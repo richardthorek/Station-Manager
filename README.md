@@ -98,9 +98,8 @@ Visit `http://localhost:5173` to see the application.
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│   In-Memory DB  │  ← Data Storage
-│ (Future: Azure  │     (Development)
-│  Cosmos/Table)  │
+│   Cosmos DB     │  ← Data Storage
+│ (MongoDB API)   │    (Production)
 └─────────────────┘
 ```
 
@@ -123,28 +122,30 @@ Visit `http://localhost:5173` to see the application.
 ## 📚 Documentation
 
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - Local development setup
-- **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment
+- **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
 - **[PLAN.md](PLAN.md)** - Comprehensive project plan and requirements
 
 ## 🚢 Deployment
 
-### Azure (Recommended)
+### Azure Deployment
 
 Deploy to Azure for a production-ready setup:
-- Azure App Service (Backend with WebSockets)
-- Azure Static Web Apps (Frontend)
-- Azure Cosmos DB or Table Storage (Database)
 
-**Estimated cost**: ~$13-15 AUD/month for low-traffic volunteer organization
+- **Frontend:** Azure Static Web Apps (Free tier)
+- **Backend:** Azure App Service B1 tier (~$13 AUD/month)
+- **Database:** Cosmos DB with MongoDB API (Free tier available)
+- **Real-time:** Socket.io with native WebSocket support
 
-See [Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md) for detailed instructions.
+**Estimated cost:** ~$13-25 AUD/month for a volunteer organization
+
+See [Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md) for step-by-step instructions.
 
 ### Other Options
+
 - Heroku
 - Railway
-- Vercel (frontend) + Render (backend)
-- Self-hosted VPS
+- Any Node.js hosting platform with WebSocket support
 
 ## 🎨 Design
 

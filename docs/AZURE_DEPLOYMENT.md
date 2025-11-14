@@ -1,44 +1,143 @@
 # Azure Deployment Guide
 
-This guide provides step-by-step instructions for deploying the RFS Station Manager application to Azure.
+This guide provides step-by-step instructions for deploying the RFS Station Manager application to Azure using **Azure App Service** and **Cosmos DB with MongoDB API**.
 
 ## Architecture Overview
 
-The application uses:
-- **Azure Static Web Apps** for hosting the React frontend
-- **Azure Functions** for the backend API (alternative deployment option)
-- **Azure App Service** for the Node.js backend with Socket.io (recommended)
-- **Azure Cosmos DB** or **Azure Table Storage** for data persistence
-- **Azure Application Insights** for monitoring (optional)
+```
+┌──────────────────────────┐
+│  Azure Static Web Apps   │  ← React Frontend (Free tier)
+│     (Frontend)           │
+└────────────┬─────────────┘
+             │ HTTP + WebSocket
+┌────────────▼─────────────┐
+│  Azure App Service (B1)  │  ← Node.js + Express + Socket.io
+│   - WebSocket Enabled    │    (Backend API & Real-time)
+│   - Always On            │
+└────────────┬─────────────┘
+             │
+┌────────────▼─────────────┐
+│  Cosmos DB (MongoDB API) │  ← Data Persistence
+│   - Free tier available  │    (Members, Activities, Check-ins)
+└──────────────────────────┘
+```
+
+### Components
+- **Azure Static Web Apps** - Hosts the React frontend (Free tier)
+- **Azure App Service (B1 tier)** - Hosts Node.js backend with WebSocket support
+- **Cosmos DB (MongoDB API)** - NoSQL database with MongoDB compatibility
+- **Azure Application Insights** - Monitoring and diagnostics (Optional)
+
+### Monthly Cost Estimate
+- **Static Web Apps:** $0 (Free tier - 100GB bandwidth/month)
+- **App Service B1:** ~$13 AUD/month (1 core, 1.75GB RAM, always-on)
+- **Cosmos DB:** $0 (Free tier - 1000 RU/s, 25GB storage) or ~$5-10 for consumption
+- **TOTAL:** **~$13-25 AUD/month**
+
+---
 
 ## Prerequisites
 
-1. Azure account with an active subscription
-2. Azure CLI installed locally
+1. Azure account with an active subscription ([Create free account](https://azure.microsoft.com/free/))
+2. Azure CLI installed locally ([Install guide](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
 3. Node.js 18+ and npm installed
 4. Git installed
 
-## Option 1: Deploy Backend to Azure App Service (Recommended for WebSockets)
+---
 
-### Step 1: Create an Azure App Service
+## Step 1: Set Up Azure Resources
+
+### 1.1 Login and Configure Azure CLI
 
 ```bash
 # Login to Azure
 az login
 
+# List subscriptions
+az account list --output table
+
 # Set your subscription (if you have multiple)
 az account set --subscription "YOUR_SUBSCRIPTION_ID"
+```
 
-# Create a resource group
-az group create --name rfs-station-manager --location australiaeast
+### 1.2 Create Resource Group
 
-# Create an App Service plan (B1 tier for low budget)
+```bash
+# Create resource group in Australia East
+az group create \
+  --name rfs-station-manager \
+  --location australiaeast
+```
+
+---
+
+## Step 2: Create Cosmos DB with MongoDB API
+
+### 2.1 Create Cosmos DB Account
+
+```bash
+# Create Cosmos DB account with MongoDB API
+az cosmosdb create \
+  --name rfs-station-db \
+  --resource-group rfs-station-manager \
+  --kind MongoDB \
+  --locations regionName=australiaeast failoverPriority=0 \
+  --default-consistency-level Session \
+  --enable-free-tier true \
+  --server-version 4.2
+```
+
+**Note:** Free tier provides 1000 RU/s and 25GB storage at no cost. Only one free tier Cosmos DB account is allowed per Azure subscription.
+
+### 2.2 Get Connection String
+
+```bash
+# Get connection string (save this for later)
+az cosmosdb keys list \
+  --name rfs-station-db \
+  --resource-group rfs-station-manager \
+  --type connection-strings \
+  --query "connectionStrings[0].connectionString" \
+  --output tsv
+
+# Store in variable for later use
+COSMOS_CONNECTION_STRING=$(az cosmosdb keys list \
+  --name rfs-station-db \
+  --resource-group rfs-station-manager \
+  --type connection-strings \
+  --query "connectionStrings[0].connectionString" \
+  --output tsv)
+
+echo "Connection string saved to COSMOS_CONNECTION_STRING"
+```
+
+**Collections will be created automatically** by the backend application on first run.
+
+---
+
+## Step 3: Deploy Backend to Azure App Service
+
+### 3.1 Create App Service Plan
+
+```bash
+# Create App Service plan (B1 tier)
 az appservice plan create \
   --name rfs-station-plan \
   --resource-group rfs-station-manager \
   --sku B1 \
   --is-linux
+```
 
+**B1 Tier Specifications:**
+- 1 vCPU core
+- 1.75 GB RAM
+- ~$13 AUD/month
+- Supports WebSockets
+- Always-on capability
+
+### 3.2 Create Web App
+
+```bash
 # Create the web app
 az webapp create \
   --name rfs-station-backend \
@@ -47,74 +146,137 @@ az webapp create \
   --runtime "NODE|18-lts"
 ```
 
-### Step 2: Configure App Service Settings
+**Note:** The web app name must be globally unique. If `rfs-station-backend` is taken, try `rfs-station-backend-yourname` or similar.
+
+### 3.3 Configure Web App Settings
 
 ```bash
-# Enable WebSockets
+# Enable WebSockets (required for Socket.io)
 az webapp config set \
   --name rfs-station-backend \
   --resource-group rfs-station-manager \
-  --web-sockets-enabled true
+  --web-sockets-enabled true \
+  --always-on true
 
-# Set environment variables
+# Set Node.js version
+az webapp config appsettings set \
+  --name rfs-station-backend \
+  --resource-group rfs-station-manager \
+  --settings \
+    WEBSITE_NODE_DEFAULT_VERSION=18-lts
+```
+
+### 3.4 Configure Environment Variables
+
+```bash
+# Set backend environment variables
 az webapp config appsettings set \
   --name rfs-station-backend \
   --resource-group rfs-station-manager \
   --settings \
     PORT=8080 \
-    FRONTEND_URL="https://YOUR_STATIC_WEB_APP_URL"
+    MONGODB_URI="$COSMOS_CONNECTION_STRING" \
+    FRONTEND_URL="https://rfs-station-frontend.azurestaticapps.net" \
+    NODE_ENV=production
 ```
 
-### Step 3: Deploy Backend Code
+**Important:** The `FRONTEND_URL` will be updated after deploying the frontend in Step 4.
+
+### 3.5 Build and Deploy Backend Code
 
 ```bash
-# From the backend directory
+# Navigate to backend directory
 cd backend
 
-# Create a deployment package
-npm install --production
+# Install dependencies
+npm install
+
+# Build TypeScript
 npm run build
 
-# Create a zip file for deployment
-zip -r deploy.zip dist node_modules package.json
+# Create deployment package (excluding dev files)
+zip -r deploy.zip dist node_modules package.json package-lock.json
 
 # Deploy to App Service
 az webapp deployment source config-zip \
   --name rfs-station-backend \
   --resource-group rfs-station-manager \
   --src deploy.zip
+
+# Clean up
+rm deploy.zip
+```
+
+### 3.6 Get Backend URL
+
+```bash
+# Get the backend URL
+az webapp show \
+  --name rfs-station-backend \
+  --resource-group rfs-station-manager \
+  --query defaultHostName \
+  --output tsv
 ```
 
 Your backend will be available at: `https://rfs-station-backend.azurewebsites.net`
 
-## Option 2: Deploy Frontend to Azure Static Web Apps
-
-### Step 1: Build the Frontend
+### 3.7 Verify Backend Deployment
 
 ```bash
-cd frontend
+# Test health endpoint
+curl https://rfs-station-backend.azurewebsites.net/health
 
-# Create production build
-npm run build
+# Expected response:
+# {"status":"ok","timestamp":"2024-11-14T..."}
 ```
 
-### Step 2: Deploy to Static Web Apps
+---
+
+## Step 4: Deploy Frontend to Azure Static Web Apps
+
+### 4.1 Create Static Web App
 
 ```bash
-# Create a Static Web App
+# Navigate back to root
+cd ..
+
+# Create Static Web App
 az staticwebapp create \
   --name rfs-station-frontend \
   --resource-group rfs-station-manager \
   --location australiaeast
+```
 
-# Get the deployment token
+### 4.2 Build Frontend
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create environment file for production
+cat > .env.production << EOF
+VITE_API_URL=https://rfs-station-backend.azurewebsites.net/api
+VITE_SOCKET_URL=https://rfs-station-backend.azurewebsites.net
+EOF
+
+# Build production bundle
+npm run build
+```
+
+### 4.3 Deploy Frontend
+
+```bash
+# Get deployment token
 DEPLOYMENT_TOKEN=$(az staticwebapp secrets list \
   --name rfs-station-frontend \
   --resource-group rfs-station-manager \
-  --query "properties.apiKey" -o tsv)
+  --query "properties.apiKey" \
+  --output tsv)
 
-# Deploy using Azure CLI (or use GitHub Actions)
-# Install the SWA CLI
+# Install Azure Static Web Apps CLI
 npm install -g @azure/static-web-apps-cli
 
 # Deploy
@@ -123,85 +285,189 @@ swa deploy ./dist \
   --env production
 ```
 
-### Step 3: Configure Frontend Environment Variables
-
-In your Static Web App settings, add:
-
-```
-VITE_API_URL=https://rfs-station-backend.azurewebsites.net/api
-VITE_SOCKET_URL=https://rfs-station-backend.azurewebsites.net
-```
-
-## Option 3: Set Up Azure Cosmos DB (Optional - for production data)
-
-### Step 1: Create Cosmos DB Account
+### 4.4 Get Frontend URL
 
 ```bash
-# Create Cosmos DB account with Table API
-az cosmosdb create \
-  --name rfs-station-db \
+# Get the frontend URL
+az staticwebapp show \
+  --name rfs-station-frontend \
   --resource-group rfs-station-manager \
-  --kind GlobalDocumentDB \
-  --locations regionName=australiaeast failoverPriority=0 \
-  --default-consistency-level Session \
-  --enable-free-tier true
-
-# Get the connection string
-az cosmosdb keys list \
-  --name rfs-station-db \
-  --resource-group rfs-station-manager \
-  --type connection-strings
+  --query defaultHostname \
+  --output tsv
 ```
 
-### Step 2: Update Backend to Use Cosmos DB
+Your frontend will be available at: `https://rfs-station-frontend.azurestaticapps.net`
 
-Add to your App Service configuration:
+### 4.5 Update Backend CORS Settings
 
 ```bash
+# Update backend with actual frontend URL
 az webapp config appsettings set \
   --name rfs-station-backend \
   --resource-group rfs-station-manager \
   --settings \
-    COSMOS_DB_ENDPOINT="https://rfs-station-db.documents.azure.com:443/" \
-    COSMOS_DB_KEY="YOUR_PRIMARY_KEY" \
-    COSMOS_DB_DATABASE="StationManager"
-```
+    FRONTEND_URL="https://rfs-station-frontend.azurestaticapps.net"
 
-## Option 4: Set Up Azure Table Storage (Budget-Friendly Alternative)
-
-### Step 1: Create Storage Account
-
-```bash
-# Create storage account
-az storage account create \
-  --name rfsstationstorage \
-  --resource-group rfs-station-manager \
-  --location australiaeast \
-  --sku Standard_LRS \
-  --kind StorageV2
-
-# Get connection string
-az storage account show-connection-string \
-  --name rfsstationstorage \
+# Restart backend to apply settings
+az webapp restart \
+  --name rfs-station-backend \
   --resource-group rfs-station-manager
 ```
 
-### Step 2: Create Tables
+---
+
+## Step 5: Optional - Enable Application Insights
+
+### 5.1 Create Application Insights
 
 ```bash
-# Set the connection string
-CONNECTION_STRING="YOUR_CONNECTION_STRING"
-
-# Create tables
-az storage table create --name Members --connection-string $CONNECTION_STRING
-az storage table create --name Activities --connection-string $CONNECTION_STRING
-az storage table create --name CheckIns --connection-string $CONNECTION_STRING
-az storage table create --name ActiveActivity --connection-string $CONNECTION_STRING
+# Create Application Insights resource
+az monitor app-insights component create \
+  --app rfs-station-insights \
+  --location australiaeast \
+  --resource-group rfs-station-manager \
+  --application-type web
 ```
+
+### 5.2 Link to App Service
+
+```bash
+# Get instrumentation key
+INSTRUMENTATION_KEY=$(az monitor app-insights component show \
+  --app rfs-station-insights \
+  --resource-group rfs-station-manager \
+  --query instrumentationKey \
+  --output tsv)
+
+# Add to App Service
+az webapp config appsettings set \
+  --name rfs-station-backend \
+  --resource-group rfs-station-manager \
+  --settings \
+    APPINSIGHTS_INSTRUMENTATIONKEY=$INSTRUMENTATION_KEY
+
+# Restart to apply
+az webapp restart \
+  --name rfs-station-backend \
+  --resource-group rfs-station-manager
+```
+
+---
+
+## Step 6: Testing
+
+### 6.1 Test Backend API
+
+```bash
+# Health check
+curl https://rfs-station-backend.azurewebsites.net/health
+
+# Get members
+curl https://rfs-station-backend.azurewebsites.net/api/members
+
+# Get activities
+curl https://rfs-station-backend.azurewebsites.net/api/activities
+```
+
+### 6.2 Test Frontend
+
+1. Open your browser to `https://rfs-station-frontend.azurestaticapps.net`
+2. Verify the UI loads correctly
+3. Check browser console for WebSocket connection
+4. Test check-in functionality
+5. Open in multiple browser windows/tabs to verify real-time sync
+
+### 6.3 Test Real-Time Sync
+
+1. Open the app in two different browsers/devices
+2. Check in a member in one browser
+3. Verify the update appears immediately in the other browser
+4. Change activity and verify it syncs across devices
+
+---
+
+## Monitoring and Maintenance
+
+### View Application Logs
+
+```bash
+# Stream live logs from App Service
+az webapp log tail \
+  --name rfs-station-backend \
+  --resource-group rfs-station-manager
+
+# Download logs
+az webapp log download \
+  --name rfs-station-backend \
+  --resource-group rfs-station-manager \
+  --log-file logs.zip
+```
+
+### View Cosmos DB Metrics
+
+```bash
+# View Cosmos DB metrics
+az monitor metrics list \
+  --resource /subscriptions/YOUR_SUB/resourceGroups/rfs-station-manager/providers/Microsoft.DocumentDB/databaseAccounts/rfs-station-db \
+  --metric TotalRequests \
+  --interval PT1H
+```
+
+### Access Cosmos DB Data Explorer
+
+1. Go to [Azure Portal](https://portal.azure.com)
+2. Navigate to your Cosmos DB account `rfs-station-db`
+3. Click **Data Explorer** in the left menu
+4. Browse your collections: Members, Activities, CheckIns, ActiveActivity
+
+---
+
+## Updating the Application
+
+### Update Backend Code
+
+```bash
+cd backend
+
+# Make your code changes
+# ...
+
+# Build
+npm run build
+
+# Deploy
+zip -r deploy.zip dist node_modules package.json package-lock.json
+
+az webapp deployment source config-zip \
+  --name rfs-station-backend \
+  --resource-group rfs-station-manager \
+  --src deploy.zip
+
+rm deploy.zip
+```
+
+### Update Frontend Code
+
+```bash
+cd frontend
+
+# Make your code changes
+# ...
+
+# Build
+npm run build
+
+# Deploy
+swa deploy ./dist \
+  --deployment-token $DEPLOYMENT_TOKEN \
+  --env production
+```
+
+---
 
 ## CI/CD with GitHub Actions
 
-Create `.github/workflows/deploy.yml`:
+Create `.github/workflows/azure-deploy.yml`:
 
 ```yaml
 name: Deploy to Azure
@@ -209,126 +475,128 @@ name: Deploy to Azure
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy-backend:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v2
-    
-    # Deploy Backend
-    - name: Setup Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '18'
-    
-    - name: Install and Build Backend
-      run: |
-        cd backend
-        npm ci
-        npm run build
-    
-    - name: Deploy to Azure App Service
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: rfs-station-backend
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: backend
-    
-    # Deploy Frontend
-    - name: Build Frontend
-      run: |
-        cd frontend
-        npm ci
-        npm run build
-    
-    - name: Deploy to Static Web Apps
-      uses: Azure/static-web-apps-deploy@v1
-      with:
-        azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        action: "upload"
-        app_location: "frontend"
-        output_location: "dist"
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install and Build Backend
+        run: |
+          cd backend
+          npm ci
+          npm run build
+      
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: rfs-station-backend
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: backend
+  
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+      
+      - name: Deploy to Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "frontend"
+          output_location: "dist"
 ```
 
-## Cost Estimation (Monthly)
-
-For a volunteer organization with low traffic:
-
-- **App Service (B1)**: ~$13 AUD/month
-- **Static Web Apps (Free tier)**: $0
-- **Cosmos DB (Free tier)**: $0 (first 1000 RU/s and 25GB)
-- **Table Storage**: < $1 AUD/month
-- **Total**: ~$13-15 AUD/month
-
-## Monitoring and Maintenance
-
-### Enable Application Insights
-
-```bash
-# Create Application Insights
-az monitor app-insights component create \
-  --app rfs-station-insights \
-  --location australiaeast \
-  --resource-group rfs-station-manager \
-  --application-type web
-
-# Link to App Service
-INSTRUMENTATION_KEY=$(az monitor app-insights component show \
-  --app rfs-station-insights \
-  --resource-group rfs-station-manager \
-  --query instrumentationKey -o tsv)
-
-az webapp config appsettings set \
-  --name rfs-station-backend \
-  --resource-group rfs-station-manager \
-  --settings APPINSIGHTS_INSTRUMENTATIONKEY=$INSTRUMENTATION_KEY
-```
-
-### View Logs
-
-```bash
-# Stream logs from App Service
-az webapp log tail \
-  --name rfs-station-backend \
-  --resource-group rfs-station-manager
-```
-
-## Scaling Considerations
-
-As usage grows, you can:
-
-1. **Scale Up**: Move to higher-tier App Service plans
-2. **Scale Out**: Add more instances
-3. **Add CDN**: Use Azure CDN for static assets
-4. **Add Redis**: Use Azure Cache for Redis for session management
-
-## Security Best Practices
-
-1. Enable HTTPS only
-2. Configure CORS properly
-3. Use Managed Identity for Azure resource access
-4. Enable Azure DDoS Protection
-5. Regular security updates
-6. Use Azure Key Vault for secrets
+---
 
 ## Troubleshooting
 
-### WebSocket Connection Issues
-- Verify WebSockets are enabled in App Service
-- Check CORS configuration
-- Ensure frontend is using WSS (not WS) in production
+### WebSocket Connection Fails
 
-### Database Connection Issues
-- Verify connection strings are correct
-- Check firewall rules in Cosmos DB/Storage
-- Ensure proper permissions are set
+**Solutions:**
+1. Verify WebSockets are enabled in App Service configuration
+2. Check CORS settings match your frontend URL
+3. Ensure frontend is using `https://` (not `http://`)
+4. Check backend logs for Socket.io connection messages
 
-## Support
+### Database Connection Errors
 
-For issues or questions:
-- Check Azure Service Health
-- Review Application Insights logs
-- Contact Azure Support if needed
+**Solutions:**
+1. Verify `MONGODB_URI` connection string is correct
+2. Check Cosmos DB firewall settings (should allow Azure services)
+3. Verify Cosmos DB is using MongoDB API (not SQL API)
+4. Check backend logs for MongoDB connection errors
+
+### Frontend Shows CORS Errors
+
+**Solutions:**
+1. Update backend `FRONTEND_URL` setting to match your actual frontend URL
+2. Restart backend after changing settings
+3. Clear browser cache and reload
+
+### 502 Bad Gateway
+
+**Solutions:**
+1. Check backend logs for startup errors
+2. Verify `PORT` environment variable is set to `8080`
+3. Check that `npm start` script is configured correctly
+4. Verify all dependencies were deployed
+
+---
+
+## Security Best Practices
+
+1. **Use HTTPS only** - Both services use HTTPS by default
+2. **Enable CORS properly** - Only allow your frontend URL
+3. **Store secrets in Key Vault** - For production deployments
+4. **Enable Azure DDoS Protection** - For public-facing apps
+5. **Regular updates** - Keep Node.js and npm packages updated
+
+---
+
+## Cost Optimization
+
+1. **Use Cosmos DB free tier** - 1000 RU/s and 25GB storage at no cost
+2. **Monitor RU consumption** - Optimize queries if approaching limit
+3. **Use B1 App Service tier** - Lowest cost for production WebSocket support
+4. **Set up budget alerts** - Get notified if costs exceed expectations
+
+---
+
+## Support and Resources
+
+- **Azure App Service:** https://docs.microsoft.com/en-us/azure/app-service/
+- **Cosmos DB MongoDB API:** https://docs.microsoft.com/en-us/azure/cosmos-db/mongodb/
+- **Static Web Apps:** https://docs.microsoft.com/en-us/azure/static-web-apps/
+- **Socket.io:** https://socket.io/docs/
+
+---
+
+## Summary
+
+You now have a production-ready deployment with:
+- ✅ React frontend on Azure Static Web Apps (Free)
+- ✅ Node.js backend on Azure App Service with WebSocket support
+- ✅ Cosmos DB with MongoDB API for data persistence
+- ✅ Real-time synchronization via Socket.io
+- ✅ Monthly cost: ~$13-25 AUD

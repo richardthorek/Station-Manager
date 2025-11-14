@@ -1,20 +1,21 @@
 import { Router } from 'express';
-import { db } from '../services/database';
+import { db } from '../services/mongoDatabase';
 
 const router = Router();
 
 // Get all active check-ins
-router.get('/active', (req, res) => {
+router.get('/active', async (req, res) => {
   try {
-    const checkIns = db.getActiveCheckIns();
+    const checkIns = await db.getActiveCheckIns();
     res.json(checkIns);
   } catch (error) {
+    console.error('Error fetching active check-ins:', error);
     res.status(500).json({ error: 'Failed to fetch active check-ins' });
   }
 });
 
 // Check in a member
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { memberId, activityId, method, location, isOffsite } = req.body;
 
@@ -24,7 +25,7 @@ router.post('/', (req, res) => {
     }
 
     // Check if member exists
-    const member = db.getMemberById(memberId);
+    const member = await db.getMemberById(memberId);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
@@ -32,7 +33,7 @@ router.post('/', (req, res) => {
     // Use active activity if no activity specified
     let finalActivityId = activityId;
     if (!finalActivityId) {
-      const activeActivity = db.getActiveActivity();
+      const activeActivity = await db.getActiveActivity();
       if (!activeActivity) {
         return res.status(400).json({ error: 'No active activity set' });
       }
@@ -40,16 +41,16 @@ router.post('/', (req, res) => {
     }
 
     // Check if activity exists
-    const activity = db.getActivityById(finalActivityId);
+    const activity = await db.getActivityById(finalActivityId);
     if (!activity) {
       return res.status(404).json({ error: 'Activity not found' });
     }
 
     // Check if member is already checked in
-    const existingCheckIn = db.getCheckInByMember(memberId);
+    const existingCheckIn = await db.getCheckInByMember(memberId);
     if (existingCheckIn) {
       // Undo the check-in
-      db.deactivateCheckIn(existingCheckIn.id);
+      await db.deactivateCheckIn(existingCheckIn.id);
       return res.json({ 
         action: 'undone',
         checkIn: existingCheckIn,
@@ -57,7 +58,7 @@ router.post('/', (req, res) => {
     }
 
     // Create new check-in
-    const checkIn = db.createCheckIn(
+    const checkIn = await db.createCheckIn(
       memberId,
       finalActivityId,
       method || 'mobile',
@@ -76,10 +77,10 @@ router.post('/', (req, res) => {
 });
 
 // Undo check-in (alternative endpoint)
-router.delete('/:memberId', (req, res) => {
+router.delete('/:memberId', async (req, res) => {
   try {
     const { memberId } = req.params;
-    const success = db.deactivateCheckInByMember(memberId);
+    const success = await db.deactivateCheckInByMember(memberId);
     
     if (!success) {
       return res.status(404).json({ error: 'No active check-in found for member' });
@@ -87,6 +88,7 @@ router.delete('/:memberId', (req, res) => {
 
     res.json({ message: 'Check-in undone successfully' });
   } catch (error) {
+    console.error('Error undoing check-in:', error);
     res.status(500).json({ error: 'Failed to undo check-in' });
   }
 });
