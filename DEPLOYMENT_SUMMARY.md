@@ -2,7 +2,7 @@
 
 ## What Was Done
 
-Per your request to use **Option C: Azure App Service with Cosmos DB (MongoDB API)**, I have:
+Per your request to use **Option C: Azure App Service with Azure Cosmos DB (Document DB) with MongoDB API**, I have:
 
 ### 1. Cleaned Up Documentation ✅
 
@@ -13,8 +13,9 @@ Per your request to use **Option C: Azure App Service with Cosmos DB (MongoDB AP
 - `deploy-container-apps.sh` script
 
 **Updated:**
-- `AZURE_DEPLOYMENT.md` - Now contains clear, step-by-step instructions for deploying with App Service + Cosmos DB MongoDB
+- `AZURE_DEPLOYMENT.md` - Now contains clear, step-by-step instructions for deploying with App Service + Azure Cosmos DB (Document DB) with MongoDB API
 - `README.md` - Removed mentions of alternative options, shows single clear path
+- Added clarification that Azure Cosmos DB with MongoDB API is also known as Azure Document DB
 
 ### 2. Implemented MongoDB Support ✅
 
@@ -24,7 +25,7 @@ Per your request to use **Option C: Azure App Service with Cosmos DB (MongoDB AP
   - Auto-initialization of collections
   - Full CRUD operations for Members, Activities, CheckIns
   - Efficient indexing
-  - Compatible with both local MongoDB and Cosmos DB MongoDB API
+  - Compatible with both local MongoDB and Azure Cosmos DB (Document DB) with MongoDB API
 
 **Updated Backend Code:**
 - `backend/src/index.ts` - Added MongoDB connection on startup + graceful shutdown
@@ -49,18 +50,22 @@ Per your request to use **Option C: Azure App Service with Cosmos DB (MongoDB AP
              │ HTTPS + WebSocket
 ┌────────────▼────────────────────┐
 │  Azure App Service (B1 tier)    │  ← Node.js + Express + Socket.io
-│  ~$13 AUD/month                  │    WebSockets enabled
+│  bungrfsstation                  │    WebSockets enabled
+│  ~$13 AUD/month                  │    
 │  Always-on, 1.75GB RAM           │
 └────────────┬────────────────────┘
              │
 ┌────────────▼────────────────────┐
-│  Cosmos DB (MongoDB API)         │  ← MongoDB-compatible database
-│  Free tier or ~$5-10/month       │    1000 RU/s + 25GB storage (free)
+│  Azure Cosmos DB (Document DB)  │  ← MongoDB-compatible database
+│  with MongoDB API                │    1000 RU/s + 25GB storage (free)
+│  Free tier or ~$5-10/month       │
 └─────────────────────────────────┘
 ```
 
 **Total Monthly Cost:** ~$13-25 AUD
 **Real-time Sync:** Native WebSocket support via Socket.io
+
+> **Note:** Azure Cosmos DB with MongoDB API is also known as Azure Document DB. They are the same service.
 
 ---
 
@@ -85,15 +90,17 @@ The guide includes:
 ```bash
 PORT=8080
 NODE_ENV=production
-MONGODB_URI=<your-cosmos-db-connection-string>
+MONGODB_URI=<your-azure-cosmos-db-connection-string>
 FRONTEND_URL=<your-static-web-app-url>
 ```
 
 **Frontend (.env.production):**
 ```bash
-VITE_API_URL=https://<your-backend>.azurewebsites.net/api
-VITE_SOCKET_URL=https://<your-backend>.azurewebsites.net
+VITE_API_URL=https://bungrfsstation.azurewebsites.net/api
+VITE_SOCKET_URL=https://bungrfsstation.azurewebsites.net
 ```
+
+> Replace `bungrfsstation` with your actual App Service name if different.
 
 ### Step 3: Local Development (Optional)
 
@@ -143,8 +150,9 @@ The backend will automatically:
 - Sorted results
 - Optimized check-in queries
 
-✅ **Cosmos DB Compatible**
-- Works seamlessly with Cosmos DB MongoDB API
+✅ **Azure Cosmos DB (Document DB) Compatible**
+- Works seamlessly with Azure Cosmos DB (Document DB) with MongoDB API
+- Just provide the connection string - no code changes needed
 - Just change the connection string - no code changes needed
 
 ### Real-time Sync
@@ -203,11 +211,12 @@ All documentation has been updated to reflect the chosen architecture.
 
 ## Summary
 
-✅ Backend now supports Cosmos DB MongoDB API
+✅ Backend now supports Azure Cosmos DB (Document DB) with MongoDB API
 ✅ All alternative deployment options removed from docs
 ✅ Clear, single deployment path documented
 ✅ Code tested and ready for deployment
 ✅ No security vulnerabilities
 ✅ Estimated cost: ~$13-25 AUD/month
+✅ Actual deployed backend: bungrfsstation
 
 **You're ready to deploy to Azure!** 🚀

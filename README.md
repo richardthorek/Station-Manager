@@ -108,8 +108,9 @@ Additional features can be easily added as new routes following this pattern.
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│   Cosmos DB     │  ← Data Storage
-│ (MongoDB API)   │    (Production)
+│  Azure Cosmos DB│  ← Data Storage
+│  (Document DB)  │    (Production)
+│ with MongoDB API│
 └─────────────────┘
 ```
 
@@ -143,11 +144,13 @@ Additional features can be easily added as new routes following this pattern.
 Deploy to Azure for a production-ready setup:
 
 - **Frontend:** Azure Static Web Apps (Free tier)
-- **Backend:** Azure App Service B1 tier (~$13 AUD/month)
-- **Database:** Cosmos DB with MongoDB API (Free tier available)
+- **Backend:** Azure App Service B1 tier (~$13 AUD/month) - e.g., `bungrfsstation`
+- **Database:** Azure Cosmos DB (Document DB) with MongoDB API (Free tier available)
 - **Real-time:** Socket.io with native WebSocket support
 
 **Estimated cost:** ~$13-25 AUD/month for a volunteer organization
+
+> **Note:** Azure Cosmos DB with MongoDB API is also known as Azure Document DB. They are the same service.
 
 See [Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md) for step-by-step instructions.
 
