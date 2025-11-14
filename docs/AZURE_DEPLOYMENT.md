@@ -2,13 +2,18 @@
 
 This guide provides step-by-step instructions for deploying the RFS Station Manager application to Azure.
 
+> **📋 NEW: Budget-Friendly Deployment Options**  
+> For a comprehensive analysis of **cost-optimized deployment architectures** (including $0-5/month options), see the [Azure Budget Deployment Plan](./AZURE_DEPLOYMENT_BUDGET_PLAN.md).  
+> This guide covers the traditional App Service approach. For lower costs, consider **Azure Container Apps** (see budget plan).
+
 ## Architecture Overview
 
 The application uses:
 - **Azure Static Web Apps** for hosting the React frontend
-- **Azure Functions** for the backend API (alternative deployment option)
-- **Azure App Service** for the Node.js backend with Socket.io (recommended)
-- **Azure Cosmos DB** or **Azure Table Storage** for data persistence
+- **Azure App Service** for the Node.js backend with Socket.io (**~$13/month**)
+- **Azure Container Apps** for the backend (**$0-5/month alternative - see budget plan**)
+- **Azure Table Storage** for data persistence (recommended for budget)
+- **Azure Cosmos DB** (alternative option, free tier available)
 - **Azure Application Insights** for monitoring (optional)
 
 ## Prerequisites
@@ -332,3 +337,34 @@ For issues or questions:
 - Check Azure Service Health
 - Review Application Insights logs
 - Contact Azure Support if needed
+
+---
+
+## 💰 Cost-Saving Alternative: Azure Container Apps
+
+This guide documents the **traditional Azure App Service deployment** (~$13/month).
+
+For a **budget-friendly alternative** that costs **$0-5/month**:
+- See the [Azure Budget Deployment Plan](./AZURE_DEPLOYMENT_BUDGET_PLAN.md)
+- Uses **Azure Container Apps** instead of App Service
+- Supports WebSockets/Socket.io (no code changes needed)
+- Includes scale-to-zero for cost savings
+- Production-ready architecture
+
+**Cost Comparison:**
+- **App Service (this guide):** $13-15 AUD/month
+- **Container Apps (budget plan):** $0-5 AUD/month
+- **Savings:** Up to $156 AUD/year
+
+Choose App Service if you need:
+- Zero cold starts (instant response 24/7)
+- Simplest deployment process
+- Predictable fixed costs
+
+Choose Container Apps if you want:
+- Lowest possible cost
+- Serverless architecture
+- Can tolerate 2-5 second cold start after idle periods
+
+**📖 Read the full analysis:** [Azure Budget Deployment Plan](./AZURE_DEPLOYMENT_BUDGET_PLAN.md)
+
