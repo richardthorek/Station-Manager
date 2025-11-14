@@ -1,0 +1,139 @@
+.truckcheck-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+  color: #ffffff;
+}
+
+.truckcheck-header {
+  background: #E2231A;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.back-link {
+  display: inline-block;
+  color: #ffffff;
+  text-decoration: none;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  transition: opacity 0.2s;
+}
+
+.back-link:hover {
+  opacity: 0.8;
+}
+
+.truckcheck-header h1 {
+  font-size: 2.5rem;
+  margin: 0;
+  color: #ffffff;
+}
+
+.truckcheck-main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+.placeholder-content {
+  text-align: center;
+  background: #ffffff;
+  color: #000000;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.placeholder-content .icon {
+  font-size: 5rem;
+  margin-bottom: 1.5rem;
+}
+
+.placeholder-content h2 {
+  font-size: 2rem;
+  color: #E2231A;
+  margin: 0 0 1rem 0;
+}
+
+.placeholder-content p {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: #333333;
+  margin-bottom: 2rem;
+}
+
+.planned-features {
+  text-align: left;
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+  border-left: 4px solid #C6D931;
+}
+
+.planned-features h3 {
+  font-size: 1.25rem;
+  color: #E2231A;
+  margin: 0 0 1rem 0;
+}
+
+.planned-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.planned-features li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  color: #333333;
+}
+
+.planned-features li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: #C6D931;
+  font-weight: bold;
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: #E2231A;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background 0.2s;
+  margin-top: 1rem;
+}
+
+.btn-primary:hover {
+  background: #c41e16;
+}
+
+@media (max-width: 768px) {
+  .truckcheck-header h1 {
+    font-size: 2rem;
+  }
+
+  .truckcheck-main {
+    padding: 2rem 1rem;
+  }
+
+  .placeholder-content {
+    padding: 2rem 1rem;
+  }
+
+  .placeholder-content .icon {
+    font-size: 4rem;
+  }
+
+  .placeholder-content h2 {
+    font-size: 1.75rem;
+  }
+}

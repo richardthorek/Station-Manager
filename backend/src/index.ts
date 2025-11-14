@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
-import { db } from './services/mongoDatabase';
+import { db } from './services/database';
 
 dotenv.config();
 
@@ -30,7 +30,7 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    database: db ? 'connected' : 'disconnected'
+    database: 'in-memory'
   });
 });
 
@@ -74,15 +74,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Initialize database and start server
 async function startServer() {
   try {
-    // Connect to MongoDB
-    await db.connect();
-    console.log('✅ Database connected');
-
-    // Start HTTP server
+    // Start HTTP server (using in-memory database, no connection needed)
     httpServer.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`Health check: http://localhost:${PORT}/health`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`Database: In-memory storage`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
@@ -95,7 +92,6 @@ process.on('SIGTERM', async () => {
   console.log('SIGTERM signal received: closing HTTP server');
   httpServer.close(async () => {
     console.log('HTTP server closed');
-    await db.disconnect();
     process.exit(0);
   });
 });
@@ -104,7 +100,6 @@ process.on('SIGINT', async () => {
   console.log('SIGINT signal received: closing HTTP server');
   httpServer.close(async () => {
     console.log('HTTP server closed');
-    await db.disconnect();
     process.exit(0);
   });
 });
