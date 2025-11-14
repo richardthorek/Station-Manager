@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from '../services/mongoDatabase';
+import { db } from '../services/database';
 
 const router = Router();
 

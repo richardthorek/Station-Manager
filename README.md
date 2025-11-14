@@ -49,9 +49,19 @@ cp .env.example .env
 npm run dev
 ```
 
-Visit `http://localhost:5173` to see the application.
+Visit `http://localhost:5173` to see the application landing page.
 
 **📖 For detailed setup instructions, see [Getting Started Guide](docs/GETTING_STARTED.md)**
+
+## 🗺️ Application Routes
+
+The application uses a feature-based routing structure for scalability:
+
+- **`/`** - Landing page with overview of all features
+- **`/signin`** - Station member sign-in system (current functionality)
+- **`/truckcheck`** - Vehicle maintenance tracking (placeholder for future feature)
+
+Additional features can be easily added as new routes following this pattern.
 
 ## 📱 Usage
 
@@ -173,7 +183,11 @@ See [Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md) for step-by-step instruct
 Station-Manager/
 ├── frontend/           # React application
 │   ├── src/
-│   │   ├── components/ # UI components
+│   │   ├── features/   # Feature-based modules
+│   │   │   ├── landing/      # Landing page (/)
+│   │   │   ├── signin/       # Sign-in feature (/signin)
+│   │   │   └── truckcheck/   # Truck check (placeholder)
+│   │   ├── components/ # Shared UI components
 │   │   ├── hooks/      # Custom React hooks
 │   │   ├── services/   # API services
 │   │   └── types/      # TypeScript definitions
@@ -186,6 +200,20 @@ Station-Manager/
 │   └── dist/           # Build output
 └── docs/               # Documentation
 ```
+
+### Feature-Based Routing
+
+The application follows a scalable feature-based routing pattern:
+
+1. **Landing Page (`/`)**: Central hub displaying all available features
+2. **Feature Routes (`/feature-name`)**: Each major feature has its own route
+3. **Feature Modules**: Self-contained feature directories with components and styles
+
+**Adding a New Feature:**
+1. Create a new directory in `frontend/src/features/your-feature`
+2. Add `YourFeaturePage.tsx` and `YourFeaturePage.css`
+3. Register the route in `App.tsx`
+4. Add a feature card to the landing page
 
 ### Scripts
 
