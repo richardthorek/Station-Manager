@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
@@ -25,6 +26,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from frontend build (for production)
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 
@@ -38,6 +43,11 @@ app.get('/health', (req, res) => {
 app.use('/api/members', membersRouter);
 app.use('/api/activities', activitiesRouter);
 app.use('/api/checkins', checkinsRouter);
+
+// Serve frontend for all other routes (SPA fallback)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
