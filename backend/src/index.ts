@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
+import { db } from './services/mongoDatabase';
 
 dotenv.config();
 
@@ -26,7 +27,11 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    database: db ? 'connected' : 'disconnected'
+  });
 });
 
 // API Routes
@@ -66,10 +71,45 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
+// Initialize database and start server
+async function startServer() {
+  try {
+    // Connect to MongoDB
+    await db.connect();
+    console.log('✅ Database connected');
+
+    // Start HTTP server
+    httpServer.listen(PORT, () => {
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`Health check: http://localhost:${PORT}/health`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Handle graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  httpServer.close(async () => {
+    console.log('HTTP server closed');
+    await db.disconnect();
+    process.exit(0);
+  });
 });
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  httpServer.close(async () => {
+    console.log('HTTP server closed');
+    await db.disconnect();
+    process.exit(0);
+  });
+});
+
+// Start the server
+startServer();
 
 export { io };

@@ -98,9 +98,8 @@ Visit `http://localhost:5173` to see the application.
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│   In-Memory DB  │  ← Data Storage
-│ (Future: Azure  │     (Development)
-│  Cosmos/Table)  │
+│   Cosmos DB     │  ← Data Storage
+│ (MongoDB API)   │    (Production)
 └─────────────────┘
 ```
 
@@ -123,38 +122,30 @@ Visit `http://localhost:5173` to see the application.
 ## 📚 Documentation
 
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - Local development setup
-- **[Azure Budget Deployment Plan](docs/AZURE_DEPLOYMENT_BUDGET_PLAN.md)** - 💰 Cost-optimized deployment ($0-5/month) ✨ **NEW**
-- **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Traditional production deployment ($13-15/month)
+- **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
 - **[PLAN.md](PLAN.md)** - Comprehensive project plan and requirements
 
 ## 🚢 Deployment
 
-### Azure (Recommended)
+### Azure Deployment
 
-Deploy to Azure for a production-ready setup with **multiple cost options**:
+Deploy to Azure for a production-ready setup:
 
-**Budget-Friendly Option ($0-5 AUD/month):**
-- Azure Container Apps (Backend with WebSockets)
-- Azure Static Web Apps (Frontend)
-- Azure Table Storage (Database)
+- **Frontend:** Azure Static Web Apps (Free tier)
+- **Backend:** Azure App Service B1 tier (~$13 AUD/month)
+- **Database:** Cosmos DB with MongoDB API (Free tier available)
+- **Real-time:** Socket.io with native WebSocket support
 
-**Traditional Option ($13-15 AUD/month):**
-- Azure App Service (Backend with WebSockets)
-- Azure Static Web Apps (Frontend)
-- Azure Table Storage (Database)
+**Estimated cost:** ~$13-25 AUD/month for a volunteer organization
 
-**📖 Choose your deployment path:**
-- **[Budget Deployment Plan](docs/AZURE_DEPLOYMENT_BUDGET_PLAN.md)** - Comprehensive cost analysis with $0-5/month options ✨ **NEW**
-- **[Traditional Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - App Service deployment ($13-15/month)
-
-Both options support full WebSocket/real-time functionality!
+See [Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md) for step-by-step instructions.
 
 ### Other Options
+
 - Heroku
 - Railway
-- Vercel (frontend) + Render (backend)
-- Self-hosted VPS
+- Any Node.js hosting platform with WebSocket support
 
 ## 🎨 Design
 
