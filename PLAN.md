@@ -60,19 +60,19 @@ The RFS station needs a modern, efficient way to track member presence and activ
 ### 3.1 Technology Stack Recommendations
 
 **QUESTIONS FOR DECISION:**
-- Q1: Do you have a preference for frontend framework? (React, Vue, Angular, Svelte, etc.)
-- Q2: Do you have a preference for backend technology? (Node.js, Python, .NET, Go, etc.)
-- Q3: What is the hosting environment? (Cloud provider preference? On-premises server?)
-- Q4: Database preference? (PostgreSQL, MySQL, MongoDB, Firebase, etc.)
-- Q5: Budget considerations for cloud services?
+- Q1: Do you have a preference for frontend framework? React
+- Q2: Do you have a preference for backend technology? Node.j
+- Q3: What is the hosting environment? Azure
+- Q4: Database preference? (Cosmos DB, pick a suitable format)
+- Q5: Budget considerations for cloud services? volunteer org with low budget
 
 **Suggested Stack (pending answers above):**
 - **Frontend**: React with TypeScript for type safety
-- **Backend**: Node.js with Express or NestJS
+- **Backend**: Node.js with Express
 - **Real-time**: WebSocket (Socket.io) or Server-Sent Events
 - **Database**: PostgreSQL for reliability
-- **Hosting**: Cloud platform (AWS, Azure, GCP) or Firebase for simplicity
-- **Authentication**: JWT tokens or OAuth2
+- **Hosting**: Cloud platform (Azure)
+- **Authentication**: JWT tokens or OAuth2 - we shouldnt need authentication yet plus guests with no accounts need to be able to use kiosks to sign in
 
 ### 3.2 System Components
 
@@ -126,10 +126,10 @@ ActiveActivity
 ```
 
 **QUESTIONS FOR DECISION:**
-- Q6: Should we track check-out times explicitly, or only check-ins?
-- Q7: Do we need to track which specific kiosk/location was used?
-- Q8: Should there be a limit on how many people can be checked in at once?
-- Q9: Do we need historical reporting on check-ins and activities?
+- Q6: Should we track check-out times explicitly, or only check-ins? Not required yet
+- Q7: Do we need to track which specific kiosk/location was used? Yes, including the users device location if accessed via web or the qr scan in. offsite sign ins flagged. 
+- Q8: Should there be a limit on how many people can be checked in at once? No
+- Q9: Do we need historical reporting on check-ins and activities? yes but later. 
 
 ### 3.3 Real-Time Synchronization Strategy
 
@@ -138,19 +138,15 @@ ActiveActivity
    - Pros: True real-time, bidirectional, efficient
    - Cons: More complex, requires WebSocket support
 
-2. **Server-Sent Events (SSE)**
-   - Pros: Simpler than WebSocket, built into HTTP
-   - Cons: One-way (server to client only)
-
 3. **Polling**
    - Pros: Simple, works everywhere
    - Cons: Higher latency, more server load
 
 **QUESTIONS FOR DECISION:**
-- Q10: What is the expected number of concurrent users/devices?
-- Q11: What is the network reliability at the station?
+- Q10: What is the expected number of concurrent users/devices? <10
+- Q11: What is the network reliability at the station? good. 
 
-**Recommended**: WebSocket (Socket.io) for best user experience, with fallback to polling
+**Recommended**: WebSocket (Socket.io) for best user experience, with fallback to polling - do this
 
 ---
 
@@ -171,7 +167,7 @@ ActiveActivity
 1. User scans their unique QR code
 2. System identifies user
 3. User sees current activity
-4. User confirms or selects different activity
+4. User selects different activity if relevant
 5. User is checked in automatically
 6. Update propagates to all devices
 
@@ -193,11 +189,12 @@ ActiveActivity
 ### 4.2 UI/UX Requirements
 
 **QUESTIONS FOR DECISION:**
-- Q12: Should kiosks require any authentication or be completely open?
-- Q13: Should there be different permission levels (admin vs member)?
-- Q14: What accessibility requirements should we consider?
-- Q15: Should the app support multiple languages?
-- Q16: Do you have brand colors/logo for the RFS station?
+- Q12: Should kiosks require any authentication or be completely open? open
+- Q13: Should there be different permission levels (admin vs member)? not yet
+- Q14: What accessibility requirements should we consider? standard list. 
+- Q15: Should the app support multiple languages? not yet
+- Q16: Do you have brand colors/logo for the RFS station? 
+yes, follow the nsw rfs colours and style guide. red highlights black white primary and sparingly used lime green accents. public sans font. 
 
 #### 4.2.1 Kiosk Interface
 - **Large touch targets** (minimum 60px)
@@ -225,10 +222,10 @@ ActiveActivity
 ### 5.1 Authentication Strategy
 
 **QUESTIONS FOR DECISION:**
-- Q17: How should members be registered in the system? (Admin adds them? Self-registration?)
-- Q18: Should kiosk devices have any PIN/password protection?
-- Q19: Should QR codes expire or be permanent?
-- Q20: What happens if someone's QR code is lost/stolen?
+- Q17: How should members be registered in the system? (Admin adds them? Self-registration?) self register on first use, name persists.
+- Q18: Should kiosk devices have any PIN/password protection? no
+- Q19: Should QR codes expire or be permanent? permanent to support printing of stickers for individuals 
+- Q20: What happens if someone's QR code is lost/stolen? 
 
 **Initial Recommendations:**
 - Kiosks: No authentication (physical security assumed)
@@ -244,8 +241,8 @@ ActiveActivity
 - Regular data cleanup (auto-delete old records?)
 
 **QUESTIONS FOR DECISION:**
-- Q21: How long should historical check-in data be retained?
-- Q22: Are there any privacy regulations we need to comply with?
+- Q21: How long should historical check-in data be retained? forever
+- Q22: Are there any privacy regulations we need to comply with? no
 
 ---
 
@@ -266,9 +263,9 @@ ActiveActivity
 
 ### 6.3 Midnight Rollover Logic
 **QUESTIONS FOR DECISION:**
-- Q23: What timezone should be used for midnight rollover?
-- Q24: What happens to checked-in users at midnight? (Auto check-out? Carry forward?)
-- Q25: What happens to the active activity at midnight? (Reset to default? Keep previous?)
+- Q23: What timezone should be used for midnight rollover? +10
+- Q24: What happens to checked-in users at midnight? (Auto check-out? Carry forward?) no checkout required. people are just checked in to events on days. 
+- Q25: What happens to the active activity at midnight? (Reset to default? Keep previous?) reset to default which requires the first person to pick before signing in
 
 **Proposed Logic:**
 - Run scheduled job at midnight local time
