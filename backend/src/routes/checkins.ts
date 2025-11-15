@@ -1,3 +1,14 @@
+/**
+ * Check-In Management Routes
+ * 
+ * Handles member check-in/check-out operations:
+ * - Getting active check-ins
+ * - Creating new check-ins with activity association
+ * - Toggling check-in status (undo check-in)
+ * - Tracking check-in methods (kiosk, mobile, QR)
+ * - Location tracking and offsite flagging
+ */
+
 import { Router } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
 

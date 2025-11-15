@@ -1,3 +1,16 @@
+/**
+ * Truck Checks Routes
+ * 
+ * Comprehensive vehicle inspection workflow including:
+ * - Appliance management (fire trucks, bulk water carriers, command vehicles)
+ * - Checklist templates with customizable items
+ * - Check run creation and management (collaborative checking)
+ * - Check result tracking (done, issue, skipped statuses)
+ * - Photo upload support (Azure Blob Storage integration)
+ * - Real-time collaboration via WebSocket
+ * - Issue tracking and reporting
+ */
+
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';

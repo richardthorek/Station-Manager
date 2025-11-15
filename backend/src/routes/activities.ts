@@ -1,3 +1,13 @@
+/**
+ * Activity Management Routes
+ * 
+ * Manages station activities including:
+ * - Fetching all available activities
+ * - Getting and setting the active activity
+ * - Creating custom activities
+ * - Managing activity state for sign-in workflow
+ */
+
 import { Router } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
 

@@ -1,3 +1,19 @@
+/**
+ * RFS Station Manager - Backend Server
+ * 
+ * Main entry point for the Express server that powers the RFS Station Manager application.
+ * Provides REST API endpoints for member management, activity tracking, check-ins, events,
+ * and truck checks. Includes WebSocket support via Socket.io for real-time synchronization.
+ * 
+ * Key Features:
+ * - Member sign-in/sign-out tracking
+ * - Activity and event management
+ * - Real-time updates across devices
+ * - Truck check workflows
+ * - Azure Cosmos DB / MongoDB integration
+ * - In-memory database for development
+ */
+
 import dotenv from 'dotenv';
 
 // Load environment variables FIRST, before any other imports

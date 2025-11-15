@@ -1,3 +1,14 @@
+/**
+ * Event Management Routes
+ * 
+ * Manages discrete activity events with participant tracking:
+ * - Creating and managing events (training sessions, meetings, callouts)
+ * - Adding/removing participants from events
+ * - Tracking event start/end times
+ * - Pagination support for event history
+ * - Active event management
+ */
+
 import { Router } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
 
