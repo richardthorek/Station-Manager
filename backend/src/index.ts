@@ -9,6 +9,7 @@ import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
 import eventsRouter from './routes/events';
+import truckChecksRouter from './routes/truckChecks';
 import { db } from './services/database';
 
 dotenv.config();
@@ -54,6 +55,7 @@ app.use('/api/members', membersRouter);
 app.use('/api/activities', activitiesRouter);
 app.use('/api/checkins', checkinsRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/truck-checks', truckChecksRouter);
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
