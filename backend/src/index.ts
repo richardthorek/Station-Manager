@@ -7,6 +7,7 @@ import path from 'path';
 import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
+import eventsRouter from './routes/events';
 import { db } from './services/database';
 
 dotenv.config();
@@ -43,6 +44,7 @@ app.get('/health', (req, res) => {
 app.use('/api/members', membersRouter);
 app.use('/api/activities', activitiesRouter);
 app.use('/api/checkins', checkinsRouter);
+app.use('/api/events', eventsRouter);
 
 // Serve frontend for all other routes (SPA fallback)
 app.get(/^\/(?!api).*/, (req, res) => {
@@ -72,6 +74,21 @@ io.on('connection', (socket) => {
   // Handle member addition
   socket.on('member-added', (data) => {
     socket.broadcast.emit('member-update', data);
+  });
+
+  // Handle event creation
+  socket.on('event-created', (data) => {
+    io.emit('event-update', data);
+  });
+
+  // Handle event end
+  socket.on('event-ended', (data) => {
+    io.emit('event-update', data);
+  });
+
+  // Handle participant added/removed
+  socket.on('participant-change', (data) => {
+    io.emit('event-update', data);
   });
 });
 
