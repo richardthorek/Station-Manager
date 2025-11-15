@@ -1,4 +1,4 @@
-import type { Member, Activity, CheckIn, CheckInWithDetails, ActiveActivity } from '../types';
+import type { Member, Activity, CheckIn, CheckInWithDetails, ActiveActivity, EventWithParticipants, EventParticipant } from '../types';
 
 // Use relative URL in production, localhost in development
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
@@ -115,6 +115,66 @@ class ApiService {
     });
     if (!response.ok) throw new Error('Failed to perform URL check-in');
     return response.json();
+  }
+  // Events
+  async getEvents(limit: number = 50, offset: number = 0): Promise<EventWithParticipants[]> {
+    const response = await fetch(`${API_BASE_URL}/events?limit=${limit}&offset=${offset}`);
+    if (!response.ok) throw new Error('Failed to fetch events');
+    return response.json();
+  }
+
+  async getActiveEvents(): Promise<EventWithParticipants[]> {
+    const response = await fetch(`${API_BASE_URL}/events/active`);
+    if (!response.ok) throw new Error('Failed to fetch active events');
+    return response.json();
+  }
+
+  async getEvent(eventId: string): Promise<EventWithParticipants> {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}`);
+    if (!response.ok) throw new Error('Failed to fetch event');
+    return response.json();
+  }
+
+  async createEvent(activityId: string, createdBy?: string): Promise<EventWithParticipants> {
+    const response = await fetch(`${API_BASE_URL}/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activityId, createdBy }),
+    });
+    if (!response.ok) throw new Error('Failed to create event');
+    return response.json();
+  }
+
+  async endEvent(eventId: string): Promise<EventWithParticipants> {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/end`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to end event');
+    return response.json();
+  }
+
+  async addEventParticipant(
+    eventId: string,
+    memberId: string,
+    method: 'kiosk' | 'mobile' | 'qr' = 'mobile',
+    location?: string,
+    isOffsite?: boolean
+  ): Promise<{ action: string; participant: EventParticipant }> {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/participants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId, method, location, isOffsite }),
+    });
+    if (!response.ok) throw new Error('Failed to add participant');
+    return response.json();
+  }
+
+  async removeEventParticipant(eventId: string, participantId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/participants/${participantId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to remove participant');
   }
 }
 

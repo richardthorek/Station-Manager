@@ -41,3 +41,41 @@ export interface ActiveActivity {
 }
 
 export type CheckInMethod = 'kiosk' | 'mobile' | 'qr';
+
+/**
+ * Represents a discrete instance of an activity with its own lifecycle
+ */
+export interface Event {
+  id: string;
+  activityId: string;
+  activityName: string;
+  startTime: string;
+  endTime?: string;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Represents a participant's check-in to a specific event
+ */
+export interface EventParticipant {
+  id: string;
+  eventId: string;
+  memberId: string;
+  memberName: string;
+  checkInTime: string;
+  checkInMethod: 'kiosk' | 'mobile' | 'qr';
+  location?: string;
+  isOffsite: boolean;
+  createdAt: string;
+}
+
+/**
+ * Event with all participant details for UI display
+ */
+export interface EventWithParticipants extends Event {
+  participants: EventParticipant[];
+  participantCount: number;
+}

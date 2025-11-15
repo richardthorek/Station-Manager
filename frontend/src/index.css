@@ -1,14 +1,36 @@
 :root {
-  /* NSW RFS Brand Colors */
-  --color-primary-red: #E2231A;
-  --color-black: #000000;
-  --color-white: #FFFFFF;
-  --color-lime-green: #C6D931;
-  --color-gray-light: #F5F5F5;
-  --color-gray-medium: #CCCCCC;
-  --color-gray-dark: #333333;
-  --color-error: #D32F2F;
-  --color-success: #388E3C;
+  /* NSW RFS Brand Colors (from Style Guide Sept 2024) */
+  --rfs-core-red: #e5281B;
+  --rfs-lime: #cbdb2a;
+  --rfs-dark-grey: #4d4d4f;
+  --rfs-light-grey: #bcbec0;
+  --rfs-black: #000000;
+  --rfs-white: #ffffff;
+
+  /* Thematic/Semantic UI Colors (from Style Guide & User Requirements) */
+  --ui-amber: #fbb034;  /* Amber (Bush Fire Ready / Watch & Act) */
+  --ui-blue: #215e9e;    /* Blue (Advice / Hyperlink Blue from guide) */
+  --ui-green: #008550;   /* Green (DGR from guide, can be used for Membership/Events if suitable) */
+  /* Emergency Red is --rfs-core-red */
+
+  /* General UI & Text Colors */
+  --rfs-accent-green: #4CAF50; /* Retained for now, assess if needed alongside RFS Lime/UI Green */
+  --rfs-neutral-light: #f4f4f4; /* Style guide uses specific greys, this might need to align with --rfs-light-grey or similar */
+  --rfs-neutral-medium: #e0e0e0; /* Assess against style guide greys */
+  --rfs-neutral-dark: #333333; /* Consider replacing with --rfs-dark-grey or another specified grey */
+  --text-color-light: var(--rfs-white);
+  --text-color-dark: var(--rfs-dark-grey);
+
+  /* Legacy variable mapping for backward compatibility */
+  --color-primary-red: var(--rfs-core-red);
+  --color-black: var(--rfs-black);
+  --color-white: var(--rfs-white);
+  --color-lime-green: var(--rfs-lime);
+  --color-gray-light: var(--rfs-neutral-light);
+  --color-gray-medium: var(--rfs-light-grey);
+  --color-gray-dark: var(--rfs-dark-grey);
+  --color-error: var(--rfs-core-red);
+  --color-success: var(--ui-green);
   
   /* Typography */
   font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -36,11 +58,14 @@ body {
   margin: 0;
   display: flex;
   min-width: 320px;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden; /* Prevent whole page scroll */
 }
 
 #root {
   width: 100%;
+  height: 100%;
+  overflow: hidden; /* Prevent whole page scroll */
 }
 
 h1, h2, h3, h4, h5, h6 {
