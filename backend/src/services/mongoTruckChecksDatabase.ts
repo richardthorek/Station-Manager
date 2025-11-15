@@ -390,7 +390,7 @@ class MongoTruckChecksDatabase {
       throw new Error('Database not connected');
     }
     
-    const checkRun = await this.checkRunsCollection.findOne({ id: runId });
+    const checkRun = await this.checkRunsCollection.findOne({ id: { $eq: runId } });
     if (!checkRun) {
       throw new Error('Check run not found');
     }
