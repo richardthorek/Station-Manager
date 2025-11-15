@@ -90,13 +90,17 @@ export function CheckWorkflowPage() {
   }
 
   function scrollToItem(index: number) {
-    if (scrollContainerRef.current) {
-      const itemHeight = scrollContainerRef.current.scrollHeight / (template?.items.length || 1);
-      scrollContainerRef.current.scrollTo({
-        top: itemHeight * index,
-        behavior: 'smooth',
-      });
+    if (scrollContainerRef.current && template) {
+      const cards = scrollContainerRef.current.querySelectorAll('.check-item-card');
+      if (cards[index]) {
+        cards[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
+  }
+  
+  function jumpToItem(index: number) {
+    setCurrentIndex(index);
+    scrollToItem(index);
   }
 
   function handlePrevious() {
@@ -185,11 +189,29 @@ export function CheckWorkflowPage() {
           </button>
         </div>
         <h1>{appliance.name} Check</h1>
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ width: `${((currentIndex + 1) / template.items.length) * 100}%` }}
-          />
+        <div className="progress-bar-container">
+          <div className="progress-bar">
+            <div 
+              className="progress-fill" 
+              style={{ width: `${((currentIndex + 1) / template.items.length) * 100}%` }}
+            />
+          </div>
+          <div className="progress-milestones">
+            {template.items.map((item, index) => (
+              <button
+                key={item.id}
+                className={`milestone ${index === currentIndex ? 'active' : ''} ${results.has(item.id) ? 'completed' : ''}`}
+                onClick={() => jumpToItem(index)}
+                title={item.name}
+                aria-label={`Jump to ${item.name}`}
+              >
+                <span className="milestone-number">{index + 1}</span>
+                {results.has(item.id) && (
+                  <span className="milestone-check">✓</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
         <p className="progress-text">
           Item {currentIndex + 1} of {template.items.length}
@@ -259,52 +281,75 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
 
   return (
     <div className={`check-item-card ${isActive ? 'active' : ''} ${result ? 'completed' : ''}`}>
-      <h2>{item.name}</h2>
-      <p className="item-description">{item.description}</p>
-      
-      {result && (
-        <div className={`result-badge ${result.status}`}>
-          {result.status === 'done' && '✓ Done'}
-          {result.status === 'issue' && '⚠ Issue'}
-          {result.status === 'skipped' && '○ Skipped'}
+      <div className="item-content">
+        <h2>{item.name}</h2>
+        <p className="item-description">{item.description}</p>
+        
+        {/* Placeholder for reference photo */}
+        <div className="reference-photo-placeholder">
+          <div className="photo-icon">📷</div>
+          <p className="photo-text">Reference photo will appear here</p>
         </div>
-      )}
-
-      {!result && isActive && (
-        <div className="item-actions">
-          {!showComment ? (
-            <>
-              <button className="btn-done" onClick={() => handleStatus('done')}>
-                ✓ Done
-              </button>
-              <button className="btn-issue" onClick={() => handleStatus('issue')}>
-                ⚠ Issue
-              </button>
-              <button className="btn-skip" onClick={() => handleStatus('skipped')}>
-                Skip
-              </button>
-            </>
-          ) : (
-            <div className="comment-section">
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Describe the issue..."
-                className="comment-input"
-                autoFocus
-              />
-              <div className="comment-actions">
-                <button className="btn-secondary" onClick={() => setShowComment(false)}>
-                  Cancel
-                </button>
-                <button className="btn-primary" onClick={handleSubmitWithComment}>
-                  Submit Issue
-                </button>
-              </div>
+        
+        {result ? (
+          <div className="result-display">
+            <div className={`result-badge ${result.status}`}>
+              {result.status === 'done' && '✓ Done'}
+              {result.status === 'issue' && '⚠ Issue'}
+              {result.status === 'skipped' && '○ Skipped'}
             </div>
-          )}
-        </div>
-      )}
+            {result.comment && (
+              <p className="result-comment">Comment: {result.comment}</p>
+            )}
+            {isActive && (
+              <p className="edit-hint">Scroll to next item or use navigation buttons</p>
+            )}
+          </div>
+        ) : isActive ? (
+          <div className="item-actions">
+            {!showComment ? (
+              <>
+                <button className="btn-done" onClick={() => handleStatus('done')}>
+                  ✓ Done
+                </button>
+                <button className="btn-issue" onClick={() => handleStatus('issue')}>
+                  ⚠ Issue
+                </button>
+                <button className="btn-skip" onClick={() => handleStatus('skipped')}>
+                  Skip
+                </button>
+              </>
+            ) : (
+              <div className="comment-section">
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Describe the issue..."
+                  className="comment-input"
+                  autoFocus
+                />
+                <div className="comment-actions">
+                  <button className="btn-secondary" onClick={() => setShowComment(false)}>
+                    Cancel
+                  </button>
+                  <button className="btn-primary" onClick={handleSubmitWithComment}>
+                    Submit Issue
+                  </button>
+                </div>
+                {/* Placeholder for photo upload */}
+                <div className="photo-upload-placeholder">
+                  <div className="upload-icon">📸</div>
+                  <p className="upload-text">Photo upload will be available here</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="item-waiting">
+            <p>Scroll or navigate to this item to complete</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

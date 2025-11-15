@@ -27,19 +27,86 @@
   font-weight: 700;
 }
 
+.progress-bar-container {
+  width: 100%;
+  margin-top: 1rem;
+}
+
 .progress-bar {
   width: 100%;
   height: 8px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
-  margin-top: 1rem;
   overflow: hidden;
+  margin-bottom: 1rem;
 }
 
 .progress-fill {
   height: 100%;
   background: var(--rfs-lime);
   transition: width 0.3s ease;
+}
+
+.progress-milestones {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.milestone {
+  position: relative;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: var(--rfs-white);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.milestone:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.milestone.active {
+  background: var(--rfs-lime);
+  border-color: var(--rfs-lime);
+  color: var(--rfs-black);
+  transform: scale(1.2);
+}
+
+.milestone.completed {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.milestone-number {
+  font-size: 0.85rem;
+}
+
+.milestone-check {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: white;
+  color: #4caf50;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .progress-text {
@@ -102,11 +169,12 @@
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   scroll-snap-align: start;
   opacity: 0.5;
   transition: opacity 0.3s;
+  overflow-y: auto;
 }
 
 .check-item-card.active {
@@ -114,7 +182,13 @@
 }
 
 .check-item-card.completed {
-  opacity: 0.7;
+  opacity: 0.8;
+}
+
+.item-content {
+  width: 100%;
+  max-width: 600px;
+  margin-top: 2rem;
 }
 
 .check-item-card h2 {
@@ -129,7 +203,34 @@
   color: var(--text-secondary);
   text-align: center;
   margin: 0 0 2rem 0;
-  max-width: 600px;
+  line-height: 1.6;
+}
+
+.reference-photo-placeholder {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.photo-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+}
+
+.photo-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.result-display {
+  text-align: center;
+  margin-top: 2rem;
 }
 
 .result-badge {
@@ -137,7 +238,8 @@
   border-radius: 4px;
   font-size: 1.1rem;
   font-weight: 600;
-  margin-top: 1rem;
+  display: inline-block;
+  margin-bottom: 1rem;
 }
 
 .result-badge.done {
@@ -153,6 +255,37 @@
 .result-badge.skipped {
   background: #757575;
   color: white;
+}
+
+.result-comment {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.edit-hint {
+  margin: 1rem 0 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.item-waiting {
+  text-align: center;
+  margin-top: 2rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.item-waiting p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
 }
 
 .item-actions {
@@ -233,6 +366,28 @@
 
 .comment-actions button {
   flex: 1;
+}
+
+.photo-upload-placeholder {
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.upload-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+}
+
+.upload-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 .workflow-footer {
