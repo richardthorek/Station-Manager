@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Simplified RFS favicon -->
+  <rect width="32" height="32" fill="#E2231A"/>
+  
+  <!-- Simple fire station silhouette -->
+  <g fill="#FFFFFF">
+    <!-- Building -->
+    <rect x="10" y="16" width="12" height="13"/>
+    <!-- Roof -->
+    <path d="M 16 8 L 22 16 L 10 16 Z"/>
+    <!-- Tower -->
+    <rect x="14" y="6" width="4" height="4"/>
+    <circle cx="16" cy="5" r="2"/>
+    <!-- Door -->
+    <rect x="14" y="22" width="4" height="7" fill="#E2231A"/>
+  </g>
+  
+  <!-- Lime accent -->
+  <rect x="0" y="29" width="32" height="3" fill="#C6D931"/>
+</svg>
