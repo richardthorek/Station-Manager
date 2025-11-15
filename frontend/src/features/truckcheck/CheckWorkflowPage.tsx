@@ -22,8 +22,25 @@ export function CheckWorkflowPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isJoinedCheck, setIsJoinedCheck] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-collapse sidebar on mobile devices
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        setSidebarCollapsed(true);
+      }
+    };
+    
+    // Set initial state
+    handleResize();
+    
+    // Listen for window resize
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (applianceId) {
@@ -309,8 +326,19 @@ export function CheckWorkflowPage() {
 
       <div className="workflow-content-wrapper">
         {/* Left sidebar with progress indicators */}
-        <aside className="workflow-sidebar">
-          <h2 className="sidebar-title">Progress ({results.size}/{template.items.length})</h2>
+        <aside className={`workflow-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          <div className="sidebar-header">
+            <button 
+              className="sidebar-toggle"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? '→' : '←'}
+            </button>
+            {!sidebarCollapsed && (
+              <h2 className="sidebar-title">Progress ({results.size}/{template.items.length})</h2>
+            )}
+          </div>
           <div className="sidebar-progress-list">
             {template.items.map((item, index) => (
               <button
@@ -321,12 +349,14 @@ export function CheckWorkflowPage() {
                 aria-label={`Jump to ${item.name}`}
               >
                 <div className={`sidebar-milestone ${index === currentIndex ? 'active' : ''} ${results.has(item.id) ? 'completed' : ''}`}>
-                  <span className="milestone-number">{index + 1}</span>
+                  <span className="milestone-number">{sidebarCollapsed ? item.name.charAt(0).toUpperCase() : index + 1}</span>
                   {results.has(item.id) && (
                     <span className="sidebar-milestone-check">✓</span>
                   )}
                 </div>
-                <span className="sidebar-item-title">{item.name}</span>
+                {!sidebarCollapsed && (
+                  <span className="sidebar-item-title">{item.name}</span>
+                )}
               </button>
             ))}
           </div>
@@ -476,8 +506,10 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
         {/* Reference photo if available */}
         {item.referencePhotoUrl ? (
           <div className="reference-photo">
-            <img src={item.referencePhotoUrl} alt={`Reference for ${item.name}`} />
-            <p className="photo-caption">Reference Photo</p>
+            <a href={item.referencePhotoUrl} target="_blank" rel="noopener noreferrer">
+              <img src={item.referencePhotoUrl} alt={`Reference for ${item.name}`} />
+            </a>
+            <p className="photo-caption">Reference Photo (click to enlarge)</p>
           </div>
         ) : (
           <div className="reference-photo-placeholder">
@@ -501,8 +533,10 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
             )}
             {result.photoUrl && (
               <div className="result-photo">
-                <img src={result.photoUrl} alt="Issue documentation" />
-                <p className="photo-caption">Uploaded Photo</p>
+                <a href={result.photoUrl} target="_blank" rel="noopener noreferrer">
+                  <img src={result.photoUrl} alt="Issue documentation" />
+                </a>
+                <p className="photo-caption">Uploaded Photo (click to enlarge)</p>
               </div>
             )}
             {isActive && (
