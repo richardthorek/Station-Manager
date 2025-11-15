@@ -1,3 +1,4 @@
+import { useTheme } from '../hooks/useTheme';
 import './Header.css';
 
 interface HeaderProps {
@@ -5,6 +6,8 @@ interface HeaderProps {
 }
 
 export function Header({ isConnected }: HeaderProps) {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <header className="header">
       <div className="header-content">
@@ -13,6 +16,14 @@ export function Header({ isConnected }: HeaderProps) {
           <h1>RFS Station Manager</h1>
         </div>
         <div className="header-status">
+          <button 
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
           <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
             <span className="status-dot"></span>
             <span className="status-text">

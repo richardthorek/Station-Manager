@@ -13,9 +13,9 @@
 }
 
 .modal-content {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 16px;
-  border: 2px solid #333;
+  border: 2px solid var(--border-color);
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
@@ -40,20 +40,20 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 2px solid #333;
-  background: #222;
+  border-bottom: 2px solid var(--border-color);
+  background: var(--bg-secondary);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .modal-close {
   background: transparent;
   border: none;
-  color: #999;
+  color: var(--text-secondary);
   font-size: 1.5rem;
   cursor: pointer;
   width: 32px;
@@ -67,7 +67,7 @@
 
 .modal-close:hover {
   background: #333;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -75,7 +75,7 @@
 }
 
 .modal-description {
-  color: #999;
+  color: var(--text-secondary);
   margin: 0 0 1.5rem 0;
   line-height: 1.6;
 }
@@ -87,8 +87,8 @@
 }
 
 .activity-option {
-  background: #222;
-  border: 2px solid #333;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
   border-radius: 12px;
   padding: 1.5rem 1rem;
   cursor: pointer;
@@ -97,7 +97,7 @@
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s;
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
 }
 
@@ -125,7 +125,7 @@
 .activity-option .custom-badge {
   font-size: 0.7rem;
   background: #555;
-  color: #fff;
+  color: var(--text-primary);
   padding: 0.2rem 0.5rem;
   border-radius: 12px;
   text-transform: uppercase;
@@ -138,7 +138,7 @@
   gap: 1rem;
   padding: 1.5rem;
   border-top: 2px solid #333;
-  background: #222;
+  background: var(--bg-secondary);
 }
 
 .btn-primary,
@@ -165,13 +165,13 @@
 
 .btn-primary:disabled {
   background: #555;
-  color: #999;
+  color: var(--text-secondary);
   cursor: not-allowed;
 }
 
 .btn-secondary {
   background: #333;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover {
@@ -184,7 +184,7 @@
 }
 
 .modal-content::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: var(--bg-card);
 }
 
 .modal-content::-webkit-scrollbar-thumb {

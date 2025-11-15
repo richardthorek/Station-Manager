@@ -18,17 +18,10 @@
   --rfs-neutral-light: #f4f4f4; /* Style guide uses specific greys, this might need to align with --rfs-light-grey or similar */
   --rfs-neutral-medium: #e0e0e0; /* Assess against style guide greys */
   --rfs-neutral-dark: #333333; /* Consider replacing with --rfs-dark-grey or another specified grey */
-  --text-color-light: var(--rfs-white);
-  --text-color-dark: var(--rfs-dark-grey);
 
   /* Legacy variable mapping for backward compatibility */
   --color-primary-red: var(--rfs-core-red);
-  --color-black: var(--rfs-black);
-  --color-white: var(--rfs-white);
   --color-lime-green: var(--rfs-lime);
-  --color-gray-light: var(--rfs-neutral-light);
-  --color-gray-medium: var(--rfs-light-grey);
-  --color-gray-dark: var(--rfs-dark-grey);
   --color-error: var(--rfs-core-red);
   --color-success: var(--ui-green);
   
@@ -38,14 +31,57 @@
   line-height: 1.5;
   font-weight: 400;
   
-  color-scheme: light;
-  color: var(--color-black);
-  background-color: var(--color-white);
-  
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light Theme (Default) */
+:root,
+[data-theme="light"] {
+  --color-black: var(--rfs-black);
+  --color-white: var(--rfs-white);
+  --color-gray-light: var(--rfs-neutral-light);
+  --color-gray-medium: var(--rfs-light-grey);
+  --color-gray-dark: var(--rfs-dark-grey);
+  --text-color-light: var(--rfs-white);
+  --text-color-dark: var(--rfs-dark-grey);
+  
+  --bg-primary: var(--rfs-white);
+  --bg-secondary: var(--rfs-neutral-light);
+  --bg-card: var(--rfs-white);
+  --text-primary: var(--rfs-black);
+  --text-secondary: var(--rfs-dark-grey);
+  --border-color: var(--rfs-light-grey);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  
+  color-scheme: light;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --color-black: #e0e0e0;
+  --color-white: #1a1a1a;
+  --color-gray-light: #333333;
+  --color-gray-medium: #555555;
+  --color-gray-dark: #bcbec0;
+  --text-color-light: #1a1a1a;
+  --text-color-dark: #e0e0e0;
+  
+  --bg-primary: #000000;
+  --bg-secondary: #1a1a1a;
+  --bg-card: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --border-color: #333333;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  
+  color-scheme: dark;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 }
 
 * {

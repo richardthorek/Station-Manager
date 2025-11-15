@@ -39,6 +39,32 @@
   gap: 12px;
 }
 
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.25rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  padding: 0;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px) rotate(15deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0) rotate(0deg);
+}
+
 .status-indicator {
   display: flex;
   align-items: center;
