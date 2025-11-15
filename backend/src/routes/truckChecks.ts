@@ -1,8 +1,26 @@
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { CheckStatus } from '../types';
+import { azureStorageService } from '../services/azureStorage';
 
 const router = Router();
+
+// Configure multer for memory storage (we'll upload to Azure)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+});
 
 // ============================================
 // Appliance Routes
@@ -342,6 +360,81 @@ router.delete('/results/:id', async (req: Request, res: Response) => {
     console.error('Error deleting check result:', error);
     res.status(500).json({ error: 'Failed to delete check result' });
   }
+});
+
+// ============================================
+// Photo Upload Routes
+// ============================================
+
+/**
+ * POST /api/truck-checks/upload/reference-photo
+ * Upload a reference photo for a checklist template item
+ */
+router.post('/upload/reference-photo', upload.single('photo'), async (req: Request, res: Response) => {
+  try {
+    if (!azureStorageService.isStorageEnabled()) {
+      return res.status(503).json({ 
+        error: 'Photo upload is not available. Azure Storage is not configured.' 
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No photo file provided' });
+    }
+
+    const photoUrl = await azureStorageService.uploadReferencePhoto(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype
+    );
+
+    res.status(201).json({ photoUrl });
+  } catch (error) {
+    console.error('Error uploading reference photo:', error);
+    res.status(500).json({ error: 'Failed to upload reference photo' });
+  }
+});
+
+/**
+ * POST /api/truck-checks/upload/result-photo
+ * Upload a result photo for a check result
+ */
+router.post('/upload/result-photo', upload.single('photo'), async (req: Request, res: Response) => {
+  try {
+    if (!azureStorageService.isStorageEnabled()) {
+      return res.status(503).json({ 
+        error: 'Photo upload is not available. Azure Storage is not configured.' 
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No photo file provided' });
+    }
+
+    const photoUrl = await azureStorageService.uploadResultPhoto(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype
+    );
+
+    res.status(201).json({ photoUrl });
+  } catch (error) {
+    console.error('Error uploading result photo:', error);
+    res.status(500).json({ error: 'Failed to upload result photo' });
+  }
+});
+
+/**
+ * GET /api/truck-checks/storage-status
+ * Check if Azure Storage is configured and available
+ */
+router.get('/storage-status', (req: Request, res: Response) => {
+  res.json({
+    enabled: azureStorageService.isStorageEnabled(),
+    message: azureStorageService.isStorageEnabled() 
+      ? 'Photo upload is available' 
+      : 'Photo upload is not available. Configure Azure Storage to enable this feature.'
+  });
 });
 
 export default router;

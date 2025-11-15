@@ -349,6 +349,37 @@ class ApiService {
     });
     if (!response.ok) throw new Error('Failed to delete check result');
   }
+
+  // Photo Uploads
+  async uploadReferencePhoto(file: File): Promise<{ photoUrl: string }> {
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    const response = await fetch(`${API_BASE_URL}/truck-checks/upload/reference-photo`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) throw new Error('Failed to upload reference photo');
+    return response.json();
+  }
+
+  async uploadResultPhoto(file: File): Promise<{ photoUrl: string }> {
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    const response = await fetch(`${API_BASE_URL}/truck-checks/upload/result-photo`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) throw new Error('Failed to upload result photo');
+    return response.json();
+  }
+
+  async getStorageStatus(): Promise<{ enabled: boolean; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/storage-status`);
+    if (!response.ok) throw new Error('Failed to get storage status');
+    return response.json();
+  }
 }
 
 export const api = new ApiService();

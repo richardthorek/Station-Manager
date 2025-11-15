@@ -58,7 +58,7 @@ export function CheckWorkflowPage() {
     }
   }
 
-  async function handleItemResult(itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string) {
+  async function handleItemResult(itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string, photoUrl?: string) {
     if (!checkRun) return;
 
     try {
@@ -68,7 +68,8 @@ export function CheckWorkflowPage() {
         itemName,
         itemDescription,
         status,
-        comment
+        comment,
+        photoUrl
       );
       
       const newResults = new Map(results);
@@ -226,7 +227,7 @@ export function CheckWorkflowPage() {
               item={item}
               isActive={index === currentIndex}
               result={results.get(item.id)}
-              onResult={(status, comment) => handleItemResult(item.id, item.name, item.description, status, comment)}
+              onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl)}
             />
           ))}
         </div>
@@ -256,27 +257,78 @@ interface CheckItemCardProps {
   item: { id: string; name: string; description: string; referencePhotoUrl?: string };
   isActive: boolean;
   result?: CheckResult;
-  onResult: (status: CheckStatus, comment?: string) => void;
+  onResult: (status: CheckStatus, comment?: string, photoUrl?: string) => void;
 }
 
 function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps) {
   const [comment, setComment] = useState('');
   const [showComment, setShowComment] = useState(false);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [storageEnabled, setStorageEnabled] = useState(false);
+
+  useEffect(() => {
+    checkStorageStatus();
+  }, []);
+
+  async function checkStorageStatus() {
+    try {
+      const status = await api.getStorageStatus();
+      setStorageEnabled(status.enabled);
+    } catch (err) {
+      console.error('Failed to check storage status:', err);
+    }
+  }
 
   function handleStatus(status: CheckStatus) {
     if (status === 'issue') {
       setShowComment(true);
     } else {
-      onResult(status, comment || undefined);
+      onResult(status, comment || undefined, uploadedPhotoUrl || undefined);
       setComment('');
       setShowComment(false);
+      setUploadedPhotoUrl(null);
+    }
+  }
+
+  async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!storageEnabled) {
+      alert('Photo upload is not available. Azure Storage is not configured.');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image file must be smaller than 10MB');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const response = await api.uploadResultPhoto(file);
+      setUploadedPhotoUrl(response.photoUrl);
+    } catch (err) {
+      console.error('Failed to upload photo:', err);
+      alert('Failed to upload photo. Please try again.');
+    } finally {
+      setUploading(false);
     }
   }
 
   function handleSubmitWithComment() {
-    onResult('issue', comment || undefined);
+    onResult('issue', comment || undefined, uploadedPhotoUrl || undefined);
     setComment('');
     setShowComment(false);
+    setUploadedPhotoUrl(null);
   }
 
   return (
@@ -285,11 +337,18 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
         <h2>{item.name}</h2>
         <p className="item-description">{item.description}</p>
         
-        {/* Placeholder for reference photo */}
-        <div className="reference-photo-placeholder">
-          <div className="photo-icon">📷</div>
-          <p className="photo-text">Reference photo will appear here</p>
-        </div>
+        {/* Reference photo if available */}
+        {item.referencePhotoUrl ? (
+          <div className="reference-photo">
+            <img src={item.referencePhotoUrl} alt={`Reference for ${item.name}`} />
+            <p className="photo-caption">Reference Photo</p>
+          </div>
+        ) : (
+          <div className="reference-photo-placeholder">
+            <div className="photo-icon">📷</div>
+            <p className="photo-text">No reference photo available</p>
+          </div>
+        )}
         
         {result ? (
           <div className="result-display">
@@ -300,6 +359,12 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
             </div>
             {result.comment && (
               <p className="result-comment">Comment: {result.comment}</p>
+            )}
+            {result.photoUrl && (
+              <div className="result-photo">
+                <img src={result.photoUrl} alt="Issue documentation" />
+                <p className="photo-caption">Uploaded Photo</p>
+              </div>
             )}
             {isActive && (
               <p className="edit-hint">Scroll to next item or use navigation buttons</p>
@@ -328,18 +393,51 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
                   className="comment-input"
                   autoFocus
                 />
+                
+                {/* Photo upload for issue documentation */}
+                {storageEnabled && (
+                  <div className="photo-upload-section">
+                    <label className="upload-label-text">
+                      Add Photo (Optional)
+                    </label>
+                    {uploadedPhotoUrl ? (
+                      <div className="uploaded-photo-preview">
+                        <img src={uploadedPhotoUrl} alt="Uploaded issue" />
+                        <button 
+                          className="remove-photo-btn"
+                          onClick={() => setUploadedPhotoUrl(null)}
+                        >
+                          Remove Photo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="photo-upload-control">
+                        <input
+                          type="file"
+                          id="photo-upload"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          disabled={uploading}
+                          style={{ display: 'none' }}
+                        />
+                        <label htmlFor="photo-upload" className="upload-button">
+                          {uploading ? '📤 Uploading...' : '📸 Add Photo'}
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div className="comment-actions">
-                  <button className="btn-secondary" onClick={() => setShowComment(false)}>
+                  <button className="btn-secondary" onClick={() => {
+                    setShowComment(false);
+                    setUploadedPhotoUrl(null);
+                  }}>
                     Cancel
                   </button>
                   <button className="btn-primary" onClick={handleSubmitWithComment}>
                     Submit Issue
                   </button>
-                </div>
-                {/* Placeholder for photo upload */}
-                <div className="photo-upload-placeholder">
-                  <div className="upload-icon">📸</div>
-                  <p className="upload-text">Photo upload will be available here</p>
                 </div>
               </div>
             )}
