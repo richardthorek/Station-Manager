@@ -203,7 +203,7 @@ class MongoDBService {
 
   async getActivityById(id: string): Promise<Activity | null> {
     if (!this.activitiesCollection) throw new Error('Database not connected');
-    return await this.activitiesCollection.findOne({ id });
+    return await this.activitiesCollection.findOne({ id: { $eq: id } });
   }
 
   async createActivity(name: string, createdBy?: string): Promise<Activity> {
