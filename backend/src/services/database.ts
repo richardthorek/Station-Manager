@@ -13,6 +13,11 @@ class DatabaseService {
 
   constructor() {
     this.initializeDefaultData();
+    
+    // Initialize dev data if in development mode
+    if (process.env.NODE_ENV !== 'production') {
+      this.initializeDevData();
+    }
   }
 
   private initializeDefaultData() {
@@ -46,6 +51,38 @@ class DatabaseService {
       'Lisa Anderson',
       'James Taylor',
       'Jennifer Martinez',
+      'Robert Lee',
+      'Mary Williams',
+      'Christopher Thompson',
+      'Patricia Garcia',
+      'Daniel Rodriguez',
+      'Linda Martinez',
+      'Matthew Anderson',
+      'Barbara Thomas',
+      'Joseph Jackson',
+      'Elizabeth White',
+      'Charles Harris',
+      'Susan Clark',
+      'Thomas Lewis',
+      'Jessica Robinson',
+      'Christopher Walker',
+      'Sarah Hall',
+      'Joshua Allen',
+      'Nancy Young',
+      'Andrew King',
+      'Margaret Wright',
+      'Ryan Lopez',
+      'Dorothy Hill',
+      'Nicholas Scott',
+      'Betty Green',
+      'Jonathan Adams',
+      'Helen Baker',
+      'Brandon Nelson',
+      'Sandra Carter',
+      'Benjamin Mitchell',
+      'Ashley Perez',
+      'Samuel Roberts',
+      'Kimberly Turner',
     ];
 
     sampleMembers.forEach(name => {
@@ -58,6 +95,73 @@ class DatabaseService {
       };
       this.members.set(member.id, member);
     });
+  }
+
+  private initializeDevData() {
+    console.log('🔧 Initializing development data...');
+    
+    const members = Array.from(this.members.values());
+    const activities = Array.from(this.activities.values());
+    
+    if (members.length === 0 || activities.length === 0) {
+      console.warn('No members or activities available for dev data');
+      return;
+    }
+
+    // Create events from the past week
+    const now = new Date();
+    const eventsToCreate = 15;
+    
+    for (let i = 0; i < eventsToCreate; i++) {
+      // Create events at various times in the past
+      const daysAgo = Math.floor(i / 3); // Group events by day
+      const hoursAgo = (i % 3) * 4 + Math.random() * 2; // Spread throughout the day
+      const eventTime = new Date(now.getTime() - (daysAgo * 24 + hoursAgo) * 60 * 60 * 1000);
+      
+      // Pick a random activity
+      const activity = activities[i % activities.length];
+      
+      const event: Event = {
+        id: uuidv4(),
+        activityId: activity.id,
+        activityName: activity.name,
+        startTime: eventTime,
+        endTime: i < 2 ? undefined : new Date(eventTime.getTime() + (2 + Math.random() * 3) * 60 * 60 * 1000), // Random 2-5 hour duration
+        isActive: i < 2, // Keep 2 most recent events active
+        createdAt: eventTime,
+        updatedAt: eventTime,
+      };
+      
+      this.events.set(event.id, event);
+      
+      // Add random participants to each event
+      const participantCount = Math.floor(Math.random() * 6) + 3; // 3-8 participants
+      const shuffledMembers = [...members].sort(() => Math.random() - 0.5);
+      
+      for (let j = 0; j < participantCount && j < shuffledMembers.length; j++) {
+        const member = shuffledMembers[j];
+        const checkInOffset = Math.random() * 30; // Check-in within first 30 minutes
+        const checkInTime = new Date(eventTime.getTime() + checkInOffset * 60 * 1000);
+        
+        const methods: Array<'kiosk' | 'mobile' | 'qr'> = ['kiosk', 'mobile', 'qr'];
+        const method = methods[Math.floor(Math.random() * methods.length)];
+        
+        const participant: EventParticipant = {
+          id: uuidv4(),
+          eventId: event.id,
+          memberId: member.id,
+          memberName: member.name,
+          checkInTime,
+          checkInMethod: method,
+          isOffsite: Math.random() > 0.85, // 15% chance of offsite
+          createdAt: checkInTime,
+        };
+        
+        this.eventParticipants.set(participant.id, participant);
+      }
+    }
+    
+    console.log(`✅ Created ${eventsToCreate} dev events with participants`);
   }
 
   // Member methods
