@@ -595,3 +595,215 @@ curl -X POST http://localhost:3000/api/checkins \
     "method": "mobile"
   }'
 ```
+
+---
+
+## Events
+
+The event system manages discrete activity instances with their own lifecycles and participant lists.
+
+### Get Events
+
+#### `GET /api/events`
+
+Retrieve events with pagination support.
+
+**Query Parameters**:
+- `limit` (optional, default 50, max 100): Maximum number of events to return
+- `offset` (optional, default 0): Number of events to skip
+
+**Response** (200 OK):
+```json
+[
+  {
+    "id": "uuid",
+    "activityId": "uuid",
+    "activityName": "Training",
+    "startTime": "2024-11-15T12:44:00.000Z",
+    "endTime": null,
+    "isActive": true,
+    "createdBy": "system",
+    "createdAt": "2024-11-15T12:44:00.000Z",
+    "updatedAt": "2024-11-15T12:44:00.000Z",
+    "participants": [
+      {
+        "id": "uuid",
+        "eventId": "uuid",
+        "memberId": "uuid",
+        "memberName": "John Smith",
+        "checkInTime": "2024-11-15T12:44:30.000Z",
+        "checkInMethod": "mobile",
+        "isOffsite": false,
+        "createdAt": "2024-11-15T12:44:30.000Z"
+      }
+    ],
+    "participantCount": 1
+  }
+]
+```
+
+### Get Active Events
+
+#### `GET /api/events/active`
+
+Retrieve all currently active (not ended) events.
+
+**Response** (200 OK):
+Same format as GET /api/events
+
+### Get Specific Event
+
+#### `GET /api/events/:eventId`
+
+Retrieve a specific event with all participants.
+
+**Parameters**:
+- `eventId` (path): Event UUID
+
+**Response** (200 OK):
+```json
+{
+  "id": "uuid",
+  "activityId": "uuid",
+  "activityName": "Training",
+  "startTime": "2024-11-15T12:44:00.000Z",
+  "endTime": null,
+  "isActive": true,
+  "participants": [...],
+  "participantCount": 3
+}
+```
+
+**Errors**:
+- `404`: Event not found
+
+### Create Event
+
+#### `POST /api/events`
+
+Start a new event from an activity type.
+
+**Request Body**:
+```json
+{
+  "activityId": "activity-uuid",
+  "createdBy": "username"
+}
+```
+
+**Response** (201 Created):
+Same format as GET /api/events/:eventId
+
+**Errors**:
+- `400`: Invalid activity ID
+- `404`: Activity not found
+
+### End Event
+
+#### `PUT /api/events/:eventId/end`
+
+End an event (sets end time and marks as inactive).
+
+**Parameters**:
+- `eventId` (path): Event UUID
+
+**Response** (200 OK):
+Same format as GET /api/events/:eventId
+
+**Errors**:
+- `404`: Event not found
+
+### Add Event Participant
+
+#### `POST /api/events/:eventId/participants`
+
+Add a participant to an event. If the participant is already in the event, they are removed (toggle behavior).
+
+**Parameters**:
+- `eventId` (path): Event UUID
+
+**Request Body**:
+```json
+{
+  "memberId": "member-uuid",
+  "method": "mobile",
+  "location": "Station",
+  "isOffsite": false
+}
+```
+
+**Response** (201 Created):
+```json
+{
+  "action": "added",
+  "participant": {
+    "id": "uuid",
+    "eventId": "uuid",
+    "memberId": "uuid",
+    "memberName": "John Smith",
+    "checkInTime": "2024-11-15T12:44:30.000Z",
+    "checkInMethod": "mobile",
+    "isOffsite": false,
+    "createdAt": "2024-11-15T12:44:30.000Z"
+  }
+}
+```
+
+Or if removing:
+```json
+{
+  "action": "removed",
+  "participant": { ... }
+}
+```
+
+**Errors**:
+- `400`: Invalid member ID or event is ended
+- `404`: Event or member not found
+
+### Remove Event Participant
+
+#### `DELETE /api/events/:eventId/participants/:participantId`
+
+Remove a participant from an event.
+
+**Parameters**:
+- `eventId` (path): Event UUID
+- `participantId` (path): Participant UUID
+
+**Response** (200 OK):
+```json
+{
+  "message": "Participant removed successfully"
+}
+```
+
+**Errors**:
+- `404`: Participant not found
+
+---
+
+## Example Usage - Event System
+
+```bash
+# Start a new training event
+curl -X POST http://localhost:3000/api/events \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activityId": "training-activity-uuid"
+  }'
+
+# Add a participant to the event
+curl -X POST http://localhost:3000/api/events/event-uuid/participants \
+  -H "Content-Type: application/json" \
+  -d '{
+    "memberId": "member-uuid",
+    "method": "mobile"
+  }'
+
+# Get all active events
+curl http://localhost:3000/api/events/active
+
+# End an event
+curl -X PUT http://localhost:3000/api/events/event-uuid/end
+```
