@@ -1,3 +1,13 @@
+/**
+ * Header Component
+ * 
+ * Main application header displaying:
+ * - Application title and logo
+ * - Theme toggle (light/dark mode)
+ * - Connection status indicator
+ * - Database status warning (in-memory vs persistent)
+ */
+
 import { useTheme } from '../hooks/useTheme';
 import './Header.css';
 
