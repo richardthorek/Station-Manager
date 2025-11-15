@@ -139,14 +139,27 @@ export function CheckWorkflowPage() {
           setCurrentIndex(nextIndex);
           scrollToItem(nextIndex);
         } else {
-          // All items completed, navigate to summary
-          navigate(`/truckcheck/summary/${checkRun.id}`);
+          // All items completed - scroll to completion card
+          setTimeout(() => {
+            if (scrollContainerRef.current) {
+              const completionCard = scrollContainerRef.current.querySelector('.completion-card');
+              if (completionCard) {
+                completionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
+          }, 100);
         }
       }
     } catch (err) {
       setError('Failed to save result');
       console.error(err);
     }
+  }
+
+  function handleFinishCheck() {
+    if (!checkRun) return;
+    // Optionally we could call completeCheckRun here, but summary page handles final completion.
+    navigate(`/truckcheck/summary/${checkRun.id}`);
   }
 
   function findNextUncompletedItem(startIndex: number): number {
@@ -322,8 +335,30 @@ export function CheckWorkflowPage() {
               onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl)}
             />
           ))}
+          
+          {results.size === template.items.length && (
+            <div className="completion-card">
+              <div className="completion-icon">✅</div>
+              <h2>All Items Completed!</h2>
+              <p>You've completed all {template.items.length} items in this check.</p>
+              <button 
+                className="btn-complete"
+                onClick={handleFinishCheck}
+              >
+                View Summary & Finish
+              </button>
+            </div>
+          )}
         </div>
       </main>
+
+      {results.size === template.items.length && (
+        <div className="completion-sticky" aria-label="Completion actions">
+          <button className="btn-complete" onClick={handleFinishCheck}>
+            ✅ Finish & View Summary
+          </button>
+        </div>
+      )}
 
       <footer className="workflow-footer">
         <button 
