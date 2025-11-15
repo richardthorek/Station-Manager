@@ -194,11 +194,19 @@
   letter-spacing: 0.5px;
 }
 
-.btn-end-event:hover {
+.btn-end-event:hover:not(:disabled) {
   background: #b91c15;
   color: #ffffff;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(226, 35, 26, 0.3);
+}
+
+.btn-end-event:disabled {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
 }
 
 /* Scrollbar styling */

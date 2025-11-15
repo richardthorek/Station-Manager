@@ -125,17 +125,16 @@ export function EventCard({ event, isActive, isSelected, onSelect, onEnd }: Even
             </div>
           )}
           
-          {isActive && (
-            <button
-              className="btn-end-event"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEnd(event.id);
-              }}
-            >
-              End Event
-            </button>
-          )}
+          <button
+            className="btn-end-event"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEnd(event.id);
+            }}
+            disabled={!isActive}
+          >
+            {isActive ? 'End Event' : 'Event Ended'}
+          </button>
         </div>
       )}
     </div>

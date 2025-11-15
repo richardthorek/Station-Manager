@@ -47,14 +47,45 @@ export function UserManagement({ members, onClose, onUpdateMember }: UserManagem
     navigate(`/profile/${memberId}`);
   };
 
+  const handleExportUrls = () => {
+    const baseUrl = window.location.origin;
+    const urls = members
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(member => {
+        const identifier = encodeURIComponent(member.name);
+        const url = `${baseUrl}/sign-in?user=${identifier}`;
+        return `${member.name},${url}`;
+      })
+      .join('\n');
+    
+    const csvContent = 'Name,Sign-In URL\n' + urls;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'member-signin-urls.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    alert(`Exported ${members.length} sign-in URLs to CSV file.\n\nYou can use these URLs to generate QR codes for member lockers.`);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Manage Users</h2>
-          <button className="btn-close" onClick={onClose}>
-            ×
-          </button>
+          <div className="header-actions">
+            <button className="btn-export" onClick={handleExportUrls}>
+              📋 Export Sign-In URLs
+            </button>
+            <button className="btn-close" onClick={onClose}>
+              ×
+            </button>
+          </div>
         </div>
 
         <div className="modal-body">
