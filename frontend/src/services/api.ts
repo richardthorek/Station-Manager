@@ -1,6 +1,8 @@
 import type { Member, Activity, CheckIn, CheckInWithDetails, ActiveActivity } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// Use relative URL in production, localhost in development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
 class ApiService {
   // Members
