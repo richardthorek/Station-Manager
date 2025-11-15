@@ -1,179 +1,247 @@
 .truckcheck-page {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   color: var(--text-primary);
-  overflow: hidden;
 }
 
 .truckcheck-header {
   background: var(--rfs-core-red);
+  color: var(--rfs-white);
   padding: 1.5rem 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.header-top {
+.truckcheck-header .header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.back-link {
-  display: inline-block;
-  color: var(--rfs-white);
-  text-decoration: none;
-  font-size: 1rem;
-  transition: opacity 0.2s;
-}
-
-.back-link:hover {
-  opacity: 0.8;
-}
-
-.theme-toggle-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1.25rem;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  padding: 0;
-}
-
-.theme-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px) rotate(15deg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.theme-toggle-btn:active {
-  transform: translateY(0) rotate(0deg);
-}
-
-.truckcheck-header h1 {
-  font-size: 2rem;
-  margin: 0;
-  color: var(--rfs-white);
-}
-
-.truckcheck-main {
-  flex: 1;
-  max-width: 800px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 2rem;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.placeholder-content {
-  text-align: center;
-  background: var(--rfs-white);
-  color: var(--rfs-black);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-.placeholder-content .icon {
-  font-size: 4rem;
   margin-bottom: 1rem;
 }
 
-.placeholder-content h2 {
-  font-size: 1.75rem;
-  color: var(--rfs-core-red);
-  margin: 0 0 1rem 0;
-}
-
-.placeholder-content p {
-  font-size: 1rem;
-  line-height: 1.8;
-  color: var(--rfs-dark-grey);
-  margin-bottom: 1.5rem;
-}
-
-.planned-features {
-  text-align: left;
-  max-width: 500px;
-  margin: 1.5rem auto;
-  padding: 1.5rem;
-  background: var(--rfs-neutral-light);
-  border-radius: 8px;
-  border-left: 4px solid var(--rfs-lime);
-}
-
-.planned-features h3 {
-  font-size: 1.25rem;
-  color: var(--rfs-core-red);
-  margin: 0 0 1rem 0;
-}
-
-.planned-features ul {
-  list-style: none;
-  padding: 0;
+.truckcheck-header h1 {
   margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
 }
 
-.planned-features li {
-  padding: 0.5rem 0;
-  padding-left: 1.5rem;
-  position: relative;
-  color: var(--rfs-dark-grey);
+.truckcheck-header .subtitle {
+  margin: 0.5rem 0 0 0;
+  font-size: 1rem;
+  opacity: 0.9;
 }
 
-.planned-features li::before {
-  content: "→";
-  position: absolute;
-  left: 0;
-  color: var(--rfs-lime);
-  font-weight: bold;
-}
-
-.btn-primary {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  background: var(--rfs-core-red);
+.back-link {
   color: var(--rfs-white);
   text-decoration: none;
-  border-radius: 6px;
-  font-weight: 600;
   font-size: 1rem;
-  transition: background 0.2s;
-  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.back-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: var(--rfs-white);
+  font-size: 1.5rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.theme-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.truckcheck-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+}
+
+.error {
+  color: var(--rfs-core-red);
+}
+
+/* View Tabs */
+.view-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  color: var(--rfs-core-red);
+  border-bottom-color: var(--rfs-core-red);
+}
+
+/* Start View */
+.start-view .instructions {
+  margin-bottom: 2rem;
+}
+
+.start-view .instructions h2 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.start-view .instructions p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.appliance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.appliance-card {
+  background: var(--rfs-white);
+  color: var(--rfs-black);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.appliance-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.appliance-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.appliance-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: var(--rfs-black);
+}
+
+.appliance-description {
+  margin: 0 0 1.5rem 0;
+  color: var(--rfs-dark-grey);
+  font-size: 0.9rem;
+}
+
+/* Admin View */
+.admin-view {
+  padding: 1rem 0;
+}
+
+.admin-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.action-card {
+  background: var(--rfs-white);
+  color: var(--rfs-black);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 2rem;
+}
+
+.action-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: var(--rfs-black);
+}
+
+.action-card p {
+  margin: 0 0 1.5rem 0;
+  color: var(--rfs-dark-grey);
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--rfs-core-red);
+  color: var(--rfs-white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  width: 100%;
 }
 
 .btn-primary:hover {
-  background: #c21f17;
+  background-color: #c21e18;
+  transform: translateY(-1px);
 }
 
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
+  .truckcheck-header {
+    padding: 1rem;
+  }
+
   .truckcheck-header h1 {
     font-size: 1.5rem;
   }
 
   .truckcheck-main {
-    padding: 1.5rem 1rem;
+    padding: 1rem;
   }
 
-  .placeholder-content {
-    padding: 1.5rem 1rem;
+  .appliance-grid,
+  .admin-actions {
+    grid-template-columns: 1fr;
   }
 
-  .placeholder-content .icon {
-    font-size: 3rem;
+  .view-tabs {
+    gap: 0.5rem;
   }
 
-  .placeholder-content h2 {
-    font-size: 1.5rem;
+  .tab-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
   }
 }
