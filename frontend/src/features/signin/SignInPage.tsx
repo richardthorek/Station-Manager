@@ -3,7 +3,6 @@ import { Header } from '../../components/Header';
 import { EventLog } from '../../components/EventLog';
 import { CurrentEventParticipants } from '../../components/CurrentEventParticipants';
 import { MemberList } from '../../components/MemberList';
-import { ActiveCheckIns } from '../../components/ActiveCheckIns';
 import { UserManagement } from '../../components/UserManagement';
 import { NewEventModal } from '../../components/NewEventModal';
 import { useSocket } from '../../hooks/useSocket';
@@ -254,6 +253,8 @@ export function SignInPage() {
             onClick={() => setShowUserManagement(true)}
           >
             ⚙️ Manage Users
+          </button>
+        </div>
         <div className="toolbar">
           <button className="btn-new-event" onClick={() => setShowNewEventModal(true)}>
             + Start New Event

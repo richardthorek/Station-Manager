@@ -34,6 +34,8 @@
 .btn-manage-users:hover {
   background: #333;
   transform: translateY(-1px);
+}
+
 .toolbar {
   display: flex;
   gap: 1rem;
