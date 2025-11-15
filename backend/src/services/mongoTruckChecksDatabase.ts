@@ -329,7 +329,7 @@ class MongoTruckChecksDatabase {
   async getCheckRunsByAppliance(applianceId: string): Promise<CheckRun[]> {
     if (!this.checkRunsCollection) throw new Error('Database not connected');
     return await this.checkRunsCollection
-      .find({ applianceId })
+      .find({ applianceId: { $eq: applianceId } })
       .sort({ startTime: -1 })
       .toArray();
   }
