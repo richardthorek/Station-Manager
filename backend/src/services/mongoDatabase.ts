@@ -285,7 +285,7 @@ class MongoDBService {
 
   async getCheckInByMember(memberId: string): Promise<CheckIn | null> {
     if (!this.checkInsCollection) throw new Error('Database not connected');
-    return await this.checkInsCollection.findOne({ memberId, isActive: true });
+    return await this.checkInsCollection.findOne({ memberId: { $eq: memberId }, isActive: true });
   }
 
   async createCheckIn(
