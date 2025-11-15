@@ -33,6 +33,7 @@ import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
 import eventsRouter from './routes/events';
 import truckChecksRouter from './routes/truckChecks';
+import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
 
@@ -113,6 +114,13 @@ app.use('/api/activities', activitiesRouter);
 app.use('/api/checkins', checkinsRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/truck-checks', truckChecksRouter);
+
+// Achievement routes (initialized with database instances)
+(async () => {
+  const db = await ensureDatabase();
+  const truckChecksDb = await ensureTruckChecksDatabase();
+  app.use('/api/achievements', createAchievementRoutes(db, truckChecksDb));
+})();
 
 // Socket.io connection handling
 io.on('connection', (socket) => {

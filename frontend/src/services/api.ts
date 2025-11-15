@@ -14,6 +14,7 @@ import type {
   CheckResult,
   CheckStatus
 } from '../types';
+import type { MemberAchievementSummary } from '../types/achievements';
 
 // Use relative URL in production, localhost in development
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
@@ -392,6 +393,31 @@ class ApiService {
   async getStorageStatus(): Promise<{ enabled: boolean; message: string }> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/storage-status`);
     if (!response.ok) throw new Error('Failed to get storage status');
+    return response.json();
+  }
+
+  // Achievements
+  async getMemberAchievements(memberId: string): Promise<MemberAchievementSummary> {
+    const response = await fetch(`${API_BASE_URL}/achievements/${memberId}`);
+    if (!response.ok) throw new Error('Failed to fetch achievements');
+    return response.json();
+  }
+
+  async getRecentAchievements(memberId: string): Promise<{
+    recentlyEarned: any[];
+    totalNew: number;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/achievements/${memberId}/recent`);
+    if (!response.ok) throw new Error('Failed to fetch recent achievements');
+    return response.json();
+  }
+
+  async getAchievementProgress(memberId: string): Promise<{
+    progress: any[];
+    activeStreaks: any[];
+  }> {
+    const response = await fetch(`${API_BASE_URL}/achievements/${memberId}/progress`);
+    if (!response.ok) throw new Error('Failed to fetch achievement progress');
     return response.json();
   }
 }

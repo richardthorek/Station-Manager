@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/Header';
+import { AchievementGrid } from '../../components/AchievementBadge';
 import { api } from '../../services/api';
 import { useSocket } from '../../hooks/useSocket';
 import type { Member, CheckIn, Activity } from '../../types';
+import type { MemberAchievementSummary } from '../../types/achievements';
 import './UserProfilePage.css';
 
 export function UserProfilePage() {
@@ -12,6 +14,7 @@ export function UserProfilePage() {
   const [member, setMember] = useState<Member | null>(null);
   const [checkInHistory, setCheckInHistory] = useState<CheckIn[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [achievements, setAchievements] = useState<MemberAchievementSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -53,15 +56,17 @@ export function UserProfilePage() {
         return;
       }
 
-      const [memberData, historyData, activitiesData] = await Promise.all([
+      const [memberData, historyData, activitiesData, achievementsData] = await Promise.all([
         api.getMember(memberId),
         api.getMemberHistory(memberId),
         api.getActivities(),
+        api.getMemberAchievements(memberId).catch(() => null), // Don't fail if achievements fail
       ]);
       
       setMember(memberData);
       setCheckInHistory(historyData);
       setActivities(activitiesData);
+      setAchievements(achievementsData);
       setEditedName(memberData.name);
       setEditedRank(memberData.rank || 'Visitor');
     } catch (err) {
@@ -258,6 +263,66 @@ export function UserProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Achievements Section */}
+          {achievements && (
+            <div className="achievements-card card">
+              <h2>🏆 Achievements</h2>
+              <div className="achievements-stats">
+                <div className="achievement-stat">
+                  <span className="stat-number">{achievements.totalAchievements}</span>
+                  <span className="stat-label">Total Achievements</span>
+                </div>
+                <div className="achievement-stat">
+                  <span className="stat-number">{achievements.activeStreaks.length}</span>
+                  <span className="stat-label">Active Streaks</span>
+                </div>
+                <div className="achievement-stat">
+                  <span className="stat-number">{achievements.recentlyEarned.length}</span>
+                  <span className="stat-label">Recently Earned</span>
+                </div>
+              </div>
+              
+              {achievements.totalAchievements === 0 && achievements.progress.length === 0 ? (
+                <p className="no-achievements">
+                  Start checking in to events to earn achievements! 🎯
+                </p>
+              ) : (
+                <>
+                  {achievements.recentlyEarned.length > 0 && (
+                    <div className="achievements-section">
+                      <h3>Recently Earned</h3>
+                      <AchievementGrid
+                        achievements={achievements.recentlyEarned}
+                        variant="compact"
+                        showRecent={true}
+                      />
+                    </div>
+                  )}
+                  
+                  {achievements.achievements.length > 0 && (
+                    <div className="achievements-section">
+                      <h3>All Achievements</h3>
+                      <AchievementGrid
+                        achievements={achievements.achievements}
+                        variant="compact"
+                      />
+                    </div>
+                  )}
+                  
+                  {achievements.progress.length > 0 && (
+                    <div className="achievements-section">
+                      <h3>In Progress</h3>
+                      <AchievementGrid
+                        progress={achievements.progress.slice(0, 6)}
+                        variant="full"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="history-card card">
             <h2>Check-In History</h2>
