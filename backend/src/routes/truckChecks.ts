@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { truckChecksDb } from '../services/truckChecksDatabase';
+import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { CheckStatus } from '../types';
 
 const router = Router();
@@ -14,7 +14,8 @@ const router = Router();
  */
 router.get('/appliances', async (req: Request, res: Response) => {
   try {
-    const appliances = truckChecksDb.getAllAppliances();
+    const db = await ensureTruckChecksDatabase();
+    const appliances = await db.getAllAppliances();
     res.json(appliances);
   } catch (error) {
     console.error('Error fetching appliances:', error);
@@ -28,7 +29,8 @@ router.get('/appliances', async (req: Request, res: Response) => {
  */
 router.get('/appliances/:id', async (req: Request, res: Response) => {
   try {
-    const appliance = truckChecksDb.getApplianceById(req.params.id);
+    const db = await ensureTruckChecksDatabase();
+    const appliance = await db.getApplianceById(req.params.id);
     if (!appliance) {
       return res.status(404).json({ error: 'Appliance not found' });
     }
@@ -51,7 +53,8 @@ router.post('/appliances', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Name is required' });
     }
 
-    const appliance = truckChecksDb.createAppliance(name, description);
+    const db = await ensureTruckChecksDatabase();
+    const appliance = await db.createAppliance(name, description);
     res.status(201).json(appliance);
   } catch (error) {
     console.error('Error creating appliance:', error);
@@ -71,7 +74,8 @@ router.put('/appliances/:id', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Name is required' });
     }
 
-    const appliance = truckChecksDb.updateAppliance(req.params.id, name, description);
+    const db = await ensureTruckChecksDatabase();
+    const appliance = await db.updateAppliance(req.params.id, name, description);
     if (!appliance) {
       return res.status(404).json({ error: 'Appliance not found' });
     }
@@ -89,7 +93,8 @@ router.put('/appliances/:id', async (req: Request, res: Response) => {
  */
 router.delete('/appliances/:id', async (req: Request, res: Response) => {
   try {
-    const deleted = truckChecksDb.deleteAppliance(req.params.id);
+    const db = await ensureTruckChecksDatabase();
+    const deleted = await db.deleteAppliance(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Appliance not found' });
     }
@@ -110,7 +115,8 @@ router.delete('/appliances/:id', async (req: Request, res: Response) => {
  */
 router.get('/templates/:applianceId', async (req: Request, res: Response) => {
   try {
-    const template = truckChecksDb.getTemplateByApplianceId(req.params.applianceId);
+    const db = await ensureTruckChecksDatabase();
+    const template = await db.getTemplateByApplianceId(req.params.applianceId);
     if (!template) {
       return res.status(404).json({ error: 'Template not found' });
     }
@@ -133,7 +139,8 @@ router.put('/templates/:applianceId', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Items array is required' });
     }
 
-    const template = truckChecksDb.updateTemplate(req.params.applianceId, items);
+    const db = await ensureTruckChecksDatabase();
+    const template = await db.updateTemplate(req.params.applianceId, items);
     res.json(template);
   } catch (error) {
     console.error('Error updating template:', error);
@@ -157,7 +164,8 @@ router.post('/runs', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'applianceId and completedBy are required' });
     }
 
-    const checkRun = truckChecksDb.createCheckRun(applianceId, completedBy, completedByName);
+    const db = await ensureTruckChecksDatabase();
+    const checkRun = await db.createCheckRun(applianceId, completedBy, completedByName);
     res.status(201).json(checkRun);
   } catch (error) {
     console.error('Error creating check run:', error);
@@ -171,7 +179,8 @@ router.post('/runs', async (req: Request, res: Response) => {
  */
 router.get('/runs/:id', async (req: Request, res: Response) => {
   try {
-    const checkRun = truckChecksDb.getCheckRunWithResults(req.params.id);
+    const db = await ensureTruckChecksDatabase();
+    const checkRun = await db.getCheckRunWithResults(req.params.id);
     if (!checkRun) {
       return res.status(404).json({ error: 'Check run not found' });
     }
@@ -189,28 +198,29 @@ router.get('/runs/:id', async (req: Request, res: Response) => {
 router.get('/runs', async (req: Request, res: Response) => {
   try {
     const { applianceId, startDate, endDate, withIssues } = req.query;
+    const db = await ensureTruckChecksDatabase();
     
     let runs;
     
     if (withIssues === 'true') {
-      runs = truckChecksDb.getRunsWithIssues();
+      runs = await db.getRunsWithIssues();
     } else if (applianceId) {
-      const simpleRuns = truckChecksDb.getCheckRunsByAppliance(applianceId as string);
-      runs = simpleRuns.map(run => ({
+      const simpleRuns = await db.getCheckRunsByAppliance(applianceId as string);
+      runs = await Promise.all(simpleRuns.map(async run => ({
         ...run,
-        results: truckChecksDb.getResultsByRunId(run.id),
-      }));
+        results: await db.getResultsByRunId(run.id),
+      })));
     } else if (startDate && endDate) {
-      const simpleRuns = truckChecksDb.getCheckRunsByDateRange(
+      const simpleRuns = await db.getCheckRunsByDateRange(
         new Date(startDate as string),
         new Date(endDate as string)
       );
-      runs = simpleRuns.map(run => ({
+      runs = await Promise.all(simpleRuns.map(async run => ({
         ...run,
-        results: truckChecksDb.getResultsByRunId(run.id),
-      }));
+        results: await db.getResultsByRunId(run.id),
+      })));
     } else {
-      runs = truckChecksDb.getAllRunsWithResults();
+      runs = await db.getAllRunsWithResults();
     }
     
     res.json(runs);
@@ -228,7 +238,8 @@ router.put('/runs/:id/complete', async (req: Request, res: Response) => {
   try {
     const { additionalComments } = req.body;
     
-    const checkRun = truckChecksDb.completeCheckRun(req.params.id, additionalComments);
+    const db = await ensureTruckChecksDatabase();
+    const checkRun = await db.completeCheckRun(req.params.id, additionalComments);
     if (!checkRun) {
       return res.status(404).json({ error: 'Check run not found' });
     }
@@ -262,7 +273,8 @@ router.post('/results', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
-    const result = truckChecksDb.createCheckResult(
+    const db = await ensureTruckChecksDatabase();
+    const result = await db.createCheckResult(
       runId,
       itemId,
       itemName,
@@ -295,7 +307,8 @@ router.put('/results/:id', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
-    const result = truckChecksDb.updateCheckResult(
+    const db = await ensureTruckChecksDatabase();
+    const result = await db.updateCheckResult(
       req.params.id,
       status as CheckStatus,
       comment,
@@ -319,7 +332,8 @@ router.put('/results/:id', async (req: Request, res: Response) => {
  */
 router.delete('/results/:id', async (req: Request, res: Response) => {
   try {
-    const deleted = truckChecksDb.deleteCheckResult(req.params.id);
+    const db = await ensureTruckChecksDatabase();
+    const deleted = await db.deleteCheckResult(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Check result not found' });
     }
