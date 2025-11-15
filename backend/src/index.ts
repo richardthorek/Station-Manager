@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import rateLimit from 'express-rate-limit';
 import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
@@ -18,6 +19,14 @@ const io = new Server(httpServer, {
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     methods: ['GET', 'POST'],
   },
+});
+
+// Rate limiter for SPA fallback route (serving index.html)
+const spaRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
 const PORT = process.env.PORT || 3000;
@@ -71,7 +80,7 @@ io.on('connection', (socket) => {
 });
 
 // Serve frontend for all other GET routes (SPA fallback) - Must be last!
-app.get(/^\/(?!api).*/, (req, res) => {
+app.get(/^\/(?!api).*/, spaRateLimiter, (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
