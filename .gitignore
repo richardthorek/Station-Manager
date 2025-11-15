@@ -44,3 +44,5 @@ __blobstorage__/
 __queuestorage__/
 __azurite_db*__.json
 .python_packages/
+2025-11-15_Brigade Administration Report (Bungendore).csv
+backend/scripts/importMembers.js

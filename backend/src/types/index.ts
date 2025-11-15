@@ -2,6 +2,10 @@ export interface Member {
   id: string;
   name: string;
   qrCode: string;
+  memberNumber?: string;
+  rank?: string | null;
+  firstName?: string;
+  lastName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
