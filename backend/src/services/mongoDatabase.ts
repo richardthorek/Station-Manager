@@ -146,7 +146,7 @@ class MongoDBService {
 
   async getMemberById(id: string): Promise<Member | null> {
     if (!this.membersCollection) throw new Error('Database not connected');
-    return await this.membersCollection.findOne({ id });
+    return await this.membersCollection.findOne({ id: { $eq: id } });
   }
 
   async getMemberByQRCode(qrCode: string): Promise<Member | null> {
