@@ -2,8 +2,8 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--rfs-black) 0%, #1a1a1a 100%);
-  color: var(--rfs-white);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  color: var(--text-primary);
   overflow: hidden;
 }
 
@@ -18,6 +18,40 @@
 .header-content {
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.header-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.5rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  padding: 0;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px) rotate(15deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0) rotate(0deg);
 }
 
 .app-title {
@@ -59,7 +93,7 @@
 .welcome-text {
   font-size: 1.25rem;
   line-height: 1.8;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   max-width: 800px;
   margin: 0 auto;
 }
@@ -72,19 +106,20 @@
 }
 
 .feature-card {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 6px var(--shadow-color);
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
-  color: var(--rfs-black);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .feature-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 12px var(--shadow-color);
 }
 
 .feature-card-disabled {
@@ -94,7 +129,7 @@
 
 .feature-card-disabled:hover {
   transform: none;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 6px var(--shadow-color);
 }
 
 .feature-icon {
@@ -190,12 +225,12 @@
 
 .info-card p {
   font-size: 1rem;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .landing-footer {
-  background: var(--rfs-black);
+  background: var(--bg-secondary);
   padding: 1.5rem;
   text-align: center;
   border-top: 3px solid var(--rfs-core-red);
@@ -204,12 +239,12 @@
 
 .landing-footer p {
   margin: 0.25rem 0;
-  color: var(--rfs-light-grey);
+  color: var(--text-secondary);
 }
 
 .version {
   font-size: 0.875rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 /* Responsive Design */

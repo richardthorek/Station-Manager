@@ -1,13 +1,28 @@
 import { Link } from 'react-router-dom';
+import { useTheme } from '../../hooks/useTheme';
 import './LandingPage.css';
 
 export function LandingPage() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="landing-page">
       <header className="landing-header">
         <div className="header-content">
-          <h1 className="app-title">RFS Station Manager</h1>
-          <p className="app-subtitle">Digital management tools for Rural Fire Service stations</p>
+          <div className="header-title-row">
+            <div>
+              <h1 className="app-title">RFS Station Manager</h1>
+              <p className="app-subtitle">Digital management tools for Rural Fire Service stations</p>
+            </div>
+            <button 
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+          </div>
         </div>
       </header>
 
