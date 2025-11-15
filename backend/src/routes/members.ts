@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { db } from '../services/database';
+import { ensureDatabase } from '../services/dbFactory';
 
 const router = Router();
 
 // Get all members
 router.get('/', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const members = await db.getAllMembers();
     res.json(members);
   } catch (error) {
@@ -17,6 +18,7 @@ router.get('/', async (req, res) => {
 // Get member by ID
 router.get('/:id', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const member = await db.getMemberById(req.params.id);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
@@ -31,6 +33,7 @@ router.get('/:id', async (req, res) => {
 // Get member by QR code
 router.get('/qr/:qrCode', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const member = await db.getMemberByQRCode(req.params.qrCode);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
@@ -45,6 +48,7 @@ router.get('/qr/:qrCode', async (req, res) => {
 // Create new member
 router.post('/', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { name } = req.body;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Valid name is required' });
@@ -60,6 +64,7 @@ router.post('/', async (req, res) => {
 // Update member
 router.put('/:id', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { name } = req.body;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Valid name is required' });
@@ -78,6 +83,7 @@ router.put('/:id', async (req, res) => {
 // Get member check-in history
 router.get('/:id/history', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const member = await db.getMemberById(req.params.id);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });

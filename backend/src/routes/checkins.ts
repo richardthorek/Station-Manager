@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { db } from '../services/database';
+import { ensureDatabase } from '../services/dbFactory';
 
 const router = Router();
 
 // Get all active check-ins
 router.get('/active', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const checkIns = await db.getActiveCheckIns();
     res.json(checkIns);
   } catch (error) {
@@ -17,6 +18,7 @@ router.get('/active', async (req, res) => {
 // Check in a member
 router.post('/', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { memberId, activityId, method, location, isOffsite } = req.body;
 
     // Validate required fields
@@ -79,6 +81,7 @@ router.post('/', async (req, res) => {
 // Undo check-in (alternative endpoint)
 router.delete('/:memberId', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { memberId } = req.params;
     const success = await db.deactivateCheckInByMember(memberId);
     
@@ -96,6 +99,7 @@ router.delete('/:memberId', async (req, res) => {
 // URL-based check-in
 router.post('/url-checkin', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { identifier } = req.body;
 
     if (!identifier || typeof identifier !== 'string') {

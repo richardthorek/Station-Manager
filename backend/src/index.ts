@@ -10,7 +10,7 @@ import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
 import eventsRouter from './routes/events';
 import truckChecksRouter from './routes/truckChecks';
-import { db } from './services/database';
+import { ensureDatabase } from './services/dbFactory';
 
 dotenv.config();
 
@@ -42,12 +42,23 @@ const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    database: 'in-memory'
-  });
+app.get('/health', async (req, res) => {
+  try {
+    const db = await ensureDatabase();
+    const dbType = process.env.MONGODB_URI ? 'mongodb' : 'in-memory';
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      database: dbType,
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: 'Database connection failed'
+    });
+  }
 });
 
 // API Routes
@@ -112,12 +123,20 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Initialize database and start server
 async function startServer() {
   try {
-    // Start HTTP server (using in-memory database, no connection needed)
+    // Initialize database connection
+    console.log('🚀 Starting server...');
+    await ensureDatabase();
+    
+    // Start HTTP server
     httpServer.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`Health check: http://localhost:${PORT}/health`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`Database: In-memory storage`);
+      if (process.env.MONGODB_URI) {
+        console.log(`Database: MongoDB/Cosmos DB (persistent)`);
+      } else {
+        console.log(`Database: In-memory (data will be lost on restart)`);
+      }
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from '../services/database';
+import { ensureDatabase } from '../services/dbFactory';
 
 const router = Router();
 
@@ -9,6 +9,7 @@ const router = Router();
  */
 router.get('/', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
     
@@ -25,15 +26,18 @@ router.get('/', async (req, res) => {
  */
 router.get('/active', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const activeEvents = await db.getActiveEvents();
-    const eventsWithParticipants = activeEvents.map(event => {
-      const participants = db.getEventParticipants(event.id);
-      return {
-        ...event,
-        participants,
-        participantCount: participants.length,
-      };
-    });
+    const eventsWithParticipants = await Promise.all(
+      activeEvents.map(async event => {
+        const participants = await db.getEventParticipants(event.id);
+        return {
+          ...event,
+          participants,
+          participantCount: participants.length,
+        };
+      })
+    );
     
     res.json(eventsWithParticipants);
   } catch (error) {
@@ -47,6 +51,7 @@ router.get('/active', async (req, res) => {
  */
 router.get('/:eventId', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { eventId } = req.params;
     const event = await db.getEventWithParticipants(eventId);
     
@@ -66,6 +71,7 @@ router.get('/:eventId', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { activityId, createdBy } = req.body;
     
     if (!activityId) {
@@ -92,6 +98,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:eventId/end', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { eventId } = req.params;
     const event = await db.endEvent(eventId);
     
@@ -112,6 +119,7 @@ router.put('/:eventId/end', async (req, res) => {
  */
 router.post('/:eventId/participants', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { eventId } = req.params;
     const { memberId, method, location, isOffsite } = req.body;
     
@@ -165,6 +173,7 @@ router.post('/:eventId/participants', async (req, res) => {
  */
 router.delete('/:eventId/participants/:participantId', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { participantId } = req.params;
     const success = await db.removeEventParticipant(participantId);
     

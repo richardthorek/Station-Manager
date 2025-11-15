@@ -1,5 +1,5 @@
 import { MongoClient, Db, Collection, ObjectId } from 'mongodb';
-import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails } from '../types';
+import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 class MongoDBService {
@@ -9,6 +9,8 @@ class MongoDBService {
   private activitiesCollection: Collection<Activity> | null = null;
   private checkInsCollection: Collection<CheckIn> | null = null;
   private activeActivityCollection: Collection<ActiveActivity> | null = null;
+  private eventsCollection: Collection<Event> | null = null;
+  private eventParticipantsCollection: Collection<EventParticipant> | null = null;
   private isConnected: boolean = false;
 
   constructor(connectionString?: string) {
@@ -30,6 +32,8 @@ class MongoDBService {
       this.activitiesCollection = this.db.collection<Activity>('Activities');
       this.checkInsCollection = this.db.collection<CheckIn>('CheckIns');
       this.activeActivityCollection = this.db.collection<ActiveActivity>('ActiveActivity');
+      this.eventsCollection = this.db.collection<Event>('Events');
+      this.eventParticipantsCollection = this.db.collection<EventParticipant>('EventParticipants');
 
       // Create indexes
       await this.createIndexes();
@@ -52,6 +56,10 @@ class MongoDBService {
     await this.checkInsCollection?.createIndex({ memberId: 1 });
     await this.checkInsCollection?.createIndex({ isActive: 1 });
     await this.checkInsCollection?.createIndex({ checkInTime: -1 });
+    await this.eventsCollection?.createIndex({ startTime: -1 });
+    await this.eventsCollection?.createIndex({ isActive: 1 });
+    await this.eventParticipantsCollection?.createIndex({ eventId: 1 });
+    await this.eventParticipantsCollection?.createIndex({ memberId: 1 });
   }
 
   private async initializeDefaultData(): Promise<void> {
@@ -144,6 +152,23 @@ class MongoDBService {
     return member;
   }
 
+  async updateMember(id: string, name: string): Promise<Member | null> {
+    if (!this.membersCollection) throw new Error('Database not connected');
+    
+    const result = await this.membersCollection.findOneAndUpdate(
+      { id },
+      { 
+        $set: { 
+          name,
+          updatedAt: new Date()
+        } 
+      },
+      { returnDocument: 'after' }
+    );
+    
+    return result || null;
+  }
+
   // Activity methods
   async getAllActivities(): Promise<Activity[]> {
     if (!this.activitiesCollection) throw new Error('Database not connected');
@@ -206,6 +231,14 @@ class MongoDBService {
   async getAllCheckIns(): Promise<CheckIn[]> {
     if (!this.checkInsCollection) throw new Error('Database not connected');
     return await this.checkInsCollection.find().toArray();
+  }
+
+  async getCheckInsByMember(memberId: string): Promise<CheckIn[]> {
+    if (!this.checkInsCollection) throw new Error('Database not connected');
+    return await this.checkInsCollection
+      .find({ memberId })
+      .sort({ checkInTime: -1 })
+      .toArray();
   }
 
   async getActiveCheckIns(): Promise<CheckInWithDetails[]> {
@@ -308,6 +341,205 @@ class MongoDBService {
         } 
       }
     );
+  }
+  
+  // ============================================
+  // Event Management Methods
+  // ============================================
+
+  async createEvent(activityId: string, createdBy?: string): Promise<Event> {
+    if (!this.eventsCollection || !this.activitiesCollection) {
+      throw new Error('Database not connected');
+    }
+    
+    const activity = await this.activitiesCollection.findOne({ id: activityId });
+    if (!activity) {
+      throw new Error('Activity not found');
+    }
+
+    const event: Event = {
+      id: uuidv4(),
+      activityId,
+      activityName: activity.name,
+      startTime: new Date(),
+      endTime: undefined,
+      isActive: true,
+      createdBy,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    await this.eventsCollection.insertOne(event);
+    return event;
+  }
+
+  async getEvents(limit: number = 50, offset: number = 0): Promise<Event[]> {
+    if (!this.eventsCollection) throw new Error('Database not connected');
+    
+    return await this.eventsCollection
+      .find()
+      .sort({ startTime: -1 })
+      .skip(offset)
+      .limit(limit)
+      .toArray();
+  }
+
+  async getActiveEvents(): Promise<Event[]> {
+    if (!this.eventsCollection) throw new Error('Database not connected');
+    
+    return await this.eventsCollection
+      .find({ isActive: true })
+      .sort({ startTime: -1 })
+      .toArray();
+  }
+
+  async getEventById(eventId: string): Promise<Event | null> {
+    if (!this.eventsCollection) throw new Error('Database not connected');
+    return await this.eventsCollection.findOne({ id: eventId });
+  }
+
+  async endEvent(eventId: string): Promise<Event | null> {
+    if (!this.eventsCollection) throw new Error('Database not connected');
+    
+    const result = await this.eventsCollection.findOneAndUpdate(
+      { id: eventId },
+      { 
+        $set: { 
+          endTime: new Date(),
+          isActive: false,
+          updatedAt: new Date()
+        } 
+      },
+      { returnDocument: 'after' }
+    );
+    
+    return result || null;
+  }
+
+  async addEventParticipant(
+    eventId: string,
+    memberId: string,
+    method: 'kiosk' | 'mobile' | 'qr',
+    location?: string,
+    isOffsite: boolean = false
+  ): Promise<EventParticipant> {
+    if (!this.eventParticipantsCollection || !this.eventsCollection || !this.membersCollection) {
+      throw new Error('Database not connected');
+    }
+    
+    const event = await this.eventsCollection.findOne({ id: eventId });
+    if (!event) {
+      throw new Error('Event not found');
+    }
+
+    const member = await this.membersCollection.findOne({ id: memberId });
+    if (!member) {
+      throw new Error('Member not found');
+    }
+
+    const participant: EventParticipant = {
+      id: uuidv4(),
+      eventId,
+      memberId,
+      memberName: member.name,
+      checkInTime: new Date(),
+      checkInMethod: method,
+      location,
+      isOffsite,
+      createdAt: new Date(),
+    };
+
+    await this.eventParticipantsCollection.insertOne(participant);
+    await this.eventsCollection.updateOne(
+      { id: eventId },
+      { $set: { updatedAt: new Date() } }
+    );
+    
+    return participant;
+  }
+
+  async getEventParticipants(eventId: string): Promise<EventParticipant[]> {
+    if (!this.eventParticipantsCollection) throw new Error('Database not connected');
+    
+    return await this.eventParticipantsCollection
+      .find({ eventId })
+      .sort({ checkInTime: 1 })
+      .toArray();
+  }
+
+  async getEventWithParticipants(eventId: string): Promise<EventWithParticipants | null> {
+    if (!this.eventsCollection) throw new Error('Database not connected');
+    
+    const event = await this.eventsCollection.findOne({ id: eventId });
+    if (!event) {
+      return null;
+    }
+
+    const participants = await this.getEventParticipants(eventId);
+    
+    return {
+      ...event,
+      participants,
+      participantCount: participants.length,
+    };
+  }
+
+  async getEventsWithParticipants(limit: number = 50, offset: number = 0): Promise<EventWithParticipants[]> {
+    const events = await this.getEvents(limit, offset);
+    
+    const eventsWithParticipants = await Promise.all(
+      events.map(async (event) => {
+        const participants = await this.getEventParticipants(event.id);
+        return {
+          ...event,
+          participants,
+          participantCount: participants.length,
+        };
+      })
+    );
+    
+    return eventsWithParticipants;
+  }
+
+  async removeEventParticipant(participantId: string): Promise<boolean> {
+    if (!this.eventParticipantsCollection || !this.eventsCollection) {
+      throw new Error('Database not connected');
+    }
+    
+    const participant = await this.eventParticipantsCollection.findOne({ id: participantId });
+    if (!participant) {
+      return false;
+    }
+
+    await this.eventParticipantsCollection.deleteOne({ id: participantId });
+    
+    // Update event's updatedAt timestamp
+    await this.eventsCollection.updateOne(
+      { id: participant.eventId },
+      { $set: { updatedAt: new Date() } }
+    );
+    
+    return true;
+  }
+
+  async getMemberParticipantInEvent(eventId: string, memberId: string): Promise<EventParticipant | null> {
+    if (!this.eventParticipantsCollection) throw new Error('Database not connected');
+    
+    return await this.eventParticipantsCollection.findOne({ eventId, memberId });
+  }
+
+  async getAllActiveParticipants(): Promise<EventParticipant[]> {
+    if (!this.eventParticipantsCollection || !this.eventsCollection) {
+      throw new Error('Database not connected');
+    }
+    
+    const activeEvents = await this.eventsCollection.find({ isActive: true }).toArray();
+    const activeEventIds = activeEvents.map(e => e.id);
+
+    return await this.eventParticipantsCollection
+      .find({ eventId: { $in: activeEventIds } })
+      .sort({ checkInTime: -1 })
+      .toArray();
   }
 }
 

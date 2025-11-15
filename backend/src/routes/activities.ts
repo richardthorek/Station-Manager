@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { db } from '../services/database';
+import { ensureDatabase } from '../services/dbFactory';
 
 const router = Router();
 
 // Get all activities
 router.get('/', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const activities = await db.getAllActivities();
     res.json(activities);
   } catch (error) {
@@ -17,6 +18,7 @@ router.get('/', async (req, res) => {
 // Get active activity
 router.get('/active', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const activeActivity = await db.getActiveActivity();
     if (!activeActivity) {
       return res.status(404).json({ error: 'No active activity set' });
@@ -36,6 +38,7 @@ router.get('/active', async (req, res) => {
 // Set active activity
 router.post('/active', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { activityId, setBy } = req.body;
     if (!activityId) {
       return res.status(400).json({ error: 'Activity ID is required' });
@@ -60,6 +63,7 @@ router.post('/active', async (req, res) => {
 // Create custom activity
 router.post('/', async (req, res) => {
   try {
+    const db = await ensureDatabase();
     const { name, createdBy } = req.body;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Valid name is required' });
