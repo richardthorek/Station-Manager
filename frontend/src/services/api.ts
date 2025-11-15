@@ -8,6 +8,7 @@ import type {
   EventParticipant,
   Appliance,
   ChecklistTemplate,
+  ChecklistItem,
   CheckRun,
   CheckRunWithResults,
   CheckResult,
@@ -267,7 +268,7 @@ class ApiService {
     return response.json();
   }
 
-  async updateTemplate(applianceId: string, items: any[]): Promise<ChecklistTemplate> {
+  async updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[]): Promise<ChecklistTemplate> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/templates/${applianceId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

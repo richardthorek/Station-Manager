@@ -42,7 +42,7 @@ export function AdminDashboardPage() {
 
   async function loadCheckRuns() {
     try {
-      const filters: any = {};
+      const filters: { applianceId?: string; withIssues?: boolean } = {};
       if (selectedAppliance !== 'all') {
         filters.applianceId = selectedAppliance;
       }

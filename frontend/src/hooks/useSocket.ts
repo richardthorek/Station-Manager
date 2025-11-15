@@ -36,26 +36,27 @@ export function useSocket() {
     };
   }, []);
 
-  const emit = (event: string, data: any) => {
+  const emit = (event: string, data: unknown) => {
     if (socketRef.current) {
       socketRef.current.emit(event, data);
     }
   };
 
-  const on = (event: string, callback: (data: any) => void) => {
+  const on = (event: string, callback: (data: unknown) => void) => {
     if (socketRef.current) {
-      socketRef.current.on(event, callback);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      socketRef.current.on(event, callback as any);
     }
   };
 
-  const off = (event: string, callback?: (data: any) => void) => {
+  const off = (event: string, callback?: (data: unknown) => void) => {
     if (socketRef.current) {
-      socketRef.current.off(event, callback);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      socketRef.current.off(event, callback as any);
     }
   };
 
   return {
-    socket: socketRef.current,
     isConnected,
     emit,
     on,

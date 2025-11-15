@@ -19,53 +19,53 @@ export function SignInLinkPage() {
 
   useEffect(() => {
     // Load database status on mount
-    loadDatabaseStatus();
+    const initDatabaseStatus = async () => {
+      try {
+        const status = await api.getStatus();
+        setDatabaseStatus({
+          databaseType: status.databaseType,
+          usingInMemory: status.usingInMemory,
+        });
+      } catch (err) {
+        console.error('Error loading database status:', err);
+      }
+    };
+    
+    initDatabaseStatus();
 
     const userIdentifier = searchParams.get('user');
     
-    if (!userIdentifier) {
-      setStatus('error');
-      setMessage('No user identifier provided in URL');
-      return;
-    }
-
-    handleUrlCheckIn(userIdentifier);
-  }, [searchParams]);
-
-  const loadDatabaseStatus = async () => {
-    try {
-      const status = await api.getStatus();
-      setDatabaseStatus({
-        databaseType: status.databaseType,
-        usingInMemory: status.usingInMemory,
-      });
-    } catch (err) {
-      console.error('Error loading database status:', err);
-    }
-  };
-
-  const handleUrlCheckIn = async (identifier: string) => {
-    try {
-      setStatus('loading');
-      const result = await api.urlCheckIn(identifier);
-      
-      setMemberName(result.member);
-      
-      if (result.action === 'already-checked-in') {
-        setStatus('already-checked-in');
-        setMessage(`${result.member} is already checked in.`);
-      } else if (result.action === 'checked-in') {
-        setStatus('success');
-        setMessage(`Successfully checked in ${result.member}!`);
-        // Emit socket event for real-time updates - this will trigger a refresh on connected sign-in pages
-        emit('event-update', { type: 'participant-added', checkIn: result.checkIn });
+    const performCheckIn = async () => {
+      if (!userIdentifier) {
+        setStatus('error');
+        setMessage('No user identifier provided in URL');
+        return;
       }
-    } catch (err) {
-      console.error('URL check-in error:', err);
-      setStatus('error');
-      setMessage('Failed to check in. Please try again or check in manually.');
-    }
-  };
+
+      try {
+        setStatus('loading');
+        const result = await api.urlCheckIn(userIdentifier);
+        
+        setMemberName(result.member);
+        
+        if (result.action === 'already-checked-in') {
+          setStatus('already-checked-in');
+          setMessage(`${result.member} is already checked in.`);
+        } else if (result.action === 'checked-in') {
+          setStatus('success');
+          setMessage(`Successfully checked in ${result.member}!`);
+          // Emit socket event for real-time updates - this will trigger a refresh on connected sign-in pages
+          emit('event-update', { type: 'participant-added', checkIn: result.checkIn });
+        }
+      } catch (err) {
+        console.error('URL check-in error:', err);
+        setStatus('error');
+        setMessage('Failed to check in. Please try again or check in manually.');
+      }
+    };
+    
+    performCheckIn();
+  }, [searchParams, emit]);
 
   const handleGoToSignIn = () => {
     navigate('/signin');

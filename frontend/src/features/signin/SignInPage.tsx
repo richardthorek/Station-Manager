@@ -307,7 +307,17 @@ export function SignInPage() {
               members={members}
               activeCheckIns={activeParticipantIds.map(id => ({
                 memberId: id,
-              } as any))}
+                id: '',
+                activityId: '',
+                checkInTime: '',
+                checkInMethod: 'mobile' as const,
+                isOffsite: false,
+                isActive: true,
+                createdAt: '',
+                updatedAt: '',
+                memberName: '',
+                activityName: '',
+              }))}
               onCheckIn={handleCheckIn}
               onAddMember={handleAddMember}
             />

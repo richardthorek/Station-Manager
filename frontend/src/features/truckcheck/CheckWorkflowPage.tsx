@@ -10,7 +10,7 @@ export function CheckWorkflowPage() {
   const { applianceId } = useParams<{ applianceId: string }>();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const socket = useSocket();
+  const { on, off } = useSocket();
   
   const [appliance, setAppliance] = useState<Appliance | null>(null);
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
@@ -33,41 +33,51 @@ export function CheckWorkflowPage() {
 
   // Listen for real-time updates from other contributors
   useEffect(() => {
-    if (!socket || !checkRun) return;
+    if (!checkRun) return;
 
-    function handleTruckCheckUpdate(data: any) {
-      if (data.runId !== checkRun?.id) return;
+    function handleTruckCheckUpdate(data: unknown) {
+      const typedData = data as { 
+        runId: string; 
+        type: string; 
+        result?: CheckResult; 
+        checkRun?: CheckRun;
+      };
+      
+      if (typedData.runId !== checkRun?.id) return;
 
-      switch (data.type) {
-        case 'result-created':
+      switch (typedData.type) {
+        case 'result-created': {
           // Another contributor completed an item
-          const newResults = new Map(results);
-          newResults.set(data.result.itemId, data.result);
-          setResults(newResults);
+          if (typedData.result) {
+            const newResults = new Map(results);
+            newResults.set(typedData.result.itemId, typedData.result);
+            setResults(newResults);
+          }
           break;
+        }
         
         case 'contributor-joined':
           // Someone else joined the check
-          if (checkRun && data.checkRun) {
-            setCheckRun(data.checkRun);
+          if (checkRun && typedData.checkRun) {
+            setCheckRun(typedData.checkRun);
           }
           break;
         
         case 'check-completed':
           // Check was completed
-          if (data.checkRun) {
-            setCheckRun(data.checkRun);
+          if (typedData.checkRun) {
+            setCheckRun(typedData.checkRun);
           }
           break;
       }
     }
 
-    socket.on('truck-check-update', handleTruckCheckUpdate);
+    on('truck-check-update', handleTruckCheckUpdate);
 
     return () => {
-      socket.off('truck-check-update', handleTruckCheckUpdate);
+      off('truck-check-update', handleTruckCheckUpdate);
     };
-  }, [socket, checkRun, results]);
+  }, [checkRun, results, on, off]);
 
   async function loadData() {
     try {
@@ -92,7 +102,7 @@ export function CheckWorkflowPage() {
     try {
       const response = await api.createCheckRun(applianceId, completedBy, completedBy);
       setCheckRun(response);
-      const joined = (response as any).joined || false;
+      const joined = typeof response === 'object' && 'joined' in response ? Boolean(response.joined) : false;
       setIsJoinedCheck(joined);
       setShowNamePrompt(false);
       
