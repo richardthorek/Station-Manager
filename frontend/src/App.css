@@ -71,4 +71,10 @@
   .main-content {
     padding: 16px;
   }
+  
+  .app {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible; /* Allow page to extend on mobile */
+  }
 }

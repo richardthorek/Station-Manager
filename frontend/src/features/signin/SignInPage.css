@@ -197,3 +197,68 @@
     width: 100%;
   }
 }
+
+/* Mobile-specific optimizations for check-in */
+@media (max-width: 768px) {
+  .app {
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  .main-content {
+    padding: 12px;
+    overflow: visible;
+  }
+  
+  .page-header {
+    margin-bottom: 0.75rem;
+  }
+  
+  .btn-manage-users {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .toolbar {
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .btn-new-event,
+  .btn-add-activity {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .content-grid {
+    gap: 16px;
+    height: auto;
+    overflow: visible;
+  }
+  
+  .left-column,
+  .middle-column,
+  .right-column {
+    max-height: none;
+    overflow: visible;
+  }
+  
+  /* Optimize for mobile check-in: prioritize Sign In section */
+  .content-grid {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Put Sign In section first on mobile for easy check-in */
+  .right-column {
+    order: -1;
+  }
+  
+  .middle-column {
+    order: 0;
+  }
+  
+  .left-column {
+    order: 1;
+  }
+}

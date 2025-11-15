@@ -208,3 +208,18 @@ input:focus, select:focus {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Mobile-specific scrolling fixes */
+@media (max-width: 768px) {
+  body {
+    overflow: auto; /* Allow page scroll on mobile */
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  #root {
+    overflow: visible; /* Allow content to flow on mobile */
+    height: auto;
+    min-height: 100vh;
+  }
+}
