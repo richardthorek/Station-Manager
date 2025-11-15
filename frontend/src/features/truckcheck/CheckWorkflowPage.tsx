@@ -285,72 +285,71 @@ export function CheckWorkflowPage() {
           <div className="check-status-info">
             {isJoinedCheck && (
               <div className="joined-check-notice">
-                ✅ You joined an existing check
+                ✅ Joined existing check
               </div>
             )}
             {checkRun.contributors && checkRun.contributors.length > 1 && (
               <div className="contributors-badge">
-                👥 {checkRun.contributors.length} contributors: {checkRun.contributors.join(', ')}
+                👥 {checkRun.contributors.length} contributors
               </div>
             )}
           </div>
         )}
-        <div className="progress-bar-container">
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${(results.size / template.items.length) * 100}%` }}
-            />
-          </div>
-          <div className="progress-milestones">
+      </header>
+
+      <div className="workflow-content-wrapper">
+        {/* Left sidebar with progress indicators */}
+        <aside className="workflow-sidebar">
+          <h2 className="sidebar-title">Progress ({results.size}/{template.items.length})</h2>
+          <div className="sidebar-progress-list">
             {template.items.map((item, index) => (
               <button
                 key={item.id}
-                className={`milestone ${index === currentIndex ? 'active' : ''} ${results.has(item.id) ? 'completed' : ''}`}
+                className={`sidebar-progress-item ${index === currentIndex ? 'active' : ''} ${results.has(item.id) ? 'completed' : ''}`}
                 onClick={() => jumpToItem(index)}
                 title={item.name}
                 aria-label={`Jump to ${item.name}`}
               >
-                <span className="milestone-number">{index + 1}</span>
-                {results.has(item.id) && (
-                  <span className="milestone-check">✓</span>
-                )}
+                <div className={`sidebar-milestone ${index === currentIndex ? 'active' : ''} ${results.has(item.id) ? 'completed' : ''}`}>
+                  <span className="milestone-number">{index + 1}</span>
+                  {results.has(item.id) && (
+                    <span className="sidebar-milestone-check">✓</span>
+                  )}
+                </div>
+                <span className="sidebar-item-title">{item.name}</span>
               </button>
             ))}
           </div>
-        </div>
-        <p className="progress-text">
-          {results.size} of {template.items.length} completed
-        </p>
-      </header>
+        </aside>
 
-      <main className="workflow-main" ref={scrollContainerRef}>
-        <div className="items-container">
-          {template.items.map((item, index) => (
-            <CheckItemCard
-              key={item.id}
-              item={item}
-              isActive={index === currentIndex}
-              result={results.get(item.id)}
-              onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl)}
-            />
-          ))}
-          
-          {results.size === template.items.length && (
-            <div className="completion-card">
-              <div className="completion-icon">✅</div>
-              <h2>All Items Completed!</h2>
-              <p>You've completed all {template.items.length} items in this check.</p>
-              <button 
-                className="btn-complete"
-                onClick={handleFinishCheck}
-              >
-                View Summary & Finish
-              </button>
-            </div>
-          )}
-        </div>
-      </main>
+        <main className="workflow-main" ref={scrollContainerRef}>
+          <div className="items-container">
+            {template.items.map((item, index) => (
+              <CheckItemCard
+                key={item.id}
+                item={item}
+                isActive={index === currentIndex}
+                result={results.get(item.id)}
+                onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl)}
+              />
+            ))}
+            
+            {results.size === template.items.length && (
+              <div className="completion-card">
+                <div className="completion-icon">✅</div>
+                <h2>All Items Completed!</h2>
+                <p>You've completed all {template.items.length} items in this check.</p>
+                <button 
+                  className="btn-complete"
+                  onClick={handleFinishCheck}
+                >
+                  View Summary & Finish
+                </button>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
 
       {results.size === template.items.length && (
         <div className="completion-sticky" aria-label="Completion actions">
