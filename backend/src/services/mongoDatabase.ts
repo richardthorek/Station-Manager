@@ -542,7 +542,10 @@ class MongoDBService {
   async getMemberParticipantInEvent(eventId: string, memberId: string): Promise<EventParticipant | null> {
     if (!this.eventParticipantsCollection) throw new Error('Database not connected');
     
-    return await this.eventParticipantsCollection.findOne({ eventId, memberId });
+    return await this.eventParticipantsCollection.findOne({
+      eventId: { $eq: eventId },
+      memberId: { $eq: memberId }
+    });
   }
 
   async getAllActiveParticipants(): Promise<EventParticipant[]> {
