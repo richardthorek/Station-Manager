@@ -16,14 +16,31 @@ export function UserProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [databaseStatus, setDatabaseStatus] = useState<{
+    databaseType: 'mongodb' | 'in-memory';
+    usingInMemory: boolean;
+  } | null>(null);
   
   const { isConnected } = useSocket();
 
   useEffect(() => {
+    loadDatabaseStatus();
     if (memberId) {
       loadMemberData();
     }
   }, [memberId]);
+
+  const loadDatabaseStatus = async () => {
+    try {
+      const status = await api.getStatus();
+      setDatabaseStatus({
+        databaseType: status.databaseType,
+        usingInMemory: status.usingInMemory,
+      });
+    } catch (err) {
+      console.error('Error loading database status:', err);
+    }
+  };
 
   const loadMemberData = async () => {
     try {
@@ -94,7 +111,7 @@ export function UserProfilePage() {
   if (loading) {
     return (
       <div className="app">
-        <Header isConnected={isConnected} />
+        <Header isConnected={isConnected} databaseStatus={databaseStatus} />
         <div className="loading-container">
           <div className="spinner"></div>
           <p>Loading profile...</p>
@@ -106,7 +123,7 @@ export function UserProfilePage() {
   if (error || !member) {
     return (
       <div className="app">
-        <Header isConnected={isConnected} />
+        <Header isConnected={isConnected} databaseStatus={databaseStatus} />
         <div className="error-container">
           <h2>Error</h2>
           <p>{error || 'Member not found'}</p>
@@ -120,7 +137,7 @@ export function UserProfilePage() {
 
   return (
     <div className="app">
-      <Header isConnected={isConnected} />
+      <Header isConnected={isConnected} databaseStatus={databaseStatus} />
       
       <main className="main-content">
         <div className="profile-container">

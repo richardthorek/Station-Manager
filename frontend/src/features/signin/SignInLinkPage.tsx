@@ -11,9 +11,16 @@ export function SignInLinkPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'already-checked-in'>('loading');
   const [message, setMessage] = useState('');
   const [memberName, setMemberName] = useState('');
+  const [databaseStatus, setDatabaseStatus] = useState<{
+    databaseType: 'mongodb' | 'in-memory';
+    usingInMemory: boolean;
+  } | null>(null);
   const { isConnected, emit } = useSocket();
 
   useEffect(() => {
+    // Load database status on mount
+    loadDatabaseStatus();
+
     const userIdentifier = searchParams.get('user');
     
     if (!userIdentifier) {
@@ -24,6 +31,18 @@ export function SignInLinkPage() {
 
     handleUrlCheckIn(userIdentifier);
   }, [searchParams]);
+
+  const loadDatabaseStatus = async () => {
+    try {
+      const status = await api.getStatus();
+      setDatabaseStatus({
+        databaseType: status.databaseType,
+        usingInMemory: status.usingInMemory,
+      });
+    } catch (err) {
+      console.error('Error loading database status:', err);
+    }
+  };
 
   const handleUrlCheckIn = async (identifier: string) => {
     try {
@@ -55,7 +74,7 @@ export function SignInLinkPage() {
   if (status === 'loading') {
     return (
       <div className="app">
-        <Header isConnected={isConnected} />
+        <Header isConnected={isConnected} databaseStatus={databaseStatus} />
         <div className="signin-link-container">
           <div className="signin-link-content">
             <div className="spinner"></div>
@@ -68,7 +87,7 @@ export function SignInLinkPage() {
 
   return (
     <div className="app">
-      <Header isConnected={isConnected} />
+      <Header isConnected={isConnected} databaseStatus={databaseStatus} />
       
       <div className="signin-link-container">
         <div className="signin-link-content">
