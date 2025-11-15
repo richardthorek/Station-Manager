@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import type { Appliance } from '../../types';
 import './TruckCheckPage.css';
 
-export function TruckCheckPage() {
-  const { theme, toggleTheme } = useTheme();
+export function TemplateSelectionPage() {
   const navigate = useNavigate();
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,16 +27,16 @@ export function TruckCheckPage() {
     }
   }
 
-  function handleStartCheck(applianceId: string) {
-    navigate(`/truckcheck/check/${applianceId}`);
+  function handleEditTemplate(applianceId: string) {
+    navigate(`/truckcheck/templates/${applianceId}`);
   }
 
   if (loading) {
     return (
       <div className="truckcheck-page">
         <header className="truckcheck-header">
-          <Link to="/" className="back-link">← Back to Home</Link>
-          <h1>Truck Checks</h1>
+          <Link to="/truckcheck" className="back-link">← Back to Truck Checks</Link>
+          <h1>Manage Checklists</h1>
         </header>
         <main className="truckcheck-main">
           <div className="loading">Loading appliances...</div>
@@ -51,8 +49,8 @@ export function TruckCheckPage() {
     return (
       <div className="truckcheck-page">
         <header className="truckcheck-header">
-          <Link to="/" className="back-link">← Back to Home</Link>
-          <h1>Truck Checks</h1>
+          <Link to="/truckcheck" className="back-link">← Back to Truck Checks</Link>
+          <h1>Manage Checklists</h1>
         </header>
         <main className="truckcheck-main">
           <div className="error">{error}</div>
@@ -64,51 +62,31 @@ export function TruckCheckPage() {
   return (
     <div className="truckcheck-page">
       <header className="truckcheck-header">
-        <div className="header-top">
-          <Link to="/" className="back-link">← Back to Home</Link>
-          <button 
-            className="theme-toggle-btn"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-          >
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
-        </div>
-        <h1>Truck Checks</h1>
-        <p className="subtitle">Weekly vehicle inspection system</p>
+        <Link to="/truckcheck" className="back-link">← Back to Truck Checks</Link>
+        <h1>Manage Checklists</h1>
+        <p className="subtitle">Select an appliance to edit its checklist template</p>
       </header>
 
       <main className="truckcheck-main">
-        <div className="view-tabs">
-          <Link to="/truckcheck/admin" className="tab-link">
-            ⚙️ Admin Dashboard
-          </Link>
-        </div>
-
         <div className="start-view">
           <div className="instructions">
-            <h2>Select an Appliance to Check</h2>
-            <p>Choose the vehicle you want to perform a weekly inspection on.</p>
+            <h2>Select an Appliance</h2>
+            <p>Choose the vehicle whose checklist you want to modify.</p>
           </div>
 
           <div className="appliance-grid">
             {appliances.map((appliance) => (
               <div key={appliance.id} className="appliance-card">
-                {appliance.photoUrl ? (
-                  <img src={appliance.photoUrl} alt={appliance.name} className="appliance-photo" />
-                ) : (
-                  <div className="appliance-icon">🚛</div>
-                )}
+                <div className="appliance-icon">📋</div>
                 <h3>{appliance.name}</h3>
                 {appliance.description && (
                   <p className="appliance-description">{appliance.description}</p>
                 )}
                 <button 
                   className="btn-primary"
-                  onClick={() => handleStartCheck(appliance.id)}
+                  onClick={() => handleEditTemplate(appliance.id)}
                 >
-                  Start Check
+                  Edit Checklist
                 </button>
               </div>
             ))}

@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
+import { VehicleManagement } from './VehicleManagement';
 import type { CheckRunWithResults, Appliance } from '../../types';
 import './AdminDashboard.css';
 
+type ActiveTab = 'history' | 'vehicles';
+
 export function AdminDashboardPage() {
   const { theme, toggleTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('history');
   const [checkRuns, setCheckRuns] = useState<CheckRunWithResults[]>([]);
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [selectedAppliance, setSelectedAppliance] = useState<string>('all');
@@ -102,11 +106,28 @@ export function AdminDashboardPage() {
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
         </div>
-        <h1>Check History</h1>
-        <p className="subtitle">View and manage all truck check records</p>
+        <h1>Admin Dashboard</h1>
+        <div className="tabs">
+          <button 
+            className={`tab ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            📊 Check History
+          </button>
+          <button 
+            className={`tab ${activeTab === 'vehicles' ? 'active' : ''}`}
+            onClick={() => setActiveTab('vehicles')}
+          >
+            🚒 Vehicle Management
+          </button>
+        </div>
       </header>
 
       <main className="dashboard-main">
+        {activeTab === 'vehicles' ? (
+          <VehicleManagement appliances={appliances} onUpdate={loadData} />
+        ) : (
+          <>
         <div className="filters-section">
           <div className="filter-group">
             <label htmlFor="appliance-filter">Filter by Appliance:</label>
@@ -210,6 +231,8 @@ export function AdminDashboardPage() {
             ))
           )}
         </div>
+        </>
+        )}
       </main>
     </div>
   );

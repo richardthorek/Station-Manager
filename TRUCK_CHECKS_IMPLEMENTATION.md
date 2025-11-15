@@ -129,15 +129,33 @@ The Truck Checks feature enables weekly vehicle inspections for fire service app
 - Smooth scrolling with scroll-snap
 - Theme support (light/dark modes)
 
+### Photo Upload System
+- **Azure Blob Storage Integration**
+  - Separate containers for reference photos and result photos
+  - Public blob access for easy viewing
+  - 10MB file size limit
+  - Image file type validation
+  
+- **Reference Photos**
+  - Template editors can upload guiding photos for each checklist item
+  - Photos are displayed during checks to help users understand what to inspect
+  - Managed through the Template Editor UI
+  
+- **Result Photos**
+  - Users can upload photos when documenting issues
+  - Photos are attached to check results
+  - Visible in check summaries and admin dashboard
+
 ## File Structure
 
 ```
 backend/
   src/
     routes/
-      truckChecks.ts           # API routes
+      truckChecks.ts           # API routes + photo upload endpoints
     services/
       truckChecksDatabase.ts   # Database service
+      azureStorage.ts          # Azure Blob Storage service
     types/
       index.ts                 # Type definitions
 
@@ -145,16 +163,17 @@ frontend/
   src/
     features/
       truckcheck/
-        TruckCheckPage.tsx        # Landing page
+        TruckCheckPage.tsx            # Landing page
         TruckCheckPage.css
-        CheckWorkflowPage.tsx     # Main workflow
+        CheckWorkflowPage.tsx         # Main workflow with photo display
         CheckWorkflow.css
-        CheckSummaryPage.tsx      # Summary & submission
+        CheckSummaryPage.tsx          # Summary & submission
         CheckSummary.css
-        AdminDashboardPage.tsx    # Admin dashboard
+        AdminDashboardPage.tsx        # Admin dashboard
         AdminDashboard.css
-        PlaceholderPages.tsx      # Template editor placeholder
-        PlaceholderPage.css
+        TemplateSelectionPage.tsx     # Select appliance to edit
+        TemplateEditorPage.tsx        # Edit checklist items
+        TemplateEditor.css
     services/
       api.ts                    # API client methods
     types/
@@ -177,13 +196,17 @@ frontend/
 ✅ No TypeScript errors
 ✅ CodeQL security scan: 0 alerts
 
-## Known Limitations & Future Enhancements
+## Recent Updates
+
+### ✅ Photo Upload & Template Editor (Implemented)
+The truck checks feature now includes:
+1. **Photo Upload**: Azure Blob Storage integration for attaching photos to check items
+2. **Template Editor**: Full UI for managing checklist items within the app
+3. **Reference Photos**: Ability to add reference photos to checklist items
+4. **Result Photos**: Upload photos when documenting issues
 
 ### Not Yet Implemented
-1. **Photo Upload**: Azure Blob Storage integration for attaching photos to check items
-2. **Email Notifications**: Send emails only when issues are found
-3. **Template Editor**: UI for managing checklist items within the app
-4. **Reference Photos**: Ability to add reference photos to checklist items
+1. **Email Notifications**: Send emails only when issues are found
 
 ### Future Considerations
 1. Export check history to PDF/CSV
@@ -201,7 +224,80 @@ frontend/
 PORT=3000
 MONGODB_URI=mongodb://localhost:27017/StationManager
 # For production: Use Azure Cosmos DB connection string
+
+# Azure Storage (for photo uploads)
+AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net
+AZURE_STORAGE_REFERENCE_CONTAINER=reference-photos
+AZURE_STORAGE_RESULT_CONTAINER=result-photos
 ```
+
+### Azure Storage Setup
+
+#### 1. Create Azure Storage Account
+
+```bash
+# Set variables
+RESOURCE_GROUP="your-resource-group"
+STORAGE_ACCOUNT="yourstorageaccount"  # Must be globally unique, lowercase, no special chars
+LOCATION="australiaeast"
+
+# Create storage account
+az storage account create \
+  --name $STORAGE_ACCOUNT \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --sku Standard_LRS \
+  --kind StorageV2 \
+  --access-tier Hot
+```
+
+#### 2. Get Connection String
+
+```bash
+# Get connection string
+az storage account show-connection-string \
+  --name $STORAGE_ACCOUNT \
+  --resource-group $RESOURCE_GROUP \
+  --query "connectionString" \
+  --output tsv
+```
+
+#### 3. Configure Backend Environment Variables
+
+Add to your backend `.env` file or Azure App Service configuration:
+
+```bash
+AZURE_STORAGE_CONNECTION_STRING="<connection-string-from-step-2>"
+AZURE_STORAGE_REFERENCE_CONTAINER="reference-photos"
+AZURE_STORAGE_RESULT_CONTAINER="result-photos"
+```
+
+#### 4. Set Environment Variables in Azure App Service
+
+```bash
+APP_NAME="bungrfsstation"
+RESOURCE_GROUP="your-resource-group"
+CONNECTION_STRING="<your-connection-string>"
+
+az webapp config appsettings set \
+  --name $APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --settings \
+    AZURE_STORAGE_CONNECTION_STRING="$CONNECTION_STRING" \
+    AZURE_STORAGE_REFERENCE_CONTAINER="reference-photos" \
+    AZURE_STORAGE_RESULT_CONTAINER="result-photos"
+```
+
+#### 5. Container Creation
+
+The containers will be created automatically when the first photo is uploaded. No manual creation needed.
+
+#### Storage Costs
+
+- Azure Blob Storage costs are minimal for typical usage:
+  - ~$0.02 per GB per month for storage
+  - ~$0.004 per 10,000 operations
+- For a fire station with weekly checks, expect < $1/month
 
 ### Database Migration
 The current implementation uses in-memory storage. To migrate to Azure Cosmos DB:
@@ -230,7 +326,60 @@ POST /api/truck-checks/results
   "itemName": "Tyre Condition",
   "itemDescription": "Check all tyres for wear...",
   "status": "issue",
-  "comment": "Front left tyre pressure low"
+  "comment": "Front left tyre pressure low",
+  "photoUrl": "https://your-storage.blob.core.windows.net/result-photos/uuid.jpg"
+}
+```
+
+### Upload Reference Photo
+```bash
+POST /api/truck-checks/upload/reference-photo
+Content-Type: multipart/form-data
+
+photo: <file>
+
+# Response:
+{
+  "photoUrl": "https://your-storage.blob.core.windows.net/reference-photos/uuid.jpg"
+}
+```
+
+### Upload Result Photo
+```bash
+POST /api/truck-checks/upload/result-photo
+Content-Type: multipart/form-data
+
+photo: <file>
+
+# Response:
+{
+  "photoUrl": "https://your-storage.blob.core.windows.net/result-photos/uuid.jpg"
+}
+```
+
+### Check Storage Status
+```bash
+GET /api/truck-checks/storage-status
+
+# Response:
+{
+  "enabled": true,
+  "message": "Photo upload is available"
+}
+```
+
+### Update Template with Reference Photos
+```bash
+PUT /api/truck-checks/templates/appliance123
+{
+  "items": [
+    {
+      "name": "Tyre Condition",
+      "description": "Check all tyres for wear, damage, and correct pressure",
+      "order": 1,
+      "referencePhotoUrl": "https://your-storage.blob.core.windows.net/reference-photos/uuid.jpg"
+    }
+  ]
 }
 ```
 
@@ -287,21 +436,23 @@ GET /api/truck-checks/runs?withIssues=true
 
 ### Production Checklist
 - [ ] Set up Azure Cosmos DB
-- [ ] Configure Azure Blob Storage for photos
+- [x] Configure Azure Blob Storage for photos
 - [ ] Set up email service (Azure Communication Services)
 - [ ] Enable HTTPS
-- [ ] Configure production environment variables
+- [ ] Configure production environment variables (including Azure Storage)
 - [ ] Test on actual iPad/mobile devices
 - [ ] Set up monitoring and logging
-- [ ] Document admin procedures
+- [x] Document admin procedures (Template Editor)
+- [x] Document Azure Storage setup
 
 ## Support & Maintenance
 
 ### Common Tasks
 1. **Add New Appliance**: Use POST /appliances endpoint
-2. **Modify Checklist**: Use PUT /templates/:applianceId endpoint
-3. **View Check History**: Use admin dashboard or GET /runs endpoint
-4. **Clear Old Data**: Database cleanup procedures (TBD)
+2. **Modify Checklist**: Navigate to Truck Checks → Admin → Manage Checklists
+3. **Add Reference Photos**: Use Template Editor to upload photos for each checklist item
+4. **View Check History**: Use admin dashboard or GET /runs endpoint
+5. **Clear Old Data**: Database cleanup procedures (TBD)
 
 ### Troubleshooting
 - Check browser console for errors

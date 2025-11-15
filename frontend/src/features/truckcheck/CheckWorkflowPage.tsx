@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
+import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import type { Appliance, ChecklistTemplate, CheckRun, CheckResult, CheckStatus } from '../../types';
 import './CheckWorkflow.css';
@@ -9,6 +10,7 @@ export function CheckWorkflowPage() {
   const { applianceId } = useParams<{ applianceId: string }>();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const socket = useSocket();
   
   const [appliance, setAppliance] = useState<Appliance | null>(null);
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
@@ -19,6 +21,7 @@ export function CheckWorkflowPage() {
   const [showNamePrompt, setShowNamePrompt] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isJoinedCheck, setIsJoinedCheck] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -27,6 +30,44 @@ export function CheckWorkflowPage() {
       loadData();
     }
   }, [applianceId]);
+
+  // Listen for real-time updates from other contributors
+  useEffect(() => {
+    if (!socket || !checkRun) return;
+
+    function handleTruckCheckUpdate(data: any) {
+      if (data.runId !== checkRun?.id) return;
+
+      switch (data.type) {
+        case 'result-created':
+          // Another contributor completed an item
+          const newResults = new Map(results);
+          newResults.set(data.result.itemId, data.result);
+          setResults(newResults);
+          break;
+        
+        case 'contributor-joined':
+          // Someone else joined the check
+          if (checkRun && data.checkRun) {
+            setCheckRun(data.checkRun);
+          }
+          break;
+        
+        case 'check-completed':
+          // Check was completed
+          if (data.checkRun) {
+            setCheckRun(data.checkRun);
+          }
+          break;
+      }
+    }
+
+    socket.on('truck-check-update', handleTruckCheckUpdate);
+
+    return () => {
+      socket.off('truck-check-update', handleTruckCheckUpdate);
+    };
+  }, [socket, checkRun, results]);
 
   async function loadData() {
     try {
@@ -49,16 +90,29 @@ export function CheckWorkflowPage() {
     if (!completedBy.trim() || !applianceId) return;
     
     try {
-      const run = await api.createCheckRun(applianceId, completedBy, completedBy);
-      setCheckRun(run);
+      const response = await api.createCheckRun(applianceId, completedBy, completedBy);
+      setCheckRun(response);
+      setIsJoinedCheck((response as any).joined || false);
       setShowNamePrompt(false);
+      
+      // Load existing results if joining an active check
+      if ((response as any).joined) {
+        const existingResults = await api.getCheckRun(response.id);
+        if (existingResults && 'results' in existingResults) {
+          const resultsMap = new Map<string, CheckResult>();
+          existingResults.results.forEach((result: CheckResult) => {
+            resultsMap.set(result.itemId, result);
+          });
+          setResults(resultsMap);
+        }
+      }
     } catch (err) {
-      setError('Failed to start check');
+      setError('Failed to start/join check');
       console.error(err);
     }
   }
 
-  async function handleItemResult(itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string) {
+  async function handleItemResult(itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string, photoUrl?: string) {
     if (!checkRun) return;
 
     try {
@@ -68,25 +122,49 @@ export function CheckWorkflowPage() {
         itemName,
         itemDescription,
         status,
-        comment
+        comment,
+        photoUrl,
+        completedBy // Track who completed this item
       );
       
       const newResults = new Map(results);
       newResults.set(itemId, result);
       setResults(newResults);
 
-      // Move to next item if not the last
-      if (template && currentIndex < template.items.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-        scrollToItem(currentIndex + 1);
-      } else {
-        // Navigate to summary
-        navigate(`/truckcheck/summary/${checkRun.id}`);
+      // Move to next uncompleted item
+      if (template) {
+        const nextIndex = findNextUncompletedItem(currentIndex + 1);
+        if (nextIndex !== -1) {
+          setCurrentIndex(nextIndex);
+          scrollToItem(nextIndex);
+        } else {
+          // All items completed, navigate to summary
+          navigate(`/truckcheck/summary/${checkRun.id}`);
+        }
       }
     } catch (err) {
       setError('Failed to save result');
       console.error(err);
     }
+  }
+
+  function findNextUncompletedItem(startIndex: number): number {
+    if (!template) return -1;
+    
+    for (let i = startIndex; i < template.items.length; i++) {
+      if (!results.has(template.items[i].id)) {
+        return i;
+      }
+    }
+    
+    // Wrap around to beginning
+    for (let i = 0; i < startIndex; i++) {
+      if (!results.has(template.items[i].id)) {
+        return i;
+      }
+    }
+    
+    return -1; // All items completed
   }
 
   function scrollToItem(index: number) {
@@ -189,11 +267,16 @@ export function CheckWorkflowPage() {
           </button>
         </div>
         <h1>{appliance.name} Check</h1>
+        {checkRun && checkRun.contributors && checkRun.contributors.length > 1 && (
+          <div className="contributors-badge">
+            👥 {checkRun.contributors.length} contributors: {checkRun.contributors.join(', ')}
+          </div>
+        )}
         <div className="progress-bar-container">
           <div className="progress-bar">
             <div 
               className="progress-fill" 
-              style={{ width: `${((currentIndex + 1) / template.items.length) * 100}%` }}
+              style={{ width: `${(results.size / template.items.length) * 100}%` }}
             />
           </div>
           <div className="progress-milestones">
@@ -214,7 +297,7 @@ export function CheckWorkflowPage() {
           </div>
         </div>
         <p className="progress-text">
-          Item {currentIndex + 1} of {template.items.length}
+          {results.size} of {template.items.length} completed
         </p>
       </header>
 
@@ -226,7 +309,7 @@ export function CheckWorkflowPage() {
               item={item}
               isActive={index === currentIndex}
               result={results.get(item.id)}
-              onResult={(status, comment) => handleItemResult(item.id, item.name, item.description, status, comment)}
+              onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl)}
             />
           ))}
         </div>
@@ -256,27 +339,78 @@ interface CheckItemCardProps {
   item: { id: string; name: string; description: string; referencePhotoUrl?: string };
   isActive: boolean;
   result?: CheckResult;
-  onResult: (status: CheckStatus, comment?: string) => void;
+  onResult: (status: CheckStatus, comment?: string, photoUrl?: string) => void;
 }
 
 function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps) {
   const [comment, setComment] = useState('');
   const [showComment, setShowComment] = useState(false);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [storageEnabled, setStorageEnabled] = useState(false);
+
+  useEffect(() => {
+    checkStorageStatus();
+  }, []);
+
+  async function checkStorageStatus() {
+    try {
+      const status = await api.getStorageStatus();
+      setStorageEnabled(status.enabled);
+    } catch (err) {
+      console.error('Failed to check storage status:', err);
+    }
+  }
 
   function handleStatus(status: CheckStatus) {
     if (status === 'issue') {
       setShowComment(true);
     } else {
-      onResult(status, comment || undefined);
+      onResult(status, comment || undefined, uploadedPhotoUrl || undefined);
       setComment('');
       setShowComment(false);
+      setUploadedPhotoUrl(null);
+    }
+  }
+
+  async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!storageEnabled) {
+      alert('Photo upload is not available. Azure Storage is not configured.');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image file must be smaller than 10MB');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const response = await api.uploadResultPhoto(file);
+      setUploadedPhotoUrl(response.photoUrl);
+    } catch (err) {
+      console.error('Failed to upload photo:', err);
+      alert('Failed to upload photo. Please try again.');
+    } finally {
+      setUploading(false);
     }
   }
 
   function handleSubmitWithComment() {
-    onResult('issue', comment || undefined);
+    onResult('issue', comment || undefined, uploadedPhotoUrl || undefined);
     setComment('');
     setShowComment(false);
+    setUploadedPhotoUrl(null);
   }
 
   return (
@@ -285,11 +419,18 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
         <h2>{item.name}</h2>
         <p className="item-description">{item.description}</p>
         
-        {/* Placeholder for reference photo */}
-        <div className="reference-photo-placeholder">
-          <div className="photo-icon">📷</div>
-          <p className="photo-text">Reference photo will appear here</p>
-        </div>
+        {/* Reference photo if available */}
+        {item.referencePhotoUrl ? (
+          <div className="reference-photo">
+            <img src={item.referencePhotoUrl} alt={`Reference for ${item.name}`} />
+            <p className="photo-caption">Reference Photo</p>
+          </div>
+        ) : (
+          <div className="reference-photo-placeholder">
+            <div className="photo-icon">📷</div>
+            <p className="photo-text">No reference photo available</p>
+          </div>
+        )}
         
         {result ? (
           <div className="result-display">
@@ -298,8 +439,17 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
               {result.status === 'issue' && '⚠ Issue'}
               {result.status === 'skipped' && '○ Skipped'}
             </div>
+            {result.completedBy && (
+              <p className="completed-by">Completed by: {result.completedBy}</p>
+            )}
             {result.comment && (
               <p className="result-comment">Comment: {result.comment}</p>
+            )}
+            {result.photoUrl && (
+              <div className="result-photo">
+                <img src={result.photoUrl} alt="Issue documentation" />
+                <p className="photo-caption">Uploaded Photo</p>
+              </div>
             )}
             {isActive && (
               <p className="edit-hint">Scroll to next item or use navigation buttons</p>
@@ -328,18 +478,51 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
                   className="comment-input"
                   autoFocus
                 />
+                
+                {/* Photo upload for issue documentation */}
+                {storageEnabled && (
+                  <div className="photo-upload-section">
+                    <label className="upload-label-text">
+                      Add Photo (Optional)
+                    </label>
+                    {uploadedPhotoUrl ? (
+                      <div className="uploaded-photo-preview">
+                        <img src={uploadedPhotoUrl} alt="Uploaded issue" />
+                        <button 
+                          className="remove-photo-btn"
+                          onClick={() => setUploadedPhotoUrl(null)}
+                        >
+                          Remove Photo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="photo-upload-control">
+                        <input
+                          type="file"
+                          id="photo-upload"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          disabled={uploading}
+                          style={{ display: 'none' }}
+                        />
+                        <label htmlFor="photo-upload" className="upload-button">
+                          {uploading ? '📤 Uploading...' : '📸 Add Photo'}
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div className="comment-actions">
-                  <button className="btn-secondary" onClick={() => setShowComment(false)}>
+                  <button className="btn-secondary" onClick={() => {
+                    setShowComment(false);
+                    setUploadedPhotoUrl(null);
+                  }}>
                     Cancel
                   </button>
                   <button className="btn-primary" onClick={handleSubmitWithComment}>
                     Submit Issue
                   </button>
-                </div>
-                {/* Placeholder for photo upload */}
-                <div className="photo-upload-placeholder">
-                  <div className="upload-icon">📸</div>
-                  <p className="upload-text">Photo upload will be available here</p>
                 </div>
               </div>
             )}

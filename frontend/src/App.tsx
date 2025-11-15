@@ -7,7 +7,8 @@ import { TruckCheckPage } from './features/truckcheck/TruckCheckPage';
 import { CheckWorkflowPage } from './features/truckcheck/CheckWorkflowPage';
 import { CheckSummaryPage } from './features/truckcheck/CheckSummaryPage';
 import { AdminDashboardPage } from './features/truckcheck/AdminDashboardPage';
-import { TemplateEditorPage } from './features/truckcheck/PlaceholderPages';
+import { TemplateSelectionPage } from './features/truckcheck/TemplateSelectionPage';
+import { TemplateEditorPage } from './features/truckcheck/TemplateEditorPage';
 
 function App() {
   return (
@@ -21,7 +22,8 @@ function App() {
         <Route path="/truckcheck/check/:applianceId" element={<CheckWorkflowPage />} />
         <Route path="/truckcheck/summary/:runId" element={<CheckSummaryPage />} />
         <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
-        <Route path="/truckcheck/templates" element={<TemplateEditorPage />} />
+        <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
+        <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
       </Routes>
     </BrowserRouter>
   );

@@ -172,7 +172,7 @@ class MongoTruckChecksDatabase {
     return await this.appliancesCollection.findOne({ id });
   }
 
-  async createAppliance(name: string, description?: string): Promise<Appliance> {
+  async createAppliance(name: string, description?: string, photoUrl?: string): Promise<Appliance> {
     if (!this.appliancesCollection || !this.templatesCollection) {
       throw new Error('Database not connected');
     }
@@ -181,6 +181,7 @@ class MongoTruckChecksDatabase {
       id: uuidv4(),
       name,
       description,
+      photoUrl,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -194,7 +195,7 @@ class MongoTruckChecksDatabase {
     return appliance;
   }
 
-  async updateAppliance(id: string, name: string, description?: string): Promise<Appliance | null> {
+  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance | null> {
     if (!this.appliancesCollection) throw new Error('Database not connected');
     
     const result = await this.appliancesCollection.findOneAndUpdate(
@@ -203,6 +204,7 @@ class MongoTruckChecksDatabase {
         $set: { 
           name,
           description,
+          photoUrl,
           updatedAt: new Date()
         } 
       },
@@ -303,6 +305,7 @@ class MongoTruckChecksDatabase {
       startTime: new Date(),
       completedBy,
       completedByName,
+      contributors: [completedByName || completedBy],
       status: 'in-progress',
       hasIssues: false,
       createdAt: new Date(),
@@ -311,6 +314,29 @@ class MongoTruckChecksDatabase {
 
     await this.checkRunsCollection.insertOne(checkRun);
     return checkRun;
+  }
+
+  async getActiveCheckRunForAppliance(applianceId: string): Promise<CheckRun | null> {
+    if (!this.checkRunsCollection) throw new Error('Database not connected');
+    return await this.checkRunsCollection.findOne({ 
+      applianceId,
+      status: 'in-progress'
+    });
+  }
+
+  async addContributorToCheckRun(runId: string, contributorName: string): Promise<CheckRun | null> {
+    if (!this.checkRunsCollection) throw new Error('Database not connected');
+    
+    const result = await this.checkRunsCollection.findOneAndUpdate(
+      { id: runId },
+      { 
+        $addToSet: { contributors: contributorName },
+        $set: { updatedAt: new Date() }
+      },
+      { returnDocument: 'after' }
+    );
+    
+    return result || null;
   }
 
   async getCheckRunById(id: string): Promise<CheckRun | null> {
@@ -384,7 +410,8 @@ class MongoTruckChecksDatabase {
     itemDescription: string,
     status: CheckStatus,
     comment?: string,
-    photoUrl?: string
+    photoUrl?: string,
+    completedBy?: string
   ): Promise<CheckResult> {
     if (!this.checkRunsCollection || !this.checkResultsCollection) {
       throw new Error('Database not connected');
@@ -404,11 +431,21 @@ class MongoTruckChecksDatabase {
       status,
       comment,
       photoUrl,
+      completedBy,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     await this.checkResultsCollection.insertOne(result);
+    
+    // Update check run's hasIssues flag if this result is an issue
+    if (status === 'issue') {
+      await this.checkRunsCollection.updateOne(
+        { id: runId },
+        { $set: { hasIssues: true, updatedAt: new Date() } }
+      );
+    }
+    
     return result;
   }
 

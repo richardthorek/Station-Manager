@@ -19,9 +19,36 @@
 }
 
 .dashboard-header h1 {
-  margin: 0;
+  margin: 0 0 1rem 0;
   font-size: 2rem;
   font-weight: 700;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px 8px 0 0;
+  color: var(--rfs-white);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.tab.active {
+  background: var(--rfs-white);
+  color: var(--rfs-core-red);
 }
 
 .dashboard-header .subtitle {
