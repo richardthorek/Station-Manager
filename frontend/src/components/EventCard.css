@@ -1,21 +1,22 @@
 .event-card {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 0.75rem;
-  border-left: 4px solid #555;
+  border-left: 4px solid var(--border-color);
   transition: all 0.2s ease;
   cursor: pointer;
+  border: 1px solid var(--border-color);
 }
 
 .event-card.active {
-  border-left-color: #C6D931;
-  background: #222;
+  border-left-color: var(--color-lime-green);
+  background: var(--bg-secondary);
 }
 
 .event-card.selected {
-  border: 2px solid #C6D931;
-  background: #2a2a2a;
+  border: 2px solid var(--color-lime-green);
+  background: var(--bg-secondary);
 }
 
 .event-card.ended {
@@ -24,7 +25,7 @@
 }
 
 .event-card:hover:not(.ended) {
-  background: #252525;
+  background: var(--bg-secondary);
   transform: translateX(4px);
 }
 

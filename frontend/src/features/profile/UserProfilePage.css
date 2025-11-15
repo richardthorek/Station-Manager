@@ -10,8 +10,8 @@
 
 .btn-back {
   padding: 0.75rem 1.5rem;
-  background: #000;
-  color: #fff;
+  background: var(--color-gray-dark);
+  color: var(--text-color-light);
   border: none;
   border-radius: 8px;
   font-size: 1rem;
@@ -20,7 +20,7 @@
 }
 
 .btn-back:hover {
-  background: #333;
+  background: var(--color-gray-medium);
 }
 
 .profile-card,

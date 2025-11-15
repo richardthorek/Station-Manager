@@ -1,11 +1,24 @@
 import { Link } from 'react-router-dom';
+import { useTheme } from '../../hooks/useTheme';
 import './TruckCheckPage.css';
 
 export function TruckCheckPage() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="truckcheck-page">
       <header className="truckcheck-header">
-        <Link to="/" className="back-link">← Back to Home</Link>
+        <div className="header-top">
+          <Link to="/" className="back-link">← Back to Home</Link>
+          <button 
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+        </div>
         <h1>Truck Check</h1>
       </header>
 
