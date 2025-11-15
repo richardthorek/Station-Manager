@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Member, CheckInWithDetails } from '../types';
 import './MemberList.css';
 
@@ -15,9 +16,15 @@ export function MemberList({
   onCheckIn,
   onAddMember,
 }: MemberListProps) {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
+  
+  // For handling long press and double click
+  const longPressTimer = useRef<number | null>(null);
+  const lastClickTime = useRef<number>(0);
+  const clickedMemberId = useRef<string>('');
 
   const checkedInMemberIds = useMemo(
     () => new Set(activeCheckIns.map(c => c.memberId)),
@@ -39,9 +46,42 @@ export function MemberList({
     }
   };
 
+  const goToProfile = (memberId: string) => {
+    navigate(`/profile/${memberId}`);
+  };
+
   const handleMemberClick = (memberId: string) => {
-    onCheckIn(memberId);
-    setSearchTerm('');
+    const now = Date.now();
+    const timeDiff = now - lastClickTime.current;
+    
+    // Double click detection (within 300ms)
+    if (timeDiff < 300 && clickedMemberId.current === memberId) {
+      // Double click - go to profile
+      goToProfile(memberId);
+      lastClickTime.current = 0;
+      clickedMemberId.current = '';
+    } else {
+      // Single click - check in
+      onCheckIn(memberId);
+      setSearchTerm('');
+      lastClickTime.current = now;
+      clickedMemberId.current = memberId;
+    }
+  };
+
+  const handleTouchStart = (memberId: string) => {
+    // Start long press timer (500ms)
+    longPressTimer.current = window.setTimeout(() => {
+      goToProfile(memberId);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    // Clear long press timer if released early
+    if (longPressTimer.current) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   return (
@@ -76,6 +116,9 @@ export function MemberList({
                 key={member.id}
                 className={`member-btn ${isCheckedIn ? 'checked-in' : ''}`}
                 onClick={() => handleMemberClick(member.id)}
+                onTouchStart={() => handleTouchStart(member.id)}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
               >
                 <span className="member-name">{member.name}</span>
                 {isCheckedIn && (

@@ -87,6 +87,16 @@ class DatabaseService {
     return member;
   }
 
+  updateMember(id: string, name: string): Member | undefined {
+    const member = this.members.get(id);
+    if (member) {
+      member.name = name;
+      member.updatedAt = new Date();
+      return member;
+    }
+    return undefined;
+  }
+
   // Activity methods
   getAllActivities(): Activity[] {
     return Array.from(this.activities.values()).sort((a, b) => {
@@ -132,6 +142,12 @@ class DatabaseService {
   // Check-in methods
   getAllCheckIns(): CheckIn[] {
     return Array.from(this.checkIns.values());
+  }
+
+  getCheckInsByMember(memberId: string): CheckIn[] {
+    return Array.from(this.checkIns.values())
+      .filter(checkIn => checkIn.memberId === memberId)
+      .sort((a, b) => b.checkInTime.getTime() - a.checkInTime.getTime());
   }
 
   getActiveCheckIns(): CheckInWithDetails[] {

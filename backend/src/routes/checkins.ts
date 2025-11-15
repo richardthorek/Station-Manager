@@ -93,4 +93,59 @@ router.delete('/:memberId', async (req, res) => {
   }
 });
 
+// URL-based check-in
+router.post('/url-checkin', async (req, res) => {
+  try {
+    const { identifier } = req.body;
+
+    if (!identifier || typeof identifier !== 'string') {
+      return res.status(400).json({ error: 'User identifier is required' });
+    }
+
+    // Try to find member by name (case-insensitive)
+    const members = await db.getAllMembers();
+    const member = members.find(
+      m => m.name.toLowerCase() === decodeURIComponent(identifier).toLowerCase()
+    );
+
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    // Get active activity
+    const activeActivity = await db.getActiveActivity();
+    if (!activeActivity) {
+      return res.status(400).json({ error: 'No active activity set' });
+    }
+
+    // Check if already checked in
+    const existingCheckIn = await db.getCheckInByMember(member.id);
+    if (existingCheckIn) {
+      return res.json({
+        action: 'already-checked-in',
+        member: member.name,
+        checkIn: existingCheckIn,
+      });
+    }
+
+    // Create new check-in with 'qr' method for URL-based check-ins
+    const checkIn = await db.createCheckIn(
+      member.id,
+      activeActivity.activityId,
+      'qr',
+      undefined,
+      false
+    );
+
+    res.status(201).json({
+      action: 'checked-in',
+      member: member.name,
+      checkIn,
+    });
+  } catch (error) {
+    console.error('URL check-in error:', error);
+    res.status(500).json({ error: 'Failed to process URL check-in' });
+  }
+});
+
 export default router;

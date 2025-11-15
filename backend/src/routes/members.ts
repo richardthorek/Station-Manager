@@ -57,4 +57,37 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Update member
+router.put('/:id', async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return res.status(400).json({ error: 'Valid name is required' });
+    }
+    const member = await db.updateMember(req.params.id, name.trim());
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    res.json(member);
+  } catch (error) {
+    console.error('Error updating member:', error);
+    res.status(500).json({ error: 'Failed to update member' });
+  }
+});
+
+// Get member check-in history
+router.get('/:id/history', async (req, res) => {
+  try {
+    const member = await db.getMemberById(req.params.id);
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    const checkIns = await db.getCheckInsByMember(req.params.id);
+    res.json(checkIns);
+  } catch (error) {
+    console.error('Error fetching member history:', error);
+    res.status(500).json({ error: 'Failed to fetch member history' });
+  }
+});
+
 export default router;

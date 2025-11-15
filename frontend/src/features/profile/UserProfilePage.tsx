@@ -1,0 +1,238 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Header } from '../../components/Header';
+import { api } from '../../services/api';
+import { useSocket } from '../../hooks/useSocket';
+import type { Member, CheckIn, Activity } from '../../types';
+import './UserProfilePage.css';
+
+export function UserProfilePage() {
+  const { memberId } = useParams<{ memberId: string }>();
+  const navigate = useNavigate();
+  const [member, setMember] = useState<Member | null>(null);
+  const [checkInHistory, setCheckInHistory] = useState<CheckIn[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  
+  const { isConnected } = useSocket();
+
+  useEffect(() => {
+    if (memberId) {
+      loadMemberData();
+    }
+  }, [memberId]);
+
+  const loadMemberData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (!memberId) {
+        setError('Member ID is required');
+        return;
+      }
+
+      const [memberData, historyData, activitiesData] = await Promise.all([
+        api.getMember(memberId),
+        api.getMemberHistory(memberId),
+        api.getActivities(),
+      ]);
+      
+      setMember(memberData);
+      setCheckInHistory(historyData);
+      setActivities(activitiesData);
+      setEditedName(memberData.name);
+    } catch (err) {
+      console.error('Error loading member data:', err);
+      setError('Failed to load member profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!member || !editedName.trim()) {
+      return;
+    }
+
+    try {
+      const updatedMember = await api.updateMember(member.id, editedName.trim());
+      setMember(updatedMember);
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Error updating member name:', err);
+      alert('Failed to update name');
+    }
+  };
+
+  const getActivityName = (activityId: string) => {
+    const activity = activities.find(a => a.id === activityId);
+    return activity?.name || 'Unknown Activity';
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
+  const generateSignInUrl = () => {
+    if (!member) return '';
+    const identifier = encodeURIComponent(member.name);
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/sign-in?user=${identifier}`;
+  };
+
+  const copySignInUrl = () => {
+    const url = generateSignInUrl();
+    navigator.clipboard.writeText(url);
+    alert('Sign-in URL copied to clipboard!');
+  };
+
+  if (loading) {
+    return (
+      <div className="app">
+        <Header isConnected={isConnected} />
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !member) {
+    return (
+      <div className="app">
+        <Header isConnected={isConnected} />
+        <div className="error-container">
+          <h2>Error</h2>
+          <p>{error || 'Member not found'}</p>
+          <button className="btn-primary" onClick={() => navigate('/signin')}>
+            Back to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      <Header isConnected={isConnected} />
+      
+      <main className="main-content">
+        <div className="profile-container">
+          <div className="profile-header">
+            <button className="btn-back" onClick={() => navigate('/signin')}>
+              ← Back to Sign In
+            </button>
+          </div>
+
+          <div className="profile-card card">
+            <h2>User Profile</h2>
+            
+            <div className="profile-info">
+              <div className="profile-field">
+                <label>Name:</label>
+                {!isEditing ? (
+                  <div className="profile-value">
+                    <span>{member.name}</span>
+                    <button className="btn-edit" onClick={() => setIsEditing(true)}>
+                      Edit
+                    </button>
+                  </div>
+                ) : (
+                  <div className="profile-edit">
+                    <input
+                      type="text"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      autoFocus
+                    />
+                    <button className="btn-success" onClick={handleSaveName}>
+                      Save
+                    </button>
+                    <button className="btn-secondary" onClick={() => {
+                      setEditedName(member.name);
+                      setIsEditing(false);
+                    }}>
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="profile-field">
+                <label>Member ID:</label>
+                <span className="profile-value">{member.id}</span>
+              </div>
+
+              <div className="profile-field">
+                <label>Member Since:</label>
+                <span className="profile-value">{formatDate(member.createdAt)}</span>
+              </div>
+
+              <div className="profile-field">
+                <label>Last Updated:</label>
+                <span className="profile-value">{formatDate(member.updatedAt)}</span>
+              </div>
+            </div>
+
+            <div className="profile-signin-link">
+              <h3>Personal Sign-In Link</h3>
+              <p className="signin-link-description">
+                Use this link or QR code to quickly check in to the active event:
+              </p>
+              <div className="signin-link-box">
+                <input
+                  type="text"
+                  value={generateSignInUrl()}
+                  readOnly
+                  className="signin-link-input"
+                />
+                <button className="btn-primary" onClick={copySignInUrl}>
+                  Copy Link
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="history-card card">
+            <h2>Check-In History</h2>
+            
+            {checkInHistory.length === 0 ? (
+              <p className="no-history">No check-in history yet.</p>
+            ) : (
+              <div className="history-list">
+                <div className="history-header">
+                  <span>Date & Time</span>
+                  <span>Activity</span>
+                  <span>Method</span>
+                  <span>Status</span>
+                </div>
+                {checkInHistory.map((checkIn) => (
+                  <div key={checkIn.id} className="history-item">
+                    <span className="history-date">
+                      {formatDate(checkIn.checkInTime)}
+                    </span>
+                    <span className="history-activity">
+                      {getActivityName(checkIn.activityId)}
+                    </span>
+                    <span className="history-method">
+                      {checkIn.checkInMethod}
+                    </span>
+                    <span className={`history-status ${checkIn.isActive ? 'active' : 'completed'}`}>
+                      {checkIn.isActive ? 'Active' : 'Completed'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

@@ -3,6 +3,8 @@ import { Header } from '../../components/Header';
 import { EventLog } from '../../components/EventLog';
 import { CurrentEventParticipants } from '../../components/CurrentEventParticipants';
 import { MemberList } from '../../components/MemberList';
+import { ActiveCheckIns } from '../../components/ActiveCheckIns';
+import { UserManagement } from '../../components/UserManagement';
 import { NewEventModal } from '../../components/NewEventModal';
 import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -19,6 +21,7 @@ export function SignInPage() {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [showUserManagement, setShowUserManagement] = useState(false);
   const [showNewEventModal, setShowNewEventModal] = useState(false);
 
   const { isConnected, emit, on, off } = useSocket();
@@ -200,6 +203,16 @@ export function SignInPage() {
     }
   };
 
+  const handleUpdateMember = async (id: string, name: string) => {
+    try {
+      const updatedMember = await api.updateMember(id, name);
+      setMembers(members.map(m => m.id === id ? updatedMember : m));
+      emit('member-update', updatedMember);
+    } catch (err) {
+      console.error('Error updating member:', err);
+      throw err;
+    }
+  };
   // Get participants signed into selected event to highlight in member list
   const activeParticipantIds = selectedEvent?.participants.map(p => p.memberId) || [];
 
@@ -235,6 +248,12 @@ export function SignInPage() {
       <Header isConnected={isConnected} />
       
       <main className="main-content">
+        <div className="page-header">
+          <button 
+            className="btn-manage-users" 
+            onClick={() => setShowUserManagement(true)}
+          >
+            ⚙️ Manage Users
         <div className="toolbar">
           <button className="btn-new-event" onClick={() => setShowNewEventModal(true)}>
             + Start New Event
@@ -277,6 +296,13 @@ export function SignInPage() {
         </div>
       </main>
 
+      {showUserManagement && (
+        <UserManagement
+          members={members}
+          onClose={() => setShowUserManagement(false)}
+          onUpdateMember={handleUpdateMember}
+        />
+      )}
       <NewEventModal
         isOpen={showNewEventModal}
         activities={activities}
