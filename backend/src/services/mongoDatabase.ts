@@ -449,7 +449,7 @@ class MongoDBService {
       throw new Error('Event not found');
     }
 
-    const member = await this.membersCollection.findOne({ id: memberId });
+    const member = await this.membersCollection.findOne({ id: { $eq: memberId } });
     if (!member) {
       throw new Error('Member not found');
     }
