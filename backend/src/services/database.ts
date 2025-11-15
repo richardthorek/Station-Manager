@@ -166,9 +166,30 @@ class DatabaseService {
 
   // Member methods
   getAllMembers(): Member[] {
-    return Array.from(this.members.values()).sort((a, b) => 
-      a.name.localeCompare(b.name)
-    );
+    // Calculate date 6 months ago
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    // Count check-ins per member in the last 6 months
+    const checkInCounts = new Map<string, number>();
+    
+    Array.from(this.eventParticipants.values()).forEach(participant => {
+      if (participant.checkInTime >= sixMonthsAgo) {
+        const currentCount = checkInCounts.get(participant.memberId) || 0;
+        checkInCounts.set(participant.memberId, currentCount + 1);
+      }
+    });
+    
+    // Sort members by check-in count (descending), then by name
+    return Array.from(this.members.values()).sort((a, b) => {
+      const countA = checkInCounts.get(a.id) || 0;
+      const countB = checkInCounts.get(b.id) || 0;
+      
+      if (countB !== countA) {
+        return countB - countA; // More check-ins first
+      }
+      return a.name.localeCompare(b.name); // Alphabetical for ties
+    });
   }
 
   getMemberById(id: string): Member | undefined {

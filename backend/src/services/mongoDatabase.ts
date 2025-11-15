@@ -85,31 +85,7 @@ class MongoDBService {
       }
     }
 
-    // Check if we need to add sample members
-    const memberCount = await this.membersCollection?.countDocuments();
-    
-    if (memberCount === 0) {
-      const sampleMembers = [
-        'John Smith',
-        'Sarah Johnson',
-        'Michael Brown',
-        'Emily Davis',
-        'David Wilson',
-        'Lisa Anderson',
-        'James Taylor',
-        'Jennifer Martinez',
-      ];
-
-      const members: Member[] = sampleMembers.map(name => ({
-        id: uuidv4(),
-        name,
-        qrCode: uuidv4(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
-
-      await this.membersCollection?.insertMany(members);
-    }
+    // Don't add sample members in production - members should be imported via script or added through UI
   }
 
   async disconnect(): Promise<void> {
@@ -122,8 +98,49 @@ class MongoDBService {
 
   // Member methods
   async getAllMembers(): Promise<Member[]> {
-    if (!this.membersCollection) throw new Error('Database not connected');
-    const members = await this.membersCollection.find().sort({ name: 1 }).toArray();
+    if (!this.membersCollection || !this.eventParticipantsCollection) {
+      throw new Error('Database not connected');
+    }
+    
+    // Calculate date 6 months ago
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    // Get all members
+    const members = await this.membersCollection.find().toArray();
+    
+    // Get check-in counts for each member in the last 6 months
+    const memberCheckInCounts = await this.eventParticipantsCollection.aggregate([
+      {
+        $match: {
+          joinedAt: { $gte: sixMonthsAgo }
+        }
+      },
+      {
+        $group: {
+          _id: '$memberId',
+          checkInCount: { $sum: 1 }
+        }
+      }
+    ]).toArray();
+    
+    // Create a map of member ID to check-in count
+    const checkInMap = new Map<string, number>();
+    memberCheckInCounts.forEach((item: any) => {
+      checkInMap.set(item._id, item.checkInCount);
+    });
+    
+    // Sort members by check-in count (descending), then by name
+    members.sort((a, b) => {
+      const countA = checkInMap.get(a.id) || 0;
+      const countB = checkInMap.get(b.id) || 0;
+      
+      if (countB !== countA) {
+        return countB - countA; // More check-ins first
+      }
+      return a.name.localeCompare(b.name); // Alphabetical for ties
+    });
+    
     return members;
   }
 

@@ -1,7 +1,10 @@
 import dotenv from 'dotenv';
 
 // Load environment variables FIRST, before any other imports
-dotenv.config();
+// In development mode, don't load .env file to use in-memory database
+if (process.env.NODE_ENV !== 'development') {
+  dotenv.config();
+}
 
 import express from 'express';
 import { createServer } from 'http';

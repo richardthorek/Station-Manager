@@ -220,11 +220,34 @@ The application follows a scalable feature-based routing pattern:
 
 ### Scripts
 
+**Development with Sample Data (In-Memory Database):**
+```bash
+# Terminal 1 - Backend
+cd backend
+npm run dev
+
+# Terminal 2 - Frontend  
+cd frontend
+npm run dev
+```
+
+**Development with Production Database:**
+```bash
+# Terminal 1 - Backend
+cd backend
+npm run dev:prod
+
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
+```
+
 **Backend:**
 ```bash
-npm run dev     # Development with hot reload
-npm run build   # Build TypeScript
-npm start       # Run production build
+npm run dev       # Development with sample data (in-memory)
+npm run dev:prod  # Development with production database
+npm run build     # Build TypeScript
+npm start         # Run production build
 ```
 
 **Frontend:**

@@ -4,7 +4,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "nodemon --exec ts-node src/index.ts",
+    "dev": "NODE_ENV=development PORT=3000 nodemon --exec ts-node src/index.ts",
+    "dev:prod": "PORT=3000 nodemon --exec ts-node src/index.ts",
     "start": "node dist/index.js"
   },
   "keywords": [],
