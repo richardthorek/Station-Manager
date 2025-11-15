@@ -5,7 +5,8 @@ import { SignInLinkPage } from './features/signin/SignInLinkPage';
 import { UserProfilePage } from './features/profile/UserProfilePage';
 import { TruckCheckPage } from './features/truckcheck/TruckCheckPage';
 import { CheckWorkflowPage } from './features/truckcheck/CheckWorkflowPage';
-import { CheckSummaryPage, AdminDashboardPage, TemplateEditorPage } from './features/truckcheck/PlaceholderPages';
+import { CheckSummaryPage } from './features/truckcheck/CheckSummaryPage';
+import { AdminDashboardPage, TemplateEditorPage } from './features/truckcheck/PlaceholderPages';
 
 function App() {
   return (
