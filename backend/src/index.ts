@@ -44,11 +44,6 @@ app.use('/api/members', membersRouter);
 app.use('/api/activities', activitiesRouter);
 app.use('/api/checkins', checkinsRouter);
 
-// Serve frontend for all other routes (SPA fallback)
-app.get(/^\/(?!api).*/, (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
-
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -73,6 +68,11 @@ io.on('connection', (socket) => {
   socket.on('member-added', (data) => {
     socket.broadcast.emit('member-update', data);
   });
+});
+
+// Serve frontend for all other GET routes (SPA fallback) - Must be last!
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Error handling middleware
