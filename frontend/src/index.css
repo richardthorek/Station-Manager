@@ -141,6 +141,8 @@ input, select {
   padding: 12px;
   border: 2px solid var(--color-gray-medium);
   border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
   transition: border-color 0.2s ease;
 }
 
@@ -149,33 +151,47 @@ input:focus, select:focus {
   border-color: var(--color-primary-red);
 }
 
+/* Color Usage Rules:
+ * - Red backgrounds (#E2231A): ALWAYS use white (#ffffff) text
+ * - Lime green backgrounds (#C6D931): ALWAYS use black (#000000) text  
+ * - Lime green: NEVER use as text color on light backgrounds
+ * - White text: Check contrast on light grey backgrounds
+ * - Use semantic color variables for theme consistency
+ */
+
 /* Utility Classes */
 .btn-primary {
   background-color: var(--color-primary-red);
-  color: var(--color-white);
+  color: #ffffff;
 }
 
 .btn-primary:hover {
   background-color: #C21F17;
+  color: #ffffff;
 }
 
 .btn-secondary {
   background-color: var(--color-gray-dark);
-  color: var(--color-white);
+  color: #ffffff;
 }
 
 .btn-secondary:hover {
   background-color: var(--color-black);
+  color: #ffffff;
 }
 
 .btn-success {
   background-color: var(--color-success);
-  color: var(--color-white);
+  color: #ffffff;
 }
 
 .btn-accent {
   background-color: var(--color-lime-green);
-  color: var(--color-black);
+  color: #000000;
+}
+
+.btn-accent:hover {
+  color: #000000;
 }
 
 .card {

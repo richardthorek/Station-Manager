@@ -169,7 +169,7 @@ class MongoDBService {
     return member;
   }
 
-  async updateMember(id: string, name: string): Promise<Member | null> {
+  async updateMember(id: string, name: string, rank?: string | null): Promise<Member | null> {
     if (!this.membersCollection) throw new Error('Database not connected');
     
     const result = await this.membersCollection.findOneAndUpdate(
@@ -177,6 +177,7 @@ class MongoDBService {
       { 
         $set: { 
           name,
+          rank: rank === undefined ? null : rank,
           updatedAt: new Date()
         } 
       },
@@ -459,6 +460,7 @@ class MongoDBService {
       eventId,
       memberId,
       memberName: member.name,
+      memberRank: member.rank || null,
       checkInTime: new Date(),
       checkInMethod: method,
       location,

@@ -119,12 +119,13 @@
 .member-btn.checked-in {
   background: linear-gradient(135deg, var(--color-lime-green) 0%, #B8C929 100%);
   border-color: var(--color-lime-green);
-  color: var(--color-black);
+  color: #000000;
   font-weight: 600;
 }
 
 .member-btn.checked-in:hover {
   background: linear-gradient(135deg, #B8C929 0%, #A8B921 100%);
+  color: #000000;
 }
 
 .member-name {

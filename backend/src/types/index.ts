@@ -73,6 +73,7 @@ export interface EventParticipant {
   eventId: string;
   memberId: string;
   memberName: string;
+  memberRank?: string | null;
   checkInTime: Date;
   checkInMethod: 'kiosk' | 'mobile' | 'qr';
   location?: string;

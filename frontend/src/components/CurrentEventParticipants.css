@@ -28,7 +28,7 @@
   gap: 0.5rem;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #C6D931;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
@@ -38,7 +38,11 @@
 
 .active-indicator {
   font-size: 0.8rem;
-  color: #C6D931;
+  background: #C6D931;
+  color: #000;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 600;
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -144,8 +148,68 @@
   margin-bottom: 0.75rem;
 }
 
-.method-icon {
+/* Hidden device icons - not needed */
+/* .method-icon {
   font-size: 1.25rem;
+} */
+
+/* Helmet rank indicator */
+.rank-helmet {
+  width: 24px;
+  height: 24px;
+  border-radius: 50% 50% 0 0;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Default member - white helmet */
+.helmet-white {
+  background: white;
+  border: 2px solid #ddd;
+}
+
+/* Captain - red helmet */
+.helmet-red {
+  background: #E2231A;
+  border: 2px solid #a51912;
+}
+
+/* Senior Deputy Captain - red with 2 white stripes */
+.helmet-red-white-stripes {
+  background: linear-gradient(
+    to bottom,
+    #E2231A 0%,
+    #E2231A 30%,
+    white 30%,
+    white 35%,
+    #E2231A 35%,
+    #E2231A 50%,
+    white 50%,
+    white 55%,
+    #E2231A 55%,
+    #E2231A 100%
+  );
+  border: 2px solid #a51912;
+}
+
+/* Deputy Captain - white with red stripe */
+.helmet-white-red-stripe {
+  background: linear-gradient(
+    to bottom,
+    white 0%,
+    white 42%,
+    #E2231A 42%,
+    #E2231A 58%,
+    white 58%,
+    white 100%
+  );
+  border: 2px solid #ddd;
+}
+
+/* District/Group ranks - orange helmet */
+.helmet-orange {
+  background: #FF6B00;
+  border: 2px solid #cc5500;
 }
 
 .participant-name {
@@ -169,7 +233,7 @@
 .offsite-badge {
   font-size: 0.7rem;
   background: #E2231A;
-  color: var(--text-primary);
+  color: #ffffff;
   padding: 0.2rem 0.5rem;
   border-radius: 12px;
 }

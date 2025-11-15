@@ -3,6 +3,7 @@
  * Determines which database service to use based on environment
  */
 
+import type { Member } from '../types';
 import { db as inMemoryDb } from './database';
 import { db as mongoDb } from './mongoDatabase';
 
@@ -35,6 +36,7 @@ export interface IDatabase {
   clearAllActiveCheckIns(): Promise<void> | void;
   
   // Events
+  updateMember(id: string, name: string, rank?: string | null): Promise<Member | null | undefined> | Member | null | undefined;
   createEvent(activityId: string, createdBy?: string): Promise<any> | any;
   getEvents(limit?: number, offset?: number): Promise<any[]> | any[];
   getActiveEvents(): Promise<any[]> | any[];

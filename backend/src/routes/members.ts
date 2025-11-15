@@ -65,11 +65,11 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const db = await ensureDatabase();
-    const { name } = req.body;
+    const { name, rank } = req.body;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Valid name is required' });
     }
-    const member = await db.updateMember(req.params.id, name.trim());
+    const member = await db.updateMember(req.params.id, name.trim(), rank || null);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }

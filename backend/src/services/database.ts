@@ -212,10 +212,11 @@ class DatabaseService {
     return member;
   }
 
-  updateMember(id: string, name: string): Member | undefined {
+  updateMember(id: string, name: string, rank?: string | null): Member | undefined {
     const member = this.members.get(id);
     if (member) {
       member.name = name;
+      member.rank = rank === undefined ? null : rank;
       member.updatedAt = new Date();
       return member;
     }
@@ -449,6 +450,7 @@ class DatabaseService {
       eventId,
       memberId,
       memberName: member.name,
+      memberRank: member.rank || null,
       checkInTime: new Date(),
       checkInMethod: method,
       location,

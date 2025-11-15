@@ -77,17 +77,24 @@
   align-items: center;
 }
 
-.profile-edit input {
+.profile-edit input,
+.profile-edit select {
   flex: 1;
   padding: 0.75rem;
   font-size: 1rem;
   border: 2px solid #ddd;
   border-radius: 8px;
+  background: white;
 }
 
-.profile-edit input:focus {
+.profile-edit input:focus,
+.profile-edit select:focus {
   outline: none;
   border-color: #E2231A;
+}
+
+.rank-dropdown {
+  min-width: 250px;
 }
 
 .profile-signin-link {

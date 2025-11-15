@@ -55,11 +55,11 @@ class ApiService {
     return response.json();
   }
 
-  async updateMember(id: string, name: string): Promise<Member> {
+  async updateMember(id: string, name: string, rank?: string | null): Promise<Member> {
     const response = await fetch(`${API_BASE_URL}/members/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, rank }),
     });
     if (!response.ok) throw new Error('Failed to update member');
     return response.json();

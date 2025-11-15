@@ -16,6 +16,7 @@ export function UserProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [editedRank, setEditedRank] = useState<string>('');
   const [databaseStatus, setDatabaseStatus] = useState<{
     databaseType: 'mongodb' | 'in-memory';
     usingInMemory: boolean;
@@ -62,6 +63,7 @@ export function UserProfilePage() {
       setCheckInHistory(historyData);
       setActivities(activitiesData);
       setEditedName(memberData.name);
+      setEditedRank(memberData.rank || 'Visitor');
     } catch (err) {
       console.error('Error loading member data:', err);
       setError('Failed to load member profile');
@@ -76,14 +78,28 @@ export function UserProfilePage() {
     }
 
     try {
-      const updatedMember = await api.updateMember(member.id, editedName.trim());
+      const updatedMember = await api.updateMember(member.id, editedName.trim(), editedRank || null);
       setMember(updatedMember);
       setIsEditing(false);
     } catch (err) {
-      console.error('Error updating member name:', err);
-      alert('Failed to update name');
+      console.error('Error updating member:', err);
+      alert('Failed to update member');
     }
   };
+
+  const rankOptions = [
+    { value: 'Visitor', label: 'Visitor' },
+    { value: 'Trainee', label: 'Trainee' },
+    { value: 'Firefighter', label: 'Firefighter' },
+    { value: 'Captain', label: 'Captain' },
+    { value: 'Senior Deputy Captain', label: 'Senior Deputy Captain' },
+    { value: 'Deputy Captain', label: 'Deputy Captain' },
+    { value: 'Group Officer', label: 'Group Officer' },
+    { value: 'Deputy Group Officer', label: 'Deputy Group Officer' },
+    { value: 'Operational Officer', label: 'Operational Officer' },
+    { value: 'Inspector', label: 'Inspector' },
+    { value: 'Superintendent', label: 'Superintendent' },
+  ];
 
   const getActivityName = (activityId: string) => {
     const activity = activities.find(a => a.id === activityId);
@@ -173,10 +189,37 @@ export function UserProfilePage() {
                     </button>
                     <button className="btn-secondary" onClick={() => {
                       setEditedName(member.name);
+                      setEditedRank(member.rank || 'Visitor');
                       setIsEditing(false);
                     }}>
                       Cancel
                     </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="profile-field">
+                <label>Rank:</label>
+                {!isEditing ? (
+                  <div className="profile-value">
+                    <span>{member.rank || 'Visitor'}</span>
+                    <button className="btn-edit" onClick={() => setIsEditing(true)}>
+                      Edit
+                    </button>
+                  </div>
+                ) : (
+                  <div className="profile-edit">
+                    <select
+                      value={editedRank}
+                      onChange={(e) => setEditedRank(e.target.value)}
+                      className="rank-dropdown"
+                    >
+                      {rankOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </div>

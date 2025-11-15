@@ -57,8 +57,8 @@ export function SignInLinkPage() {
       } else if (result.action === 'checked-in') {
         setStatus('success');
         setMessage(`Successfully checked in ${result.member}!`);
-        // Emit socket event for real-time updates
-        emit('checkin', result);
+        // Emit socket event for real-time updates - this will trigger a refresh on connected sign-in pages
+        emit('event-update', { type: 'participant-added', checkIn: result.checkIn });
       }
     } catch (err) {
       console.error('URL check-in error:', err);

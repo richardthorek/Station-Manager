@@ -14,17 +14,48 @@ export function CurrentEventParticipants({ event }: CurrentEventParticipantsProp
     });
   };
 
-  const getMethodIcon = (method: string) => {
-    switch (method) {
-      case 'kiosk':
-        return '🖥️';
-      case 'mobile':
-        return '📱';
-      case 'qr':
-        return '📸';
-      default:
-        return '✓';
+  // Hidden for now - device icons not needed
+  // const getMethodIcon = (method: string) => {
+  //   switch (method) {
+  //     case 'kiosk':
+  //       return '🖥️';
+  //     case 'mobile':
+  //       return '📱';
+  //     case 'qr':
+  //       return '📸';
+  //     default:
+  //       return '✓';
+  //   }
+  // };
+
+  const getRankHelmetClass = (rank: string | null | undefined) => {
+    if (!rank) return 'helmet-white'; // Default visitor - white helmet
+    
+    const normalizedRank = rank.toLowerCase().trim();
+    
+    // Red helmets - Brigade leadership
+    if (normalizedRank === 'captain') {
+      return 'helmet-red'; // Captain - red helmet
+    } else if (normalizedRank === 'senior deputy captain') {
+      return 'helmet-red-white-stripes'; // Senior Deputy Captain - red with 2 white stripes
+    } else if (normalizedRank === 'deputy captain') {
+      return 'helmet-white-red-stripe'; // Deputy Captain - white with red stripe
     }
+    
+    // Orange helmets - District/Group leadership
+    else if (
+      normalizedRank === 'group officer' ||
+      normalizedRank === 'deputy group officer' ||
+      normalizedRank === 'operational officer' ||
+      normalizedRank === 'inspector' ||
+      normalizedRank === 'superintendent'
+    ) {
+      return 'helmet-orange'; // Orange helmet for district ranks
+    }
+    
+    // White helmets - Visitors, trainees, firefighters, and default
+    // visitor, trainee, firefighter all get white helmets
+    return 'helmet-white'; // Default to white
   };
 
   if (!event) {
@@ -69,7 +100,7 @@ export function CurrentEventParticipants({ event }: CurrentEventParticipantsProp
             {event.participants.map((participant) => (
               <div key={participant.id} className="participant-card">
                 <div className="participant-header">
-                  <span className="method-icon">{getMethodIcon(participant.checkInMethod)}</span>
+                  <div className={`rank-helmet ${getRankHelmetClass(participant.memberRank)}`}></div>
                   <span className="participant-name">{participant.memberName}</span>
                 </div>
                 <div className="participant-footer">

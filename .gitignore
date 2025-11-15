@@ -46,3 +46,4 @@ __azurite_db*__.json
 .python_packages/
 2025-11-15_Brigade Administration Report (Bungendore).csv
 backend/scripts/importMembers.js
+AZURE_ENV_SETUP.md
