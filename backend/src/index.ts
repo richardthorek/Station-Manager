@@ -11,6 +11,7 @@ import checkinsRouter from './routes/checkins';
 import eventsRouter from './routes/events';
 import truckChecksRouter from './routes/truckChecks';
 import { ensureDatabase } from './services/dbFactory';
+import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
 
 dotenv.config();
 
@@ -57,6 +58,30 @@ app.get('/health', async (req, res) => {
       status: 'error',
       timestamp: new Date().toISOString(),
       error: 'Database connection failed'
+    });
+  }
+});
+
+// Database status endpoint for frontend
+app.get('/api/status', async (req, res) => {
+  try {
+    await ensureDatabase();
+    await ensureTruckChecksDatabase();
+    const dbType = process.env.MONGODB_URI ? 'mongodb' : 'in-memory';
+    const isProduction = process.env.NODE_ENV === 'production';
+    const usingInMemory = dbType === 'in-memory';
+    
+    res.json({ 
+      status: 'ok',
+      databaseType: dbType,
+      isProduction,
+      usingInMemory,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      error: 'Failed to check database status'
     });
   }
 });
@@ -123,9 +148,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Initialize database and start server
 async function startServer() {
   try {
-    // Initialize database connection
+    // Initialize database connections
     console.log('🚀 Starting server...');
     await ensureDatabase();
+    await ensureTruckChecksDatabase();
     
     // Start HTTP server
     httpServer.listen(PORT, () => {

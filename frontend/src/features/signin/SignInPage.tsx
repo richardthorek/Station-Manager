@@ -22,6 +22,10 @@ export function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showNewEventModal, setShowNewEventModal] = useState(false);
+  const [databaseStatus, setDatabaseStatus] = useState<{
+    databaseType: 'mongodb' | 'in-memory';
+    usingInMemory: boolean;
+  } | null>(null);
 
   const { isConnected, emit, on, off } = useSocket();
 
@@ -61,12 +65,26 @@ export function SignInPage() {
         loadMembers(),
         loadActivities(),
         loadEvents(true),
+        loadDatabaseStatus(),
       ]);
     } catch (err) {
       setError('Failed to load initial data');
       console.error('Error loading initial data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDatabaseStatus = async () => {
+    try {
+      const status = await api.getStatus();
+      setDatabaseStatus({
+        databaseType: status.databaseType,
+        usingInMemory: status.usingInMemory,
+      });
+    } catch (err) {
+      console.error('Error loading database status:', err);
+      // Don't fail if status can't be loaded
     }
   };
 
@@ -218,7 +236,7 @@ export function SignInPage() {
   if (loading) {
     return (
       <div className="app">
-        <Header isConnected={isConnected} />
+        <Header isConnected={isConnected} databaseStatus={databaseStatus} />
         <div className="loading-container">
           <div className="spinner"></div>
           <p>Loading Station Manager...</p>
@@ -230,7 +248,7 @@ export function SignInPage() {
   if (error) {
     return (
       <div className="app">
-        <Header isConnected={isConnected} />
+        <Header isConnected={isConnected} databaseStatus={databaseStatus} />
         <div className="error-container">
           <h2>Error</h2>
           <p>{error}</p>
@@ -244,7 +262,7 @@ export function SignInPage() {
 
   return (
     <div className="app">
-      <Header isConnected={isConnected} />
+      <Header isConnected={isConnected} databaseStatus={databaseStatus} />
       
       <main className="main-content">
         <div className="page-header">

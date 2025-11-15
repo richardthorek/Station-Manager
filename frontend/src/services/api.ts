@@ -19,6 +19,19 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
 class ApiService {
+  // System Status
+  async getStatus(): Promise<{
+    status: string;
+    databaseType: 'mongodb' | 'in-memory';
+    isProduction: boolean;
+    usingInMemory: boolean;
+    timestamp: string;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/status`);
+    if (!response.ok) throw new Error('Failed to fetch status');
+    return response.json();
+  }
+
   // Members
   async getMembers(): Promise<Member[]> {
     const response = await fetch(`${API_BASE_URL}/members`);

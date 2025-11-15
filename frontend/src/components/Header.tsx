@@ -3,10 +3,15 @@ import './Header.css';
 
 interface HeaderProps {
   isConnected: boolean;
+  databaseStatus?: {
+    databaseType: 'mongodb' | 'in-memory';
+    usingInMemory: boolean;
+  } | null;
 }
 
-export function Header({ isConnected }: HeaderProps) {
+export function Header({ isConnected, databaseStatus }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const showDatabaseWarning = databaseStatus?.usingInMemory;
 
   return (
     <header className="header">
@@ -24,6 +29,14 @@ export function Header({ isConnected }: HeaderProps) {
           >
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
+          {showDatabaseWarning && (
+            <div className="status-indicator warning" title="Using in-memory database - data will be lost on restart">
+              <span className="status-dot"></span>
+              <span className="status-text">
+                Memory Only
+              </span>
+            </div>
+          )}
           <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
             <span className="status-dot"></span>
             <span className="status-text">

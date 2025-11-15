@@ -93,6 +93,16 @@
   background: var(--color-error);
 }
 
+.status-indicator.warning {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.status-indicator.warning .status-dot {
+  background: #FFA500;
+  box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
 .status-text {
   font-size: 0.875rem;
   font-weight: 500;
