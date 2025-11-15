@@ -1,3 +1,14 @@
+/**
+ * Member Management Routes
+ * 
+ * Handles CRUD operations for RFS members including:
+ * - Fetching all members
+ * - Getting member by ID or QR code
+ * - Creating new members with auto-generated QR codes
+ * - Updating member information
+ * - Deleting members
+ */
+
 import { Router } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
 

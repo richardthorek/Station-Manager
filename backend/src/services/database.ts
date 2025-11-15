@@ -1,3 +1,19 @@
+/**
+ * In-Memory Database Service
+ * 
+ * Provides in-memory data storage for development and testing.
+ * Uses JavaScript Maps for efficient key-value storage.
+ * 
+ * Features:
+ * - Member, activity, and check-in management
+ * - Event and participant tracking
+ * - Auto-initialization with default activities
+ * - Dev sample data for testing
+ * - Fast, synchronous operations
+ * 
+ * Note: Data is lost on server restart. Use MongoDB for persistence.
+ */
+
 import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 

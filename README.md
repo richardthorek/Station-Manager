@@ -135,7 +135,8 @@ Additional features can be easily added as new routes following this pattern.
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - Local development setup
 - **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
-- **[PLAN.md](PLAN.md)** - Comprehensive project plan and requirements
+- **[Truck Checks Guide](docs/TRUCK_CHECKS_IMPLEMENTATION.md)** - Vehicle inspection feature documentation
+- **[Project Plan](docs/PROJECT_PLAN.md)** - Original project requirements and planning (historical)
 
 ## 🚢 Deployment
 

@@ -1,3 +1,19 @@
+/**
+ * Truck Check Landing Page
+ * 
+ * Hub for vehicle inspection workflows.
+ * 
+ * Features:
+ * - View all appliances (fire trucks, bulk water carriers, command vehicles)
+ * - Start new vehicle inspections
+ * - View active check runs
+ * - Join collaborative inspections
+ * - Access admin dashboard
+ * - Manage vehicles and checklists
+ * 
+ * Supports collaborative checking where multiple members can work on the same vehicle.
+ */
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';

@@ -1,3 +1,20 @@
+/**
+ * Sign-In Page Component
+ * 
+ * Main interface for member sign-in/sign-out and event management.
+ * 
+ * Features:
+ * - Event-based attendance tracking
+ * - Real-time participant updates via WebSocket
+ * - Member search and quick sign-in
+ * - Event creation and management
+ * - Activity selection (training, maintenance, meetings)
+ * - Infinite scroll event log
+ * - User management (add/edit members)
+ * 
+ * Real-time synchronization ensures all connected devices see updates instantly.
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { Header } from '../../components/Header';
 import { EventLog } from '../../components/EventLog';
@@ -307,7 +324,17 @@ export function SignInPage() {
               members={members}
               activeCheckIns={activeParticipantIds.map(id => ({
                 memberId: id,
-              } as any))}
+                id: '',
+                activityId: '',
+                checkInTime: '',
+                checkInMethod: 'mobile' as const,
+                isOffsite: false,
+                isActive: true,
+                createdAt: '',
+                updatedAt: '',
+                memberName: '',
+                activityName: '',
+              }))}
               onCheckIn={handleCheckIn}
               onAddMember={handleAddMember}
             />

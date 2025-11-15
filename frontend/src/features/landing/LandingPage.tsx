@@ -1,3 +1,14 @@
+/**
+ * Landing Page Component
+ * 
+ * Central hub displaying all available features:
+ * - Sign-In system
+ * - Truck Checks (vehicle inspections)
+ * - Future features
+ * 
+ * Provides easy navigation to different modules of the application.
+ */
+
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import './LandingPage.css';
