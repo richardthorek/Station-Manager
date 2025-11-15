@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
-import type { Appliance } from '../../types';
+import type { Appliance, CheckRun } from '../../types';
 import './TruckCheckPage.css';
 
 export function TruckCheckPage() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [appliances, setAppliances] = useState<Appliance[]>([]);
+  const [activeChecks, setActiveChecks] = useState<Map<string, CheckRun>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,8 +20,20 @@ export function TruckCheckPage() {
   async function loadAppliances() {
     try {
       setLoading(true);
-      const data = await api.getAppliances();
-      setAppliances(data);
+      const [appliancesData, checkRunsData] = await Promise.all([
+        api.getAppliances(),
+        api.getCheckRuns()
+      ]);
+      setAppliances(appliancesData);
+      
+      // Map active checks by appliance ID
+      const activeMap = new Map<string, CheckRun>();
+      checkRunsData
+        .filter((run: CheckRun) => run.status === 'in-progress')
+        .forEach((run: CheckRun) => {
+          activeMap.set(run.applianceId, run);
+        });
+      setActiveChecks(activeMap);
     } catch (err) {
       setError('Failed to load appliances');
       console.error(err);
@@ -93,25 +106,36 @@ export function TruckCheckPage() {
           </div>
 
           <div className="appliance-grid">
-            {appliances.map((appliance) => (
-              <div key={appliance.id} className="appliance-card">
-                {appliance.photoUrl ? (
-                  <img src={appliance.photoUrl} alt={appliance.name} className="appliance-photo" />
-                ) : (
-                  <div className="appliance-icon">🚛</div>
-                )}
-                <h3>{appliance.name}</h3>
-                {appliance.description && (
-                  <p className="appliance-description">{appliance.description}</p>
-                )}
-                <button 
-                  className="btn-primary"
-                  onClick={() => handleStartCheck(appliance.id)}
-                >
-                  Start Check
-                </button>
-              </div>
-            ))}
+            {appliances.map((appliance) => {
+              const activeCheck = activeChecks.get(appliance.id);
+              return (
+                <div key={appliance.id} className="appliance-card">
+                  {activeCheck && (
+                    <div className="active-check-badge">
+                      🔄 Check in progress
+                      <span className="contributors-count">
+                        {activeCheck.contributors?.length || 1} contributor{(activeCheck.contributors?.length || 1) > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
+                  {appliance.photoUrl ? (
+                    <img src={appliance.photoUrl} alt={appliance.name} className="appliance-photo" />
+                  ) : (
+                    <div className="appliance-icon">🚛</div>
+                  )}
+                  <h3>{appliance.name}</h3>
+                  {appliance.description && (
+                    <p className="appliance-description">{appliance.description}</p>
+                  )}
+                  <button 
+                    className="btn-primary"
+                    onClick={() => handleStartCheck(appliance.id)}
+                  >
+                    {activeCheck ? 'Join Check' : 'Start Check'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </main>

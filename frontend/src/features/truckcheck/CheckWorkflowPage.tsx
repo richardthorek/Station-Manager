@@ -92,11 +92,12 @@ export function CheckWorkflowPage() {
     try {
       const response = await api.createCheckRun(applianceId, completedBy, completedBy);
       setCheckRun(response);
-      setIsJoinedCheck((response as any).joined || false);
+      const joined = (response as any).joined || false;
+      setIsJoinedCheck(joined);
       setShowNamePrompt(false);
       
       // Load existing results if joining an active check
-      if ((response as any).joined) {
+      if (joined) {
         const existingResults = await api.getCheckRun(response.id);
         if (existingResults && 'results' in existingResults) {
           const resultsMap = new Map<string, CheckResult>();
@@ -267,9 +268,18 @@ export function CheckWorkflowPage() {
           </button>
         </div>
         <h1>{appliance.name} Check</h1>
-        {checkRun && checkRun.contributors && checkRun.contributors.length > 1 && (
-          <div className="contributors-badge">
-            👥 {checkRun.contributors.length} contributors: {checkRun.contributors.join(', ')}
+        {checkRun && (
+          <div className="check-status-info">
+            {isJoinedCheck && (
+              <div className="joined-check-notice">
+                ✅ You joined an existing check
+              </div>
+            )}
+            {checkRun.contributors && checkRun.contributors.length > 1 && (
+              <div className="contributors-badge">
+                👥 {checkRun.contributors.length} contributors: {checkRun.contributors.join(', ')}
+              </div>
+            )}
           </div>
         )}
         <div className="progress-bar-container">

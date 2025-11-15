@@ -118,12 +118,28 @@
   opacity: 0.9;
 }
 
+.check-status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.joined-check-notice {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
 .contributors-badge {
   background: rgba(255, 255, 255, 0.2);
   padding: 0.35rem 0.75rem;
   border-radius: 12px;
   font-size: 0.8rem;
-  margin-top: 0.5rem;
   font-weight: 500;
 }
 
