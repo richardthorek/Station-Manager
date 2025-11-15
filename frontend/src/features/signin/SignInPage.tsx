@@ -3,6 +3,7 @@ import { Header } from '../../components/Header';
 import { ActivitySelector } from '../../components/ActivitySelector';
 import { MemberList } from '../../components/MemberList';
 import { ActiveCheckIns } from '../../components/ActiveCheckIns';
+import { UserManagement } from '../../components/UserManagement';
 import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import type { Member, Activity, CheckInWithDetails, ActiveActivity } from '../../types';
@@ -15,6 +16,7 @@ export function SignInPage() {
   const [activeCheckIns, setActiveCheckIns] = useState<CheckInWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showUserManagement, setShowUserManagement] = useState(false);
 
   const { isConnected, emit, on, off } = useSocket();
 
@@ -155,6 +157,17 @@ export function SignInPage() {
     }
   };
 
+  const handleUpdateMember = async (id: string, name: string) => {
+    try {
+      const updatedMember = await api.updateMember(id, name);
+      setMembers(members.map(m => m.id === id ? updatedMember : m));
+      emit('member-update', updatedMember);
+    } catch (err) {
+      console.error('Error updating member:', err);
+      throw err;
+    }
+  };
+
   if (loading) {
     return (
       <div className="app">
@@ -187,6 +200,15 @@ export function SignInPage() {
       <Header isConnected={isConnected} />
       
       <main className="main-content">
+        <div className="page-header">
+          <button 
+            className="btn-manage-users" 
+            onClick={() => setShowUserManagement(true)}
+          >
+            ⚙️ Manage Users
+          </button>
+        </div>
+
         <div className="content-grid">
           <div className="left-column">
             <ActivitySelector
@@ -212,6 +234,14 @@ export function SignInPage() {
           </div>
         </div>
       </main>
+
+      {showUserManagement && (
+        <UserManagement
+          members={members}
+          onClose={() => setShowUserManagement(false)}
+          onUpdateMember={handleUpdateMember}
+        />
+      )}
     </div>
   );
 }

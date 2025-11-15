@@ -28,6 +28,22 @@ class ApiService {
     return response.json();
   }
 
+  async updateMember(id: string, name: string): Promise<Member> {
+    const response = await fetch(`${API_BASE_URL}/members/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) throw new Error('Failed to update member');
+    return response.json();
+  }
+
+  async getMemberHistory(id: string): Promise<CheckIn[]> {
+    const response = await fetch(`${API_BASE_URL}/members/${id}/history`);
+    if (!response.ok) throw new Error('Failed to fetch member history');
+    return response.json();
+  }
+
   // Activities
   async getActivities(): Promise<Activity[]> {
     const response = await fetch(`${API_BASE_URL}/activities`);
@@ -89,6 +105,16 @@ class ApiService {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to undo check-in');
+  }
+
+  async urlCheckIn(identifier: string): Promise<{ action: string; member: string; checkIn?: CheckIn }> {
+    const response = await fetch(`${API_BASE_URL}/checkins/url-checkin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier }),
+    });
+    if (!response.ok) throw new Error('Failed to perform URL check-in');
+    return response.json();
   }
 }
 
