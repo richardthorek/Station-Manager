@@ -85,9 +85,32 @@
 /* View Tabs */
 .view-tabs {
   display: flex;
+  justify-content: flex-end;
   gap: 1rem;
   margin-bottom: 2rem;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-link {
+  background: var(--rfs-white);
+  color: var(--rfs-core-red);
+  border: 2px solid var(--rfs-core-red);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab-link:hover {
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .tab-btn {

@@ -11,7 +11,6 @@ export function TruckCheckPage() {
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<'start' | 'admin'>('start');
 
   useEffect(() => {
     loadAppliances();
@@ -32,14 +31,6 @@ export function TruckCheckPage() {
 
   function handleStartCheck(applianceId: string) {
     navigate(`/truckcheck/check/${applianceId}`);
-  }
-
-  function handleViewAdmin() {
-    navigate('/truckcheck/admin');
-  }
-
-  function handleManageTemplates() {
-    navigate('/truckcheck/templates');
   }
 
   if (loading) {
@@ -90,72 +81,39 @@ export function TruckCheckPage() {
 
       <main className="truckcheck-main">
         <div className="view-tabs">
-          <button 
-            className={`tab-btn ${view === 'start' ? 'active' : ''}`}
-            onClick={() => setView('start')}
-          >
-            Start Check
-          </button>
-          <button 
-            className={`tab-btn ${view === 'admin' ? 'active' : ''}`}
-            onClick={() => setView('admin')}
-          >
-            Admin
-          </button>
+          <Link to="/truckcheck/admin" className="tab-link">
+            ⚙️ Admin Dashboard
+          </Link>
         </div>
 
-        {view === 'start' && (
-          <div className="start-view">
-            <div className="instructions">
-              <h2>Select an Appliance to Check</h2>
-              <p>Choose the vehicle you want to perform a weekly inspection on.</p>
-            </div>
-
-            <div className="appliance-grid">
-              {appliances.map((appliance) => (
-                <div key={appliance.id} className="appliance-card">
-                  {appliance.photoUrl ? (
-                    <img src={appliance.photoUrl} alt={appliance.name} className="appliance-photo" />
-                  ) : (
-                    <div className="appliance-icon">🚛</div>
-                  )}
-                  <h3>{appliance.name}</h3>
-                  {appliance.description && (
-                    <p className="appliance-description">{appliance.description}</p>
-                  )}
-                  <button 
-                    className="btn-primary"
-                    onClick={() => handleStartCheck(appliance.id)}
-                  >
-                    Start Check
-                  </button>
-                </div>
-              ))}
-            </div>
+        <div className="start-view">
+          <div className="instructions">
+            <h2>Select an Appliance to Check</h2>
+            <p>Choose the vehicle you want to perform a weekly inspection on.</p>
           </div>
-        )}
 
-        {view === 'admin' && (
-          <div className="admin-view">
-            <div className="admin-actions">
-              <div className="action-card">
-                <h3>📊 View Check History</h3>
-                <p>Review all completed truck checks and filter by date or appliance.</p>
-                <button className="btn-primary" onClick={handleViewAdmin}>
-                  View History
+          <div className="appliance-grid">
+            {appliances.map((appliance) => (
+              <div key={appliance.id} className="appliance-card">
+                {appliance.photoUrl ? (
+                  <img src={appliance.photoUrl} alt={appliance.name} className="appliance-photo" />
+                ) : (
+                  <div className="appliance-icon">🚛</div>
+                )}
+                <h3>{appliance.name}</h3>
+                {appliance.description && (
+                  <p className="appliance-description">{appliance.description}</p>
+                )}
+                <button 
+                  className="btn-primary"
+                  onClick={() => handleStartCheck(appliance.id)}
+                >
+                  Start Check
                 </button>
               </div>
-
-              <div className="action-card">
-                <h3>✏️ Manage Checklists</h3>
-                <p>Edit checklist items for each appliance.</p>
-                <button className="btn-primary" onClick={handleManageTemplates}>
-                  Manage Templates
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
       </main>
     </div>
   );
