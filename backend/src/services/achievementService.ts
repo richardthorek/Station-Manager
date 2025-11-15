@@ -160,10 +160,17 @@ export class AchievementService {
     
     for (const event of allEvents) {
       const eventParticipants = this.db.getEventParticipants(event.id);
-      participants.push(...eventParticipants.filter(p => p.memberId === memberId));
+      // Add activityName to each participant from the event
+      const participantsWithActivity = eventParticipants
+        .filter(p => p.memberId === memberId)
+        .map(p => ({
+          ...p,
+          activityName: event.activityName
+        }));
+      participants.push(...participantsWithActivity);
     }
     
-    return participants;
+    return participants as any;
   }
 
   /**
@@ -238,9 +245,9 @@ export class AchievementService {
   /**
    * Check if participant is of a specific activity type
    */
-  private isActivityType(participant: EventParticipant, activityType: string): boolean {
-    // Activity names are stored in eventId context, we'll use a heuristic based on common naming
-    const activityName = (participant as any).activityName?.toLowerCase() || '';
+  private isActivityType(participant: any, activityType: string): boolean {
+    // Activity names are stored in the event context
+    const activityName = participant.activityName?.toLowerCase() || '';
     return activityName.includes(activityType.toLowerCase());
   }
 
