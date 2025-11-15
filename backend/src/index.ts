@@ -1,8 +1,12 @@
+import dotenv from 'dotenv';
+
+// Load environment variables FIRST, before any other imports
+dotenv.config();
+
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
 import membersRouter from './routes/members';
@@ -12,8 +16,6 @@ import eventsRouter from './routes/events';
 import truckChecksRouter from './routes/truckChecks';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
-
-dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
