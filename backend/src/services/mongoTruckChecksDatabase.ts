@@ -241,7 +241,7 @@ class MongoTruckChecksDatabase {
       throw new Error('Database not connected');
     }
     
-    const appliance = await this.appliancesCollection.findOne({ id: applianceId });
+    const appliance = await this.appliancesCollection.findOne({ id: { $eq: applianceId } });
     if (!appliance) {
       throw new Error('Appliance not found');
     }
@@ -291,7 +291,7 @@ class MongoTruckChecksDatabase {
       throw new Error('Database not connected');
     }
     
-    const appliance = await this.appliancesCollection.findOne({ id: applianceId });
+    const appliance = await this.appliancesCollection.findOne({ id: { $eq: applianceId } });
     if (!appliance) {
       throw new Error('Appliance not found');
     }
