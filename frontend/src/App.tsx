@@ -4,6 +4,10 @@ import { SignInPage } from './features/signin/SignInPage';
 import { SignInLinkPage } from './features/signin/SignInLinkPage';
 import { UserProfilePage } from './features/profile/UserProfilePage';
 import { TruckCheckPage } from './features/truckcheck/TruckCheckPage';
+import { CheckWorkflowPage } from './features/truckcheck/CheckWorkflowPage';
+import { CheckSummaryPage } from './features/truckcheck/CheckSummaryPage';
+import { AdminDashboardPage } from './features/truckcheck/AdminDashboardPage';
+import { TemplateEditorPage } from './features/truckcheck/PlaceholderPages';
 
 function App() {
   return (
@@ -14,6 +18,10 @@ function App() {
         <Route path="/sign-in" element={<SignInLinkPage />} />
         <Route path="/profile/:memberId" element={<UserProfilePage />} />
         <Route path="/truckcheck" element={<TruckCheckPage />} />
+        <Route path="/truckcheck/check/:applianceId" element={<CheckWorkflowPage />} />
+        <Route path="/truckcheck/summary/:runId" element={<CheckSummaryPage />} />
+        <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
+        <Route path="/truckcheck/templates" element={<TemplateEditorPage />} />
       </Routes>
     </BrowserRouter>
   );

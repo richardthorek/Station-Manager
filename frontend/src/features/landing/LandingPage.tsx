@@ -47,14 +47,14 @@ export function LandingPage() {
             </Link>
           </div>
 
-          <div className="feature-card feature-card-disabled">
+          <div className="feature-card">
             <div className="feature-icon">🚛</div>
             <h3>Truck Check</h3>
             <p>Vehicle maintenance tracking and inspection checklist system.</p>
-            <div className="feature-link feature-link-disabled">
-              Coming Soon
-              <span className="badge">Future</span>
-            </div>
+            <Link to="/truckcheck" className="feature-link">
+              Go to Truck Checks
+              <span className="arrow">→</span>
+            </Link>
           </div>
 
           <div className="feature-card feature-card-disabled">

@@ -1,4 +1,18 @@
-import type { Member, Activity, CheckIn, CheckInWithDetails, ActiveActivity, EventWithParticipants, EventParticipant } from '../types';
+import type { 
+  Member, 
+  Activity, 
+  CheckIn, 
+  CheckInWithDetails, 
+  ActiveActivity, 
+  EventWithParticipants, 
+  EventParticipant,
+  Appliance,
+  ChecklistTemplate,
+  CheckRun,
+  CheckRunWithResults,
+  CheckResult,
+  CheckStatus
+} from '../types';
 
 // Use relative URL in production, localhost in development
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
@@ -175,6 +189,152 @@ class ApiService {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to remove participant');
+  }
+
+  // ============================================
+  // Truck Checks
+  // ============================================
+
+  // Appliances
+  async getAppliances(): Promise<Appliance[]> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`);
+    if (!response.ok) throw new Error('Failed to fetch appliances');
+    return response.json();
+  }
+
+  async getAppliance(id: string): Promise<Appliance> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`);
+    if (!response.ok) throw new Error('Failed to fetch appliance');
+    return response.json();
+  }
+
+  async createAppliance(name: string, description?: string): Promise<Appliance> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description }),
+    });
+    if (!response.ok) throw new Error('Failed to create appliance');
+    return response.json();
+  }
+
+  async updateAppliance(id: string, name: string, description?: string): Promise<Appliance> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description }),
+    });
+    if (!response.ok) throw new Error('Failed to update appliance');
+    return response.json();
+  }
+
+  async deleteAppliance(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete appliance');
+  }
+
+  // Templates
+  async getTemplate(applianceId: string): Promise<ChecklistTemplate> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/templates/${applianceId}`);
+    if (!response.ok) throw new Error('Failed to fetch template');
+    return response.json();
+  }
+
+  async updateTemplate(applianceId: string, items: any[]): Promise<ChecklistTemplate> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/templates/${applianceId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    if (!response.ok) throw new Error('Failed to update template');
+    return response.json();
+  }
+
+  // Check Runs
+  async createCheckRun(applianceId: string, completedBy: string, completedByName?: string): Promise<CheckRun> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/runs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ applianceId, completedBy, completedByName }),
+    });
+    if (!response.ok) throw new Error('Failed to create check run');
+    return response.json();
+  }
+
+  async getCheckRun(id: string): Promise<CheckRunWithResults> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}`);
+    if (!response.ok) throw new Error('Failed to fetch check run');
+    return response.json();
+  }
+
+  async getCheckRuns(filters?: {
+    applianceId?: string;
+    startDate?: string;
+    endDate?: string;
+    withIssues?: boolean;
+  }): Promise<CheckRunWithResults[]> {
+    const params = new URLSearchParams();
+    if (filters?.applianceId) params.append('applianceId', filters.applianceId);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.withIssues) params.append('withIssues', 'true');
+
+    const response = await fetch(`${API_BASE_URL}/truck-checks/runs?${params.toString()}`);
+    if (!response.ok) throw new Error('Failed to fetch check runs');
+    return response.json();
+  }
+
+  async completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}/complete`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ additionalComments }),
+    });
+    if (!response.ok) throw new Error('Failed to complete check run');
+    return response.json();
+  }
+
+  // Check Results
+  async createCheckResult(
+    runId: string,
+    itemId: string,
+    itemName: string,
+    itemDescription: string,
+    status: CheckStatus,
+    comment?: string,
+    photoUrl?: string
+  ): Promise<CheckResult> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/results`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl }),
+    });
+    if (!response.ok) throw new Error('Failed to create check result');
+    return response.json();
+  }
+
+  async updateCheckResult(
+    id: string,
+    status: CheckStatus,
+    comment?: string,
+    photoUrl?: string
+  ): Promise<CheckResult> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/results/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, comment, photoUrl }),
+    });
+    if (!response.ok) throw new Error('Failed to update check result');
+    return response.json();
+  }
+
+  async deleteCheckResult(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/results/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete check result');
   }
 }
 

@@ -83,3 +83,87 @@ export interface EventWithParticipants extends Event {
   participants: EventParticipant[];
   participantCount: number;
 }
+
+// ============================================
+// Truck Checks Types
+// ============================================
+
+/**
+ * Represents an appliance/vehicle that needs checking
+ */
+export interface Appliance {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Template defining the checklist for an appliance
+ */
+export interface ChecklistTemplate {
+  id: string;
+  applianceId: string;
+  applianceName: string;
+  items: ChecklistItem[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Individual item in a checklist template
+ */
+export interface ChecklistItem {
+  id: string;
+  name: string;
+  description: string;
+  referencePhotoUrl?: string;
+  order: number;
+}
+
+/**
+ * Status of a check result
+ */
+export type CheckStatus = 'done' | 'issue' | 'skipped';
+
+/**
+ * A check run session for one appliance
+ */
+export interface CheckRun {
+  id: string;
+  applianceId: string;
+  applianceName: string;
+  startTime: Date;
+  endTime?: Date;
+  completedBy: string;
+  completedByName?: string;
+  additionalComments?: string;
+  status: 'in-progress' | 'completed';
+  hasIssues: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Result for a specific item in a check run
+ */
+export interface CheckResult {
+  id: string;
+  runId: string;
+  itemId: string;
+  itemName: string;
+  itemDescription: string;
+  status: CheckStatus;
+  comment?: string;
+  photoUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Complete check run with all results
+ */
+export interface CheckRunWithResults extends CheckRun {
+  results: CheckResult[];
+}
