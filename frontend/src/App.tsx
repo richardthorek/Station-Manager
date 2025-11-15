@@ -6,7 +6,8 @@ import { UserProfilePage } from './features/profile/UserProfilePage';
 import { TruckCheckPage } from './features/truckcheck/TruckCheckPage';
 import { CheckWorkflowPage } from './features/truckcheck/CheckWorkflowPage';
 import { CheckSummaryPage } from './features/truckcheck/CheckSummaryPage';
-import { AdminDashboardPage, TemplateEditorPage } from './features/truckcheck/PlaceholderPages';
+import { AdminDashboardPage } from './features/truckcheck/AdminDashboardPage';
+import { TemplateEditorPage } from './features/truckcheck/PlaceholderPages';
 
 function App() {
   return (
