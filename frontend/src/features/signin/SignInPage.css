@@ -1,3 +1,4 @@
+/* SignInPage specific styles */
 .app {
   min-height: 100vh;
   background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
@@ -55,6 +56,7 @@
   grid-template-columns: 400px 1fr 400px;
   gap: 24px;
   align-items: start;
+  height: 100%;
   height: calc(100vh - 180px);
 }
 
@@ -63,6 +65,9 @@
 .right-column {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow-y: auto;
   height: 100%;
   overflow: hidden;
 }
@@ -141,6 +146,7 @@
 @media (max-width: 1024px) {
   .content-grid {
     grid-template-columns: 1fr;
+    overflow-y: auto;
     height: auto;
   }
 
@@ -150,11 +156,11 @@
     height: auto;
     max-height: 600px;
   }
-}
 
-@media (max-width: 768px) {
-  .main-content {
-    padding: 16px;
+  .left-column,
+  .right-column {
+    height: auto;
+    overflow-y: visible;
   }
 
   .toolbar {
