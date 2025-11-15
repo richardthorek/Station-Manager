@@ -45,7 +45,7 @@ app.use('/api/activities', activitiesRouter);
 app.use('/api/checkins', checkinsRouter);
 
 // Serve frontend for all other routes (SPA fallback)
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
