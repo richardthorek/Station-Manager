@@ -114,7 +114,11 @@ export function TruckCheckPage() {
             <div className="appliance-grid">
               {appliances.map((appliance) => (
                 <div key={appliance.id} className="appliance-card">
-                  <div className="appliance-icon">🚛</div>
+                  {appliance.photoUrl ? (
+                    <img src={appliance.photoUrl} alt={appliance.name} className="appliance-photo" />
+                  ) : (
+                    <div className="appliance-icon">🚛</div>
+                  )}
                   <h3>{appliance.name}</h3>
                   {appliance.description && (
                     <p className="appliance-description">{appliance.description}</p>

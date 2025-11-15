@@ -118,11 +118,12 @@ class TruckChecksDatabase {
     return this.appliances.get(id);
   }
 
-  createAppliance(name: string, description?: string): Appliance {
+  createAppliance(name: string, description?: string, photoUrl?: string): Appliance {
     const appliance: Appliance = {
       id: uuidv4(),
       name,
       description,
+      photoUrl,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -135,11 +136,12 @@ class TruckChecksDatabase {
     return appliance;
   }
 
-  updateAppliance(id: string, name: string, description?: string): Appliance | undefined {
+  updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Appliance | undefined {
     const appliance = this.appliances.get(id);
     if (appliance) {
       appliance.name = name;
       appliance.description = description;
+      appliance.photoUrl = photoUrl;
       appliance.updatedAt = new Date();
       return appliance;
     }
@@ -219,6 +221,7 @@ class TruckChecksDatabase {
       startTime: new Date(),
       completedBy,
       completedByName,
+      contributors: [completedByName || completedBy],
       status: 'in-progress',
       hasIssues: false,
       createdAt: new Date(),
@@ -227,6 +230,24 @@ class TruckChecksDatabase {
 
     this.checkRuns.set(checkRun.id, checkRun);
     return checkRun;
+  }
+
+  getActiveCheckRunForAppliance(applianceId: string): CheckRun | undefined {
+    return Array.from(this.checkRuns.values()).find(
+      run => run.applianceId === applianceId && run.status === 'in-progress'
+    );
+  }
+
+  addContributorToCheckRun(runId: string, contributorName: string): CheckRun | undefined {
+    const run = this.checkRuns.get(runId);
+    if (!run) return undefined;
+
+    if (!run.contributors.includes(contributorName)) {
+      run.contributors.push(contributorName);
+      run.updatedAt = new Date();
+    }
+
+    return run;
   }
 
   getCheckRunById(id: string): CheckRun | undefined {
@@ -282,7 +303,8 @@ class TruckChecksDatabase {
     itemDescription: string,
     status: CheckStatus,
     comment?: string,
-    photoUrl?: string
+    photoUrl?: string,
+    completedBy?: string
   ): CheckResult {
     const checkRun = this.checkRuns.get(runId);
     if (!checkRun) {
@@ -298,11 +320,19 @@ class TruckChecksDatabase {
       status,
       comment,
       photoUrl,
+      completedBy,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     this.checkResults.set(result.id, result);
+    
+    // Update check run's hasIssues flag if this result is an issue
+    if (status === 'issue') {
+      checkRun.hasIssues = true;
+      checkRun.updatedAt = new Date();
+    }
+    
     return result;
   }
 

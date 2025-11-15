@@ -221,23 +221,35 @@ class ApiService {
     return response.json();
   }
 
-  async createAppliance(name: string, description?: string): Promise<Appliance> {
+  async createAppliance(name: string, description?: string, photoUrl?: string): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description }),
+      body: JSON.stringify({ name, description, photoUrl }),
     });
     if (!response.ok) throw new Error('Failed to create appliance');
     return response.json();
   }
 
-  async updateAppliance(id: string, name: string, description?: string): Promise<Appliance> {
+  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description }),
+      body: JSON.stringify({ name, description, photoUrl }),
     });
     if (!response.ok) throw new Error('Failed to update appliance');
+    return response.json();
+  }
+
+  async uploadAppliancePhoto(file: File): Promise<{ photoUrl: string }> {
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    const response = await fetch(`${API_BASE_URL}/truck-checks/upload/reference-photo`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) throw new Error('Failed to upload appliance photo');
     return response.json();
   }
 
@@ -317,12 +329,13 @@ class ApiService {
     itemDescription: string,
     status: CheckStatus,
     comment?: string,
-    photoUrl?: string
+    photoUrl?: string,
+    completedBy?: string
   ): Promise<CheckResult> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/results`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl }),
+      body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy }),
     });
     if (!response.ok) throw new Error('Failed to create check result');
     return response.json();

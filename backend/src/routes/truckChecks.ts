@@ -3,6 +3,7 @@ import multer from 'multer';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { CheckStatus } from '../types';
 import { azureStorageService } from '../services/azureStorage';
+import { io } from '../index';
 
 const router = Router();
 
@@ -65,14 +66,14 @@ router.get('/appliances/:id', async (req: Request, res: Response) => {
  */
 router.post('/appliances', async (req: Request, res: Response) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, photoUrl } = req.body;
     
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
 
     const db = await ensureTruckChecksDatabase();
-    const appliance = await db.createAppliance(name, description);
+    const appliance = await db.createAppliance(name, description, photoUrl);
     res.status(201).json(appliance);
   } catch (error) {
     console.error('Error creating appliance:', error);
@@ -86,14 +87,14 @@ router.post('/appliances', async (req: Request, res: Response) => {
  */
 router.put('/appliances/:id', async (req: Request, res: Response) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, photoUrl } = req.body;
     
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
 
     const db = await ensureTruckChecksDatabase();
-    const appliance = await db.updateAppliance(req.params.id, name, description);
+    const appliance = await db.updateAppliance(req.params.id, name, description, photoUrl);
     if (!appliance) {
       return res.status(404).json({ error: 'Appliance not found' });
     }
@@ -172,7 +173,8 @@ router.put('/templates/:applianceId', async (req: Request, res: Response) => {
 
 /**
  * POST /api/truck-checks/runs
- * Create a new check run
+ * Find or create a check run for collaborative checking
+ * If an active check run exists for the appliance, join it; otherwise create new
  */
 router.post('/runs', async (req: Request, res: Response) => {
   try {
@@ -183,11 +185,41 @@ router.post('/runs', async (req: Request, res: Response) => {
     }
 
     const db = await ensureTruckChecksDatabase();
-    const checkRun = await db.createCheckRun(applianceId, completedBy, completedByName);
-    res.status(201).json(checkRun);
+    
+    // Check for existing active check run
+    let checkRun = await db.getActiveCheckRunForAppliance(applianceId);
+    
+    if (checkRun) {
+      // Join existing check run
+      checkRun = await db.addContributorToCheckRun(checkRun.id, completedByName || completedBy);
+      
+      // Emit real-time update that someone joined
+      io.emit('truck-check-update', {
+        type: 'contributor-joined',
+        runId: checkRun!.id,
+        contributorName: completedByName || completedBy,
+        checkRun,
+        timestamp: new Date()
+      });
+      
+      res.json({ ...checkRun, joined: true });
+    } else {
+      // Create new check run
+      checkRun = await db.createCheckRun(applianceId, completedBy, completedByName);
+      
+      // Emit real-time update that check run started
+      io.emit('truck-check-update', {
+        type: 'check-started',
+        runId: checkRun.id,
+        checkRun,
+        timestamp: new Date()
+      });
+      
+      res.status(201).json({ ...checkRun, joined: false });
+    }
   } catch (error) {
-    console.error('Error creating check run:', error);
-    res.status(500).json({ error: 'Failed to create check run' });
+    console.error('Error creating/joining check run:', error);
+    res.status(500).json({ error: 'Failed to create/join check run' });
   }
 });
 
@@ -262,6 +294,14 @@ router.put('/runs/:id/complete', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Check run not found' });
     }
     
+    // Emit real-time update that check run completed
+    io.emit('truck-check-update', {
+      type: 'check-completed',
+      runId: checkRun.id,
+      checkRun,
+      timestamp: new Date()
+    });
+    
     res.json(checkRun);
   } catch (error) {
     console.error('Error completing check run:', error);
@@ -279,7 +319,7 @@ router.put('/runs/:id/complete', async (req: Request, res: Response) => {
  */
 router.post('/results', async (req: Request, res: Response) => {
   try {
-    const { runId, itemId, itemName, itemDescription, status, comment, photoUrl } = req.body;
+    const { runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy } = req.body;
     
     if (!runId || !itemId || !itemName || !itemDescription || !status) {
       return res.status(400).json({ 
@@ -299,8 +339,17 @@ router.post('/results', async (req: Request, res: Response) => {
       itemDescription,
       status as CheckStatus,
       comment,
-      photoUrl
+      photoUrl,
+      completedBy
     );
+    
+    // Emit real-time update for collaborative checking
+    io.emit('truck-check-update', {
+      type: 'result-created',
+      runId,
+      result,
+      timestamp: new Date()
+    });
     
     res.status(201).json(result);
   } catch (error) {

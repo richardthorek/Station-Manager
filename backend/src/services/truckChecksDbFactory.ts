@@ -20,8 +20,8 @@ export interface ITruckChecksDatabase {
   // Appliances
   getAllAppliances(): Promise<Appliance[]> | Appliance[];
   getApplianceById(id: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
-  createAppliance(name: string, description?: string): Promise<Appliance> | Appliance;
-  updateAppliance(id: string, name: string, description?: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
+  createAppliance(name: string, description?: string, photoUrl?: string): Promise<Appliance> | Appliance;
+  updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
   deleteAppliance(id: string): Promise<boolean> | boolean;
   
   // Templates
@@ -36,9 +36,11 @@ export interface ITruckChecksDatabase {
   getCheckRunsByAppliance(applianceId: string): Promise<CheckRun[]> | CheckRun[];
   getCheckRunsByDateRange(startDate: Date, endDate: Date): Promise<CheckRun[]> | CheckRun[];
   completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
+  getActiveCheckRunForAppliance(applianceId: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
+  addContributorToCheckRun(runId: string, contributorName: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
   
   // Check Results
-  createCheckResult(runId: string, itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string, photoUrl?: string): Promise<CheckResult> | CheckResult;
+  createCheckResult(runId: string, itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string, photoUrl?: string, completedBy?: string): Promise<CheckResult> | CheckResult;
   getResultsByRunId(runId: string): Promise<CheckResult[]> | CheckResult[];
   getCheckRunWithResults(runId: string): Promise<CheckRunWithResults | null> | CheckRunWithResults | null;
   updateCheckResult(id: string, status: CheckStatus, comment?: string, photoUrl?: string): Promise<CheckResult | null | undefined> | CheckResult | null | undefined;

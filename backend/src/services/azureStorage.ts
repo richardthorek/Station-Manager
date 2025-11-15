@@ -1,4 +1,4 @@
-import { BlobServiceClient, ContainerClient, BlockBlobClient } from '@azure/storage-blob';
+import { BlobServiceClient, ContainerClient, BlockBlobClient, BlobSASPermissions, generateBlobSASQueryParameters, StorageSharedKeyCredential } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -9,6 +9,8 @@ class AzureStorageService {
   private blobServiceClient: BlobServiceClient | null = null;
   private referencePhotosContainer: ContainerClient | null = null;
   private resultPhotosContainer: ContainerClient | null = null;
+  private accountName: string = '';
+  private accountKey: string = '';
   private isEnabled: boolean = false;
 
   constructor() {
@@ -28,6 +30,13 @@ class AzureStorageService {
     }
 
     try {
+      // Parse connection string to extract account name and key
+      const matches = connectionString.match(/AccountName=([^;]+);AccountKey=([^;]+)/);
+      if (matches) {
+        this.accountName = matches[1];
+        this.accountKey = matches[2];
+      }
+
       this.blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
       
       // Container names
@@ -54,15 +63,11 @@ class AzureStorageService {
     }
 
     try {
-      // Create reference photos container if it doesn't exist
-      await this.referencePhotosContainer.createIfNotExists({
-        access: 'blob' // Public read access for reference photos
-      });
+      // Create reference photos container if it doesn't exist (private access)
+      await this.referencePhotosContainer.createIfNotExists();
 
-      // Create result photos container if it doesn't exist
-      await this.resultPhotosContainer.createIfNotExists({
-        access: 'blob' // Public read access for result photos
-      });
+      // Create result photos container if it doesn't exist (private access)
+      await this.resultPhotosContainer.createIfNotExists();
 
       console.log('Storage containers verified/created');
     } catch (error) {
@@ -79,11 +84,42 @@ class AzureStorageService {
   }
 
   /**
+   * Generate a SAS URL for a blob that's valid for 1 year
+   */
+  private generateSasUrl(containerClient: ContainerClient, blobName: string): string {
+    if (!this.accountName || !this.accountKey) {
+      // If we don't have credentials, return the direct URL (won't work but better than nothing)
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+      return blockBlobClient.url;
+    }
+
+    try {
+      const sharedKeyCredential = new StorageSharedKeyCredential(this.accountName, this.accountKey);
+      
+      // Generate SAS token valid for 1 year
+      const sasToken = generateBlobSASQueryParameters({
+        containerName: containerClient.containerName,
+        blobName: blobName,
+        permissions: BlobSASPermissions.parse('r'), // Read permission only
+        startsOn: new Date(),
+        expiresOn: new Date(new Date().valueOf() + 365 * 24 * 60 * 60 * 1000), // 1 year
+      }, sharedKeyCredential).toString();
+
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+      return `${blockBlobClient.url}?${sasToken}`;
+    } catch (error) {
+      console.error('Error generating SAS URL:', error);
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+      return blockBlobClient.url;
+    }
+  }
+
+  /**
    * Upload a reference photo (for checklist templates)
    * @param file File buffer
    * @param fileName Original file name
    * @param contentType MIME type
-   * @returns Public URL of the uploaded photo
+   * @returns SAS URL of the uploaded photo (valid for 1 year)
    */
   async uploadReferencePhoto(
     file: Buffer,
@@ -109,7 +145,8 @@ class AzureStorageService {
         }
       });
 
-      return blockBlobClient.url;
+      // Return SAS URL instead of direct URL
+      return this.generateSasUrl(this.referencePhotosContainer, blobName);
     } catch (error) {
       console.error('Error uploading reference photo:', error);
       throw error;
@@ -121,7 +158,7 @@ class AzureStorageService {
    * @param file File buffer
    * @param fileName Original file name
    * @param contentType MIME type
-   * @returns Public URL of the uploaded photo
+   * @returns SAS URL of the uploaded photo (valid for 1 year)
    */
   async uploadResultPhoto(
     file: Buffer,
@@ -147,7 +184,8 @@ class AzureStorageService {
         }
       });
 
-      return blockBlobClient.url;
+      // Return SAS URL instead of direct URL
+      return this.generateSasUrl(this.resultPhotosContainer, blobName);
     } catch (error) {
       console.error('Error uploading result photo:', error);
       throw error;

@@ -95,6 +95,7 @@ export interface Appliance {
   id: string;
   name: string;
   description?: string;
+  photoUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -129,6 +130,7 @@ export type CheckStatus = 'done' | 'issue' | 'skipped';
 
 /**
  * A check run session for one appliance
+ * Multiple people can collaborate on a single check run
  */
 export interface CheckRun {
   id: string;
@@ -138,6 +140,7 @@ export interface CheckRun {
   endTime?: string;
   completedBy: string;
   completedByName?: string;
+  contributors: string[]; // Array of contributor names
   additionalComments?: string;
   status: 'in-progress' | 'completed';
   hasIssues: boolean;
@@ -157,6 +160,7 @@ export interface CheckResult {
   status: CheckStatus;
   comment?: string;
   photoUrl?: string;
+  completedBy?: string; // Who completed this specific item
   createdAt: string;
   updatedAt: string;
 }
