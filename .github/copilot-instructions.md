@@ -1,0 +1,499 @@
+# GitHub Copilot Instructions for RFS Station Manager
+
+## Project Overview
+
+The RFS Station Manager is a modern, real-time digital sign-in system built for NSW Rural Fire Service (RFS) stations. It enables member presence tracking, activity monitoring, and vehicle maintenance checks across multiple devices with instant synchronization.
+
+**Version**: 1.0.0  
+**Status**: Production-ready with active development  
+**Purpose**: Volunteer organization management for RFS stations
+
+## Technology Stack
+
+### Frontend
+- **React 19** with TypeScript (strict mode)
+- **Vite 7** as build tool and dev server
+- **React Router DOM 7** for client-side routing
+- **Socket.io Client 4** for real-time WebSocket communication
+- **Framer Motion 12** for animations and transitions
+- **QRCode.react** for QR code generation
+- **ESLint 9** with TypeScript ESLint for code quality
+
+### Backend
+- **Node.js 22** with TypeScript
+- **Express 5** for REST API
+- **Socket.io 4** for real-time bidirectional communication
+- **MongoDB driver 6** for Azure Cosmos DB integration
+- **Multer** for file uploads (appliance photos, check photos)
+- **Azure Storage Blob** for cloud storage
+- **CORS** enabled for frontend communication
+- **Rate limiting** on SPA fallback routes
+
+### Database
+- **Production**: Azure Cosmos DB with MongoDB API (Document DB)
+- **Development**: In-memory database (when NODE_ENV=development)
+- **Collections**: members, activities, checkins, events, event_participants, appliances, templates, check_runs, check_results
+
+### Deployment
+- **Frontend**: Azure Static Web Apps or served from backend `/dist`
+- **Backend**: Azure App Service (Node.js)
+- **Storage**: Azure Blob Storage for images
+- **Protocol**: HTTPS in production, WSS for WebSockets
+
+## Architecture
+
+### Feature-Based Structure
+
+The application uses a **feature-based routing architecture** for scalability:
+
+```
+frontend/src/
+├── features/              # Self-contained feature modules
+│   ├── landing/          # Landing page (/)
+│   ├── signin/           # Sign-in system (/signin)
+│   ├── profile/          # User profiles (/profile/:memberId)
+│   └── truckcheck/       # Vehicle checks (/truckcheck)
+├── components/           # Shared reusable UI components
+├── hooks/                # Custom React hooks (useSocket, etc.)
+├── services/             # API services and external integrations
+├── types/                # TypeScript type definitions
+└── App.tsx              # Main router configuration
+
+backend/src/
+├── routes/               # Express route handlers
+├── services/             # Business logic and database operations
+│   ├── database.ts       # Main app database service
+│   ├── dbFactory.ts      # Database factory (in-memory or MongoDB)
+│   ├── truckChecksDatabase.ts  # Truck checks database service
+│   └── truckChecksDbFactory.ts # Truck checks DB factory
+└── types/                # TypeScript type definitions
+```
+
+### Real-Time Communication
+
+- **HTTP REST API** for CRUD operations
+- **WebSocket (Socket.io)** for instant synchronization across devices
+- Events: `checkin`, `activity-change`, `member-added`, `event-created`, `event-ended`, `participant-change`
+- Backend broadcasts updates to all connected clients
+- Frontend listens for updates and refreshes UI state automatically
+
+### Data Flow
+
+1. User interacts with React frontend
+2. Frontend calls REST API via `services/api.ts`
+3. Backend processes request, updates database
+4. Backend emits Socket.io event
+5. All connected clients receive update
+6. Clients update their local state and re-render
+
+## NSW RFS Branding & UI/UX Standards
+
+### Brand Colors (Official NSW RFS Style Guide Sept 2024)
+
+**Primary Colors:**
+```css
+--rfs-core-red: #e5281B       /* Primary brand color */
+--rfs-lime: #cbdb2a           /* Accent color */
+--rfs-black: #000000          /* Text and backgrounds */
+--rfs-white: #ffffff          /* Text on dark backgrounds */
+--rfs-dark-grey: #4d4d4f      /* Secondary text */
+--rfs-light-grey: #bcbec0     /* Borders and subtle elements */
+```
+
+**Thematic UI Colors:**
+```css
+--ui-amber: #fbb034           /* Bush Fire Ready / Watch & Act */
+--ui-blue: #215e9e            /* Advice / Hyperlinks */
+--ui-green: #008550           /* Success / DGR */
+```
+
+### Typography
+
+- **Font Family**: 'Public Sans' (Google Fonts), fallback to system fonts
+- **Weights**: Regular (400), Medium (500), Bold (700)
+- **Line Height**: 1.5 for body text
+- **Hierarchy**: Clear heading levels (h1: 2.5rem, h2: 2rem, h3: 1.5rem)
+
+### UI Principles
+
+1. **Large Touch Targets**: Minimum 60px for buttons and interactive elements (kiosk-friendly)
+2. **High Contrast**: Ensure visibility in various lighting conditions (station environments)
+3. **Responsive Design**: Mobile-first approach, works on all screen sizes
+4. **Accessibility**: 
+   - Semantic HTML elements
+   - Proper ARIA labels
+   - Keyboard navigation support
+   - Screen reader compatibility
+5. **Consistent Spacing**: Use rem units for spacing (0.5rem, 1rem, 1.5rem, 2rem)
+6. **Subtle Animations**: Framer Motion for feedback (200-300ms transitions)
+7. **Visual Feedback**: Loading states, success/error messages, hover effects
+
+### Design Patterns
+
+**Header Pattern:**
+```tsx
+<header className="feature-header">
+  <Link to="/" className="back-link">← Back to Home</Link>
+  <h1>Feature Title</h1>
+</header>
+```
+
+**Button Pattern:**
+```tsx
+<button className="primary-button">Action</button>
+<button className="secondary-button">Secondary Action</button>
+```
+
+**Card Pattern:**
+```tsx
+<div className="card">
+  <h3>Card Title</h3>
+  <p>Card content</p>
+</div>
+```
+
+## Development Practices
+
+### Code Style & Conventions
+
+**TypeScript:**
+- Strict mode enabled
+- Always define interfaces for data structures
+- Use explicit return types for functions
+- Prefer `interface` over `type` for object shapes
+- Use proper type imports: `import type { Type } from './types'`
+
+**React:**
+- Functional components with hooks (no class components)
+- Use `useState`, `useEffect`, `useCallback`, `useMemo` appropriately
+- Custom hooks for reusable logic (prefix with `use`)
+- Props destructuring in component parameters
+- Export components as named exports
+
+**File Naming:**
+- Components: `PascalCase.tsx` (e.g., `SignInPage.tsx`, `ActivitySelector.tsx`)
+- Styles: Match component name (e.g., `SignInPage.css`)
+- Utilities: `camelCase.ts`
+- Types: `index.ts` or `descriptive.ts`
+
+**CSS:**
+- Component-scoped CSS files
+- BEM-like naming: `.component-name`, `.component-name__element`, `.component-name--modifier`
+- Use CSS variables from `:root` (defined in `index.css`)
+- Mobile-first media queries
+- Avoid inline styles (use classes)
+
+### Project Structure Rules
+
+**Adding New Features:**
+1. Create directory in `frontend/src/features/feature-name/`
+2. Create `FeaturePage.tsx` and `FeaturePage.css`
+3. Register route in `App.tsx`
+4. Add feature card to `LandingPage.tsx`
+5. Add backend routes if needed in `backend/src/routes/`
+
+**Shared Components:**
+- Place in `frontend/src/components/` if reusable across features
+- Keep feature-specific components in feature directory
+- Document props with TypeScript interfaces
+
+**API Integration:**
+- All API calls go through `frontend/src/services/api.ts`
+- Use async/await with try/catch
+- Handle errors gracefully with user-friendly messages
+- Show loading states during async operations
+
+**Socket.io Usage:**
+- Use `useSocket` hook from `frontend/src/hooks/useSocket.ts`
+- Clean up event listeners in useEffect cleanup
+- Emit events after successful API calls
+- Handle disconnection gracefully
+
+### Environment Configuration
+
+**Development:**
+- Backend runs on port 3000 (configurable via PORT env var)
+- Frontend runs on port 5173 (Vite default)
+- Use `npm run dev` for development mode (in-memory database)
+- Use `npm run dev:prod` to test with production database
+
+**Environment Variables:**
+
+Backend `.env`:
+```
+MONGODB_URI=<azure-cosmos-db-connection-string>
+FRONTEND_URL=http://localhost:5173
+AZURE_STORAGE_CONNECTION_STRING=<optional-for-file-uploads>
+```
+
+Frontend `.env`:
+```
+VITE_API_URL=http://localhost:3000
+```
+
+### Testing & Quality
+
+**Manual Testing:**
+1. Test on multiple devices simultaneously to verify real-time sync
+2. Test on different screen sizes (mobile, tablet, desktop, kiosk)
+3. Test with slow network conditions
+4. Test keyboard navigation and accessibility
+
+**Build Process:**
+```bash
+# Backend
+cd backend
+npm run build     # Compiles TypeScript to dist/
+
+# Frontend
+cd frontend
+npm run build     # Vite production build to dist/
+npm run preview   # Preview production build
+```
+
+**Linting:**
+```bash
+cd frontend
+npm run lint      # ESLint with TypeScript
+```
+
+### Error Handling
+
+**Frontend Pattern:**
+```typescript
+const [error, setError] = useState<string | null>(null);
+const [loading, setLoading] = useState(false);
+
+const handleAction = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    await api.someAction();
+    // Success handling
+  } catch (err) {
+    setError('User-friendly error message');
+    console.error('Detailed error:', err);
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+**Backend Pattern:**
+```typescript
+router.post('/', async (req, res) => {
+  try {
+    const result = await db.someAction(req.body);
+    res.json(result);
+  } catch (error) {
+    console.error('Error in route:', error);
+    res.status(500).json({ error: 'User-friendly error message' });
+  }
+});
+```
+
+## Key Features & Business Logic
+
+### 1. Sign-In System (`/signin`)
+- Member check-in/check-out tracking
+- Activity selection (Training, Maintenance, Meeting, Custom)
+- Real-time updates across devices
+- QR code support for quick check-in
+- Self-registration for new members
+
+### 2. Event System
+- Discrete event instances (vs continuous activities)
+- Start/end time tracking
+- Participant management
+- Historical event logs
+- Support for concurrent events
+
+### 3. User Profiles (`/profile/:memberId`)
+- Member information display
+- Personal achievement tracking
+- Check-in history
+- Event participation history
+- Rank and member number display
+
+### 4. Truck Checks (`/truckcheck`)
+- Vehicle/appliance management
+- Customizable checklist templates
+- Photo capture for issues
+- Multi-contributor check runs
+- Status tracking (done/issue/skipped)
+- Historical check reports
+
+### 5. Achievement System
+- Milestone tracking (sign-ins, hours, events)
+- Visual badges and celebrations
+- Cross-feature achievements (sign-ins + truck checks)
+- Animated unlock notifications
+
+## Security Considerations
+
+**Current Implementation:**
+- CORS configured for frontend URL
+- Rate limiting on SPA fallback routes (100 req/15min)
+- Input validation on all endpoints (basic)
+- HTTPS required in production
+- WSS (WebSocket Secure) in production
+
+**Future Enhancements:**
+- Optional authentication for admin functions
+- Role-based access control
+- Audit logging
+- Enhanced input sanitization
+
+## Performance Guidelines
+
+**Target Metrics:**
+- Page load: < 2 seconds on 3G
+- Real-time sync: < 2 seconds
+- Check-in response: < 500ms
+- Support: 50+ concurrent users
+- Bundle size: Keep optimized with code splitting
+
+**Optimization Strategies:**
+- Lazy load heavy components
+- Optimize images (compress, use appropriate formats)
+- Minimize re-renders with React.memo, useMemo, useCallback
+- Use WebSocket for real-time data (not polling)
+- Efficient database queries (indexes on MongoDB)
+
+## Common Tasks & Patterns
+
+### Adding a New Component
+
+```typescript
+// Component file: frontend/src/components/NewComponent.tsx
+import { useState } from 'react';
+import './NewComponent.css';
+
+interface NewComponentProps {
+  title: string;
+  onAction: () => void;
+}
+
+export function NewComponent({ title, onAction }: NewComponentProps) {
+  return (
+    <div className="new-component">
+      <h3>{title}</h3>
+      <button onClick={onAction} className="primary-button">
+        Action
+      </button>
+    </div>
+  );
+}
+```
+
+### Adding a New API Endpoint
+
+```typescript
+// Backend: backend/src/routes/feature.ts
+import { Router } from 'express';
+import { ensureDatabase } from '../services/dbFactory';
+
+const router = Router();
+
+router.get('/', async (req, res) => {
+  try {
+    const db = await ensureDatabase();
+    const data = db.getData();
+    res.json(data);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+});
+
+export default router;
+
+// Register in backend/src/index.ts:
+// import featureRouter from './routes/feature';
+// app.use('/api/feature', featureRouter);
+```
+
+### Using Socket.io
+
+```typescript
+// Frontend component
+import { useSocket } from '../../hooks/useSocket';
+
+function MyComponent() {
+  const { isConnected, emit, on, off } = useSocket();
+
+  useEffect(() => {
+    const handleUpdate = (data: any) => {
+      console.log('Received update:', data);
+      // Update local state
+    };
+
+    on('my-event', handleUpdate);
+    return () => off('my-event', handleUpdate);
+  }, [on, off]);
+
+  const sendUpdate = () => {
+    emit('my-event', { data: 'value' });
+  };
+
+  return <div>{isConnected ? 'Connected' : 'Disconnected'}</div>;
+}
+```
+
+## Documentation References
+
+- **Getting Started**: `docs/GETTING_STARTED.md`
+- **Azure Deployment**: `docs/AZURE_DEPLOYMENT.md`
+- **API Documentation**: `docs/API_DOCUMENTATION.md`
+- **Feature Development**: `docs/FEATURE_DEVELOPMENT_GUIDE.md`
+- **Truck Checks**: `docs/TRUCK_CHECKS_IMPLEMENTATION.md`
+- **Achievements**: `docs/ACHIEVEMENTS.md`
+- **Main README**: `README.md`
+
+## Important Notes for Copilot
+
+1. **NSW RFS Branding is Critical**: Always use official colors and maintain brand consistency
+2. **Real-Time is Core**: Changes must sync across devices via Socket.io
+3. **Kiosk-Friendly**: Large touch targets (60px+) for station kiosk use
+4. **TypeScript Strict**: No `any` types, proper interfaces required
+5. **Feature Independence**: Keep features self-contained and modular
+6. **Mobile-First**: Responsive design is non-negotiable
+7. **Volunteer Context**: Simple, intuitive UX for non-technical volunteers
+8. **Production-Ready**: Code must work in Azure production environment
+9. **Database Flexibility**: Support both in-memory (dev) and MongoDB (prod)
+10. **Error Recovery**: Handle network failures gracefully (rural areas)
+
+## Workflow Commands
+
+```bash
+# Development
+npm run install       # Install all dependencies (root)
+cd backend && npm run dev       # Start backend (in-memory DB)
+cd backend && npm run dev:prod  # Start backend (production DB)
+cd frontend && npm run dev      # Start frontend dev server
+
+# Building
+npm run build        # Build both frontend and backend (root)
+cd backend && npm run build    # Build backend only
+cd frontend && npm run build   # Build frontend only
+
+# Linting
+cd frontend && npm run lint    # Run ESLint
+
+# Production
+npm start            # Start production server (root)
+```
+
+## Version Information
+
+- Node.js: 22.x
+- npm: >=10.0.0
+- React: 19.2.0
+- TypeScript: ~5.9.3
+- Vite: ^7.2.2
+- Express: ^5.1.0
+- Socket.io: ^4.8.1
+
+---
+
+**Built with ❤️ for the RFS volunteer community**
