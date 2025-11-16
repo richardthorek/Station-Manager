@@ -80,6 +80,14 @@
   transform: translateY(-50%) scale(1.1);
 }
 
+.members-container {
+  display: flex;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .members-grid {
   display: flex;
   flex-wrap: wrap;
@@ -90,6 +98,55 @@
   overflow-x: hidden;
   min-height: 0;
   align-content: start;
+}
+
+.letter-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 4px 4px 0;
+  flex-shrink: 0;
+  width: 36px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.letter-btn {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-medium);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-gray-dark);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.letter-btn:hover {
+  background: var(--color-gray-light);
+  border-color: var(--color-primary-red);
+  color: var(--color-primary-red);
+  transform: scale(1.05);
+}
+
+.letter-btn.active {
+  background: var(--color-primary-red);
+  border-color: var(--color-primary-red);
+  color: var(--color-white);
+  font-weight: 700;
+}
+
+.letter-btn.active:hover {
+  background: var(--color-ruby-red);
+  border-color: var(--color-ruby-red);
 }
 
 .member-btn {
@@ -236,6 +293,24 @@
   background: var(--color-gray-dark);
 }
 
+/* Letter selector scrollbar styling */
+.letter-selector::-webkit-scrollbar {
+  width: 4px;
+}
+
+.letter-selector::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.letter-selector::-webkit-scrollbar-thumb {
+  background: var(--color-gray-medium);
+  border-radius: 2px;
+}
+
+.letter-selector::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-dark);
+}
+
 @media (max-width: 768px) {
   .members-grid {
     gap: 8px;
@@ -244,5 +319,16 @@
   .member-btn {
     flex: 0 1 100%;
     max-width: 100%;
+  }
+  
+  .letter-selector {
+    width: 32px;
+  }
+  
+  .letter-btn {
+    width: 26px;
+    height: 26px;
+    min-height: 26px;
+    font-size: 0.7rem;
   }
 }
