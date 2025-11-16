@@ -103,23 +103,24 @@
 .letter-selector {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   padding: 4px 4px 4px 0;
   flex-shrink: 0;
   width: 36px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
+  justify-content: space-between;
 }
 
 .letter-btn {
   width: 28px;
-  height: 28px;
-  min-height: 28px;
-  padding: 0;
+  height: auto;
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 4px 0;
   background: var(--color-white);
   border: 1px solid var(--color-gray-medium);
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--color-gray-dark);
   cursor: pointer;
@@ -127,7 +128,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  flex-grow: 1;
 }
 
 .letter-btn:hover {
@@ -293,24 +295,6 @@
   background: var(--color-gray-dark);
 }
 
-/* Letter selector scrollbar styling */
-.letter-selector::-webkit-scrollbar {
-  width: 4px;
-}
-
-.letter-selector::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.letter-selector::-webkit-scrollbar-thumb {
-  background: var(--color-gray-medium);
-  border-radius: 2px;
-}
-
-.letter-selector::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gray-dark);
-}
-
 @media (max-width: 768px) {
   .members-grid {
     gap: 8px;
@@ -327,8 +311,7 @@
   
   .letter-btn {
     width: 26px;
-    height: 26px;
-    min-height: 26px;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
+    padding: 3px 0;
   }
 }
