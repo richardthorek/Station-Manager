@@ -16,6 +16,7 @@ export function MemberList({
   onAddMember,
 }: MemberListProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
 
@@ -25,11 +26,25 @@ export function MemberList({
   );
 
   const filteredMembers = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return members.filter(member =>
-      member.name.toLowerCase().includes(term)
-    );
-  }, [members, searchTerm]);
+    let filtered = members;
+    
+    // Apply letter filter if selected
+    if (selectedLetter) {
+      filtered = filtered.filter(member =>
+        member.name.toLowerCase().startsWith(selectedLetter.toLowerCase())
+      );
+    }
+    
+    // Apply search term filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(member =>
+        member.name.toLowerCase().includes(term)
+      );
+    }
+    
+    return filtered;
+  }, [members, searchTerm, selectedLetter]);
 
   const handleAddMember = () => {
     if (newMemberName.trim()) {
@@ -43,6 +58,19 @@ export function MemberList({
     onCheckIn(memberId);
     setSearchTerm('');
   };
+
+  const handleLetterClick = (letter: string) => {
+    if (selectedLetter === letter) {
+      // Toggle off if clicking the same letter
+      setSelectedLetter(null);
+    } else {
+      setSelectedLetter(letter);
+    }
+    setSearchTerm(''); // Clear search when using letter filter
+  };
+
+  // Generate A-Z letters
+  const letters = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 
   return (
     <div className="member-list card">
@@ -76,26 +104,41 @@ export function MemberList({
         </button>
       </div>
 
-      <div className="members-grid">
-        {filteredMembers.length > 0 ? (
-          filteredMembers.map(member => {
-            const isCheckedIn = checkedInMemberIds.has(member.id);
-            return (
-              <button
-                key={member.id}
-                className={`member-btn ${isCheckedIn ? 'checked-in' : ''}`}
-                onClick={() => handleMemberClick(member.id)}
-              >
-                <span className="member-name">{member.name}</span>
-                {isCheckedIn && (
-                  <span className="check-icon">✓</span>
-                )}
-              </button>
-            );
-          })
-        ) : (
-          <p className="no-results">No members found</p>
-        )}
+      <div className="members-container">
+        <div className="members-grid">
+          {filteredMembers.length > 0 ? (
+            filteredMembers.map(member => {
+              const isCheckedIn = checkedInMemberIds.has(member.id);
+              return (
+                <button
+                  key={member.id}
+                  className={`member-btn ${isCheckedIn ? 'checked-in' : ''}`}
+                  onClick={() => handleMemberClick(member.id)}
+                >
+                  <span className="member-name">{member.name}</span>
+                  {isCheckedIn && (
+                    <span className="check-icon">✓</span>
+                  )}
+                </button>
+              );
+            })
+          ) : (
+            <p className="no-results">No members found</p>
+          )}
+        </div>
+
+        <div className="letter-selector">
+          {letters.map(letter => (
+            <button
+              key={letter}
+              className={`letter-btn ${selectedLetter === letter ? 'active' : ''}`}
+              onClick={() => handleLetterClick(letter)}
+              title={`Filter by ${letter}`}
+            >
+              {letter}
+            </button>
+          ))}
+        </div>
       </div>
 
       {showAddMember && (
