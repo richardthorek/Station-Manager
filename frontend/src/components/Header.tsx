@@ -28,7 +28,7 @@ export function Header({ isConnected, databaseStatus }: HeaderProps) {
       <div className="header-content">
         <div className="header-logo">
           <div className="logo-icon">🚒</div>
-          <h1>RFS Station Manager</h1>
+          <h1>Station Manager</h1>
         </div>
         <div className="header-status">
           <button 

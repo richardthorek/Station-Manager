@@ -1,7 +1,7 @@
 {
-  "name": "RFS Station Manager",
+  "name": "Station Manager",
   "short_name": "Station Manager",
-  "description": "Digital management tools for Rural Fire Service stations - Real-time sign-in, truck checks, and station operations",
+  "description": "Digital management tools for fire stations - Real-time sign-in, truck checks, and station operations",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

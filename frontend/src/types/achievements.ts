@@ -2,7 +2,7 @@
  * Achievement and Gamification Types (Frontend)
  * 
  * Defines the achievement system for gamifying volunteer participation
- * in the RFS Station Manager.
+ * in the Station Manager.
  */
 
 export type AchievementType =
