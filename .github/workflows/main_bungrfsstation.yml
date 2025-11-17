@@ -23,8 +23,15 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: npm install (production only)
-        run: npm install --omit=dev
+      - name: npm install and build
+        run: |
+          npm install
+          npm run build
+
+      - name: Clean dev dependencies
+        run: |
+          npm prune --production --prefix backend
+          npm prune --production --prefix frontend
 
       - name: Zip artifact for deployment
         run: |
