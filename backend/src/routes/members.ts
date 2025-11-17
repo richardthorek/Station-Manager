@@ -1,7 +1,7 @@
 /**
  * Member Management Routes
  * 
- * Handles CRUD operations for RFS members including:
+ * Handles CRUD operations for members including:
  * - Fetching all members
  * - Getting member by ID or QR code
  * - Creating new members with auto-generated QR codes

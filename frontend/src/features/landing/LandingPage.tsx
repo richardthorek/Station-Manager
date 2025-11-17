@@ -22,8 +22,8 @@ export function LandingPage() {
         <div className="header-content">
           <div className="header-title-row">
             <div>
-              <h1 className="app-title">RFS Station Manager</h1>
-              <p className="app-subtitle">Digital management tools for Rural Fire Service stations</p>
+              <h1 className="app-title">Station Manager</h1>
+              <p className="app-subtitle">Digital management tools for fire stations</p>
             </div>
             <button 
               className="theme-toggle-btn"
@@ -41,7 +41,7 @@ export function LandingPage() {
         <section className="welcome-section">
           <h2>Welcome to Station Manager</h2>
           <p className="welcome-text">
-            A modern, real-time digital management system for RFS stations. 
+            A modern, real-time digital management system for fire stations. 
             Track member presence, manage activities, and coordinate station operations 
             across multiple devices with instant synchronization.
           </p>
@@ -99,14 +99,14 @@ export function LandingPage() {
             <p>Changes appear instantly across all connected devices</p>
           </div>
           <div className="info-card">
-            <h3>NSW RFS Branding</h3>
-            <p>Designed to align with NSW RFS visual standards</p>
+            <h3>Professional Branding</h3>
+            <p>Clean, modern design suitable for any fire service</p>
           </div>
         </section>
       </main>
 
       <footer className="landing-footer">
-        <p>Built with ❤️ for the RFS volunteer community</p>
+        <p>Built with ❤️ for the volunteer community</p>
         <p className="version">Version 1.0</p>
       </footer>
     </div>

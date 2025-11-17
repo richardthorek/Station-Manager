@@ -1,7 +1,7 @@
 /**
- * RFS Station Manager - Backend Server
+ * Station Manager - Backend Server
  * 
- * Main entry point for the Express server that powers the RFS Station Manager application.
+ * Main entry point for the Express server that powers the Station Manager application.
  * Provides REST API endpoints for member management, activity tracking, check-ins, events,
  * and truck checks. Includes WebSocket support via Socket.io for real-time synchronization.
  * 
