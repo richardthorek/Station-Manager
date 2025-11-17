@@ -22,14 +22,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          cache: 'npm'
 
-      - name: npm install and build
-        run: |
-          npm install
-          npm run build --if-present
+      - name: npm install (production only)
+        run: npm install --omit=dev
 
       - name: Zip artifact for deployment
-        run: zip -r release.zip . -x "*.git*" "node_modules/*" "frontend/node_modules/*" "backend/node_modules/*"
+        run: |
+          mkdir -p deploy
+          cp package.json deploy/
+          cp -r backend/dist deploy/backend/
+          cp backend/package.json deploy/backend/
+          cp -r backend/node_modules deploy/backend/
+          cp -r frontend/dist deploy/frontend/
+          cp startup.sh deploy/ 2>/dev/null || true
+          cp web.config deploy/ 2>/dev/null || true
+          cd deploy && zip -r ../release.zip .
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
