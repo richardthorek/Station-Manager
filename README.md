@@ -136,6 +136,8 @@ Additional features can be easily added as new routes following this pattern.
 - **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
 - **[Truck Checks Guide](docs/TRUCK_CHECKS_IMPLEMENTATION.md)** - Vehicle inspection feature documentation
+- **[Storage Analysis](docs/STORAGE_ANALYSIS.md)** - Cost analysis: Cosmos DB vs Table Storage
+- **[Storage Recommendation](docs/STORAGE_RECOMMENDATION_SUMMARY.md)** - Executive summary of storage decision
 - **[Project Plan](docs/PROJECT_PLAN.md)** - Original project requirements and planning (historical)
 
 ## 🚢 Deployment

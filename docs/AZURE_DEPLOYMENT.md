@@ -39,6 +39,8 @@ This guide provides step-by-step instructions for deploying the RFS Station Mana
 - **Cosmos DB:** $0 (Free tier - 1000 RU/s, 25GB storage) or ~$5-10 for consumption
 - **TOTAL:** **~$13-25 AUD/month**
 
+> **💰 Cost Optimization Note**: A comprehensive analysis shows Azure Cosmos DB is the most cost-effective storage solution for this application. The free tier covers typical station usage indefinitely (5-year projection: 16MB of 25GB limit). See [Storage Analysis](STORAGE_ANALYSIS.md) and [Storage Recommendation](STORAGE_RECOMMENDATION_SUMMARY.md) for detailed cost comparison vs Azure Table Storage.
+
 ---
 
 ## Prerequisites
