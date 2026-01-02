@@ -136,8 +136,9 @@ Additional features can be easily added as new routes following this pattern.
 - **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
 - **[Truck Checks Guide](docs/TRUCK_CHECKS_IMPLEMENTATION.md)** - Vehicle inspection feature documentation
-- **[Storage Analysis](docs/STORAGE_ANALYSIS.md)** - Cost analysis: Cosmos DB vs Table Storage
-- **[Storage Recommendation](docs/STORAGE_RECOMMENDATION_SUMMARY.md)** - Executive summary of storage decision
+- **[Storage Recommendation (No Free Tier)](docs/STORAGE_RECOMMENDATION_NO_FREE_TIER.md)** - ⭐ **Current recommendation** - Keep Cosmos DB Serverless
+- **[Storage Analysis (No Free Tier)](docs/STORAGE_ANALYSIS_NO_FREE_TIER.md)** - Detailed cost analysis without free tier
+- **[Storage Analysis (With Free Tier)](docs/STORAGE_ANALYSIS.md)** - Original analysis assuming free tier available
 - **[Project Plan](docs/PROJECT_PLAN.md)** - Original project requirements and planning (historical)
 
 ## 🚢 Deployment
