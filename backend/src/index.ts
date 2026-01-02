@@ -39,10 +39,20 @@ import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
 
 const app = express();
 const httpServer = createServer(app);
+
+// Configure allowed origins for CORS (Static Web App + local development)
+const allowedOrigins: string[] = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',      // Vite dev server
+  'http://localhost:4280',      // Azure Static Web Apps CLI
+  'http://localhost:3000',      // Backend serving frontend
+].filter((origin): origin is string => Boolean(origin)); // Remove undefined/null values
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
@@ -56,8 +66,22 @@ const spaRateLimiter = rateLimit({
 
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+// Middleware - CORS with multiple origins support
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS: Blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // Serve static files from frontend build (for production)

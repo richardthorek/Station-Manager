@@ -1,0 +1,13 @@
+{
+  "$schema": "https://aka.ms/azure/static-web-apps-cli/schema",
+  "configurations": {
+    "station-manager": {
+      "appLocation": "frontend",
+      "outputLocation": "dist",
+      "appBuildCommand": "npm run build",
+      "appDevserverUrl": "http://localhost:5173",
+      "apiLocation": "",
+      "apiDevserverUrl": "http://localhost:3000"
+    }
+  }
+}
