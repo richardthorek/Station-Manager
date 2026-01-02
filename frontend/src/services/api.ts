@@ -404,7 +404,7 @@ class ApiService {
   }
 
   async getRecentAchievements(memberId: string): Promise<{
-    recentlyEarned: any[];
+    recentlyEarned: unknown[];
     totalNew: number;
   }> {
     const response = await fetch(`${API_BASE_URL}/achievements/${memberId}/recent`);
@@ -413,8 +413,8 @@ class ApiService {
   }
 
   async getAchievementProgress(memberId: string): Promise<{
-    progress: any[];
-    activeStreaks: any[];
+    progress: unknown[];
+    activeStreaks: unknown[];
   }> {
     const response = await fetch(`${API_BASE_URL}/achievements/${memberId}/progress`);
     if (!response.ok) throw new Error('Failed to fetch achievement progress');
