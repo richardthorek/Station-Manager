@@ -28,6 +28,11 @@ jobs:
           npm install
           npm run build
 
+      - name: Run backend tests
+        run: |
+          cd backend
+          npm test
+
       - name: Clean dev dependencies
         run: |
           npm prune --production --prefix backend
