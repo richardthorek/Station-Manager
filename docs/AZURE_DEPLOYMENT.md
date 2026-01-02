@@ -36,10 +36,11 @@ This guide provides step-by-step instructions for deploying the RFS Station Mana
 ### Monthly Cost Estimate
 - **Static Web Apps:** $0 (Free tier - 100GB bandwidth/month)
 - **App Service B1:** ~$13 AUD/month (1 core, 1.75GB RAM, always-on)
-- **Cosmos DB (Serverless):** $0.50-3/month typical usage (or $0 if using free tier for this app)
-- **TOTAL:** **~$13.50-16 AUD/month** (or $13-25 if using free tier)
+- **Azure Table Storage:** $0.10-2/month typical usage (recommended)
+  - *Alternative: Cosmos DB Serverless: $0.50-3/month (if free tier available: $0)*
+- **TOTAL:** **~$13.10-15 AUD/month**
 
-> **💰 Updated Cost Recommendation (Jan 2026)**: If your Cosmos DB free tier is reserved for other purposes, use **Serverless pricing** for this application. Comprehensive analysis shows that even without free tier, Cosmos DB Serverless ($0.50-3/month) is more cost-effective than Azure Table Storage for typical RFS station usage. Migration would take 100+ years to break even. See [Storage Recommendation (No Free Tier)](STORAGE_RECOMMENDATION_NO_FREE_TIER.md) for detailed analysis.
+> **💰 UPDATED RECOMMENDATION (Jan 2026)**: Migrate to **Azure Table Storage** for 70-95% cost savings on database costs. When considering only Azure infrastructure costs (excluding personnel), Table Storage is clearly more cost-effective at $0.10-2/month vs Cosmos DB Serverless at $0.50-3/month. Migration is minimal (re-seed member list only). See [FINAL Storage Decision](FINAL_STORAGE_DECISION.md) for complete analysis and implementation plan.
 
 ---
 
