@@ -136,10 +136,11 @@ Additional features can be easily added as new routes following this pattern.
 - **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
 - **[Truck Checks Guide](docs/TRUCK_CHECKS_IMPLEMENTATION.md)** - Vehicle inspection feature documentation
-- **[⭐ FINAL Storage Decision](docs/FINAL_STORAGE_DECISION.md)** - **DECISION: Migrate to Azure Table Storage**
+- **[🚀 TABLE STORAGE MIGRATION PLAN](docs/TABLE_STORAGE_MIGRATION_PLAN.md)** - ⭐ **APPROVED** - Step-by-step implementation guide
+- **[Storage Decision](docs/FINAL_STORAGE_DECISION.md)** - Decision rationale: Migrate to Azure Table Storage
 - **[Storage Analysis (Azure Costs Only)](docs/STORAGE_DECISION_AZURE_COSTS_ONLY.md)** - Detailed cost analysis
 - **[Storage Analysis (With Free Tier)](docs/STORAGE_ANALYSIS.md)** - Original analysis assuming free tier
-- **[Cosmos DB Optimization Guide](docs/COSMOS_DB_OPTIMIZATION_GUIDE.md)** - If staying with Cosmos DB
+- **[Cosmos DB Optimization Guide](docs/COSMOS_DB_OPTIMIZATION_GUIDE.md)** - Reference only
 - **[Project Plan](docs/PROJECT_PLAN.md)** - Original project requirements and planning (historical)
 
 ## 🚢 Deployment
