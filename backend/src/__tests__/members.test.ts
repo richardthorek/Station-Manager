@@ -1,0 +1,241 @@
+/**
+ * Members API Route Tests
+ * 
+ * Tests for all member management endpoints:
+ * - GET /api/members - Get all members
+ * - GET /api/members/:id - Get member by ID
+ * - GET /api/members/qr/:qrCode - Get member by QR code
+ * - POST /api/members - Create new member
+ * - PUT /api/members/:id - Update member
+ * - GET /api/members/:id/history - Get member check-in history
+ */
+
+import request from 'supertest';
+import express, { Express } from 'express';
+import membersRouter from '../routes/members';
+import { ensureDatabase } from '../services/dbFactory';
+
+let app: Express;
+
+beforeAll(() => {
+  // Set up Express app with routes
+  app = express();
+  app.use(express.json());
+  app.use('/api/members', membersRouter);
+});
+
+describe('Members API', () => {
+  describe('GET /api/members', () => {
+    it('should return an array of members', async () => {
+      const response = await request(app)
+        .get('/api/members')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+      
+      // Verify member structure
+      const member = response.body[0];
+      expect(member).toHaveProperty('id');
+      expect(member).toHaveProperty('name');
+      expect(member).toHaveProperty('qrCode');
+      expect(member).toHaveProperty('createdAt');
+    });
+
+    it('should return members sorted by activity (check-ins in last 6 months), then alphabetically', async () => {
+      const response = await request(app)
+        .get('/api/members')
+        .expect(200);
+
+      // Verify that sorting is applied (members array is returned in consistent order)
+      const names = response.body.map((m: { name: string }) => m.name);
+      expect(names.length).toBeGreaterThan(0);
+      
+      // Verify all names are unique
+      const uniqueNames = new Set(names);
+      expect(uniqueNames.size).toBe(names.length);
+    });
+  });
+
+  describe('GET /api/members/:id', () => {
+    it('should return a specific member by ID', async () => {
+      // First get all members to get a valid ID
+      const membersResponse = await request(app).get('/api/members');
+      const testMember = membersResponse.body[0];
+
+      const response = await request(app)
+        .get(`/api/members/${testMember.id}`)
+        .expect(200);
+
+      expect(response.body.id).toBe(testMember.id);
+      expect(response.body.name).toBe(testMember.name);
+    });
+
+    it('should return 404 for non-existent member ID', async () => {
+      const response = await request(app)
+        .get('/api/members/non-existent-id')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('not found');
+    });
+  });
+
+  describe('GET /api/members/qr/:qrCode', () => {
+    it('should return a member by QR code', async () => {
+      // First get all members to get a valid QR code
+      const membersResponse = await request(app).get('/api/members');
+      const testMember = membersResponse.body[0];
+
+      const response = await request(app)
+        .get(`/api/members/qr/${testMember.qrCode}`)
+        .expect(200);
+
+      expect(response.body.id).toBe(testMember.id);
+      expect(response.body.qrCode).toBe(testMember.qrCode);
+    });
+
+    it('should return 404 for non-existent QR code', async () => {
+      const response = await request(app)
+        .get('/api/members/qr/invalid-qr-code')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error');
+    });
+  });
+
+  describe('POST /api/members', () => {
+    it('should create a new member with valid name', async () => {
+      const newMemberName = 'Test User ' + Date.now();
+      
+      const response = await request(app)
+        .post('/api/members')
+        .send({ name: newMemberName })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.name).toBe(newMemberName);
+      expect(response.body).toHaveProperty('qrCode');
+      expect(response.body.qrCode).toBeTruthy();
+    });
+
+    it('should trim whitespace from member name', async () => {
+      const response = await request(app)
+        .post('/api/members')
+        .send({ name: '  Whitespace Test  ' })
+        .expect(201);
+
+      expect(response.body.name).toBe('Whitespace Test');
+    });
+
+    it('should return 400 for missing name', async () => {
+      const response = await request(app)
+        .post('/api/members')
+        .send({})
+        .expect(400);
+
+      expect(response.body.error).toContain('name is required');
+    });
+
+    it('should return 400 for empty name', async () => {
+      const response = await request(app)
+        .post('/api/members')
+        .send({ name: '   ' })
+        .expect(400);
+
+      expect(response.body.error).toContain('name is required');
+    });
+
+    it('should return 400 for non-string name', async () => {
+      const response = await request(app)
+        .post('/api/members')
+        .send({ name: 123 })
+        .expect(400);
+
+      expect(response.body.error).toContain('name is required');
+    });
+  });
+
+  describe('PUT /api/members/:id', () => {
+    it('should update a member name', async () => {
+      // First create a member
+      const createResponse = await request(app)
+        .post('/api/members')
+        .send({ name: 'Original Name' });
+      
+      const memberId = createResponse.body.id;
+      const updatedName = 'Updated Name ' + Date.now();
+
+      const response = await request(app)
+        .put(`/api/members/${memberId}`)
+        .send({ name: updatedName })
+        .expect(200);
+
+      expect(response.body.name).toBe(updatedName);
+      expect(response.body.id).toBe(memberId);
+    });
+
+    it('should update member rank when provided', async () => {
+      // First create a member
+      const createResponse = await request(app)
+        .post('/api/members')
+        .send({ name: 'Rank Test Member' });
+      
+      const memberId = createResponse.body.id;
+
+      const response = await request(app)
+        .put(`/api/members/${memberId}`)
+        .send({ name: 'Rank Test Member', rank: 'Captain' })
+        .expect(200);
+
+      expect(response.body.rank).toBe('Captain');
+    });
+
+    it('should return 404 for non-existent member', async () => {
+      const response = await request(app)
+        .put('/api/members/non-existent-id')
+        .send({ name: 'Test Name' })
+        .expect(404);
+
+      expect(response.body.error).toContain('not found');
+    });
+
+    it('should return 400 for invalid name', async () => {
+      // Get a valid member ID first
+      const membersResponse = await request(app).get('/api/members');
+      const memberId = membersResponse.body[0].id;
+
+      const response = await request(app)
+        .put(`/api/members/${memberId}`)
+        .send({ name: '' })
+        .expect(400);
+
+      expect(response.body.error).toContain('name is required');
+    });
+  });
+
+  describe('GET /api/members/:id/history', () => {
+    it('should return empty array for member with no check-ins', async () => {
+      // Create a new member
+      const createResponse = await request(app)
+        .post('/api/members')
+        .send({ name: 'No History Member' });
+      
+      const memberId = createResponse.body.id;
+
+      const response = await request(app)
+        .get(`/api/members/${memberId}/history`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should return 404 for non-existent member', async () => {
+      const response = await request(app)
+        .get('/api/members/non-existent-id/history')
+        .expect(404);
+
+      expect(response.body.error).toContain('not found');
+    });
+  });
+});

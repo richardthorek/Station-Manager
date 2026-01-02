@@ -1,0 +1,1029 @@
+# RFS Station Manager - OpenAPI Specification
+
+openapi: 3.0.3
+info:
+  title: RFS Station Manager API
+  description: |
+    REST API for the RFS Station Manager - a real-time digital sign-in system for Rural Fire Service stations.
+    
+    This API provides endpoints for:
+    - Member management
+    - Activity tracking
+    - Check-in/check-out operations
+    - Event management
+    - Truck checks
+    - Achievements
+    
+    Real-time updates are also available via Socket.io WebSocket connections.
+  version: 1.0.0
+  contact:
+    name: RFS Station Manager Support
+    url: https://github.com/richardthorek/Station-Manager
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://bungrfsstation.azurewebsites.net
+    description: Production server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Members
+    description: Member management operations
+  - name: Activities
+    description: Activity management operations
+  - name: Check-ins
+    description: Check-in/check-out operations
+  - name: Events
+    description: Event management operations
+  - name: Truck Checks
+    description: Vehicle inspection operations
+  - name: Achievements
+    description: Member achievement operations
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the server is running and database is accessible
+      operationId: getHealth
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, error]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  database:
+                    type: string
+                    enum: [mongodb, in-memory]
+                  environment:
+                    type: string
+                    enum: [development, production]
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/members:
+    get:
+      tags:
+        - Members
+      summary: Get all members
+      description: Retrieve all registered members, sorted by activity level (check-ins in last 6 months) then alphabetically
+      operationId: getMembers
+      responses:
+        '200':
+          description: List of members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      tags:
+        - Members
+      summary: Create new member
+      description: Register a new member with auto-generated UUID and QR code
+      operationId: createMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  example: John Smith
+      responses:
+        '201':
+          description: Member created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/members/{id}:
+    get:
+      tags:
+        - Members
+      summary: Get member by ID
+      description: Retrieve a specific member by their UUID
+      operationId: getMemberById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Member UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Member details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    put:
+      tags:
+        - Members
+      summary: Update member
+      description: Update member information
+      operationId: updateMember
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Member UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                rank:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/members/qr/{qrCode}:
+    get:
+      tags:
+        - Members
+      summary: Get member by QR code
+      description: Retrieve a member by their unique QR code
+      operationId: getMemberByQRCode
+      parameters:
+        - name: qrCode
+          in: path
+          required: true
+          description: Unique QR code string
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Member details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/members/{id}/history:
+    get:
+      tags:
+        - Members
+      summary: Get member check-in history
+      description: Retrieve all historical check-ins for a member
+      operationId: getMemberHistory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Member UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Member check-in history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CheckIn'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/activities:
+    get:
+      tags:
+        - Activities
+      summary: Get all activities
+      description: Retrieve all activities (default and custom), sorted with defaults first
+      operationId: getActivities
+      responses:
+        '200':
+          description: List of activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      tags:
+        - Activities
+      summary: Create custom activity
+      description: Create a new custom activity
+      operationId: createActivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  example: Equipment Check
+                createdBy:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: Member ID who created the activity
+      responses:
+        '201':
+          description: Activity created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/activities/active:
+    get:
+      tags:
+        - Activities
+      summary: Get active activity
+      description: Retrieve the currently active activity for the station
+      operationId: getActiveActivity
+      responses:
+        '200':
+          description: Active activity details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveActivity'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      tags:
+        - Activities
+      summary: Set active activity
+      description: Change the active activity for the station
+      operationId: setActiveActivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - activityId
+              properties:
+                activityId:
+                  type: string
+                  format: uuid
+                setBy:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: Member ID who set the activity
+      responses:
+        '200':
+          description: Active activity updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveActivity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/checkins/active:
+    get:
+      tags:
+        - Check-ins
+      summary: Get active check-ins
+      description: Retrieve all currently active check-ins with member and activity details
+      operationId: getActiveCheckIns
+      responses:
+        '200':
+          description: List of active check-ins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CheckInWithDetails'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/checkins:
+    post:
+      tags:
+        - Check-ins
+      summary: Check in or undo check-in
+      description: |
+        Check in a member or undo their existing check-in (toggle behavior).
+        If member is not checked in, creates new check-in.
+        If member is already checked in, deactivates the check-in.
+      operationId: toggleCheckIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - memberId
+              properties:
+                memberId:
+                  type: string
+                  format: uuid
+                activityId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: If not provided, uses active activity
+                method:
+                  type: string
+                  enum: [kiosk, mobile, qr]
+                  default: mobile
+                location:
+                  type: string
+                  nullable: true
+                isOffsite:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Check-in undone
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  action:
+                    type: string
+                    enum: [undone]
+                  checkIn:
+                    $ref: '#/components/schemas/CheckIn'
+        '201':
+          description: Member checked in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  action:
+                    type: string
+                    enum: [checked-in]
+                  checkIn:
+                    $ref: '#/components/schemas/CheckIn'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/events:
+    get:
+      tags:
+        - Events
+      summary: Get all events
+      description: Retrieve all events (active and historical), sorted by start time descending
+      operationId: getEvents
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      tags:
+        - Events
+      summary: Create new event
+      description: Create a new event instance
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - type
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  example: Structure Fire - Main Street
+                type:
+                  type: string
+                  enum: [incident, training, meeting, maintenance, other]
+                location:
+                  type: string
+                  nullable: true
+                description:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/events/active:
+    get:
+      tags:
+        - Events
+      summary: Get active events
+      description: Retrieve only currently active events
+      operationId: getActiveEvents
+      responses:
+        '200':
+          description: List of active events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/events/{id}:
+    get:
+      tags:
+        - Events
+      summary: Get event with participants
+      description: Retrieve event details including all participants
+      operationId: getEventWithParticipants
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Event UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event details with participants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWithParticipants'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/events/{id}/end:
+    put:
+      tags:
+        - Events
+      summary: End event
+      description: Mark an event as ended
+      operationId: endEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Event UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event ended successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/events/{id}/participants:
+    post:
+      tags:
+        - Events
+      summary: Add participant to event
+      description: Add a member as a participant in an event
+      operationId: addEventParticipant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Event UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - memberId
+              properties:
+                memberId:
+                  type: string
+                  format: uuid
+                role:
+                  type: string
+                  nullable: true
+                  example: Crew Leader
+      responses:
+        '201':
+          description: Participant added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventParticipant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/events/{id}/participants/{participantId}:
+    delete:
+      tags:
+        - Events
+      summary: Remove participant from event
+      description: Check out a participant from an event
+      operationId: removeEventParticipant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Event UUID
+          schema:
+            type: string
+            format: uuid
+        - name: participantId
+          in: path
+          required: true
+          description: Participant UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Participant removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventParticipant'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/member/{memberId}:
+    get:
+      tags:
+        - Achievements
+      summary: Get member achievements
+      description: Retrieve all achievements for a specific member
+      operationId: getMemberAchievements
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          description: Member UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Member achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Achievement'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/achievements/recent:
+    get:
+      tags:
+        - Achievements
+      summary: Get recent achievements
+      description: Retrieve recently unlocked achievements across all members
+      operationId: getRecentAchievements
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of achievements to return
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Recent achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Achievement'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        qrCode:
+          type: string
+        rank:
+          type: string
+          nullable: true
+        memberNumber:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - qrCode
+        - createdAt
+        - updatedAt
+
+    Activity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        isCustom:
+          type: boolean
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - isCustom
+        - createdAt
+
+    ActiveActivity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        activityId:
+          type: string
+          format: uuid
+        setAt:
+          type: string
+          format: date-time
+        setBy:
+          type: string
+          format: uuid
+          nullable: true
+        activity:
+          $ref: '#/components/schemas/Activity'
+      required:
+        - id
+        - activityId
+        - setAt
+        - activity
+
+    CheckIn:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        activityId:
+          type: string
+          format: uuid
+        checkInTime:
+          type: string
+          format: date-time
+        checkOutTime:
+          type: string
+          format: date-time
+          nullable: true
+        checkInMethod:
+          type: string
+          enum: [kiosk, mobile, qr]
+        location:
+          type: string
+          nullable: true
+        isOffsite:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - memberId
+        - activityId
+        - checkInTime
+        - checkInMethod
+        - isOffsite
+        - isActive
+        - createdAt
+        - updatedAt
+
+    CheckInWithDetails:
+      allOf:
+        - $ref: '#/components/schemas/CheckIn'
+        - type: object
+          properties:
+            memberName:
+              type: string
+            activityName:
+              type: string
+          required:
+            - memberName
+            - activityName
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [incident, training, meeting, maintenance, other]
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - type
+        - startTime
+        - isActive
+        - createdAt
+        - updatedAt
+
+    EventParticipant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        checkInTime:
+          type: string
+          format: date-time
+        checkOutTime:
+          type: string
+          format: date-time
+          nullable: true
+        role:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - eventId
+        - memberId
+        - checkInTime
+        - isActive
+        - createdAt
+        - updatedAt
+
+    EventWithParticipants:
+      allOf:
+        - $ref: '#/components/schemas/Event'
+        - type: object
+          properties:
+            participants:
+              type: array
+              items:
+                $ref: '#/components/schemas/EventParticipant'
+          required:
+            - participants
+
+    Achievement:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [sign_in, event, truck_check]
+        requirement:
+          type: integer
+        icon:
+          type: string
+        isUnlocked:
+          type: boolean
+        unlockedAt:
+          type: string
+          format: date-time
+          nullable: true
+        progress:
+          type: integer
+      required:
+        - id
+        - name
+        - description
+        - category
+        - requirement
+        - icon
+        - isUnlocked
+        - progress
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    # Future: JWT Bearer token authentication for admin functions
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+# No security required currently (by design for kiosk access)
+# Future versions may require authentication for admin operations
+security: []
