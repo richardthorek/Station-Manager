@@ -1,5 +1,9 @@
 # Azure Deployment Guide
 
+> **📌 NEW: Azure Static Web Apps Deployment**  
+> For the recommended hybrid architecture using Azure Static Web Apps for the frontend, see the **[Static Web App Setup Guide](STATIC_WEB_APP_SETUP.md)**.  
+> This guide covers the traditional App Service deployment for both frontend and backend.
+
 This guide provides step-by-step instructions for deploying the RFS Station Manager application to Azure using **Azure App Service** and **Azure Cosmos DB (Document DB) with MongoDB API**.
 
 > **Note:** Azure Cosmos DB with MongoDB API is also known as Azure Document DB. They are the same service - "Document DB" was the original name, now officially called "Cosmos DB". This guide uses both terms interchangeably.

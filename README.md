@@ -95,43 +95,55 @@ Additional features can be easily added as new routes following this pattern.
 
 ## 🏗️ Architecture
 
+### Hybrid Architecture (Azure Static Web Apps + App Service)
+
 ```
-┌─────────────────┐
-│  React Frontend │  ← User Interface
-│   (TypeScript)  │
-└────────┬────────┘
-         │ HTTP + WebSocket
-┌────────▼────────┐
-│  Node.js Backend│  ← API + Real-time
-│   (Express +    │
-│    Socket.io)   │
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│  Azure Cosmos DB│  ← Data Storage
-│  (Document DB)  │    (Production)
-│ with MongoDB API│
-└─────────────────┘
+┌─────────────────────────────┐
+│   Azure Static Web Apps     │  ← React Frontend (FREE)
+│   (Static Content + CDN)    │    TypeScript + Vite
+└──────────────┬──────────────┘
+               │ HTTPS + WebSocket Secure (WSS)
+┌──────────────▼──────────────┐
+│   Azure App Service         │  ← Node.js Backend
+│   (bungrfsstation)          │    Express + Socket.io
+│   - WebSocket: ON           │    Real-time sync
+│   - Always On: ON           │
+└──────────────┬──────────────┘
+               │
+┌──────────────▼──────────────┐
+│   Azure Cosmos DB           │  ← Data Storage
+│   (Document DB)             │    Production persistence
+│   with MongoDB API          │    (or in-memory for dev)
+└─────────────────────────────┘
 ```
+
+**Why this architecture?**
+- Azure Static Web Apps' Functions backend **does not support WebSockets**
+- Our application requires Socket.io for real-time sign-in synchronization
+- This hybrid approach preserves all functionality while gaining Static Web App benefits
 
 ### Tech Stack
 
 **Frontend:**
-- React 18
-- TypeScript
-- Vite (build tool)
-- Socket.io Client
-- Framer Motion (animations)
+- React 19
+- TypeScript (strict mode)
+- Vite 7 (build tool)
+- Socket.io Client 4 (real-time)
+- Framer Motion 12 (animations)
+- React Router DOM 7 (routing)
 
 **Backend:**
-- Node.js 18+
-- Express
-- Socket.io (WebSocket)
+- Node.js 22
+- Express 5
+- Socket.io 4 (WebSocket)
 - TypeScript
-- In-memory storage (dev)
+- MongoDB driver 6
+- In-memory storage (development)
 
 ## 📚 Documentation
 
+- **[Master Plan](MASTER_PLAN.md)** - Azure Static Web App refactoring strategy
+- **[Static Web App Setup](docs/STATIC_WEB_APP_SETUP.md)** - Comprehensive deployment guide
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - Local development setup
 - **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
@@ -140,14 +152,16 @@ Additional features can be easily added as new routes following this pattern.
 
 ## 🚢 Deployment
 
-### Azure Deployment
+### Azure Static Web Apps (Recommended)
 
-Deploy to Azure for a production-ready setup:
+Deploy frontend to Azure Static Web Apps with backend on Azure App Service:
 
-- **Frontend:** Azure Static Web Apps (Free tier)
+- **Frontend:** Azure Static Web Apps (Free tier - 100GB bandwidth/month)
 - **Backend:** Azure App Service B1 tier (~$13 AUD/month) - e.g., `bungrfsstation`
 - **Database:** Azure Cosmos DB (Document DB) with MongoDB API (Free tier available)
-- **Real-time:** Socket.io with native WebSocket support
+- **Real-time:** Socket.io with native WebSocket support on App Service
+
+**See [Static Web App Setup Guide](docs/STATIC_WEB_APP_SETUP.md) for detailed instructions.**
 
 **Estimated cost:** ~$13-25 AUD/month for a volunteer organization
 
