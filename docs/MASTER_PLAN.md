@@ -86,6 +86,15 @@ When making changes that affect this document:
 
 ### 🔄 In Progress
 
+- [x] **Table Storage Migration (Q1 2026)** - Migrating from Cosmos DB to Azure Table Storage
+  - [x] Phase 1: Documentation and environment setup
+  - [ ] Phase 2: Implement Table Storage database services
+  - [ ] Phase 3: Testing and validation
+  - [ ] Phase 4: Documentation updates
+  - [ ] Phase 5: Production deployment
+  - **Expected Savings**: 70-95% cost reduction ($6-34/year per station)
+  - **Status**: SDK installed, copilot instructions updated
+  - **Reference**: `docs/TABLE_STORAGE_MIGRATION_PLAN.md`
 - [ ] Frontend component tests
 - [ ] OpenAPI/Swagger specification
 - [ ] Enhanced logging and monitoring
@@ -516,6 +525,77 @@ When making changes that affect this document:
 
 ## Cost Optimization
 
+### Table Storage Migration (Q1 2026)
+
+**Status:** 🔄 In Progress  
+**Primary Goal:** Reduce database costs by 70-95%
+
+#### Migration Overview
+
+| Aspect | Before (Cosmos DB) | After (Table Storage) | Savings |
+|--------|-------------------|----------------------|---------|
+| Monthly Cost (per station) | $0.50-3 | $0.01-0.20 | 70-95% |
+| Annual Cost (per station) | $6-36 | $0.12-2.40 | $6-34/year |
+| 10 Stations Annual | $60-360 | $1.20-24 | $59-336 |
+| 50 Stations Annual | $294-1,680 | $6-120 | $288-1,560 |
+
+#### Migration Phases
+
+**Phase 1: Preparation (Complete)** ✅
+- [x] Review migration plan (`TABLE_STORAGE_MIGRATION_PLAN.md`)
+- [x] Install @azure/data-tables SDK
+- [x] Update copilot instructions
+- [x] Document current architecture
+
+**Phase 2: Implementation (Current)**
+- [ ] Create `tableStorageDatabase.ts` service
+- [ ] Create `tableStorageTruckChecksDatabase.ts` service
+- [ ] Update database factories with Table Storage support
+- [ ] Add `USE_TABLE_STORAGE` environment variable
+- [ ] Implement all database operations
+
+**Phase 3: Testing**
+- [ ] Unit tests for Table Storage services
+- [ ] Integration tests with existing API endpoints
+- [ ] Real-time sync validation
+- [ ] Performance benchmarking
+- [ ] Multi-user concurrent testing
+
+**Phase 4: Documentation**
+- [ ] Update `AS_BUILT.md` with Table Storage architecture
+- [ ] Update `api_register.json` (if needed)
+- [ ] Update `function_register.json` with new methods
+- [ ] Update `AZURE_DEPLOYMENT.md`
+- [ ] Document rollback procedures
+
+**Phase 5: Deployment**
+- [ ] Deploy to production with dual-database support
+- [ ] Enable Table Storage via environment variable
+- [ ] Monitor performance and costs
+- [ ] Maintain Cosmos DB fallback for 2 weeks
+- [ ] Delete Cosmos DB after successful validation
+
+#### Success Criteria
+- ✅ All API endpoints work with Table Storage
+- ✅ Real-time sync functional
+- ✅ Performance ≤ 2s page loads
+- ✅ Cost reduction confirmed (70-95%)
+- ✅ Zero data loss
+- ✅ Rollback capability maintained
+
+#### Rollback Plan
+If issues occur within 2 weeks:
+1. Set `USE_TABLE_STORAGE=false` in environment
+2. Application automatically falls back to Cosmos DB
+3. No code deployment needed
+4. Retain Cosmos DB until migration proven stable
+
+**See Also:**
+- Full migration plan: `docs/TABLE_STORAGE_MIGRATION_PLAN.md`
+- Cost analysis: `docs/FINAL_STORAGE_DECISION.md`
+
+---
+
 ### Current Costs (Production)
 
 | Service | Tier | Monthly Cost (AUD) |
@@ -525,12 +605,23 @@ When making changes that affect this document:
 | Azure Blob Storage | Standard | $0-5 (minimal usage) |
 | **Total** | | **$13-38** |
 
-### Optimization Opportunities
+**Post-Migration Costs (Expected):**
 
-#### C1.1: Optimize Cosmos DB RU Usage
-**Strategy:** Efficient queries, caching, bulk operations  
-**Potential Savings:** 30-50% on RU consumption  
-**Effort:** 2-3 days
+| Service | Tier | Monthly Cost (AUD) |
+|---------|------|-------------------|
+| Azure App Service | B1 | $13 |
+| Azure Table Storage | Standard | $0.01-2 (usage-based) |
+| Azure Blob Storage | Standard | $0-5 (minimal usage) |
+| **Total** | | **$13-20** |
+
+**Expected Savings:** $6-18/month ($72-216/year)
+
+### Other Optimization Opportunities
+
+#### C1.1: Optimize Cosmos DB RU Usage (DEPRECATED - Migrating to Table Storage)
+**Strategy:** ~~Efficient queries, caching, bulk operations~~  
+**Status:** Superseded by Table Storage migration  
+**Note:** Cosmos DB will be decommissioned after successful migration
 
 #### C1.2: Image Compression
 **Strategy:** Compress before upload, use CDN  

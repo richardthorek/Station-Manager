@@ -1,10 +1,12 @@
 /**
  * Truck Checks Database Factory
  * Determines which database service to use based on environment
+ * Priority: Table Storage > MongoDB/Cosmos DB > In-Memory
  */
 
 import { truckChecksDb as inMemoryTruckChecksDb } from './truckChecksDatabase';
 import { truckChecksDb as mongoTruckChecksDb } from './mongoTruckChecksDatabase';
+import { tableStorageTruckChecksDb } from './tableStorageTruckChecksDatabase';
 import { 
   Appliance, 
   ChecklistTemplate, 
@@ -53,10 +55,29 @@ export interface ITruckChecksDatabase {
 
 /**
  * Initialize and return the appropriate truck checks database service
+ * Priority order:
+ * 1. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
+ * 2. MongoDB/Cosmos DB (if MONGODB_URI set)
+ * 3. In-memory database (fallback for development)
  */
 async function initializeTruckChecksDatabase(): Promise<ITruckChecksDatabase> {
   const mongoUri = process.env.MONGODB_URI;
+  const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true';
   const nodeEnv = process.env.NODE_ENV;
+  
+  // Prefer Table Storage if explicitly enabled
+  if (useTableStorage && storageConnectionString) {
+    console.log('🔌 Connecting to Azure Table Storage for Truck Checks...');
+    try {
+      await tableStorageTruckChecksDb.connect();
+      console.log('✅ Connected to Azure Table Storage for Truck Checks');
+      return tableStorageTruckChecksDb as ITruckChecksDatabase;
+    } catch (error) {
+      console.error('❌ Failed to connect to Table Storage for Truck Checks:', error);
+      console.log('⚠️  Falling back to alternative database');
+    }
+  }
   
   // Use MongoDB if connection string is provided
   if (mongoUri && mongoUri.trim() !== '') {
@@ -68,14 +89,13 @@ async function initializeTruckChecksDatabase(): Promise<ITruckChecksDatabase> {
     } catch (error) {
       console.error('❌ Failed to connect to MongoDB for Truck Checks:', error);
       console.log('⚠️  Falling back to in-memory database for Truck Checks');
-      return inMemoryTruckChecksDb as ITruckChecksDatabase;
     }
   }
   
   // Fallback to in-memory database
   if (nodeEnv === 'production') {
     console.warn('⚠️  WARNING: Running Truck Checks in production with in-memory database!');
-    console.warn('⚠️  Data will be lost on restart. Set MONGODB_URI to use persistent storage.');
+    console.warn('⚠️  Data will be lost on restart. Set MONGODB_URI or enable Table Storage.');
   } else {
     console.log('📦 Using in-memory database for Truck Checks (development)');
   }
