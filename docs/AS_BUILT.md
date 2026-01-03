@@ -171,7 +171,8 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 | Express | ^5.1.0 | Web framework |
 | TypeScript | ^5.9.3 | Type-safe development |
 | Socket.io | ^4.8.1 | Real-time bidirectional communication |
-| MongoDB Driver | ^6.10.0 | Database connectivity |
+| **@azure/data-tables** | **^13.x** | **Azure Table Storage SDK (primary database)** |
+| MongoDB Driver | ^6.10.0 | Database connectivity (legacy/fallback) |
 | Azure Storage Blob | ^12.29.1 | Cloud file storage |
 | Multer | ^2.0.2 | File upload handling |
 | CORS | ^2.8.5 | Cross-origin resource sharing |
@@ -193,6 +194,60 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 ---
 
 ## Database Design
+
+### Database Architecture
+
+**Migration Status:** 🔄 Transitioning from Cosmos DB to Azure Table Storage (Q1 2026)
+
+The system supports three database backends through a factory pattern:
+
+1. **Azure Table Storage** (Primary - Production)
+   - Cost: $0.01-0.20/month per station (70-95% savings vs Cosmos DB)
+   - Connection: `AZURE_STORAGE_CONNECTION_STRING`
+   - Enable: `USE_TABLE_STORAGE=true`
+   - Implementation: `backend/src/services/tableStorageDatabase.ts`
+
+2. **Azure Cosmos DB with MongoDB API** (Legacy/Fallback)
+   - Cost: $0.50-3/month per station
+   - Connection: `MONGODB_URI`
+   - Implementation: `backend/src/services/mongoDatabase.ts`
+
+3. **In-Memory Database** (Development Only)
+   - No persistence (data lost on restart)
+   - Auto-selected when `NODE_ENV=development`
+   - Implementation: `backend/src/services/database.ts`
+
+**Selection Priority:**
+```
+USE_TABLE_STORAGE=true + AZURE_STORAGE_CONNECTION_STRING
+  ↓ (if not available)
+MONGODB_URI set
+  ↓ (if not available)
+In-memory database (development fallback)
+```
+
+### Table Storage Partition Strategy
+
+Efficient query patterns through strategic partitioning:
+
+| Table | Partition Key | Row Key | Purpose |
+|-------|--------------|---------|---------|
+| Members | `'Member'` | `memberId` | All members in single partition |
+| Activities | `'Activity'` | `activityId` | All activities together |
+| Events | `'Event_YYYY-MM'` | `eventId` | Partitioned by month |
+| EventParticipants | `eventId` | `participantId` | Co-located with event |
+| ActiveActivity | `'ActiveActivity'` | `activityId` | Singleton current activity |
+| CheckIns | `'CheckIn'` | `checkInId` | Legacy support |
+| Appliances | `'Appliance'` | `applianceId` | Truck check appliances |
+| ChecklistTemplates | `'Template'` | `templateId` | Checklist definitions |
+| CheckRuns | `'CheckRun_YYYY-MM'` | `runId` | Partitioned by month |
+| CheckResults | `runId` | `resultId` | Co-located with check run |
+
+**Design Benefits:**
+- Single-partition queries for members and activities (fast)
+- Month-based partitioning for time-series data (events, check runs)
+- Co-location pattern for related entities (participants with events)
+- Efficient range queries on time-based data
 
 ### Collections Overview
 
@@ -607,19 +662,33 @@ None currently (server-initiated broadcasts only)
 │  └────────────────────────────────────────────────────┘│
 │                                                          │
 │  ┌────────────────────────────────────────────────────┐│
-│  │ Azure Cosmos DB                                     ││
-│  │ API: MongoDB                                        ││
-│  │ Tier: Serverless (consumption-based)               ││
+│  │ Azure Storage Account ⭐ PRIMARY                    ││
+│  │ Service: Table Storage                              ││
+│  │ Cost: $0.01-0.20/month per station                 ││
 │  │ Region: Australia East                              ││
+│  │ Tables: Members, Activities, Events, etc.          ││
+│  │ + Blob Storage: Appliance/check images            ││
+│  │ Connection: AZURE_STORAGE_CONNECTION_STRING         ││
+│  │ Enable: USE_TABLE_STORAGE=true                     ││
 │  └────────────────────────────────────────────────────┘│
 │                                                          │
 │  ┌────────────────────────────────────────────────────┐│
-│  │ Azure Blob Storage (Optional)                       ││
-│  │ Container: station-photos                           ││
-│  │ Purpose: Appliance and check images                ││
+│  │ Azure Cosmos DB (LEGACY - Fallback Only)           ││
+│  │ API: MongoDB                                        ││
+│  │ Tier: Serverless (consumption-based)               ││
+│  │ Cost: $0.50-3/month per station                    ││
+│  │ Region: Australia East                              ││
+│  │ Status: To be decommissioned after migration       ││
 │  └────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────┘
 ```
+
+**Migration Status (Q1 2026):**
+- ✅ Table Storage services implemented
+- ✅ Database factory updated with priority selection
+- ⏳ Testing and validation in progress
+- 🔜 Production deployment
+- 🔜 Cosmos DB decommission (after 2 weeks validation)
 
 ### CI/CD Pipeline
 
@@ -655,6 +724,8 @@ None currently (server-initiated broadcasts only)
 | Real-time Sync | < 2s | ~500ms-1s | Socket.io broadcast |
 | Database Query | < 100ms | ~50ms | In-memory dev mode |
 | Database Query | < 300ms | ~150-250ms | MongoDB production |
+| **Database Query (Table Storage)** | **< 200ms** | **~80-150ms** | **Single-partition queries** |
+| **Database Query (Table Storage)** | **< 500ms** | **~200-400ms** | **Multi-partition queries** |
 
 ### Scalability
 
