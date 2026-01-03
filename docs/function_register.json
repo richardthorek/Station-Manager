@@ -1,0 +1,536 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-03",
+  "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager",
+  "services": {
+    "database": {
+      "file": "backend/src/services/database.ts",
+      "description": "In-memory database service implementation",
+      "type": "class",
+      "methods": {
+        "getAllMembers": {
+          "signature": "getAllMembers(): Member[]",
+          "line": 184,
+          "description": "Get all members sorted by activity level (check-ins in last 6 months)",
+          "returns": "Member[]",
+          "complexity": "O(n log n)",
+          "sideEffects": "none"
+        },
+        "getMemberById": {
+          "signature": "getMemberById(id: string): Member | undefined",
+          "line": 211,
+          "parameters": [
+            { "name": "id", "type": "string", "description": "Member UUID" }
+          ],
+          "returns": "Member | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "getMemberByQRCode": {
+          "signature": "getMemberByQRCode(qrCode: string): Member | undefined",
+          "line": 215,
+          "parameters": [
+            { "name": "qrCode", "type": "string", "description": "Unique QR identifier" }
+          ],
+          "returns": "Member | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "createMember": {
+          "signature": "createMember(name: string): Member",
+          "line": 219,
+          "parameters": [
+            { "name": "name", "type": "string", "description": "Member full name" }
+          ],
+          "returns": "Member",
+          "complexity": "O(1)",
+          "sideEffects": "Adds member to database, generates UUID and QR code"
+        },
+        "updateMember": {
+          "signature": "updateMember(id: string, name: string, rank: string | null): Member | undefined",
+          "line": 230,
+          "parameters": [
+            { "name": "id", "type": "string", "description": "Member UUID" },
+            { "name": "name", "type": "string", "description": "New name" },
+            { "name": "rank", "type": "string | null", "description": "New rank or null" }
+          ],
+          "returns": "Member | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "Updates member in database"
+        },
+        "getCheckInsByMember": {
+          "signature": "getCheckInsByMember(memberId: string): CheckIn[]",
+          "line": 243,
+          "parameters": [
+            { "name": "memberId", "type": "string", "description": "Member UUID" }
+          ],
+          "returns": "CheckIn[]",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "getAllActivities": {
+          "signature": "getAllActivities(): Activity[]",
+          "line": 247,
+          "description": "Get all activities sorted (default first, then custom alphabetically)",
+          "returns": "Activity[]",
+          "complexity": "O(n log n)",
+          "sideEffects": "none"
+        },
+        "getActivityById": {
+          "signature": "getActivityById(id: string): Activity | undefined",
+          "line": 257,
+          "parameters": [
+            { "name": "id", "type": "string", "description": "Activity UUID" }
+          ],
+          "returns": "Activity | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "createActivity": {
+          "signature": "createActivity(name: string, createdBy?: string): Activity",
+          "line": 261,
+          "parameters": [
+            { "name": "name", "type": "string", "description": "Activity name" },
+            { "name": "createdBy", "type": "string | undefined", "description": "Member ID who created" }
+          ],
+          "returns": "Activity",
+          "complexity": "O(1)",
+          "sideEffects": "Adds custom activity to database"
+        },
+        "getActiveActivity": {
+          "signature": "getActiveActivity(): ActiveActivity | null",
+          "line": 270,
+          "description": "Get current active activity with full activity details",
+          "returns": "ActiveActivity | null",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "setActiveActivity": {
+          "signature": "setActiveActivity(activityId: string, setBy?: string): ActiveActivity",
+          "line": 282,
+          "parameters": [
+            { "name": "activityId", "type": "string", "description": "Activity UUID" },
+            { "name": "setBy", "type": "string | undefined", "description": "Member ID who set it" }
+          ],
+          "returns": "ActiveActivity",
+          "complexity": "O(n)",
+          "sideEffects": "Replaces current active activity"
+        },
+        "getActiveCheckIns": {
+          "signature": "getActiveCheckIns(): CheckInWithDetails[]",
+          "line": 291,
+          "description": "Get all active check-ins with member and activity details",
+          "returns": "CheckInWithDetails[]",
+          "complexity": "O(n²)",
+          "sideEffects": "none"
+        },
+        "getCheckInByMember": {
+          "signature": "getCheckInByMember(memberId: string): CheckIn | undefined",
+          "line": 307,
+          "parameters": [
+            { "name": "memberId", "type": "string", "description": "Member UUID" }
+          ],
+          "returns": "CheckIn | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "createCheckIn": {
+          "signature": "createCheckIn(memberId: string, activityId: string, method: string, location?: string, isOffsite: boolean = false): CheckIn",
+          "line": 314,
+          "parameters": [
+            { "name": "memberId", "type": "string" },
+            { "name": "activityId", "type": "string" },
+            { "name": "method", "type": "string", "enum": ["kiosk", "mobile", "qr"] },
+            { "name": "location", "type": "string | undefined" },
+            { "name": "isOffsite", "type": "boolean", "default": false }
+          ],
+          "returns": "CheckIn",
+          "complexity": "O(1)",
+          "sideEffects": "Creates new check-in record"
+        },
+        "deactivateCheckIn": {
+          "signature": "deactivateCheckIn(checkInId: string): CheckIn | undefined",
+          "line": 331,
+          "parameters": [
+            { "name": "checkInId", "type": "string", "description": "Check-in UUID" }
+          ],
+          "returns": "CheckIn | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "Marks check-in as inactive"
+        },
+        "deactivateCheckInByMember": {
+          "signature": "deactivateCheckInByMember(memberId: string): boolean",
+          "line": 341,
+          "parameters": [
+            { "name": "memberId", "type": "string", "description": "Member UUID" }
+          ],
+          "returns": "boolean",
+          "complexity": "O(n)",
+          "sideEffects": "Deactivates active check-in if found"
+        },
+        "getAllEvents": {
+          "signature": "getAllEvents(): Event[]",
+          "line": 350,
+          "description": "Get all events sorted by start time (descending)",
+          "returns": "Event[]",
+          "complexity": "O(n log n)",
+          "sideEffects": "none"
+        },
+        "getActiveEvents": {
+          "signature": "getActiveEvents(): Event[]",
+          "line": 354,
+          "returns": "Event[]",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "getEventById": {
+          "signature": "getEventById(id: string): Event | undefined",
+          "line": 358,
+          "parameters": [
+            { "name": "id", "type": "string", "description": "Event UUID" }
+          ],
+          "returns": "Event | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "getEventWithParticipants": {
+          "signature": "getEventWithParticipants(id: string): EventWithParticipants | undefined",
+          "line": 362,
+          "parameters": [
+            { "name": "id", "type": "string", "description": "Event UUID" }
+          ],
+          "returns": "EventWithParticipants | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "createEvent": {
+          "signature": "createEvent(name: string, type: string, location?: string, description?: string): Event",
+          "line": 375,
+          "parameters": [
+            { "name": "name", "type": "string" },
+            { "name": "type", "type": "string", "enum": ["incident", "training", "meeting", "maintenance", "other"] },
+            { "name": "location", "type": "string | undefined" },
+            { "name": "description", "type": "string | undefined" }
+          ],
+          "returns": "Event",
+          "complexity": "O(1)",
+          "sideEffects": "Creates new event"
+        },
+        "endEvent": {
+          "signature": "endEvent(id: string): Event | undefined",
+          "line": 391,
+          "parameters": [
+            { "name": "id", "type": "string", "description": "Event UUID" }
+          ],
+          "returns": "Event | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "Sets event as inactive with end time"
+        },
+        "addParticipant": {
+          "signature": "addParticipant(eventId: string, memberId: string, role?: string): EventParticipant",
+          "line": 401,
+          "parameters": [
+            { "name": "eventId", "type": "string" },
+            { "name": "memberId", "type": "string" },
+            { "name": "role", "type": "string | undefined" }
+          ],
+          "returns": "EventParticipant",
+          "complexity": "O(1)",
+          "sideEffects": "Adds participant to event"
+        },
+        "removeParticipant": {
+          "signature": "removeParticipant(eventId: string, participantId: string): EventParticipant | undefined",
+          "line": 418,
+          "parameters": [
+            { "name": "eventId", "type": "string" },
+            { "name": "participantId", "type": "string" }
+          ],
+          "returns": "EventParticipant | undefined",
+          "complexity": "O(n)",
+          "sideEffects": "Marks participant as inactive with checkout time"
+        },
+        "getEventParticipants": {
+          "signature": "getEventParticipants(eventId: string): EventParticipant[]",
+          "line": 432,
+          "parameters": [
+            { "name": "eventId", "type": "string" }
+          ],
+          "returns": "EventParticipant[]",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        }
+      }
+    },
+    "mongoDatabase": {
+      "file": "backend/src/services/mongoDatabase.ts",
+      "description": "MongoDB/Cosmos DB implementation (async versions of database methods)",
+      "type": "class",
+      "note": "All methods are async and mirror the in-memory database but operate on MongoDB collections"
+    },
+    "achievementService": {
+      "file": "backend/src/services/achievementService.ts",
+      "description": "Business logic for calculating and tracking member achievements",
+      "functions": {
+        "calculateAchievements": {
+          "signature": "calculateAchievements(memberId: string, db: DatabaseService): Achievement[]",
+          "description": "Calculate all achievements for a member based on their activity",
+          "parameters": [
+            { "name": "memberId", "type": "string", "description": "Member UUID" },
+            { "name": "db", "type": "DatabaseService", "description": "Database service instance" }
+          ],
+          "returns": "Achievement[]",
+          "logic": [
+            "Fetches member check-in history",
+            "Calculates sign-in milestones (1, 10, 50, 100)",
+            "Calculates event participation (1, 10, 50)",
+            "Calculates truck check participation (5, 20, 50)",
+            "Returns array with unlock status and progress"
+          ],
+          "achievements": [
+            { "id": "first-signin", "name": "First Sign-In", "requirement": 1, "category": "sign-ins" },
+            { "id": "regular-attendee", "name": "Regular Attendee", "requirement": 10, "category": "sign-ins" },
+            { "id": "dedicated-member", "name": "Dedicated Member", "requirement": 50, "category": "sign-ins" },
+            { "id": "veteran", "name": "Veteran", "requirement": 100, "category": "sign-ins" },
+            { "id": "first-event", "name": "First Event", "requirement": 1, "category": "events" },
+            { "id": "event-regular", "name": "Event Regular", "requirement": 10, "category": "events" },
+            { "id": "event-veteran", "name": "Event Veteran", "requirement": 50, "category": "events" },
+            { "id": "team-player", "name": "Team Player", "requirement": 5, "category": "truck-checks" },
+            { "id": "safety-champion", "name": "Safety Champion", "requirement": 20, "category": "truck-checks" },
+            { "id": "equipment-expert", "name": "Equipment Expert", "requirement": 50, "category": "truck-checks" }
+          ]
+        }
+      }
+    },
+    "azureStorage": {
+      "file": "backend/src/services/azureStorage.ts",
+      "description": "Azure Blob Storage service for file uploads",
+      "functions": {
+        "uploadPhoto": {
+          "signature": "uploadPhoto(file: Buffer, filename: string): Promise<string>",
+          "description": "Upload photo to Azure Blob Storage",
+          "parameters": [
+            { "name": "file", "type": "Buffer", "description": "File buffer" },
+            { "name": "filename", "type": "string", "description": "Target filename" }
+          ],
+          "returns": "Promise<string>",
+          "returnDescription": "Public URL of uploaded file",
+          "throws": ["Azure Storage errors"],
+          "async": true
+        },
+        "deletePhoto": {
+          "signature": "deletePhoto(url: string): Promise<void>",
+          "description": "Delete photo from Azure Blob Storage",
+          "parameters": [
+            { "name": "url", "type": "string", "description": "Blob URL" }
+          ],
+          "returns": "Promise<void>",
+          "throws": ["Azure Storage errors"],
+          "async": true
+        }
+      }
+    },
+    "dbFactory": {
+      "file": "backend/src/services/dbFactory.ts",
+      "description": "Database factory for creating appropriate database instance",
+      "functions": {
+        "ensureDatabase": {
+          "signature": "ensureDatabase(): Promise<DatabaseService>",
+          "description": "Get database instance (singleton pattern)",
+          "returns": "Promise<DatabaseService>",
+          "logic": "Returns in-memory DB for development, MongoDB for production",
+          "async": true
+        },
+        "initializeDatabase": {
+          "signature": "initializeDatabase(): Promise<DatabaseService>",
+          "description": "Initialize database connection",
+          "returns": "Promise<DatabaseService>",
+          "logic": "Checks NODE_ENV and MONGODB_URI to determine DB type",
+          "async": true
+        }
+      }
+    },
+    "truckChecksDatabase": {
+      "file": "backend/src/services/truckChecksDatabase.ts",
+      "description": "In-memory truck checks database service",
+      "type": "class",
+      "collections": ["appliances", "templates", "check_runs", "check_results"],
+      "methodCategories": {
+        "appliances": ["getAllAppliances", "getApplianceById", "createAppliance", "updateAppliance", "deactivateAppliance"],
+        "templates": ["getAllTemplates", "getTemplateById", "getTemplateWithItems", "createTemplate", "updateTemplate", "deleteTemplate"],
+        "checkRuns": ["getAllCheckRuns", "getCheckRunById", "getCheckRunWithResults", "createCheckRun", "completeCheckRun"],
+        "checkResults": ["createCheckResult", "updateCheckResult", "getCheckResultsByRun"]
+      }
+    },
+    "mongoTruckChecksDatabase": {
+      "file": "backend/src/services/mongoTruckChecksDatabase.ts",
+      "description": "MongoDB implementation of truck checks database",
+      "note": "Async versions of all truckChecksDatabase methods"
+    },
+    "truckChecksDbFactory": {
+      "file": "backend/src/services/truckChecksDbFactory.ts",
+      "description": "Factory for truck checks database instances",
+      "functions": {
+        "ensureTruckChecksDatabase": {
+          "signature": "ensureTruckChecksDatabase(): Promise<TruckChecksDatabase>",
+          "description": "Get truck checks database instance (singleton)",
+          "returns": "Promise<TruckChecksDatabase>",
+          "async": true
+        }
+      }
+    }
+  },
+  "routes": {
+    "members": {
+      "file": "backend/src/routes/members.ts",
+      "description": "Express routes for member management",
+      "endpoints": 6,
+      "handlers": [
+        { "method": "GET", "path": "/", "handler": "getAllMembers", "line": 18 },
+        { "method": "GET", "path": "/:id", "handler": "getMemberById", "line": 30 },
+        { "method": "GET", "path": "/qr/:qrCode", "handler": "getMemberByQRCode", "line": 45 },
+        { "method": "POST", "path": "/", "handler": "createMember", "line": 60 },
+        { "method": "PUT", "path": "/:id", "handler": "updateMember", "line": 76 },
+        { "method": "GET", "path": "/:id/history", "handler": "getMemberHistory", "line": 95 }
+      ],
+      "socketEvents": ["member-added", "member-updated"]
+    },
+    "activities": {
+      "file": "backend/src/routes/activities.ts",
+      "description": "Express routes for activity management",
+      "endpoints": 4,
+      "handlers": [
+        { "method": "GET", "path": "/", "handler": "getAllActivities", "line": 18 },
+        { "method": "POST", "path": "/", "handler": "createActivity", "line": 30 },
+        { "method": "GET", "path": "/active", "handler": "getActiveActivity", "line": 48 },
+        { "method": "POST", "path": "/active", "handler": "setActiveActivity", "line": 68 }
+      ],
+      "socketEvents": ["activity-change"]
+    },
+    "checkins": {
+      "file": "backend/src/routes/checkins.ts",
+      "description": "Express routes for check-in management",
+      "endpoints": 4,
+      "handlers": [
+        { "method": "GET", "path": "/active", "handler": "getActiveCheckIns", "line": 18 },
+        { "method": "POST", "path": "/", "handler": "toggleCheckIn", "line": 30 },
+        { "method": "DELETE", "path": "/:memberId", "handler": "undoCheckIn", "line": 93 },
+        { "method": "POST", "path": "/url-checkin", "handler": "urlBasedCheckIn", "line": 111 }
+      ],
+      "socketEvents": ["checkin", "checkout"]
+    },
+    "events": {
+      "file": "backend/src/routes/events.ts",
+      "description": "Express routes for event management",
+      "endpoints": 7,
+      "handlers": [
+        { "method": "GET", "path": "/", "handler": "getAllEvents", "line": 18 },
+        { "method": "GET", "path": "/active", "handler": "getActiveEvents", "line": 30 },
+        { "method": "GET", "path": "/:id", "handler": "getEventById", "line": 42 },
+        { "method": "POST", "path": "/", "handler": "createEvent", "line": 58 },
+        { "method": "PUT", "path": "/:id/end", "handler": "endEvent", "line": 81 },
+        { "method": "POST", "path": "/:id/participants", "handler": "addParticipant", "line": 99 },
+        { "method": "DELETE", "path": "/:id/participants/:participantId", "handler": "removeParticipant", "line": 125 }
+      ],
+      "socketEvents": ["event-created", "event-ended", "participant-added", "participant-removed"]
+    },
+    "truckChecks": {
+      "file": "backend/src/routes/truckChecks.ts",
+      "description": "Express routes for truck check management",
+      "endpointCategories": {
+        "appliances": 5,
+        "templates": 5,
+        "checkRuns": 4,
+        "checkResults": 2
+      },
+      "totalEndpoints": 16
+    },
+    "achievements": {
+      "file": "backend/src/routes/achievements.ts",
+      "description": "Express routes for achievement tracking",
+      "endpoints": 2,
+      "handlers": [
+        { "method": "GET", "path": "/member/:memberId", "handler": "getMemberAchievements" },
+        { "method": "GET", "path": "/recent", "handler": "getRecentAchievements" }
+      ],
+      "socketEvents": ["achievement-unlocked"]
+    }
+  },
+  "utilities": {
+    "uuid": {
+      "package": "uuid",
+      "function": "v4()",
+      "usage": "Generate unique identifiers for all entities",
+      "usedIn": ["All create operations", "QR code generation"]
+    },
+    "dateTime": {
+      "type": "JavaScript Date",
+      "format": "ISO 8601",
+      "usage": "Timestamp creation and manipulation"
+    },
+    "stringUtils": {
+      "functions": [
+        { "name": "String.prototype.trim()", "usage": "Input sanitization" },
+        { "name": "String.prototype.localeCompare()", "usage": "Alphabetical sorting" }
+      ]
+    }
+  },
+  "typeDefinitions": {
+    "file": "backend/src/types/index.ts",
+    "interfaces": [
+      "Member",
+      "Activity",
+      "CheckIn",
+      "CheckInWithDetails",
+      "ActiveActivity",
+      "Event",
+      "EventParticipant",
+      "EventWithParticipants",
+      "DatabaseService",
+      "Appliance",
+      "ChecklistTemplate",
+      "ChecklistItem",
+      "CheckRun",
+      "CheckResult",
+      "TruckChecksDatabase"
+    ]
+  },
+  "testCoverage": {
+    "framework": "Jest + Supertest",
+    "totalTests": 45,
+    "suites": {
+      "members": { "file": "backend/src/__tests__/members.test.ts", "tests": 16 },
+      "activities": { "file": "backend/src/__tests__/activities.test.ts", "tests": 16 },
+      "checkins": { "file": "backend/src/__tests__/checkins.test.ts", "tests": 13 }
+    },
+    "coverageTarget": {
+      "branches": 70,
+      "functions": 70,
+      "lines": 70,
+      "statements": 70
+    }
+  },
+  "maintenance": {
+    "updateTriggers": [
+      "When adding new service methods or functions",
+      "When modifying function signatures or parameters",
+      "When adding new database methods",
+      "When creating new utility functions",
+      "When refactoring business logic",
+      "When adding new routes or handlers"
+    ],
+    "validation": {
+      "schema": "Validate against JSON Schema Draft 7",
+      "tools": ["jsonlint", "ajv-cli"],
+      "ci": "Run validation in CI/CD pipeline"
+    },
+    "references": {
+      "from": [
+        "docs/FUNCTION_REGISTER.md",
+        "docs/AS_BUILT.md",
+        "docs/MASTER_PLAN.md",
+        ".github/copilot-instructions.md"
+      ]
+    }
+  }
+}
