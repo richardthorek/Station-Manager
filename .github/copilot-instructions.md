@@ -8,6 +8,199 @@ The RFS Station Manager is a modern, real-time digital sign-in system built for 
 **Status**: Production-ready with active development  
 **Purpose**: Volunteer organization management for RFS stations
 
+---
+
+## Documentation & Planning Discipline
+
+### Single Source of Truth Principle
+
+This repository follows strict documentation discipline to ensure consistency, maintainability, and effective AI-assisted development:
+
+#### Master Plan (Planning Source of Truth)
+- **Location**: `/docs/MASTER_PLAN.md`
+- **Purpose**: Single source of truth for ALL planning, roadmap, phases, enhancement tracking, and strategic intent
+- **Requirements**:
+  - ALL feature planning, enhancement backlog, technical debt, and future roadmap MUST be documented here
+  - NO duplicate planning documents allowed
+  - All major documentation files MUST reference the master plan
+  - All PRs that affect project direction MUST update the master plan
+  - Version-controlled and living document (updated continuously)
+
+#### As-Built Documentation (Implementation Source of Truth)
+- **Location**: `/docs/AS_BUILT.md` (main) and feature-specific docs in `/docs/`
+- **Purpose**: Single, always-updated record of current system state, architecture, and implementation
+- **Requirements**:
+  - ONE authoritative as-built doc per major feature/component (never duplicated)
+  - Must include: API endpoints, database schema, architecture diagrams, configuration, deployment info
+  - Always kept up-to-date - NEVER create "as-built v2" or dated copies
+  - Include links to images/diagrams stored in repo or cloud storage
+  - Update immediately when implementation changes
+
+#### Machine-Readable API and Function Registries
+- **Location**: 
+  - `/docs/api_register.json` - REST API endpoints and WebSocket events
+  - `/docs/function_register.json` - Backend functions, services, and business logic
+- **Purpose**: Structured, programmatically-accessible interface definitions
+- **Requirements**:
+  - **MUST capture**:
+    - REST endpoint paths, methods, parameters, request/response schemas
+    - WebSocket event names and payloads
+    - Function signatures with parameter types and return types
+    - Database service methods
+    - TypeScript interfaces and type definitions
+    - Implementation file locations and line numbers
+  - **JSON Schema**: Follow JSON Schema Draft 7 format
+  - **Validation**: Must be valid JSON, validated in CI/CD
+  - **Cross-references**: Referenced from AS_BUILT.md, MASTER_PLAN.md, and API_DOCUMENTATION.md
+  - **Update triggers**: New endpoints, modified signatures, schema changes, new services
+  - **Tools**: Use `jsonlint` or `ajv-cli` for validation
+
+### Pull Request Requirements
+
+Every PR (including AI-generated PRs) MUST:
+
+1. **Update `/docs/MASTER_PLAN.md`** if the PR:
+   - Adds/removes features
+   - Changes project roadmap or priorities
+   - Addresses technical debt
+   - Affects future planning
+
+2. **Update `/docs/AS_BUILT.md`** and related as-built docs if the PR:
+   - Modifies architecture or system design
+   - Changes API endpoints or database schema
+   - Updates deployment configuration
+   - Adds/removes major components
+
+3. **Update `/docs/api_register.json`** if the PR:
+   - Adds, modifies, or removes REST API endpoints
+   - Changes request/response schemas
+   - Adds or modifies WebSocket events
+   - Updates endpoint authentication or parameters
+
+4. **Update `/docs/function_register.json`** if the PR:
+   - Adds new backend service methods or functions
+   - Modifies function signatures or parameters
+   - Changes business logic organization
+   - Adds new database methods
+
+5. **Update `.github/copilot-instructions.md`** if the PR:
+   - Introduces new repository conventions
+   - Changes development workflows or standards
+   - Modifies project structure rules
+   - Updates deployment or CI/CD processes
+
+6. **Validate machine-readable files**:
+   - Run `jsonlint` on all modified JSON registry files
+   - Ensure cross-references between docs are maintained
+   - Verify file locations match actual implementation
+
+### Recursive Enforcement
+
+**Copilot and AI tools MUST:**
+- Propose updates to `.github/copilot-instructions.md` when repository procedures evolve
+- Suggest corrections when documentation drifts from implementation
+- Flag when multiple planning documents are created (violation of single source of truth)
+- Recommend consolidation when duplicate as-built docs are detected
+- Validate that PRs include required documentation updates
+
+**Examples of Required Updates:**
+```yaml
+# Scenario: Adding a new API endpoint
+Required updates:
+  - backend/src/routes/new-feature.ts (implementation)
+  - docs/api_register.json (add endpoint definition)
+  - docs/AS_BUILT.md (update API endpoint count/summary)
+  - docs/MASTER_PLAN.md (if implementing planned feature, mark complete)
+
+# Scenario: Changing development workflow
+Required updates:
+  - .github/workflows/*.yml (implementation)
+  - .github/copilot-instructions.md (document new workflow)
+  - docs/MASTER_PLAN.md (update CI/CD section if strategic)
+
+# Scenario: Major refactoring
+Required updates:
+  - Source files (implementation)
+  - docs/function_register.json (updated signatures/locations)
+  - docs/AS_BUILT.md (architecture changes)
+  - .github/copilot-instructions.md (if patterns change)
+```
+
+### Documentation Cross-Reference Map
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ .github/copilot-instructions.md (This File)                 │
+│ - Repository conventions and AI guidance                     │
+│ - References: MASTER_PLAN.md, AS_BUILT.md, api_register.json│
+└─────────────────────────────────────────────────────────────┘
+           │
+           ├──────────────────┬────────────────────────┐
+           ▼                  ▼                        ▼
+┌────────────────────┐ ┌──────────────────┐ ┌─────────────────────┐
+│ MASTER_PLAN.md     │ │ AS_BUILT.md      │ │ api_register.json   │
+│ (Planning Truth)   │ │ (Implementation) │ │ function_register.json│
+│                    │ │                  │ │ (Machine-Readable)  │
+│ - Roadmap          │ │ - Architecture   │ │                     │
+│ - Enhancements     │ │ - API Endpoints  │ │ - Endpoint schemas  │
+│ - Technical Debt   │ │ - Database       │ │ - Function sigs     │
+│ - Future Features  │ │ - Deployment     │ │ - Type definitions  │
+└────────────────────┘ └──────────────────┘ └─────────────────────┘
+           │                  │                        │
+           └──────────────────┴────────────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │ Feature Docs:    │
+                    │ - API_DOCS.md    │
+                    │ - GETTING_STARTED│
+                    │ - DEPLOYMENT.md  │
+                    └──────────────────┘
+```
+
+### Machine-Readable Format Examples
+
+**API Register Example:**
+```json
+{
+  "endpoints": {
+    "members": {
+      "GET /api/members": {
+        "method": "GET",
+        "path": "/api/members",
+        "description": "Get all members",
+        "authentication": "none",
+        "responses": {
+          "200": { "schema": { "type": "array", "items": { "$ref": "#/definitions/Member" } } }
+        },
+        "implementation": "backend/src/routes/members.ts:18"
+      }
+    }
+  }
+}
+```
+
+**Function Register Example:**
+```json
+{
+  "services": {
+    "database": {
+      "methods": {
+        "createMember": {
+          "signature": "createMember(name: string): Member",
+          "parameters": [{ "name": "name", "type": "string" }],
+          "returns": "Member",
+          "line": 219,
+          "sideEffects": "Adds member to database"
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
 ## Technology Stack
 
 ### Frontend

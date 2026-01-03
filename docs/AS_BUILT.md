@@ -7,6 +7,38 @@
 
 ---
 
+## Document Control
+
+### As-Built Documentation Principle
+This document is the **SINGLE SOURCE OF TRUTH** for the current implementation state, architecture, and technical details of the RFS Station Manager system. It must always reflect the actual deployed system - never create dated copies or "v2" versions.
+
+### Related Documentation
+- **Planning & Roadmap**: `docs/MASTER_PLAN.md` - Strategic planning, enhancement backlog, and future features
+- **AI Development Guidelines**: `.github/copilot-instructions.md` - Repository conventions and development standards
+- **Machine-Readable Registries**:
+  - `docs/api_register.json` - REST API endpoints and WebSocket events (programmatic access)
+  - `docs/function_register.json` - Backend functions and service methods (programmatic access)
+- **Feature Documentation**:
+  - `docs/API_DOCUMENTATION.md` - Human-readable API reference
+  - `docs/FUNCTION_REGISTER.md` - Human-readable function reference
+  - `docs/FEATURE_DEVELOPMENT_GUIDE.md` - Adding new features
+
+### Update Requirements
+This document MUST be updated when:
+- Architecture or system design changes
+- API endpoints are added, modified, or removed
+- Database schema changes
+- Deployment configuration changes
+- Major components are added or removed
+- Technology stack versions are updated
+
+When updating this document, also update:
+- `docs/api_register.json` if APIs changed
+- `docs/function_register.json` if backend functions changed
+- `docs/MASTER_PLAN.md` if strategic direction affected
+
+---
+
 ## Table of Contents
 
 1. [Executive Summary](#executive-summary)
@@ -384,7 +416,19 @@ frontend/src/
     └── index.ts
 ```
 
-### Backend Service Structure
+### Backend Service Structure and Function Registry
+
+**Machine-Readable Function Registry**: [`docs/function_register.json`](function_register.json) - Complete registry of all backend functions, service methods, and business logic
+
+The function register contains:
+- Service method signatures with parameter types
+- Database operation functions
+- Business logic implementations
+- Utility functions
+- Implementation file locations and line numbers
+- Complexity analysis and side effects documentation
+
+**Human-Readable Documentation**: [FUNCTION_REGISTER.md](FUNCTION_REGISTER.md) for detailed function reference.
 
 ```
 backend/src/
@@ -418,7 +462,18 @@ backend/src/
 
 ## API Endpoints
 
-See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete endpoint reference.
+### Machine-Readable API Registry
+
+**Primary Source**: [`docs/api_register.json`](api_register.json) - Complete machine-readable REST API and WebSocket event registry
+
+The API register contains:
+- Full endpoint definitions with request/response schemas
+- Parameter types and validation rules
+- WebSocket event payloads
+- Implementation file locations
+- Status codes and error responses
+
+**Human-Readable Documentation**: [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed endpoint reference.
 
 ### Endpoint Summary by Category
 

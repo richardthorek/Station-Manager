@@ -1,0 +1,714 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-03",
+  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager",
+  "baseUrl": {
+    "development": "http://localhost:3000",
+    "production": "https://bungrfsstation.azurewebsites.net"
+  },
+  "apiPrefix": "/api",
+  "endpoints": {
+    "health": {
+      "GET /health": {
+        "method": "GET",
+        "path": "/health",
+        "description": "Check server health and status",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "enum": ["ok", "error"] },
+                "timestamp": { "type": "string", "format": "date-time" },
+                "database": { "type": "string", "enum": ["mongodb", "in-memory"] },
+                "environment": { "type": "string", "enum": ["development", "production"] }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/index.ts:68"
+      }
+    },
+    "members": {
+      "GET /api/members": {
+        "method": "GET",
+        "path": "/api/members",
+        "description": "Get all registered members sorted by activity level",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Array of members",
+            "schema": { "type": "array", "items": { "$ref": "#/definitions/Member" } }
+          },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/members.ts:18"
+      },
+      "GET /api/members/:id": {
+        "method": "GET",
+        "path": "/api/members/:id",
+        "description": "Get specific member by ID",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": { "type": "string", "format": "uuid", "required": true, "description": "Member UUID" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Member object", "schema": { "$ref": "#/definitions/Member" } },
+          "404": { "description": "Member not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/members.ts:30"
+      },
+      "GET /api/members/qr/:qrCode": {
+        "method": "GET",
+        "path": "/api/members/qr/:qrCode",
+        "description": "Get member by QR code",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "qrCode": { "type": "string", "required": true, "description": "Unique QR identifier" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Member object", "schema": { "$ref": "#/definitions/Member" } },
+          "404": { "description": "Member not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/members.ts:45"
+      },
+      "POST /api/members": {
+        "method": "POST",
+        "path": "/api/members",
+        "description": "Create new member",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string", "description": "Member full name" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Member created", "schema": { "$ref": "#/definitions/Member" } },
+          "400": { "description": "Invalid or missing name" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/members.ts:60",
+        "socketEvent": "member-added"
+      },
+      "PUT /api/members/:id": {
+        "method": "PUT",
+        "path": "/api/members/:id",
+        "description": "Update member information",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": { "type": "string", "format": "uuid", "required": true, "description": "Member UUID" }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string", "description": "Member full name" },
+              "rank": { "type": "string", "nullable": true, "description": "Optional rank" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Member updated", "schema": { "$ref": "#/definitions/Member" } },
+          "400": { "description": "Invalid request" },
+          "404": { "description": "Member not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/members.ts:76",
+        "socketEvent": "member-updated"
+      },
+      "GET /api/members/:id/history": {
+        "method": "GET",
+        "path": "/api/members/:id/history",
+        "description": "Get member's check-in history",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": { "type": "string", "format": "uuid", "required": true, "description": "Member UUID" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Array of check-ins", "schema": { "type": "array", "items": { "$ref": "#/definitions/CheckIn" } } },
+          "404": { "description": "Member not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/members.ts:95"
+      }
+    },
+    "activities": {
+      "GET /api/activities": {
+        "method": "GET",
+        "path": "/api/activities",
+        "description": "Get all activities (default + custom)",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Array of activities", "schema": { "type": "array", "items": { "$ref": "#/definitions/Activity" } } },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/activities.ts:18"
+      },
+      "POST /api/activities": {
+        "method": "POST",
+        "path": "/api/activities",
+        "description": "Create custom activity",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string", "description": "Activity name" },
+              "createdBy": { "type": "string", "format": "uuid", "nullable": true, "description": "Member ID who created" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Activity created", "schema": { "$ref": "#/definitions/Activity" } },
+          "400": { "description": "Invalid or missing name" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/activities.ts:30"
+      },
+      "GET /api/activities/active": {
+        "method": "GET",
+        "path": "/api/activities/active",
+        "description": "Get currently active activity for station",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Active activity", "schema": { "$ref": "#/definitions/ActiveActivity" } },
+          "404": { "description": "No active activity set" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/activities.ts:48"
+      },
+      "POST /api/activities/active": {
+        "method": "POST",
+        "path": "/api/activities/active",
+        "description": "Set active activity",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["activityId"],
+            "properties": {
+              "activityId": { "type": "string", "format": "uuid", "description": "Activity UUID" },
+              "setBy": { "type": "string", "format": "uuid", "nullable": true, "description": "Member ID who set it" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Active activity set", "schema": { "$ref": "#/definitions/ActiveActivity" } },
+          "400": { "description": "Missing activity ID" },
+          "404": { "description": "Activity not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/activities.ts:68",
+        "socketEvent": "activity-change"
+      }
+    },
+    "checkins": {
+      "GET /api/checkins/active": {
+        "method": "GET",
+        "path": "/api/checkins/active",
+        "description": "Get all currently active check-ins",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Array of active check-ins", "schema": { "type": "array", "items": { "$ref": "#/definitions/CheckInWithDetails" } } },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/checkins.ts:18"
+      },
+      "POST /api/checkins": {
+        "method": "POST",
+        "path": "/api/checkins",
+        "description": "Check in member or undo existing check-in (toggle)",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["memberId"],
+            "properties": {
+              "memberId": { "type": "string", "format": "uuid", "description": "Member UUID" },
+              "activityId": { "type": "string", "format": "uuid", "nullable": true, "description": "Activity UUID (uses active if not provided)" },
+              "method": { "type": "string", "enum": ["kiosk", "mobile", "qr"], "default": "mobile" },
+              "location": { "type": "string", "nullable": true, "description": "Optional location" },
+              "isOffsite": { "type": "boolean", "default": false }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Check-in undone", "schema": { "type": "object", "properties": { "action": { "enum": ["undone"] }, "checkIn": { "$ref": "#/definitions/CheckIn" } } } },
+          "201": { "description": "Checked in", "schema": { "type": "object", "properties": { "action": { "enum": ["checked-in"] }, "checkIn": { "$ref": "#/definitions/CheckIn" } } } },
+          "400": { "description": "Invalid request or no active activity" },
+          "404": { "description": "Member or activity not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/checkins.ts:30",
+        "socketEvent": "checkin or checkout"
+      },
+      "DELETE /api/checkins/:memberId": {
+        "method": "DELETE",
+        "path": "/api/checkins/:memberId",
+        "description": "Undo check-in for specific member",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "memberId": { "type": "string", "format": "uuid", "required": true, "description": "Member UUID" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Check-in undone", "schema": { "type": "object", "properties": { "message": { "type": "string" } } } },
+          "404": { "description": "No active check-in found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/checkins.ts:93",
+        "socketEvent": "checkout"
+      },
+      "POST /api/checkins/url-checkin": {
+        "method": "POST",
+        "path": "/api/checkins/url-checkin",
+        "description": "Check in via URL parameter (QR code or name)",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["identifier"],
+            "properties": {
+              "identifier": { "type": "string", "description": "Member name or QR code" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Check-in toggled", "schema": { "type": "object", "properties": { "action": { "enum": ["checked-in", "undone"] }, "checkIn": { "$ref": "#/definitions/CheckIn" } } } },
+          "201": { "description": "Checked in" },
+          "400": { "description": "Invalid identifier" },
+          "404": { "description": "Member not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/checkins.ts:111"
+      }
+    },
+    "events": {
+      "GET /api/events": {
+        "method": "GET",
+        "path": "/api/events",
+        "description": "Get all events (active and historical)",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Array of events", "schema": { "type": "array", "items": { "$ref": "#/definitions/Event" } } },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/events.ts:18"
+      },
+      "GET /api/events/active": {
+        "method": "GET",
+        "path": "/api/events/active",
+        "description": "Get currently active events",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Array of active events", "schema": { "type": "array", "items": { "$ref": "#/definitions/Event" } } },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/events.ts:30"
+      },
+      "GET /api/events/:id": {
+        "method": "GET",
+        "path": "/api/events/:id",
+        "description": "Get event with participants",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": { "type": "string", "format": "uuid", "required": true, "description": "Event UUID" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Event with participants", "schema": { "$ref": "#/definitions/EventWithParticipants" } },
+          "404": { "description": "Event not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/events.ts:42"
+      },
+      "POST /api/events": {
+        "method": "POST",
+        "path": "/api/events",
+        "description": "Create new event",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string", "enum": ["incident", "training", "meeting", "maintenance", "other"] },
+              "location": { "type": "string", "nullable": true },
+              "description": { "type": "string", "nullable": true }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Event created", "schema": { "$ref": "#/definitions/Event" } },
+          "400": { "description": "Invalid request" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/events.ts:58",
+        "socketEvent": "event-created"
+      },
+      "PUT /api/events/:id/end": {
+        "method": "PUT",
+        "path": "/api/events/:id/end",
+        "description": "End an active event",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": { "type": "string", "format": "uuid", "required": true, "description": "Event UUID" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Event ended", "schema": { "$ref": "#/definitions/Event" } },
+          "404": { "description": "Event not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/events.ts:81",
+        "socketEvent": "event-ended"
+      },
+      "POST /api/events/:id/participants": {
+        "method": "POST",
+        "path": "/api/events/:id/participants",
+        "description": "Add participant to event",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": { "type": "string", "format": "uuid", "required": true, "description": "Event UUID" }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["memberId"],
+            "properties": {
+              "memberId": { "type": "string", "format": "uuid" },
+              "role": { "type": "string", "nullable": true }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Participant added", "schema": { "$ref": "#/definitions/EventParticipant" } },
+          "400": { "description": "Invalid request" },
+          "404": { "description": "Event or member not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/events.ts:99",
+        "socketEvent": "participant-added"
+      },
+      "DELETE /api/events/:id/participants/:participantId": {
+        "method": "DELETE",
+        "path": "/api/events/:id/participants/:participantId",
+        "description": "Remove participant from event (check out)",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": { "type": "string", "format": "uuid", "required": true, "description": "Event UUID" },
+            "participantId": { "type": "string", "format": "uuid", "required": true, "description": "Participant UUID" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Participant removed", "schema": { "$ref": "#/definitions/EventParticipant" } },
+          "404": { "description": "Participant not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/events.ts:125",
+        "socketEvent": "participant-removed"
+      }
+    },
+    "achievements": {
+      "GET /api/achievements/member/:memberId": {
+        "method": "GET",
+        "path": "/api/achievements/member/:memberId",
+        "description": "Get achievements for specific member",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "memberId": { "type": "string", "format": "uuid", "required": true, "description": "Member UUID" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Array of achievements", "schema": { "type": "array", "items": { "$ref": "#/definitions/Achievement" } } },
+          "404": { "description": "Member not found" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/achievements.ts"
+      },
+      "GET /api/achievements/recent": {
+        "method": "GET",
+        "path": "/api/achievements/recent",
+        "description": "Get recently unlocked achievements (all members)",
+        "authentication": "none",
+        "parameters": {
+          "query": {
+            "limit": { "type": "number", "default": 10, "description": "Max achievements to return" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Array of recent achievements", "schema": { "type": "array", "items": { "$ref": "#/definitions/Achievement" } } },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/achievements.ts"
+      }
+    }
+  },
+  "socketEvents": {
+    "serverToClient": {
+      "member-added": {
+        "event": "member-added",
+        "description": "New member registered",
+        "payload": { "$ref": "#/definitions/Member" },
+        "trigger": "POST /api/members"
+      },
+      "member-updated": {
+        "event": "member-updated",
+        "description": "Member details changed",
+        "payload": { "$ref": "#/definitions/Member" },
+        "trigger": "PUT /api/members/:id"
+      },
+      "checkin": {
+        "event": "checkin",
+        "description": "New check-in created",
+        "payload": { "$ref": "#/definitions/CheckIn" },
+        "trigger": "POST /api/checkins"
+      },
+      "checkout": {
+        "event": "checkout",
+        "description": "Member checked out",
+        "payload": { "$ref": "#/definitions/CheckIn" },
+        "trigger": "POST /api/checkins, DELETE /api/checkins/:memberId"
+      },
+      "activity-change": {
+        "event": "activity-change",
+        "description": "Active activity changed",
+        "payload": { "$ref": "#/definitions/ActiveActivity" },
+        "trigger": "POST /api/activities/active"
+      },
+      "event-created": {
+        "event": "event-created",
+        "description": "New event started",
+        "payload": { "$ref": "#/definitions/Event" },
+        "trigger": "POST /api/events"
+      },
+      "event-ended": {
+        "event": "event-ended",
+        "description": "Event completed",
+        "payload": { "$ref": "#/definitions/Event" },
+        "trigger": "PUT /api/events/:id/end"
+      },
+      "participant-added": {
+        "event": "participant-added",
+        "description": "Member joined event",
+        "payload": { "$ref": "#/definitions/EventParticipant" },
+        "trigger": "POST /api/events/:id/participants"
+      },
+      "participant-removed": {
+        "event": "participant-removed",
+        "description": "Member left event",
+        "payload": { "type": "object", "properties": { "participantId": { "type": "string" } } },
+        "trigger": "DELETE /api/events/:id/participants/:participantId"
+      },
+      "achievement-unlocked": {
+        "event": "achievement-unlocked",
+        "description": "Member unlocked achievement",
+        "payload": { "$ref": "#/definitions/Achievement" },
+        "trigger": "Achievement calculation"
+      }
+    }
+  },
+  "definitions": {
+    "Member": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "name": { "type": "string" },
+        "qrCode": { "type": "string" },
+        "rank": { "type": "string", "nullable": true },
+        "memberNumber": { "type": "string", "nullable": true },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Activity": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "name": { "type": "string" },
+        "isCustom": { "type": "boolean" },
+        "createdBy": { "type": "string", "format": "uuid", "nullable": true },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "CheckIn": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "memberId": { "type": "string", "format": "uuid" },
+        "activityId": { "type": "string", "format": "uuid" },
+        "checkInTime": { "type": "string", "format": "date-time" },
+        "checkOutTime": { "type": "string", "format": "date-time", "nullable": true },
+        "checkInMethod": { "type": "string", "enum": ["kiosk", "mobile", "qr"] },
+        "location": { "type": "string", "nullable": true },
+        "isOffsite": { "type": "boolean" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "CheckInWithDetails": {
+      "allOf": [
+        { "$ref": "#/definitions/CheckIn" },
+        {
+          "type": "object",
+          "properties": {
+            "memberName": { "type": "string" },
+            "activityName": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "ActiveActivity": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "activityId": { "type": "string", "format": "uuid" },
+        "setAt": { "type": "string", "format": "date-time" },
+        "setBy": { "type": "string", "format": "uuid", "nullable": true },
+        "activity": { "$ref": "#/definitions/Activity" }
+      }
+    },
+    "Event": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["incident", "training", "meeting", "maintenance", "other"] },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time", "nullable": true },
+        "location": { "type": "string", "nullable": true },
+        "description": { "type": "string", "nullable": true },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "EventParticipant": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "eventId": { "type": "string", "format": "uuid" },
+        "memberId": { "type": "string", "format": "uuid" },
+        "checkInTime": { "type": "string", "format": "date-time" },
+        "checkOutTime": { "type": "string", "format": "date-time", "nullable": true },
+        "role": { "type": "string", "nullable": true },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "EventWithParticipants": {
+      "allOf": [
+        { "$ref": "#/definitions/Event" },
+        {
+          "type": "object",
+          "properties": {
+            "participants": { "type": "array", "items": { "$ref": "#/definitions/EventParticipant" } }
+          }
+        }
+      ]
+    },
+    "Achievement": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string", "enum": ["sign-ins", "events", "truck-checks", "special"] },
+        "requirement": { "type": "number" },
+        "unlocked": { "type": "boolean" },
+        "unlockedAt": { "type": "string", "format": "date-time", "nullable": true },
+        "progress": { "type": "number" }
+      }
+    }
+  },
+  "maintenance": {
+    "updateTriggers": [
+      "When adding new REST API endpoints",
+      "When modifying endpoint paths, methods, or parameters",
+      "When adding or changing Socket.io events",
+      "When updating request/response schemas",
+      "When changing authentication requirements",
+      "During API versioning"
+    ],
+    "validation": {
+      "schema": "Validate against JSON Schema Draft 7",
+      "tools": ["jsonlint", "ajv-cli"],
+      "ci": "Run validation in CI/CD pipeline"
+    },
+    "references": {
+      "from": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/FUNCTION_REGISTER.md",
+        "docs/MASTER_PLAN.md",
+        ".github/copilot-instructions.md"
+      ]
+    }
+  }
+}

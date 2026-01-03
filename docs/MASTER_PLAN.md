@@ -7,6 +7,29 @@
 
 ---
 
+## Document Control
+
+### Single Source of Truth
+This document is the **SINGLE SOURCE OF TRUTH** for all planning, roadmap, phases, enhancement tracking, and strategic intent for the RFS Station Manager project. All planning must be consolidated here - no duplicate planning documents are permitted.
+
+### Related Documentation
+- **AI Development Guidelines**: `.github/copilot-instructions.md` - Repository conventions, coding standards, and AI-assisted development rules
+- **Implementation Details**: `docs/AS_BUILT.md` - Current system architecture and implementation state
+- **API Definitions**: `docs/api_register.json` - Machine-readable REST API and WebSocket event registry
+- **Function Registry**: `docs/function_register.json` - Machine-readable backend function and service method registry
+- **API Documentation**: `docs/API_DOCUMENTATION.md` - Human-readable API reference
+- **Feature Guides**: `docs/FEATURE_DEVELOPMENT_GUIDE.md`, `docs/GETTING_STARTED.md`
+
+### Update Requirements
+When making changes that affect this document:
+1. Update this master plan to reflect new priorities, completed work, or strategic changes
+2. Update `docs/AS_BUILT.md` if implementation details changed
+3. Update machine-readable registries (`api_register.json`, `function_register.json`) if APIs/functions changed
+4. Reference this master plan from all major PRs and documentation
+5. Update `.github/copilot-instructions.md` if repository procedures evolved
+
+---
+
 ## Table of Contents
 
 1. [Current System Status](#current-system-status)
