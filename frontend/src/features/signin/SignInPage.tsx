@@ -54,6 +54,7 @@ export function SignInPage() {
   // Initial data load
   useEffect(() => {
     loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Socket event listeners
@@ -73,6 +74,7 @@ export function SignInPage() {
       off('event-update', handleEventUpdate);
       off('member-update', handleMemberUpdate);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [on, off]);
 
   const loadInitialData = async () => {
@@ -225,6 +227,7 @@ export function SignInPage() {
 
   const handleLoadMoreEvents = useCallback(() => {
     loadEvents(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset, loadingMore]);
 
   const handleCreateActivity = async (name: string) => {

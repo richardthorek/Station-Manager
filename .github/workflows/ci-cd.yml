@@ -1,0 +1,331 @@
+# ===============================================================================
+# RFS Station Manager - Comprehensive CI/CD Pipeline
+# ===============================================================================
+# 
+# Purpose:
+#   Automated quality assurance, testing, and deployment pipeline with strict
+#   quality gates to ensure no broken code reaches production.
+#
+# Pipeline Stages:
+#   1. Quality Checks (parallel) - Linting, type checking, security scanning
+#   2. Testing (parallel) - Unit tests, integration tests, coverage reporting
+#   3. Build - Production build artifacts
+#   4. Deploy - Deployment to Azure (only if all checks pass)
+#
+# Quality Gates:
+#   - All linting must pass (zero errors, zero warnings)
+#   - Type checking must pass (TypeScript strict mode)
+#   - All tests must pass (45+ tests)
+#   - Build must succeed
+#   - Deployment only occurs if all above gates pass
+#
+# Optimizations:
+#   - Parallel job execution for independent tasks
+#   - Dependency caching (npm)
+#   - Concurrency control (cancels outdated PR runs)
+#
+# Future Optimizations:
+#   - Skip deployment on documentation-only changes (future enhancement)
+#   - Conditional execution based on file changes (future enhancement)
+#
+# Failure Handling:
+#   - Detailed error logs in workflow output
+#   - Automatic issue creation on failure (see create-issue-on-failure.yml)
+#
+# Documentation:
+#   - See docs/ci_pipeline.md for detailed pipeline documentation
+#   - See docs/MASTER_PLAN.md for strategic planning
+#
+# Maintenance:
+#   - Review and update periodically
+#   - Monitor GitHub Actions minutes usage
+#   - Optimize caching strategies as project grows
+#
+# ===============================================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22.x'
+  NPM_CACHE_KEY: 'npm-cache-v1'
+
+jobs:
+  # ===========================================================================
+  # PHASE 1: QUALITY CHECKS (Parallel Execution)
+  # ===========================================================================
+  # These jobs run in parallel to quickly identify quality issues
+  # All must pass before build/test/deploy can proceed
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # Frontend Linting
+  # ---------------------------------------------------------------------------
+  # Enforces code quality, style consistency, and catches common errors
+  # Uses ESLint with TypeScript parser and React hooks plugin
+  lint-frontend:
+    name: 🔍 Lint Frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run ESLint
+        run: |
+          cd frontend
+          npm run lint
+
+  # ---------------------------------------------------------------------------
+  # Backend Type Checking
+  # ---------------------------------------------------------------------------
+  # Validates TypeScript types and catches type errors in backend
+  typecheck-backend:
+    name: 🔍 Type Check Backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run TypeScript compiler (type check only)
+        run: |
+          cd backend
+          npx tsc --noEmit
+
+  # ---------------------------------------------------------------------------
+  # Frontend Type Checking
+  # ---------------------------------------------------------------------------
+  # Validates TypeScript types and catches type errors in frontend
+  typecheck-frontend:
+    name: 🔍 Type Check Frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run TypeScript compiler (type check only)
+        run: |
+          cd frontend
+          npx tsc -b --noEmit
+
+  # ===========================================================================
+  # PHASE 2: TESTING (Parallel Execution)
+  # ===========================================================================
+  # Comprehensive test suite ensuring functionality works as expected
+  # Tests use in-memory database (no Azure dependencies required)
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # Backend Tests
+  # ---------------------------------------------------------------------------
+  # Runs all backend unit and integration tests
+  # Coverage threshold: 70% (branches, functions, lines, statements)
+  test-backend:
+    name: 🧪 Test Backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write # For test result annotations
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run backend tests with coverage
+        run: |
+          cd backend
+          npm run test:coverage
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage/
+          retention-days: 30
+
+      - name: Display coverage summary
+        if: always()
+        run: |
+          echo "## Backend Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f backend/coverage/lcov.info ]; then
+            echo "Coverage report generated successfully ✅" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ===========================================================================
+  # PHASE 3: BUILD
+  # ===========================================================================
+  # Creates production-ready build artifacts
+  # Only runs if all quality checks and tests pass
+  # ===========================================================================
+
+  build:
+    name: 🏗️ Build Application
+    runs-on: ubuntu-latest
+    # QUALITY GATE: All quality checks and tests must pass
+    needs: 
+      - lint-frontend
+      - typecheck-backend
+      - typecheck-frontend
+      - test-backend
+    environment: copilot
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install all dependencies
+        run: npm install
+
+      - name: Build application
+        run: npm run build
+
+      - name: Clean dev dependencies (production only)
+        run: |
+          npm prune --production --prefix backend
+          npm prune --production --prefix frontend
+
+      - name: Create deployment package
+        run: |
+          mkdir -p deploy
+          cp package.json deploy/
+          cp -r backend/dist deploy/backend/
+          cp backend/package.json deploy/backend/
+          cp -r backend/node_modules deploy/backend/
+          cp -r frontend/dist deploy/frontend/
+          cp startup.sh deploy/ 2>/dev/null || true
+          cp web.config deploy/ 2>/dev/null || true
+          cd deploy && zip -r ../release.zip .
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: node-app
+          path: release.zip
+          retention-days: 7
+
+  # ===========================================================================
+  # PHASE 4: DEPLOYMENT
+  # ===========================================================================
+  # Deploys to Azure App Service
+  # Only runs on main branch pushes and if all previous stages pass
+  # ===========================================================================
+
+  deploy:
+    name: 🚀 Deploy to Azure
+    runs-on: ubuntu-latest
+    # QUALITY GATE: Only deploy if build succeeded
+    needs: build
+    # DEPLOYMENT GATE: Only deploy on main branch (not PRs)
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: copilot
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Download deployment artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: node-app
+
+      - name: Unzip deployment package
+        run: unzip release.zip
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F04003FFA701477E897BF9329FCA2C5E }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0FB429D7D41741EAA3FF70DCD8F0A441 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_ECE14A699FEA4BB9AA978A7C54A2FE67 }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'bungrfsstation'
+          slot-name: 'Production'
+          package: .
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+          echo "- **App Name**: bungrfsstation" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY

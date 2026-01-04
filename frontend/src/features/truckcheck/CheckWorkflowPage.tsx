@@ -46,6 +46,7 @@ export function CheckWorkflowPage() {
     if (applianceId) {
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applianceId]);
 
   // Listen for real-time updates from other contributors

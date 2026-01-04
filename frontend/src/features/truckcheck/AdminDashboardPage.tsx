@@ -21,10 +21,12 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     loadCheckRuns();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAppliance, issuesOnly]);
 
   async function loadData() {

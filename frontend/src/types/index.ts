@@ -35,6 +35,7 @@ export interface CheckInWithDetails extends CheckIn {
   memberName: string;
   activityName: string;
   activityTagColor?: string;
+  tagColor?: string; // Legacy field, same as activityTagColor
 }
 
 export interface ActiveActivity {

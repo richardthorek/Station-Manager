@@ -1,0 +1,152 @@
+# ===============================================================================
+# Automatic Issue Creation on CI/CD Failure
+# ===============================================================================
+#
+# Purpose:
+#   Automatically creates a GitHub issue when the CI/CD pipeline fails,
+#   including detailed error information and logs for debugging.
+#
+# Behavior:
+#   - Triggers when ci-cd.yml workflow completes
+#   - Only creates issue if workflow failed
+#   - Includes link to failed workflow run
+#   - Extracts and includes error logs
+#   - Assigns labels for easy filtering
+#   - Prevents duplicate issues for the same failure
+#
+# Issue Details Include:
+#   - Workflow run URL
+#   - Failed job names
+#   - Branch and commit information
+#   - Timestamp of failure
+#   - Link to view full logs
+#
+# ===============================================================================
+
+name: Create Issue on CI/CD Failure
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+
+permissions:
+  issues: write
+  actions: read
+  contents: read
+
+jobs:
+  create-issue:
+    name: 📝 Create Issue on Failure
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Create issue on failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowRun = context.payload.workflow_run;
+            const runUrl = workflowRun.html_url;
+            const branch = workflowRun.head_branch;
+            const commit = workflowRun.head_sha.substring(0, 7);
+            const commitUrl = `${context.payload.repository.html_url}/commit/${workflowRun.head_sha}`;
+            const actor = workflowRun.actor.login;
+            const timestamp = new Date(workflowRun.updated_at).toLocaleString();
+
+            // Get list of failed jobs
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: workflowRun.id,
+            });
+
+            const failedJobs = jobs.data.jobs.filter(job => job.conclusion === 'failure');
+            const failedJobsList = failedJobs.map(job => `- **${job.name}**: [View logs](${job.html_url})`).join('\n');
+
+            // Create issue title
+            const issueTitle = `CI/CD Pipeline Failed on ${branch} (${commit})`;
+
+            // Check if similar issue already exists (to avoid duplicates)
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'ci-failure',
+              per_page: 10
+            });
+
+            const similarIssue = existingIssues.data.find(issue => 
+              issue.title.includes(branch) && issue.title.includes(commit)
+            );
+
+            if (similarIssue) {
+              console.log(`Similar issue already exists: #${similarIssue.number}`);
+              return;
+            }
+
+            // Create issue body with detailed information
+            const issueBody = `
+            ## 🚨 CI/CD Pipeline Failure
+
+            The CI/CD pipeline has failed. Please review the errors and take corrective action.
+
+            ### Failure Details
+
+            | Property | Value |
+            |----------|-------|
+            | **Branch** | \`${branch}\` |
+            | **Commit** | [\`${commit}\`](${commitUrl}) |
+            | **Triggered by** | @${actor} |
+            | **Time** | ${timestamp} |
+            | **Workflow Run** | [View Run](${runUrl}) |
+
+            ### Failed Jobs
+
+            ${failedJobsList || '_No specific job failures recorded_'}
+
+            ### Next Steps
+
+            1. 🔍 **Review the logs**: Click on the failed job links above to see detailed error messages
+            2. 🔧 **Fix the issues**: Address the root cause of the failure
+            3. ✅ **Verify locally**: Run the failed checks locally before pushing
+               - Frontend linting: \`cd frontend && npm run lint\`
+               - Backend tests: \`cd backend && npm test\`
+               - Type checking: \`cd backend && npx tsc --noEmit\`
+               - Build: \`npm run build\`
+            4. 🚀 **Push the fix**: Once verified, push your changes
+            5. ✔️ **Close this issue**: After the pipeline passes, close this issue
+
+            ### Common Failure Causes
+
+            - **Linting Errors**: ESLint rules violated (check \`npm run lint\`)
+            - **Type Errors**: TypeScript compilation errors (check \`npx tsc --noEmit\`)
+            - **Test Failures**: Unit or integration tests failing (check \`npm test\`)
+            - **Build Errors**: Build process failed (check \`npm run build\`)
+            - **Dependency Issues**: Missing or incompatible dependencies (check \`npm install\`)
+
+            ### Resources
+
+            - 📖 [CI/CD Pipeline Documentation](docs/ci_pipeline.md)
+            - 📚 [Contributing Guidelines](docs/FEATURE_DEVELOPMENT_GUIDE.md)
+            - 🔧 [Getting Started Guide](docs/GETTING_STARTED.md)
+
+            ---
+
+            _This issue was automatically created by the CI/CD pipeline failure handler._
+            _Workflow Run ID: ${workflowRun.id}_
+            `;
+
+            // Create the issue
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['ci-failure', 'bug', 'automated']
+            });
+
+            console.log(`Created issue #${issue.data.number}: ${issue.data.html_url}`);
