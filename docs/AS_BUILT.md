@@ -675,24 +675,58 @@ None currently (server-initiated broadcasts only)
 
 ### CI/CD Pipeline
 
-**GitHub Actions Workflow:** `.github/workflows/main_bungrfsstation.yml`
+**Primary Workflow:** `.github/workflows/ci-cd.yml`  
+**Failure Handler:** `.github/workflows/create-issue-on-failure.yml`  
+**Documentation:** `docs/ci_pipeline.md`
 
-**Build Steps:**
-1. Checkout code
-2. Set up Node.js 22.x
-3. Install dependencies (`npm install`)
-4. **Run backend tests** (`npm test`)
-5. Build backend and frontend (`npm run build`)
-6. Prune dev dependencies
-7. Package for deployment
-8. Upload artifacts
+**Pipeline Stages:**
 
-**Deploy Steps:**
-1. Download artifacts
-2. Login to Azure
-3. Deploy to App Service
+1. **Quality Checks (Parallel Execution)**
+   - Frontend linting (ESLint) - Zero errors/warnings required
+   - Backend type checking (TypeScript strict mode)
+   - Frontend type checking (TypeScript strict mode)
+   - Backend testing (Jest) - 45+ tests, 70% coverage threshold
 
-**Trigger:** Push to `main` branch or manual dispatch
+2. **Build (Runs if all quality checks pass)**
+   - Install dependencies with npm caching
+   - Build backend (TypeScript → JavaScript)
+   - Build frontend (Vite production bundle)
+   - Prune dev dependencies
+   - Create deployment package (ZIP artifact)
+
+3. **Deploy (Runs only on main branch after successful build)**
+   - Download build artifact
+   - Login to Azure (OIDC federated credentials)
+   - Deploy to Azure App Service
+   - Display deployment summary
+
+**Quality Gates:**
+- ✅ All linting must pass (zero errors, zero warnings)
+- ✅ All type checks must pass (TypeScript strict mode)
+- ✅ All tests must pass (45+ tests)
+- ✅ Code coverage must meet 70% threshold
+- ✅ Build must succeed
+- ✅ Deployment only on `main` branch merges
+
+**Optimizations:**
+- Parallel job execution for independent tasks
+- npm dependency caching (saves ~30-60 seconds per run)
+- Concurrency control (cancels outdated PR runs)
+- In-memory database for tests (no Azure dependencies)
+
+**Failure Handling:**
+- Automatic GitHub issue creation on pipeline failure
+- Detailed error logs and job links included in issue
+- Duplicate issue prevention
+- Troubleshooting steps and resources provided
+
+**Typical Execution Time:**
+- Quality checks: ~2-3 minutes (parallel)
+- Build: ~2-3 minutes
+- Deploy: ~3-5 minutes
+- **Total:** ~7-11 minutes (successful run)
+
+**Trigger:** Push to `main` branch, pull requests to `main`, or manual dispatch
 
 ---
 
