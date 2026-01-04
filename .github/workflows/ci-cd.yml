@@ -372,6 +372,33 @@ jobs:
           slot-name: 'Production'
           package: release.zip
 
+      - name: Set Azure App Service environment variables
+        run: |
+          # Set version environment variables in Azure App Service
+          # These override any .env file values to ensure correct version reporting
+          
+          # Determine build timestamp with fallback (handle empty strings and null)
+          BUILD_TS="${{ github.event.head_commit.timestamp }}"
+          if [ -z "$BUILD_TS" ] || [ "$BUILD_TS" = "null" ]; then
+            BUILD_TS="${{ github.event.repository.updated_at }}"
+          fi
+          if [ -z "$BUILD_TS" ] || [ "$BUILD_TS" = "null" ]; then
+            BUILD_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          fi
+          
+          az webapp config appsettings set \
+            --resource-group bungrfsstation_group \
+            --name bungrfsstation \
+            --settings \
+              GIT_COMMIT_SHA="${{ github.sha }}" \
+              GIT_COMMIT_SHORT="$(echo "${{ github.sha }}" | cut -c1-7)" \
+              BUILD_TIMESTAMP="$BUILD_TS" \
+            --output none
+          echo "✅ Environment variables set in Azure App Service"
+          echo "   - GIT_COMMIT_SHA: ${{ github.sha }}"
+          echo "   - GIT_COMMIT_SHORT: $(echo "${{ github.sha }}" | cut -c1-7)"
+          echo "   - BUILD_TIMESTAMP: $BUILD_TS"
+
       - name: Deployment summary
         run: |
           echo "## 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY

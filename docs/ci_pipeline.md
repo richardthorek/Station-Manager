@@ -207,12 +207,49 @@ Runs only if **build** succeeds and **branch is main** (not PRs).
 2. Unzip deployment package
 3. Login to Azure using OIDC
 4. Deploy to App Service
-5. Display deployment summary
+5. Set Azure App Service environment variables (version info)
+6. Display deployment summary
+
+**Environment Variables Set:**
+- `GIT_COMMIT_SHA`: Full commit SHA (for version verification)
+- `GIT_COMMIT_SHORT`: Short commit SHA (7 characters, for display)
+- `BUILD_TIMESTAMP`: Build timestamp (ISO 8601 format)
+
+These variables ensure the backend `/health` endpoint returns the correct version information for post-deployment verification.
 
 **Deployment Gates:**
 - Only on `main` branch
 - Not triggered by pull requests
 - Requires all previous jobs to succeed
+
+#### 3.2 Post-Deployment Tests (`post-deployment-tests`)
+
+- **Purpose**: Validate deployed application is functioning correctly
+- **Target**: Live Azure App Service deployment
+- **Test Environment**: Uses `TABLE_STORAGE_TABLE_SUFFIX=Test` for isolated test data
+- **Tool**: TypeScript smoke tests (`backend/src/scripts/postDeploymentTests.ts`)
+
+**Test Coverage:**
+1. **Version Verification**: Confirms deployed code matches expected commit SHA
+2. **Health Check**: Validates `/health` endpoint responds correctly
+3. **API Status**: Verifies `/api/status` endpoint is functional
+4. **Activities API**: Tests `/api/activities` endpoint
+5. **Members API**: Tests `/api/members` endpoint
+6. **Check-ins API**: Tests `/api/checkins` endpoint
+7. **Frontend SPA**: Validates frontend loads correctly
+8. **CORS Configuration**: Verifies CORS headers are present
+9. **Rate Limiting**: Ensures rate limiting is configured
+
+**Retry Strategy:**
+- 30-second initial wait for deployment stabilization
+- 3 retries per request with 5-second delays
+- Automatic retry on 404, 502, 503 status codes (deployment stabilizing)
+- Total maximum time: 45+ seconds per test
+
+**Success Criteria:**
+- All 9 smoke tests must pass
+- Deployed commit SHA must match GitHub deployment SHA
+- All critical API endpoints must respond with 200 status
 
 ---
 
@@ -272,6 +309,7 @@ The following conditions will **prevent deployment**:
 - `test-backend` - Backend testing
 - `build` - Build application (needs all above)
 - `deploy` - Deploy to Azure (needs build, main branch only)
+- `post-deployment-tests` - Smoke tests on live deployment (needs deploy, main branch only)
 
 **Concurrency:** 
 - Cancels in-progress runs for the same PR/branch
