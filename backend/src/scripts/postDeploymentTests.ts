@@ -9,6 +9,14 @@
  * 
  * Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data from production.
  * 
+ * Retry Strategy:
+ *   - Retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
+ *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
+ *   - 5 second delay between retries
+ *   - Default 3 retries per request (15 seconds max per request)
+ *   - With initial 30s wait, provides 45+ seconds for deployment to stabilize
+ *   - Multiple tests can retry independently for extended stabilization time
+ * 
  * Usage:
  *   APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy
  * 
@@ -28,6 +36,15 @@ const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '30000');
 const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '3');
 const RETRY_DELAY = 5000; // 5 seconds between retries
 
+// HTTP status codes that indicate deployment is still stabilizing
+// These will trigger automatic retries:
+// - 404: Route not found (app still loading/registering routes)
+// - 502: Bad Gateway (Azure proxy can't connect to app yet)
+// - 503: Service Unavailable (app is starting up)
+// Note: Other error codes (401, 403, 500, etc.) indicate actual application
+// errors that won't be fixed by retrying, so we fail fast on those.
+const RETRYABLE_STATUS_CODES = [404, 502, 503];
+
 // Test results tracking
 let testsRun = 0;
 let testsPassed = 0;
@@ -41,7 +58,24 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Helper function to perform retry logic
+ */
+function retryRequest(
+  url: string,
+  options: any,
+  retries: number,
+  resolve: (value: any) => void,
+  reject: (reason?: any) => void
+): void {
+  sleep(RETRY_DELAY)
+    .then(() => makeRequest(url, options, retries - 1))
+    .then(resolve)
+    .catch(reject);
+}
+
+/**
  * Make HTTP/HTTPS request with retry logic
+ * Retries on network errors and deployment-related HTTP status codes
  */
 async function makeRequest(
   url: string,
@@ -65,24 +99,28 @@ async function makeRequest(
           data += chunk;
         });
         res.on('end', () => {
-          resolve({
-            statusCode: res.statusCode || 0,
-            data,
-          });
+          const statusCode = res.statusCode || 0;
+          
+          // Check if we should retry on this status code
+          const shouldRetry = retries > 0 && RETRYABLE_STATUS_CODES.includes(statusCode);
+          
+          if (shouldRetry) {
+            console.log(`  ⏳ Got ${statusCode} status, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
+            retryRequest(url, options, retries, resolve, reject);
+          } else {
+            resolve({
+              statusCode,
+              data,
+            });
+          }
         });
       }
     );
 
-    req.on('error', async (error) => {
+    req.on('error', (error) => {
       if (retries > 0) {
         console.log(`  ⏳ Request failed, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
-        await sleep(RETRY_DELAY);
-        try {
-          const result = await makeRequest(url, options, retries - 1);
-          resolve(result);
-        } catch (err) {
-          reject(err);
-        }
+        retryRequest(url, options, retries, resolve, reject);
       } else {
         reject(error);
       }
