@@ -67,8 +67,8 @@ app.get('/health', async (req, res) => {
   try {
     await ensureDatabase();
     const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-    const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
-    const dbType = useTableStorage && storageConnectionString ? 'table-storage' : 'in-memory';
+    const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
+    const dbType = storageConnectionString && !explicitlyDisabled ? 'table-storage' : 'in-memory';
     res.json({ 
       status: 'ok', 
       timestamp: new Date().toISOString(),
@@ -90,8 +90,8 @@ app.get('/api/status', async (req, res) => {
     await ensureDatabase();
     await ensureTruckChecksDatabase();
     const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-    const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
-    const dbType = useTableStorage && storageConnectionString ? 'table-storage' : 'in-memory';
+    const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
+    const dbType = storageConnectionString && !explicitlyDisabled ? 'table-storage' : 'in-memory';
     const isProduction = process.env.NODE_ENV === 'production';
     const usingInMemory = dbType === 'in-memory';
     
@@ -190,8 +190,9 @@ async function startServer() {
       console.log(`Health check: http://localhost:${PORT}/health`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
       const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-      const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || (process.env.NODE_ENV === 'development' && !!storageConnectionString);
-      if (useTableStorage && storageConnectionString) {
+      const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
+      const useTableStorage = storageConnectionString && !explicitlyDisabled;
+      if (useTableStorage) {
         const suffix = process.env.TABLE_STORAGE_TABLE_SUFFIX ? ` (tables suffixed '${process.env.TABLE_STORAGE_TABLE_SUFFIX}')` : '';
         const prefix = process.env.TABLE_STORAGE_TABLE_PREFIX ? ` (tables prefixed '${process.env.TABLE_STORAGE_TABLE_PREFIX}')` : '';
         console.log(`Database: Azure Table Storage${prefix || suffix ? ` ${prefix}${suffix}` : ''}`);

@@ -58,29 +58,60 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     }
   }
 
-  async connect(): Promise<void> {
+  async connect(retries = 3, delayMs = 2000): Promise<void> {
     if (this.isConnected) return;
 
     if (!this.connectionString) {
       throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage. Cannot connect without credentials.');
     }
 
-    try {
-      await Promise.all([
-        this.appliancesTable.createTable().catch(() => {}),
-        this.templatesTable.createTable().catch(() => {}),
-        this.checkRunsTable.createTable().catch(() => {}),
-        this.checkResultsTable.createTable().catch(() => {}),
-      ]);
+    let lastError: any;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`🔌 Connecting to Azure Table Storage for Truck Checks (attempt ${attempt}/${retries})...`);
+        
+        await Promise.all([
+          this.appliancesTable.createTable().catch((err) => {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
+              console.warn('Warning creating Appliances table:', err.message);
+            }
+          }),
+          this.templatesTable.createTable().catch((err) => {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
+              console.warn('Warning creating Templates table:', err.message);
+            }
+          }),
+          this.checkRunsTable.createTable().catch((err) => {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
+              console.warn('Warning creating CheckRuns table:', err.message);
+            }
+          }),
+          this.checkResultsTable.createTable().catch((err) => {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
+              console.warn('Warning creating CheckResults table:', err.message);
+            }
+          }),
+        ]);
 
-      await this.initializeDefaultAppliances();
-      
-      this.isConnected = true;
-      console.log('✅ Connected to Table Storage for Truck Checks');
-    } catch (error) {
-      console.error('❌ Failed to connect to Table Storage for Truck Checks:', error);
-      throw error;
+        await this.initializeDefaultAppliances();
+        
+        this.isConnected = true;
+        console.log(`✅ Connected to Table Storage for Truck Checks (attempt ${attempt}/${retries})`);
+        return; // Success, exit function
+      } catch (error) {
+        lastError = error;
+        console.error(`❌ Failed to connect to Table Storage for Truck Checks (attempt ${attempt}/${retries}):`, error);
+        
+        if (attempt < retries) {
+          console.log(`⏳ Retrying in ${delayMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
     }
+    
+    // All retries failed
+    console.error('❌ All connection attempts failed for Truck Checks. Last error:', lastError);
+    throw lastError || new Error(`Failed to connect to Table Storage for Truck Checks after ${retries} attempts`);
   }
 
   private async initializeDefaultAppliances(): Promise<void> {

@@ -56,9 +56,12 @@ export interface IDatabase {
  * Initialize and return the appropriate database service
  * Priority order:
  * 1. Table Storage with 'Test' suffix (if NODE_ENV=test and AZURE_STORAGE_CONNECTION_STRING set)
- * 2. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
- * 3. Table Storage with 'Dev' suffix (if NODE_ENV=development and AZURE_STORAGE_CONNECTION_STRING set)
+ * 2. Table Storage (if AZURE_STORAGE_CONNECTION_STRING is set - default for all environments)
+ * 3. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
  * 4. In-memory database (fallback when no Azure connection available)
+ * 
+ * Note: Production environments automatically use Table Storage when connection string is available.
+ * Set USE_TABLE_STORAGE=false to explicitly disable Table Storage.
  */
 async function initializeDatabase(): Promise<IDatabase> {
   const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
@@ -70,10 +73,14 @@ async function initializeDatabase(): Promise<IDatabase> {
     return inMemoryDb as IDatabase;
   }
 
-  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || nodeEnv === 'development' || nodeEnv === 'test';
+  // Use Table Storage if:
+  // 1. Connection string is available AND
+  // 2. Either: not explicitly disabled (USE_TABLE_STORAGE !== 'false') OR explicitly enabled
+  const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
+  const useTableStorage = storageConnectionString && !explicitlyDisabled;
   
-  // Prefer Table Storage if explicitly enabled or in development/test mode
-  if (useTableStorage && storageConnectionString) {
+  // Prefer Table Storage if connection string is available and not explicitly disabled
+  if (useTableStorage) {
     console.log('🔌 Connecting to Azure Table Storage...');
     try {
       // tableStorageDb is implemented in a module that would otherwise create a circular type import
@@ -83,10 +90,8 @@ async function initializeDatabase(): Promise<IDatabase> {
       return tableStorageDb as unknown as IDatabase;
     } catch (error) {
       console.error('❌ Failed to connect to Table Storage:', error);
-      console.log('⚠️  Falling back to alternative database');
+      console.log('⚠️  Falling back to in-memory database');
     }
-  } else if (useTableStorage && !storageConnectionString) {
-    console.warn('⚠️  USE_TABLE_STORAGE requested but AZURE_STORAGE_CONNECTION_STRING is missing; skipping Table Storage');
   }
   
   // Fallback to in-memory database
