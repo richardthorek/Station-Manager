@@ -4,52 +4,59 @@
  * Priority: Table Storage > In-Memory
  */
 
-import type { Member } from '../types';
+import type { 
+  Member, 
+  Activity, 
+  ActiveActivity, 
+  CheckIn, 
+  Event, 
+  EventParticipant, 
+  EventWithParticipants 
+} from '../types';
 import { db as inMemoryDb } from './database';
 import { tableStorageDb } from './tableStorageDatabase';
 
 // Interface that both database services must implement
 export interface IDatabase {
   // Members
-  getAllMembers(): Promise<any[]> | any[];
-  getMemberById(id: string): Promise<any | null | undefined> | any | null | undefined;
-  getMemberByQRCode(qrCode: string): Promise<any | null | undefined> | any | null | undefined;
-  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string }): Promise<any> | any;
-  updateMember(id: string, name: string, rank?: string | null): Promise<any | null | undefined> | any | null | undefined;
+  getAllMembers(): Promise<Member[]> | Member[];
+  getMemberById(id: string): Promise<Member | null | undefined> | Member | null | undefined;
+  getMemberByQRCode(qrCode: string): Promise<Member | null | undefined> | Member | null | undefined;
+  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string }): Promise<Member> | Member;
+  updateMember(id: string, name: string, rank?: string | null): Promise<Member | null | undefined> | Member | null | undefined;
   
   // Activities
-  getAllActivities(): Promise<any[]> | any[];
-  getActivityById(id: string): Promise<any | null | undefined> | any | null | undefined;
-  createActivity(name: string, createdBy?: string): Promise<any> | any;
+  getAllActivities(): Promise<Activity[]> | Activity[];
+  getActivityById(id: string): Promise<Activity | null | undefined> | Activity | null | undefined;
+  createActivity(name: string, createdBy?: string): Promise<Activity> | Activity;
   
   // Active Activity
-  getActiveActivity(): Promise<any | null> | any | null;
-  setActiveActivity(activityId: string, setBy?: string): Promise<any> | any;
+  getActiveActivity(): Promise<ActiveActivity | null> | ActiveActivity | null;
+  setActiveActivity(activityId: string, setBy?: string): Promise<ActiveActivity> | ActiveActivity;
   
   // Check-ins
-  getAllCheckIns(): Promise<any[]> | any[];
-  getActiveCheckIns(): Promise<any[]> | any[];
-  getCheckInByMember(memberId: string): Promise<any | null | undefined> | any | null | undefined;
-  getCheckInsByMember(memberId: string): Promise<any[]> | any[];
-  createCheckIn(memberId: string, activityId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean): Promise<any> | any;
+  getAllCheckIns(): Promise<CheckIn[]> | CheckIn[];
+  getActiveCheckIns(): Promise<CheckIn[]> | CheckIn[];
+  getCheckInByMember(memberId: string): Promise<CheckIn | null | undefined> | CheckIn | null | undefined;
+  getCheckInsByMember(memberId: string): Promise<CheckIn[]> | CheckIn[];
+  createCheckIn(memberId: string, activityId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean): Promise<CheckIn> | CheckIn;
   deactivateCheckIn(checkInId: string): Promise<boolean> | boolean;
   deactivateCheckInByMember(memberId: string): Promise<boolean> | boolean;
   clearAllActiveCheckIns(): Promise<void> | void;
   
   // Events
-  updateMember(id: string, name: string, rank?: string | null): Promise<Member | null | undefined> | Member | null | undefined;
-  createEvent(activityId: string, createdBy?: string): Promise<any> | any;
-  getEvents(limit?: number, offset?: number): Promise<any[]> | any[];
-  getActiveEvents(): Promise<any[]> | any[];
-  getEventById(eventId: string): Promise<any | null | undefined> | any | null | undefined;
-  endEvent(eventId: string): Promise<any | null> | any | null;
-  addEventParticipant(eventId: string, memberId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean): Promise<any> | any;
-  getEventParticipants(eventId: string): Promise<any[]> | any[];
-  getEventWithParticipants(eventId: string): Promise<any | null> | any | null;
-  getEventsWithParticipants(limit?: number, offset?: number): Promise<any[]> | any[];
+  createEvent(activityId: string, createdBy?: string): Promise<Event> | Event;
+  getEvents(limit?: number, offset?: number): Promise<Event[]> | Event[];
+  getActiveEvents(): Promise<Event[]> | Event[];
+  getEventById(eventId: string): Promise<Event | null | undefined> | Event | null | undefined;
+  endEvent(eventId: string): Promise<Event | null> | Event | null;
+  addEventParticipant(eventId: string, memberId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean): Promise<EventParticipant> | EventParticipant;
+  getEventParticipants(eventId: string): Promise<EventParticipant[]> | EventParticipant[];
+  getEventWithParticipants(eventId: string): Promise<EventWithParticipants | null> | EventWithParticipants | null;
+  getEventsWithParticipants(limit?: number, offset?: number): Promise<EventWithParticipants[]> | EventWithParticipants[];
   removeEventParticipant(participantId: string): Promise<boolean> | boolean;
-  getMemberParticipantInEvent(eventId: string, memberId: string): Promise<any | undefined> | any | undefined;
-  getAllActiveParticipants(): Promise<any[]> | any[];
+  getMemberParticipantInEvent(eventId: string, memberId: string): Promise<EventParticipant | undefined> | EventParticipant | undefined;
+  getAllActiveParticipants(): Promise<EventParticipant[]> | EventParticipant[];
 }
 
 /**
@@ -83,11 +90,10 @@ async function initializeDatabase(): Promise<IDatabase> {
   if (useTableStorage) {
     console.log('🔌 Connecting to Azure Table Storage...');
     try {
-      // tableStorageDb is implemented in a module that would otherwise create a circular type import
-      // so call connect and return via `any`/`unknown` casts to satisfy the compiler.
-      await (tableStorageDb as any).connect();
+      // Call connect on tableStorageDb (type-safe via unknown cast)
+      await (tableStorageDb as unknown as { connect: () => Promise<void> }).connect();
       console.log('✅ Connected to Azure Table Storage');
-      return tableStorageDb as unknown as IDatabase;
+      return tableStorageDb as IDatabase;
     } catch (error) {
       console.error('❌ Failed to connect to Table Storage:', error);
       console.log('⚠️  Falling back to in-memory database');

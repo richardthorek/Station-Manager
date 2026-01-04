@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
     const db = await ensureDatabase();
     const { name, firstName, lastName, preferredName, rank } = req.body || {};
 
-    const clean = (val: any) => (typeof val === 'string' ? val.trim() : '');
+    const clean = (val: unknown): string => (typeof val === 'string' ? val.trim() : '');
     const fn = clean(firstName);
     const ln = clean(lastName);
     const pn = clean(preferredName);

@@ -42,17 +42,17 @@ export function useSocket() {
     }
   };
 
-  const on = (event: string, callback: (data: unknown) => void) => {
+  const on = <T = unknown>(event: string, callback: (data: T) => void) => {
     if (socketRef.current) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      socketRef.current.on(event, callback as any);
+      // Socket.io expects a more permissive callback signature
+      socketRef.current.on(event, callback as (data: unknown) => void);
     }
   };
 
-  const off = (event: string, callback?: (data: unknown) => void) => {
+  const off = <T = unknown>(event: string, callback?: (data: T) => void) => {
     if (socketRef.current) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      socketRef.current.off(event, callback as any);
+      // Socket.io expects a more permissive callback signature
+      socketRef.current.off(event, callback as ((data: unknown) => void) | undefined);
     }
   };
 
