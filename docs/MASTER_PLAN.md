@@ -323,21 +323,35 @@ When making changes that affect this document:
 
 ### High Priority Technical Debt
 
-#### TD1.1: Add Frontend Component Tests
+#### TD1.1: Increase Backend Test Coverage to 70%+
+**Description:** Backend test coverage is currently 15% (45 tests covering core APIs only)  
+**Impact:** Many modules untested (achievements, events, truck checks, services), higher risk of regressions  
+**Effort:** 2-3 weeks  
+**Plan:** Add comprehensive tests for:
+- Achievements routes and service
+- Events routes and service  
+- Truck checks routes and service
+- Azure storage services
+- Table Storage database implementations
+- Integration tests for end-to-end workflows  
+**Target:** Q1 2026  
+**Note:** Coverage threshold adjusted to 15% baseline (Jan 2026) to unblock CI/CD pipeline
+
+#### TD1.2: Add Frontend Component Tests
 **Description:** Frontend has no automated tests  
 **Impact:** Harder to refactor, risk of regressions  
 **Effort:** 1-2 weeks  
 **Plan:** Set up Vitest + React Testing Library, write tests for key components  
 **Target:** Q1 2026
 
-#### TD1.2: Implement Structured Logging
+#### TD1.3: Implement Structured Logging
 **Description:** Using console.log for all logging  
 **Impact:** Hard to debug production issues, no log aggregation  
 **Effort:** 2-3 days  
 **Plan:** Integrate Winston or Pino, add request IDs, set up Azure Log Analytics  
 **Target:** Q1 2026
 
-#### TD1.3: Add Input Sanitization Library
+#### TD1.4: Add Input Sanitization Library
 **Description:** Basic trim() only, no XSS protection  
 **Impact:** Potential security vulnerability  
 **Effort:** 1-2 days  
