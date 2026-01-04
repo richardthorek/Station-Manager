@@ -72,7 +72,7 @@ describe('useSocket', () => {
   it('cleans up socket connection on unmount', () => {
     const { unmount } = renderHook(() => useSocket())
 
-    const mockSocketInstance = (io as any).mock.results[0].value
+    const mockSocketInstance = (io as ReturnType<typeof vi.fn>).mock.results[0].value
     
     unmount()
 
@@ -82,7 +82,7 @@ describe('useSocket', () => {
   it('can emit events', () => {
     const { result } = renderHook(() => useSocket())
 
-    const mockSocketInstance = (io as any).mock.results[0].value
+    const mockSocketInstance = (io as ReturnType<typeof vi.fn>).mock.results[0].value
 
     result.current.emit('test-event', { data: 'test' })
 
@@ -92,7 +92,7 @@ describe('useSocket', () => {
   it('can register event listeners', () => {
     const { result } = renderHook(() => useSocket())
 
-    const mockSocketInstance = (io as any).mock.results[0].value
+    const mockSocketInstance = (io as ReturnType<typeof vi.fn>).mock.results[0].value
     const callback = vi.fn()
 
     result.current.on('test-event', callback)
@@ -103,7 +103,7 @@ describe('useSocket', () => {
   it('can unregister event listeners', () => {
     const { result } = renderHook(() => useSocket())
 
-    const mockSocketInstance = (io as any).mock.results[0].value
+    const mockSocketInstance = (io as ReturnType<typeof vi.fn>).mock.results[0].value
     const callback = vi.fn()
 
     result.current.off('test-event', callback)

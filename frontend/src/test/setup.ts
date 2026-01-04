@@ -6,7 +6,7 @@
  */
 
 import '@testing-library/jest-dom'
-import { expect, afterEach } from 'vitest'
+import { afterEach, beforeAll, afterAll } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
 // Cleanup after each test
@@ -38,13 +38,13 @@ global.IntersectionObserver = class IntersectionObserver {
     return []
   }
   unobserve() {}
-} as any
+} as unknown as typeof IntersectionObserver
 
 // Suppress console errors in tests (optional - can be removed if you want to see all errors)
 // Only suppress specific known errors
 const originalError = console.error
 beforeAll(() => {
-  console.error = (...args: any[]) => {
+  console.error = (...args: unknown[]) => {
     // Suppress specific React warnings if needed
     if (
       typeof args[0] === 'string' &&
