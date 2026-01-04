@@ -6,7 +6,7 @@
  */
 
 import { ReactElement } from 'react'
-import { render, RenderOptions } from '@testing-library/react'
+import { render as rtlRender, RenderOptions } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 
 /**
@@ -20,9 +20,9 @@ export function renderWithProviders(
     return <BrowserRouter>{children}</BrowserRouter>
   }
 
-  return render(ui, { wrapper: Wrapper, ...options })
+  return rtlRender(ui, { wrapper: Wrapper, ...options })
 }
 
-// Re-export everything from React Testing Library
-export * from '@testing-library/react'
+// Re-export specific utilities from React Testing Library
+export { screen, waitFor, within, fireEvent } from '@testing-library/react'
 export { renderWithProviders as render }
