@@ -607,8 +607,14 @@ None currently (server-initiated broadcasts only)
    - Credentials not required
 
 2. **Rate Limiting**
-   - SPA fallback route: 100 requests per 15 minutes per IP
-   - Protects against DOS attacks
+   - **API Routes:** 100 requests per 15 minutes per IP (configurable via `RATE_LIMIT_API_MAX`)
+   - **Auth Routes:** 5 requests per 15 minutes per IP (configurable via `RATE_LIMIT_AUTH_MAX`) - Reserved for future auth endpoints
+   - **SPA Fallback:** 100 requests per 15 minutes per IP
+   - **Protected Endpoints:** All `/api/*` routes
+   - **Headers:** Returns standard `RateLimit-*` headers (Limit, Remaining, Reset)
+   - **Custom Error Messages:** Clear 429 responses with retry information
+   - **Logging:** Rate limit violations logged for monitoring
+   - **Configuration:** Adjustable via environment variables (`RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_API_MAX`, `RATE_LIMIT_AUTH_MAX`)
 
 3. **Input Validation**
    - All POST/PUT endpoints validate required fields
