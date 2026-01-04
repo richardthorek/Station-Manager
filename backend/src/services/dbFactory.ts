@@ -120,3 +120,9 @@ export function getDbSync(): IDatabase {
   }
   return dbInstance;
 }
+
+// Helper function for testing: reset the database instance
+export function __resetDatabase(): void {
+  dbInstance = null;
+}
+

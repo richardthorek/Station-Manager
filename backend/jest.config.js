@@ -10,16 +10,18 @@ module.exports = {
     '!src/index.ts',
     '!src/__tests__/**',
   ],
-  // Coverage thresholds: Set to realistic levels based on current test suite
-  // Current coverage: ~15% (3 test files: activities, members, checkins)
-  // Future improvement: Add tests for achievements, events, truckChecks, and services
-  // to gradually increase coverage toward 70%+ industry standard
+  // Coverage thresholds: Increased from 15% baseline to 48%+ (121 tests)
+  // Progressive improvement toward 70%+ industry standard
+  // Current coverage: ~48-49% (statements, branches, functions, lines)
+  // Phase 1 Complete: Comprehensive route testing (45 tests → 121 tests)
+  // Future improvement: Add tests for Table Storage implementations, Azure Storage service,
+  // and database factories to reach 70%+ target
   coverageThreshold: {
     global: {
-      branches: 15,
-      functions: 14,
-      lines: 15,
-      statements: 14,
+      branches: 37,
+      functions: 50,
+      lines: 49,
+      statements: 48,
     },
   },
   moduleNameMapper: {

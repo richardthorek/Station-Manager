@@ -127,3 +127,9 @@ export function getTruckChecksDbSync(): ITruckChecksDatabase {
   }
   return truckChecksDbInstance;
 }
+
+// Helper function for testing: reset the database instance
+export function __resetTruckChecksDatabase(): void {
+  truckChecksDbInstance = null;
+}
+
