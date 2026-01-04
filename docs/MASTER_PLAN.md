@@ -88,6 +88,14 @@ When making changes that affect this document:
 
 ### ✅ Recently Completed
 
+- [x] **CI/CD Pipeline Azure OIDC Fix (January 2026)** - ✅ COMPLETE - Fixed deployment authentication failure
+  - [x] Removed `environment: copilot` from build and deploy jobs
+  - [x] Resolved AADSTS700213 error (federated identity credential mismatch)
+  - **Root Cause**: GitHub environment changed OIDC subject claim from `repo:org/repo:ref:refs/heads/main` to `repo:org/repo:environment:copilot`, which Azure wasn't configured to accept
+  - **Solution**: Removed environment specification to use standard subject claim format
+  - **Impact**: Restored automated deployments to Azure App Service
+  - **Reference**: Issue #90, `.github/workflows/ci-cd.yml`
+
 - [x] **CI/CD Pipeline Enhancement (January 2026)** - ✅ COMPLETE - Comprehensive quality gates and automated testing
   - [x] Parallel quality checks (linting, type checking)
   - [x] Backend testing with coverage reporting (15%+ baseline threshold)
