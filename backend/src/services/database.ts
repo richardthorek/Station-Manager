@@ -73,6 +73,8 @@ class DatabaseService {
       { id: uuidv4(), name: 'Training', isCustom: false, category: 'training', tagColor: '#008550', createdAt: new Date() },
       { id: uuidv4(), name: 'Maintenance', isCustom: false, category: 'maintenance', tagColor: '#fbb034', createdAt: new Date() },
       { id: uuidv4(), name: 'Meeting', isCustom: false, category: 'meeting', tagColor: '#215e9e', createdAt: new Date() },
+      { id: uuidv4(), name: 'Brigade Training', isCustom: false, category: 'training', tagColor: '#cbdb2a', createdAt: new Date() },
+      { id: uuidv4(), name: 'District Training', isCustom: false, category: 'training', tagColor: '#008550', createdAt: new Date() },
     ];
 
     defaultActivities.forEach(activity => {
@@ -287,7 +289,7 @@ class DatabaseService {
 
   createActivity(name: string, createdBy?: string): Activity {
     const isCustom = !this.isDefaultActivityName(name);
-    const category = this.inferCategoryFromName(name);
+    const category: Activity['category'] = isCustom ? 'other' : this.inferCategoryFromName(name);
     const activity: Activity = {
       id: uuidv4(),
       name,

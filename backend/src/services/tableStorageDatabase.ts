@@ -21,6 +21,8 @@ function buildTableName(baseName: string): string {
   return name || baseName; // Fallback to base if everything was stripped
 }
 
+type ActivityCategory = NonNullable<Activity['category']>;
+
 // Activity helpers (shared defaults/category detection)
 function inferCategoryFromName(name: string): 'training' | 'maintenance' | 'meeting' | 'other' {
   const n = name.toLowerCase();
@@ -39,10 +41,21 @@ function colorForCategory(category: string): string {
   }
 }
 
-const DEFAULT_ACTIVITY_NAMES = ['training', 'maintenance', 'meeting'];
+const DEFAULT_ACTIVITIES: Array<{ name: string; category: ActivityCategory; tagColor: string }> = [
+  { name: 'Training', category: 'training', tagColor: '#008550' },
+  { name: 'Maintenance', category: 'maintenance', tagColor: '#fbb034' },
+  { name: 'Meeting', category: 'meeting', tagColor: '#215e9e' },
+  { name: 'Brigade Training', category: 'training', tagColor: '#cbdb2a' },
+  { name: 'District Training', category: 'training', tagColor: '#008550' },
+];
+
+function getDefaultActivityByName(name: string) {
+  const n = name.trim().toLowerCase();
+  return DEFAULT_ACTIVITIES.find(a => a.name.toLowerCase() === n);
+}
 
 function isDefaultActivityName(name: string): boolean {
-  return DEFAULT_ACTIVITY_NAMES.includes(name.trim().toLowerCase());
+  return !!getDefaultActivityByName(name);
 }
 
 /**
@@ -122,14 +135,7 @@ export class TableStorageDatabase {
       }
 
       if (count === 0) {
-        // Create default activities
-        const defaultActivities = [
-          { name: 'Training', isCustom: false },
-          { name: 'Maintenance', isCustom: false },
-          { name: 'Meeting', isCustom: false },
-        ];
-
-        for (const activity of defaultActivities) {
+        for (const activity of DEFAULT_ACTIVITIES) {
           await this.createActivity(activity.name);
         }
 
@@ -271,14 +277,20 @@ export class TableStorageDatabase {
   }
 
   async createActivity(name: string, createdBy?: string): Promise<Activity> {
-    const isDefault = isDefaultActivityName(name);
-    const category = inferCategoryFromName(name);
+    const defaultActivity = getDefaultActivityByName(name);
+    const isDefault = !!defaultActivity;
+    const category: ActivityCategory = isDefault
+      ? defaultActivity!.category
+      : 'other';
+    const tagColor = isDefault
+      ? defaultActivity!.tagColor
+      : colorForCategory(category);
     const activity: Activity = {
       id: uuidv4(),
       name,
       isCustom: !isDefault,
       category,
-      tagColor: colorForCategory(category),
+      tagColor,
       createdBy,
       createdAt: new Date(),
     };
@@ -301,16 +313,22 @@ export class TableStorageDatabase {
   private entityToActivity(entity: TableEntity): Activity {
     const name = entity.name as string;
     const storedIsCustom = typeof entity.isCustom === 'boolean' ? (entity.isCustom as boolean) : undefined;
-    const storedCategory = (entity.category as Activity['category']) || undefined;
-    const inferredCategory = storedCategory ?? inferCategoryFromName(name);
-    const tagColor = (entity.tagColor as string) || colorForCategory(inferredCategory);
-    const isCustom = isDefaultActivityName(name) ? false : (storedIsCustom ?? true);
+    const defaultActivity = getDefaultActivityByName(name);
+    const isDefault = !!defaultActivity;
+    const isCustom = isDefault ? false : (storedIsCustom ?? true);
+    const storedCategory = (entity.category as ActivityCategory | undefined) || undefined;
+    const category: ActivityCategory = isDefault
+      ? (defaultActivity?.category ?? storedCategory ?? 'training')
+      : (storedCategory ?? 'other');
+    const tagColor = (entity.tagColor as string)
+      || defaultActivity?.tagColor
+      || colorForCategory(category);
 
     return {
       id: entity.rowKey as string,
       name,
       isCustom,
-      category: inferredCategory,
+      category,
       tagColor,
       createdBy: (entity.createdBy as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
