@@ -29,19 +29,50 @@ class DatabaseService {
 
   constructor() {
     this.initializeDefaultData();
-    
-    // Initialize dev data if in development mode
-    if (process.env.NODE_ENV !== 'production') {
+
+    const preferTableStorage = (process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development')
+      && !!process.env.AZURE_STORAGE_CONNECTION_STRING;
+    // Only seed noisy dev data when we're actually using in-memory (not when dev is pointing at Table Storage)
+    if (!preferTableStorage && process.env.NODE_ENV !== 'production') {
       this.initializeDevData();
     }
   }
 
+  // Helpers for activity category and color
+  private inferCategoryFromName(name: string): 'training' | 'maintenance' | 'meeting' | 'other' {
+    const n = name.toLowerCase();
+    if (n.includes('train')) return 'training';
+    if (n.includes('maint')) return 'maintenance';
+    if (n.includes('meet')) return 'meeting';
+    return 'other';
+  }
+
+  private colorForCategory(category: string): string {
+    switch (category) {
+      case 'training': return '#008550';
+      case 'maintenance': return '#fbb034';
+      case 'meeting': return '#215e9e';
+      default: return '#bcbec0';
+    }
+  }
+
+  private isDefaultActivityName(name: string): boolean {
+    const n = name.trim().toLowerCase();
+    return [
+      'training',
+      'maintenance',
+      'meeting',
+      'brigade training',
+      'district training'
+    ].includes(n);
+  }
+
   private initializeDefaultData() {
     // Add default activities
-    const defaultActivities = [
-      { id: uuidv4(), name: 'Training', isCustom: false, createdAt: new Date() },
-      { id: uuidv4(), name: 'Maintenance', isCustom: false, createdAt: new Date() },
-      { id: uuidv4(), name: 'Meeting', isCustom: false, createdAt: new Date() },
+    const defaultActivities: Activity[] = [
+      { id: uuidv4(), name: 'Training', isCustom: false, category: 'training', tagColor: '#008550', createdAt: new Date() },
+      { id: uuidv4(), name: 'Maintenance', isCustom: false, category: 'maintenance', tagColor: '#fbb034', createdAt: new Date() },
+      { id: uuidv4(), name: 'Meeting', isCustom: false, category: 'meeting', tagColor: '#215e9e', createdAt: new Date() },
     ];
 
     defaultActivities.forEach(activity => {
@@ -255,10 +286,14 @@ class DatabaseService {
   }
 
   createActivity(name: string, createdBy?: string): Activity {
+    const isCustom = !this.isDefaultActivityName(name);
+    const category = this.inferCategoryFromName(name);
     const activity: Activity = {
       id: uuidv4(),
       name,
-      isCustom: true,
+      isCustom,
+      category,
+      tagColor: this.colorForCategory(category),
       createdBy,
       createdAt: new Date(),
     };
@@ -304,6 +339,7 @@ class DatabaseService {
         ...checkIn,
         memberName: member?.name || 'Unknown',
         activityName: activity?.name || 'Unknown',
+        activityTagColor: activity?.tagColor || undefined,
       };
     });
   }

@@ -10,7 +10,40 @@ import {
   EventParticipant,
   EventWithParticipants
 } from '../types';
-import { IDatabase } from './dbFactory';
+// Note: we intentionally avoid importing IDatabase here to prevent circular type issues
+
+// Build table names with optional prefix/suffix so dev can share prod storage without mixing tables
+function buildTableName(baseName: string): string {
+  const sanitize = (value: string) => value.replace(/[^A-Za-z0-9]/g, '');
+  const prefix = sanitize(process.env.TABLE_STORAGE_TABLE_PREFIX || '');
+  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || (process.env.NODE_ENV === 'development' ? 'Dev' : ''));
+  const name = `${prefix}${baseName}${suffix}`;
+  return name || baseName; // Fallback to base if everything was stripped
+}
+
+// Activity helpers (shared defaults/category detection)
+function inferCategoryFromName(name: string): 'training' | 'maintenance' | 'meeting' | 'other' {
+  const n = name.toLowerCase();
+  if (n.includes('train')) return 'training';
+  if (n.includes('maint')) return 'maintenance';
+  if (n.includes('meet')) return 'meeting';
+  return 'other';
+}
+
+function colorForCategory(category: string): string {
+  switch (category) {
+    case 'training': return '#008550'; // green
+    case 'maintenance': return '#fbb034'; // amber
+    case 'meeting': return '#215e9e'; // blue
+    default: return '#bcbec0'; // light grey
+  }
+}
+
+const DEFAULT_ACTIVITY_NAMES = ['training', 'maintenance', 'meeting'];
+
+function isDefaultActivityName(name: string): boolean {
+  return DEFAULT_ACTIVITY_NAMES.includes(name.trim().toLowerCase());
+}
 
 /**
  * Azure Table Storage Database Implementation
@@ -24,7 +57,7 @@ import { IDatabase } from './dbFactory';
  * - ActiveActivity: PartitionKey = 'ActiveActivity'
  * - CheckIns: PartitionKey = 'CheckIn' (legacy, not used with events)
  */
-export class TableStorageDatabase implements IDatabase {
+export class TableStorageDatabase {
   private connectionString: string;
   private membersTable: TableClient;
   private activitiesTable: TableClient;
@@ -42,12 +75,12 @@ export class TableStorageDatabase implements IDatabase {
     }
 
     // Initialize table clients
-    this.membersTable = TableClient.fromConnectionString(this.connectionString, 'Members');
-    this.activitiesTable = TableClient.fromConnectionString(this.connectionString, 'Activities');
-    this.eventsTable = TableClient.fromConnectionString(this.connectionString, 'Events');
-    this.eventParticipantsTable = TableClient.fromConnectionString(this.connectionString, 'EventParticipants');
-    this.checkInsTable = TableClient.fromConnectionString(this.connectionString, 'CheckIns');
-    this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, 'ActiveActivity');
+    this.membersTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Members'));
+    this.activitiesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Activities'));
+    this.eventsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Events'));
+    this.eventParticipantsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('EventParticipants'));
+    this.checkInsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckIns'));
+    this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ActiveActivity'));
   }
 
   async connect(): Promise<void> {
@@ -238,10 +271,14 @@ export class TableStorageDatabase implements IDatabase {
   }
 
   async createActivity(name: string, createdBy?: string): Promise<Activity> {
+    const isDefault = isDefaultActivityName(name);
+    const category = inferCategoryFromName(name);
     const activity: Activity = {
       id: uuidv4(),
       name,
-      isCustom: true,
+      isCustom: !isDefault,
+      category,
+      tagColor: colorForCategory(category),
       createdBy,
       createdAt: new Date(),
     };
@@ -251,6 +288,8 @@ export class TableStorageDatabase implements IDatabase {
       rowKey: activity.id,
       name: activity.name,
       isCustom: activity.isCustom,
+      category: activity.category || '',
+      tagColor: activity.tagColor || '',
       createdBy: activity.createdBy || '',
       createdAt: activity.createdAt.toISOString(),
     };
@@ -260,10 +299,19 @@ export class TableStorageDatabase implements IDatabase {
   }
 
   private entityToActivity(entity: TableEntity): Activity {
+    const name = entity.name as string;
+    const storedIsCustom = typeof entity.isCustom === 'boolean' ? (entity.isCustom as boolean) : undefined;
+    const storedCategory = (entity.category as Activity['category']) || undefined;
+    const inferredCategory = storedCategory ?? inferCategoryFromName(name);
+    const tagColor = (entity.tagColor as string) || colorForCategory(inferredCategory);
+    const isCustom = isDefaultActivityName(name) ? false : (storedIsCustom ?? true);
+
     return {
       id: entity.rowKey as string,
-      name: entity.name as string,
-      isCustom: entity.isCustom as boolean,
+      name,
+      isCustom,
+      category: inferredCategory,
+      tagColor,
       createdBy: (entity.createdBy as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
     };
@@ -513,11 +561,13 @@ export class TableStorageDatabase implements IDatabase {
     const event = await this.getEventById(eventId);
     if (!event) return null;
 
+    // fetch activity to include tag color
+    const activity = await this.getActivityById(event.activityId);
     const participants = await this.getEventParticipants(eventId);
 
     return {
       ...event,
-      participants,
+      participants: participants.map(p => ({ ...p, activityTagColor: activity?.tagColor })),
       participantCount: participants.length,
     };
   }
@@ -528,9 +578,10 @@ export class TableStorageDatabase implements IDatabase {
     const eventsWithParticipants = await Promise.all(
       events.map(async (event) => {
         const participants = await this.getEventParticipants(event.id);
+        const activity = await this.getActivityById(event.activityId);
         return {
           ...event,
-          participants,
+          participants: participants.map(p => ({ ...p, activityTagColor: activity?.tagColor })),
           participantCount: participants.length,
         };
       })
@@ -565,7 +616,8 @@ export class TableStorageDatabase implements IDatabase {
 
     for (const event of activeEvents) {
       const participants = await this.getEventParticipants(event.id);
-      allParticipants.push(...participants);
+      const activity = await this.getActivityById(event.activityId);
+      allParticipants.push(...participants.map(p => ({ ...p, activityTagColor: activity?.tagColor })) as any);
     }
 
     // Sort by checkInTime descending

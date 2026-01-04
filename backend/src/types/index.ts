@@ -14,6 +14,8 @@ export interface Activity {
   id: string;
   name: string;
   isCustom: boolean;
+  category?: 'training' | 'maintenance' | 'meeting' | 'other';
+  tagColor?: string; // CSS color or color name for UI tags
   createdBy?: string;
   createdAt: Date;
 }
@@ -41,6 +43,7 @@ export interface ActiveActivity {
 export interface CheckInWithDetails extends CheckIn {
   memberName: string;
   activityName: string;
+  activityTagColor?: string;
 }
 
 export enum CheckInMethod {

@@ -16,15 +16,15 @@ import type {
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 
-// Use relative URL in production, localhost in development
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
+// Use relative URL in production, localhost in development; ensure trailing /api
+const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
+const API_BASE_URL = rawApiBase.endsWith('/api') ? rawApiBase : `${rawApiBase.replace(/\/$/, '')}/api`;
 
 class ApiService {
   // System Status
   async getStatus(): Promise<{
     status: string;
-    databaseType: 'mongodb' | 'in-memory';
+    databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     isProduction: boolean;
     usingInMemory: boolean;
     timestamp: string;

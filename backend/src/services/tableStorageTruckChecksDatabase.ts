@@ -11,6 +11,15 @@ import {
 } from '../types';
 import { ITruckChecksDatabase } from './truckChecksDbFactory';
 
+// Build table names with optional prefix/suffix so dev can share prod storage without mixing tables
+function buildTableName(baseName: string): string {
+  const sanitize = (value: string) => value.replace(/[^A-Za-z0-9]/g, '');
+  const prefix = sanitize(process.env.TABLE_STORAGE_TABLE_PREFIX || '');
+  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || (process.env.NODE_ENV === 'development' ? 'Dev' : ''));
+  const name = `${prefix}${baseName}${suffix}`;
+  return name || baseName;
+}
+
 /**
  * Azure Table Storage implementation for Truck Checks
  * 
@@ -35,10 +44,10 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage');
     }
 
-    this.appliancesTable = TableClient.fromConnectionString(this.connectionString, 'Appliances');
-    this.templatesTable = TableClient.fromConnectionString(this.connectionString, 'ChecklistTemplates');
-    this.checkRunsTable = TableClient.fromConnectionString(this.connectionString, 'CheckRuns');
-    this.checkResultsTable = TableClient.fromConnectionString(this.connectionString, 'CheckResults');
+    this.appliancesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Appliances'));
+    this.templatesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ChecklistTemplates'));
+    this.checkRunsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckRuns'));
+    this.checkResultsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckResults'));
   }
 
   async connect(): Promise<void> {

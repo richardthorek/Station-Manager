@@ -34,6 +34,7 @@ export interface CheckIn {
 export interface CheckInWithDetails extends CheckIn {
   memberName: string;
   activityName: string;
+  activityTagColor?: string;
 }
 
 export interface ActiveActivity {
