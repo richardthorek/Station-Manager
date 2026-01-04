@@ -691,13 +691,33 @@ None currently (server-initiated broadcasts only)
    - Install dependencies with npm caching
    - Build backend (TypeScript → JavaScript)
    - Build frontend (Vite production bundle)
+   - Create .env file with build metadata (GIT_COMMIT_SHA, BUILD_TIMESTAMP)
    - Prune dev dependencies
-   - Create deployment package (ZIP artifact)
+   - Create deployment package with correct structure:
+     ```
+     deploy/
+     ├── package.json (contains "start": "node backend/dist/index.js")
+     ├── backend/
+     │   ├── dist/           ← Compiled backend code
+     │   │   ├── index.js
+     │   │   ├── .env        ← Build metadata
+     │   │   └── ...
+     │   ├── package.json
+     │   └── node_modules/
+     └── frontend/
+         └── dist/           ← Built frontend assets
+     ```
+   - Package as ZIP artifact for Azure deployment
 
 3. **Deploy (Runs only on main branch after successful build)**
-   - Download build artifact
+   - Download build artifact (ZIP from build step)
+   - Unzip deployment package to working directory
    - Login to Azure (OIDC federated credentials)
-   - Deploy to Azure App Service
+   - Deploy to Azure App Service using pre-built artifacts
+   - Azure configuration: SCM_DO_BUILD_DURING_DEPLOYMENT=false
+     - Prevents Azure from rebuilding source
+     - Uses pre-built artifacts from CI/CD
+     - Preserves build-time environment variables
    - Display deployment summary
 
 4. **Post-Deployment Tests (NEW - Runs after deployment)**

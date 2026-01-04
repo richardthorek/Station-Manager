@@ -280,6 +280,13 @@ features/
 - **Status**: Complete, integrated into CI/CD pipeline
 - **Documentation**: `docs/POST_DEPLOYMENT_TESTING.md`
 
+✅ **CI/CD Deployment Artifact Fix** - Corrected deployment package structure (January 2026)
+- **Issue**: Azure was rebuilding from source, losing build metadata and deploying stale code
+- **Root Cause**: SCM_DO_BUILD_DURING_DEPLOYMENT=true + incorrect deployment package structure
+- **Solution**: Disabled Azure SCM rebuild, fixed package directory structure (backend/dist)
+- **Impact**: Deployments now use pre-built CI/CD artifacts with correct version tracking
+- **Status**: Complete, deployments working correctly
+
 ### Known Limitations
 
 | ID | Limitation | Impact | Workaround | Priority |
