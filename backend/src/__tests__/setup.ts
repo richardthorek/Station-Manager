@@ -4,6 +4,9 @@
  * Sets up the testing environment before running tests.
  * Configures environment variables and global test utilities.
  * 
+ * Note: This file runs via jest.config.js setupFilesAfterEnv,
+ * which ensures it executes before any test files are loaded.
+ * 
  * When using Azure Table Storage for tests:
  * - Tables are suffixed with 'Test' (e.g., MembersTest, ActivitiesTest)
  * - Test data should be seeded before running tests via `npm run seed:test`
@@ -11,6 +14,7 @@
  */
 
 // Set NODE_ENV to test to use test-specific Table Storage tables (suffixed with 'Test')
+// This is safe here because setupFilesAfterEnv runs before test files
 process.env.NODE_ENV = 'test';
 
 // Increase timeout for async operations (especially when using real Azure Table Storage)

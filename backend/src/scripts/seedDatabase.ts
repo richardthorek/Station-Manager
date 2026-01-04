@@ -57,8 +57,14 @@ const SAMPLE_MEMBERS = [
 ];
 
 async function seedDatabase() {
-  const environment = process.env.NODE_ENV || 'development';
+  const environment = process.env.NODE_ENV;
   const tableSuffix = process.env.TABLE_STORAGE_TABLE_SUFFIX || '';
+  
+  // Validate environment
+  if (!environment || !['test', 'development', 'production'].includes(environment)) {
+    console.error(`❌ Invalid NODE_ENV: "${environment}". Must be one of: test, development, production`);
+    process.exit(1);
+  }
   
   console.log(`\n🌱 Seeding database for environment: ${environment}`);
   if (tableSuffix) {

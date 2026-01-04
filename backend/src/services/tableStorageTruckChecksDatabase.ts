@@ -49,10 +49,10 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
   constructor(connectionString?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
     
-    // Don't throw here - let connect() handle the error
-    // This allows the module to be imported even when connection string isn't available
+    // Initialize table clients if connection string is available
+    // Otherwise, connect() will throw a meaningful error
     if (!this.connectionString) {
-      // Set dummy values to satisfy TypeScript - these won't be used if connect() isn't called
+      // Create uninitialized clients - connect() will fail with a clear error message
       this.appliancesTable = null as any;
       this.templatesTable = null as any;
       this.checkRunsTable = null as any;
@@ -70,7 +70,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     if (this.isConnected) return;
 
     if (!this.connectionString) {
-      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage');
+      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage. Cannot connect without credentials.');
     }
 
     try {
