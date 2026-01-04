@@ -81,7 +81,7 @@ When making changes that affect this document:
 - [x] Azure Table Storage database
 - [x] Azure deployment configuration
 - [x] Comprehensive CI/CD pipeline with quality gates
-- [x] Automated testing (45+ tests, 70% coverage)
+- [x] Automated testing (45+ tests, 15%+ coverage baseline)
 - [x] Automated failure issue creation
 - [x] Dependabot configuration for automated dependency updates
 - [x] Complete documentation
@@ -90,7 +90,7 @@ When making changes that affect this document:
 
 - [x] **CI/CD Pipeline Enhancement (January 2026)** - ✅ COMPLETE - Comprehensive quality gates and automated testing
   - [x] Parallel quality checks (linting, type checking)
-  - [x] Backend testing with coverage reporting (70% threshold)
+  - [x] Backend testing with coverage reporting (15%+ baseline threshold)
   - [x] Build validation with strict quality gates
   - [x] Deployment gating (only on main branch after all checks pass)
   - [x] npm dependency caching for efficiency
@@ -122,7 +122,7 @@ When making changes that affect this document:
 | Metric | Status | Notes |
 |--------|--------|-------|
 | Uptime | 99%+ | Production stable |
-| Test Coverage | Backend: 70%+ (45 tests) | Frontend: TBD |
+| Test Coverage | Backend: 15%+ baseline (45 tests) | Frontend: TBD |
 | CI/CD Quality Gates | 100% enforced | Linting, type checking, testing |
 | Documentation | 95% complete | CI/CD, API, features documented |
 | Performance | Meets targets | < 500ms API response |
