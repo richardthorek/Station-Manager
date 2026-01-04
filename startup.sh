@@ -9,6 +9,12 @@ if [ ! -d "backend/dist" ]; then
   cd backend && npm install && npm run build && cd ..
 fi
 
+# Check if node_modules exists (in case of zip deploy without deps)
+if [ ! -d "backend/node_modules" ]; then
+  echo "Installing production dependencies..."
+  cd backend && npm ci --production && cd ..
+fi
+
 # Start the application
 echo "Starting backend server..."
 cd backend && npm start

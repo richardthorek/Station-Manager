@@ -321,7 +321,7 @@ jobs:
           cp package.json deploy/
           cp -r backend/dist deploy/backend/
           cp backend/package.json deploy/backend/
-          cp -r backend/node_modules deploy/backend/
+          cp backend/package-lock.json deploy/backend/
           cp -r frontend/dist deploy/frontend/
           cp startup.sh deploy/ 2>/dev/null || true
           cp web.config deploy/ 2>/dev/null || true
