@@ -107,10 +107,14 @@ export function LandingPage() {
         <p>Built with ❤️ for the volunteer community</p>
         <p className="version">
           Version 1.0 • Build: {__APP_VERSION__.commitShort}
-          {' • '}
-          <span title={`Full SHA: ${__APP_VERSION__.commitSha}\nBuild Time: ${__APP_VERSION__.buildTime}`}>
-            {new Date(__APP_VERSION__.buildTime).toLocaleString()}
-          </span>
+          {__APP_VERSION__.buildTime && __APP_VERSION__.buildTime !== 'unknown' && (
+            <>
+              {' • '}
+              <span title={`Full SHA: ${__APP_VERSION__.commitSha}\nBuild Time: ${__APP_VERSION__.buildTime}`}>
+                {new Date(__APP_VERSION__.buildTime).toLocaleString()}
+              </span>
+            </>
+          )}
         </p>
       </footer>
     </div>
