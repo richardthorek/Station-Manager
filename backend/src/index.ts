@@ -17,13 +17,20 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables FIRST, before any other imports
-// Always load .env so development can access production storage creds when desired
-// In production, also load .env from dist directory if it exists (for build-time vars)
-dotenv.config();
-if (process.env.NODE_ENV === 'production') {
-  dotenv.config({ path: path.join(__dirname, '.env') });
-}
+// Load environment variables from common locations (no overrides) before any other imports
+const candidateEnvPaths = [
+  path.resolve(process.cwd(), '.env.local'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '../.env.local'),
+  path.resolve(__dirname, '../.env'),
+  path.resolve(__dirname, '../../.env.local'),
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(__dirname, '.env'),
+];
+
+candidateEnvPaths.forEach(envPath => {
+  dotenv.config({ path: envPath, override: false });
+});
 
 import express from 'express';
 import { createServer } from 'http';

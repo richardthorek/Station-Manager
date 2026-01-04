@@ -214,6 +214,16 @@ jobs:
           cd backend
           npm run test:coverage
 
+      - name: Append coverage numbers to summary
+        if: always()
+        run: |
+          if [ -f backend/coverage/coverage-summary.json ]; then
+            node -e "const s=require('./backend/coverage/coverage-summary.json').total; const fmt=n=>n.toFixed(1)+'%'; console.log(['## Backend Coverage','',`Statements: ${fmt(s.statements.pct)}`,`Branches: ${fmt(s.branches.pct)}`,`Functions: ${fmt(s.functions.pct)}`,`Lines: ${fmt(s.lines.pct)}`].join('\n'))" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Backend Coverage" >> $GITHUB_STEP_SUMMARY
+            echo "Coverage summary not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Upload coverage reports
         uses: actions/upload-artifact@v6
         if: always()
@@ -260,9 +270,19 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
 
-      - name: Install all dependencies
-        run: npm install
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
 
       - name: Build application
         env:
@@ -296,7 +316,8 @@ jobs:
 
       - name: Create deployment package
         run: |
-          mkdir -p deploy
+          mkdir -p deploy/backend
+          mkdir -p deploy/frontend
           cp package.json deploy/
           cp -r backend/dist deploy/backend/
           cp backend/package.json deploy/backend/
@@ -336,9 +357,6 @@ jobs:
         with:
           name: node-app
 
-      - name: Unzip deployment package
-        run: unzip release.zip
-
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -352,7 +370,7 @@ jobs:
         with:
           app-name: 'bungrfsstation'
           slot-name: 'Production'
-          package: .
+          package: release.zip
 
       - name: Deployment summary
         run: |

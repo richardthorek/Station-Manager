@@ -13,6 +13,23 @@
  * - Test data is isolated from dev and prod environments
  */
 
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables from common locations for tests (no overrides)
+const candidateEnvPaths = [
+  path.resolve(process.cwd(), '.env.local'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '../../.env.local'),
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(__dirname, '../../../.env.local'),
+  path.resolve(__dirname, '../../../.env'),
+];
+
+candidateEnvPaths.forEach(envPath => {
+  dotenv.config({ path: envPath, override: false });
+});
+
 // Set NODE_ENV to test to use test-specific Table Storage tables (suffixed with 'Test')
 // This is safe here because setupFilesAfterEnv runs before test files
 process.env.NODE_ENV = 'test';
