@@ -21,6 +21,7 @@ export function CheckSummaryPage() {
     if (runId) {
       loadCheckRun();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId]);
 
   async function loadCheckRun() {

@@ -18,6 +18,7 @@ export function TemplateEditorPage() {
   useEffect(() => {
     loadTemplate();
     checkStorageStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applianceId]);
 
   const checkStorageStatus = async () => {

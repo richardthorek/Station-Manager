@@ -32,6 +32,7 @@ export function UserProfilePage() {
     if (memberId) {
       loadMemberData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memberId]);
 
   const loadDatabaseStatus = async () => {

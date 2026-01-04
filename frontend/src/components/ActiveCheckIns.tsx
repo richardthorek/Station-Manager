@@ -48,7 +48,7 @@ export function ActiveCheckIns({ checkIns, onUndo }: ActiveCheckInsProps) {
                   <div>
                     <div className="member-name-display">{checkIn.memberName}</div>
                     <div className="checkin-meta">
-                      <ActivityTag name={checkIn.activityName} color={(checkIn as any).activityTagColor || (checkIn as any).tagColor} /> • {formatTime(checkIn.checkInTime)}
+                      <ActivityTag name={checkIn.activityName} color={checkIn.activityTagColor || checkIn.tagColor} /> • {formatTime(checkIn.checkInTime)}
                       {checkIn.isOffsite && (
                         <span className="offsite-badge">📍 Offsite</span>
                       )}
