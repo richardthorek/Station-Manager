@@ -103,33 +103,73 @@ export class TableStorageDatabase {
     }
   }
 
-  async connect(): Promise<void> {
+  async connect(retries = 3, delayMs = 2000): Promise<void> {
     if (this.isConnected) return;
 
     if (!this.connectionString) {
       throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage. Cannot connect without credentials.');
     }
 
-    try {
-      // Create tables if they don't exist
-      await Promise.all([
-        this.membersTable.createTable().catch(() => {}), // Ignore if exists
-        this.activitiesTable.createTable().catch(() => {}),
-        this.eventsTable.createTable().catch(() => {}),
-        this.eventParticipantsTable.createTable().catch(() => {}),
-        this.checkInsTable.createTable().catch(() => {}),
-        this.activeActivityTable.createTable().catch(() => {}),
-      ]);
+    let lastError: any;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`🔌 Connecting to Azure Table Storage (attempt ${attempt}/${retries})...`);
+        
+        // Create tables if they don't exist
+        await Promise.all([
+          this.membersTable.createTable().catch((err) => {
+            // Ignore "table already exists" errors, but log others
+            if (!err.message?.includes('TableAlreadyExists')) {
+              console.warn('Warning creating Members table:', err.message);
+            }
+          }),
+          this.activitiesTable.createTable().catch((err) => {
+            if (!err.message?.includes('TableAlreadyExists')) {
+              console.warn('Warning creating Activities table:', err.message);
+            }
+          }),
+          this.eventsTable.createTable().catch((err) => {
+            if (!err.message?.includes('TableAlreadyExists')) {
+              console.warn('Warning creating Events table:', err.message);
+            }
+          }),
+          this.eventParticipantsTable.createTable().catch((err) => {
+            if (!err.message?.includes('TableAlreadyExists')) {
+              console.warn('Warning creating EventParticipants table:', err.message);
+            }
+          }),
+          this.checkInsTable.createTable().catch((err) => {
+            if (!err.message?.includes('TableAlreadyExists')) {
+              console.warn('Warning creating CheckIns table:', err.message);
+            }
+          }),
+          this.activeActivityTable.createTable().catch((err) => {
+            if (!err.message?.includes('TableAlreadyExists')) {
+              console.warn('Warning creating ActiveActivity table:', err.message);
+            }
+          }),
+        ]);
 
-      // Initialize default activities if empty
-      await this.initializeDefaultActivities();
+        // Initialize default activities if empty
+        await this.initializeDefaultActivities();
 
-      this.isConnected = true;
-      console.log('✅ Connected to Azure Table Storage');
-    } catch (error) {
-      console.error('❌ Failed to connect to Table Storage:', error);
-      throw error;
+        this.isConnected = true;
+        console.log(`✅ Connected to Azure Table Storage (attempt ${attempt}/${retries})`);
+        return; // Success, exit function
+      } catch (error) {
+        lastError = error;
+        console.error(`❌ Failed to connect to Table Storage (attempt ${attempt}/${retries}):`, error);
+        
+        if (attempt < retries) {
+          console.log(`⏳ Retrying in ${delayMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
     }
+    
+    // All retries failed
+    console.error('❌ All connection attempts failed. Last error:', lastError);
+    throw lastError || new Error('Failed to connect to Table Storage after multiple attempts');
   }
 
   private async initializeDefaultActivities(): Promise<void> {
