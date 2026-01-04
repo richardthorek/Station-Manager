@@ -21,9 +21,12 @@
 #
 # Optimizations:
 #   - Parallel job execution for independent tasks
-#   - Dependency caching (npm, build artifacts)
-#   - Skip deployment on documentation-only changes
-#   - Conditional execution based on file changes
+#   - Dependency caching (npm)
+#   - Concurrency control (cancels outdated PR runs)
+#
+# Future Optimizations:
+#   - Skip deployment on documentation-only changes (future enhancement)
+#   - Conditional execution based on file changes (future enhancement)
 #
 # Failure Handling:
 #   - Detailed error logs in workflow output
