@@ -105,7 +105,17 @@ export function LandingPage() {
 
       <footer className="landing-footer">
         <p>Built with ❤️ for the volunteer community</p>
-        <p className="version">Version 1.0</p>
+        <p className="version">
+          Version 1.0 • Build: {__APP_VERSION__.commitShort}
+          {__APP_VERSION__.buildTime && __APP_VERSION__.buildTime !== 'unknown' && (
+            <>
+              {' • '}
+              <span title={`Full SHA: ${__APP_VERSION__.commitSha}\nBuild Time: ${__APP_VERSION__.buildTime}`}>
+                {new Date(__APP_VERSION__.buildTime).toLocaleString()}
+              </span>
+            </>
+          )}
+        </p>
       </footer>
     </div>
   );

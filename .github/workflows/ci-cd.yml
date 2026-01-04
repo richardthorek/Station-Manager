@@ -265,7 +265,29 @@ jobs:
         run: npm install
 
       - name: Build application
-        run: npm run build
+        env:
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_COMMIT_SHORT: ${{ github.sha }}
+          BUILD_TIMESTAMP: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+        run: |
+          # Set short commit SHA (first 7 characters)
+          export GIT_COMMIT_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+          
+          # Export for backend (will be in compiled code)
+          export GIT_COMMIT_SHA="${{ github.sha }}"
+          # Use commit timestamp if available, otherwise use current time
+          export BUILD_TIMESTAMP="${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}"
+          if [ -z "$BUILD_TIMESTAMP" ]; then
+            export BUILD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          fi
+          
+          # Build both frontend and backend
+          npm run build
+          
+          # Create .env file for backend runtime
+          echo "GIT_COMMIT_SHA=${{ github.sha }}" > backend/dist/.env
+          echo "GIT_COMMIT_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)" >> backend/dist/.env
+          echo "BUILD_TIMESTAMP=${BUILD_TIMESTAMP}" >> backend/dist/.env
 
       - name: Clean dev dependencies (production only)
         run: |
@@ -393,6 +415,7 @@ jobs:
           TABLE_STORAGE_TABLE_SUFFIX: Test
           TEST_TIMEOUT: 30000
           MAX_RETRIES: 3
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           cd backend
           npm run test:post-deploy

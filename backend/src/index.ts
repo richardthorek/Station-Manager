@@ -15,16 +15,20 @@
  */
 
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Load environment variables FIRST, before any other imports
 // Always load .env so development can access production storage creds when desired
+// In production, also load .env from dist directory if it exists (for build-time vars)
 dotenv.config();
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: path.join(__dirname, '.env') });
+}
 
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import path from 'path';
 import rateLimit from 'express-rate-limit';
 import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
@@ -34,6 +38,7 @@ import truckChecksRouter from './routes/truckChecks';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
+import { getVersionInfo } from './services/version';
 
 const app = express();
 const httpServer = createServer(app);
@@ -69,11 +74,13 @@ app.get('/health', async (req, res) => {
     const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
     const dbType = storageConnectionString && !explicitlyDisabled ? 'table-storage' : 'in-memory';
+    const versionInfo = getVersionInfo();
     res.json({ 
       status: 'ok', 
       timestamp: new Date().toISOString(),
       database: dbType,
-      environment: process.env.NODE_ENV || 'development'
+      environment: process.env.NODE_ENV || 'development',
+      version: versionInfo
     });
   } catch (error) {
     res.status(500).json({
@@ -94,13 +101,15 @@ app.get('/api/status', async (req, res) => {
     const dbType = storageConnectionString && !explicitlyDisabled ? 'table-storage' : 'in-memory';
     const isProduction = process.env.NODE_ENV === 'production';
     const usingInMemory = dbType === 'in-memory';
+    const versionInfo = getVersionInfo();
     
     res.json({ 
       status: 'ok',
       databaseType: dbType,
       isProduction,
       usingInMemory,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      version: versionInfo
     });
   } catch (error) {
     res.status(500).json({
