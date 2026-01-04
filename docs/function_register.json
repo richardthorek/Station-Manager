@@ -262,12 +262,6 @@
         }
       }
     },
-    "mongoDatabase": {
-      "file": "backend/src/services/mongoDatabase.ts",
-      "description": "MongoDB/Cosmos DB implementation (async versions of database methods)",
-      "type": "class",
-      "note": "All methods are async and mirror the in-memory database but operate on MongoDB collections"
-    },
     "achievementService": {
       "file": "backend/src/services/achievementService.ts",
       "description": "Business logic for calculating and tracking member achievements",
@@ -338,14 +332,14 @@
           "signature": "ensureDatabase(): Promise<DatabaseService>",
           "description": "Get database instance (singleton pattern)",
           "returns": "Promise<DatabaseService>",
-          "logic": "Returns in-memory DB for development, MongoDB for production",
+          "logic": "Returns Table Storage for production (if configured), in-memory DB for development",
           "async": true
         },
         "initializeDatabase": {
           "signature": "initializeDatabase(): Promise<DatabaseService>",
           "description": "Initialize database connection",
           "returns": "Promise<DatabaseService>",
-          "logic": "Checks NODE_ENV and MONGODB_URI to determine DB type",
+          "logic": "Checks USE_TABLE_STORAGE and AZURE_STORAGE_CONNECTION_STRING to determine DB type",
           "async": true
         }
       }
@@ -362,10 +356,17 @@
         "checkResults": ["createCheckResult", "updateCheckResult", "getCheckResultsByRun"]
       }
     },
-    "mongoTruckChecksDatabase": {
-      "file": "backend/src/services/mongoTruckChecksDatabase.ts",
-      "description": "MongoDB implementation of truck checks database",
-      "note": "Async versions of all truckChecksDatabase methods"
+    "tableStorageDatabase": {
+      "file": "backend/src/services/tableStorageDatabase.ts",
+      "description": "Azure Table Storage implementation (production database)",
+      "type": "class",
+      "note": "All methods are async and use @azure/data-tables SDK"
+    },
+    "tableStorageTruckChecksDatabase": {
+      "file": "backend/src/services/tableStorageTruckChecksDatabase.ts",
+      "description": "Azure Table Storage implementation for truck checks",
+      "type": "class",
+      "note": "All methods are async and use @azure/data-tables SDK"
     },
     "truckChecksDbFactory": {
       "file": "backend/src/services/truckChecksDbFactory.ts",

@@ -10,7 +10,7 @@
  * - Activity and event management
  * - Real-time updates across devices
  * - Truck check workflows
- * - Azure Cosmos DB / MongoDB integration
+ * - Azure Table Storage integration
  * - In-memory database for development
  */
 
@@ -68,7 +68,7 @@ app.get('/health', async (req, res) => {
     await ensureDatabase();
     const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
-    const dbType = useTableStorage && storageConnectionString ? 'table-storage' : process.env.MONGODB_URI ? 'mongodb' : 'in-memory';
+    const dbType = useTableStorage && storageConnectionString ? 'table-storage' : 'in-memory';
     res.json({ 
       status: 'ok', 
       timestamp: new Date().toISOString(),
@@ -91,7 +91,7 @@ app.get('/api/status', async (req, res) => {
     await ensureTruckChecksDatabase();
     const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
-    const dbType = useTableStorage && storageConnectionString ? 'table-storage' : process.env.MONGODB_URI ? 'mongodb' : 'in-memory';
+    const dbType = useTableStorage && storageConnectionString ? 'table-storage' : 'in-memory';
     const isProduction = process.env.NODE_ENV === 'production';
     const usingInMemory = dbType === 'in-memory';
     
@@ -195,8 +195,6 @@ async function startServer() {
         const suffix = process.env.TABLE_STORAGE_TABLE_SUFFIX ? ` (tables suffixed '${process.env.TABLE_STORAGE_TABLE_SUFFIX}')` : '';
         const prefix = process.env.TABLE_STORAGE_TABLE_PREFIX ? ` (tables prefixed '${process.env.TABLE_STORAGE_TABLE_PREFIX}')` : '';
         console.log(`Database: Azure Table Storage${prefix || suffix ? ` ${prefix}${suffix}` : ''}`);
-      } else if (process.env.MONGODB_URI) {
-        console.log(`Database: MongoDB/Cosmos DB (persistent)`);
       } else {
         console.log(`Database: In-memory (data will be lost on restart)`);
       }

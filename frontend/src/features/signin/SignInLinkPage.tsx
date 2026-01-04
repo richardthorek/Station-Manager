@@ -12,7 +12,7 @@ export function SignInLinkPage() {
   const [message, setMessage] = useState('');
   const [memberName, setMemberName] = useState('');
   const [databaseStatus, setDatabaseStatus] = useState<{
-    databaseType: 'mongodb' | 'in-memory';
+    databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
   } | null>(null);
   const { isConnected, emit } = useSocket();

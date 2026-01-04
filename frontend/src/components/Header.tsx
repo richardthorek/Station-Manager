@@ -14,7 +14,7 @@ import './Header.css';
 interface HeaderProps {
   isConnected: boolean;
   databaseStatus?: {
-    databaseType: 'mongodb' | 'in-memory';
+    databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
   } | null;
 }
