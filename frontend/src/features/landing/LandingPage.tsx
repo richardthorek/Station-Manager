@@ -68,14 +68,14 @@ export function LandingPage() {
             </Link>
           </div>
 
-          <div className="feature-card feature-card-disabled">
+          <div className="feature-card">
             <div className="feature-icon">📊</div>
             <h3>Reports & Analytics</h3>
             <p>Historical reporting, analytics, and data export capabilities.</p>
-            <div className="feature-link feature-link-disabled">
-              Coming Soon
-              <span className="badge">Future</span>
-            </div>
+            <Link to="/reports" className="feature-link">
+              Go to Reports
+              <span className="arrow">→</span>
+            </Link>
           </div>
 
           <div className="feature-card feature-card-disabled">

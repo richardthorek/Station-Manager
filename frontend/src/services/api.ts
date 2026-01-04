@@ -420,6 +420,86 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to fetch achievement progress');
     return response.json();
   }
+
+  // Reports
+  async getAttendanceSummary(startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    summary: Array<{ month: string; count: number }>;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/attendance-summary?startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch attendance summary');
+    return response.json();
+  }
+
+  async getMemberParticipation(startDate: string, endDate: string, limit: number = 10): Promise<{
+    startDate: string;
+    endDate: string;
+    limit: number;
+    participation: Array<{
+      memberId: string;
+      memberName: string;
+      participationCount: number;
+      lastCheckIn: string;
+    }>;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/member-participation?startDate=${startDate}&endDate=${endDate}&limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch member participation');
+    return response.json();
+  }
+
+  async getActivityBreakdown(startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    breakdown: Array<{
+      category: string;
+      count: number;
+      percentage: number;
+    }>;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/activity-breakdown?startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch activity breakdown');
+    return response.json();
+  }
+
+  async getEventStatistics(startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    statistics: {
+      totalEvents: number;
+      activeEvents: number;
+      completedEvents: number;
+      totalParticipants: number;
+      averageParticipantsPerEvent: number;
+      averageDuration: number;
+    };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/event-statistics?startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch event statistics');
+    return response.json();
+  }
+
+  async getTruckCheckCompliance(startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    compliance: {
+      totalChecks: number;
+      completedChecks: number;
+      inProgressChecks: number;
+      checksWithIssues: number;
+      complianceRate: number;
+      applianceStats: Array<{
+        applianceId: string;
+        applianceName: string;
+        checkCount: number;
+        lastCheckDate: string | null;
+      }>;
+    };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/truckcheck-compliance?startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch truck check compliance');
+    return response.json();
+  }
 }
 
 export const api = new ApiService();
