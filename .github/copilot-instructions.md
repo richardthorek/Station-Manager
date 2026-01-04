@@ -688,7 +688,7 @@ npm start            # Start production server (root)
 
 1. **Production Database**: Azure Table Storage (using @azure/data-tables SDK)
 2. **Development Database**: In-memory database for fast local development
-3. **Environment Variable**: `USE_TABLE_STORAGE=true` enables Table Storage
+3. **Environment Variable**: `USE_TABLE_STORAGE=true` enables Table Storage (default in development mode when connection string is available)
 4. **Connection String**: `AZURE_STORAGE_CONNECTION_STRING` (same account as blob storage)
 5. **Documentation**: See `docs/TABLE_STORAGE_MIGRATION_PLAN.md` for migration history
 
@@ -697,7 +697,8 @@ npm start            # Start production server (root)
 ```typescript
 // Priority order in dbFactory:
 // 1. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
-// 2. In-memory database (fallback for development)
+// 2. Table Storage (if NODE_ENV=development and AZURE_STORAGE_CONNECTION_STRING set - uses dev table prefix)
+// 3. In-memory database (fallback for development without Azure connection)
 ```
 
 ### Important Implementation Notes

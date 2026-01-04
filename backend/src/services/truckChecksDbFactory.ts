@@ -65,14 +65,15 @@ export interface ITruckChecksDatabase {
  * Initialize and return the appropriate truck checks database service
  * Priority order:
  * 1. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
- * 2. In-memory database (fallback for development)
+ * 2. Table Storage (if NODE_ENV=development and AZURE_STORAGE_CONNECTION_STRING set - uses dev prefix)
+ * 3. In-memory database (fallback for development without Azure connection)
  */
 async function initializeTruckChecksDatabase(): Promise<ITruckChecksDatabase> {
   const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true';
+  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
   const nodeEnv = process.env.NODE_ENV;
 
-  // Prefer Table Storage if explicitly enabled
+  // Prefer Table Storage if explicitly enabled or in development mode
   if (useTableStorage && storageConnectionString) {
     console.log('🔌 Connecting to Azure Table Storage for Truck Checks...');
     try {
