@@ -168,193 +168,199 @@ export function UserProfilePage() {
             </button>
           </div>
 
-          <div className="profile-card card">
-            <h2>User Profile</h2>
-            
-            <div className="profile-info">
-              <div className="profile-field">
-                <label>Name:</label>
-                {!isEditing ? (
-                  <div className="profile-value">
-                    <span>{member.name}</span>
-                    <button className="btn-edit" onClick={() => setIsEditing(true)}>
-                      Edit
-                    </button>
+          <div className="profile-layout">
+            <div className="profile-left">
+              <div className="profile-card card">
+                <h2>User Profile</h2>
+                
+                <div className="profile-info">
+                  <div className="profile-field">
+                    <label>Name:</label>
+                    {!isEditing ? (
+                      <div className="profile-value">
+                        <span>{member.name}</span>
+                        <button className="btn-edit" onClick={() => setIsEditing(true)}>
+                          Edit
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="profile-edit">
+                        <input
+                          type="text"
+                          value={editedName}
+                          onChange={(e) => setEditedName(e.target.value)}
+                          autoFocus
+                        />
+                        <button className="btn-success" onClick={handleSaveName}>
+                          Save
+                        </button>
+                        <button className="btn-secondary" onClick={() => {
+                          setEditedName(member.name);
+                          setEditedRank(member.rank || 'Visitor');
+                          setIsEditing(false);
+                        }}>
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="profile-edit">
+
+                  <div className="profile-field">
+                    <label>Rank:</label>
+                    {!isEditing ? (
+                      <div className="profile-value">
+                        <span>{member.rank || 'Visitor'}</span>
+                        <button className="btn-edit" onClick={() => setIsEditing(true)}>
+                          Edit
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="profile-edit">
+                        <select
+                          value={editedRank}
+                          onChange={(e) => setEditedRank(e.target.value)}
+                          className="rank-dropdown"
+                        >
+                          {rankOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="profile-field">
+                    <label>Member ID:</label>
+                    <span className="profile-value">{member.id}</span>
+                  </div>
+
+                  <div className="profile-field">
+                    <label>Member Since:</label>
+                    <span className="profile-value">{formatDate(member.createdAt)}</span>
+                  </div>
+
+                  <div className="profile-field">
+                    <label>Last Updated:</label>
+                    <span className="profile-value">{formatDate(member.updatedAt)}</span>
+                  </div>
+                </div>
+
+                <div className="profile-signin-link">
+                  <h3>Personal Sign-In Link</h3>
+                  <p className="signin-link-description">
+                    Use this link or QR code to quickly check in to the active event:
+                  </p>
+                  <div className="signin-link-box">
                     <input
                       type="text"
-                      value={editedName}
-                      onChange={(e) => setEditedName(e.target.value)}
-                      autoFocus
+                      value={generateSignInUrl()}
+                      readOnly
+                      className="signin-link-input"
                     />
-                    <button className="btn-success" onClick={handleSaveName}>
-                      Save
-                    </button>
-                    <button className="btn-secondary" onClick={() => {
-                      setEditedName(member.name);
-                      setEditedRank(member.rank || 'Visitor');
-                      setIsEditing(false);
-                    }}>
-                      Cancel
+                    <button className="btn-primary" onClick={copySignInUrl}>
+                      Copy Link
                     </button>
                   </div>
-                )}
-              </div>
-
-              <div className="profile-field">
-                <label>Rank:</label>
-                {!isEditing ? (
-                  <div className="profile-value">
-                    <span>{member.rank || 'Visitor'}</span>
-                    <button className="btn-edit" onClick={() => setIsEditing(true)}>
-                      Edit
-                    </button>
-                  </div>
-                ) : (
-                  <div className="profile-edit">
-                    <select
-                      value={editedRank}
-                      onChange={(e) => setEditedRank(e.target.value)}
-                      className="rank-dropdown"
-                    >
-                      {rankOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <div className="profile-field">
-                <label>Member ID:</label>
-                <span className="profile-value">{member.id}</span>
-              </div>
-
-              <div className="profile-field">
-                <label>Member Since:</label>
-                <span className="profile-value">{formatDate(member.createdAt)}</span>
-              </div>
-
-              <div className="profile-field">
-                <label>Last Updated:</label>
-                <span className="profile-value">{formatDate(member.updatedAt)}</span>
-              </div>
-            </div>
-
-            <div className="profile-signin-link">
-              <h3>Personal Sign-In Link</h3>
-              <p className="signin-link-description">
-                Use this link or QR code to quickly check in to the active event:
-              </p>
-              <div className="signin-link-box">
-                <input
-                  type="text"
-                  value={generateSignInUrl()}
-                  readOnly
-                  className="signin-link-input"
-                />
-                <button className="btn-primary" onClick={copySignInUrl}>
-                  Copy Link
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Achievements Section */}
-          {achievements && (
-            <div className="achievements-card card">
-              <h2>🏆 Achievements</h2>
-              <div className="achievements-stats">
-                <div className="achievement-stat">
-                  <span className="stat-number">{achievements.totalAchievements}</span>
-                  <span className="stat-label">Total Achievements</span>
-                </div>
-                <div className="achievement-stat">
-                  <span className="stat-number">{achievements.activeStreaks.length}</span>
-                  <span className="stat-label">Active Streaks</span>
-                </div>
-                <div className="achievement-stat">
-                  <span className="stat-number">{achievements.recentlyEarned.length}</span>
-                  <span className="stat-label">Recently Earned</span>
                 </div>
               </div>
-              
-              {achievements.totalAchievements === 0 && achievements.progress.length === 0 ? (
-                <p className="no-achievements">
-                  Start checking in to events to earn achievements! 🎯
-                </p>
-              ) : (
-                <>
-                  {achievements.recentlyEarned.length > 0 && (
-                    <div className="achievements-section">
-                      <h3>Recently Earned</h3>
-                      <AchievementGrid
-                        achievements={achievements.recentlyEarned}
-                        variant="compact"
-                        showRecent={true}
-                      />
+
+              {/* Achievements Section */}
+              {achievements && (
+                <div className="achievements-card card">
+                  <h2>🏆 Achievements</h2>
+                  <div className="achievements-stats">
+                    <div className="achievement-stat">
+                      <span className="stat-number">{achievements.totalAchievements}</span>
+                      <span className="stat-label">Total Achievements</span>
                     </div>
-                  )}
+                    <div className="achievement-stat">
+                      <span className="stat-number">{achievements.activeStreaks.length}</span>
+                      <span className="stat-label">Active Streaks</span>
+                    </div>
+                    <div className="achievement-stat">
+                      <span className="stat-number">{achievements.recentlyEarned.length}</span>
+                      <span className="stat-label">Recently Earned</span>
+                    </div>
+                  </div>
                   
-                  {achievements.achievements.length > 0 && (
-                    <div className="achievements-section">
-                      <h3>All Achievements</h3>
-                      <AchievementGrid
-                        achievements={achievements.achievements}
-                        variant="compact"
-                      />
-                    </div>
+                  {achievements.totalAchievements === 0 && achievements.progress.length === 0 ? (
+                    <p className="no-achievements">
+                      Start checking in to events to earn achievements! 🎯
+                    </p>
+                  ) : (
+                    <>
+                      {achievements.recentlyEarned.length > 0 && (
+                        <div className="achievements-section">
+                          <h3>Recently Earned</h3>
+                          <AchievementGrid
+                            achievements={achievements.recentlyEarned}
+                            variant="compact"
+                            showRecent={true}
+                          />
+                        </div>
+                      )}
+                      
+                      {achievements.achievements.length > 0 && (
+                        <div className="achievements-section">
+                          <h3>All Achievements</h3>
+                          <AchievementGrid
+                            achievements={achievements.achievements}
+                            variant="compact"
+                          />
+                        </div>
+                      )}
+                      
+                      {achievements.progress.length > 0 && (
+                        <div className="achievements-section">
+                          <h3>In Progress</h3>
+                          <AchievementGrid
+                            progress={achievements.progress.slice(0, 6)}
+                            variant="full"
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
-                  
-                  {achievements.progress.length > 0 && (
-                    <div className="achievements-section">
-                      <h3>In Progress</h3>
-                      <AchievementGrid
-                        progress={achievements.progress.slice(0, 6)}
-                        variant="full"
-                      />
-                    </div>
-                  )}
-                </>
+                </div>
               )}
             </div>
-          )}
 
-          <div className="history-card card">
-            <h2>Check-In History</h2>
-            
-            {checkInHistory.length === 0 ? (
-              <p className="no-history">No check-in history yet.</p>
-            ) : (
-              <div className="history-list">
-                <div className="history-header">
-                  <span>Date & Time</span>
-                  <span>Activity</span>
-                  <span>Method</span>
-                  <span>Status</span>
-                </div>
-                {checkInHistory.map((checkIn) => (
-                  <div key={checkIn.id} className="history-item">
-                    <span className="history-date">
-                      {formatDate(checkIn.checkInTime)}
-                    </span>
-                    <span className="history-activity">
-                      {getActivityName(checkIn.activityId)}
-                    </span>
-                    <span className="history-method">
-                      {checkIn.checkInMethod}
-                    </span>
-                    <span className={`history-status ${checkIn.isActive ? 'active' : 'completed'}`}>
-                      {checkIn.isActive ? 'Active' : 'Completed'}
-                    </span>
+            <div className="profile-right">
+              <div className="history-card card">
+                <h2>Check-In History</h2>
+                
+                {checkInHistory.length === 0 ? (
+                  <p className="no-history">No check-in history yet.</p>
+                ) : (
+                  <div className="history-list">
+                    <div className="history-header">
+                      <span>Date & Time</span>
+                      <span>Activity</span>
+                      <span>Method</span>
+                      <span>Status</span>
+                    </div>
+                    {checkInHistory.map((checkIn) => (
+                      <div key={checkIn.id} className="history-item">
+                        <span className="history-date">
+                          {formatDate(checkIn.checkInTime)}
+                        </span>
+                        <span className="history-activity">
+                          {getActivityName(checkIn.activityId)}
+                        </span>
+                        <span className="history-method">
+                          {checkIn.checkInMethod}
+                        </span>
+                        <span className={`history-status ${checkIn.isActive ? 'active' : 'completed'}`}>
+                          {checkIn.isActive ? 'Active' : 'Completed'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </main>
