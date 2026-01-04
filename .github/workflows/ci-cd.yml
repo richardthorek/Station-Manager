@@ -29,7 +29,7 @@
 #   - Validates database connectivity and API responsiveness
 #   - Ensures production data remains unaffected
 #   - Includes automatic retry logic for 404/502/503 responses (deployment stabilization)
-#   - 60s initial wait + 30s retry per test = 90+ seconds minimum for stabilization
+#   - 60s initial wait + up to 40s for version verification = 100s total stabilization time
 #
 # Optimizations:
 #   - Parallel job execution for independent tasks
