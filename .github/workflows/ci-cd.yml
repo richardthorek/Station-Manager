@@ -173,7 +173,8 @@ jobs:
   # Backend Tests
   # ---------------------------------------------------------------------------
   # Runs all backend unit and integration tests
-  # Coverage threshold: 70% (branches, functions, lines, statements)
+  # Coverage threshold: 15%+ baseline (set in jest.config.js)
+  # Current: 45 tests covering core APIs (members, activities, check-ins)
   test-backend:
     name: 🧪 Test Backend
     runs-on: ubuntu-latest
