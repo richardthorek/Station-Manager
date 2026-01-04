@@ -82,3 +82,32 @@ All seed scripts are idempotent - running them multiple times is safe. They:
 - Check for existing data before creating
 - Skip items that already exist
 - Report what was created vs skipped
+
+### `purgeProdTestData.ts` - Clear Production Test Records
+
+Removes historical test data from production tables while leaving members and activities intact.
+
+**What gets cleared:**
+
+- Events
+- EventParticipants (event check-ins)
+- CheckIns (legacy)
+- ActiveActivity
+- CheckRuns and CheckResults when `PURGE_TRUCK_CHECKS=true`
+
+**Usage (requires production connection string and explicit confirmation):**
+
+```bash
+# Clear event history and event participants
+npm run purge:prod
+
+# Also clear truck check runs/results
+npm run purge:prod:truck
+```
+
+Environment variables:
+
+- `AZURE_STORAGE_CONNECTION_STRING`: Required
+- `PURGE_CONFIRM=YES`: Required safety latch
+- `TABLE_STORAGE_TABLE_PREFIX` / `TABLE_STORAGE_TABLE_SUFFIX`: Optional targeting (suffix auto-applies for test/dev)
+- `PURGE_TRUCK_CHECKS=true`: Include truck check tables
