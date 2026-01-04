@@ -69,7 +69,7 @@ export interface ITruckChecksDatabase {
  */
 async function initializeTruckChecksDatabase(): Promise<ITruckChecksDatabase> {
   const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
+  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true';
   const nodeEnv = process.env.NODE_ENV;
 
   // Prefer Table Storage if explicitly enabled

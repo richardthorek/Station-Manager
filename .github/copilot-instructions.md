@@ -688,7 +688,7 @@ npm start            # Start production server (root)
 
 1. **Production Database**: Azure Table Storage (using @azure/data-tables SDK)
 2. **Development Database**: In-memory database for fast local development
-3. **Environment Variable**: `USE_TABLE_STORAGE=true` enables Table Storage (default in dev mode)
+3. **Environment Variable**: `USE_TABLE_STORAGE=true` enables Table Storage
 4. **Connection String**: `AZURE_STORAGE_CONNECTION_STRING` (same account as blob storage)
 5. **Documentation**: See `docs/TABLE_STORAGE_MIGRATION_PLAN.md` for migration history
 

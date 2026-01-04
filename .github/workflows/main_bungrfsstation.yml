@@ -12,6 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: copilot
     permissions:
       contents: read #This is required for actions/checkout
 
@@ -29,6 +30,9 @@ jobs:
           npm run build
 
       - name: Run backend tests
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          USE_TABLE_STORAGE: 'true'
         run: |
           cd backend
           npm test
