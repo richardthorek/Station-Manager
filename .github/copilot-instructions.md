@@ -89,7 +89,15 @@ Every PR (including AI-generated PRs) MUST:
    - Modifies project structure rules
    - Updates deployment or CI/CD processes
 
-6. **Validate machine-readable files**:
+6. **Add tests for all new code** (REQUIRED):
+   - Backend: Add tests in `backend/src/__tests__/` for new routes, services, utilities
+   - Frontend: Add tests next to components (`.test.tsx` files) for new components, hooks, pages
+   - Run `npm run test:coverage` to verify coverage thresholds are met
+   - Coverage must stay above thresholds: Backend (70% statements/functions/lines, 65% branches)
+   - Include test additions in the same PR as code changes
+   - Tests are NOT optional - CI will fail if coverage drops below thresholds
+
+7. **Validate machine-readable files**:
    - Run `jsonlint` on all modified JSON registry files
    - Ensure cross-references between docs are maintained
    - Verify file locations match actual implementation
@@ -471,6 +479,78 @@ npm run test:coverage # Generate coverage report
 - Mock external dependencies (Socket.io, API calls)
 - Test user interactions with `@testing-library/user-event`
 - Test accessibility (semantic HTML, ARIA labels, keyboard navigation)
+
+**Coverage Requirements - CRITICAL:**
+
+**ALL new code MUST include tests to maintain coverage thresholds:**
+
+- **Backend Coverage Thresholds** (enforced in CI):
+  - Statements: 70%
+  - Branches: 65%
+  - Functions: 70%
+  - Lines: 70%
+
+- **When adding new code, you MUST:**
+  1. Write tests for new functions, routes, and services
+  2. Ensure new code doesn't lower overall coverage below thresholds
+  3. Run `npm run test:coverage` before committing
+  4. If coverage drops below thresholds, add more tests or refactor
+  5. Include test additions in the same PR as the code changes
+
+- **Test Coverage Best Practices:**
+  - **New routes**: Add integration tests in `backend/src/__tests__/`
+  - **New services**: Add unit tests covering main code paths
+  - **New components**: Add React component tests with user interactions
+  - **New utilities**: Add unit tests with edge cases
+  - **Bug fixes**: Add regression tests to prevent future recurrence
+  - **Refactoring**: Maintain or improve existing test coverage
+
+- **Why This Matters:**
+  - CI will fail if coverage drops below thresholds
+  - Untested code leads to bugs in production
+  - Tests serve as documentation for future developers
+  - High coverage enables confident refactoring
+
+- **Example - Adding a New API Endpoint:**
+  ```typescript
+  // Step 1: Implement the endpoint in backend/src/routes/
+  // Step 2: Add tests in backend/src/__tests__/
+  describe('POST /api/new-feature', () => {
+    it('should create new resource', async () => {
+      const response = await request(app)
+        .post('/api/new-feature')
+        .send({ data: 'value' });
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('id');
+    });
+    
+    it('should validate input', async () => {
+      const response = await request(app)
+        .post('/api/new-feature')
+        .send({});
+      expect(response.status).toBe(400);
+    });
+  });
+  ```
+
+- **Example - Adding a New Component:**
+  ```typescript
+  // Step 1: Create component in frontend/src/components/
+  // Step 2: Add test file NewComponent.test.tsx
+  describe('NewComponent', () => {
+    it('renders correctly', () => {
+      render(<NewComponent title="Test" />);
+      expect(screen.getByText('Test')).toBeInTheDocument();
+    });
+    
+    it('handles user interaction', async () => {
+      const onAction = vi.fn();
+      render(<NewComponent onAction={onAction} />);
+      await userEvent.click(screen.getByRole('button'));
+      expect(onAction).toHaveBeenCalled();
+    });
+  });
+  ```
 
 **Manual Testing:**
 1. Test on multiple devices simultaneously to verify real-time sync
