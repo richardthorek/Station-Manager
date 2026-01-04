@@ -81,6 +81,7 @@ When making changes that affect this document:
 - [x] MongoDB/Cosmos DB integration
 - [x] Azure deployment configuration
 - [x] CI/CD pipeline with GitHub Actions
+- [x] Dependabot configuration for automated dependency updates
 - [x] Comprehensive API testing (45 tests)
 - [x] Complete documentation
 
@@ -355,6 +356,20 @@ When making changes that affect this document:
 **Plan:** Migrate to flat config  
 **Target:** Q2 2026
 
+### ✅ Completed Technical Debt
+
+#### TD✓.1: Configure Dependabot for Automated Dependency Updates
+**Description:** Dependabot configuration was incomplete  
+**Impact:** Manual dependency updates, potential security vulnerabilities  
+**Solution Implemented:**
+- Configured npm ecosystem for root, backend, and frontend
+- Configured GitHub Actions workflow updates
+- Weekly schedule on Mondays at 9:00 AM Australia/Sydney
+- Automatic labeling and conventional commit messages
+- PR limits to avoid overwhelming maintainers  
+**Completed:** January 2026  
+**Documentation:** `.github/dependabot.yml`
+
 ---
 
 ## Future Feature Roadmap
@@ -567,13 +582,14 @@ When making changes that affect this document:
 - Review user feedback/issues
 
 #### Monthly
-- Update dependencies (npm audit, security patches)
+- Review system performance metrics
 - Review and prune old data (if needed)
 - Capacity planning review
 - Cost optimization review
+- Review Dependabot PRs and merge approved updates
 
 #### Quarterly
-- Major dependency updates
+- Major dependency updates (if not handled by Dependabot)
 - Performance benchmarking
 - Security audit
 - Backup restore test
