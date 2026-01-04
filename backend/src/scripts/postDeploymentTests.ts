@@ -6,16 +6,29 @@
  * 2. Health check endpoint is functional
  * 3. Database connectivity (with test tables)
  * 4. Basic API operations work
+ * 5. Version verification (correct commit SHA deployed)
  * 
  * Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data from production.
  * 
  * Retry Strategy:
  *   - Retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
  *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
+ *   - Retries on version mismatch (Azure App Service restart in progress)
  *   - 5 second delay between retries
  *   - Default 3 retries per request (15 seconds max per request)
- *   - With initial 30s wait, provides 45+ seconds for deployment to stabilize
- *   - Multiple tests can retry independently for extended stabilization time
+ *   - With initial 60s wait, provides 75+ seconds for deployment to stabilize
+ *   - Version test can take up to 20 seconds with retries (4 attempts × 5s)
+ *   - Total stabilization time: 60s wait + up to 20s version verification = 80s
+ * 
+ * Version Verification:
+ *   The version test is retry-aware because Azure App Service takes time to:
+ *   1. Apply new environment variables set via az webapp config appsettings set
+ *   2. Restart the application (triggered by az webapp restart)
+ *   3. Initialize Node.js and load environment variables
+ *   4. Begin serving requests with the new configuration
+ *   
+ *   During this window, the health endpoint may return the old commit SHA.
+ *   The test retries for up to 20 seconds to allow Azure to complete the restart.
  * 
  * Usage:
  *   APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy
@@ -25,6 +38,7 @@
  *   TABLE_STORAGE_TABLE_SUFFIX: Set to "Test" to use test tables (default: Test)
  *   TEST_TIMEOUT: Timeout for each test in ms (default: 30000)
  *   MAX_RETRIES: Number of retries for failed requests (default: 3)
+ *   GITHUB_SHA: Expected commit SHA for version verification
  */
 
 import http from 'http';
@@ -161,38 +175,85 @@ async function test(name: string, fn: () => Promise<void>): Promise<void> {
  * Test 1: Version Verification
  * Verifies that the deployed backend has the expected commit SHA
  * This ensures the correct code is running in production
+ * 
+ * Note: This test retries on version mismatch because Azure App Service
+ * may take time to restart and pick up new environment variables after deployment.
  */
 async function testVersionVerification(): Promise<void> {
-  const response = await makeRequest(`${APP_URL}/health`);
+  let lastError: Error | null = null;
+  let attempts = 0;
+  const maxAttempts = MAX_RETRIES + 1; // +1 for initial attempt
   
-  if (response.statusCode !== 200) {
-    throw new Error(`Expected status 200, got ${response.statusCode}`);
-  }
+  while (attempts < maxAttempts) {
+    attempts++;
+    
+    try {
+      const response = await makeRequest(`${APP_URL}/health`);
+      
+      if (response.statusCode !== 200) {
+        throw new Error(`Expected status 200, got ${response.statusCode}`);
+      }
 
-  const data = JSON.parse(response.data);
-  
-  if (!data.version) {
-    throw new Error('Missing version information in health check response');
-  }
+      const data = JSON.parse(response.data);
+      
+      if (!data.version) {
+        throw new Error('Missing version information in health check response');
+      }
 
-  const deployedSha = data.version.commitSha;
-  
-  if (!deployedSha || deployedSha === 'unknown') {
-    throw new Error('Deployed version has unknown commit SHA');
-  }
+      const deployedSha = data.version.commitSha;
+      
+      if (!deployedSha || deployedSha === 'unknown') {
+        throw new Error('Deployed version has unknown commit SHA');
+      }
 
-  // If we have an expected SHA from CI/CD, verify it matches
-  if (EXPECTED_COMMIT_SHA) {
-    if (deployedSha !== EXPECTED_COMMIT_SHA) {
-      throw new Error(
-        `Version mismatch! Expected: ${EXPECTED_COMMIT_SHA}, Deployed: ${deployedSha}\n` +
-        `    This indicates the deployment did not pick up the latest code.`
-      );
+      // If we have an expected SHA from CI/CD, verify it matches
+      if (EXPECTED_COMMIT_SHA) {
+        if (deployedSha !== EXPECTED_COMMIT_SHA) {
+          const error = new Error(
+            `Version mismatch! Expected: ${EXPECTED_COMMIT_SHA}, Deployed: ${deployedSha}`
+          );
+          
+          // If we still have retries left, retry on version mismatch
+          if (attempts < maxAttempts) {
+            console.log(`    ⏳ Version mismatch (attempt ${attempts}/${maxAttempts}), retrying in ${RETRY_DELAY / 1000}s...`);
+            console.log(`       Expected: ${EXPECTED_COMMIT_SHA.substring(0, 7)}..., Got: ${deployedSha.substring(0, 7)}...`);
+            lastError = error;
+            await sleep(RETRY_DELAY);
+            continue;
+          }
+          
+          // Out of retries, fail
+          throw error;
+        }
+        console.log(`    ✅ Version verified: ${data.version.commitShort} (${deployedSha.substring(0, 7)})`);
+        if (attempts > 1) {
+          console.log(`       (Succeeded after ${attempts} attempts)`);
+        }
+      } else {
+        console.log(`    ℹ️  Deployed version: ${data.version.commitShort} (no expected SHA to verify against)`);
+      }
+      
+      // Success!
+      return;
+      
+    } catch (error) {
+      lastError = error as Error;
+      
+      // If this is a network error and we have retries left, retry
+      if (attempts < maxAttempts && error instanceof Error && 
+          (error.message.includes('ECONNREFUSED') || error.message.includes('timeout'))) {
+        console.log(`    ⏳ Network error (attempt ${attempts}/${maxAttempts}), retrying in ${RETRY_DELAY / 1000}s...`);
+        await sleep(RETRY_DELAY);
+        continue;
+      }
+      
+      // Out of retries or non-retryable error
+      throw error;
     }
-    console.log(`    ✅ Version verified: ${data.version.commitShort} (${deployedSha.substring(0, 7)})`);
-  } else {
-    console.log(`    ℹ️  Deployed version: ${data.version.commitShort} (no expected SHA to verify against)`);
   }
+  
+  // If we get here, we ran out of retries
+  throw lastError || new Error('Version verification failed after all retries');
 }
 
 /**
