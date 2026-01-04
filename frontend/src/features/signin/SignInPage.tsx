@@ -40,7 +40,7 @@ export function SignInPage() {
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showNewEventModal, setShowNewEventModal] = useState(false);
   const [databaseStatus, setDatabaseStatus] = useState<{
-    databaseType: 'mongodb' | 'in-memory';
+    databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
   } | null>(null);
 

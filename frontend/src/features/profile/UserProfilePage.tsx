@@ -21,7 +21,7 @@ export function UserProfilePage() {
   const [editedName, setEditedName] = useState('');
   const [editedRank, setEditedRank] = useState<string>('');
   const [databaseStatus, setDatabaseStatus] = useState<{
-    databaseType: 'mongodb' | 'in-memory';
+    databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
   } | null>(null);
   
