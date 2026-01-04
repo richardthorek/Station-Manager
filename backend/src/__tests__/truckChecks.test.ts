@@ -240,7 +240,8 @@ describe('Truck Checks API - Templates', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Items array is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 400 if items is not an array', async () => {
@@ -325,7 +326,8 @@ describe('Truck Checks API - Check Runs', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 400 if completedBy is missing', async () => {
@@ -335,6 +337,8 @@ describe('Truck Checks API - Check Runs', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
   });
 
@@ -493,7 +497,8 @@ describe('Truck Checks API - Check Results', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 400 if status is invalid', async () => {
@@ -509,7 +514,8 @@ describe('Truck Checks API - Check Results', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Invalid status');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should accept all valid status values', async () => {
@@ -567,7 +573,8 @@ describe('Truck Checks API - Check Results', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('status is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 400 if status is invalid', async () => {

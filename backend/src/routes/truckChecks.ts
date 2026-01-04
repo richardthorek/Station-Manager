@@ -17,6 +17,21 @@ import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { CheckStatus } from '../types';
 import { azureStorageService } from '../services/azureStorage';
 import { io } from '../index';
+import {
+  validateCreateAppliance,
+  validateUpdateAppliance,
+  validateApplianceId,
+  validateTemplateApplianceId,
+  validateUpdateTemplate,
+  validateCreateCheckRun,
+  validateCheckRunId,
+  validateCompleteCheckRun,
+  validateCheckRunQuery,
+  validateCreateCheckResult,
+  validateUpdateCheckResult,
+  validateCheckResultId,
+} from '../middleware/truckCheckValidation';
+import { handleValidationErrors } from '../middleware/validationHandler';
 
 const router = Router();
 
@@ -59,7 +74,7 @@ router.get('/appliances', async (req: Request, res: Response) => {
  * GET /api/truck-checks/appliances/:id
  * Get a specific appliance
  */
-router.get('/appliances/:id', async (req: Request, res: Response) => {
+router.get('/appliances/:id', validateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase();
     const appliance = await db.getApplianceById(req.params.id);
@@ -77,7 +92,7 @@ router.get('/appliances/:id', async (req: Request, res: Response) => {
  * POST /api/truck-checks/appliances
  * Create a new appliance
  */
-router.post('/appliances', async (req: Request, res: Response) => {
+router.post('/appliances', validateCreateAppliance, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { name, description, photoUrl } = req.body;
     
@@ -98,7 +113,7 @@ router.post('/appliances', async (req: Request, res: Response) => {
  * PUT /api/truck-checks/appliances/:id
  * Update an appliance
  */
-router.put('/appliances/:id', async (req: Request, res: Response) => {
+router.put('/appliances/:id', validateUpdateAppliance, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { name, description, photoUrl } = req.body;
     
@@ -123,7 +138,7 @@ router.put('/appliances/:id', async (req: Request, res: Response) => {
  * DELETE /api/truck-checks/appliances/:id
  * Delete an appliance
  */
-router.delete('/appliances/:id', async (req: Request, res: Response) => {
+router.delete('/appliances/:id', validateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase();
     const deleted = await db.deleteAppliance(req.params.id);
@@ -145,7 +160,7 @@ router.delete('/appliances/:id', async (req: Request, res: Response) => {
  * GET /api/truck-checks/templates/:applianceId
  * Get checklist template for an appliance
  */
-router.get('/templates/:applianceId', async (req: Request, res: Response) => {
+router.get('/templates/:applianceId', validateTemplateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase();
     const template = await db.getTemplateByApplianceId(req.params.applianceId);
@@ -163,7 +178,7 @@ router.get('/templates/:applianceId', async (req: Request, res: Response) => {
  * PUT /api/truck-checks/templates/:applianceId
  * Update checklist template for an appliance
  */
-router.put('/templates/:applianceId', async (req: Request, res: Response) => {
+router.put('/templates/:applianceId', validateUpdateTemplate, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { items } = req.body;
     
@@ -189,7 +204,7 @@ router.put('/templates/:applianceId', async (req: Request, res: Response) => {
  * Find or create a check run for collaborative checking
  * If an active check run exists for the appliance, join it; otherwise create new
  */
-router.post('/runs', async (req: Request, res: Response) => {
+router.post('/runs', validateCreateCheckRun, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { applianceId, completedBy, completedByName } = req.body;
     
@@ -240,7 +255,7 @@ router.post('/runs', async (req: Request, res: Response) => {
  * GET /api/truck-checks/runs/:id
  * Get a specific check run with results
  */
-router.get('/runs/:id', async (req: Request, res: Response) => {
+router.get('/runs/:id', validateCheckRunId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase();
     const checkRun = await db.getCheckRunWithResults(req.params.id);
@@ -258,7 +273,7 @@ router.get('/runs/:id', async (req: Request, res: Response) => {
  * GET /api/truck-checks/runs
  * Get all check runs with optional filters
  */
-router.get('/runs', async (req: Request, res: Response) => {
+router.get('/runs', validateCheckRunQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { applianceId, startDate, endDate, withIssues } = req.query;
     const db = await ensureTruckChecksDatabase();
@@ -297,7 +312,7 @@ router.get('/runs', async (req: Request, res: Response) => {
  * PUT /api/truck-checks/runs/:id/complete
  * Complete a check run
  */
-router.put('/runs/:id/complete', async (req: Request, res: Response) => {
+router.put('/runs/:id/complete', validateCompleteCheckRun, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { additionalComments } = req.body;
     
@@ -330,7 +345,7 @@ router.put('/runs/:id/complete', async (req: Request, res: Response) => {
  * POST /api/truck-checks/results
  * Create a check result for an item
  */
-router.post('/results', async (req: Request, res: Response) => {
+router.post('/results', validateCreateCheckResult, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy } = req.body;
     
@@ -375,7 +390,7 @@ router.post('/results', async (req: Request, res: Response) => {
  * PUT /api/truck-checks/results/:id
  * Update a check result
  */
-router.put('/results/:id', async (req: Request, res: Response) => {
+router.put('/results/:id', validateUpdateCheckResult, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { status, comment, photoUrl } = req.body;
     
@@ -410,7 +425,7 @@ router.put('/results/:id', async (req: Request, res: Response) => {
  * DELETE /api/truck-checks/results/:id
  * Delete a check result
  */
-router.delete('/results/:id', async (req: Request, res: Response) => {
+router.delete('/results/:id', validateCheckResultId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase();
     const deleted = await db.deleteCheckResult(req.params.id);

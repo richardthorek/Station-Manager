@@ -107,7 +107,8 @@ describe('Activities API', () => {
         .send({})
         .expect(400);
 
-      expect(response.body.error).toContain('name is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 400 for empty name', async () => {
@@ -116,7 +117,8 @@ describe('Activities API', () => {
         .send({ name: '   ' })
         .expect(400);
 
-      expect(response.body.error).toContain('name is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 400 for non-string name', async () => {
@@ -125,7 +127,8 @@ describe('Activities API', () => {
         .send({ name: 123 })
         .expect(400);
 
-      expect(response.body.error).toContain('name is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
   });
 
@@ -194,7 +197,8 @@ describe('Activities API', () => {
         .send({})
         .expect(400);
 
-      expect(response.body.error).toContain('Activity ID is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 404 for non-existent activity', async () => {

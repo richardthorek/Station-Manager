@@ -9,8 +9,15 @@
  * - Deleting members
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
+import {
+  validateCreateMember,
+  validateUpdateMember,
+  validateMemberId,
+  validateQRCode,
+} from '../middleware/memberValidation';
+import { handleValidationErrors } from '../middleware/validationHandler';
 
 const router = Router();
 
@@ -27,7 +34,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get member by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const member = await db.getMemberById(req.params.id);
@@ -42,7 +49,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Get member by QR code
-router.get('/qr/:qrCode', async (req, res) => {
+router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const member = await db.getMemberByQRCode(req.params.qrCode);
@@ -57,7 +64,7 @@ router.get('/qr/:qrCode', async (req, res) => {
 });
 
 // Create new member
-router.post('/', async (req, res) => {
+router.post('/', validateCreateMember, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { name, firstName, lastName, preferredName, rank } = req.body || {};
@@ -89,7 +96,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update member
-router.put('/:id', async (req, res) => {
+router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { name, rank } = req.body;
@@ -108,7 +115,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Get member check-in history
-router.get('/:id/history', async (req, res) => {
+router.get('/:id/history', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const member = await db.getMemberById(req.params.id);
