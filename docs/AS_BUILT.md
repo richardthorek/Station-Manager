@@ -700,6 +700,14 @@ None currently (server-initiated broadcasts only)
    - Deploy to Azure App Service
    - Display deployment summary
 
+4. **Post-Deployment Tests (NEW - Runs after deployment)**
+   - Wait 30 seconds for deployment stabilization
+   - Login to Azure using OIDC (identity-driven, no secrets)
+   - Run 8 smoke tests against live deployment
+   - Test with TABLE_STORAGE_TABLE_SUFFIX=Test (isolated test data)
+   - Validate health check, API endpoints, and frontend
+   - Generate test summary and fail pipeline if tests fail
+
 **Quality Gates:**
 - ✅ All linting must pass (zero errors, zero warnings)
 - ✅ All type checks must pass (TypeScript strict mode)
@@ -707,6 +715,7 @@ None currently (server-initiated broadcasts only)
 - ✅ Code coverage must meet 15%+ baseline threshold
 - ✅ Build must succeed
 - ✅ Deployment only on `main` branch merges
+- ✅ Post-deployment smoke tests must pass (NEW)
 
 **Optimizations:**
 - Parallel job execution for independent tasks
@@ -798,6 +807,56 @@ None currently (server-initiated broadcasts only)
 cd backend
 npm test              # Run all tests
 npm run test:watch    # Watch mode
+npm run test:coverage # With coverage report
+npm run test:post-deploy # Post-deployment smoke tests (requires APP_URL)
+```
+
+**Test Files:**
+- `backend/src/__tests__/members.test.ts` - Members API tests
+- `backend/src/__tests__/activities.test.ts` - Activities API tests
+- `backend/src/__tests__/checkins.test.ts` - Check-ins API tests
+- `backend/src/__tests__/achievements.test.ts` - Achievements API tests (basic)
+- `backend/src/__tests__/events.test.ts` - Events API tests (basic)
+- `backend/src/__tests__/truckChecks.test.ts` - Truck Checks API tests (basic)
+
+### Post-Deployment Smoke Tests (NEW)
+
+**Test Script:** `backend/src/scripts/postDeploymentTests.ts`  
+**Documentation:** `docs/POST_DEPLOYMENT_TESTING.md`  
+**Total Tests:** 8 smoke tests  
+**Execution:** Automated in CI/CD after deployment
+
+**Test Suite:**
+1. Health check endpoint validation
+2. API status endpoint validation
+3. Activities API functionality
+4. Members API functionality
+5. Check-ins API functionality
+6. Frontend SPA loading
+7. CORS configuration check
+8. Rate limiting configuration check
+
+**Key Features:**
+- **Identity-Driven:** Uses Azure OIDC (no connection strings)
+- **Test Isolation:** TABLE_STORAGE_TABLE_SUFFIX=Test keeps test data separate
+- **Retry Logic:** 3 attempts with 5-second delays
+- **Configurable:** Timeout, retries, target URL via environment variables
+- **Fast:** < 2 minutes total execution time
+
+**Running Locally:**
+```bash
+cd backend
+APP_URL=https://bungrfsstation.azurewebsites.net \
+TABLE_STORAGE_TABLE_SUFFIX=Test \
+npm run test:post-deploy
+```
+
+### Frontend Tests
+
+**Status:** Not yet implemented  
+**Planned:** Vitest + React Testing Library  
+**Target Coverage:** 50%+ component coverage  
+**Timeline:** Q1 2026 (Phase 1 - Quality & Testing)
 npm run test:coverage # Coverage report
 ```
 

@@ -1,6 +1,6 @@
-# Database Seeding Scripts
+# Database Seeding Scripts and Utilities
 
-This directory contains scripts for seeding database with initial data across different environments.
+This directory contains scripts for seeding database with initial data and testing deployments across different environments.
 
 ## Scripts
 
@@ -36,6 +36,55 @@ npm run seed:prod
 ### `seedActivities.ts` - Legacy Activity Seeding
 
 Legacy script that seeds only activities. Use `seedDatabase.ts` for comprehensive seeding.
+
+### `postDeploymentTests.ts` - Post-Deployment Smoke Tests (NEW)
+
+Validates deployed application health by running smoke tests against live deployment.
+
+**Documentation:** `docs/POST_DEPLOYMENT_TESTING.md`
+
+**Usage:**
+
+```bash
+# Test deployed application
+APP_URL=https://bungrfsstation.azurewebsites.net \
+TABLE_STORAGE_TABLE_SUFFIX=Test \
+npm run test:post-deploy
+```
+
+**What gets tested:**
+
+1. Health check endpoint responds correctly
+2. API status endpoint returns valid database connection
+3. Activities API functionality
+4. Members API functionality
+5. Check-ins API functionality
+6. Frontend SPA loads correctly
+7. CORS configuration is present
+8. Rate limiting is configured
+
+**Environment Variables:**
+
+- `APP_URL`: Deployed application URL (required, e.g., https://bungrfsstation.azurewebsites.net)
+- `TABLE_STORAGE_TABLE_SUFFIX`: Table suffix for test isolation (default: Test)
+- `TEST_TIMEOUT`: Timeout per request in ms (default: 30000)
+- `MAX_RETRIES`: Number of retries for failed requests (default: 3)
+
+**CI/CD Integration:**
+
+Automatically runs after deployment to validate successful deployments:
+
+```yaml
+- name: Run post-deployment smoke tests
+  env:
+    APP_URL: ${{ secrets.APP_URL }}
+    TABLE_STORAGE_TABLE_SUFFIX: Test
+  run: cd backend && npm run test:post-deploy
+```
+
+### `purgeProdTestData.ts` - Clear Production Test Records
+
+Removes historical test data from production tables while leaving members and activities intact.
 
 ## Table Naming Convention
 
