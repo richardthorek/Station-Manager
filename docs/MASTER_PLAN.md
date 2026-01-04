@@ -400,6 +400,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #1: Increase Backend Test Coverage to 70%+
+**GitHub Issue**: #96 (created 2026-01-04T07:52:21Z)
 
 **Objective**: Establish comprehensive test coverage to prevent regressions and ensure code quality
 
@@ -460,6 +461,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #2: Add Frontend Component Tests
+**GitHub Issue**: #104 (created 2026-01-04T09:23:39Z)
 
 **Objective**: Establish frontend testing infrastructure and achieve initial coverage
 
@@ -521,6 +523,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #3: Fix CI/CD Test Coverage Threshold Failure
+**GitHub Issue**: #105 (created 2026-01-04T09:23:47Z)
 
 **Objective**: Add tests to meet and exceed the 15% baseline coverage threshold
 
@@ -570,6 +573,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #4: Code Quality Audit and Cleanup
+**GitHub Issue**: #106 (created 2026-01-04T09:24:17Z)
 
 **Objective**: Improve code quality, remove dead code, and establish quality standards
 
@@ -632,6 +636,7 @@ Priority: **HIGH** - Critical for production scale
 ---
 
 #### Issue #5: Implement Structured Logging
+**GitHub Issue**: #107 (created 2026-01-04T09:24:25Z)
 
 **Objective**: Replace console.log with structured logging for better debugging and monitoring
 
@@ -694,6 +699,7 @@ Priority: **HIGH** - Critical for production scale
 ---
 
 #### Issue #6: Add Input Sanitization and Validation
+**GitHub Issue**: #108 (created 2026-01-04T09:24:34Z)
 
 **Objective**: Protect against XSS, injection attacks, and invalid data
 
@@ -752,6 +758,7 @@ Priority: **HIGH** - Critical for production scale
 ---
 
 #### Issue #7: Add API Rate Limiting
+**GitHub Issue**: #109 (created 2026-01-04T09:24:42Z)
 
 **Objective**: Protect API endpoints from abuse and DDoS attacks
 
@@ -808,6 +815,7 @@ Priority: **HIGH** - Critical for production scale
 ---
 
 #### Issue #8: Implement Midnight Rollover Automation
+**GitHub Issue**: #110 (created 2026-01-04T09:24:50Z)
 
 **Objective**: Automatically reset check-ins at midnight to eliminate manual intervention
 
@@ -868,6 +876,7 @@ Priority: **HIGH** - Critical for production scale
 
 
 #### Issue #9: Performance Optimization - Response Compression
+**GitHub Issue**: #111 (created 2026-01-04T09:24:58Z)
 
 **Objective**: Reduce bandwidth usage and improve page load times with compression
 
@@ -919,6 +928,7 @@ Priority: **HIGH** - Critical for production scale
 ---
 
 #### Issue #10: Add Security Headers
+**GitHub Issue**: #112 (created 2026-01-04T09:25:06Z)
 
 **Objective**: Implement standard security headers to protect against common web vulnerabilities
 
@@ -976,6 +986,7 @@ Priority: **HIGH** - High-value user features
 ---
 
 #### Issue #11: CSV Data Export
+**GitHub Issue**: #113 (created 2026-01-04T09:25:13Z)
 
 **Objective**: Allow users to export data for reporting and external analysis
 
@@ -1040,6 +1051,7 @@ Priority: **HIGH** - High-value user features
 ---
 
 #### Issue #12: Enhanced Member Search and Filtering
+**GitHub Issue**: #114 (created 2026-01-04T09:25:22Z)
 
 **Objective**: Improve member search with multiple criteria and better UX
 
@@ -1104,6 +1116,7 @@ Priority: **HIGH** - High-value user features
 
 
 #### Issue #13: Reporting Dashboard
+**GitHub Issue**: #115 (created 2026-01-04T09:25:30Z)
 
 **Objective**: Provide station captains with insights into station activity and volunteer participation
 
@@ -1175,6 +1188,7 @@ Priority: **HIGH** - High-value user features
 ---
 
 #### Issue #14: Bulk Member Import from CSV
+**GitHub Issue**: #116 (created 2026-01-04T09:25:39Z)
 
 **Objective**: Enable quick onboarding of multiple members at once
 
@@ -1258,6 +1272,7 @@ Priority: **HIGH** - High-value user features
 ---
 
 #### Issue #15: Bundle Size Optimization
+**GitHub Issue**: #117 (created 2026-01-04T09:25:48Z)
 
 **Objective**: Reduce frontend bundle size for faster load times on slow connections
 
@@ -1327,6 +1342,7 @@ Priority: **MEDIUM** - Long-term enhancements
 ---
 
 #### Issue #16: PWA with Offline Support
+**GitHub Issue**: #119 (created 2026-01-04T09:25:56Z)
 
 **Objective**: Enable offline functionality for use during network outages
 
@@ -1399,6 +1415,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 
 #### Issue #17: Notification System (Email/SMS)
+**GitHub Issue**: #120 (created 2026-01-04T09:26:06Z)
 
 **Objective**: Send automated notifications to keep members informed
 
@@ -1474,6 +1491,7 @@ Priority: **MEDIUM** - Long-term enhancements
 ---
 
 #### Issue #18: Optional Admin Authentication
+**GitHub Issue**: #121 (created 2026-01-04T09:26:14Z)
 
 **Objective**: Protect sensitive administrative operations with authentication
 
@@ -1550,6 +1568,7 @@ Priority: **MEDIUM** - Long-term enhancements
 ---
 
 #### Issue #19: Multi-Station Support
+**GitHub Issue**: #122 (created 2026-01-04T09:26:22Z)
 
 **Objective**: Enable multi-tenant support for managing multiple RFS stations
 
@@ -1622,6 +1641,7 @@ Priority: **MEDIUM** - Long-term enhancements
 ---
 
 #### Issue #20: Advanced Analytics Dashboard
+**GitHub Issue**: #123 (created 2026-01-04T09:26:30Z)
 
 **Objective**: Provide deep insights with advanced analytics and visualizations
 
