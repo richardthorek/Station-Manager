@@ -9,6 +9,13 @@
  * 
  * Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data from production.
  * 
+ * Retry Strategy:
+ *   - Retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
+ *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
+ *   - 5 second delay between retries
+ *   - Default 3 retries per request
+ *   - With initial 30s wait + retries, gives 60+ seconds for deployment to stabilize
+ * 
  * Usage:
  *   APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy
  * 
@@ -42,6 +49,7 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Make HTTP/HTTPS request with retry logic
+ * Retries on network errors and deployment-related HTTP status codes
  */
 async function makeRequest(
   url: string,
@@ -51,7 +59,7 @@ async function makeRequest(
   const urlObj = new URL(url);
   const client = urlObj.protocol === 'https:' ? https : http;
 
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const req = client.request(
       url,
       {
@@ -64,11 +72,30 @@ async function makeRequest(
         res.on('data', (chunk) => {
           data += chunk;
         });
-        res.on('end', () => {
-          resolve({
-            statusCode: res.statusCode || 0,
-            data,
-          });
+        res.on('end', async () => {
+          const statusCode = res.statusCode || 0;
+          
+          // Retry on status codes that indicate deployment is still stabilizing
+          // 404: Route not found (app might still be starting/routing not ready)
+          // 502: Bad Gateway (Azure proxy can't reach app yet)
+          // 503: Service Unavailable (app is starting up)
+          const shouldRetry = retries > 0 && (statusCode === 404 || statusCode === 502 || statusCode === 503);
+          
+          if (shouldRetry) {
+            console.log(`  ⏳ Got ${statusCode} status, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
+            await sleep(RETRY_DELAY);
+            try {
+              const result = await makeRequest(url, options, retries - 1);
+              resolve(result);
+            } catch (err) {
+              reject(err);
+            }
+          } else {
+            resolve({
+              statusCode,
+              data,
+            });
+          }
         });
       }
     );

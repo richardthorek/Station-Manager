@@ -28,6 +28,8 @@
 #   - Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data
 #   - Validates database connectivity and API responsiveness
 #   - Ensures production data remains unaffected
+#   - Includes automatic retry logic for 404/502/503 responses (deployment stabilization)
+#   - 30s initial wait + retries provides 60+ seconds for Azure to stabilize
 #
 # Optimizations:
 #   - Parallel job execution for independent tasks
