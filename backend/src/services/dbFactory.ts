@@ -64,8 +64,12 @@ async function initializeDatabase(): Promise<IDatabase> {
   const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
   const nodeEnv = process.env.NODE_ENV;
   
-  // Use Table Storage for test, development, or when explicitly enabled
-  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || nodeEnv === 'development' || nodeEnv === 'test';
+  // Prefer in-memory for tests unless explicitly forced (legacy check-ins unsupported on Table Storage)
+  const allowTableInTests = process.env.TEST_USE_TABLE_STORAGE === 'true';
+  const useTableStorage =
+    process.env.USE_TABLE_STORAGE === 'true' ||
+    nodeEnv === 'development' ||
+    (nodeEnv === 'test' && allowTableInTests);
   
   // Prefer Table Storage if explicitly enabled or in development/test mode
   if (useTableStorage && storageConnectionString) {
