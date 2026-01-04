@@ -1,11 +1,12 @@
 /**
  * Database Factory
  * Determines which database service to use based on environment
+ * Priority: Table Storage > In-Memory
  */
 
 import type { Member } from '../types';
 import { db as inMemoryDb } from './database';
-import { db as mongoDb } from './mongoDatabase';
+import { tableStorageDb } from './tableStorageDatabase';
 
 // Interface that both database services must implement
 export interface IDatabase {
@@ -53,29 +54,36 @@ export interface IDatabase {
 
 /**
  * Initialize and return the appropriate database service
+ * Priority order:
+ * 1. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
+ * 2. In-memory database (fallback for development)
  */
 async function initializeDatabase(): Promise<IDatabase> {
-  const mongoUri = process.env.MONGODB_URI;
+  const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
   const nodeEnv = process.env.NODE_ENV;
   
-  // Use MongoDB if connection string is provided
-  if (mongoUri && mongoUri.trim() !== '') {
-    console.log('🔌 Connecting to MongoDB/Cosmos DB...');
+  // Prefer Table Storage if explicitly enabled
+  if (useTableStorage && storageConnectionString) {
+    console.log('🔌 Connecting to Azure Table Storage...');
     try {
-      await mongoDb.connect();
-      console.log('✅ Connected to MongoDB/Cosmos DB');
-      return mongoDb as IDatabase;
+      // tableStorageDb is implemented in a module that would otherwise create a circular type import
+      // so call connect and return via `any`/`unknown` casts to satisfy the compiler.
+      await (tableStorageDb as any).connect();
+      console.log('✅ Connected to Azure Table Storage');
+      return tableStorageDb as unknown as IDatabase;
     } catch (error) {
-      console.error('❌ Failed to connect to MongoDB:', error);
-      console.log('⚠️  Falling back to in-memory database');
-      return inMemoryDb as IDatabase;
+      console.error('❌ Failed to connect to Table Storage:', error);
+      console.log('⚠️  Falling back to alternative database');
     }
+  } else if (useTableStorage && !storageConnectionString) {
+    console.warn('⚠️  USE_TABLE_STORAGE requested but AZURE_STORAGE_CONNECTION_STRING is missing; skipping Table Storage');
   }
   
   // Fallback to in-memory database
   if (nodeEnv === 'production') {
     console.warn('⚠️  WARNING: Running in production with in-memory database!');
-    console.warn('⚠️  Data will be lost on restart. Set MONGODB_URI to use persistent storage.');
+    console.warn('⚠️  Data will be lost on restart. Set AZURE_STORAGE_CONNECTION_STRING to enable Table Storage.');
   } else {
     console.log('📦 Using in-memory database for development');
   }

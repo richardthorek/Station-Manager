@@ -53,6 +53,153 @@ This guide provides step-by-step instructions for deploying the RFS Station Mana
 
 ---
 
+## 🆕 Table Storage Deployment (RECOMMENDED)
+
+**Status:** ✅ Available (January 2026)  
+**Cost Savings:** 70-95% vs Cosmos DB ($0.10-2/month vs $0.50-3/month)
+
+### Why Table Storage?
+
+- **Lower Cost:** $0.10-2/month per station vs $0.50-3/month for Cosmos DB
+- **Same Storage Account:** Uses existing blob storage account (no new resource)
+- **Performance:** Comparable or better for this use case
+- **Simplicity:** No RU management, straightforward pricing
+- **Easy Rollback:** Can switch back to Cosmos DB with environment variable
+
+### Table Storage Setup
+
+#### Option 1: Use Existing Storage Account (Recommended)
+
+If you already have a storage account for blob storage (appliance photos):
+
+```bash
+# Get your existing storage account connection string
+STORAGE_ACCOUNT_NAME="<your-storage-account-name>"
+RESOURCE_GROUP="<your-resource-group>"
+
+az storage account show-connection-string \
+  --name $STORAGE_ACCOUNT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --output tsv
+```
+
+#### Option 2: Create New Storage Account
+
+If you don't have a storage account yet:
+
+```bash
+# Variables
+RESOURCE_GROUP="rg-station-manager"
+STORAGE_ACCOUNT_NAME="stationstorageXXXXX"  # Must be globally unique, lowercase, no hyphens
+LOCATION="australiaeast"
+
+# Create storage account
+az storage account create \
+  --name $STORAGE_ACCOUNT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --sku Standard_LRS \
+  --kind StorageV2
+
+# Get connection string
+az storage account show-connection-string \
+  --name $STORAGE_ACCOUNT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --output tsv
+```
+
+#### Configure App Service for Table Storage
+
+```bash
+# Variables
+APP_NAME="bungrfsstation"
+RESOURCE_GROUP="<your-resource-group>"
+STORAGE_CONNECTION_STRING="<your-storage-connection-string>"
+FRONTEND_URL="<your-frontend-url>"
+
+# Set environment variables
+az webapp config appsettings set \
+  --name $APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --settings \
+    PORT=8080 \
+    NODE_ENV=production \
+    USE_TABLE_STORAGE=true \
+    AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CONNECTION_STRING" \
+    FRONTEND_URL="$FRONTEND_URL"
+```
+
+**Optional: Keep Cosmos DB as Fallback (Recommended for 2 weeks)**
+
+```bash
+# Keep both connection strings during migration period
+az webapp config appsettings set \
+  --name $APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --settings \
+    PORT=8080 \
+    NODE_ENV=production \
+    USE_TABLE_STORAGE=true \
+    AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CONNECTION_STRING" \
+    MONGODB_URI="$COSMOS_CONNECTION_STRING" \
+    FRONTEND_URL="$FRONTEND_URL"
+```
+
+This allows easy rollback by setting `USE_TABLE_STORAGE=false` if issues occur.
+
+#### Verify Table Storage Connection
+
+After deployment, check the application logs:
+
+```bash
+az webapp log tail --name $APP_NAME --resource-group $RESOURCE_GROUP
+```
+
+Look for:
+```
+✅ Connected to Azure Table Storage
+✅ Connected to Table Storage for Truck Checks
+```
+
+#### View Tables in Azure Portal
+
+1. Go to Azure Portal → Your Storage Account
+2. Navigate to "Tables" in the left menu
+3. You should see tables: Members, Activities, Events, EventParticipants, etc.
+
+#### Cost Monitoring
+
+```bash
+# View storage account metrics
+az monitor metrics list \
+  --resource "/subscriptions/<sub-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME" \
+  --metric "UsedCapacity" \
+  --interval PT1H
+```
+
+Expected costs:
+- **Storage:** $0.03/GB/month (typically < 1GB = $0.03)
+- **Transactions:** $0.00045 per 10K transactions (typically 100-500K/month = $0.05-0.23)
+- **Total:** $0.08-0.26/month per station
+
+### Rollback to Cosmos DB
+
+If you need to switch back to Cosmos DB:
+
+```bash
+az webapp config appsettings set \
+  --name $APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --settings \
+    USE_TABLE_STORAGE=false \
+    MONGODB_URI="$COSMOS_CONNECTION_STRING"
+
+# Restart app
+az webapp restart --name $APP_NAME --resource-group $RESOURCE_GROUP
+```
+
+---
+
 ## Using Your Deployed Resources
 
 If you've already deployed Azure resources, you can configure this application to use them:

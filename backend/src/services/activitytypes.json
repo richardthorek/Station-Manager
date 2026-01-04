@@ -1,0 +1,6 @@
+[
+  { "name": "Maintenance", "isCustom": false, "category": "maintenance", "tagColor": "#fbb034" },
+  { "name": "Meeting", "isCustom": false, "category": "meeting", "tagColor": "#215e9e" },
+  { "name": "Brigade Training", "isCustom": false, "category": "training", "tagColor": "#cbdb2a" },
+  { "name": "District Training", "isCustom": false, "category": "training", "tagColor": "#008550" }
+]

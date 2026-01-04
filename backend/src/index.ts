@@ -17,10 +17,8 @@
 import dotenv from 'dotenv';
 
 // Load environment variables FIRST, before any other imports
-// In development mode, don't load .env file to use in-memory database
-if (process.env.NODE_ENV !== 'development') {
-  dotenv.config();
-}
+// Always load .env so development can access production storage creds when desired
+dotenv.config();
 
 import express from 'express';
 import { createServer } from 'http';
@@ -67,8 +65,10 @@ app.use(express.static(frontendPath));
 // Health check
 app.get('/health', async (req, res) => {
   try {
-    const db = await ensureDatabase();
-    const dbType = process.env.MONGODB_URI ? 'mongodb' : 'in-memory';
+    await ensureDatabase();
+    const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+    const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
+    const dbType = useTableStorage && storageConnectionString ? 'table-storage' : process.env.MONGODB_URI ? 'mongodb' : 'in-memory';
     res.json({ 
       status: 'ok', 
       timestamp: new Date().toISOString(),
@@ -89,7 +89,9 @@ app.get('/api/status', async (req, res) => {
   try {
     await ensureDatabase();
     await ensureTruckChecksDatabase();
-    const dbType = process.env.MONGODB_URI ? 'mongodb' : 'in-memory';
+    const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+    const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
+    const dbType = useTableStorage && storageConnectionString ? 'table-storage' : process.env.MONGODB_URI ? 'mongodb' : 'in-memory';
     const isProduction = process.env.NODE_ENV === 'production';
     const usingInMemory = dbType === 'in-memory';
     
@@ -187,7 +189,13 @@ async function startServer() {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`Health check: http://localhost:${PORT}/health`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      if (process.env.MONGODB_URI) {
+      const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+      const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || (process.env.NODE_ENV === 'development' && !!storageConnectionString);
+      if (useTableStorage && storageConnectionString) {
+        const suffix = process.env.TABLE_STORAGE_TABLE_SUFFIX ? ` (tables suffixed '${process.env.TABLE_STORAGE_TABLE_SUFFIX}')` : '';
+        const prefix = process.env.TABLE_STORAGE_TABLE_PREFIX ? ` (tables prefixed '${process.env.TABLE_STORAGE_TABLE_PREFIX}')` : '';
+        console.log(`Database: Azure Table Storage${prefix || suffix ? ` ${prefix}${suffix}` : ''}`);
+      } else if (process.env.MONGODB_URI) {
         console.log(`Database: MongoDB/Cosmos DB (persistent)`);
       } else {
         console.log(`Database: In-memory (data will be lost on restart)`);

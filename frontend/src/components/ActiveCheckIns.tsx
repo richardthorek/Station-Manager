@@ -1,5 +1,6 @@
 import type { CheckInWithDetails } from '../types';
 import './ActiveCheckIns.css';
+import { ActivityTag } from './ActivityTag';
 
 interface ActiveCheckInsProps {
   checkIns: CheckInWithDetails[];
@@ -47,7 +48,7 @@ export function ActiveCheckIns({ checkIns, onUndo }: ActiveCheckInsProps) {
                   <div>
                     <div className="member-name-display">{checkIn.memberName}</div>
                     <div className="checkin-meta">
-                      {checkIn.activityName} • {formatTime(checkIn.checkInTime)}
+                      <ActivityTag name={checkIn.activityName} color={(checkIn as any).activityTagColor || (checkIn as any).tagColor} /> • {formatTime(checkIn.checkInTime)}
                       {checkIn.isOffsite && (
                         <span className="offsite-badge">📍 Offsite</span>
                       )}

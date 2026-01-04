@@ -216,16 +216,19 @@ Required updates:
 - **Node.js 22** with TypeScript
 - **Express 5** for REST API
 - **Socket.io 4** for real-time bidirectional communication
-- **MongoDB driver 6** for Azure Cosmos DB integration
+- **@azure/data-tables** for Azure Table Storage integration
+- **MongoDB driver 6** for Azure Cosmos DB (legacy/fallback support)
 - **Multer** for file uploads (appliance photos, check photos)
 - **Azure Storage Blob** for cloud storage
 - **CORS** enabled for frontend communication
 - **Rate limiting** on SPA fallback routes
 
 ### Database
-- **Production**: Azure Cosmos DB with MongoDB API (Document DB)
+- **Production (Primary)**: Azure Table Storage (70-95% cost savings vs Cosmos DB)
+- **Production (Legacy)**: Azure Cosmos DB with MongoDB API (fallback if Table Storage unavailable)
 - **Development**: In-memory database (when NODE_ENV=development)
-- **Collections**: members, activities, checkins, events, event_participants, appliances, templates, check_runs, check_results
+- **Tables**: Members, Activities, Events, EventParticipants, CheckIns, ActiveActivity, Appliances, ChecklistTemplates, CheckRuns, CheckResults
+- **Migration Status**: Actively migrating from Cosmos DB to Table Storage (see TABLE_STORAGE_MIGRATION_PLAN.md)
 
 ### Deployment
 - **Frontend**: Azure Static Web Apps or served from backend `/dist`
@@ -255,9 +258,13 @@ frontend/src/
 backend/src/
 ├── routes/               # Express route handlers
 ├── services/             # Business logic and database operations
-│   ├── database.ts       # Main app database service
-│   ├── dbFactory.ts      # Database factory (in-memory or MongoDB)
-│   ├── truckChecksDatabase.ts  # Truck checks database service
+│   ├── database.ts       # In-memory database service
+│   ├── mongoDatabase.ts  # MongoDB/Cosmos DB database service (legacy)
+│   ├── tableStorageDatabase.ts  # Table Storage database service (primary)
+│   ├── dbFactory.ts      # Database factory (in-memory, MongoDB, or Table Storage)
+│   ├── truckChecksDatabase.ts  # In-memory truck checks database service
+│   ├── mongoTruckChecksDatabase.ts  # MongoDB truck checks service (legacy)
+│   ├── tableStorageTruckChecksDatabase.ts  # Table Storage truck checks service (primary)
 │   └── truckChecksDbFactory.ts # Truck checks DB factory
 └── types/                # TypeScript type definitions
 ```
@@ -677,6 +684,62 @@ cd frontend && npm run lint    # Run ESLint
 npm start            # Start production server (root)
 ```
 
+## Table Storage Migration
+
+**Status**: 🔄 In Progress (January 2026)  
+**Goal**: Migrate from Azure Cosmos DB to Azure Table Storage for 70-95% cost savings
+
+### Key Points for AI Assistants
+
+1. **Primary Database**: Azure Table Storage (using @azure/data-tables SDK)
+2. **Fallback**: MongoDB/Cosmos DB API (for backward compatibility during migration)
+3. **Environment Variable**: `USE_TABLE_STORAGE=true` enables Table Storage
+4. **Connection String**: `AZURE_STORAGE_CONNECTION_STRING` (same account as blob storage)
+5. **Migration Plan**: See `docs/TABLE_STORAGE_MIGRATION_PLAN.md` for complete details
+
+### Database Selection Priority
+
+```typescript
+// Priority order in dbFactory:
+// 1. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
+// 2. MongoDB/Cosmos DB (if MONGODB_URI set)
+// 3. In-memory database (fallback for development)
+```
+
+### Important Implementation Notes
+
+- **Partition Strategy**: Entities grouped by type (e.g., `PartitionKey='Member'`)
+- **Event Partitioning**: Events partitioned by month (`Event_YYYY-MM`) for efficient queries
+- **Co-location**: Event participants co-located with events (same partition key)
+- **Schema Compatibility**: Maintains same TypeScript interfaces as MongoDB implementation
+- **Real-time Sync**: Socket.io events unchanged; works identically with Table Storage
+- **Default Activities**: Auto-initialized on first connection (Training, Maintenance, Meeting)
+
+### Testing with Table Storage
+
+```bash
+# Local development with Table Storage
+cd backend
+echo "USE_TABLE_STORAGE=true" >> .env
+echo "AZURE_STORAGE_CONNECTION_STRING=<your-connection-string>" >> .env
+npm run dev
+
+# Test without Table Storage (use in-memory or MongoDB)
+cd backend
+echo "USE_TABLE_STORAGE=false" >> .env  # or remove the variable
+npm run dev
+```
+
+### Cost Comparison
+
+| Database | Monthly Cost (per station) | Annual Cost |
+|----------|---------------------------|-------------|
+| Cosmos DB Serverless | $0.50-3 | $6-36 |
+| Table Storage | $0.01-0.20 | $0.12-2.40 |
+| **Savings** | **70-95%** | **$6-34/year** |
+
+---
+
 ## Version Information
 
 - Node.js: 22.x
@@ -686,6 +749,7 @@ npm start            # Start production server (root)
 - Vite: ^7.2.2
 - Express: ^5.1.0
 - Socket.io: ^4.8.1
+- @azure/data-tables: ^13.x (for Table Storage)
 
 ---
 

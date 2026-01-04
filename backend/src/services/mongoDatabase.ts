@@ -13,6 +13,35 @@ class MongoDBService {
   private eventParticipantsCollection: Collection<EventParticipant> | null = null;
   private isConnected: boolean = false;
 
+  // Helpers for activity classification
+  private isDefaultActivityName(name: string): boolean {
+    const n = name.trim().toLowerCase();
+    return [
+      'training',
+      'maintenance',
+      'meeting',
+      'brigade training',
+      'district training'
+    ].includes(n);
+  }
+
+  private inferCategoryFromName(name: string): 'training' | 'maintenance' | 'meeting' | 'other' {
+    const n = name.toLowerCase();
+    if (n.includes('train')) return 'training';
+    if (n.includes('maint')) return 'maintenance';
+    if (n.includes('meet')) return 'meeting';
+    return 'other';
+  }
+
+  private colorForCategory(category: string): string {
+    switch (category) {
+      case 'training': return '#008550';
+      case 'maintenance': return '#fbb034';
+      case 'meeting': return '#215e9e';
+      default: return '#bcbec0';
+    }
+  }
+
   constructor(connectionString?: string) {
     const uri = connectionString || process.env.MONGODB_URI || 'mongodb://localhost:27017';
     this.client = new MongoClient(uri);
@@ -67,10 +96,12 @@ class MongoDBService {
     const activityCount = await this.activitiesCollection?.countDocuments();
     
     if (activityCount === 0) {
-      const defaultActivities = [
-        { id: uuidv4(), name: 'Training', isCustom: false, createdAt: new Date() },
-        { id: uuidv4(), name: 'Maintenance', isCustom: false, createdAt: new Date() },
-        { id: uuidv4(), name: 'Meeting', isCustom: false, createdAt: new Date() },
+      const defaultActivities: Activity[] = [
+        { id: uuidv4(), name: 'Training', isCustom: false, category: 'training', tagColor: '#008550', createdAt: new Date() },
+        { id: uuidv4(), name: 'Maintenance', isCustom: false, category: 'maintenance', tagColor: '#fbb034', createdAt: new Date() },
+        { id: uuidv4(), name: 'Meeting', isCustom: false, category: 'meeting', tagColor: '#215e9e', createdAt: new Date() },
+        { id: uuidv4(), name: 'Brigade Training', isCustom: false, category: 'training', tagColor: '#cbdb2a', createdAt: new Date() },
+        { id: uuidv4(), name: 'District Training', isCustom: false, category: 'training', tagColor: '#008550', createdAt: new Date() },
       ];
 
       await this.activitiesCollection?.insertMany(defaultActivities);
@@ -209,11 +240,15 @@ class MongoDBService {
 
   async createActivity(name: string, createdBy?: string): Promise<Activity> {
     if (!this.activitiesCollection) throw new Error('Database not connected');
-    
+    const isCustom = !this.isDefaultActivityName(name);
+    const category: Activity['category'] = isCustom ? 'other' : this.inferCategoryFromName(name);
+
     const activity: Activity = {
       id: uuidv4(),
       name,
-      isCustom: true,
+      isCustom,
+      category,
+      tagColor: this.colorForCategory(category),
       createdBy,
       createdAt: new Date(),
     };
@@ -278,6 +313,7 @@ class MongoDBService {
         ...checkIn,
         memberName: member?.name || 'Unknown',
         activityName: activity?.name || 'Unknown',
+        activityTagColor: activity?.tagColor || undefined,
       });
     }
     
@@ -495,10 +531,11 @@ class MongoDBService {
     }
 
     const participants = await this.getEventParticipants(eventId);
-    
+    const activity = await this.getActivityById(event.activityId);
+
     return {
       ...event,
-      participants,
+      participants: participants.map(p => ({ ...p, activityTagColor: activity?.tagColor })),
       participantCount: participants.length,
     };
   }
@@ -509,9 +546,10 @@ class MongoDBService {
     const eventsWithParticipants = await Promise.all(
       events.map(async (event) => {
         const participants = await this.getEventParticipants(event.id);
+        const activity = await this.getActivityById(event.activityId);
         return {
           ...event,
-          participants,
+          participants: participants.map(p => ({ ...p, activityTagColor: activity?.tagColor })),
           participantCount: participants.length,
         };
       })
