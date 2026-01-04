@@ -11,6 +11,7 @@
 #   2. Testing (parallel) - Unit tests, integration tests, coverage reporting
 #   3. Build - Production build artifacts
 #   4. Deploy - Deployment to Azure (only if all checks pass)
+#   5. Post-Deployment Tests - Smoke tests against live deployment
 #
 # Quality Gates:
 #   - All linting must pass (zero errors, zero warnings)
@@ -18,6 +19,15 @@
 #   - All tests must pass (45+ tests)
 #   - Build must succeed
 #   - Deployment only occurs if all above gates pass
+#   - Post-deployment tests validate live application
+#
+# Post-Deployment Testing Strategy:
+#   - Uses health check endpoint to validate deployment
+#   - Tests against live Azure deployment with test-suffixed tables
+#   - Leverages existing OIDC authentication (no secrets needed)
+#   - Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data
+#   - Validates database connectivity and API responsiveness
+#   - Ensures production data remains unaffected
 #
 # Optimizations:
 #   - Parallel job execution for independent tasks
@@ -328,3 +338,78 @@ jobs:
           echo "- **App Name**: bungrfsstation" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # PHASE 5: POST-DEPLOYMENT TESTING
+  # ===========================================================================
+  # Smoke tests that validate the deployed application
+  # Tests run against the live deployment with test-suffixed tables
+  # Uses Azure OIDC credentials (already authenticated from deploy job)
+  # ===========================================================================
+
+  post-deployment-tests:
+    name: 🧪 Post-Deployment Tests
+    runs-on: ubuntu-latest
+    # Only run after successful deployment
+    needs: deploy
+    # Only run on main branch deployments
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Wait for deployment to stabilize
+        run: |
+          echo "Waiting 30 seconds for deployment to fully stabilize..."
+          sleep 30
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F04003FFA701477E897BF9329FCA2C5E }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0FB429D7D41741EAA3FF70DCD8F0A441 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_ECE14A699FEA4BB9AA978A7C54A2FE67 }}
+
+      - name: Run post-deployment smoke tests
+        env:
+          APP_URL: https://bungrfsstation.azurewebsites.net
+          TABLE_STORAGE_TABLE_SUFFIX: Test
+          TEST_TIMEOUT: 30000
+          MAX_RETRIES: 3
+        run: |
+          cd backend
+          npm run test:post-deploy
+
+      - name: Post-deployment test summary
+        if: always()
+        run: |
+          echo "## 🧪 Post-Deployment Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ All smoke tests passed!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The deployed application is responding correctly and all critical endpoints are functional." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some smoke tests failed!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Check the test output above for details. The deployment may have issues." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target URL**: https://bungrfsstation.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Environment**: TABLE_STORAGE_TABLE_SUFFIX=Test" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
