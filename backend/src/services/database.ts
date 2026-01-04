@@ -11,7 +11,7 @@
  * - Dev sample data for testing
  * - Fast, synchronous operations
  * 
- * Note: Data is lost on server restart. Use MongoDB for persistence.
+ * Note: Data is lost on server restart. Use Azure Table Storage for persistence.
  */
 
 import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants } from '../types';
