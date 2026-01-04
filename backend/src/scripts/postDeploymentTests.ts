@@ -37,7 +37,12 @@ const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '3');
 const RETRY_DELAY = 5000; // 5 seconds between retries
 
 // HTTP status codes that indicate deployment is still stabilizing
-// These will trigger automatic retries
+// These will trigger automatic retries:
+// - 404: Route not found (app still loading/registering routes)
+// - 502: Bad Gateway (Azure proxy can't connect to app yet)
+// - 503: Service Unavailable (app is starting up)
+// Note: Other error codes (401, 403, 500, etc.) indicate actual application
+// errors that won't be fixed by retrying, so we fail fast on those.
 const RETRYABLE_STATUS_CODES = [404, 502, 503];
 
 // Test results tracking
@@ -50,6 +55,22 @@ let testsFailed = 0;
  */
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Helper function to perform retry logic
+ */
+function retryRequest(
+  url: string,
+  options: any,
+  retries: number,
+  resolve: (value: any) => void,
+  reject: (reason?: any) => void
+): void {
+  sleep(RETRY_DELAY)
+    .then(() => makeRequest(url, options, retries - 1))
+    .then(resolve)
+    .catch(reject);
 }
 
 /**
@@ -85,10 +106,7 @@ async function makeRequest(
           
           if (shouldRetry) {
             console.log(`  ⏳ Got ${statusCode} status, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
-            sleep(RETRY_DELAY)
-              .then(() => makeRequest(url, options, retries - 1))
-              .then(resolve)
-              .catch(reject);
+            retryRequest(url, options, retries, resolve, reject);
           } else {
             resolve({
               statusCode,
@@ -102,10 +120,7 @@ async function makeRequest(
     req.on('error', (error) => {
       if (retries > 0) {
         console.log(`  ⏳ Request failed, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
-        sleep(RETRY_DELAY)
-          .then(() => makeRequest(url, options, retries - 1))
-          .then(resolve)
-          .catch(reject);
+        retryRequest(url, options, retries, resolve, reject);
       } else {
         reject(error);
       }
