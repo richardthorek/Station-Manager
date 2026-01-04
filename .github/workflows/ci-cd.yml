@@ -31,8 +31,8 @@
 #   - Includes automatic retry logic for 404/502/503 responses (deployment stabilization)
 #   - Polls health endpoint every 10s (max 10 attempts = 100s) before running tests
 #   - Tests proceed as soon as app is ready, or after 100s timeout
-#   - Version verification can take up to 40s additional time (4 attempts × 10s)
-#   - Total stabilization time: up to 100s polling + up to 40s verification = 140s max
+#   - Version verification can take up to 120s additional time (13 attempts × 10s)
+#   - Total stabilization time: up to 100s polling + up to 120s verification = 220s max
 #
 # Optimizations:
 #   - Parallel job execution for independent tasks
@@ -561,7 +561,7 @@ jobs:
           APP_URL: ${{ secrets.APP_URL }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
           TEST_TIMEOUT: 30000
-          MAX_RETRIES: 3
+          MAX_RETRIES: 12
           GITHUB_SHA: ${{ github.sha }}
         run: |
           cd backend

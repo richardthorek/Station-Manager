@@ -241,10 +241,11 @@ These variables ensure the backend `/health` endpoint returns the correct versio
 9. **Rate Limiting**: Ensures rate limiting is configured
 
 **Retry Strategy:**
-- 30-second initial wait for deployment stabilization
-- 3 retries per request with 5-second delays
+- 100-second initial wait for deployment stabilization (polling health endpoint every 10s)
+- 12 retries per request with 10-second delays
 - Automatic retry on 404, 502, 503 status codes (deployment stabilizing)
-- Total maximum time: 45+ seconds per test
+- Automatic retry on version mismatch (Azure App Service restart)
+- Total maximum time: 220 seconds (100s polling + 120s version verification)
 
 **Success Criteria:**
 - All 9 smoke tests must pass

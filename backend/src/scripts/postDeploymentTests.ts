@@ -17,9 +17,9 @@
  *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
  *   - Retries on version mismatch (Azure App Service restart in progress)
  *   - 10 second delay between test retries
- *   - Default 3 retries per request (30 seconds max per request)
- *   - Version test can take up to 40 seconds with retries (4 attempts × 10s)
- *   - Total stabilization time: up to 100s polling + up to 40s verification = 140s max
+ *   - Default 12 retries per request (120 seconds max per request)
+ *   - Version test can take up to 120 seconds with retries (13 attempts × 10s)
+ *   - Total stabilization time: up to 100s polling + up to 120s verification = 220s max
  * 
  * Version Verification:
  *   The version test is retry-aware because Azure App Service takes time to:
@@ -29,7 +29,7 @@
  *   4. Begin serving requests with the new configuration
  *   
  *   During this window, the health endpoint may return the old commit SHA.
- *   The test retries for up to 40 seconds to allow Azure to complete the restart.
+ *   The test retries for up to 120 seconds to allow Azure to complete the restart.
  * 
  * Usage:
  *   APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy
@@ -38,7 +38,7 @@
  *   APP_URL: The deployed application URL (required)
  *   TABLE_STORAGE_TABLE_SUFFIX: Set to "Test" to use test tables (default: Test)
  *   TEST_TIMEOUT: Timeout for each test in ms (default: 30000)
- *   MAX_RETRIES: Number of retries for failed requests (default: 3)
+ *   MAX_RETRIES: Number of retries for failed requests (default: 12)
  *   GITHUB_SHA: Expected commit SHA for version verification
  */
 
@@ -48,7 +48,7 @@ import https from 'https';
 // Configuration
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '30000');
-const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '3');
+const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '12');
 const RETRY_DELAY = 10000; // 10 seconds between retries
 const EXPECTED_COMMIT_SHA = process.env.GITHUB_SHA || process.env.GIT_COMMIT_SHA; // From CI/CD or manual override
 
