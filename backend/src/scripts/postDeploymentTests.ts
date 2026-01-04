@@ -35,6 +35,7 @@ const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '30000');
 const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '3');
 const RETRY_DELAY = 5000; // 5 seconds between retries
+const EXPECTED_COMMIT_SHA = process.env.GITHUB_SHA || process.env.GIT_COMMIT_SHA; // From CI/CD or manual override
 
 // HTTP status codes that indicate deployment is still stabilizing
 // These will trigger automatic retries:
@@ -157,7 +158,45 @@ async function test(name: string, fn: () => Promise<void>): Promise<void> {
 }
 
 /**
- * Test 1: Health Check Endpoint
+ * Test 1: Version Verification
+ * Verifies that the deployed backend has the expected commit SHA
+ * This ensures the correct code is running in production
+ */
+async function testVersionVerification(): Promise<void> {
+  const response = await makeRequest(`${APP_URL}/health`);
+  
+  if (response.statusCode !== 200) {
+    throw new Error(`Expected status 200, got ${response.statusCode}`);
+  }
+
+  const data = JSON.parse(response.data);
+  
+  if (!data.version) {
+    throw new Error('Missing version information in health check response');
+  }
+
+  const deployedSha = data.version.commitSha;
+  
+  if (!deployedSha || deployedSha === 'unknown') {
+    throw new Error('Deployed version has unknown commit SHA');
+  }
+
+  // If we have an expected SHA from CI/CD, verify it matches
+  if (EXPECTED_COMMIT_SHA) {
+    if (deployedSha !== EXPECTED_COMMIT_SHA) {
+      throw new Error(
+        `Version mismatch! Expected: ${EXPECTED_COMMIT_SHA}, Deployed: ${deployedSha}\n` +
+        `    This indicates the deployment did not pick up the latest code.`
+      );
+    }
+    console.log(`    ✅ Version verified: ${data.version.commitShort} (${deployedSha.substring(0, 7)})`);
+  } else {
+    console.log(`    ℹ️  Deployed version: ${data.version.commitShort} (no expected SHA to verify against)`);
+  }
+}
+
+/**
+ * Test 2: Health Check Endpoint
  */
 async function testHealthCheck(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/health`);
@@ -187,7 +226,7 @@ async function testHealthCheck(): Promise<void> {
 }
 
 /**
- * Test 2: API Status Endpoint
+ * Test 3: API Status Endpoint
  */
 async function testApiStatus(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/status`);
@@ -212,7 +251,7 @@ async function testApiStatus(): Promise<void> {
 }
 
 /**
- * Test 3: Get Activities Endpoint
+ * Test 4: Get Activities Endpoint
  */
 async function testGetActivities(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/activities`);
@@ -234,7 +273,7 @@ async function testGetActivities(): Promise<void> {
 }
 
 /**
- * Test 4: Get Members Endpoint
+ * Test 5: Get Members Endpoint
  */
 async function testGetMembers(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/members`);
@@ -251,7 +290,7 @@ async function testGetMembers(): Promise<void> {
 }
 
 /**
- * Test 5: Get Check-ins Endpoint
+ * Test 6: Get Check-ins Endpoint
  */
 async function testGetCheckins(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/checkins`);
@@ -268,7 +307,7 @@ async function testGetCheckins(): Promise<void> {
 }
 
 /**
- * Test 6: Frontend Loads (SPA)
+ * Test 7: Frontend Loads (SPA)
  */
 async function testFrontendLoads(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/`);
@@ -287,7 +326,7 @@ async function testFrontendLoads(): Promise<void> {
 }
 
 /**
- * Test 7: CORS Headers Present
+ * Test 8: CORS Headers Present
  */
 async function testCorsHeaders(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/activities`);
@@ -300,7 +339,7 @@ async function testCorsHeaders(): Promise<void> {
 }
 
 /**
- * Test 8: Rate Limiting Not Triggered (Basic Check)
+ * Test 9: Rate Limiting Not Triggered (Basic Check)
  */
 async function testRateLimiting(): Promise<void> {
   // Make a few requests to ensure rate limiting is not overly restrictive
@@ -337,7 +376,8 @@ async function runTests(): Promise<void> {
 
   console.log('Running tests...\n');
 
-  // Run all tests
+  // Run all tests - VERSION VERIFICATION FIRST
+  await test('Version verification (commit SHA matches)', testVersionVerification);
   await test('Health check endpoint responds', testHealthCheck);
   await test('API status endpoint responds', testApiStatus);
   await test('Activities API endpoint works', testGetActivities);
