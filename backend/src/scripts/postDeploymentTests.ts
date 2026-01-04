@@ -11,14 +11,15 @@
  * Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data from production.
  * 
  * Retry Strategy:
- *   - Retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
+ *   - CI/CD polls health endpoint every 10s (max 10 attempts = 100s) before running tests
+ *   - Tests start as soon as app responds, or after 100s timeout
+ *   - Individual test retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
  *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
  *   - Retries on version mismatch (Azure App Service restart in progress)
- *   - 5 second delay between retries
- *   - Default 3 retries per request (15 seconds max per request)
- *   - With initial 60s wait, provides 75+ seconds for deployment to stabilize
- *   - Version test can take up to 20 seconds with retries (4 attempts × 5s)
- *   - Total stabilization time: 60s wait + up to 20s version verification = 80s
+ *   - 10 second delay between test retries
+ *   - Default 3 retries per request (30 seconds max per request)
+ *   - Version test can take up to 40 seconds with retries (4 attempts × 10s)
+ *   - Total stabilization time: up to 100s polling + up to 40s verification = 140s max
  * 
  * Version Verification:
  *   The version test is retry-aware because Azure App Service takes time to:
@@ -28,7 +29,7 @@
  *   4. Begin serving requests with the new configuration
  *   
  *   During this window, the health endpoint may return the old commit SHA.
- *   The test retries for up to 20 seconds to allow Azure to complete the restart.
+ *   The test retries for up to 40 seconds to allow Azure to complete the restart.
  * 
  * Usage:
  *   APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy
@@ -48,7 +49,7 @@ import https from 'https';
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '30000');
 const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '3');
-const RETRY_DELAY = 5000; // 5 seconds between retries
+const RETRY_DELAY = 10000; // 10 seconds between retries
 const EXPECTED_COMMIT_SHA = process.env.GITHUB_SHA || process.env.GIT_COMMIT_SHA; // From CI/CD or manual override
 
 // HTTP status codes that indicate deployment is still stabilizing
