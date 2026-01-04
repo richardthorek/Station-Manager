@@ -322,6 +322,13 @@ backend/src/
 5. **Consistent Spacing**: Use rem units for spacing (0.5rem, 1rem, 1.5rem, 2rem)
 6. **Subtle Animations**: Framer Motion for feedback (200-300ms transitions)
 7. **Visual Feedback**: Loading states, success/error messages, hover effects
+8. **UI Screenshot Requirement**: **ALL UI changes MUST include screenshots on tablet (iPad) size in BOTH portrait AND landscape mode**
+   - Take screenshots using browser developer tools or actual iPad
+   - Typical iPad dimensions: 768px × 1024px (portrait), 1024px × 768px (landscape)
+   - Include screenshots in PR description or issue updates
+   - Show before/after for UI modifications
+   - Capture complete feature workflows for new features
+   - This requirement applies to all issues marked with UI changes in the master plan
 
 ### Design Patterns
 
