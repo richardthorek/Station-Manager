@@ -55,14 +55,17 @@ export interface IDatabase {
 /**
  * Initialize and return the appropriate database service
  * Priority order:
- * 1. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
- * 2. Table Storage (if NODE_ENV=development and AZURE_STORAGE_CONNECTION_STRING set - uses dev prefix)
- * 3. In-memory database (fallback for development without Azure connection)
+ * 1. In-memory database (always used when NODE_ENV=test, regardless of other settings)
+ * 2. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
+ * 3. Table Storage (if NODE_ENV=development and AZURE_STORAGE_CONNECTION_STRING set - uses dev prefix)
+ * 4. In-memory database (fallback for development without Azure connection)
  */
 async function initializeDatabase(): Promise<IDatabase> {
   const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || process.env.NODE_ENV === 'development';
   const nodeEnv = process.env.NODE_ENV;
+  
+  // Never use Table Storage in test environment - always use in-memory database for tests
+  const useTableStorage = nodeEnv !== 'test' && (process.env.USE_TABLE_STORAGE === 'true' || nodeEnv === 'development');
   
   // Prefer Table Storage if explicitly enabled or in development mode
   if (useTableStorage && storageConnectionString) {
