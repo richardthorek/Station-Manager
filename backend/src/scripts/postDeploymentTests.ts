@@ -11,14 +11,15 @@
  * Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data from production.
  * 
  * Retry Strategy:
- *   - Retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
+ *   - CI/CD polls health endpoint every 10s (max 10 attempts = 100s) before running tests
+ *   - Tests start as soon as app responds, or after 100s timeout
+ *   - Individual test retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
  *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
  *   - Retries on version mismatch (Azure App Service restart in progress)
- *   - 10 second delay between retries
+ *   - 10 second delay between test retries
  *   - Default 3 retries per request (30 seconds max per request)
- *   - With initial 60s wait, provides 90+ seconds for deployment to stabilize
  *   - Version test can take up to 40 seconds with retries (4 attempts × 10s)
- *   - Total stabilization time: 60s wait + up to 40s version verification = 100s
+ *   - Total stabilization time: up to 100s polling + up to 40s verification = 140s max
  * 
  * Version Verification:
  *   The version test is retry-aware because Azure App Service takes time to:
