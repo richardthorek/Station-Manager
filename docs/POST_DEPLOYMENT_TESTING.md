@@ -126,8 +126,8 @@ const tableName = `members${suffix}`; // "membersTest" when suffix is "Test"
 
 ### Test Characteristics
 
-- **Fast**: < 2 minutes total execution time
-- **Reliable**: Retry logic with 3 attempts and 5-second delays
+- **Fast**: < 3 minutes total execution time (with retries)
+- **Reliable**: Retry logic with 12 attempts and 10-second delays
 - **Informative**: Clear pass/fail reporting with detailed error messages
 - **Configurable**: Timeout, retries, and target URL via environment variables
 
@@ -138,7 +138,7 @@ const tableName = `members${suffix}`; // "membersTest" when suffix is "Test"
 | `APP_URL` | (required) | Target deployment URL (e.g., https://bungrfsstation.azurewebsites.net) |
 | `TABLE_STORAGE_TABLE_SUFFIX` | `Test` | Table suffix for test isolation |
 | `TEST_TIMEOUT` | `30000` | Timeout per request in milliseconds |
-| `MAX_RETRIES` | `3` | Number of retries for failed requests |
+| `MAX_RETRIES` | `12` | Number of retries for failed requests |
 
 ---
 
@@ -275,7 +275,7 @@ npm run test:post-deploy
 
 Target URL: https://bungrfsstation.azurewebsites.net
 Timeout: 30000ms
-Max Retries: 3
+Max Retries: 12
 Test Environment: TABLE_STORAGE_TABLE_SUFFIX=Test
 
 Running tests...
@@ -317,7 +317,8 @@ Failed:       0 ❌
 
 **Solutions:**
 - Increase `TEST_TIMEOUT` environment variable
-- Increase stabilization wait time (currently 30 seconds)
+- Increase `MAX_RETRIES` (default is 12, providing up to 120 seconds)
+- Increase stabilization wait time (currently 100 seconds)
 - Check Azure App Service logs for startup issues
 
 #### Database Connection Failures
