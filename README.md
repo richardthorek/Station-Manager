@@ -108,26 +108,26 @@ Additional features can be easily added as new routes following this pattern.
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  Azure Cosmos DB│  ← Data Storage
-│  (Document DB)  │    (Production)
-│ with MongoDB API│
+│ Azure Table     │  ← Data Storage
+│ Storage         │    (Production)
 └─────────────────┘
 ```
 
 ### Tech Stack
 
 **Frontend:**
-- React 18
+- React 19
 - TypeScript
 - Vite (build tool)
 - Socket.io Client
 - Framer Motion (animations)
 
 **Backend:**
-- Node.js 18+
-- Express
+- Node.js 22
+- Express 5
 - Socket.io (WebSocket)
 - TypeScript
+- Azure Table Storage (production)
 - In-memory storage (dev)
 
 ## 📚 Documentation
@@ -136,11 +136,8 @@ Additional features can be easily added as new routes following this pattern.
 - **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
 - **[Truck Checks Guide](docs/TRUCK_CHECKS_IMPLEMENTATION.md)** - Vehicle inspection feature documentation
-- **[🚀 TABLE STORAGE MIGRATION PLAN](docs/TABLE_STORAGE_MIGRATION_PLAN.md)** - ⭐ **APPROVED** - Step-by-step implementation guide
-- **[Storage Decision](docs/FINAL_STORAGE_DECISION.md)** - Decision rationale: Migrate to Azure Table Storage
-- **[Storage Analysis (Azure Costs Only)](docs/STORAGE_DECISION_AZURE_COSTS_ONLY.md)** - Detailed cost analysis
-- **[Storage Analysis (With Free Tier)](docs/STORAGE_ANALYSIS.md)** - Original analysis assuming free tier
-- **[Cosmos DB Optimization Guide](docs/COSMOS_DB_OPTIMIZATION_GUIDE.md)** - Reference only
+- **[Storage Migration History](docs/TABLE_STORAGE_MIGRATION_PLAN.md)** - Migration from Cosmos DB to Table Storage (completed)
+- **[Storage Decision](docs/FINAL_STORAGE_DECISION.md)** - Decision rationale: Azure Table Storage
 - **[Project Plan](docs/PROJECT_PLAN.md)** - Original project requirements and planning (historical)
 
 ## 🚢 Deployment

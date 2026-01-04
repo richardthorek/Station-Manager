@@ -25,7 +25,7 @@
               "properties": {
                 "status": { "type": "string", "enum": ["ok", "error"] },
                 "timestamp": { "type": "string", "format": "date-time" },
-                "database": { "type": "string", "enum": ["mongodb", "in-memory"] },
+                "database": { "type": "string", "enum": ["table-storage", "in-memory"] },
                 "environment": { "type": "string", "enum": ["development", "production"] }
               }
             }
