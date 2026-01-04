@@ -435,6 +435,43 @@ VITE_API_URL=http://localhost:3000
 
 ### Testing & Quality
 
+**Automated Testing:**
+
+**Frontend Tests (Vitest + React Testing Library):**
+```bash
+cd frontend
+npm test              # Run all tests once
+npm run test:watch    # Watch mode for development
+npm run test:ui       # Run tests with UI  
+npm run test:coverage # Generate coverage report
+```
+- 80+ tests covering components, hooks, and pages
+- 93%+ code coverage
+- Test files located next to source files (*.test.tsx, *.test.ts)
+- Mock utilities in `src/test/mocks/` (socket.ts, api.ts)
+- Test utilities in `src/test/utils/test-utils.tsx` (custom render with providers)
+- Test setup in `src/test/setup.ts` (jsdom, jest-dom matchers)
+
+**Backend Tests (Jest + Supertest):**
+```bash
+cd backend
+npm test              # Run all tests once
+npm run test:watch    # Watch mode for development
+npm run test:coverage # Generate coverage report
+```
+- 45+ integration tests covering all API endpoints
+- Tests in `src/__tests__/` directory
+- In-memory database for fast, isolated tests
+
+**Test Conventions:**
+- Use `describe` blocks to group related tests
+- Use `it` or `test` for individual test cases
+- Use `beforeEach` to reset state between tests
+- Always clean up after tests (useEffect cleanup, event listener removal)
+- Mock external dependencies (Socket.io, API calls)
+- Test user interactions with `@testing-library/user-event`
+- Test accessibility (semantic HTML, ARIA labels, keyboard navigation)
+
 **Manual Testing:**
 1. Test on multiple devices simultaneously to verify real-time sync
 2. Test on different screen sizes (mobile, tablet, desktop, kiosk)

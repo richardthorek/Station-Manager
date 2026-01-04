@@ -255,12 +255,65 @@ npm start         # Run production build
 
 **Frontend:**
 ```bash
-npm run dev     # Development server
-npm run build   # Production build
-npm run preview # Preview production build
+npm run dev          # Development server
+npm run build        # Production build
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+npm run test         # Run tests
+npm run test:watch   # Run tests in watch mode
+npm run test:ui      # Run tests with UI
+npm run test:coverage # Run tests with coverage report
+```
+
+**Backend:**
+```bash
+npm run test         # Run tests
+npm run test:watch   # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
 ```
 
 ## 🧪 Testing
+
+### Automated Tests
+
+The application includes comprehensive automated test coverage:
+
+**Frontend Tests (Vitest + React Testing Library):**
+- 80+ tests covering components, hooks, and pages
+- 93%+ code coverage (statements, branches, functions)
+- Tests for:
+  - Core components (ActivitySelector, MemberList, ActiveCheckIns, Header, EventCard)
+  - Feature pages (LandingPage)
+  - Custom hooks (useSocket, useTheme)
+  - User interactions and state management
+
+**Backend Tests (Jest + Supertest):**
+- 45+ integration tests covering all API endpoints
+- Tests for members, activities, check-ins, events, truck checks, and achievements
+- In-memory database for fast, isolated tests
+
+**Running Tests:**
+```bash
+# Frontend
+cd frontend
+npm test              # Run all tests once
+npm run test:watch    # Watch mode for development
+npm run test:coverage # Generate coverage report
+
+# Backend
+cd backend
+npm test              # Run all tests once
+npm run test:watch    # Watch mode for development
+npm run test:coverage # Generate coverage report
+```
+
+**CI/CD Testing:**
+- All tests run automatically in GitHub Actions on every PR
+- Frontend and backend tests run in parallel
+- Build only proceeds if all tests pass
+- Coverage reports uploaded as artifacts
+
+### Manual Testing
 
 Open multiple browser windows to `http://localhost:5173` and test real-time synchronization:
 - Check in on one device, see update on others

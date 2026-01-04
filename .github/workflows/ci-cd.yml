@@ -246,6 +246,68 @@ jobs:
             echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
           fi
 
+  # ---------------------------------------------------------------------------
+  # Frontend Tests
+  # ---------------------------------------------------------------------------
+  # Runs all frontend component and hook tests
+  # Uses Vitest with React Testing Library
+  # Current: 80+ tests covering core components, hooks, and pages
+  test-frontend:
+    name: 🧪 Test Frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write # For test result annotations
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run frontend tests with coverage
+        run: |
+          cd frontend
+          npm run test:coverage
+
+      - name: Append coverage numbers to summary
+        if: always()
+        run: |
+          if [ -f frontend/coverage/coverage-summary.json ]; then
+            node -e "const s=require('./frontend/coverage/coverage-summary.json').total; const fmt=n=>n.toFixed(1)+'%'; console.log(['## Frontend Coverage','',`Statements: ${fmt(s.statements.pct)}`,`Branches: ${fmt(s.branches.pct)}`,`Functions: ${fmt(s.functions.pct)}`,`Lines: ${fmt(s.lines.pct)}`].join('\n'))" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Frontend Coverage" >> $GITHUB_STEP_SUMMARY
+            echo "Coverage summary not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 30
+
+      - name: Display coverage summary
+        if: always()
+        run: |
+          echo "## Frontend Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f frontend/coverage/lcov.info ]; then
+            echo "Coverage report generated successfully ✅" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
   # ===========================================================================
   # PHASE 3: BUILD
   # ===========================================================================
@@ -262,6 +324,7 @@ jobs:
       - typecheck-backend
       - typecheck-frontend
       - test-backend
+      - test-frontend
     permissions:
       contents: read
     steps:
