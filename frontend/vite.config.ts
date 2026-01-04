@@ -15,7 +15,7 @@ const getGitCommitSha = () => {
 const getGitCommitShort = () => {
   try {
     return execSync('git rev-parse --short HEAD').toString().trim()
-  } catch (error) {
+  } catch {
     return 'unknown'
   }
 }
