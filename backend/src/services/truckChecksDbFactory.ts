@@ -80,6 +80,17 @@ export const getTruckChecksDatabase = initializeTruckChecksDatabaseService();
 // Export a synchronous wrapper for route handlers
 let truckChecksDbInstance: ITruckChecksDatabase | null = null;
 
+/**
+ * Ensure truck checks database is initialized and return the instance
+ * 
+ * This is the primary function for accessing the truck checks database in route handlers.
+ * It handles lazy initialization and caches the database instance.
+ * 
+ * @returns Promise that resolves to the initialized truck checks database instance
+ * @example
+ * const db = await ensureTruckChecksDatabase();
+ * const appliances = await db.getAllAppliances();
+ */
 export async function ensureTruckChecksDatabase(): Promise<ITruckChecksDatabase> {
   if (!truckChecksDbInstance) {
     truckChecksDbInstance = await getTruckChecksDatabase;
@@ -87,7 +98,15 @@ export async function ensureTruckChecksDatabase(): Promise<ITruckChecksDatabase>
   return truckChecksDbInstance;
 }
 
-// Helper function for synchronous access (after initialization)
+/**
+ * Get truck checks database instance synchronously (after initialization)
+ * 
+ * Only use this if you're certain the database has been initialized.
+ * Most code should use ensureTruckChecksDatabase() instead.
+ * 
+ * @throws Error if database is not initialized
+ * @returns The truck checks database instance
+ */
 export function getTruckChecksDbSync(): ITruckChecksDatabase {
   if (!truckChecksDbInstance) {
     throw new Error('Truck Checks Database not initialized. Call ensureTruckChecksDatabase() first.');
@@ -95,7 +114,14 @@ export function getTruckChecksDbSync(): ITruckChecksDatabase {
   return truckChecksDbInstance;
 }
 
-// Helper function for testing: reset the database instance
+/**
+ * Reset the truck checks database instance (for testing only)
+ * 
+ * This function should only be used in test code to reset state between tests.
+ * Do not use in production code.
+ * 
+ * @internal
+ */
 export function __resetTruckChecksDatabase(): void {
   truckChecksDbInstance = null;
 }

@@ -78,6 +78,17 @@ export const getDatabase = initializeDatabaseService();
 // Export a synchronous wrapper for route handlers
 let dbInstance: IDatabase | null = null;
 
+/**
+ * Ensure database is initialized and return the instance
+ * 
+ * This is the primary function for accessing the database in route handlers.
+ * It handles lazy initialization and caches the database instance.
+ * 
+ * @returns Promise that resolves to the initialized database instance
+ * @example
+ * const db = await ensureDatabase();
+ * const members = await db.getAllMembers();
+ */
 export async function ensureDatabase(): Promise<IDatabase> {
   if (!dbInstance) {
     dbInstance = await getDatabase;
@@ -85,7 +96,15 @@ export async function ensureDatabase(): Promise<IDatabase> {
   return dbInstance;
 }
 
-// Helper function for synchronous access (after initialization)
+/**
+ * Get database instance synchronously (after initialization)
+ * 
+ * Only use this if you're certain the database has been initialized.
+ * Most code should use ensureDatabase() instead.
+ * 
+ * @throws Error if database is not initialized
+ * @returns The database instance
+ */
 export function getDbSync(): IDatabase {
   if (!dbInstance) {
     throw new Error('Database not initialized. Call ensureDatabase() first.');
@@ -93,7 +112,14 @@ export function getDbSync(): IDatabase {
   return dbInstance;
 }
 
-// Helper function for testing: reset the database instance
+/**
+ * Reset the database instance (for testing only)
+ * 
+ * This function should only be used in test code to reset state between tests.
+ * Do not use in production code.
+ * 
+ * @internal
+ */
 export function __resetDatabase(): void {
   dbInstance = null;
 }
