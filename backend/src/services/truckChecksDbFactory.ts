@@ -73,12 +73,13 @@ async function initializeTruckChecksDatabase(): Promise<ITruckChecksDatabase> {
   const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
   const nodeEnv = process.env.NODE_ENV;
   
-    // Keep tests on in-memory unless explicitly forced
-    const allowTableInTests = process.env.TEST_USE_TABLE_STORAGE === 'true';
-    const useTableStorage =
-      process.env.USE_TABLE_STORAGE === 'true' ||
-      nodeEnv === 'development' ||
-      (nodeEnv === 'test' && allowTableInTests);
+  // In tests, default to in-memory unless explicitly forced on
+  if (nodeEnv === 'test' && process.env.TEST_USE_TABLE_STORAGE !== 'true') {
+    console.log('🧪 Using in-memory truck checks database for tests (Table Storage disabled by default)');
+    return inMemoryTruckChecksDb as ITruckChecksDatabase;
+  }
+
+  const useTableStorage = process.env.USE_TABLE_STORAGE === 'true' || nodeEnv === 'development' || nodeEnv === 'test';
 
   // Prefer Table Storage if explicitly enabled or in development/test mode
   if (useTableStorage && storageConnectionString) {
