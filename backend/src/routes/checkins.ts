@@ -14,6 +14,18 @@ import { ensureDatabase } from '../services/dbFactory';
 
 const router = Router();
 
+// Get all check-ins (both active and inactive)
+router.get('/', async (req, res) => {
+  try {
+    const db = await ensureDatabase();
+    const checkIns = await db.getAllCheckIns();
+    res.json(checkIns);
+  } catch (error) {
+    console.error('Error fetching check-ins:', error);
+    res.status(500).json({ error: 'Failed to fetch check-ins' });
+  }
+});
+
 // Get all active check-ins
 router.get('/active', async (req, res) => {
   try {

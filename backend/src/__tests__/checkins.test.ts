@@ -24,6 +24,16 @@ beforeAll(() => {
 });
 
 describe('Check-Ins API', () => {
+  describe('GET /api/checkins', () => {
+    it('should return an array of all check-ins', async () => {
+      const response = await request(app)
+        .get('/api/checkins')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+  });
+
   describe('GET /api/checkins/active', () => {
     it('should return an array of active check-ins', async () => {
       const response = await request(app)
