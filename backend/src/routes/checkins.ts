@@ -9,8 +9,14 @@
  * - Location tracking and offsite flagging
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
+import {
+  validateCreateCheckIn,
+  validateUrlCheckIn,
+  validateMemberIdParam,
+} from '../middleware/checkinValidation';
+import { handleValidationErrors } from '../middleware/validationHandler';
 
 const router = Router();
 
@@ -39,7 +45,7 @@ router.get('/active', async (req, res) => {
 });
 
 // Check in a member
-router.post('/', async (req, res) => {
+router.post('/', validateCreateCheckIn, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { memberId, activityId, method, location, isOffsite } = req.body;
@@ -102,7 +108,7 @@ router.post('/', async (req, res) => {
 });
 
 // Undo check-in (alternative endpoint)
-router.delete('/:memberId', async (req, res) => {
+router.delete('/:memberId', validateMemberIdParam, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { memberId } = req.params;
@@ -120,7 +126,7 @@ router.delete('/:memberId', async (req, res) => {
 });
 
 // URL-based check-in
-router.post('/url-checkin', async (req, res) => {
+router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { identifier } = req.body;

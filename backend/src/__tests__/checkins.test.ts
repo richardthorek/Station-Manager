@@ -175,7 +175,8 @@ describe('Check-Ins API', () => {
         .send({ method: 'kiosk' })
         .expect(400);
 
-      expect(response.body.error).toContain('Member ID is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 404 for non-existent member', async () => {

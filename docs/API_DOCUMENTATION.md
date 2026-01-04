@@ -13,6 +13,56 @@ All API endpoints are prefixed with `/api`.
 
 Currently, the API does not require authentication. This is by design for kiosk access. Future versions may add optional authentication for administrative functions.
 
+## Input Validation and Security
+
+All API endpoints implement comprehensive input validation and sanitization to protect against XSS attacks, injection attacks, and invalid data.
+
+### Validation Features
+
+- **HTML Escaping**: All text inputs are automatically escaped to prevent XSS attacks. HTML tags and special characters are converted to HTML entities (e.g., `<` becomes `&lt;`)
+- **Type Validation**: Fields are validated for correct data types (string, boolean, number)
+- **Length Validation**: Maximum and minimum length constraints are enforced
+- **Pattern Validation**: Name fields accept only letters, spaces, hyphens, and apostrophes
+- **Enum Validation**: Fields with predefined values are validated against allowed options
+- **Whitespace Trimming**: Leading and trailing whitespace is automatically removed
+
+### Error Response Format
+
+When validation fails, the API returns a `400 Bad Request` response with detailed error information:
+
+```json
+{
+  "error": "Validation failed",
+  "details": [
+    {
+      "field": "name",
+      "message": "Name must be between 1 and 200 characters",
+      "value": ""
+    }
+  ]
+}
+```
+
+### Common Validation Rules
+
+#### String Fields
+- Must be valid strings (not numbers, objects, or arrays)
+- Automatically trimmed and HTML-escaped
+- Subject to length constraints (see specific endpoints)
+
+#### Name Fields (firstName, lastName, preferredName)
+- Pattern: Only letters, spaces, hyphens (-), and apostrophes (')
+- Length: 1-100 characters
+- Examples: `John`, `O'Brien`, `Mary-Jane`, `De La Cruz`
+
+#### Method Fields
+- Allowed values: `kiosk`, `mobile`, `qr`, `manual`
+- Case-sensitive
+
+#### Boolean Fields (isOffsite, etc.)
+- Must be boolean type: `true` or `false`
+- Strings like `"true"` or `"yes"` are NOT accepted
+
 ## REST API Endpoints
 
 ### Health Check
@@ -107,15 +157,33 @@ Register a new member. Automatically generates a unique QR code.
 **Request Body**:
 ```json
 {
-  "name": "Jane Doe"
+  "name": "Jane Doe",
+  "firstName": "Jane",  // optional
+  "lastName": "Doe",    // optional
+  "preferredName": "J", // optional
+  "rank": "Captain",    // optional, max 100 chars
+  "memberNumber": "12345" // optional, max 50 chars
 }
 ```
+
+**Validation Rules**:
+- At least one of `name`, `firstName`, `preferredName`, or `lastName` must be provided
+- `name`: 1-200 characters, string type, HTML-escaped
+- `firstName`, `lastName`, `preferredName`: 1-100 characters, letters/spaces/hyphens/apostrophes only
+- `rank`: max 100 characters, string type, HTML-escaped
+- `memberNumber`: max 50 characters, string type, HTML-escaped
+- All string fields are trimmed of leading/trailing whitespace
 
 **Response** (201 Created):
 ```json
 {
   "id": "new-uuid",
   "name": "Jane Doe",
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "preferredName": "J",
+  "rank": "Captain",
+  "memberNumber": "12345",
   "qrCode": "generated-qr-code",
   "createdAt": "2024-11-14T12:00:00.000Z",
   "updatedAt": "2024-11-14T12:00:00.000Z"
@@ -123,7 +191,7 @@ Register a new member. Automatically generates a unique QR code.
 ```
 
 **Errors**:
-- `400`: Invalid or missing name
+- `400`: Validation failed - see error response format in Input Validation section
 
 ---
 
@@ -281,12 +349,19 @@ Check in a member or undo their existing check-in. If the member is not checked 
 ```json
 {
   "memberId": "member-uuid",
-  "method": "mobile",  // "kiosk", "mobile", or "qr"
+  "method": "mobile",  // "kiosk", "mobile", "qr", or "manual"
   "activityId": "activity-uuid",  // optional, uses active activity if not provided
   "location": "Station",  // optional
   "isOffsite": false  // optional, default false
 }
 ```
+
+**Validation Rules**:
+- `memberId` (required): Valid UUID string, max 100 chars, HTML-escaped
+- `method` (optional): Must be one of: `kiosk`, `mobile`, `qr`, `manual` (case-sensitive)
+- `activityId` (optional): Valid UUID string, max 100 chars, HTML-escaped
+- `location` (optional): String, max 500 chars, HTML-escaped
+- `isOffsite` (optional): Boolean type only (true/false, not strings)
 
 **Response - Check In** (201 Created):
 ```json
@@ -324,7 +399,7 @@ Check in a member or undo their existing check-in. If the member is not checked 
 ```
 
 **Errors**:
-- `400`: Missing member ID or no active activity set
+- `400`: Validation failed (see Input Validation section) or no active activity set
 - `404`: Member or activity not found
 
 ### Undo Check-In

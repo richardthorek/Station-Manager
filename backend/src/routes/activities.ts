@@ -8,8 +8,13 @@
  * - Managing activity state for sign-in workflow
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
+import {
+  validateCreateActivity,
+  validateSetActiveActivity,
+} from '../middleware/activityValidation';
+import { handleValidationErrors } from '../middleware/validationHandler';
 
 const router = Router();
 
@@ -46,7 +51,7 @@ router.get('/active', async (req, res) => {
 });
 
 // Set active activity
-router.post('/active', async (req, res) => {
+router.post('/active', validateSetActiveActivity, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { activityId, setBy } = req.body;
@@ -71,7 +76,7 @@ router.post('/active', async (req, res) => {
 });
 
 // Create custom activity
-router.post('/', async (req, res) => {
+router.post('/', validateCreateActivity, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { name, createdBy } = req.body;

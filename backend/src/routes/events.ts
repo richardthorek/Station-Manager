@@ -9,8 +9,16 @@
  * - Active event management
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
+import {
+  validateCreateEvent,
+  validateEventId,
+  validateAddParticipant,
+  validateRemoveParticipant,
+  validateEventQuery,
+} from '../middleware/eventValidation';
+import { handleValidationErrors } from '../middleware/validationHandler';
 
 const router = Router();
 
@@ -18,7 +26,7 @@ const router = Router();
  * Get events with pagination support
  * Query params: limit (default 50), offset (default 0)
  */
-router.get('/', async (req, res) => {
+router.get('/', validateEventQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
@@ -60,7 +68,7 @@ router.get('/active', async (req, res) => {
 /**
  * Get a specific event with participants
  */
-router.get('/:eventId', async (req, res) => {
+router.get('/:eventId', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { eventId } = req.params;
@@ -80,7 +88,7 @@ router.get('/:eventId', async (req, res) => {
 /**
  * Create a new event from an activity type
  */
-router.post('/', async (req, res) => {
+router.post('/', validateCreateEvent, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { activityId, createdBy } = req.body;
@@ -107,7 +115,7 @@ router.post('/', async (req, res) => {
 /**
  * End an event (sets end time and makes it inactive)
  */
-router.put('/:eventId/end', async (req, res) => {
+router.put('/:eventId/end', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { eventId } = req.params;
@@ -128,7 +136,7 @@ router.put('/:eventId/end', async (req, res) => {
 /**
  * Add a participant to an event (check-in)
  */
-router.post('/:eventId/participants', async (req, res) => {
+router.post('/:eventId/participants', validateAddParticipant, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { eventId } = req.params;
@@ -182,7 +190,7 @@ router.post('/:eventId/participants', async (req, res) => {
 /**
  * Remove a participant from an event (undo check-in)
  */
-router.delete('/:eventId/participants/:participantId', async (req, res) => {
+router.delete('/:eventId/participants/:participantId', validateRemoveParticipant, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase();
     const { participantId } = req.params;

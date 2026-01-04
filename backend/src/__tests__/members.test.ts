@@ -134,7 +134,9 @@ describe('Members API', () => {
         .send({})
         .expect(400);
 
-      expect(response.body.error).toContain('name is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
+      expect(response.body.details.some((d: any) => d.message.toLowerCase().includes('name'))).toBe(true);
     });
 
     it('should return 400 for empty name', async () => {
@@ -143,7 +145,9 @@ describe('Members API', () => {
         .send({ name: '   ' })
         .expect(400);
 
-      expect(response.body.error).toContain('name is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
+      expect(response.body.details.some((d: any) => d.message.toLowerCase().includes('name'))).toBe(true);
     });
 
     it('should return 400 for non-string name', async () => {
@@ -152,7 +156,9 @@ describe('Members API', () => {
         .send({ name: 123 })
         .expect(400);
 
-      expect(response.body.error).toContain('name is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
+      expect(response.body.details.some((d: any) => d.message.toLowerCase().includes('name'))).toBe(true);
     });
   });
 
@@ -210,7 +216,9 @@ describe('Members API', () => {
         .send({ name: '' })
         .expect(400);
 
-      expect(response.body.error).toContain('name is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
+      expect(response.body.details.some((d: any) => d.message.toLowerCase().includes('name'))).toBe(true);
     });
   });
 

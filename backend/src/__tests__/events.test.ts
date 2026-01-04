@@ -126,7 +126,8 @@ describe('Events API', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Activity ID is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 404 if activity does not exist', async () => {
@@ -254,7 +255,8 @@ describe('Events API', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Member ID is required');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toBeDefined();
     });
 
     it('should return 404 if event does not exist', async () => {
