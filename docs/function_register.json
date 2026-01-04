@@ -327,7 +327,7 @@
         },
         "endEvent": {
           "signature": "endEvent(id: string): Event | undefined",
-          "line": 391,
+          "line": 473,
           "parameters": [
             {
               "name": "id",
@@ -336,8 +336,23 @@
             }
           ],
           "returns": "Event | undefined",
-          "complexity": "O(n)",
-          "sideEffects": "Sets event as inactive with end time"
+          "complexity": "O(1)",
+          "sideEffects": "Sets event as inactive with end time. Event remains visible in UI."
+        },
+        "reactivateEvent": {
+          "signature": "reactivateEvent(id: string): Event | undefined",
+          "line": 486,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Event UUID"
+            }
+          ],
+          "returns": "Event | undefined",
+          "complexity": "O(1)",
+          "sideEffects": "Clears event end time and sets isActive=true",
+          "notes": "Used to reactivate manually ended or auto-expired events"
         },
         "addParticipant": {
           "signature": "addParticipant(eventId: string, memberId: string, role?: string): EventParticipant",
@@ -680,6 +695,76 @@
           "returns": "Function",
           "complexity": "O(1)",
           "sideEffects": "Catches errors and sends standardized error responses"
+        }
+      }
+    },
+    "rolloverService": {
+      "file": "backend/src/services/rolloverService.ts",
+      "description": "Event auto-expiry and rollover service for time-based event deactivation",
+      "type": "module",
+      "constants": {
+        "EVENT_EXPIRY_HOURS": {
+          "type": "number",
+          "default": 12,
+          "description": "Hours after event start time before auto-expiry",
+          "source": "process.env.EVENT_EXPIRY_HOURS"
+        }
+      },
+      "methods": {
+        "isEventExpired": {
+          "signature": "isEventExpired(event: Event, expiryHours?: number): boolean",
+          "line": 30,
+          "description": "Check if an event has exceeded the expiry time limit",
+          "parameters": [
+            {
+              "name": "event",
+              "type": "Event",
+              "description": "Event to check for expiry"
+            },
+            {
+              "name": "expiryHours",
+              "type": "number",
+              "description": "Optional custom expiry hours (defaults to EVENT_EXPIRY_HOURS)"
+            }
+          ],
+          "returns": "boolean",
+          "complexity": "O(1)",
+          "sideEffects": "none"
+        },
+        "autoExpireEvents": {
+          "signature": "autoExpireEvents(events: Event[], db: IDatabase): Promise<string[]>",
+          "line": 45,
+          "description": "Mark expired events as inactive (events remain visible in UI)",
+          "parameters": [
+            {
+              "name": "events",
+              "type": "Event[]",
+              "description": "Array of events to check"
+            },
+            {
+              "name": "db",
+              "type": "IDatabase",
+              "description": "Database instance for updating events"
+            }
+          ],
+          "returns": "Promise<string[]>",
+          "complexity": "O(n)",
+          "sideEffects": "Marks expired events as inactive via db.endEvent()"
+        },
+        "deactivateExpiredEvents": {
+          "signature": "deactivateExpiredEvents(db: IDatabase): Promise<string[]>",
+          "line": 71,
+          "description": "Deactivate all expired events (manual rollover trigger)",
+          "parameters": [
+            {
+              "name": "db",
+              "type": "IDatabase",
+              "description": "Database instance"
+            }
+          ],
+          "returns": "Promise<string[]>",
+          "complexity": "O(n)",
+          "sideEffects": "Queries database and marks expired events as inactive"
         }
       }
     }

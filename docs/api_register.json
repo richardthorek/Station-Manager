@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "version": "1.0.0",
-  "lastUpdated": "2026-01-03",
+  "lastUpdated": "2026-01-04",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).",
   "baseUrl": {
     "development": "http://localhost:3000",
@@ -1043,7 +1043,7 @@
       "PUT /api/events/:id/end": {
         "method": "PUT",
         "path": "/api/events/:id/end",
-        "description": "End an active event",
+        "description": "End an active event (marks as inactive, event remains visible)",
         "authentication": "none",
         "parameters": {
           "path": {
@@ -1070,8 +1070,113 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/events.ts:81",
+        "implementation": "backend/src/routes/events.ts:118",
         "socketEvent": "event-ended",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000,
+            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "headers": [
+              "RateLimit-Limit",
+              "RateLimit-Remaining",
+              "RateLimit-Reset"
+            ]
+          }
+        }
+      },
+      "PUT /api/events/:id/reactivate": {
+        "method": "PUT",
+        "path": "/api/events/:id/reactivate",
+        "description": "Reactivate an ended event (clears end time, sets isActive=true)",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "required": true,
+              "description": "Event UUID"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Event reactivated successfully",
+            "schema": {
+              "$ref": "#/definitions/Event"
+            }
+          },
+          "404": {
+            "description": "Event not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/events.ts:136",
+        "socketEvent": null,
+        "notes": "Events are automatically deactivated after EVENT_EXPIRY_HOURS (default: 12). Use this endpoint to reactivate expired events.",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000,
+            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "headers": [
+              "RateLimit-Limit",
+              "RateLimit-Remaining",
+              "RateLimit-Reset"
+            ]
+          }
+        }
+      },
+      "POST /api/events/admin/rollover": {
+        "method": "POST",
+        "path": "/api/events/admin/rollover",
+        "description": "Manually trigger event expiry check (marks expired events as inactive)",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Rollover completed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Rollover completed successfully"
+                },
+                "deactivatedCount": {
+                  "type": "number",
+                  "description": "Number of events deactivated"
+                },
+                "deactivatedEventIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "expiryHours": {
+                  "type": "number",
+                  "description": "Configured expiry hours from EVENT_EXPIRY_HOURS"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/events.ts:232",
+        "notes": "Events older than EVENT_EXPIRY_HOURS (default: 12) are automatically marked as inactive. Expired events remain visible in the UI.",
         "security": {
           "rateLimiting": {
             "enabled": true,

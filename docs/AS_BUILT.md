@@ -72,7 +72,7 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 - **Backend Code:** ~4,800 lines (TypeScript)
 - **Frontend Code:** ~2,200 lines (TypeScript/React)
 - **Test Coverage:** 45 backend API tests (100% pass rate)
-- **API Endpoints:** 35+ REST endpoints
+- **API Endpoints:** 37+ REST endpoints (includes event auto-expiry management)
 - **Real-time Events:** 10+ Socket.io event types
 
 ---
@@ -494,6 +494,7 @@ backend/src/
 │   ├── tableStorageTruckChecksDatabase.ts # Table Storage truck checks (production)
 │   ├── truckChecksDbFactory.ts
 │   ├── achievementService.ts
+│   ├── rolloverService.ts    # Event auto-expiry service
 │   └── azureStorage.ts       # File storage
 ├── types/                     # Type definitions
 │   ├── index.ts
@@ -543,11 +544,13 @@ The API register contains:
 - `POST /api/checkins` - Check in/out (toggle)
 - `POST /api/checkins/url-checkin` - URL-based check-in
 
-**Events (6 endpoints)**
-- `GET /api/events` - List events
+**Events (8 endpoints)**
+- `GET /api/events` - List events (all, including inactive)
 - `POST /api/events` - Create event
-- `GET /api/events/active` - Get active events
-- `PUT /api/events/:id/end` - End event
+- `GET /api/events/active` - Get active events (excludes expired)
+- `PUT /api/events/:id/end` - End event (mark inactive)
+- `PUT /api/events/:id/reactivate` - Reactivate ended/expired event
+- `POST /api/events/admin/rollover` - Manual expiry check trigger
 - `POST /api/events/:id/participants` - Add participant
 - `DELETE /api/events/:id/participants/:participantId` - Remove participant
 
@@ -594,6 +597,71 @@ None currently (server-initiated broadcasts only)
 - **Heartbeat**: Socket.io built-in heartbeat mechanism
 - **Namespace**: Default namespace (`/`)
 - **Transport**: WebSocket preferred, falls back to polling
+
+---
+
+## Event Auto-Expiry System
+
+### Overview
+
+Events automatically become inactive after a configurable time period (default: 12 hours from start time). This eliminates the need for manual daily management while keeping expired events visible in the UI.
+
+### Key Features
+
+1. **Time-Based Expiry**
+   - Events expire exactly 12 hours after `startTime` (configurable via `EVENT_EXPIRY_HOURS`)
+   - Flexible timing - events can start at any time, not just midnight
+   - No scheduled jobs required - expiry checked dynamically
+
+2. **Visibility Behavior**
+   - Expired events remain visible in event lists
+   - Marked as `isActive: false` with `endTime` set
+   - UI shows "inactive" tag instead of "active" tag
+   - Cannot modify inactive events without reactivating first
+
+3. **Manual Controls**
+   - `PUT /api/events/:id/end` - Manually mark event as inactive
+   - `PUT /api/events/:id/reactivate` - Reactivate ended/expired event
+   - `POST /api/events/admin/rollover` - Trigger manual expiry check
+
+### Implementation
+
+**Service:** `backend/src/services/rolloverService.ts`
+
+```typescript
+// Check if event has exceeded expiry time
+isEventExpired(event: Event, expiryHours?: number): boolean
+
+// Mark expired events as inactive (called by getActiveEvents)
+autoExpireEvents(events: Event[], db: IDatabase): Promise<string[]>
+
+// Manual rollover trigger
+deactivateExpiredEvents(db: IDatabase): Promise<string[]>
+```
+
+**Database Methods:**
+- `getActiveEvents()` - Automatically expires old events before returning
+- `reactivateEvent(id)` - Clears endTime and sets isActive=true
+
+**Configuration:**
+```bash
+EVENT_EXPIRY_HOURS=12  # Default: 12 hours after event start
+```
+
+### Behavior Examples
+
+| Event Start Time | Current Time | Status | Notes |
+|------------------|--------------|--------|-------|
+| Today 08:00 | Today 14:00 | Active | 6 hours elapsed |
+| Today 08:00 | Today 20:00 | Active | 12 hours exactly (not yet expired) |
+| Today 08:00 | Today 20:01 | Inactive | Auto-expired (>12 hours) |
+| Yesterday 14:00 | Today 10:00 | Inactive | Auto-expired (20 hours) |
+
+### Testing
+
+- 15 comprehensive tests in `backend/src/__tests__/rollover.test.ts`
+- Tests cover: expiry detection, auto-expiry, reactivation, visibility
+- All 174 backend tests passing
 
 ---
 
