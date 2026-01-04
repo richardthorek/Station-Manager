@@ -398,6 +398,15 @@ jobs:
           echo "   - GIT_COMMIT_SHA: ${{ github.sha }}"
           echo "   - GIT_COMMIT_SHORT: $(echo "${{ github.sha }}" | cut -c1-7)"
           echo "   - BUILD_TIMESTAMP: $BUILD_TS"
+          
+          # Restart the app to immediately pick up new environment variables
+          echo ""
+          echo "🔄 Restarting Azure App Service to apply new environment variables..."
+          az webapp restart \
+            --resource-group bungrfsstation_group \
+            --name bungrfsstation \
+            --output none
+          echo "✅ App restart initiated"
 
       - name: Deployment summary
         run: |
@@ -444,8 +453,13 @@ jobs:
 
       - name: Wait for deployment to stabilize
         run: |
-          echo "Waiting 30 seconds for deployment to fully stabilize..."
-          sleep 30
+          echo "Waiting 60 seconds for app restart and initialization..."
+          echo "This allows Azure App Service to:"
+          echo "  1. Complete the restart process"
+          echo "  2. Load new environment variables"
+          echo "  3. Initialize the Node.js application"
+          echo "  4. Connect to Azure Table Storage"
+          sleep 60
 
       - name: Login to Azure
         uses: azure/login@v2
