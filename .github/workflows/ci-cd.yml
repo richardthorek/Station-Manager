@@ -237,7 +237,6 @@ jobs:
       - typecheck-backend
       - typecheck-frontend
       - test-backend
-    environment: copilot
     permissions:
       contents: read
     steps:
@@ -294,7 +293,6 @@ jobs:
     needs: build
     # DEPLOYMENT GATE: Only deploy on main branch (not PRs)
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    environment: copilot
     permissions:
       id-token: write
       contents: read
