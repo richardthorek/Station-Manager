@@ -81,37 +81,26 @@ function isDefaultActivityName(name: string): boolean {
  */
 export class TableStorageDatabase {
   private connectionString: string;
-  private membersTable: TableClient;
-  private activitiesTable: TableClient;
-  private eventsTable: TableClient;
-  private eventParticipantsTable: TableClient;
-  private checkInsTable: TableClient;
-  private activeActivityTable: TableClient;
+  private membersTable!: TableClient;
+  private activitiesTable!: TableClient;
+  private eventsTable!: TableClient;
+  private eventParticipantsTable!: TableClient;
+  private checkInsTable!: TableClient;
+  private activeActivityTable!: TableClient;
   private isConnected: boolean = false;
 
   constructor(connectionString?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
     
-    // Initialize table clients if connection string is available
-    // Otherwise, connect() will throw a meaningful error
-    if (!this.connectionString) {
-      // Create uninitialized clients - connect() will fail with a clear error message
-      this.membersTable = null as any;
-      this.activitiesTable = null as any;
-      this.eventsTable = null as any;
-      this.eventParticipantsTable = null as any;
-      this.checkInsTable = null as any;
-      this.activeActivityTable = null as any;
-      return;
+    // Initialize table clients only if connection string is available
+    if (this.connectionString) {
+      this.membersTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Members'));
+      this.activitiesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Activities'));
+      this.eventsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Events'));
+      this.eventParticipantsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('EventParticipants'));
+      this.checkInsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckIns'));
+      this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ActiveActivity'));
     }
-
-    // Initialize table clients
-    this.membersTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Members'));
-    this.activitiesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Activities'));
-    this.eventsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Events'));
-    this.eventParticipantsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('EventParticipants'));
-    this.checkInsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckIns'));
-    this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ActiveActivity'));
   }
 
   async connect(): Promise<void> {

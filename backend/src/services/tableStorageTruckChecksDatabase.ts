@@ -40,30 +40,22 @@ function buildTableName(baseName: string): string {
  */
 export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
   private connectionString: string;
-  private appliancesTable: TableClient;
-  private templatesTable: TableClient;
-  private checkRunsTable: TableClient;
-  private checkResultsTable: TableClient;
+  private appliancesTable!: TableClient;
+  private templatesTable!: TableClient;
+  private checkRunsTable!: TableClient;
+  private checkResultsTable!: TableClient;
   private isConnected: boolean = false;
 
   constructor(connectionString?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
     
-    // Initialize table clients if connection string is available
-    // Otherwise, connect() will throw a meaningful error
-    if (!this.connectionString) {
-      // Create uninitialized clients - connect() will fail with a clear error message
-      this.appliancesTable = null as any;
-      this.templatesTable = null as any;
-      this.checkRunsTable = null as any;
-      this.checkResultsTable = null as any;
-      return;
+    // Initialize table clients only if connection string is available
+    if (this.connectionString) {
+      this.appliancesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Appliances'));
+      this.templatesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ChecklistTemplates'));
+      this.checkRunsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckRuns'));
+      this.checkResultsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckResults'));
     }
-
-    this.appliancesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Appliances'));
-    this.templatesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ChecklistTemplates'));
-    this.checkRunsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckRuns'));
-    this.checkResultsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckResults'));
   }
 
   async connect(): Promise<void> {
