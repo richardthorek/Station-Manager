@@ -68,11 +68,11 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 - **Kiosk-friendly interface** optimized for station use
 
 ### Key Metrics
-- **Total Lines of Code:** ~7,000 lines
-- **Backend Code:** ~4,800 lines (TypeScript)
-- **Frontend Code:** ~2,200 lines (TypeScript/React)
-- **Test Coverage:** 45 backend API tests (100% pass rate)
-- **API Endpoints:** 37+ REST endpoints (includes event auto-expiry management)
+- **Total Lines of Code:** ~8,500 lines
+- **Backend Code:** ~5,600 lines (TypeScript)
+- **Frontend Code:** ~2,900 lines (TypeScript/React)
+- **Test Coverage:** 67 API tests (100% pass rate: 45 backend general + 11 backend reports + 11 frontend reports)
+- **API Endpoints:** 42+ REST endpoints (includes event auto-expiry management and reporting)
 - **Real-time Events:** 10+ Socket.io event types
 
 ---
@@ -446,11 +446,14 @@ frontend/src/
 │   ├── profile/               # Member profiles
 │   │   ├── ProfilePage.tsx
 │   │   └── ProfilePage.css
-│   └── truckcheck/            # Vehicle checks
-│       ├── TruckCheckPage.tsx
-│       ├── CheckWorkflowPage.tsx
-│       ├── AdminDashboardPage.tsx
-│       └── [styles]
+│   ├── truckcheck/            # Vehicle checks
+│   │   ├── TruckCheckPage.tsx
+│   │   ├── CheckWorkflowPage.tsx
+│   │   ├── AdminDashboardPage.tsx
+│   │   └── [styles]
+│   └── reports/               # Reports & Analytics
+│       ├── ReportsPage.tsx
+│       └── ReportsPage.css
 ├── components/                # Shared components
 │   ├── Header.tsx
 │   ├── Footer.tsx
@@ -563,6 +566,13 @@ The API register contains:
 **Achievements (2 endpoints)**
 - `GET /api/achievements/member/:memberId` - Get member achievements
 - `GET /api/achievements/recent` - Get recent unlocks
+
+**Reports & Analytics (5 endpoints)**
+- `GET /api/reports/attendance-summary` - Monthly attendance statistics
+- `GET /api/reports/member-participation` - Top members by participation
+- `GET /api/reports/activity-breakdown` - Activity category breakdown
+- `GET /api/reports/event-statistics` - Event statistics (count, duration, etc.)
+- `GET /api/reports/truckcheck-compliance` - Truck check compliance metrics
 
 **Health Check**
 - `GET /health` - Server health status

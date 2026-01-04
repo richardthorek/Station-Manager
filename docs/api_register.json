@@ -1404,6 +1404,223 @@
           }
         }
       }
+    },
+    "reports": {
+      "GET /api/reports/attendance-summary": {
+        "method": "GET",
+        "path": "/api/reports/attendance-summary",
+        "description": "Get monthly attendance statistics grouped by month",
+        "authentication": "none",
+        "parameters": {
+          "query": {
+            "startDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Start date for report range (ISO 8601). Defaults to 30 days ago."
+            },
+            "endDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "End date for report range (ISO 8601). Defaults to now."
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Attendance summary data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "startDate": { "type": "string", "format": "date-time" },
+                "endDate": { "type": "string", "format": "date-time" },
+                "summary": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "month": { "type": "string", "example": "2024-01" },
+                      "count": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/reports.ts"
+      },
+      "GET /api/reports/member-participation": {
+        "method": "GET",
+        "path": "/api/reports/member-participation",
+        "description": "Get top members by participation count",
+        "authentication": "none",
+        "parameters": {
+          "query": {
+            "startDate": { "type": "string", "format": "date-time" },
+            "endDate": { "type": "string", "format": "date-time" },
+            "limit": {
+              "type": "number",
+              "default": 10,
+              "description": "Maximum number of members to return"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Member participation data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "startDate": { "type": "string" },
+                "endDate": { "type": "string" },
+                "limit": { "type": "number" },
+                "participation": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "memberId": { "type": "string" },
+                      "memberName": { "type": "string" },
+                      "participationCount": { "type": "number" },
+                      "lastCheckIn": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/reports.ts"
+      },
+      "GET /api/reports/activity-breakdown": {
+        "method": "GET",
+        "path": "/api/reports/activity-breakdown",
+        "description": "Get breakdown of activities by category",
+        "authentication": "none",
+        "parameters": {
+          "query": {
+            "startDate": { "type": "string", "format": "date-time" },
+            "endDate": { "type": "string", "format": "date-time" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Activity breakdown data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "startDate": { "type": "string" },
+                "endDate": { "type": "string" },
+                "breakdown": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": { "type": "string", "enum": ["training", "maintenance", "meeting", "other"] },
+                      "count": { "type": "number" },
+                      "percentage": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/reports.ts"
+      },
+      "GET /api/reports/event-statistics": {
+        "method": "GET",
+        "path": "/api/reports/event-statistics",
+        "description": "Get aggregate event statistics",
+        "authentication": "none",
+        "parameters": {
+          "query": {
+            "startDate": { "type": "string", "format": "date-time" },
+            "endDate": { "type": "string", "format": "date-time" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Event statistics",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "startDate": { "type": "string" },
+                "endDate": { "type": "string" },
+                "statistics": {
+                  "type": "object",
+                  "properties": {
+                    "totalEvents": { "type": "number" },
+                    "activeEvents": { "type": "number" },
+                    "completedEvents": { "type": "number" },
+                    "totalParticipants": { "type": "number" },
+                    "averageParticipantsPerEvent": { "type": "number" },
+                    "averageDuration": { "type": "number", "description": "Average event duration in minutes" }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/reports.ts"
+      },
+      "GET /api/reports/truckcheck-compliance": {
+        "method": "GET",
+        "path": "/api/reports/truckcheck-compliance",
+        "description": "Get truck check compliance metrics",
+        "authentication": "none",
+        "parameters": {
+          "query": {
+            "startDate": { "type": "string", "format": "date-time" },
+            "endDate": { "type": "string", "format": "date-time" }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Truck check compliance data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "startDate": { "type": "string" },
+                "endDate": { "type": "string" },
+                "compliance": {
+                  "type": "object",
+                  "properties": {
+                    "totalChecks": { "type": "number" },
+                    "completedChecks": { "type": "number" },
+                    "inProgressChecks": { "type": "number" },
+                    "checksWithIssues": { "type": "number" },
+                    "complianceRate": { "type": "number", "description": "Percentage (0-100)" },
+                    "applianceStats": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "applianceId": { "type": "string" },
+                          "applianceName": { "type": "string" },
+                          "checkCount": { "type": "number" },
+                          "lastCheckDate": { "type": "string", "format": "date-time", "nullable": true }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/reports.ts"
+      }
     }
   },
   "socketEvents": {
