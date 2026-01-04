@@ -10,6 +10,7 @@ import {
   EventParticipant,
   EventWithParticipants
 } from '../types';
+import { autoExpireEvents } from './rolloverService';
 // Note: we intentionally avoid importing IDatabase here to prevent circular type issues
 
 // Build table names with optional prefix/suffix so dev/test can share prod storage without mixing tables
@@ -516,7 +517,15 @@ export class TableStorageDatabase {
 
   async getActiveEvents(): Promise<Event[]> {
     const events = await this.getEvents(100, 0);
-    return events.filter(e => e.isActive);
+    const activeEvents = events.filter(e => e.isActive);
+    
+    // Auto-expire events that have exceeded time limit
+    // Expired events remain visible in getEvents(), they're just marked as inactive
+    await autoExpireEvents(activeEvents, this as any);
+    
+    // Return currently active events (excluding ones we just expired)
+    const updatedEvents = await this.getEvents(100, 0);
+    return updatedEvents.filter(e => e.isActive);
   }
 
   async getEventById(eventId: string): Promise<Event | null> {
@@ -549,6 +558,26 @@ export class TableStorageDatabase {
       const entity = await this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId);
       entity.endTime = new Date().toISOString();
       entity.isActive = false;
+      entity.updatedAt = new Date().toISOString();
+
+      await this.eventsTable.updateEntity(entity, 'Replace');
+      
+      return this.entityToEvent(entity);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async reactivateEvent(eventId: string): Promise<Event | null> {
+    const event = await this.getEventById(eventId);
+    if (!event) return null;
+
+    const monthKey = event.startTime.toISOString().slice(0, 7);
+    
+    try {
+      const entity = await this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId);
+      entity.endTime = undefined;
+      entity.isActive = true;
       entity.updatedAt = new Date().toISOString();
 
       await this.eventsTable.updateEntity(entity, 'Replace');

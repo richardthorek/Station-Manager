@@ -10,12 +10,14 @@
  * - Auto-initialization with default activities
  * - Dev sample data for testing
  * - Fast, synchronous operations
+ * - Automatic event expiry after configured hours (events remain visible, just inactive)
  * 
  * Note: Data is lost on server restart. Use Azure Table Storage for persistence.
  */
 
 import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { autoExpireEvents } from './rolloverService';
 
 class DatabaseService {
   private members: Map<string, Member> = new Map();
@@ -452,9 +454,24 @@ class DatabaseService {
   }
 
   /**
-   * Get only active events (not yet ended)
+   * Get only active events (not yet ended and not expired)
+   * Note: This auto-expires events that have exceeded the time limit.
+   * Expired events remain visible in getEvents(), they're just marked as inactive.
    */
   getActiveEvents(): Event[] {
+    const activeEvents = Array.from(this.events.values())
+      .filter(event => event.isActive)
+      .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+    
+    // Auto-expire events that have exceeded time limit
+    // This is synchronous because in-memory DB operations are instant
+    autoExpireEvents(activeEvents, this as any).then(() => {
+      // Events have been marked inactive in the database
+    }).catch(err => {
+      console.error('Error auto-expiring events:', err);
+    });
+    
+    // Return only currently active events (excluding ones we just expired)
     return Array.from(this.events.values())
       .filter(event => event.isActive)
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
@@ -478,6 +495,22 @@ class DatabaseService {
 
     event.endTime = new Date();
     event.isActive = false;
+    event.updatedAt = new Date();
+
+    return event;
+  }
+
+  /**
+   * Reactivate an ended event (clears end time and sets isActive to true)
+   */
+  reactivateEvent(eventId: string): Event | null {
+    const event = this.events.get(eventId);
+    if (!event) {
+      return null;
+    }
+
+    event.endTime = undefined;
+    event.isActive = true;
     event.updatedAt = new Date();
 
     return event;

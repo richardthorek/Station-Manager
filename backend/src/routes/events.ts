@@ -11,6 +11,7 @@
 
 import { Router, Request, Response } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
+import { deactivateExpiredEvents, EVENT_EXPIRY_HOURS } from '../services/rolloverService';
 import {
   validateCreateEvent,
   validateEventId,
@@ -134,6 +135,27 @@ router.put('/:eventId/end', validateEventId, handleValidationErrors, async (req:
 });
 
 /**
+ * Reactivate an event (clears end time and makes it active again)
+ */
+router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase();
+    const { eventId } = req.params;
+    const event = await db.reactivateEvent(eventId);
+    
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    
+    const eventWithParticipants = await db.getEventWithParticipants(event.id);
+    res.json(eventWithParticipants);
+  } catch (error) {
+    console.error('Error reactivating event:', error);
+    res.status(500).json({ error: 'Failed to reactivate event' });
+  }
+});
+
+/**
  * Add a participant to an event (check-in)
  */
 router.post('/:eventId/participants', validateAddParticipant, handleValidationErrors, async (req: Request, res: Response) => {
@@ -204,6 +226,28 @@ router.delete('/:eventId/participants/:participantId', validateRemoveParticipant
   } catch (error) {
     console.error('Error removing participant:', error);
     res.status(500).json({ error: 'Failed to remove participant' });
+  }
+});
+
+/**
+ * Manual rollover trigger - deactivates all expired events
+ * POST /api/events/admin/rollover
+ */
+router.post('/admin/rollover', async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase();
+    const deactivatedEventIds = await deactivateExpiredEvents(db);
+    
+    res.json({
+      message: 'Rollover completed successfully',
+      deactivatedCount: deactivatedEventIds.length,
+      deactivatedEventIds,
+      expiryHours: EVENT_EXPIRY_HOURS,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error during manual rollover:', error);
+    res.status(500).json({ error: 'Failed to perform rollover' });
   }
 });
 
