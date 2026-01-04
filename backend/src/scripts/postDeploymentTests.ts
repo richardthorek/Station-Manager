@@ -13,8 +13,9 @@
  *   - Retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
  *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
  *   - 5 second delay between retries
- *   - Default 3 retries per request
- *   - With initial 30s wait + retries, gives 60+ seconds for deployment to stabilize
+ *   - Default 3 retries per request (15 seconds max per request)
+ *   - With initial 30s wait, provides 45+ seconds for deployment to stabilize
+ *   - Multiple tests can retry independently for extended stabilization time
  * 
  * Usage:
  *   APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy
@@ -34,6 +35,10 @@ const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '30000');
 const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '3');
 const RETRY_DELAY = 5000; // 5 seconds between retries
+
+// HTTP status codes that indicate deployment is still stabilizing
+// These will trigger automatic retries
+const RETRYABLE_STATUS_CODES = [404, 502, 503];
 
 // Test results tracking
 let testsRun = 0;
@@ -75,11 +80,8 @@ async function makeRequest(
         res.on('end', () => {
           const statusCode = res.statusCode || 0;
           
-          // Retry on status codes that indicate deployment is still stabilizing
-          // 404: Route not found (app might still be starting/routing not ready)
-          // 502: Bad Gateway (Azure proxy can't reach app yet)
-          // 503: Service Unavailable (app is starting up)
-          const shouldRetry = retries > 0 && (statusCode === 404 || statusCode === 502 || statusCode === 503);
+          // Check if we should retry on this status code
+          const shouldRetry = retries > 0 && RETRYABLE_STATUS_CODES.includes(statusCode);
           
           if (shouldRetry) {
             console.log(`  ⏳ Got ${statusCode} status, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
