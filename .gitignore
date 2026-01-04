@@ -48,3 +48,6 @@ __azurite_db*__.json
 backend/scripts/importMembers.js
 AZURE_ENV_SETUP.md
 azure.env
+
+
+bungendore_members.csv

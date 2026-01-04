@@ -146,6 +146,8 @@ export class TableStorageDatabase {
     }
   }
 
+  
+
   // ===== MEMBER METHODS =====
 
   async getAllMembers(): Promise<Member[]> {
@@ -186,13 +188,21 @@ export class TableStorageDatabase {
     return null;
   }
 
-  async createMember(name: string): Promise<Member> {
+  async createMember(
+    name: string,
+    details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string }
+  ): Promise<Member> {
+    const now = new Date();
     const member: Member = {
       id: uuidv4(),
       name,
       qrCode: uuidv4(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      memberNumber: details?.memberNumber || undefined,
+      rank: details?.rank || undefined,
+      firstName: details?.firstName || undefined,
+      lastName: details?.lastName || undefined,
+      createdAt: now,
+      updatedAt: now,
     };
 
     const entity: TableEntity = {

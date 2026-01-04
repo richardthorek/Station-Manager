@@ -47,7 +47,7 @@ export function LandingPage() {
           </p>
         </section>
 
-        <section className="features-grid">
+        <section className="cards-grid">
           <div className="feature-card">
             <div className="feature-icon">🔥</div>
             <h3>Station Sign-In</h3>
@@ -87,9 +87,7 @@ export function LandingPage() {
               <span className="badge">Future</span>
             </div>
           </div>
-        </section>
 
-        <section className="info-section">
           <div className="info-card">
             <h3>Multi-Device Support</h3>
             <p>Access from kiosks, mobile phones, tablets, or via QR codes</p>

@@ -249,11 +249,15 @@ class DatabaseService {
     return Array.from(this.members.values()).find(m => m.qrCode === qrCode);
   }
 
-  createMember(name: string): Member {
+  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string }): Member {
     const member: Member = {
       id: uuidv4(),
       name,
       qrCode: uuidv4(),
+      memberNumber: details?.memberNumber || undefined,
+      rank: details?.rank || undefined,
+      firstName: details?.firstName || undefined,
+      lastName: details?.lastName || undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

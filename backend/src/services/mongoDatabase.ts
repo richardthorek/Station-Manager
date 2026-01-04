@@ -185,13 +185,17 @@ class MongoDBService {
     return await this.membersCollection.findOne({ qrCode });
   }
 
-  async createMember(name: string): Promise<Member> {
+  async createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string }): Promise<Member> {
     if (!this.membersCollection) throw new Error('Database not connected');
     
     const member: Member = {
       id: uuidv4(),
       name,
       qrCode: uuidv4(),
+      memberNumber: details?.memberNumber || undefined,
+      rank: details?.rank || null,
+      firstName: details?.firstName || undefined,
+      lastName: details?.lastName || undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

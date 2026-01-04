@@ -1,7 +1,11 @@
 .truckcheck-page {
+  height: 100vh;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   color: var(--text-primary);
+  overflow: hidden;
 }
 
 .truckcheck-header {
@@ -67,8 +71,13 @@
 
 .truckcheck-main {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 2rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .loading,

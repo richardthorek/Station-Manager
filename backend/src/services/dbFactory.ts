@@ -14,8 +14,8 @@ export interface IDatabase {
   getAllMembers(): Promise<any[]> | any[];
   getMemberById(id: string): Promise<any | null | undefined> | any | null | undefined;
   getMemberByQRCode(qrCode: string): Promise<any | null | undefined> | any | null | undefined;
-  createMember(name: string): Promise<any> | any;
-  updateMember(id: string, name: string): Promise<any | null | undefined> | any | null | undefined;
+  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string }): Promise<any> | any;
+  updateMember(id: string, name: string, rank?: string | null): Promise<any | null | undefined> | any | null | undefined;
   
   // Activities
   getAllActivities(): Promise<any[]> | any[];

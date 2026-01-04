@@ -60,11 +60,27 @@ router.get('/qr/:qrCode', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const db = await ensureDatabase();
-    const { name } = req.body;
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    const { name, firstName, lastName, preferredName, rank } = req.body || {};
+
+    const clean = (val: any) => (typeof val === 'string' ? val.trim() : '');
+    const fn = clean(firstName);
+    const ln = clean(lastName);
+    const pn = clean(preferredName);
+    const nm = clean(name);
+
+    const displayFirst = pn || fn || nm;
+    const displayName = displayFirst ? `${displayFirst}${ln ? ` ${ln}` : ''}` : '';
+
+    if (!displayName) {
       return res.status(400).json({ error: 'Valid name is required' });
     }
-    const member = await db.createMember(name.trim());
+
+    const member = await db.createMember(displayName, {
+      rank: clean(rank) || undefined,
+      firstName: fn || undefined,
+      lastName: ln || undefined,
+      preferredName: pn || undefined,
+    });
     res.status(201).json(member);
   } catch (error) {
     console.error('Error creating member:', error);

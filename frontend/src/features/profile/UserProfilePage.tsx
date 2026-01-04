@@ -157,10 +157,10 @@ export function UserProfilePage() {
   }
 
   return (
-    <div className="app">
+    <div className="app profile-app">
       <Header isConnected={isConnected} databaseStatus={databaseStatus} />
       
-      <main className="main-content">
+      <main className="main-content profile-main">
         <div className="profile-container">
           <div className="profile-header">
             <button className="btn-back" onClick={() => navigate('/signin')}>
