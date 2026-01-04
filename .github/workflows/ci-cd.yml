@@ -296,9 +296,9 @@ jobs:
 
       - name: Create deployment package
         run: |
-          mkdir -p deploy
+          mkdir -p deploy/backend
           cp package.json deploy/
-          cp -r backend/dist deploy/backend/
+          cp -r backend/dist deploy/backend/dist
           cp backend/package.json deploy/backend/
           cp -r backend/node_modules deploy/backend/
           cp -r frontend/dist deploy/frontend/
