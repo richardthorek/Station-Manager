@@ -92,8 +92,17 @@ export class TableStorageDatabase {
   constructor(connectionString?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
     
+    // Don't throw here - let connect() handle the error
+    // This allows the module to be imported even when connection string isn't available
     if (!this.connectionString) {
-      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage');
+      // Set dummy values to satisfy TypeScript - these won't be used if connect() isn't called
+      this.membersTable = null as any;
+      this.activitiesTable = null as any;
+      this.eventsTable = null as any;
+      this.eventParticipantsTable = null as any;
+      this.checkInsTable = null as any;
+      this.activeActivityTable = null as any;
+      return;
     }
 
     // Initialize table clients
@@ -107,6 +116,10 @@ export class TableStorageDatabase {
 
   async connect(): Promise<void> {
     if (this.isConnected) return;
+
+    if (!this.connectionString) {
+      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage');
+    }
 
     try {
       // Create tables if they don't exist

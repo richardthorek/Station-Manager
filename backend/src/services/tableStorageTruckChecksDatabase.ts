@@ -49,8 +49,15 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
   constructor(connectionString?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
     
+    // Don't throw here - let connect() handle the error
+    // This allows the module to be imported even when connection string isn't available
     if (!this.connectionString) {
-      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage');
+      // Set dummy values to satisfy TypeScript - these won't be used if connect() isn't called
+      this.appliancesTable = null as any;
+      this.templatesTable = null as any;
+      this.checkRunsTable = null as any;
+      this.checkResultsTable = null as any;
+      return;
     }
 
     this.appliancesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Appliances'));
@@ -61,6 +68,10 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
 
   async connect(): Promise<void> {
     if (this.isConnected) return;
+
+    if (!this.connectionString) {
+      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage');
+    }
 
     try {
       await Promise.all([
