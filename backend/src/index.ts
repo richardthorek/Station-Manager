@@ -36,7 +36,6 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import rateLimit from 'express-rate-limit';
 import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
@@ -46,6 +45,7 @@ import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
 import { getVersionInfo } from './services/version';
+import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 
 const app = express();
 const httpServer = createServer(app);
@@ -54,14 +54,6 @@ const io = new Server(httpServer, {
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     methods: ['GET', 'POST'],
   },
-});
-
-// Rate limiter for SPA fallback route (serving index.html)
-const spaRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
 const PORT = process.env.PORT || 3000;
@@ -99,7 +91,7 @@ app.get('/health', async (req, res) => {
 });
 
 // Database status endpoint for frontend
-app.get('/api/status', async (req, res) => {
+app.get('/api/status', apiRateLimiter, async (req, res) => {
   try {
     await ensureDatabase();
     await ensureTruckChecksDatabase();
@@ -126,18 +118,18 @@ app.get('/api/status', async (req, res) => {
   }
 });
 
-// API Routes
-app.use('/api/members', membersRouter);
-app.use('/api/activities', activitiesRouter);
-app.use('/api/checkins', checkinsRouter);
-app.use('/api/events', eventsRouter);
-app.use('/api/truck-checks', truckChecksRouter);
+// API Routes with rate limiting
+app.use('/api/members', apiRateLimiter, membersRouter);
+app.use('/api/activities', apiRateLimiter, activitiesRouter);
+app.use('/api/checkins', apiRateLimiter, checkinsRouter);
+app.use('/api/events', apiRateLimiter, eventsRouter);
+app.use('/api/truck-checks', apiRateLimiter, truckChecksRouter);
 
 // Achievement routes (initialized with database instances)
 (async () => {
   const db = await ensureDatabase();
   const truckChecksDb = await ensureTruckChecksDatabase();
-  app.use('/api/achievements', createAchievementRoutes(db, truckChecksDb));
+  app.use('/api/achievements', apiRateLimiter, createAchievementRoutes(db, truckChecksDb));
 })();
 
 // Socket.io connection handling
