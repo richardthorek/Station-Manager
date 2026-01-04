@@ -11,13 +11,22 @@ import {
 } from '../types';
 import { ITruckChecksDatabase } from './truckChecksDbFactory';
 
-// Build table names with optional prefix/suffix so dev can share prod storage without mixing tables
+// Build table names with optional prefix/suffix so dev/test can share prod storage without mixing tables
 function buildTableName(baseName: string): string {
   const sanitize = (value: string) => value.replace(/[^A-Za-z0-9]/g, '');
   const prefix = sanitize(process.env.TABLE_STORAGE_TABLE_PREFIX || '');
-  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || (process.env.NODE_ENV === 'development' ? 'Dev' : ''));
+  
+  // Auto-suffix based on environment if not explicitly set
+  let defaultSuffix = '';
+  if (process.env.NODE_ENV === 'test') {
+    defaultSuffix = 'Test';
+  } else if (process.env.NODE_ENV === 'development') {
+    defaultSuffix = 'Dev';
+  }
+  
+  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || defaultSuffix);
   const name = `${prefix}${baseName}${suffix}`;
-  return name || baseName;
+  return name || baseName; // Fallback to base if everything was stripped
 }
 
 /**
