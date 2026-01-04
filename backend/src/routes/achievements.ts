@@ -6,10 +6,12 @@
 
 import { Router, Request, Response } from 'express';
 import { AchievementService } from '../services/achievementService';
+import type { IDatabase } from '../services/dbFactory';
+import type { ITruckChecksDatabase } from '../services/truckChecksDbFactory';
 
 export function createAchievementRoutes(
-  db: any,
-  truckChecksDb: any
+  db: IDatabase,
+  truckChecksDb: ITruckChecksDatabase
 ): Router {
   const router = Router();
   const achievementService = new AchievementService(db, truckChecksDb);
@@ -23,7 +25,7 @@ export function createAchievementRoutes(
       const { memberId } = req.params;
       
       // Get member to validate they exist
-      const member = db.getMemberById(memberId);
+      const member = await db.getMemberById(memberId);
       if (!member) {
         res.status(404).json({ error: 'Member not found' });
         return;
@@ -47,7 +49,7 @@ export function createAchievementRoutes(
     try {
       const { memberId } = req.params;
       
-      const member = db.getMemberById(memberId);
+      const member = await db.getMemberById(memberId);
       if (!member) {
         res.status(404).json({ error: 'Member not found' });
         return;
@@ -73,7 +75,7 @@ export function createAchievementRoutes(
     try {
       const { memberId } = req.params;
       
-      const member = db.getMemberById(memberId);
+      const member = await db.getMemberById(memberId);
       if (!member) {
         res.status(404).json({ error: 'Member not found' });
         return;

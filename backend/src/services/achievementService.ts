@@ -11,16 +11,16 @@ import type {
   MemberAchievementSummary,
   AchievementProgress,
 } from '../types/achievements';
-import type { EventParticipant, CheckRun } from '../types';
+import type { EventParticipant, CheckRun, Event, Member } from '../types';
 
 interface Database {
-  getEvents(limit?: number, offset?: number): any[];
-  getEventParticipants(eventId: string): EventParticipant[];
-  getMemberById(memberId: string): any;
+  getEvents(limit?: number, offset?: number): Promise<Event[]> | Event[];
+  getEventParticipants(eventId: string): Promise<EventParticipant[]> | EventParticipant[];
+  getMemberById(memberId: string): Promise<Member | null | undefined> | Member | null | undefined;
 }
 
 interface TruckChecksDatabase {
-  getAllCheckRuns(): CheckRun[];
+  getAllCheckRuns(): Promise<CheckRun[]> | CheckRun[];
 }
 
 export class AchievementService {
@@ -36,8 +36,8 @@ export class AchievementService {
    */
   async calculateAchievements(memberId: string, memberName: string): Promise<MemberAchievementSummary> {
     // Get member's participation history by scanning all events
-    const participants = this.getParticipantsByMember(memberId);
-    const allCheckRuns = this.truckChecksDb.getAllCheckRuns();
+    const participants = await this.getParticipantsByMember(memberId);
+    const allCheckRuns = await this.truckChecksDb.getAllCheckRuns();
     const checkRuns = allCheckRuns.filter(run => run.completedBy === memberId);
 
     // Get or initialize member achievements
@@ -153,13 +153,13 @@ export class AchievementService {
   /**
    * Get all participants for a member across all events
    */
-  private getParticipantsByMember(memberId: string): EventParticipant[] {
+  private async getParticipantsByMember(memberId: string): Promise<EventParticipant[]> {
     // Get a large number of events (we'll use 1000 as a reasonable limit)
-    const allEvents = this.db.getEvents(1000, 0);
+    const allEvents = await this.db.getEvents(1000, 0);
     const participants: EventParticipant[] = [];
     
     for (const event of allEvents) {
-      const eventParticipants = this.db.getEventParticipants(event.id);
+      const eventParticipants = await this.db.getEventParticipants(event.id);
       // Add activityName to each participant from the event
       const participantsWithActivity = eventParticipants
         .filter(p => p.memberId === memberId)
@@ -170,7 +170,7 @@ export class AchievementService {
       participants.push(...participantsWithActivity);
     }
     
-    return participants as any;
+    return participants;
   }
 
   /**

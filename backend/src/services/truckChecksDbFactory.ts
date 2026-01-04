@@ -6,6 +6,7 @@
 
 import { truckChecksDb as inMemoryTruckChecksDb } from './truckChecksDatabase';
 import { tableStorageTruckChecksDb } from './tableStorageTruckChecksDatabase';
+import { initializeDatabase } from './dbFactoryHelper';
 import {
   Appliance,
   ChecklistTemplate,
@@ -63,61 +64,33 @@ export interface ITruckChecksDatabase {
 
 /**
  * Initialize and return the appropriate truck checks database service
- * Priority order:
- * 1. Table Storage with 'Test' suffix (if NODE_ENV=test and AZURE_STORAGE_CONNECTION_STRING set)
- * 2. Table Storage (if AZURE_STORAGE_CONNECTION_STRING is set - default for all environments)
- * 3. Table Storage (if USE_TABLE_STORAGE=true and AZURE_STORAGE_CONNECTION_STRING set)
- * 4. In-memory database (fallback when no Azure connection available)
- * 
- * Note: Production environments automatically use Table Storage when connection string is available.
- * Set USE_TABLE_STORAGE=false to explicitly disable Table Storage.
+ * Uses shared initialization logic from dbFactoryHelper
  */
-async function initializeTruckChecksDatabase(): Promise<ITruckChecksDatabase> {
-  const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-  const nodeEnv = process.env.NODE_ENV;
-  
-  // In tests, default to in-memory unless explicitly forced on
-  if (nodeEnv === 'test' && process.env.TEST_USE_TABLE_STORAGE !== 'true') {
-    console.log('🧪 Using in-memory truck checks database for tests (Table Storage disabled by default)');
-    return inMemoryTruckChecksDb as ITruckChecksDatabase;
-  }
-
-  // Use Table Storage if:
-  // 1. Connection string is available AND
-  // 2. Either: not explicitly disabled (USE_TABLE_STORAGE !== 'false') OR explicitly enabled
-  const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
-  const useTableStorage = storageConnectionString && !explicitlyDisabled;
-
-  // Prefer Table Storage if connection string is available and not explicitly disabled
-  if (useTableStorage) {
-    console.log('🔌 Connecting to Azure Table Storage for Truck Checks...');
-    try {
-      await tableStorageTruckChecksDb.connect();
-      console.log('✅ Connected to Azure Table Storage for Truck Checks');
-      return tableStorageTruckChecksDb as ITruckChecksDatabase;
-    } catch (error) {
-      console.error('❌ Failed to connect to Table Storage for Truck Checks:', error);
-      console.log('⚠️  Falling back to in-memory database');
-    }
-  }
-
-  // Fallback to in-memory database
-  if (nodeEnv === 'production') {
-    console.warn('⚠️  WARNING: Running Truck Checks in production with in-memory database!');
-    console.warn('⚠️  Data will be lost on restart. Set AZURE_STORAGE_CONNECTION_STRING to enable Table Storage.');
-  } else {
-    console.log('📦 Using in-memory database for Truck Checks (development)');
-  }
-
-  return inMemoryTruckChecksDb as ITruckChecksDatabase;
+async function initializeTruckChecksDatabaseService(): Promise<ITruckChecksDatabase> {
+  return initializeDatabase({
+    name: 'Truck Checks',
+    inMemoryDb: inMemoryTruckChecksDb as ITruckChecksDatabase,
+    tableStorageDb: tableStorageTruckChecksDb as ITruckChecksDatabase & { connect: () => Promise<void> },
+  });
 }
 
 // Export a promise that resolves to the database instance
-export const getTruckChecksDatabase = initializeTruckChecksDatabase();
+export const getTruckChecksDatabase = initializeTruckChecksDatabaseService();
 
 // Export a synchronous wrapper for route handlers
 let truckChecksDbInstance: ITruckChecksDatabase | null = null;
 
+/**
+ * Ensure truck checks database is initialized and return the instance
+ * 
+ * This is the primary function for accessing the truck checks database in route handlers.
+ * It handles lazy initialization and caches the database instance.
+ * 
+ * @returns Promise that resolves to the initialized truck checks database instance
+ * @example
+ * const db = await ensureTruckChecksDatabase();
+ * const appliances = await db.getAllAppliances();
+ */
 export async function ensureTruckChecksDatabase(): Promise<ITruckChecksDatabase> {
   if (!truckChecksDbInstance) {
     truckChecksDbInstance = await getTruckChecksDatabase;
@@ -125,7 +98,15 @@ export async function ensureTruckChecksDatabase(): Promise<ITruckChecksDatabase>
   return truckChecksDbInstance;
 }
 
-// Helper function for synchronous access (after initialization)
+/**
+ * Get truck checks database instance synchronously (after initialization)
+ * 
+ * Only use this if you're certain the database has been initialized.
+ * Most code should use ensureTruckChecksDatabase() instead.
+ * 
+ * @throws Error if database is not initialized
+ * @returns The truck checks database instance
+ */
 export function getTruckChecksDbSync(): ITruckChecksDatabase {
   if (!truckChecksDbInstance) {
     throw new Error('Truck Checks Database not initialized. Call ensureTruckChecksDatabase() first.');
@@ -133,7 +114,14 @@ export function getTruckChecksDbSync(): ITruckChecksDatabase {
   return truckChecksDbInstance;
 }
 
-// Helper function for testing: reset the database instance
+/**
+ * Reset the truck checks database instance (for testing only)
+ * 
+ * This function should only be used in test code to reset state between tests.
+ * Do not use in production code.
+ * 
+ * @internal
+ */
 export function __resetTruckChecksDatabase(): void {
   truckChecksDbInstance = null;
 }
