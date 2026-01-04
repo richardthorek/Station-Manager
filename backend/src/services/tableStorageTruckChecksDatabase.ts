@@ -11,13 +11,22 @@ import {
 } from '../types';
 import { ITruckChecksDatabase } from './truckChecksDbFactory';
 
-// Build table names with optional prefix/suffix so dev can share prod storage without mixing tables
+// Build table names with optional prefix/suffix so dev/test can share prod storage without mixing tables
 function buildTableName(baseName: string): string {
   const sanitize = (value: string) => value.replace(/[^A-Za-z0-9]/g, '');
   const prefix = sanitize(process.env.TABLE_STORAGE_TABLE_PREFIX || '');
-  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || (process.env.NODE_ENV === 'development' ? 'Dev' : ''));
+  
+  // Auto-suffix based on environment if not explicitly set
+  let defaultSuffix = '';
+  if (process.env.NODE_ENV === 'test') {
+    defaultSuffix = 'Test';
+  } else if (process.env.NODE_ENV === 'development') {
+    defaultSuffix = 'Dev';
+  }
+  
+  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || defaultSuffix);
   const name = `${prefix}${baseName}${suffix}`;
-  return name || baseName;
+  return name || baseName; // Fallback to base if everything was stripped
 }
 
 /**
@@ -31,27 +40,30 @@ function buildTableName(baseName: string): string {
  */
 export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
   private connectionString: string;
-  private appliancesTable: TableClient;
-  private templatesTable: TableClient;
-  private checkRunsTable: TableClient;
-  private checkResultsTable: TableClient;
+  private appliancesTable!: TableClient;
+  private templatesTable!: TableClient;
+  private checkRunsTable!: TableClient;
+  private checkResultsTable!: TableClient;
   private isConnected: boolean = false;
 
   constructor(connectionString?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
     
-    if (!this.connectionString) {
-      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage');
+    // Initialize table clients only if connection string is available
+    if (this.connectionString) {
+      this.appliancesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Appliances'));
+      this.templatesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ChecklistTemplates'));
+      this.checkRunsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckRuns'));
+      this.checkResultsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckResults'));
     }
-
-    this.appliancesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Appliances'));
-    this.templatesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ChecklistTemplates'));
-    this.checkRunsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckRuns'));
-    this.checkResultsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckResults'));
   }
 
   async connect(): Promise<void> {
     if (this.isConnected) return;
+
+    if (!this.connectionString) {
+      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage. Cannot connect without credentials.');
+    }
 
     try {
       await Promise.all([

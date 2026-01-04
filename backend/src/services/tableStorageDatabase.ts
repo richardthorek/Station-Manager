@@ -12,11 +12,20 @@ import {
 } from '../types';
 // Note: we intentionally avoid importing IDatabase here to prevent circular type issues
 
-// Build table names with optional prefix/suffix so dev can share prod storage without mixing tables
+// Build table names with optional prefix/suffix so dev/test can share prod storage without mixing tables
 function buildTableName(baseName: string): string {
   const sanitize = (value: string) => value.replace(/[^A-Za-z0-9]/g, '');
   const prefix = sanitize(process.env.TABLE_STORAGE_TABLE_PREFIX || '');
-  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || (process.env.NODE_ENV === 'development' ? 'Dev' : ''));
+  
+  // Auto-suffix based on environment if not explicitly set
+  let defaultSuffix = '';
+  if (process.env.NODE_ENV === 'test') {
+    defaultSuffix = 'Test';
+  } else if (process.env.NODE_ENV === 'development') {
+    defaultSuffix = 'Dev';
+  }
+  
+  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || defaultSuffix);
   const name = `${prefix}${baseName}${suffix}`;
   return name || baseName; // Fallback to base if everything was stripped
 }
@@ -72,32 +81,34 @@ function isDefaultActivityName(name: string): boolean {
  */
 export class TableStorageDatabase {
   private connectionString: string;
-  private membersTable: TableClient;
-  private activitiesTable: TableClient;
-  private eventsTable: TableClient;
-  private eventParticipantsTable: TableClient;
-  private checkInsTable: TableClient;
-  private activeActivityTable: TableClient;
+  private membersTable!: TableClient;
+  private activitiesTable!: TableClient;
+  private eventsTable!: TableClient;
+  private eventParticipantsTable!: TableClient;
+  private checkInsTable!: TableClient;
+  private activeActivityTable!: TableClient;
   private isConnected: boolean = false;
 
   constructor(connectionString?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
     
-    if (!this.connectionString) {
-      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage');
+    // Initialize table clients only if connection string is available
+    if (this.connectionString) {
+      this.membersTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Members'));
+      this.activitiesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Activities'));
+      this.eventsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Events'));
+      this.eventParticipantsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('EventParticipants'));
+      this.checkInsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckIns'));
+      this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ActiveActivity'));
     }
-
-    // Initialize table clients
-    this.membersTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Members'));
-    this.activitiesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Activities'));
-    this.eventsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Events'));
-    this.eventParticipantsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('EventParticipants'));
-    this.checkInsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckIns'));
-    this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ActiveActivity'));
   }
 
   async connect(): Promise<void> {
     if (this.isConnected) return;
+
+    if (!this.connectionString) {
+      throw new Error('AZURE_STORAGE_CONNECTION_STRING is required for Table Storage. Cannot connect without credentials.');
+    }
 
     try {
       // Create tables if they don't exist
