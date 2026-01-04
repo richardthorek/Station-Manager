@@ -6,7 +6,6 @@
  * 2. Health check endpoint is functional
  * 3. Database connectivity (with test tables)
  * 4. Basic API operations work
- * 5. Socket.io real-time connectivity
  * 
  * Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data from production.
  * 
