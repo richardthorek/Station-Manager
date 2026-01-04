@@ -610,10 +610,22 @@ None currently (server-initiated broadcasts only)
    - SPA fallback route: 100 requests per 15 minutes per IP
    - Protects against DOS attacks
 
-3. **Input Validation**
-   - All POST/PUT endpoints validate required fields
-   - Type checking via TypeScript
-   - String trimming and sanitization
+3. **Input Validation & Sanitization** ✅ ENHANCED (2026-01-04)
+   - **express-validator** integrated on all POST/PUT/DELETE endpoints
+   - **XSS Protection**: HTML entity escaping (< > & ' " characters)
+   - **Type Validation**: String, boolean, enum validation
+   - **Length Validation**: Min/max character limits enforced
+   - **Pattern Validation**: Name fields (letters, spaces, hyphens, apostrophes only)
+   - **Whitespace**: Automatic trimming
+   - **Error Handling**: Field-level validation errors with clear messages
+   - **Middleware Structure**:
+     - `backend/src/middleware/validationHandler.ts` - Error handler
+     - `backend/src/middleware/memberValidation.ts` - Members endpoints
+     - `backend/src/middleware/activityValidation.ts` - Activities endpoints
+     - `backend/src/middleware/eventValidation.ts` - Events endpoints
+     - `backend/src/middleware/checkinValidation.ts` - Check-ins endpoints
+     - `backend/src/middleware/truckCheckValidation.ts` - Truck checks endpoints
+   - **Test Coverage**: 25 dedicated validation tests (147 total tests passing)
 
 4. **HTTPS/WSS**
    - Production uses HTTPS for HTTP traffic

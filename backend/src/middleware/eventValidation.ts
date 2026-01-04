@@ -111,6 +111,9 @@ export const validateRemoveParticipant = [
 /**
  * Validation for event query parameters
  * GET /api/events?limit=50&offset=0
+ * 
+ * Note: Limits are capped at 100 to prevent excessive database queries
+ * and maintain reasonable response times. Offsets are sanitized to be non-negative.
  */
 export const validateEventQuery = [
   query('limit')
@@ -118,7 +121,7 @@ export const validateEventQuery = [
     .toInt()
     .isInt({ min: 1 })
     .withMessage('Limit must be at least 1')
-    .customSanitizer((value) => Math.min(value, 100)), // Cap at 100
+    .customSanitizer((value) => Math.min(value, 100)), // Cap at 100 for performance
   
   query('offset')
     .optional()

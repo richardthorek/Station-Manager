@@ -17,6 +17,14 @@ import checkinsRouter from '../routes/checkins';
 
 let app: Express;
 
+// Constants for expected HTML entities after sanitization
+const EXPECTED_HTML_ENTITIES = {
+  ESCAPED_LT: '&lt;',
+  ESCAPED_GT: '&gt;',
+  ESCAPED_AMP: '&amp;',
+  ESCAPED_QUOTE: '&#x27;',
+};
+
 beforeAll(() => {
   // Set up Express app with routes
   app = express();
@@ -40,7 +48,7 @@ describe('XSS Protection Tests', () => {
       expect(response.body.name).not.toContain('<script>');
       expect(response.body.name).not.toContain('</script>');
       // express-validator's escape() converts < to &lt; and > to &gt;
-      expect(response.body.name).toContain('&lt;');
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_LT);
     });
 
     it('should block event handlers in member name', async () => {
@@ -52,8 +60,8 @@ describe('XSS Protection Tests', () => {
 
       // The HTML tags should be escaped, preventing execution
       expect(response.body.name).not.toContain('<img');
-      expect(response.body.name).toContain('&lt;');
-      expect(response.body.name).toContain('&gt;');
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_LT);
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_GT);
       // Even if 'onerror' text remains, it can't execute because tags are escaped
     });
 
@@ -77,7 +85,7 @@ describe('XSS Protection Tests', () => {
         .expect(201);
 
       // Should be escaped
-      expect(response.body.name).toContain('&#x27;'); // Escaped single quote
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_QUOTE); // Escaped single quote
     });
   });
 
@@ -90,8 +98,8 @@ describe('XSS Protection Tests', () => {
         .expect(201);
 
       expect(response.body.name).not.toContain('<svg');
-      expect(response.body.name).toContain('&lt;');
-      expect(response.body.name).toContain('&gt;');
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_LT);
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_GT);
       // Even if 'onload' text remains, it can't execute because tags are escaped
     });
 
@@ -103,7 +111,7 @@ describe('XSS Protection Tests', () => {
         .expect(201);
 
       expect(response.body.name).not.toContain('<b>');
-      expect(response.body.name).toContain('&lt;');
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_LT);
     });
   });
 });
@@ -206,10 +214,10 @@ describe('Input Sanitization', () => {
         .expect(201);
 
       // Apostrophe, ampersand, and angle brackets should be escaped
-      expect(response.body.name).toContain('&#x27;'); // Escaped apostrophe
-      expect(response.body.name).toContain('&amp;'); // Escaped ampersand
-      expect(response.body.name).toContain('&lt;'); // Escaped <
-      expect(response.body.name).toContain('&gt;'); // Escaped >
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_QUOTE); // Escaped apostrophe
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_AMP); // Escaped ampersand
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_LT); // Escaped <
+      expect(response.body.name).toContain(EXPECTED_HTML_ENTITIES.ESCAPED_GT); // Escaped >
     });
   });
 });
