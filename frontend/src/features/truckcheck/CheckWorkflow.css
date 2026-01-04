@@ -673,30 +673,15 @@
 .comment-input {
   width: 100%;
   min-height: 120px;
-    background:#6d6d6d;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
   font-size: 1rem;
   font-family: inherit;
-  .item-actions button:focus-visible {
-    outline: 2px solid var(--rfs-core-red);
-    outline-offset: 2px;
-  }
-
-  border: 2px solid var(--rfs-neutral-light);
-    width: 100%;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    padding: 0.9rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  border-color: var(--rfs-core-red);
+  color: var(--text-primary);
+  resize: vertical;
 }
-
-    font-size: 0.7rem;
-    opacity: 0.7;
-    margin: 0;
-    text-align: right;
 
 .comment-actions button {
   flex: 1;
