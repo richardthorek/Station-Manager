@@ -241,6 +241,19 @@
       }
     },
     "checkins": {
+      "GET /api/checkins": {
+        "method": "GET",
+        "path": "/api/checkins",
+        "description": "Get all check-ins (both active and inactive)",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "Array of all check-ins", "schema": { "type": "array", "items": { "$ref": "#/definitions/CheckIn" } } },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/checkins.ts:18"
+      },
       "GET /api/checkins/active": {
         "method": "GET",
         "path": "/api/checkins/active",
@@ -252,7 +265,7 @@
           "200": { "description": "Array of active check-ins", "schema": { "type": "array", "items": { "$ref": "#/definitions/CheckInWithDetails" } } },
           "500": { "description": "Server error" }
         },
-        "implementation": "backend/src/routes/checkins.ts:18"
+        "implementation": "backend/src/routes/checkins.ts:30"
       },
       "POST /api/checkins": {
         "method": "POST",
@@ -281,7 +294,7 @@
           "404": { "description": "Member or activity not found" },
           "500": { "description": "Server error" }
         },
-        "implementation": "backend/src/routes/checkins.ts:30",
+        "implementation": "backend/src/routes/checkins.ts:42",
         "socketEvent": "checkin or checkout"
       },
       "DELETE /api/checkins/:memberId": {
@@ -300,7 +313,7 @@
           "404": { "description": "No active check-in found" },
           "500": { "description": "Server error" }
         },
-        "implementation": "backend/src/routes/checkins.ts:93",
+        "implementation": "backend/src/routes/checkins.ts:105",
         "socketEvent": "checkout"
       },
       "POST /api/checkins/url-checkin": {
@@ -326,7 +339,7 @@
           "404": { "description": "Member not found" },
           "500": { "description": "Server error" }
         },
-        "implementation": "backend/src/routes/checkins.ts:111"
+        "implementation": "backend/src/routes/checkins.ts:123"
       }
     },
     "events": {
