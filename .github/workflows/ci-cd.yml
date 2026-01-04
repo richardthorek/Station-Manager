@@ -472,8 +472,8 @@ jobs:
             ATTEMPT=$((ATTEMPT + 1))
             echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking health endpoint..."
             
-            # Try to reach the health endpoint
-            if curl -f -s -o /dev/null -w "%{http_code}" "${{ secrets.APP_URL }}/health" | grep -q "200"; then
+            # Try to reach the health endpoint (5s timeout per attempt)
+            if curl -f -s -m 5 -o /dev/null -w "%{http_code}" "${{ secrets.APP_URL }}/health" | grep -q "200"; then
               echo "✅ App is ready! (after $((ATTEMPT * SLEEP_INTERVAL))s)"
               break
             else
