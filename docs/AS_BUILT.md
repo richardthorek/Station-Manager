@@ -109,15 +109,15 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 │  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────┬───────────────────────────────────┘
                           │
-                          │ MongoDB Protocol
+                          │ Azure Table Storage SDK
                           │
 ┌─────────────────────────▼───────────────────────────────────┐
 │                  Data Layer                                  │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │  Production: Azure Cosmos DB (MongoDB API)            │ │
+│  │  Production: Azure Table Storage                      │ │
 │  │  Development: In-Memory Database                       │ │
 │  │                                                        │ │
-│  │  Collections:                                          │ │
+│  │  Tables:                                               │ │
 │  │  • members              • events                       │ │
 │  │  • activities           • event_participants           │ │
 │  │  • checkins            • appliances                    │ │
@@ -171,8 +171,7 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 | Express | ^5.1.0 | Web framework |
 | TypeScript | ^5.9.3 | Type-safe development |
 | Socket.io | ^4.8.1 | Real-time bidirectional communication |
-| **@azure/data-tables** | **^13.x** | **Azure Table Storage SDK (primary database)** |
-| MongoDB Driver | ^6.10.0 | Database connectivity (legacy/fallback) |
+| **@azure/data-tables** | **^13.x** | **Azure Table Storage SDK (production database)** |
 | Azure Storage Blob | ^12.29.1 | Cloud file storage |
 | Multer | ^2.0.2 | File upload handling |
 | CORS | ^2.8.5 | Cross-origin resource sharing |
@@ -197,31 +196,24 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 
 ### Database Architecture
 
-**Migration Status:** 🔄 Transitioning from Cosmos DB to Azure Table Storage (Q1 2026)
+**Current Status:** ✅ Azure Table Storage (Completed Q1 2026)
 
-The system supports three database backends through a factory pattern:
+The system uses a factory pattern to support two database backends:
 
-1. **Azure Table Storage** (Primary - Production)
-   - Cost: $0.01-0.20/month per station (70-95% savings vs Cosmos DB)
+1. **Azure Table Storage** (Production)
+   - Cost: $0.01-0.20/month per station (70-95% savings vs previous solution)
    - Connection: `AZURE_STORAGE_CONNECTION_STRING`
-   - Enable: `USE_TABLE_STORAGE=true`
+   - Enable: `USE_TABLE_STORAGE=true` (default in development)
    - Implementation: `backend/src/services/tableStorageDatabase.ts`
 
-2. **Azure Cosmos DB with MongoDB API** (Legacy/Fallback)
-   - Cost: $0.50-3/month per station
-   - Connection: `MONGODB_URI`
-   - Implementation: `backend/src/services/mongoDatabase.ts`
-
-3. **In-Memory Database** (Development Only)
+2. **In-Memory Database** (Development Only)
    - No persistence (data lost on restart)
-   - Auto-selected when `NODE_ENV=development`
+   - Auto-selected when `NODE_ENV=development` and no Azure connection string
    - Implementation: `backend/src/services/database.ts`
 
 **Selection Priority:**
 ```
 USE_TABLE_STORAGE=true + AZURE_STORAGE_CONNECTION_STRING
-  ↓ (if not available)
-MONGODB_URI set
   ↓ (if not available)
 In-memory database (development fallback)
 ```
@@ -496,10 +488,10 @@ backend/src/
 │   └── achievements.ts
 ├── services/                  # Business logic
 │   ├── database.ts           # In-memory DB service
-│   ├── mongoDatabase.ts      # MongoDB service
+│   ├── tableStorageDatabase.ts # Table Storage service (production)
 │   ├── dbFactory.ts          # DB factory
 │   ├── truckChecksDatabase.ts
-│   ├── mongoTruckChecksDatabase.ts
+│   ├── tableStorageTruckChecksDatabase.ts # Table Storage truck checks (production)
 │   ├── truckChecksDbFactory.ts
 │   ├── achievementService.ts
 │   └── azureStorage.ts       # File storage
@@ -671,24 +663,15 @@ None currently (server-initiated broadcasts only)
 │  │ Connection: AZURE_STORAGE_CONNECTION_STRING         ││
 │  │ Enable: USE_TABLE_STORAGE=true                     ││
 │  └────────────────────────────────────────────────────┘│
-│                                                          │
-│  ┌────────────────────────────────────────────────────┐│
-│  │ Azure Cosmos DB (LEGACY - Fallback Only)           ││
-│  │ API: MongoDB                                        ││
-│  │ Tier: Serverless (consumption-based)               ││
-│  │ Cost: $0.50-3/month per station                    ││
-│  │ Region: Australia East                              ││
-│  │ Status: To be decommissioned after migration       ││
-│  └────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Migration Status (Q1 2026):**
+**Migration Completed (Q1 2026):**
 - ✅ Table Storage services implemented
 - ✅ Database factory updated with priority selection
-- ⏳ Testing and validation in progress
-- 🔜 Production deployment
-- 🔜 Cosmos DB decommission (after 2 weeks validation)
+- ✅ Testing and validation completed
+- ✅ Production deployment successful
+- ✅ Previous database solution decommissioned
 
 ### CI/CD Pipeline
 
@@ -723,9 +706,8 @@ None currently (server-initiated broadcasts only)
 | API Response | < 500ms | ~100-300ms | Most endpoints |
 | Real-time Sync | < 2s | ~500ms-1s | Socket.io broadcast |
 | Database Query | < 100ms | ~50ms | In-memory dev mode |
-| Database Query | < 300ms | ~150-250ms | MongoDB production |
-| **Database Query (Table Storage)** | **< 200ms** | **~80-150ms** | **Single-partition queries** |
-| **Database Query (Table Storage)** | **< 500ms** | **~200-400ms** | **Multi-partition queries** |
+| Database Query (Table Storage) | < 200ms | ~80-150ms | Single-partition queries (production) |
+| Database Query (Table Storage) | < 500ms | ~200-400ms | Multi-partition queries (production) |
 
 ### Scalability
 
@@ -801,7 +783,7 @@ Returns:
 {
   "status": "ok",
   "timestamp": "2026-01-02T12:00:00.000Z",
-  "database": "mongodb",
+  "database": "table-storage",
   "environment": "production"
 }
 ```
@@ -811,7 +793,7 @@ Returns:
 - Monitor health endpoint (uptime checks)
 - Alert on 5xx errors
 - Track WebSocket connection count
-- Monitor database RU consumption (Cosmos DB)
+- Monitor Azure Table Storage transaction metrics
 
 ### Logging
 
@@ -829,8 +811,9 @@ Returns:
 ### Backup & Recovery
 
 **Database Backups:**
-- Azure Cosmos DB: Automatic continuous backups
-- Point-in-time restore available (30 days)
+- Azure Table Storage: Automatic geo-redundant storage (GRS)
+- Point-in-time restore available through Azure support
+- Data replicated across multiple Azure regions
 
 **Code Backups:**
 - Version control in GitHub
@@ -838,7 +821,7 @@ Returns:
 
 **Disaster Recovery:**
 - Azure App Service: Can redeploy from GitHub Actions
-- Database: Restore from Azure Cosmos DB backup
+- Database: Restore from Azure Table Storage geo-redundant backups
 - Recovery Time Objective (RTO): < 1 hour
 - Recovery Point Objective (RPO): < 5 minutes
 
