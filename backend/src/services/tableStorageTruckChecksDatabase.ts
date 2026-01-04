@@ -72,22 +72,22 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
         
         await Promise.all([
           this.appliancesTable.createTable().catch((err) => {
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating Appliances table:', err.message);
             }
           }),
           this.templatesTable.createTable().catch((err) => {
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating Templates table:', err.message);
             }
           }),
           this.checkRunsTable.createTable().catch((err) => {
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating CheckRuns table:', err.message);
             }
           }),
           this.checkResultsTable.createTable().catch((err) => {
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating CheckResults table:', err.message);
             }
           }),
@@ -111,7 +111,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     
     // All retries failed
     console.error('❌ All connection attempts failed for Truck Checks. Last error:', lastError);
-    throw lastError || new Error('Failed to connect to Table Storage for Truck Checks after multiple attempts');
+    throw lastError || new Error(`Failed to connect to Table Storage for Truck Checks after ${retries} attempts`);
   }
 
   private async initializeDefaultAppliances(): Promise<void> {

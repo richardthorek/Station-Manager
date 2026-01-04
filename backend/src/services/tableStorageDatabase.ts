@@ -119,32 +119,32 @@ export class TableStorageDatabase {
         await Promise.all([
           this.membersTable.createTable().catch((err) => {
             // Ignore "table already exists" errors, but log others
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating Members table:', err.message);
             }
           }),
           this.activitiesTable.createTable().catch((err) => {
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating Activities table:', err.message);
             }
           }),
           this.eventsTable.createTable().catch((err) => {
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating Events table:', err.message);
             }
           }),
           this.eventParticipantsTable.createTable().catch((err) => {
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating EventParticipants table:', err.message);
             }
           }),
           this.checkInsTable.createTable().catch((err) => {
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating CheckIns table:', err.message);
             }
           }),
           this.activeActivityTable.createTable().catch((err) => {
-            if (!err.message?.includes('TableAlreadyExists')) {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               console.warn('Warning creating ActiveActivity table:', err.message);
             }
           }),
@@ -169,7 +169,7 @@ export class TableStorageDatabase {
     
     // All retries failed
     console.error('❌ All connection attempts failed. Last error:', lastError);
-    throw lastError || new Error('Failed to connect to Table Storage after multiple attempts');
+    throw lastError || new Error(`Failed to connect to Table Storage after ${retries} attempts`);
   }
 
   private async initializeDefaultActivities(): Promise<void> {
