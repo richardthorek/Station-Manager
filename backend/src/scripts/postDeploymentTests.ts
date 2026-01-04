@@ -59,7 +59,7 @@ async function makeRequest(
   const urlObj = new URL(url);
   const client = urlObj.protocol === 'https:' ? https : http;
 
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const req = client.request(
       url,
       {
@@ -72,7 +72,7 @@ async function makeRequest(
         res.on('data', (chunk) => {
           data += chunk;
         });
-        res.on('end', async () => {
+        res.on('end', () => {
           const statusCode = res.statusCode || 0;
           
           // Retry on status codes that indicate deployment is still stabilizing
@@ -83,13 +83,10 @@ async function makeRequest(
           
           if (shouldRetry) {
             console.log(`  ⏳ Got ${statusCode} status, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
-            await sleep(RETRY_DELAY);
-            try {
-              const result = await makeRequest(url, options, retries - 1);
-              resolve(result);
-            } catch (err) {
-              reject(err);
-            }
+            sleep(RETRY_DELAY)
+              .then(() => makeRequest(url, options, retries - 1))
+              .then(resolve)
+              .catch(reject);
           } else {
             resolve({
               statusCode,
@@ -100,16 +97,13 @@ async function makeRequest(
       }
     );
 
-    req.on('error', async (error) => {
+    req.on('error', (error) => {
       if (retries > 0) {
         console.log(`  ⏳ Request failed, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
-        await sleep(RETRY_DELAY);
-        try {
-          const result = await makeRequest(url, options, retries - 1);
-          resolve(result);
-        } catch (err) {
-          reject(err);
-        }
+        sleep(RETRY_DELAY)
+          .then(() => makeRequest(url, options, retries - 1))
+          .then(resolve)
+          .catch(reject);
       } else {
         reject(error);
       }
