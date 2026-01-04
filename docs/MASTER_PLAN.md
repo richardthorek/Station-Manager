@@ -274,6 +274,12 @@ features/
 - **Features**: Weekly updates, automatic labeling, conventional commits
 - **Status**: Complete, monitoring all dependencies
 
+✅ **Post-Deployment Testing** - Health check validation after deployment
+- **Achievement**: Identity-driven testing with Azure OIDC (no connection strings)
+- **Features**: 8 smoke tests, test data isolation (TABLE_STORAGE_TABLE_SUFFIX=Test), automatic validation
+- **Status**: Complete, integrated into CI/CD pipeline
+- **Documentation**: `docs/POST_DEPLOYMENT_TESTING.md`
+
 ### Known Limitations
 
 | ID | Limitation | Impact | Workaround | Priority |

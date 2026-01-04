@@ -387,7 +387,7 @@ jobs:
 
       - name: Run post-deployment smoke tests
         env:
-          APP_URL: https://bungrfsstation.azurewebsites.net
+          APP_URL: ${{ secrets.APP_URL }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
           TEST_TIMEOUT: 30000
           MAX_RETRIES: 3
@@ -410,6 +410,6 @@ jobs:
             echo "Check the test output above for details. The deployment may have issues." >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Target URL**: https://bungrfsstation.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target URL**: ${{ secrets.APP_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Test Environment**: TABLE_STORAGE_TABLE_SUFFIX=Test" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
