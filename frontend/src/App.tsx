@@ -9,6 +9,7 @@ import { CheckSummaryPage } from './features/truckcheck/CheckSummaryPage';
 import { AdminDashboardPage } from './features/truckcheck/AdminDashboardPage';
 import { TemplateSelectionPage } from './features/truckcheck/TemplateSelectionPage';
 import { TemplateEditorPage } from './features/truckcheck/TemplateEditorPage';
+import { ReportsPage } from './features/reports/ReportsPage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
         <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
         <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
       </Routes>
     </BrowserRouter>
   );

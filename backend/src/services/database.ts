@@ -640,6 +640,139 @@ class DatabaseService {
       .filter(p => activeEventIds.has(p.eventId))
       .sort((a, b) => b.checkInTime.getTime() - a.checkInTime.getTime());
   }
+
+  // ============================================
+  // Reporting Methods
+  // ============================================
+
+  /**
+   * Get attendance summary - monthly participant counts
+   */
+  getAttendanceSummary(startDate: Date, endDate: Date): Array<{ month: string; count: number }> {
+    const participants = Array.from(this.eventParticipants.values())
+      .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
+
+    // Group by month
+    const monthCounts = new Map<string, number>();
+    participants.forEach(p => {
+      const monthKey = `${p.checkInTime.getFullYear()}-${String(p.checkInTime.getMonth() + 1).padStart(2, '0')}`;
+      monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
+    });
+
+    return Array.from(monthCounts.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+  }
+
+  /**
+   * Get member participation - top members by event participation
+   */
+  getMemberParticipation(startDate: Date, endDate: Date, limit: number = 10): Array<{
+    memberId: string;
+    memberName: string;
+    participationCount: number;
+    lastCheckIn: Date;
+  }> {
+    const participants = Array.from(this.eventParticipants.values())
+      .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
+
+    // Group by member
+    const memberStats = new Map<string, { name: string; count: number; lastCheckIn: Date }>();
+    participants.forEach(p => {
+      const existing = memberStats.get(p.memberId);
+      if (!existing) {
+        memberStats.set(p.memberId, {
+          name: p.memberName,
+          count: 1,
+          lastCheckIn: p.checkInTime,
+        });
+      } else {
+        existing.count += 1;
+        if (p.checkInTime > existing.lastCheckIn) {
+          existing.lastCheckIn = p.checkInTime;
+        }
+      }
+    });
+
+    return Array.from(memberStats.entries())
+      .map(([memberId, stats]) => ({
+        memberId,
+        memberName: stats.name,
+        participationCount: stats.count,
+        lastCheckIn: stats.lastCheckIn,
+      }))
+      .sort((a, b) => b.participationCount - a.participationCount)
+      .slice(0, limit);
+  }
+
+  /**
+   * Get activity breakdown - count by activity category
+   */
+  getActivityBreakdown(startDate: Date, endDate: Date): Array<{
+    category: string;
+    count: number;
+    percentage: number;
+  }> {
+    const events = Array.from(this.events.values())
+      .filter(e => e.startTime >= startDate && e.startTime <= endDate);
+
+    const categoryCounts = new Map<string, number>();
+    events.forEach(event => {
+      const activity = this.activities.get(event.activityId);
+      const category = activity?.category || 'other';
+      categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+    });
+
+    const total = events.length;
+    return Array.from(categoryCounts.entries())
+      .map(([category, count]) => ({
+        category,
+        count,
+        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  /**
+   * Get event statistics
+   */
+  getEventStatistics(startDate: Date, endDate: Date): {
+    totalEvents: number;
+    activeEvents: number;
+    completedEvents: number;
+    totalParticipants: number;
+    averageParticipantsPerEvent: number;
+    averageDuration: number; // in minutes
+  } {
+    const events = Array.from(this.events.values())
+      .filter(e => e.startTime >= startDate && e.startTime <= endDate);
+
+    const activeEvents = events.filter(e => e.isActive).length;
+    const completedEvents = events.filter(e => !e.isActive && e.endTime).length;
+
+    const participants = Array.from(this.eventParticipants.values())
+      .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
+
+    // Calculate average duration for completed events
+    const durations = events
+      .filter(e => e.endTime)
+      .map(e => (e.endTime!.getTime() - e.startTime.getTime()) / (1000 * 60)); // minutes
+
+    const averageDuration = durations.length > 0
+      ? Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length)
+      : 0;
+
+    return {
+      totalEvents: events.length,
+      activeEvents,
+      completedEvents,
+      totalParticipants: participants.length,
+      averageParticipantsPerEvent: events.length > 0
+        ? Math.round((participants.length / events.length) * 10) / 10
+        : 0,
+      averageDuration,
+    };
+  }
 }
 
 export const db = new DatabaseService();

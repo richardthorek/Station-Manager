@@ -399,6 +399,76 @@ class TruckChecksDatabase {
       }))
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }
+
+  // ============================================
+  // Reporting Methods
+  // ============================================
+
+  /**
+   * Get truck check compliance statistics
+   */
+  getTruckCheckCompliance(startDate: Date, endDate: Date): {
+    totalChecks: number;
+    completedChecks: number;
+    inProgressChecks: number;
+    checksWithIssues: number;
+    complianceRate: number; // percentage
+    applianceStats: Array<{
+      applianceId: string;
+      applianceName: string;
+      checkCount: number;
+      lastCheckDate: Date | null;
+    }>;
+  } {
+    const runs = Array.from(this.checkRuns.values())
+      .filter(run => run.startTime >= startDate && run.startTime <= endDate);
+
+    const completedChecks = runs.filter(r => r.status === 'completed').length;
+    const inProgressChecks = runs.filter(r => r.status === 'in-progress').length;
+    const checksWithIssues = runs.filter(r => r.hasIssues).length;
+
+    // Calculate compliance rate (completed without issues)
+    const completedWithoutIssues = runs.filter(r => r.status === 'completed' && !r.hasIssues).length;
+    const complianceRate = runs.length > 0
+      ? Math.round((completedWithoutIssues / runs.length) * 100)
+      : 100;
+
+    // Group by appliance
+    const applianceMap = new Map<string, { name: string; count: number; lastCheck: Date | null }>();
+    runs.forEach(run => {
+      const existing = applianceMap.get(run.applianceId);
+      if (!existing) {
+        applianceMap.set(run.applianceId, {
+          name: run.applianceName,
+          count: 1,
+          lastCheck: run.startTime,
+        });
+      } else {
+        existing.count += 1;
+        if (!existing.lastCheck || run.startTime > existing.lastCheck) {
+          existing.lastCheck = run.startTime;
+        }
+      }
+    });
+
+    const applianceStats = Array.from(applianceMap.entries())
+      .map(([applianceId, stats]) => ({
+        applianceId,
+        applianceName: stats.name,
+        checkCount: stats.count,
+        lastCheckDate: stats.lastCheck,
+      }))
+      .sort((a, b) => b.checkCount - a.checkCount);
+
+    return {
+      totalChecks: runs.length,
+      completedChecks,
+      inProgressChecks,
+      checksWithIssues,
+      complianceRate,
+      applianceStats,
+    };
+  }
 }
 
 export const truckChecksDb = new TruckChecksDatabase();

@@ -41,6 +41,7 @@ import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
 import eventsRouter from './routes/events';
 import truckChecksRouter from './routes/truckChecks';
+import reportsRouter from './routes/reports';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -124,6 +125,7 @@ app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, checkinsRouter);
 app.use('/api/events', apiRateLimiter, eventsRouter);
 app.use('/api/truck-checks', apiRateLimiter, truckChecksRouter);
+app.use('/api/reports', apiRateLimiter, reportsRouter);
 
 // Achievement routes (initialized with database instances)
 (async () => {
