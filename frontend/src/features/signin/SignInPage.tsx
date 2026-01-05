@@ -238,6 +238,26 @@ export function SignInPage() {
     }
   };
 
+  const handleRemoveParticipant = async (memberId: string) => {
+    if (!selectedEventId) {
+      return;
+    }
+
+    try {
+      // Use the same endpoint - it toggles, so it will remove if already checked in
+      const result = await api.addEventParticipant(selectedEventId, memberId, 'mobile');
+      
+      // Reload the specific event to get updated participants
+      const updatedEvent = await api.getEvent(selectedEventId);
+      setEvents(events.map(e => e.id === selectedEventId ? updatedEvent : e));
+      
+      emit('participant-change', { eventId: selectedEventId, ...result });
+    } catch (err) {
+      console.error('Error removing participant:', err);
+      alert('Failed to remove participant');
+    }
+  };
+
   const handleAddMember = async (name: string) => {
     try {
       const member = await api.createMember(name);
@@ -358,7 +378,10 @@ export function SignInPage() {
           </div>
 
           <div className="middle-column">
-            <CurrentEventParticipants event={selectedEvent} />
+            <CurrentEventParticipants 
+              event={selectedEvent} 
+              onRemoveParticipant={handleRemoveParticipant}
+            />
           </div>
 
           <div className="right-column">

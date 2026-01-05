@@ -3,9 +3,10 @@ import './CurrentEventParticipants.css';
 
 interface CurrentEventParticipantsProps {
   event: EventWithParticipants | null;
+  onRemoveParticipant?: (memberId: string) => void;
 }
 
-export function CurrentEventParticipants({ event }: CurrentEventParticipantsProps) {
+export function CurrentEventParticipants({ event, onRemoveParticipant }: CurrentEventParticipantsProps) {
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', {
@@ -98,7 +99,20 @@ export function CurrentEventParticipants({ event }: CurrentEventParticipantsProp
         ) : (
           <div className="participants-grid">
             {event.participants.map((participant) => (
-              <div key={participant.id} className="participant-card">
+              <div 
+                key={participant.id} 
+                className={`participant-card ${onRemoveParticipant ? 'clickable' : ''}`}
+                onClick={() => onRemoveParticipant && onRemoveParticipant(participant.memberId)}
+                role={onRemoveParticipant ? 'button' : undefined}
+                tabIndex={onRemoveParticipant ? 0 : undefined}
+                onKeyDown={(e) => {
+                  if (onRemoveParticipant && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onRemoveParticipant(participant.memberId);
+                  }
+                }}
+                title={onRemoveParticipant ? 'Click to remove participant' : undefined}
+              >
                 <div className="participant-header">
                   <div className={`rank-helmet ${getRankHelmetClass(participant.memberRank)}`}></div>
                   <span className="participant-name">{participant.memberName}</span>
@@ -109,6 +123,9 @@ export function CurrentEventParticipants({ event }: CurrentEventParticipantsProp
                     <span className="offsite-badge">📍 Offsite</span>
                   )}
                 </div>
+                {onRemoveParticipant && (
+                  <div className="remove-hint">Tap to remove</div>
+                )}
               </div>
             ))}
           </div>
