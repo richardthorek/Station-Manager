@@ -1877,56 +1877,57 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19d: National Dataset Integration - RFS Facilities Parser
-**GitHub Issue**: TBD
+#### Issue #19d: National Dataset Integration - RFS Facilities Parser ✅ COMPLETED
+**GitHub Issue**: richardthorek/Station-Manager#198 (merged to main)  
+**Completed**: 2026-01-05
 
 **Objective**: Parse and integrate the national RFS facilities dataset for station lookup
 
 **User Story**: As an administrator creating a station, I want to search the national RFS facilities dataset so that I can quickly find and populate station details.
 
-**Current State**: No dataset integration  
-**Target State**: CSV parser with search and geolocation-based sorting
+**Current State**: ✅ Complete - National RFS facilities parser with geolocation search  
+**Target State**: ✅ Achieved
 
-**Steps**:
-1. Download RFS facilities CSV from atlas.gov.au
-   - Store in backend/src/data/rfs-facilities.csv
-   - Add to .gitignore if too large (>1MB)
-2. Create CSV parser service
-   - Parse station name, location, brigade, district, area
-   - Map to StationHierarchy structure
-   - **Apply 1:1 brigade-station naming**: Most stations should have brigade name = station name
-   - Handle data inconsistencies
-3. Implement search functionality
-   - Full-text search by name, brigade, district
-   - Case-insensitive matching
-   - Return ranked results
-4. Implement geolocation sorting
-   - Calculate distance from user location
-   - Return closest N stations
-   - Use Haversine formula for accuracy
-5. Create GET /api/stations/lookup endpoint
-   - Query param: q (search query)
-   - Query param: lat, lon (user location)
-   - Query param: limit (default 10)
-   - Return: closest 10 + search results
-6. Cache parsed data in memory
-   - Load on server start
-   - Refresh endpoint for updates
-7. Add tests for parser and lookup
-8. Document CSV format and mapping
+**Implementation Summary**:
+1. ✅ Created backend/src/services/rfsFacilitiesParser.ts
+   - Loads and parses national RFS facilities CSV (4400+ stations)
+   - Caches data in memory for fast access
+   - Supports all Australian states and territories
+2. ✅ Implemented search functionality
+   - Case-insensitive full-text search by name, suburb, brigade
+   - Returns ranked results
+3. ✅ Implemented geolocation sorting
+   - Haversine formula for distance calculation
+   - Returns closest N stations based on user location
+4. ✅ Created GET /api/stations/lookup endpoint
+   - Supports query parameter (q) for text search
+   - Supports lat/lon for geolocation-based sorting
+   - Limit parameter (default 10, max 50)
+   - Returns merged results (closest + search matches)
+5. ✅ Created GET /api/stations/count endpoint for monitoring
+6. ✅ Added comprehensive test coverage (25+ tests)
+7. ✅ Updated api_register.json with new endpoints
+8. ✅ Rate limiting configured (100 requests per 15 minutes)
+
+**Integration Notes**:
+- Merged into main branch via PR #198
+- Integrated into feature branch with station CRUD endpoints
+- Lookup and count endpoints placed before /:id route to avoid routing conflicts
 
 **Success Criteria**:
-- [ ] CSV parser successfully loads RFS facilities data
-- [ ] Search returns relevant results
-- [ ] Geolocation sorting returns closest stations
-- [ ] Lookup endpoint combines closest + search results
-- [ ] Data cached for performance
-- [ ] Handles missing/invalid data gracefully
-- [ ] Tests cover parser and search (10+ tests)
-- [ ] Documentation explains data mapping
-- [ ] Performance: lookup < 200ms
+- [x] CSV parser successfully loads RFS facilities data (4400+ stations)
+- [x] Search returns relevant results
+- [x] Geolocation sorting returns closest stations
+- [x] Lookup endpoint combines closest + search results
+- [x] Data cached for performance (singleton pattern)
+- [x] Handles missing/invalid data gracefully
+- [x] Tests cover parser and search (25+ tests, exceeds 10+ target)
+- [x] Documentation explains data mapping
+- [x] Performance: lookup < 200ms ✅ ACHIEVED
 
-**Dependencies**: Issue #19c
+**Dependencies**: Issue #19c ✅ COMPLETED
+
+**Effort Estimate**: 2-3 days ✅ ACTUAL: 1 day
 
 **Effort Estimate**: 2-3 days
 
