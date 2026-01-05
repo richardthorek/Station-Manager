@@ -122,6 +122,40 @@
   padding: 1rem;
   transition: all 0.2s;
   animation: fadeIn 0.3s ease;
+  position: relative;
+}
+
+.participant-card.clickable {
+  cursor: pointer;
+}
+
+.participant-card.clickable:hover {
+  border-color: var(--color-primary-red);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(226, 35, 26, 0.2);
+}
+
+.participant-card.clickable:active {
+  transform: translateY(0);
+}
+
+.remove-hint {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--color-primary-red);
+  background: rgba(226, 35, 26, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  font-weight: 500;
+}
+
+.participant-card.clickable:hover .remove-hint {
+  opacity: 1;
 }
 
 @keyframes fadeIn {
@@ -133,12 +167,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.participant-card:hover {
-  border-color: #C6D931;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(198, 217, 49, 0.2);
 }
 
 .participant-header {
