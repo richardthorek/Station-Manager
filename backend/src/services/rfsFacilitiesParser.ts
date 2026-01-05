@@ -3,8 +3,9 @@ import * as path from 'path';
 import type { StationHierarchy, StationSearchResult } from '../types/stations';
 
 /**
- * RFS Facilities Parser Service
- * Parses the national RFS facilities CSV dataset and provides search/lookup functionality
+ * National Fire Service Facilities Parser
+ * Parses the national Rural/Country Fire Service facilities dataset
+ * Supports all Australian states and territories
  */
 class RFSFacilitiesParser {
   private stations: StationHierarchy[] = [];
@@ -37,17 +38,23 @@ class RFSFacilitiesParser {
       // Skip header row
       const dataLines = lines.slice(1);
       
+      // Load ALL facilities nationally (no state filter)
       this.stations = dataLines
         .map(line => this.parseCSVLine(line))
-        .filter((station): station is StationHierarchy => 
-          station !== null && 
-          station.state === 'NEW SOUTH WALES'
-        );
+        .filter((station): station is StationHierarchy => station !== null);
 
       this.isLoaded = true;
-      console.log(`✅ Loaded ${this.stations.length} NSW RFS facilities from ${this.csvPath}`);
+      
+      // Count by state for logging
+      const byState = this.stations.reduce((acc, s) => {
+        acc[s.state] = (acc[s.state] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.log(`✅ Loaded ${this.stations.length} fire service facilities nationally from ${this.csvPath}`);
+      console.log(`   Breakdown by state: ${Object.entries(byState).map(([state, count]) => `${state}: ${count}`).join(', ')}`);
     } catch (error) {
-      console.error('❌ Error loading RFS facilities CSV:', error);
+      console.error('❌ Error loading fire service facilities CSV:', error);
       throw error;
     }
   }

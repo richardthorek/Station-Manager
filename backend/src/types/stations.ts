@@ -1,6 +1,8 @@
 /**
  * Station hierarchy representing organizational structure
- * Based on NSW RFS structure: Area > District > Brigade > Station
+ * Based on Rural/Country Fire Service structure across Australia
+ * Structure varies by state: Area > District > Brigade > Station (NSW RFS)
+ * Supports all Australian states and territories
  */
 export interface StationHierarchy {
   id: string;

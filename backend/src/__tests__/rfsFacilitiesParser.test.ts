@@ -10,19 +10,26 @@ describe('RFS Facilities Parser', () => {
   });
 
   describe('Data Loading', () => {
-    it('should load NSW RFS facilities data', () => {
+    it('should load fire service facilities data nationally', () => {
       const count = parser.getCount();
       expect(count).toBeGreaterThan(0);
-      expect(count).toBeGreaterThan(1000); // Should have 1500+ NSW facilities
+      expect(count).toBeGreaterThan(4000); // Should have 4400+ facilities nationally
     });
 
-    it('should only load NSW facilities', () => {
+    it('should load facilities from multiple states', () => {
       const allStations = parser.getAllStations();
       expect(allStations.length).toBeGreaterThan(0);
       
-      // Check that all stations are from NSW
-      const nonNswStations = allStations.filter(s => s.state !== 'NEW SOUTH WALES');
-      expect(nonNswStations.length).toBe(0);
+      // Get unique states
+      const states = new Set(allStations.map(s => s.state));
+      
+      // Should have multiple states (NSW, VIC, QLD, etc.)
+      expect(states.size).toBeGreaterThan(1);
+      
+      // Common states that should be present
+      const statesArray = Array.from(states);
+      expect(statesArray.some(s => s.includes('VICTORIA'))).toBe(true);
+      expect(statesArray.some(s => s.includes('NEW SOUTH WALES'))).toBe(true);
     });
 
     it('should parse station data correctly', () => {
@@ -41,7 +48,12 @@ describe('RFS Facilities Parser', () => {
       expect(typeof station.name).toBe('string');
       expect(typeof station.latitude).toBe('number');
       expect(typeof station.longitude).toBe('number');
-      expect(station.state).toBe('NEW SOUTH WALES');
+      
+      // State should be one of the Australian states/territories
+      const validStates = ['NEW SOUTH WALES', 'VICTORIA', 'QUEENSLAND', 'SOUTH AUSTRALIA', 
+                          'WESTERN AUSTRALIA', 'TASMANIA', 'NORTHERN TERRITORY', 
+                          'AUSTRALIAN CAPITAL TERRITORY'];
+      expect(validStates.includes(station.state)).toBe(true);
     });
 
     it('should apply 1:1 brigade-station naming', () => {
@@ -67,18 +79,18 @@ describe('RFS Facilities Parser', () => {
     });
 
     it('should find stations by partial name match', () => {
-      const results = parser.searchStations('bund');
+      const results = parser.searchStations('fire');
       
       expect(results.length).toBeGreaterThan(0);
       const names = results.map(r => r.name.toLowerCase());
-      expect(names.some(name => name.includes('bund'))).toBe(true);
+      expect(names.some(name => name.includes('fire'))).toBe(true);
     });
 
     it('should find stations by suburb', () => {
-      const results = parser.searchStations('bundanoon');
+      const results = parser.searchStations('ballarat');
       
       expect(results.length).toBeGreaterThan(0);
-      expect(results.some(r => r.suburb.toLowerCase() === 'bundanoon')).toBe(true);
+      expect(results.some(r => r.suburb.toLowerCase().includes('ballarat') || r.name.toLowerCase().includes('ballarat'))).toBe(true);
     });
 
     it('should be case-insensitive', () => {

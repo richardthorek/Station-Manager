@@ -167,7 +167,7 @@ describe('Stations API', () => {
       expect(response.body).toHaveProperty('count');
       expect(typeof response.body.count).toBe('number');
       expect(response.body.count).toBeGreaterThan(0);
-      expect(response.body.count).toBeGreaterThan(1000); // Should have 1500+ NSW facilities
+      expect(response.body.count).toBeGreaterThan(4000); // Should have 4400+ facilities nationally
     });
   });
 

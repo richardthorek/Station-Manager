@@ -5,7 +5,8 @@ const router = express.Router();
 
 /**
  * GET /api/stations/lookup
- * Search and locate RFS stations from national dataset
+ * Search and locate fire service stations from national dataset
+ * Supports all Australian states and territories
  * Query params:
  *   - q: search query (station name, suburb, brigade)
  *   - lat: user latitude (for geolocation sorting)
@@ -51,7 +52,7 @@ router.get('/lookup', async (req, res) => {
 
 /**
  * GET /api/stations/count
- * Get count of loaded RFS stations (for debugging/monitoring)
+ * Get count of loaded fire service stations nationally (for debugging/monitoring)
  */
 router.get('/count', async (req, res) => {
   try {
