@@ -500,6 +500,38 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to fetch truck check compliance');
     return response.json();
   }
+
+  // Demo Mode
+  async getDemoStatus(): Promise<{
+    isDemo: boolean;
+    demoAvailable: boolean;
+    perDeviceMode: boolean;
+    instructions: string;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/demo/status`);
+    if (!response.ok) throw new Error('Failed to fetch demo status');
+    return response.json();
+  }
+
+  async getDemoInfo(): Promise<{
+    description: string;
+    features: string[];
+    testData: {
+      members: number;
+      activities: number;
+      appliances: number;
+      description: string;
+    };
+    usage: {
+      activate: string;
+      deactivate: string;
+      seedData: string;
+    };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/demo/info`);
+    if (!response.ok) throw new Error('Failed to fetch demo info');
+    return response.json();
+  }
 }
 
 export const api = new ApiService();

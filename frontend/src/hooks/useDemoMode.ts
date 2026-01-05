@@ -15,9 +15,8 @@ import { api } from '../services/api';
 
 interface DemoModeStatus {
   isDemo: boolean;
-  tableSuffix: string;
-  environment: string;
   demoAvailable: boolean;
+  perDeviceMode: boolean;
   instructions: string;
 }
 
@@ -42,8 +41,7 @@ export function useDemoMode() {
       const urlHasDemo = demoParam === 'true' || demoParam === '1';
 
       // Check backend status
-      const response = await api.get<DemoModeStatus>('/api/demo/status');
-      const status = response.data;
+      const status = await api.getDemoStatus();
 
       setDemoStatus(status);
 
