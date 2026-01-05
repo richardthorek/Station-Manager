@@ -417,7 +417,7 @@ class TruckChecksDatabase {
       applianceId: string;
       applianceName: string;
       checkCount: number;
-      lastCheckDate: Date | null;
+      lastCheckDate: string | null;
     }>;
   } {
     const runs = Array.from(this.checkRuns.values())
@@ -456,7 +456,7 @@ class TruckChecksDatabase {
         applianceId,
         applianceName: stats.name,
         checkCount: stats.count,
-        lastCheckDate: stats.lastCheck,
+        lastCheckDate: stats.lastCheck ? stats.lastCheck.toISOString() : null,
       }))
       .sort((a, b) => b.checkCount - a.checkCount);
 

@@ -23,9 +23,9 @@ vi.mock('../../services/api', () => ({
 
 // Mock recharts to avoid canvas rendering issues in tests
 vi.mock('recharts', () => ({
-  BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
+  BarChart: ({ children }: { children?: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
   Bar: () => <div data-testid="bar" />,
-  PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
+  PieChart: ({ children }: { children?: React.ReactNode }) => <div data-testid="pie-chart">{children}</div>,
   Pie: () => <div data-testid="pie" />,
   Cell: () => <div data-testid="cell" />,
   XAxis: () => <div data-testid="x-axis" />,
@@ -33,7 +33,7 @@ vi.mock('recharts', () => ({
   CartesianGrid: () => <div data-testid="grid" />,
   Tooltip: () => <div data-testid="tooltip" />,
   Legend: () => <div data-testid="legend" />,
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: { children?: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
 }));
 
 const mockAttendanceSummary = {
@@ -99,11 +99,11 @@ describe('ReportsPage', () => {
     vi.clearAllMocks();
     
     // Setup default mock responses
-    (api.getAttendanceSummary as any).mockResolvedValue(mockAttendanceSummary);
-    (api.getMemberParticipation as any).mockResolvedValue(mockMemberParticipation);
-    (api.getActivityBreakdown as any).mockResolvedValue(mockActivityBreakdown);
-    (api.getEventStatistics as any).mockResolvedValue(mockEventStatistics);
-    (api.getTruckCheckCompliance as any).mockResolvedValue(mockTruckCheckCompliance);
+    vi.mocked(api.getAttendanceSummary).mockResolvedValue(mockAttendanceSummary);
+    vi.mocked(api.getMemberParticipation).mockResolvedValue(mockMemberParticipation);
+    vi.mocked(api.getActivityBreakdown).mockResolvedValue(mockActivityBreakdown);
+    vi.mocked(api.getEventStatistics).mockResolvedValue(mockEventStatistics);
+    vi.mocked(api.getTruckCheckCompliance).mockResolvedValue(mockTruckCheckCompliance);
   });
 
   const renderReportsPage = () => {
@@ -193,7 +193,7 @@ describe('ReportsPage', () => {
 
   it('should handle API errors gracefully', async () => {
     const errorMessage = 'Failed to load reports';
-    (api.getAttendanceSummary as any).mockRejectedValue(new Error(errorMessage));
+    vi.mocked(api.getAttendanceSummary).mockRejectedValue(new Error(errorMessage));
 
     renderReportsPage();
 
@@ -213,7 +213,7 @@ describe('ReportsPage', () => {
   });
 
   it('should show no data message when data is empty', async () => {
-    (api.getAttendanceSummary as any).mockResolvedValue({
+    vi.mocked(api.getAttendanceSummary).mockResolvedValue({
       ...mockAttendanceSummary,
       summary: [],
     });

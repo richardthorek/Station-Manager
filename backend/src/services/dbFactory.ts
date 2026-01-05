@@ -59,6 +59,12 @@ export interface IDatabase {
   removeEventParticipant(participantId: string): Promise<boolean> | boolean;
   getMemberParticipantInEvent(eventId: string, memberId: string): Promise<EventParticipant | undefined> | EventParticipant | undefined;
   getAllActiveParticipants(): Promise<EventParticipant[]> | EventParticipant[];
+  
+  // Reports
+  getAttendanceSummary(startDate: Date, endDate: Date): Promise<Array<{ month: string; count: number }>> | Array<{ month: string; count: number }>;
+  getMemberParticipation(startDate: Date, endDate: Date, limit: number): Promise<Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>> | Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>;
+  getActivityBreakdown(startDate: Date, endDate: Date): Promise<Array<{ category: string; count: number; percentage: number }>> | Array<{ category: string; count: number; percentage: number }>;
+  getEventStatistics(startDate: Date, endDate: Date): Promise<{ totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number }> | { totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number };
 }
 
 /**
