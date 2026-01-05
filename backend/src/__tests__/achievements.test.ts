@@ -126,7 +126,7 @@ describe('Achievements API', () => {
       if (response.body.recentlyEarned.length > 0) {
         const achievement = response.body.recentlyEarned[0];
         expect(achievement).toHaveProperty('id');
-        expect(achievement).toHaveProperty('name');
+        expect(achievement).toHaveProperty('achievementType');
         expect(achievement).toHaveProperty('earnedAt');
       }
     });
