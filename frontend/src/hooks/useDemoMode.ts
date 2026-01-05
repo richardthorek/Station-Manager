@@ -4,10 +4,12 @@
  * Custom React hook for managing demo mode state and detection.
  * 
  * Features:
- * - Detects ?demo=true in URL
+ * - Detects ?demo=true in URL (single source of truth)
  * - Checks backend demo mode status
- * - Persists preference in localStorage
  * - Provides functions to toggle demo mode
+ * 
+ * Note: Does NOT persist in localStorage to avoid stale state issues.
+ * The URL parameter is the only source of truth for demo mode state.
  */
 
 import { useState, useEffect } from 'react';
@@ -26,7 +28,7 @@ export function useDemoMode() {
   const [loading, setLoading] = useState<boolean>(true);
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(false);
 
-  // Check for demo mode on mount
+  // Check for demo mode on mount and when URL changes
   useEffect(() => {
     checkDemoMode();
   }, []);
@@ -35,7 +37,7 @@ export function useDemoMode() {
     try {
       setLoading(true);
 
-      // Check URL parameter
+      // Check URL parameter - this is the ONLY source of truth
       const urlParams = new URLSearchParams(window.location.search);
       const demoParam = urlParams.get('demo');
       const urlHasDemo = demoParam === 'true' || demoParam === '1';
@@ -45,17 +47,12 @@ export function useDemoMode() {
 
       setDemoStatus(status);
 
-      // Demo mode is active if backend reports it OR URL parameter is present
-      const isDemo = status.isDemo || urlHasDemo;
-      setIsDemoMode(isDemo);
+      // Demo mode is active if URL parameter is present
+      // (backend will also check this parameter in middleware)
+      setIsDemoMode(urlHasDemo);
 
-      // Persist in localStorage
-      if (isDemo) {
-        localStorage.setItem('demoMode', 'true');
-      }
-
-      // Check if banner was dismissed
-      const dismissed = localStorage.getItem('demoBannerDismissed') === 'true';
+      // Check if banner was dismissed (this is OK to persist per-session)
+      const dismissed = sessionStorage.getItem('demoBannerDismissed') === 'true';
       setBannerDismissed(dismissed);
     } catch (error) {
       console.error('Failed to check demo mode:', error);
@@ -79,19 +76,18 @@ export function useDemoMode() {
     // Remove demo parameter and reload
     const url = new URL(window.location.href);
     url.searchParams.delete('demo');
-    localStorage.removeItem('demoMode');
-    localStorage.removeItem('demoBannerDismissed');
+    sessionStorage.removeItem('demoBannerDismissed');
     window.location.href = url.toString();
   }
 
   function dismissBanner() {
     setBannerDismissed(true);
-    localStorage.setItem('demoBannerDismissed', 'true');
+    sessionStorage.setItem('demoBannerDismissed', 'true');
   }
 
   function showBanner() {
     setBannerDismissed(false);
-    localStorage.removeItem('demoBannerDismissed');
+    sessionStorage.removeItem('demoBannerDismissed');
   }
 
   return {

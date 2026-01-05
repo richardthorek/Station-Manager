@@ -11,6 +11,7 @@
 
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
+import { preserveQueryParams } from '../../utils/navigation';
 import './LandingPage.css';
 
 export function LandingPage() {
@@ -52,7 +53,7 @@ export function LandingPage() {
             <div className="feature-icon">🔥</div>
             <h3>Station Sign-In</h3>
             <p>Quick and easy member check-in/out with activity tracking. Real-time updates across all devices.</p>
-            <Link to="/signin" className="feature-link">
+            <Link to={preserveQueryParams('/signin')} className="feature-link">
               Go to Sign-In
               <span className="arrow">→</span>
             </Link>
@@ -62,7 +63,7 @@ export function LandingPage() {
             <div className="feature-icon">🚛</div>
             <h3>Truck Check</h3>
             <p>Vehicle maintenance tracking and inspection checklist system.</p>
-            <Link to="/truckcheck" className="feature-link">
+            <Link to={preserveQueryParams('/truckcheck')} className="feature-link">
               Go to Truck Checks
               <span className="arrow">→</span>
             </Link>
@@ -72,7 +73,7 @@ export function LandingPage() {
             <div className="feature-icon">📊</div>
             <h3>Reports & Analytics</h3>
             <p>Historical reporting, analytics, and data export capabilities.</p>
-            <Link to="/reports" className="feature-link">
+            <Link to={preserveQueryParams('/reports')} className="feature-link">
               Go to Reports
               <span className="arrow">→</span>
             </Link>

@@ -17,6 +17,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
+import { preserveQueryParams } from '../../utils/navigation';
 import { api } from '../../services/api';
 import type { Appliance, CheckRun } from '../../types';
 import './TruckCheckPage.css';

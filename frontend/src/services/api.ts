@@ -21,6 +21,28 @@ const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api
 const API_BASE_URL = rawApiBase.endsWith('/api') ? rawApiBase : `${rawApiBase.replace(/\/$/, '')}/api`;
 
 class ApiService {
+  /**
+   * Check if demo mode is currently active by looking at URL parameter
+   * This is the single source of truth for demo mode state
+   */
+  private isDemoMode(): boolean {
+    const urlParams = new URLSearchParams(window.location.search);
+    const demoParam = urlParams.get('demo');
+    return demoParam === 'true' || demoParam === '1';
+  }
+
+  /**
+   * Build a URL with demo parameter appended if in demo mode
+   * This ensures all API calls include the demo parameter when active
+   */
+  private buildUrl(endpoint: string): string {
+    const url = `${API_BASE_URL}${endpoint}`;
+    if (this.isDemoMode()) {
+      const separator = endpoint.includes('?') ? '&' : '?';
+      return `${url}${separator}demo=true`;
+    }
+    return url;
+  }
   // System Status
   async getStatus(): Promise<{
     status: string;
@@ -29,26 +51,26 @@ class ApiService {
     usingInMemory: boolean;
     timestamp: string;
   }> {
-    const response = await fetch(`${API_BASE_URL}/status`);
+    const response = await fetch(this.buildUrl('/status'));
     if (!response.ok) throw new Error('Failed to fetch status');
     return response.json();
   }
 
   // Members
   async getMembers(): Promise<Member[]> {
-    const response = await fetch(`${API_BASE_URL}/members`);
+    const response = await fetch(this.buildUrl('/members'));
     if (!response.ok) throw new Error('Failed to fetch members');
     return response.json();
   }
 
   async getMember(id: string): Promise<Member> {
-    const response = await fetch(`${API_BASE_URL}/members/${id}`);
+    const response = await fetch(this.buildUrl(`/members/${id}`));
     if (!response.ok) throw new Error('Failed to fetch member');
     return response.json();
   }
 
   async createMember(name: string): Promise<Member> {
-    const response = await fetch(`${API_BASE_URL}/members`, {
+    const response = await fetch(this.buildUrl('/members'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
@@ -58,7 +80,7 @@ class ApiService {
   }
 
   async updateMember(id: string, name: string, rank?: string | null): Promise<Member> {
-    const response = await fetch(`${API_BASE_URL}/members/${id}`, {
+    const response = await fetch(this.buildUrl(`/members/${id}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, rank }),
@@ -68,26 +90,26 @@ class ApiService {
   }
 
   async getMemberHistory(id: string): Promise<CheckIn[]> {
-    const response = await fetch(`${API_BASE_URL}/members/${id}/history`);
+    const response = await fetch(this.buildUrl(`/members/${id}/history`));
     if (!response.ok) throw new Error('Failed to fetch member history');
     return response.json();
   }
 
   // Activities
   async getActivities(): Promise<Activity[]> {
-    const response = await fetch(`${API_BASE_URL}/activities`);
+    const response = await fetch(this.buildUrl('/activities'));
     if (!response.ok) throw new Error('Failed to fetch activities');
     return response.json();
   }
 
   async getActiveActivity(): Promise<ActiveActivity> {
-    const response = await fetch(`${API_BASE_URL}/activities/active`);
+    const response = await fetch(this.buildUrl('/activities/active'));
     if (!response.ok) throw new Error('Failed to fetch active activity');
     return response.json();
   }
 
   async setActiveActivity(activityId: string, setBy?: string): Promise<ActiveActivity> {
-    const response = await fetch(`${API_BASE_URL}/activities/active`, {
+    const response = await fetch(this.buildUrl('/activities/active'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ activityId, setBy }),
@@ -97,7 +119,7 @@ class ApiService {
   }
 
   async createActivity(name: string, createdBy?: string): Promise<Activity> {
-    const response = await fetch(`${API_BASE_URL}/activities`, {
+    const response = await fetch(this.buildUrl('/activities'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, createdBy }),
@@ -108,7 +130,7 @@ class ApiService {
 
   // Check-ins
   async getActiveCheckIns(): Promise<CheckInWithDetails[]> {
-    const response = await fetch(`${API_BASE_URL}/checkins/active`);
+    const response = await fetch(this.buildUrl('/checkins/active'));
     if (!response.ok) throw new Error('Failed to fetch check-ins');
     return response.json();
   }
@@ -120,7 +142,7 @@ class ApiService {
     location?: string,
     isOffsite?: boolean
   ): Promise<{ action: string; checkIn: CheckIn }> {
-    const response = await fetch(`${API_BASE_URL}/checkins`, {
+    const response = await fetch(this.buildUrl('/checkins'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ memberId, method, activityId, location, isOffsite }),
@@ -130,14 +152,14 @@ class ApiService {
   }
 
   async undoCheckIn(memberId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/checkins/${memberId}`, {
+    const response = await fetch(this.buildUrl(`/checkins/${memberId}`), {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to undo check-in');
   }
 
   async urlCheckIn(identifier: string): Promise<{ action: string; member: string; checkIn?: CheckIn }> {
-    const response = await fetch(`${API_BASE_URL}/checkins/url-checkin`, {
+    const response = await fetch(this.buildUrl('/checkins/url-checkin'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier }),
@@ -147,25 +169,25 @@ class ApiService {
   }
   // Events
   async getEvents(limit: number = 50, offset: number = 0): Promise<EventWithParticipants[]> {
-    const response = await fetch(`${API_BASE_URL}/events?limit=${limit}&offset=${offset}`);
+    const response = await fetch(this.buildUrl(`/events?limit=${limit}&offset=${offset}`));
     if (!response.ok) throw new Error('Failed to fetch events');
     return response.json();
   }
 
   async getActiveEvents(): Promise<EventWithParticipants[]> {
-    const response = await fetch(`${API_BASE_URL}/events/active`);
+    const response = await fetch(this.buildUrl('/events/active'));
     if (!response.ok) throw new Error('Failed to fetch active events');
     return response.json();
   }
 
   async getEvent(eventId: string): Promise<EventWithParticipants> {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}`);
+    const response = await fetch(this.buildUrl(`/events/${eventId}`));
     if (!response.ok) throw new Error('Failed to fetch event');
     return response.json();
   }
 
   async createEvent(activityId: string, createdBy?: string): Promise<EventWithParticipants> {
-    const response = await fetch(`${API_BASE_URL}/events`, {
+    const response = await fetch(this.buildUrl('/events'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ activityId, createdBy }),
@@ -175,7 +197,7 @@ class ApiService {
   }
 
   async endEvent(eventId: string): Promise<EventWithParticipants> {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/end`, {
+    const response = await fetch(this.buildUrl(`/events/${eventId}/end`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -190,7 +212,7 @@ class ApiService {
     location?: string,
     isOffsite?: boolean
   ): Promise<{ action: string; participant: EventParticipant }> {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/participants`, {
+    const response = await fetch(this.buildUrl(`/events/${eventId}/participants`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ memberId, method, location, isOffsite }),
@@ -200,7 +222,7 @@ class ApiService {
   }
 
   async removeEventParticipant(eventId: string, participantId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/participants/${participantId}`, {
+    const response = await fetch(this.buildUrl(`/events/${eventId}/participants/${participantId}`), {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to remove participant');
@@ -212,19 +234,19 @@ class ApiService {
 
   // Appliances
   async getAppliances(): Promise<Appliance[]> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`);
+    const response = await fetch(this.buildUrl('/truck-checks/appliances'));
     if (!response.ok) throw new Error('Failed to fetch appliances');
     return response.json();
   }
 
   async getAppliance(id: string): Promise<Appliance> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`);
+    const response = await fetch(this.buildUrl(`/truck-checks/appliances/${id}`));
     if (!response.ok) throw new Error('Failed to fetch appliance');
     return response.json();
   }
 
   async createAppliance(name: string, description?: string, photoUrl?: string): Promise<Appliance> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`, {
+    const response = await fetch(this.buildUrl('/truck-checks/appliances'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, description, photoUrl }),
@@ -234,7 +256,7 @@ class ApiService {
   }
 
   async updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
+    const response = await fetch(this.buildUrl(`/truck-checks/appliances/${id}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, description, photoUrl }),
@@ -247,7 +269,7 @@ class ApiService {
     const formData = new FormData();
     formData.append('photo', file);
 
-    const response = await fetch(`${API_BASE_URL}/truck-checks/upload/reference-photo`, {
+    const response = await fetch(this.buildUrl('/truck-checks/upload/reference-photo'), {
       method: 'POST',
       body: formData,
     });
@@ -256,7 +278,7 @@ class ApiService {
   }
 
   async deleteAppliance(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
+    const response = await fetch(this.buildUrl(`/truck-checks/appliances/${id}`), {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to delete appliance');
@@ -264,13 +286,13 @@ class ApiService {
 
   // Templates
   async getTemplate(applianceId: string): Promise<ChecklistTemplate> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/templates/${applianceId}`);
+    const response = await fetch(this.buildUrl(`/truck-checks/templates/${applianceId}`));
     if (!response.ok) throw new Error('Failed to fetch template');
     return response.json();
   }
 
   async updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[]): Promise<ChecklistTemplate> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/templates/${applianceId}`, {
+    const response = await fetch(this.buildUrl(`/truck-checks/templates/${applianceId}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items }),
@@ -281,7 +303,7 @@ class ApiService {
 
   // Check Runs
   async createCheckRun(applianceId: string, completedBy: string, completedByName?: string): Promise<CheckRun> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/runs`, {
+    const response = await fetch(this.buildUrl('/truck-checks/runs'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ applianceId, completedBy, completedByName }),
@@ -291,7 +313,7 @@ class ApiService {
   }
 
   async getCheckRun(id: string): Promise<CheckRunWithResults> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}`);
+    const response = await fetch(this.buildUrl(`/truck-checks/runs/${id}`));
     if (!response.ok) throw new Error('Failed to fetch check run');
     return response.json();
   }
@@ -308,13 +330,13 @@ class ApiService {
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.withIssues) params.append('withIssues', 'true');
 
-    const response = await fetch(`${API_BASE_URL}/truck-checks/runs?${params.toString()}`);
+    const response = await fetch(this.buildUrl(`/truck-checks/runs?${params.toString()}`));
     if (!response.ok) throw new Error('Failed to fetch check runs');
     return response.json();
   }
 
   async completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}/complete`, {
+    const response = await fetch(this.buildUrl(`/truck-checks/runs/${id}/complete`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ additionalComments }),
@@ -334,7 +356,7 @@ class ApiService {
     photoUrl?: string,
     completedBy?: string
   ): Promise<CheckResult> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/results`, {
+    const response = await fetch(this.buildUrl('/truck-checks/results'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy }),
@@ -349,7 +371,7 @@ class ApiService {
     comment?: string,
     photoUrl?: string
   ): Promise<CheckResult> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/results/${id}`, {
+    const response = await fetch(this.buildUrl(`/truck-checks/results/${id}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, comment, photoUrl }),
@@ -359,7 +381,7 @@ class ApiService {
   }
 
   async deleteCheckResult(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/results/${id}`, {
+    const response = await fetch(this.buildUrl(`/truck-checks/results/${id}`), {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to delete check result');
@@ -370,7 +392,7 @@ class ApiService {
     const formData = new FormData();
     formData.append('photo', file);
 
-    const response = await fetch(`${API_BASE_URL}/truck-checks/upload/reference-photo`, {
+    const response = await fetch(this.buildUrl('/truck-checks/upload/reference-photo'), {
       method: 'POST',
       body: formData,
     });
@@ -382,7 +404,7 @@ class ApiService {
     const formData = new FormData();
     formData.append('photo', file);
 
-    const response = await fetch(`${API_BASE_URL}/truck-checks/upload/result-photo`, {
+    const response = await fetch(this.buildUrl('/truck-checks/upload/result-photo'), {
       method: 'POST',
       body: formData,
     });
@@ -391,14 +413,14 @@ class ApiService {
   }
 
   async getStorageStatus(): Promise<{ enabled: boolean; message: string }> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/storage-status`);
+    const response = await fetch(this.buildUrl('/truck-checks/storage-status'));
     if (!response.ok) throw new Error('Failed to get storage status');
     return response.json();
   }
 
   // Achievements
   async getMemberAchievements(memberId: string): Promise<MemberAchievementSummary> {
-    const response = await fetch(`${API_BASE_URL}/achievements/${memberId}`);
+    const response = await fetch(this.buildUrl(`/achievements/${memberId}`));
     if (!response.ok) throw new Error('Failed to fetch achievements');
     return response.json();
   }
@@ -407,7 +429,7 @@ class ApiService {
     recentlyEarned: unknown[];
     totalNew: number;
   }> {
-    const response = await fetch(`${API_BASE_URL}/achievements/${memberId}/recent`);
+    const response = await fetch(this.buildUrl(`/achievements/${memberId}/recent`));
     if (!response.ok) throw new Error('Failed to fetch recent achievements');
     return response.json();
   }
@@ -416,7 +438,7 @@ class ApiService {
     progress: unknown[];
     activeStreaks: unknown[];
   }> {
-    const response = await fetch(`${API_BASE_URL}/achievements/${memberId}/progress`);
+    const response = await fetch(this.buildUrl(`/achievements/${memberId}/progress`));
     if (!response.ok) throw new Error('Failed to fetch achievement progress');
     return response.json();
   }
@@ -427,7 +449,7 @@ class ApiService {
     endDate: string;
     summary: Array<{ month: string; count: number }>;
   }> {
-    const response = await fetch(`${API_BASE_URL}/reports/attendance-summary?startDate=${startDate}&endDate=${endDate}`);
+    const response = await fetch(this.buildUrl(`/reports/attendance-summary?startDate=${startDate}&endDate=${endDate}`));
     if (!response.ok) throw new Error('Failed to fetch attendance summary');
     return response.json();
   }
@@ -443,7 +465,7 @@ class ApiService {
       lastCheckIn: string;
     }>;
   }> {
-    const response = await fetch(`${API_BASE_URL}/reports/member-participation?startDate=${startDate}&endDate=${endDate}&limit=${limit}`);
+    const response = await fetch(this.buildUrl(`/reports/member-participation?startDate=${startDate}&endDate=${endDate}&limit=${limit}`));
     if (!response.ok) throw new Error('Failed to fetch member participation');
     return response.json();
   }
@@ -457,7 +479,7 @@ class ApiService {
       percentage: number;
     }>;
   }> {
-    const response = await fetch(`${API_BASE_URL}/reports/activity-breakdown?startDate=${startDate}&endDate=${endDate}`);
+    const response = await fetch(this.buildUrl(`/reports/activity-breakdown?startDate=${startDate}&endDate=${endDate}`));
     if (!response.ok) throw new Error('Failed to fetch activity breakdown');
     return response.json();
   }
@@ -474,7 +496,7 @@ class ApiService {
       averageDuration: number;
     };
   }> {
-    const response = await fetch(`${API_BASE_URL}/reports/event-statistics?startDate=${startDate}&endDate=${endDate}`);
+    const response = await fetch(this.buildUrl(`/reports/event-statistics?startDate=${startDate}&endDate=${endDate}`));
     if (!response.ok) throw new Error('Failed to fetch event statistics');
     return response.json();
   }
@@ -496,7 +518,7 @@ class ApiService {
       }>;
     };
   }> {
-    const response = await fetch(`${API_BASE_URL}/reports/truckcheck-compliance?startDate=${startDate}&endDate=${endDate}`);
+    const response = await fetch(this.buildUrl(`/reports/truckcheck-compliance?startDate=${startDate}&endDate=${endDate}`));
     if (!response.ok) throw new Error('Failed to fetch truck check compliance');
     return response.json();
   }
@@ -508,7 +530,7 @@ class ApiService {
     perDeviceMode: boolean;
     instructions: string;
   }> {
-    const response = await fetch(`${API_BASE_URL}/demo/status`);
+    const response = await fetch(this.buildUrl('/demo/status'));
     if (!response.ok) throw new Error('Failed to fetch demo status');
     return response.json();
   }
