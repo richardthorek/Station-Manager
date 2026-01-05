@@ -18,7 +18,8 @@ export function TemplateSelectionPage() {
     try {
       setLoading(true);
       const data = await api.getAppliances();
-      setAppliances(data);
+      // Defensive check: ensure data is an array
+      setAppliances(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Failed to load appliances');
       console.error(err);
