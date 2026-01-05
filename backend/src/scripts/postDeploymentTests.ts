@@ -17,9 +17,10 @@
  *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
  *   - Retries on version mismatch (Azure App Service restart in progress)
  *   - 10 second delay between test retries
- *   - Default 12 retries per request (120 seconds max per request)
- *   - Version test can take up to 120 seconds with retries (13 attempts × 10s)
- *   - Total stabilization time: up to 100s polling + up to 120s verification = 220s max
+ *   - Default 6 retries per request (60 seconds max per request, reduced from 12)
+ *   - Overall test suite timeout: 10 minutes to prevent indefinite hanging
+ *   - Version test can take up to 60 seconds with retries (7 attempts × 10s)
+ *   - Total stabilization time: up to 100s polling + up to 60s verification = 160s max
  * 
  * Version Verification:
  *   The version test is retry-aware because Azure App Service takes time to:
@@ -29,7 +30,7 @@
  *   4. Begin serving requests with the new configuration
  *   
  *   During this window, the health endpoint may return the old commit SHA.
- *   The test retries for up to 120 seconds to allow Azure to complete the restart.
+ *   The test retries for up to 60 seconds to allow Azure to complete the restart.
  * 
  * Usage:
  *   APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy
@@ -38,7 +39,7 @@
  *   APP_URL: The deployed application URL (required)
  *   TABLE_STORAGE_TABLE_SUFFIX: Set to "Test" to use test tables (default: Test)
  *   TEST_TIMEOUT: Timeout for each test in ms (default: 30000)
- *   MAX_RETRIES: Number of retries for failed requests (default: 12)
+ *   MAX_RETRIES: Number of retries for failed requests (default: 6, reduced from 12)
  *   GITHUB_SHA: Expected commit SHA for version verification
  */
 
@@ -48,7 +49,7 @@ import https from 'https';
 // Configuration
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '30000');
-const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '12');
+const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '6'); // Reduced from 12 to 6 (60s max per request)
 const RETRY_DELAY = 10000; // 10 seconds between retries
 const EXPECTED_COMMIT_SHA = process.env.GITHUB_SHA || process.env.GIT_COMMIT_SHA; // From CI/CD or manual override
 
@@ -160,14 +161,17 @@ async function makeRequest(
  */
 async function test(name: string, fn: () => Promise<void>): Promise<void> {
   testsRun++;
+  const testStartTime = Date.now();
   process.stdout.write(`  Testing: ${name}... `);
   try {
     await fn();
     testsPassed++;
-    console.log('✅ PASS');
+    const duration = Math.floor((Date.now() - testStartTime) / 1000);
+    console.log(`✅ PASS (${duration}s)`);
   } catch (error) {
     testsFailed++;
-    console.log('❌ FAIL');
+    const duration = Math.floor((Date.now() - testStartTime) / 1000);
+    console.log(`❌ FAIL (${duration}s)`);
     console.error(`    Error: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
@@ -414,13 +418,13 @@ async function testRateLimiting(): Promise<void> {
 }
 
 /**
- * Main test runner
+ * Main test runner with overall timeout
  */
 async function runTests(): Promise<void> {
   console.log('\n🧪 Starting Post-Deployment Smoke Tests\n');
   console.log(`Target URL: ${APP_URL}`);
-  console.log(`Timeout: ${TEST_TIMEOUT}ms`);
-  console.log(`Max Retries: ${MAX_RETRIES}`);
+  console.log(`Timeout: ${TEST_TIMEOUT}ms per test`);
+  console.log(`Max Retries: ${MAX_RETRIES} per test`);
   console.log(`Test Environment: TABLE_STORAGE_TABLE_SUFFIX=${process.env.TABLE_STORAGE_TABLE_SUFFIX || '(not set)'}\n`);
 
   // Validate APP_URL is set and warn if it's localhost in CI environment
@@ -438,24 +442,58 @@ async function runTests(): Promise<void> {
 
   console.log('Running tests...\n');
 
+  // Track start time for overall timeout
+  const startTime = Date.now();
+  const OVERALL_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes max for entire test suite
+  
+  // Helper to check if overall timeout has been exceeded
+  const checkOverallTimeout = () => {
+    const elapsed = Date.now() - startTime;
+    if (elapsed > OVERALL_TIMEOUT_MS) {
+      console.error(`\n❌ TIMEOUT: Test suite exceeded ${OVERALL_TIMEOUT_MS / 1000}s overall timeout`);
+      console.error(`   Elapsed time: ${Math.floor(elapsed / 1000)}s`);
+      console.error(`   Tests run: ${testsRun}, Passed: ${testsPassed}, Failed: ${testsFailed}`);
+      process.exit(1);
+    }
+  };
+
   // Run all tests - VERSION VERIFICATION FIRST
+  checkOverallTimeout();
   await test('Version verification (commit SHA matches)', testVersionVerification);
+  
+  checkOverallTimeout();
   await test('Health check endpoint responds', testHealthCheck);
+  
+  checkOverallTimeout();
   await test('API status endpoint responds', testApiStatus);
+  
+  checkOverallTimeout();
   await test('Activities API endpoint works', testGetActivities);
+  
+  checkOverallTimeout();
   await test('Members API endpoint works', testGetMembers);
+  
+  checkOverallTimeout();
   await test('Check-ins API endpoint works', testGetCheckins);
+  
+  checkOverallTimeout();
   await test('Frontend SPA loads correctly', testFrontendLoads);
+  
+  checkOverallTimeout();
   await test('CORS configuration present', testCorsHeaders);
+  
+  checkOverallTimeout();
   await test('Rate limiting configured', testRateLimiting);
 
   // Print summary
+  const totalElapsed = Math.floor((Date.now() - startTime) / 1000);
   console.log('\n' + '='.repeat(60));
   console.log('Test Summary');
   console.log('='.repeat(60));
   console.log(`Total Tests:  ${testsRun}`);
   console.log(`Passed:       ${testsPassed} ✅`);
   console.log(`Failed:       ${testsFailed} ❌`);
+  console.log(`Duration:     ${totalElapsed}s`);
   console.log('='.repeat(60));
 
   if (testsFailed > 0) {
