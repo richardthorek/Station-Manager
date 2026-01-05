@@ -42,6 +42,7 @@ import checkinsRouter from './routes/checkins';
 import eventsRouter from './routes/events';
 import truckChecksRouter from './routes/truckChecks';
 import reportsRouter from './routes/reports';
+import demoRouter from './routes/demo';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -120,6 +121,7 @@ app.get('/api/status', apiRateLimiter, async (req, res) => {
 });
 
 // API Routes with rate limiting
+app.use('/api/demo', apiRateLimiter, demoRouter);
 app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, checkinsRouter);

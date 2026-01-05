@@ -246,6 +246,23 @@
   color: var(--text-secondary);
 }
 
+.demo-mode-link {
+  margin-top: 0.5rem;
+}
+
+.discrete-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.75rem;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+
+.discrete-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
 .version {
   font-size: 0.875rem;
   color: var(--text-secondary);
