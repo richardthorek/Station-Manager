@@ -6,6 +6,12 @@
  * - Getting and setting the active activity
  * - Creating custom activities
  * - Managing activity state for sign-in workflow
+ * 
+ * Multi-Station Support:
+ * - All GET endpoints filter by stationId (from X-Station-Id header or query param)
+ * - POST endpoints assign stationId to new activities
+ * - Active activity is per-station
+ * - Backward compatible: defaults to DEFAULT_STATION_ID if no stationId provided
  */
 
 import { Router, Request, Response } from 'express';
@@ -15,14 +21,19 @@ import {
   validateSetActiveActivity,
 } from '../middleware/activityValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
+import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 
 const router = Router();
 
-// Get all activities
+// Apply station middleware to all routes
+router.use(stationMiddleware);
+
+// Get all activities (filtered by station)
 router.get('/', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const activities = await db.getAllActivities();
+    const stationId = getStationIdFromRequest(req);
+    const activities = await db.getAllActivities(stationId);
     res.json(activities);
   } catch (error) {
     console.error('Error fetching activities:', error);
@@ -30,11 +41,12 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get active activity
+// Get active activity (filtered by station)
 router.get('/active', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const activeActivity = await db.getActiveActivity();
+    const stationId = getStationIdFromRequest(req);
+    const activeActivity = await db.getActiveActivity(stationId);
     if (!activeActivity) {
       return res.status(404).json({ error: 'No active activity set' });
     }
@@ -50,11 +62,12 @@ router.get('/active', async (req, res) => {
   }
 });
 
-// Set active activity
+// Set active activity (per-station)
 router.post('/active', validateSetActiveActivity, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { activityId, setBy } = req.body;
+    const stationId = getStationIdFromRequest(req);
     if (!activityId) {
       return res.status(400).json({ error: 'Activity ID is required' });
     }
@@ -64,7 +77,7 @@ router.post('/active', validateSetActiveActivity, handleValidationErrors, async 
       return res.status(404).json({ error: 'Activity not found' });
     }
 
-    const activeActivity = await db.setActiveActivity(activityId, setBy);
+    const activeActivity = await db.setActiveActivity(activityId, setBy, stationId);
     res.json({
       ...activeActivity,
       activity,
@@ -75,15 +88,16 @@ router.post('/active', validateSetActiveActivity, handleValidationErrors, async 
   }
 });
 
-// Create custom activity
+// Create custom activity (assigns station)
 router.post('/', validateCreateActivity, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { name, createdBy } = req.body;
+    const stationId = getStationIdFromRequest(req);
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Valid name is required' });
     }
-    const activity = await db.createActivity(name.trim(), createdBy);
+    const activity = await db.createActivity(name.trim(), createdBy, stationId);
     res.status(201).json(activity);
   } catch (error) {
     console.error('Error creating activity:', error);
