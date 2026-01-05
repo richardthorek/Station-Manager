@@ -12,7 +12,8 @@ import type {
   CheckRun,
   CheckRunWithResults,
   CheckResult,
-  CheckStatus
+  CheckStatus,
+  Station
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 
@@ -20,7 +21,53 @@ import type { MemberAchievementSummary } from '../types/achievements';
 const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 const API_BASE_URL = rawApiBase.endsWith('/api') ? rawApiBase : `${rawApiBase.replace(/\/$/, '')}/api`;
 
+// Default station ID for backward compatibility
+const DEFAULT_STATION_ID = 'default-station';
+
+// Station ID provider - will be set by StationContext
+let currentStationId: string | null = null;
+
+export function setCurrentStationId(stationId: string | null) {
+  currentStationId = stationId;
+}
+
+export function getCurrentStationId(): string {
+  return currentStationId || DEFAULT_STATION_ID;
+}
+
 class ApiService {
+  /**
+   * Create headers with X-Station-Id for multi-station support
+   */
+  private getHeaders(additionalHeaders?: HeadersInit): HeadersInit {
+    const headers: HeadersInit = {
+      'X-Station-Id': getCurrentStationId(),
+      ...additionalHeaders,
+    };
+    return headers;
+  }
+
+  // ============================================
+  // Stations
+  // ============================================
+  
+  async getStations(): Promise<Station[]> {
+    const response = await fetch(`${API_BASE_URL}/stations`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch stations');
+    const data = await response.json();
+    return data.stations || data;
+  }
+
+  async getStation(id: string): Promise<Station> {
+    const response = await fetch(`${API_BASE_URL}/stations/${id}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch station');
+    return response.json();
+  }
+
   // System Status
   async getStatus(): Promise<{
     status: string;
@@ -29,20 +76,26 @@ class ApiService {
     usingInMemory: boolean;
     timestamp: string;
   }> {
-    const response = await fetch(`${API_BASE_URL}/status`);
+    const response = await fetch(`${API_BASE_URL}/status`, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) throw new Error('Failed to fetch status');
     return response.json();
   }
 
   // Members
   async getMembers(): Promise<Member[]> {
-    const response = await fetch(`${API_BASE_URL}/members`);
+    const response = await fetch(`${API_BASE_URL}/members`, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) throw new Error('Failed to fetch members');
     return response.json();
   }
 
   async getMember(id: string): Promise<Member> {
-    const response = await fetch(`${API_BASE_URL}/members/${id}`);
+    const response = await fetch(`${API_BASE_URL}/members/${id}`, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) throw new Error('Failed to fetch member');
     return response.json();
   }
@@ -50,7 +103,7 @@ class ApiService {
   async createMember(name: string): Promise<Member> {
     const response = await fetch(`${API_BASE_URL}/members`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name }),
     });
     if (!response.ok) throw new Error('Failed to create member');
@@ -60,7 +113,7 @@ class ApiService {
   async updateMember(id: string, name: string, rank?: string | null): Promise<Member> {
     const response = await fetch(`${API_BASE_URL}/members/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, rank }),
     });
     if (!response.ok) throw new Error('Failed to update member');
@@ -89,7 +142,7 @@ class ApiService {
   async setActiveActivity(activityId: string, setBy?: string): Promise<ActiveActivity> {
     const response = await fetch(`${API_BASE_URL}/activities/active`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ activityId, setBy }),
     });
     if (!response.ok) throw new Error('Failed to set active activity');
@@ -99,7 +152,7 @@ class ApiService {
   async createActivity(name: string, createdBy?: string): Promise<Activity> {
     const response = await fetch(`${API_BASE_URL}/activities`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, createdBy }),
     });
     if (!response.ok) throw new Error('Failed to create activity');
@@ -129,7 +182,7 @@ class ApiService {
   ): Promise<{ action: string; checkIn: CheckIn }> {
     const response = await fetch(`${API_BASE_URL}/checkins`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ memberId, method, activityId, location, isOffsite }),
     });
     if (!response.ok) throw new Error('Failed to check in');
@@ -146,7 +199,7 @@ class ApiService {
   async urlCheckIn(identifier: string): Promise<{ action: string; member: string; checkIn?: CheckIn }> {
     const response = await fetch(`${API_BASE_URL}/checkins/url-checkin`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ identifier }),
     });
     if (!response.ok) throw new Error('Failed to perform URL check-in');
@@ -174,7 +227,7 @@ class ApiService {
   async createEvent(activityId: string, createdBy?: string): Promise<EventWithParticipants> {
     const response = await fetch(`${API_BASE_URL}/events`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ activityId, createdBy }),
     });
     if (!response.ok) throw new Error('Failed to create event');
@@ -184,7 +237,7 @@ class ApiService {
   async endEvent(eventId: string): Promise<EventWithParticipants> {
     const response = await fetch(`${API_BASE_URL}/events/${eventId}/end`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
     });
     if (!response.ok) throw new Error('Failed to end event');
     return response.json();
@@ -206,7 +259,7 @@ class ApiService {
   ): Promise<{ action: string; participant: EventParticipant }> {
     const response = await fetch(`${API_BASE_URL}/events/${eventId}/participants`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ memberId, method, location, isOffsite }),
     });
     if (!response.ok) throw new Error('Failed to add participant');
@@ -240,7 +293,7 @@ class ApiService {
   async createAppliance(name: string, description?: string, photoUrl?: string): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, description, photoUrl }),
     });
     if (!response.ok) throw new Error('Failed to create appliance');
@@ -250,7 +303,7 @@ class ApiService {
   async updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, description, photoUrl }),
     });
     if (!response.ok) throw new Error('Failed to update appliance');
@@ -286,7 +339,7 @@ class ApiService {
   async updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[]): Promise<ChecklistTemplate> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/templates/${applianceId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ items }),
     });
     if (!response.ok) throw new Error('Failed to update template');
@@ -297,7 +350,7 @@ class ApiService {
   async createCheckRun(applianceId: string, completedBy: string, completedByName?: string): Promise<CheckRun> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/runs`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ applianceId, completedBy, completedByName }),
     });
     if (!response.ok) throw new Error('Failed to create check run');
@@ -330,7 +383,7 @@ class ApiService {
   async completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}/complete`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ additionalComments }),
     });
     if (!response.ok) throw new Error('Failed to complete check run');
@@ -350,7 +403,7 @@ class ApiService {
   ): Promise<CheckResult> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/results`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy }),
     });
     if (!response.ok) throw new Error('Failed to create check result');
@@ -365,7 +418,7 @@ class ApiService {
   ): Promise<CheckResult> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/results/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ status, comment, photoUrl }),
     });
     if (!response.ok) throw new Error('Failed to update check result');
