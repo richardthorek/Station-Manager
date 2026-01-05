@@ -65,6 +65,7 @@ export interface IDatabase {
   getEventById(eventId: string): Promise<Event | null | undefined> | Event | null | undefined;
   endEvent(eventId: string): Promise<Event | null> | Event | null;
   reactivateEvent(eventId: string): Promise<Event | null> | Event | null;
+  deleteEvent(eventId: string): Promise<Event | null> | Event | null; // Soft delete
   addEventParticipant(eventId: string, memberId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): Promise<EventParticipant> | EventParticipant;
   getEventParticipants(eventId: string): Promise<EventParticipant[]> | EventParticipant[];
   getEventWithParticipants(eventId: string): Promise<EventWithParticipants | null> | EventWithParticipants | null;

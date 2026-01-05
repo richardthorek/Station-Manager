@@ -341,6 +341,9 @@ class DatabaseService {
   getAllActivities(stationId?: string): Activity[] {
     let activities = Array.from(this.activities.values());
     
+    // Filter out soft-deleted activities
+    activities = activities.filter(a => !a.isDeleted);
+    
     // Filter by station if specified
     if (stationId) {
       activities = activities.filter(a => {
@@ -545,6 +548,8 @@ class DatabaseService {
    */
   getEvents(limit: number = 50, offset: number = 0, stationId?: string): Event[] {
     let events = Array.from(this.events.values());
+    // Filter out soft-deleted events
+    events = events.filter(e => !(e as any).isDeleted);
     if (stationId) {
       events = events.filter(e => getEffectiveStationId(e.stationId) === stationId);
     }
@@ -624,6 +629,22 @@ class DatabaseService {
     event.isActive = true;
     event.updatedAt = new Date();
 
+    return event;
+  }
+
+  /**
+   * Soft delete an event (mark as deleted)
+   */
+  deleteEvent(eventId: string): Event | null {
+    const event = this.events.get(eventId);
+    if (!event) {
+      return null;
+    }
+    // Soft delete: mark as deleted and inactive
+    (event as any).isDeleted = true;
+    event.isActive = false;
+    event.updatedAt = new Date();
+    this.events.set(eventId, event);
     return event;
   }
 
