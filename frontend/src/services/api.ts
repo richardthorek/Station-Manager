@@ -68,6 +68,93 @@ class ApiService {
     return response.json();
   }
 
+  async createStation(stationData: Partial<Station>): Promise<Station> {
+    const response = await fetch(`${API_BASE_URL}/stations`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(stationData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create station');
+    }
+    return response.json();
+  }
+
+  async updateStation(id: string, updates: Partial<Station>): Promise<Station> {
+    const response = await fetch(`${API_BASE_URL}/stations/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(updates),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update station');
+    }
+    return response.json();
+  }
+
+  async deleteStation(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/stations/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete station');
+    }
+    return response.json();
+  }
+
+  async lookupStations(query?: string, lat?: number, lon?: number, limit: number = 10): Promise<{
+    results: Array<{
+      id: string;
+      name: string;
+      brigade?: string;
+      district?: string;
+      area?: string;
+      suburb: string;
+      state: string;
+      postcode: string;
+      latitude: number;
+      longitude: number;
+      distance?: number;
+    }>;
+    count: number;
+  }> {
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (lat !== undefined) params.append('lat', lat.toString());
+    if (lon !== undefined) params.append('lon', lon.toString());
+    params.append('limit', limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/stations/lookup?${params}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to lookup stations');
+    return response.json();
+  }
+
+  async getStationStatistics(stationId: string): Promise<{
+    memberCount: number;
+    eventCount: number;
+    checkInCount: number;
+    activeCheckInCount: number;
+  }> {
+    const [members, events, checkIns] = await Promise.all([
+      this.getMembers(),
+      this.getEvents(),
+      this.getCheckIns(),
+    ]);
+
+    return {
+      memberCount: members.length,
+      eventCount: events.length,
+      checkInCount: checkIns.filter(c => !c.isActive).length,
+      activeCheckInCount: checkIns.filter(c => c.isActive).length,
+    };
+  }
+
   // System Status
   async getStatus(): Promise<{
     status: string;
