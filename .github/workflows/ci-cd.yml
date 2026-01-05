@@ -22,19 +22,34 @@
 #   - Post-deployment tests validate live application
 #
 # Post-Deployment Testing Strategy:
-#   - Uses health check endpoint to validate deployment
-#   - Tests against live Azure deployment with test-suffixed tables
-#   - Leverages existing OIDC authentication (no secrets needed)
-#   - Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data
-#   - Validates database connectivity and API responsiveness
-#   - Ensures production data remains unaffected
-#   - Includes automatic retry logic for 404/502/503 responses (deployment stabilization)
-#   - Polls health endpoint every 10s (max 10 attempts = 100s) before running tests
-#   - Tests proceed as soon as app is ready, or after 100s timeout
-#   - Individual tests can retry up to 6 times (60s max per request)
-#   - Overall test suite timeout: 10 minutes to prevent indefinite hanging
-#   - Version verification can take up to 60s additional time (7 attempts × 10s)
-#   - Total stabilization time: up to 100s polling + up to 60s verification = 160s max
+#   TWO-PHASE APPROACH FOR EFFICIENCY:
+#
+#   Phase 1: Stabilization (up to 15 minutes)
+#     - Polls health endpoint every 10 seconds
+#     - Validates site is responding AND correct version is deployed
+#     - Exits immediately when both conditions met (efficient!)
+#     - Maximum: 90 attempts × 10s = 900s (15 minutes)
+#     - Typical: 1-2 minutes (exits early when ready)
+#
+#   Phase 2: Functional Tests (minimal retries)
+#     - Runs only after stabilization confirms site is ready
+#     - Each test gets 2 quick retries (5s between) for transient issues
+#     - Tests fail fast since site is known to be up
+#     - Expected completion: 30-60 seconds for all 7 tests
+#
+#   Total Maximum Time: 15 min stabilization + 2 min tests = 17 minutes
+#   Typical Time: 2 min stabilization + 1 min tests = 3 minutes
+#
+#   This is efficient because:
+#     - Stabilization happens once, upfront
+#     - No duplicate health checks across tests
+#     - Functional tests run fast with minimal retries
+#     - Early exit when site is ready (no wasted time)
+#
+#   Environment Variables:
+#     - Uses TABLE_STORAGE_TABLE_SUFFIX=Test for isolated test data
+#     - Leverages existing OIDC authentication (no secrets needed)
+#     - Validates database connectivity and API responsiveness
 #
 # Optimizations:
 #   - Parallel job execution for independent tasks
@@ -519,38 +534,6 @@ jobs:
           cd backend
           npm ci
 
-      - name: Wait for deployment to stabilize
-        run: |
-          echo "Polling health endpoint every 10 seconds (max 100s)..."
-          echo "This allows Azure App Service to:"
-          echo "  1. Complete the restart process"
-          echo "  2. Load new environment variables"
-          echo "  3. Initialize the Node.js application"
-          echo "  4. Connect to Azure Table Storage"
-          echo ""
-          
-          MAX_ATTEMPTS=10
-          ATTEMPT=0
-          SLEEP_INTERVAL=10
-          
-          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-            ATTEMPT=$((ATTEMPT + 1))
-            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking health endpoint..."
-            
-            # Try to reach the health endpoint (5s timeout per attempt)
-            if curl -f -s -m 5 -o /dev/null -w "%{http_code}" "${{ secrets.APP_URL }}/health" | grep -q "200"; then
-              echo "✅ App is ready! (after $((ATTEMPT * SLEEP_INTERVAL))s)"
-              break
-            else
-              if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
-                echo "⏳ App not ready yet, waiting ${SLEEP_INTERVAL}s..."
-                sleep $SLEEP_INTERVAL
-              else
-                echo "⚠️  Max attempts reached, proceeding with tests..."
-              fi
-            fi
-          done
-
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -562,16 +545,26 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
-          TEST_TIMEOUT: 30000
-          MAX_RETRIES: 6
+          STABILIZATION_TIMEOUT: 900
+          STABILIZATION_INTERVAL: 10
+          FUNCTIONAL_TEST_TIMEOUT: 120
+          FUNCTIONAL_TEST_RETRIES: 2
+          REQUEST_TIMEOUT: 10000
           GITHUB_SHA: ${{ github.sha }}
         run: |
           cd backend
-          echo "🧪 Running post-deployment tests..."
-          echo "   Target: $APP_URL"
-          echo "   Commit: ${{ github.sha }}"
-          echo "   Max retries: 6 (60s per request)"
-          echo "   Overall timeout: 10 minutes"
+          echo "🧪 Running two-phase post-deployment tests..."
+          echo ""
+          echo "Phase 1: Stabilization (up to 15 minutes)"
+          echo "  - Polls until site is up AND correct version"
+          echo "  - Exits immediately when ready (efficient!)"
+          echo ""
+          echo "Phase 2: Functional tests (minimal retries)"
+          echo "  - Runs fast with 2 retries per test"
+          echo "  - Expected: 30-60 seconds"
+          echo ""
+          echo "Target: $APP_URL"
+          echo "Commit: ${{ github.sha }}"
           echo ""
           npm run test:post-deploy
 
