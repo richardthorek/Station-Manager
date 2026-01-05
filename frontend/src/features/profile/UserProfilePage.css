@@ -280,11 +280,11 @@
   }
 }
 
-/* Optimize for tablet portrait (768px) */
+/* Optimize for tablet devices (641px-900px) */
 @media (min-width: 641px) and (max-width: 900px) {
   .profile-layout {
     grid-template-columns: minmax(300px, 380px) 1fr;
-    gap: 1rem;
+    gap: 1.25rem; /* Maintain consistent spacing with default layout */
   }
   
   .profile-container {
