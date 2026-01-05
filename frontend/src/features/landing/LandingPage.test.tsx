@@ -50,4 +50,24 @@ describe('LandingPage', () => {
     const truckCheckLink = screen.getByRole('link', { name: /go to truck checks/i })
     expect(truckCheckLink).toHaveAttribute('href', '/truckcheck')
   })
+
+  it('displays all feature cards and they are accessible', () => {
+    render(<LandingPage />)
+
+    // Verify all main feature cards are present
+    expect(screen.getByText('Station Sign-In')).toBeInTheDocument()
+    expect(screen.getByText('Truck Check')).toBeInTheDocument()
+    expect(screen.getByText('Reports & Analytics')).toBeInTheDocument()
+    expect(screen.getByText('Admin Dashboard')).toBeInTheDocument()
+
+    // Verify info cards are present
+    expect(screen.getByText('Multi-Device Support')).toBeInTheDocument()
+    expect(screen.getByText('Real-Time Sync')).toBeInTheDocument()
+    expect(screen.getByText('Professional Branding')).toBeInTheDocument()
+
+    // Verify all clickable links are accessible
+    expect(screen.getByRole('link', { name: /go to sign-in/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /go to truck checks/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /go to reports/i })).toBeInTheDocument()
+  })
 })
