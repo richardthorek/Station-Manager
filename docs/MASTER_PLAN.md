@@ -1567,76 +1567,823 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19: Multi-Station Support
+#### Issue #19: Multi-Station Foundation - Database Schema & Types
 **GitHub Issue**: #122 (created 2026-01-04T09:26:22Z)
 
-**Objective**: Enable multi-tenant support for managing multiple RFS stations
+**Objective**: Establish type system and database schema foundation for multi-tenant support
 
-**User Story**: As an RFS regional manager, I want to manage multiple stations in one system so that I can see activity across all stations and consolidate reporting.
+**User Story**: As a developer, I want a solid foundation for multi-station support so that I can build station management features on a well-designed architecture.
 
-**Current State**: Single station only  
-**Target State**: Multi-tenant system with station selection and isolation
+**Current State**: Single station, no station types or schema  
+**Target State**: Station types defined, optional stationId on all entities, database interface updated
 
 **Steps**:
-1. Design multi-tenancy architecture
-   - Shared database with stationId partitioning
-   - Station-based data isolation
-   - Central admin portal
-2. Update database schema
-   - Add stationId to all entities
-   - Update partition keys for Table Storage
-   - Add Stations table/collection
-3. Create station management API
-   - POST /api/stations (create station)
-   - GET /api/stations (list all stations)
-   - GET /api/stations/:id (get station details)
-   - PUT /api/stations/:id (update station)
-4. Add station selection UI
-   - Station picker dropdown
-   - Store selected station in context
-   - Persist selection in localStorage
-5. Update all API calls
-   - Include stationId in requests
-   - Filter data by stationId
-   - Validate station access
-6. Create station admin UI
-   - Manage stations
-   - Assign admins to stations
-   - View cross-station reports
-7. Handle data migration
-   - Assign existing data to default station
-   - Migration script for current deployments
-8. Add multi-station tests
-9. Update documentation
+1. Create Station and StationHierarchy TypeScript interfaces
+   - Model jurisdiction → area → district → brigade → station hierarchy
+   - Include location (lat/long) and contact info fields
+2. Add optional stationId field to all entity types
+   - Member, Activity, CheckIn, Event, EventParticipant
+   - Appliance, ChecklistTemplate, CheckRun, CheckResult
+   - Make optional for backward compatibility
+3. Create station constants file
+   - DEFAULT_STATION_ID = 'default-station'
+   - DEMO_STATION_ID = 'demo-station' 
+   - Helper functions: getEffectiveStationId(), isDemoStation(), isDefaultStation()
+4. Update IDatabase interface
+   - Add station CRUD methods (getAllStations, getStationById, etc.)
+   - Add optional stationId parameter to all existing methods
+   - Support filtering by station or returning all stations
+5. Update ITruckChecksDatabase interface similarly
+6. Verify TypeScript compilation (expected errors until implementation)
 
 **Success Criteria**:
-- [ ] Stations table/collection created
-- [ ] All entities have stationId
-- [ ] Station management API working
-- [ ] Station selection UI working
-- [ ] Data properly isolated by station
-- [ ] Cross-station reporting available (admin only)
-- [ ] Migration script tested
-- [ ] Backwards compatible with single-station deployments
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Station and StationHierarchy interfaces defined
+- [x] All entities have optional stationId field
+- [x] Station constants created with helper functions
+- [x] IDatabase interface extended with station methods
+- [x] IDatabase methods accept optional stationId parameter
+- [x] ITruckChecksDatabase interface updated
+- [x] TypeScript compiles (implementation pending)
+- [ ] Documentation updated in types/index.ts
 
-**Dependencies**: Issue #18 (Authentication for station management)
+**Dependencies**: None
 
-**Effort Estimate**: 2-3 weeks
+**Effort Estimate**: 1 day
 
-**Priority**: P3 (Low - Future growth)
+**Priority**: P3 (Low - Foundation work)
 
-**Labels**: `feature`, `multi-tenant`, `phase-4`
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `foundation`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: N/A (Backend types only)
+
+---
+
+#### Issue #19a: Multi-Station Database Implementation - In-Memory
+**GitHub Issue**: TBD
+
+**Objective**: Implement station management and filtering in the in-memory database service
+
+**User Story**: As a developer, I want the in-memory database to support multi-station operations so that I can test multi-station features locally.
+
+**Current State**: In-memory database has no station support  
+**Target State**: In-memory database implements full IDatabase station interface
+
+**Steps**:
+1. Add stations Map to DatabaseService class
+2. Implement station CRUD operations
+   - getAllStations(), getStationById(), getStationsByBrigade()
+   - createStation(), updateStation(), deleteStation()
+3. Create default station on initialization
+4. Create demo station with sample data on dev mode
+5. Update member methods to filter by stationId
+   - getAllMembers(stationId?): filter or return all
+   - createMember: assign stationId (default if not provided)
+6. Update activity methods to filter by stationId
+7. Update check-in methods to filter by stationId
+8. Update event methods to filter by stationId
+9. Update report methods to filter by stationId
+10. Add helper method to get effective stationId throughout
+11. Test all operations with and without stationId parameter
+
+**Success Criteria**:
+- [ ] Station CRUD operations working in memory
+- [ ] Default station created automatically
+- [ ] Demo station created in dev mode with sample data
+- [ ] All member operations support station filtering
+- [ ] All activity operations support station filtering
+- [ ] All check-in operations support station filtering
+- [ ] All event operations support station filtering
+- [ ] All report operations support station filtering
+- [ ] Brigade-level queries work (multiple stations, same brigade)
+- [ ] Backward compatible (no stationId = default station)
+- [ ] Manual testing confirms isolation
+- [ ] Code compiles without errors
+
+**Dependencies**: Issue #19 (Foundation)
+
+**Effort Estimate**: 2-3 days
+
+**Priority**: P3 (Low - Implementation)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `backend`, `database`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: N/A (Backend only)
+
+---
+
+#### Issue #19b: Multi-Station Database Implementation - Table Storage
+**GitHub Issue**: TBD
+
+**Objective**: Implement station management and filtering in Azure Table Storage database service
+
+**User Story**: As a developer, I want Table Storage to support multi-station operations so that production deployments can handle multiple stations.
+
+**Current State**: Table Storage has no station support  
+**Target State**: Table Storage implements full IDatabase station interface
+
+**Steps**:
+1. Create Stations table in Azure Table Storage
+   - Partition key: 'Station'
+   - Row key: stationId
+   - Store hierarchy as JSON string
+2. Implement station CRUD operations
+   - getAllStations(), getStationById(), getStationsByBrigade()
+   - createStation(), updateStation(), deleteStation()
+3. Add stationId property to all existing table entities
+   - Update Member, Activity, CheckIn, Event tables
+   - Update Appliance, Template, CheckRun, CheckResult tables
+4. Update query operations to filter by stationId
+   - Add stationId to filter expressions
+   - Support optional stationId (query all if not provided)
+5. Update create operations to include stationId
+   - Use DEFAULT_STATION_ID if not provided
+6. Implement brigade-level queries
+   - Query multiple stations by brigadeId
+7. Create migration helper to add stationId to existing entities
+8. Test with both production and test Table Storage instances
+
+**Success Criteria**:
+- [ ] Stations table created with proper partitioning
+- [ ] Station CRUD operations working with Table Storage
+- [ ] All entities store stationId in Table Storage
+- [ ] Query operations filter by stationId correctly
+- [ ] Create operations assign stationId (default if missing)
+- [ ] Brigade-level queries return data from multiple stations
+- [ ] Migration helper tested with existing data
+- [ ] Backward compatible (existing data assigned to default)
+- [ ] Production and test instances both work
+- [ ] Code compiles without errors
+- [ ] Integration tests pass
+
+**Dependencies**: Issue #19, Issue #19a
+
+**Effort Estimate**: 3-4 days
+
+**Priority**: P3 (Low - Implementation)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `backend`, `database`, `azure`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: N/A (Backend only)
+
+---
+
+#### Issue #19c: Station Management API Endpoints
+**GitHub Issue**: TBD
+
+**Objective**: Create REST API endpoints for station management operations
+
+**User Story**: As an RFS administrator, I want API endpoints to manage stations so that I can create, update, and view stations programmatically.
+
+**Current State**: No station API endpoints  
+**Target State**: Full CRUD API for stations with validation
+
+**Steps**:
+1. Create backend/src/routes/stations.ts
+2. Implement GET /api/stations
+   - List all stations
+   - Support query params: brigadeId, area, district
+   - Paginated response
+3. Implement GET /api/stations/:id
+   - Get single station by ID
+   - Include hierarchy information
+4. Implement POST /api/stations
+   - Create new station with validation
+   - Require: name, brigadeId, hierarchy
+   - Optional: location, contactInfo
+5. Implement PUT /api/stations/:id
+   - Update station details
+   - Validate hierarchy structure
+6. Implement DELETE /api/stations/:id
+   - Soft delete (set isActive=false)
+   - Prevent deletion if has members/data
+7. Implement GET /api/stations/brigade/:brigadeId
+   - Get all stations in a brigade
+8. Create validation middleware for stations
+   - Validate hierarchy structure
+   - Validate location coordinates
+   - Validate required fields
+9. Add WebSocket events
+   - station-created, station-updated, station-deleted
+10. Add comprehensive API tests
+11. Update api_register.json with new endpoints
+
+**Success Criteria**:
+- [ ] All CRUD endpoints implemented
+- [ ] Validation middleware working
+- [ ] Error handling for invalid requests
+- [ ] WebSocket events broadcast correctly
+- [ ] Brigade query endpoint working
+- [ ] API tests cover all endpoints (15+ tests)
+- [ ] api_register.json updated
+- [ ] function_register.json updated
+- [ ] Postman/Thunder Client collection created
+- [ ] API documentation complete
+
+**Dependencies**: Issue #19a, Issue #19b
+
+**Effort Estimate**: 2-3 days
+
+**Priority**: P3 (Low - API)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `backend`, `api`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: N/A (Backend API only)
+
+---
+
+#### Issue #19d: National Dataset Integration - RFS Facilities Parser
+**GitHub Issue**: TBD
+
+**Objective**: Parse and integrate the national RFS facilities dataset for station lookup
+
+**User Story**: As an administrator creating a station, I want to search the national RFS facilities dataset so that I can quickly find and populate station details.
+
+**Current State**: No dataset integration  
+**Target State**: CSV parser with search and geolocation-based sorting
+
+**Steps**:
+1. Download RFS facilities CSV from atlas.gov.au
+   - Store in backend/src/data/rfs-facilities.csv
+   - Add to .gitignore if too large (>1MB)
+2. Create CSV parser service
+   - Parse station name, location, brigade, district, area
+   - Map to StationHierarchy structure
+   - Handle data inconsistencies
+3. Implement search functionality
+   - Full-text search by name, brigade, district
+   - Case-insensitive matching
+   - Return ranked results
+4. Implement geolocation sorting
+   - Calculate distance from user location
+   - Return closest N stations
+   - Use Haversine formula for accuracy
+5. Create GET /api/stations/lookup endpoint
+   - Query param: q (search query)
+   - Query param: lat, lon (user location)
+   - Query param: limit (default 10)
+   - Return: closest 10 + search results
+6. Cache parsed data in memory
+   - Load on server start
+   - Refresh endpoint for updates
+7. Add tests for parser and lookup
+8. Document CSV format and mapping
+
+**Success Criteria**:
+- [ ] CSV parser successfully loads RFS facilities data
+- [ ] Search returns relevant results
+- [ ] Geolocation sorting returns closest stations
+- [ ] Lookup endpoint combines closest + search results
+- [ ] Data cached for performance
+- [ ] Handles missing/invalid data gracefully
+- [ ] Tests cover parser and search (10+ tests)
+- [ ] Documentation explains data mapping
+- [ ] Performance: lookup < 200ms
+
+**Dependencies**: Issue #19c
+
+**Effort Estimate**: 2-3 days
+
+**Priority**: P3 (Low - Enhancement)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `backend`, `data-integration`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: N/A (Backend service)
+
+---
+
+#### Issue #19e: Station Context and Selection - Frontend
+**GitHub Issue**: TBD
+
+**Objective**: Create frontend station selection context and UI components
+
+**User Story**: As a user, I want to select which station I'm viewing so that I can see data specific to my station.
+
+**Current State**: No station selection in frontend  
+**Target State**: Station context, selector component, persisted selection
+
+**Steps**:
+1. Create StationContext in frontend/src/contexts/
+   - Store currently selected station
+   - Store list of available stations
+   - Store user's default station
+   - Provide methods: selectStation(), clearStation()
+2. Create StationProvider component
+   - Wrap App with provider
+   - Load stations from API on mount
+   - Load persisted selection from localStorage
+   - Sync selection across tabs (storage event)
+3. Create StationSelector component
+   - Dropdown with station search
+   - Show station hierarchy (area/district/brigade)
+   - Display current selection prominently
+   - Keyboard navigation support
+4. Add StationSelector to Header component
+   - Show in top navigation
+   - Highlight demo station with special color
+   - Show brigade name with station name
+5. Update API service to include stationId
+   - Add X-Station-Id header to all requests
+   - Use selected station from context
+   - Fallback to DEFAULT_STATION_ID
+6. Persist selection in localStorage
+   - Key: 'selectedStationId'
+   - Update on station change
+   - Clear on logout (future auth integration)
+7. Add station switching tests
+   - Test context provider
+   - Test selector component
+   - Test API header injection
+8. Style with RFS branding
+
+**Success Criteria**:
+- [ ] StationContext created and working
+- [ ] StationProvider wraps app correctly
+- [ ] StationSelector component styled and functional
+- [ ] Station selection persists across page refresh
+- [ ] All API calls include X-Station-Id header
+- [ ] Demo station visually distinguished
+- [ ] Brigade name shown with station
+- [ ] Keyboard navigation works
+- [ ] Tests pass (8+ tests)
+- [ ] Responsive design (mobile, tablet, desktop)
+- [ ] Accessibility: ARIA labels, keyboard nav
+
+**Dependencies**: Issue #19c
+
+**Effort Estimate**: 2-3 days
+
+**Priority**: P3 (Low - Frontend)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `frontend`, `ui`
 
 **Milestone**: v2.0 - Advanced Features
 
 **UI Screenshot Requirement**: YES
-- Station selection dropdown
-- Station management UI
-- Cross-station dashboard
+- Station selector dropdown (closed state)
+- Station selector dropdown (open with search)
+- Station selector on mobile
 - iPad portrait mode
 - iPad landscape mode
+
+---
+
+#### Issue #19f: Update Existing Routes for Multi-Station Filtering
+**GitHub Issue**: TBD
+
+**Objective**: Update all existing API routes to support station filtering
+
+**User Story**: As a developer, I want all API routes to filter by station so that data isolation is enforced across the system.
+
+**Current State**: Routes don't filter by station  
+**Target State**: All routes filter by stationId from header or query param
+
+**Steps**:
+1. Create middleware to extract stationId
+   - Check X-Station-Id header
+   - Check stationId query parameter
+   - Default to DEFAULT_STATION_ID if missing
+   - Attach to req.stationId
+2. Update members routes
+   - GET /api/members: filter by stationId
+   - POST /api/members: assign stationId
+   - GET /api/members/:id/history: filter check-ins
+3. Update activities routes
+   - GET /api/activities: filter by stationId
+   - POST /api/activities: assign stationId
+   - GET /api/activities/active: filter by stationId
+4. Update check-ins routes
+   - GET /api/checkins: filter by stationId
+   - GET /api/checkins/active: filter by stationId
+   - POST /api/checkins: assign stationId
+5. Update events routes
+   - GET /api/events: filter by stationId
+   - GET /api/events/active: filter by stationId
+   - POST /api/events: assign stationId
+   - Participants inherit event's stationId
+6. Update truck checks routes
+   - All appliance operations: filter by stationId
+   - All check run operations: filter by stationId
+7. Update achievements routes
+   - Filter achievements by member's station
+8. Update reports routes
+   - Add stationId parameter to all report methods
+   - Support cross-station reports (admin feature)
+9. Add tests for station filtering on all routes
+10. Update API documentation
+
+**Success Criteria**:
+- [ ] Middleware extracts stationId correctly
+- [ ] All GET routes filter by stationId
+- [ ] All POST routes assign stationId
+- [ ] Data properly isolated by station
+- [ ] Brigade-level visibility works (multiple stations)
+- [ ] Backward compatible (no stationId = default)
+- [ ] Tests verify filtering (30+ new tests)
+- [ ] API documentation updated
+- [ ] No data leakage across stations verified
+- [ ] Performance not degraded
+
+**Dependencies**: Issue #19a, Issue #19b, Issue #19c
+
+**Effort Estimate**: 3-4 days
+
+**Priority**: P3 (Low - Integration)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `backend`, `api`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: N/A (Backend routes)
+
+---
+
+#### Issue #19g: Station Management UI - Admin Portal
+**GitHub Issue**: TBD
+
+**Objective**: Create admin UI for managing stations
+
+**User Story**: As an RFS administrator, I want a UI to manage stations so that I can create, edit, and view stations without using the API directly.
+
+**Current State**: No station management UI  
+**Target State**: Admin portal with station CRUD operations
+
+**Steps**:
+1. Create frontend/src/features/admin/stations/
+2. Create StationManagementPage component
+   - List all stations in table/grid
+   - Search and filter stations
+   - Sort by name, brigade, district
+   - Pagination for large lists
+3. Create CreateStationModal component
+   - Form with station details (name, brigade, etc.)
+   - Integration with national dataset lookup
+   - Auto-populate from lookup selection
+   - Hierarchy dropdown selectors
+   - Location map selector (optional)
+4. Create EditStationModal component
+   - Pre-populated form
+   - Validation
+   - Save/cancel actions
+5. Create StationDetailsView component
+   - Show full station information
+   - Show statistics (members, events, check-ins)
+   - Link to cross-station reports
+6. Add route /admin/stations
+   - Add to main router
+   - Link from landing page admin section
+7. Integrate national dataset lookup
+   - Search component
+   - Display closest 10 + search results
+   - One-click populate from result
+8. Add demo station indicator
+   - Visual badge for demo station
+   - "Reset Demo Station" button
+9. Add station deletion confirmation
+   - Check for existing data
+   - Soft delete only
+10. Style with RFS branding
+11. Add component tests
+12. Add e2e tests with Playwright (optional)
+
+**Success Criteria**:
+- [ ] Station list displays all stations
+- [ ] Create station modal works with validation
+- [ ] Edit station modal updates correctly
+- [ ] National dataset lookup integrated
+- [ ] Closest 10 stations shown by default
+- [ ] Search returns relevant results
+- [ ] Station details view shows statistics
+- [ ] Demo station visually distinguished
+- [ ] Responsive design (mobile, tablet, desktop)
+- [ ] Tests pass (15+ component tests)
+- [ ] Accessibility compliant
+
+**Dependencies**: Issue #19c, Issue #19d, Issue #19e
+
+**Effort Estimate**: 4-5 days
+
+**Priority**: P3 (Low - Admin UI)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `frontend`, `ui`, `admin`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: YES
+- Station list page
+- Create station modal with lookup
+- Edit station modal
+- Station details view
+- Demo station with badge
+- iPad portrait mode
+- iPad landscape mode
+
+---
+
+#### Issue #19h: Cross-Station Reporting Dashboard
+**GitHub Issue**: TBD
+
+**Objective**: Create cross-station reporting dashboard for regional managers
+
+**User Story**: As an RFS regional manager, I want to view aggregated reports across multiple stations so that I can identify trends and compare station performance.
+
+**Current State**: Reports are single-station only  
+**Target State**: Cross-station dashboard with aggregated analytics
+
+**Steps**:
+1. Create frontend/src/features/reports/CrossStationReportsPage
+2. Add station selection multi-select
+   - Select multiple stations for comparison
+   - Select all stations in brigade/district
+   - Remember selection
+3. Create attendance comparison chart
+   - Side-by-side bar chart for stations
+   - Monthly trends per station
+   - Total vs per-station breakdowns
+4. Create member participation comparison
+   - Top members across all selected stations
+   - Station-specific leaderboards side-by-side
+5. Create activity breakdown comparison
+   - Pie charts for each station
+   - Aggregated totals
+6. Create event statistics comparison
+   - Event counts by station
+   - Average participation by station
+   - Duration comparisons
+7. Add export functionality
+   - Export cross-station reports to CSV
+   - Export individual station reports
+8. Add brigade-level summary
+   - Automatic brigade grouping
+   - Show all stations in brigade
+   - Toggle between stations and brigade view
+9. Style with RFS branding
+10. Add route /reports/cross-station
+11. Add tests for cross-station logic
+
+**Success Criteria**:
+- [ ] Multi-station selector working
+- [ ] Attendance comparison chart displays correctly
+- [ ] Member participation shows top performers
+- [ ] Activity breakdown compares stations
+- [ ] Event statistics compare correctly
+- [ ] Brigade-level summary auto-groups stations
+- [ ] Export to CSV works
+- [ ] Responsive design maintained
+- [ ] Tests pass (10+ tests)
+- [ ] Performance: loads < 3 seconds for 10 stations
+
+**Dependencies**: Issue #19f
+
+**Effort Estimate**: 3-4 days
+
+**Priority**: P3 (Low - Reporting)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `frontend`, `reporting`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: YES
+- Cross-station dashboard overview
+- Multi-station selector
+- Attendance comparison chart
+- Brigade-level summary view
+- iPad portrait mode
+- iPad landscape mode
+
+---
+
+#### Issue #19i: Demo Station Features and Data Reset
+**GitHub Issue**: TBD
+
+**Objective**: Implement demo station with sample data and reset capability
+
+**User Story**: As a potential user evaluating the system, I want a demo station with realistic data so that I can explore features without affecting real brigade data.
+
+**Current State**: No demo station functionality  
+**Target State**: Isolated demo station with sample data and reset functionality
+
+**Steps**:
+1. Create demo station seed data script
+   - 15-20 sample members with diverse names/ranks
+   - 5 sample activities
+   - 10 recent check-ins
+   - 3-4 events (1 active, rest completed)
+   - 2 appliances with check results
+   - Realistic timestamps (last 30 days)
+2. Create POST /api/stations/demo/reset endpoint
+   - Delete all demo station data
+   - Recreate demo station
+   - Reseed with sample data
+   - Return success message
+3. Add demo indicator to UI
+   - Show "DEMO MODE" badge in header
+   - Different color scheme for demo (subtle)
+   - Warning before destructive actions
+4. Create demo station landing prompt
+   - Show on first visit
+   - Explain demo functionality
+   - "Try Demo" vs "Use Real Station"
+   - Store preference in localStorage
+5. Add demo data quality
+   - Diverse member names (various backgrounds)
+   - Realistic activity patterns
+   - Some completed events, some active
+   - Mix of successful and issue check results
+6. Add demo reset button to admin UI
+   - Confirm before reset
+   - Show last reset time
+   - Reset logs activity
+7. Prevent demo data pollution
+   - Isolate demo station data completely
+   - No cross-contamination with real data
+8. Add tests for demo functionality
+
+**Success Criteria**:
+- [ ] Demo station created with realistic sample data
+- [ ] Demo reset endpoint works correctly
+- [ ] Demo mode indicator shows in UI
+- [ ] Landing prompt guides new users
+- [ ] Demo data is diverse and realistic
+- [ ] Reset button works in admin UI
+- [ ] Demo data completely isolated
+- [ ] No data leakage to/from real stations
+- [ ] Tests verify demo isolation (8+ tests)
+- [ ] Documentation explains demo usage
+
+**Dependencies**: Issue #19a, Issue #19b, Issue #19g
+
+**Effort Estimate**: 2-3 days
+
+**Priority**: P3 (Low - Demo)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `demo`, `seed-data`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: YES
+- Demo mode indicator in header
+- Demo landing prompt
+- Demo reset button and confirmation
+- iPad portrait mode
+- iPad landscape mode
+
+---
+
+#### Issue #19j: Multi-Station Data Migration and Backward Compatibility
+**GitHub Issue**: TBD
+
+**Objective**: Create migration script and ensure backward compatibility for existing deployments
+
+**User Story**: As a station captain with existing data, I want my data to migrate seamlessly when multi-station support is enabled so that I don't lose any information.
+
+**Current State**: Existing data has no stationId  
+**Target State**: All existing data assigned to default station, backward compatible
+
+**Steps**:
+1. Create migration script backend/src/scripts/migrateToMultiStation.ts
+   - Scan all existing entities
+   - Assign DEFAULT_STATION_ID to entities without stationId
+   - Create default station if doesn't exist
+   - Log migration progress
+   - Report entities migrated
+2. Add migration verification
+   - Check all entities have stationId
+   - Verify default station exists
+   - Count migrated entities
+   - Generate migration report
+3. Test migration with production-like data
+   - Create test dataset mimicking production
+   - Run migration
+   - Verify data integrity
+   - Check backward compatibility
+4. Add backward compatibility checks
+   - Ensure undefined stationId defaults to DEFAULT_STATION_ID
+   - All queries work with or without stationId
+   - No breaking changes to existing API
+5. Create rollback capability
+   - Remove stationId from entities
+   - Revert to single-station mode
+   - Backup before migration
+6. Document migration process
+   - Pre-migration checklist
+   - Migration steps
+   - Post-migration verification
+   - Rollback procedure
+7. Add migration tests
+8. Create migration guide for admins
+
+**Success Criteria**:
+- [ ] Migration script successfully assigns stationId to all entities
+- [ ] Default station created automatically
+- [ ] Existing data accessible after migration
+- [ ] Backward compatibility maintained
+- [ ] No data loss during migration
+- [ ] Migration is idempotent (can run multiple times)
+- [ ] Rollback procedure tested
+- [ ] Migration tests pass (5+ tests)
+- [ ] Documentation complete
+- [ ] Admin guide created
+
+**Dependencies**: Issue #19a, Issue #19b, Issue #19f
+
+**Effort Estimate**: 2 days
+
+**Priority**: P3 (Low - Migration)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `migration`, `database`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: N/A (Backend script)
+
+---
+
+#### Issue #19k: Multi-Station Documentation and Registry Updates
+**GitHub Issue**: TBD
+
+**Objective**: Update all documentation to reflect multi-station architecture
+
+**User Story**: As a developer or administrator, I want comprehensive documentation so that I can understand and use multi-station features effectively.
+
+**Current State**: Documentation describes single-station only  
+**Target State**: Complete multi-station documentation
+
+**Steps**:
+1. Update docs/AS_BUILT.md
+   - Add multi-station architecture section
+   - Document station hierarchy
+   - Explain data isolation strategy
+   - Update database schema diagrams
+2. Update docs/api_register.json
+   - Add all station endpoints
+   - Update existing endpoints with stationId parameter
+   - Document X-Station-Id header
+3. Update docs/function_register.json
+   - Add station service methods
+   - Update database methods with stationId
+   - Document helper functions
+4. Create docs/MULTI_STATION_GUIDE.md
+   - Overview of multi-station support
+   - Station hierarchy explanation
+   - How to create stations
+   - Brigade-level visibility
+   - Demo station usage
+   - Migration guide
+   - Troubleshooting
+5. Update docs/MASTER_PLAN.md
+   - Mark Issue #19 (and sub-issues) complete
+   - Update success criteria
+   - Update system capabilities
+6. Update .github/copilot-instructions.md
+   - Add multi-station development guidelines
+   - Document station ID patterns
+   - Testing multi-station features
+7. Update README.md
+   - Add multi-station to features list
+   - Link to multi-station guide
+8. Create API examples
+   - Station CRUD operations
+   - Filtering by station
+   - Cross-station queries
+   - Brigade-level operations
+9. Add architectural diagrams
+   - Station hierarchy diagram
+   - Data isolation diagram
+   - API flow with station filtering
+
+**Success Criteria**:
+- [ ] AS_BUILT.md updated with multi-station architecture
+- [ ] api_register.json includes all station endpoints
+- [ ] function_register.json updated with station methods
+- [ ] MULTI_STATION_GUIDE.md created and comprehensive
+- [ ] MASTER_PLAN.md marked complete
+- [ ] copilot-instructions.md includes multi-station guidelines
+- [ ] README.md updated
+- [ ] API examples documented
+- [ ] Architectural diagrams created
+- [ ] All documentation reviewed and accurate
+
+**Dependencies**: All previous Issue #19 sub-issues
+
+**Effort Estimate**: 1-2 days
+
+**Priority**: P3 (Low - Documentation)
+
+**Labels**: `feature`, `multi-tenant`, `phase-4`, `documentation`
+
+**Milestone**: v2.0 - Advanced Features
+
+**UI Screenshot Requirement**: N/A (Documentation only)
 
 ---
 
