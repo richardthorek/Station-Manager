@@ -638,6 +638,72 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
 
     return runsWithResults;
   }
+
+  /**
+   * Get truck check compliance statistics
+   */
+  async getTruckCheckCompliance(startDate: Date, endDate: Date): Promise<{
+    totalChecks: number;
+    completedChecks: number;
+    inProgressChecks: number;
+    checksWithIssues: number;
+    complianceRate: number;
+    applianceStats: Array<{
+      applianceId: string;
+      applianceName: string;
+      checkCount: number;
+      lastCheckDate: string | null;
+    }>;
+  }> {
+    const runs = await this.getCheckRunsByDateRange(startDate, endDate);
+
+    const completedChecks = runs.filter(r => r.status === 'completed').length;
+    const inProgressChecks = runs.filter(r => r.status === 'in-progress').length;
+    const checksWithIssues = runs.filter(r => r.hasIssues).length;
+
+    // Calculate compliance rate (completed without issues)
+    const completedWithoutIssues = runs.filter(r => r.status === 'completed' && !r.hasIssues).length;
+    const complianceRate = runs.length > 0
+      ? Math.round((completedWithoutIssues / runs.length) * 100)
+      : 100;
+
+    // Group by appliance
+    const applianceMap = new Map<string, { name: string; count: number; lastCheck: Date | null }>();
+    runs.forEach(run => {
+      const runStartTime = new Date(run.startTime);
+      const existing = applianceMap.get(run.applianceId);
+      if (!existing) {
+        applianceMap.set(run.applianceId, {
+          name: run.applianceName,
+          count: 1,
+          lastCheck: runStartTime,
+        });
+      } else {
+        existing.count += 1;
+        if (!existing.lastCheck || runStartTime > existing.lastCheck) {
+          existing.lastCheck = runStartTime;
+        }
+      }
+    });
+
+    const applianceStats = Array.from(applianceMap.entries())
+      .map(([applianceId, stats]) => ({
+        applianceId,
+        applianceName: stats.name,
+        checkCount: stats.count,
+        lastCheckDate: stats.lastCheck ? stats.lastCheck.toISOString() : null,
+      }))
+      .sort((a, b) => b.checkCount - a.checkCount);
+
+    return {
+      totalChecks: runs.length,
+      completedChecks,
+      inProgressChecks,
+      checksWithIssues,
+      complianceRate,
+      applianceStats,
+    };
+  }
 }
 
 // Export singleton instance

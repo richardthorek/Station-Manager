@@ -671,7 +671,7 @@ class DatabaseService {
     memberId: string;
     memberName: string;
     participationCount: number;
-    lastCheckIn: Date;
+    lastCheckIn: string;
   }> {
     const participants = Array.from(this.eventParticipants.values())
       .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
@@ -699,7 +699,7 @@ class DatabaseService {
         memberId,
         memberName: stats.name,
         participationCount: stats.count,
-        lastCheckIn: stats.lastCheckIn,
+        lastCheckIn: stats.lastCheckIn.toISOString(),
       }))
       .sort((a, b) => b.participationCount - a.participationCount)
       .slice(0, limit);

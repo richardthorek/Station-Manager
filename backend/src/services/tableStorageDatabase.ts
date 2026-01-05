@@ -788,6 +788,158 @@ export class TableStorageDatabase {
   async clearAllActiveCheckIns(): Promise<void> {
     return;
   }
+
+  /**
+   * Get attendance summary - monthly participation count
+   */
+  async getAttendanceSummary(startDate: Date, endDate: Date): Promise<Array<{ month: string; count: number }>> {
+    const participants = await this.getAllEventParticipants(startDate, endDate);
+
+    // Group by month
+    const monthCounts = new Map<string, number>();
+    participants.forEach(p => {
+      const checkInTime = new Date(p.checkInTime);
+      const monthKey = `${checkInTime.getFullYear()}-${String(checkInTime.getMonth() + 1).padStart(2, '0')}`;
+      monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
+    });
+
+    return Array.from(monthCounts.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+  }
+
+  /**
+   * Get member participation - top members by event participation
+   */
+  async getMemberParticipation(startDate: Date, endDate: Date, limit: number = 10): Promise<Array<{
+    memberId: string;
+    memberName: string;
+    participationCount: number;
+    lastCheckIn: string;
+  }>> {
+    const participants = await this.getAllEventParticipants(startDate, endDate);
+
+    // Group by member
+    const memberStats = new Map<string, { name: string; count: number; lastCheckIn: Date }>();
+    participants.forEach(p => {
+      const checkInTime = new Date(p.checkInTime);
+      const existing = memberStats.get(p.memberId);
+      if (!existing) {
+        memberStats.set(p.memberId, {
+          name: p.memberName,
+          count: 1,
+          lastCheckIn: checkInTime,
+        });
+      } else {
+        existing.count += 1;
+        if (checkInTime > existing.lastCheckIn) {
+          existing.lastCheckIn = checkInTime;
+        }
+      }
+    });
+
+    return Array.from(memberStats.entries())
+      .map(([memberId, stats]) => ({
+        memberId,
+        memberName: stats.name,
+        participationCount: stats.count,
+        lastCheckIn: stats.lastCheckIn.toISOString(),
+      }))
+      .sort((a, b) => b.participationCount - a.participationCount)
+      .slice(0, limit);
+  }
+
+  /**
+   * Get activity breakdown - count by activity category
+   */
+  async getActivityBreakdown(startDate: Date, endDate: Date): Promise<Array<{
+    category: string;
+    count: number;
+    percentage: number;
+  }>> {
+    const events = await this.getEventsByDateRange(startDate, endDate);
+
+    const categoryCounts = new Map<string, number>();
+    for (const event of events) {
+      const activity = await this.getActivityById(event.activityId);
+      const category = activity?.category || 'other';
+      categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+    }
+
+    const total = events.length;
+    return Array.from(categoryCounts.entries())
+      .map(([category, count]) => ({
+        category,
+        count,
+        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  /**
+   * Get event statistics
+   */
+  async getEventStatistics(startDate: Date, endDate: Date): Promise<{
+    totalEvents: number;
+    activeEvents: number;
+    completedEvents: number;
+    totalParticipants: number;
+    averageParticipantsPerEvent: number;
+    averageDuration: number;
+  }> {
+    const events = await this.getEventsByDateRange(startDate, endDate);
+
+    const activeEvents = events.filter(e => e.isActive).length;
+    const completedEvents = events.filter(e => !e.isActive && e.endTime).length;
+
+    const participants = await this.getAllEventParticipants(startDate, endDate);
+
+    // Calculate average duration for completed events
+    const durations = events
+      .filter(e => e.endTime)
+      .map(e => (new Date(e.endTime!).getTime() - new Date(e.startTime).getTime()) / (1000 * 60)); // minutes
+
+    const averageDuration = durations.length > 0
+      ? Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length)
+      : 0;
+
+    return {
+      totalEvents: events.length,
+      activeEvents,
+      completedEvents,
+      totalParticipants: participants.length,
+      averageParticipantsPerEvent: events.length > 0
+        ? Math.round((participants.length / events.length) * 10) / 10
+        : 0,
+      averageDuration,
+    };
+  }
+
+  /**
+   * Helper method to get events by date range
+   */
+  private async getEventsByDateRange(startDate: Date, endDate: Date): Promise<Event[]> {
+    const allEvents = await this.getEvents(10000); // Get a large number of events
+    return allEvents.filter(e => {
+      const eventTime = new Date(e.startTime);
+      return eventTime >= startDate && eventTime <= endDate;
+    });
+  }
+
+  /**
+   * Helper method to get all event participants in a date range
+   */
+  private async getAllEventParticipants(startDate: Date, endDate: Date): Promise<EventParticipant[]> {
+    const events = await this.getEventsByDateRange(startDate, endDate);
+    const allParticipants: EventParticipant[] = [];
+    
+    for (const event of events) {
+      const participants = await this.getEventParticipants(event.id);
+      allParticipants.push(...participants);
+    }
+    
+    return allParticipants;
+  }
 }
 
 // Export singleton instance

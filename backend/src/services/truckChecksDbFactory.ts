@@ -60,6 +60,9 @@ export interface ITruckChecksDatabase {
   // Query Methods
   getRunsWithIssues(): Promise<CheckRunWithResults[]> | CheckRunWithResults[];
   getAllRunsWithResults(): Promise<CheckRunWithResults[]> | CheckRunWithResults[];
+  
+  // Reports
+  getTruckCheckCompliance(startDate: Date, endDate: Date): Promise<{ totalChecks: number; completedChecks: number; inProgressChecks: number; checksWithIssues: number; complianceRate: number; applianceStats: Array<{ applianceId: string; applianceName: string; checkCount: number; lastCheckDate: string | null }> }> | { totalChecks: number; completedChecks: number; inProgressChecks: number; checksWithIssues: number; complianceRate: number; applianceStats: Array<{ applianceId: string; applianceName: string; checkCount: number; lastCheckDate: string | null }> };
 }
 
 /**

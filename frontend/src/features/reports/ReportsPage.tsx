@@ -14,7 +14,7 @@
  * - Responsive design for mobile, tablet, and desktop
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, subDays, subMonths } from 'date-fns';
@@ -96,41 +96,36 @@ export function ReportsPage() {
   const [eventStatistics, setEventStatistics] = useState<EventStatistics | null>(null);
   const [truckCheckCompliance, setTruckCheckCompliance] = useState<TruckCheckCompliance | null>(null);
 
-  // Calculate date range
-  const getDateRange = (): { startDate: Date; endDate: Date } => {
-    const endDate = new Date();
-    let startDate: Date;
-
-    switch (dateRange) {
-      case 'last30':
-        startDate = subDays(endDate, 30);
-        break;
-      case 'last90':
-        startDate = subDays(endDate, 90);
-        break;
-      case 'last12months':
-        startDate = subMonths(endDate, 12);
-        break;
-      case 'custom':
-        startDate = customStartDate ? new Date(customStartDate) : subDays(endDate, 30);
-        if (customEndDate) {
-          return { startDate, endDate: new Date(customEndDate) };
-        }
-        return { startDate, endDate };
-      default:
-        startDate = subDays(endDate, 30);
-    }
-
-    return { startDate, endDate };
-  };
-
   // Fetch all reports
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const { startDate, endDate } = getDateRange();
+      // Calculate date range
+      const endDate = new Date();
+      let startDate: Date;
+
+      switch (dateRange) {
+        case 'last30':
+          startDate = subDays(endDate, 30);
+          break;
+        case 'last90':
+          startDate = subDays(endDate, 90);
+          break;
+        case 'last12months':
+          startDate = subMonths(endDate, 12);
+          break;
+        case 'custom':
+          startDate = customStartDate ? new Date(customStartDate) : subDays(endDate, 30);
+          if (customEndDate) {
+            endDate.setTime(new Date(customEndDate).getTime());
+          }
+          break;
+        default:
+          startDate = subDays(endDate, 30);
+      }
+
       const startDateStr = startDate.toISOString();
       const endDateStr = endDate.toISOString();
 
@@ -160,12 +155,12 @@ export function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, customStartDate, customEndDate]);
 
   // Fetch reports on mount and when date range changes
   useEffect(() => {
     fetchReports();
-  }, [dateRange, customStartDate, customEndDate]);
+  }, [fetchReports]);
 
   // Format month for display
   const formatMonth = (monthStr: string): string => {
