@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.1.0",
-  "lastUpdated": "2026-01-04",
-  "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager",
+  "version": "1.2.0",
+  "lastUpdated": "2026-01-05",
+  "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager\n\nMulti-Station Support: Database methods now accept optional stationId parameter for filtering. All methods filter by stationId when provided, default to 'default-station' otherwise.",
   "services": {
     "database": {
       "file": "backend/src/services/database.ts",
@@ -10,9 +10,17 @@
       "type": "class",
       "methods": {
         "getAllMembers": {
-          "signature": "getAllMembers(): Member[]",
+          "signature": "getAllMembers(stationId?: string): Member[]",
           "line": 184,
-          "description": "Get all members sorted by activity level (check-ins in last 6 months)",
+          "description": "Get all members sorted by activity level (check-ins in last 6 months), filtered by stationId if provided",
+          "parameters": [
+            {
+              "name": "stationId",
+              "type": "string | undefined",
+              "description": "Optional station ID for filtering members by station",
+              "optional": true
+            }
+          ],
           "returns": "Member[]",
           "complexity": "O(n log n)",
           "sideEffects": "none"
@@ -46,18 +54,32 @@
           "sideEffects": "none"
         },
         "createMember": {
-          "signature": "createMember(name: string): Member",
+          "signature": "createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }): Member",
           "line": 219,
           "parameters": [
             {
               "name": "name",
               "type": "string",
               "description": "Member full name"
+            },
+            {
+              "name": "details",
+              "type": "object",
+              "description": "Optional member details including stationId",
+              "optional": true,
+              "properties": {
+                "rank": "string | null",
+                "firstName": "string",
+                "lastName": "string",
+                "preferredName": "string",
+                "memberNumber": "string",
+                "stationId": "string - Station ID to assign"
+              }
             }
           ],
           "returns": "Member",
           "complexity": "O(1)",
-          "sideEffects": "Adds member to database, generates UUID and QR code"
+          "sideEffects": "Adds member to database, generates UUID and QR code, assigns stationId"
         },
         "updateMember": {
           "signature": "updateMember(id: string, name: string, rank: string | null): Member | undefined",

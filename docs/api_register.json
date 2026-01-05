@@ -1,8 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.0.0",
-  "lastUpdated": "2026-01-04",
-  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).",
+  "version": "1.1.0",
+  "lastUpdated": "2026-01-05",
+  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.",
+  "commonHeaders": {
+    "X-Station-Id": {
+      "description": "Optional station identifier for multi-station filtering. If not provided, defaults to 'default-station' for backward compatibility.",
+      "type": "string",
+      "required": false,
+      "example": "station-123",
+      "appliesTo": "all endpoints except /health and /api/status"
+    }
+  },
   "baseUrl": {
     "development": "http://localhost:3000",
     "production": "https://bungrfsstation.azurewebsites.net"

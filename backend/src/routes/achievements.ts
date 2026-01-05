@@ -3,15 +3,24 @@
  * 
  * API endpoints for fetching member achievements and gamification data
  * Supports demo mode via req.isDemoMode flag
+ * 
+ * Multi-Station Support:
+ * - Achievements are filtered by member, and members are already station-filtered
+ * - Middleware applied for consistency with other routes
+ * - Backward compatible: defaults to DEFAULT_STATION_ID if no stationId provided
  */
 
 import { Router, Request, Response } from 'express';
 import { AchievementService } from '../services/achievementService';
 import { ensureDatabase } from '../services/dbFactory';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
+import { stationMiddleware } from '../middleware/stationMiddleware';
 
 export function createAchievementRoutes(): Router {
   const router = Router();
+
+  // Apply station middleware to all routes
+  router.use(stationMiddleware);
 
   /**
    * GET /api/achievements/:memberId

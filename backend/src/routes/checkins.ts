@@ -7,6 +7,11 @@
  * - Toggling check-in status (undo check-in)
  * - Tracking check-in methods (kiosk, mobile, QR)
  * - Location tracking and offsite flagging
+ * 
+ * Multi-Station Support:
+ * - All GET endpoints filter by stationId (from X-Station-Id header or query param)
+ * - POST endpoints assign stationId to new check-ins
+ * - Backward compatible: defaults to DEFAULT_STATION_ID if no stationId provided
  */
 
 import { Router, Request, Response } from 'express';
@@ -17,14 +22,19 @@ import {
   validateMemberIdParam,
 } from '../middleware/checkinValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
+import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 
 const router = Router();
 
-// Get all check-ins (both active and inactive)
+// Apply station middleware to all routes
+router.use(stationMiddleware);
+
+// Get all check-ins (both active and inactive, filtered by station)
 router.get('/', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const checkIns = await db.getAllCheckIns();
+    const stationId = getStationIdFromRequest(req);
+    const checkIns = await db.getAllCheckIns(stationId);
     res.json(checkIns);
   } catch (error) {
     console.error('Error fetching check-ins:', error);
@@ -32,11 +42,12 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get all active check-ins
+// Get all active check-ins (filtered by station)
 router.get('/active', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const checkIns = await db.getActiveCheckIns();
+    const stationId = getStationIdFromRequest(req);
+    const checkIns = await db.getActiveCheckIns(stationId);
     res.json(checkIns);
   } catch (error) {
     console.error('Error fetching active check-ins:', error);
@@ -44,11 +55,12 @@ router.get('/active', async (req, res) => {
   }
 });
 
-// Check in a member
+// Check in a member (assigns station)
 router.post('/', validateCreateCheckIn, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { memberId, activityId, method, location, isOffsite } = req.body;
+    const stationId = getStationIdFromRequest(req);
 
     // Validate required fields
     if (!memberId) {
@@ -64,7 +76,7 @@ router.post('/', validateCreateCheckIn, handleValidationErrors, async (req: Requ
     // Use active activity if no activity specified
     let finalActivityId = activityId;
     if (!finalActivityId) {
-      const activeActivity = await db.getActiveActivity();
+      const activeActivity = await db.getActiveActivity(stationId);
       if (!activeActivity) {
         return res.status(400).json({ error: 'No active activity set' });
       }
@@ -94,7 +106,8 @@ router.post('/', validateCreateCheckIn, handleValidationErrors, async (req: Requ
       finalActivityId,
       method || 'mobile',
       location,
-      isOffsite || false
+      isOffsite || false,
+      stationId
     );
 
     res.status(201).json({
@@ -125,18 +138,19 @@ router.delete('/:memberId', validateMemberIdParam, handleValidationErrors, async
   }
 });
 
-// URL-based check-in
+// URL-based check-in (assigns station)
 router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { identifier } = req.body;
+    const stationId = getStationIdFromRequest(req);
 
     if (!identifier || typeof identifier !== 'string') {
       return res.status(400).json({ error: 'User identifier is required' });
     }
 
-    // Try to find member by name (case-insensitive)
-    const members = await db.getAllMembers();
+    // Try to find member by name (case-insensitive) - filter by station
+    const members = await db.getAllMembers(stationId);
     const member = members.find(
       m => m.name.toLowerCase() === decodeURIComponent(identifier).toLowerCase()
     );
@@ -145,8 +159,8 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
       return res.status(404).json({ error: 'Member not found' });
     }
 
-    // Get active activity
-    const activeActivity = await db.getActiveActivity();
+    // Get active activity for this station
+    const activeActivity = await db.getActiveActivity(stationId);
     if (!activeActivity) {
       return res.status(400).json({ error: 'No active activity set' });
     }
@@ -167,7 +181,8 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
       activeActivity.activityId,
       'qr',
       undefined,
-      false
+      false,
+      stationId
     );
 
     res.status(201).json({

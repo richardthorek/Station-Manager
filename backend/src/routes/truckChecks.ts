@@ -9,6 +9,11 @@
  * - Photo upload support (Azure Blob Storage integration)
  * - Real-time collaboration via WebSocket
  * - Issue tracking and reporting
+ * 
+ * Multi-Station Support:
+ * - All GET endpoints filter by stationId (from X-Station-Id header or query param)
+ * - POST endpoints assign stationId to new appliances, templates, and check runs
+ * - Backward compatible: defaults to DEFAULT_STATION_ID if no stationId provided
  */
 
 import { Router, Request, Response } from 'express';
@@ -32,8 +37,12 @@ import {
   validateCheckResultId,
 } from '../middleware/truckCheckValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
+import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 
 const router = Router();
+
+// Apply station middleware to all routes
+router.use(stationMiddleware);
 
 // Configure multer for memory storage (we'll upload to Azure)
 const upload = multer({
@@ -57,12 +66,13 @@ const upload = multer({
 
 /**
  * GET /api/truck-checks/appliances
- * Get all appliances
+ * Get all appliances (filtered by station)
  */
 router.get('/appliances', async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliances = await db.getAllAppliances();
+    const stationId = getStationIdFromRequest(req);
+    const appliances = await db.getAllAppliances(stationId);
     res.json(appliances);
   } catch (error) {
     console.error('Error fetching appliances:', error);
@@ -90,18 +100,19 @@ router.get('/appliances/:id', validateApplianceId, handleValidationErrors, async
 
 /**
  * POST /api/truck-checks/appliances
- * Create a new appliance
+ * Create a new appliance (assigns station)
  */
 router.post('/appliances', validateCreateAppliance, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { name, description, photoUrl } = req.body;
+    const stationId = getStationIdFromRequest(req);
     
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.createAppliance(name, description, photoUrl);
+    const appliance = await db.createAppliance(name, description, photoUrl, stationId);
     res.status(201).json(appliance);
   } catch (error) {
     console.error('Error creating appliance:', error);
@@ -176,18 +187,19 @@ router.get('/templates/:applianceId', validateTemplateApplianceId, handleValidat
 
 /**
  * PUT /api/truck-checks/templates/:applianceId
- * Update checklist template for an appliance
+ * Update checklist template for an appliance (assigns station)
  */
 router.put('/templates/:applianceId', validateUpdateTemplate, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { items } = req.body;
+    const stationId = getStationIdFromRequest(req);
     
     if (!items || !Array.isArray(items)) {
       return res.status(400).json({ error: 'Items array is required' });
     }
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const template = await db.updateTemplate(req.params.applianceId, items);
+    const template = await db.updateTemplate(req.params.applianceId, items, stationId);
     res.json(template);
   } catch (error) {
     console.error('Error updating template:', error);
@@ -201,12 +213,13 @@ router.put('/templates/:applianceId', validateUpdateTemplate, handleValidationEr
 
 /**
  * POST /api/truck-checks/runs
- * Find or create a check run for collaborative checking
+ * Find or create a check run for collaborative checking (assigns station)
  * If an active check run exists for the appliance, join it; otherwise create new
  */
 router.post('/runs', validateCreateCheckRun, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { applianceId, completedBy, completedByName } = req.body;
+    const stationId = getStationIdFromRequest(req);
     
     if (!applianceId || !completedBy) {
       return res.status(400).json({ error: 'applianceId and completedBy are required' });
@@ -233,7 +246,7 @@ router.post('/runs', validateCreateCheckRun, handleValidationErrors, async (req:
       res.json({ ...checkRun, joined: true });
     } else {
       // Create new check run
-      checkRun = await db.createCheckRun(applianceId, completedBy, completedByName);
+      checkRun = await db.createCheckRun(applianceId, completedBy, completedByName, stationId);
       
       // Emit real-time update that check run started
       io.emit('truck-check-update', {
@@ -271,17 +284,18 @@ router.get('/runs/:id', validateCheckRunId, handleValidationErrors, async (req: 
 
 /**
  * GET /api/truck-checks/runs
- * Get all check runs with optional filters
+ * Get all check runs with optional filters (filtered by station)
  */
 router.get('/runs', validateCheckRunQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { applianceId, startDate, endDate, withIssues } = req.query;
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     
     let runs;
     
     if (withIssues === 'true') {
-      runs = await db.getRunsWithIssues();
+      runs = await db.getRunsWithIssues(stationId);
     } else if (applianceId) {
       const simpleRuns = await db.getCheckRunsByAppliance(applianceId as string);
       runs = await Promise.all(simpleRuns.map(async run => ({
@@ -291,14 +305,15 @@ router.get('/runs', validateCheckRunQuery, handleValidationErrors, async (req: R
     } else if (startDate && endDate) {
       const simpleRuns = await db.getCheckRunsByDateRange(
         new Date(startDate as string),
-        new Date(endDate as string)
+        new Date(endDate as string),
+        stationId
       );
       runs = await Promise.all(simpleRuns.map(async run => ({
         ...run,
         results: await db.getResultsByRunId(run.id),
       })));
     } else {
-      runs = await db.getAllRunsWithResults();
+      runs = await db.getAllRunsWithResults(stationId);
     }
     
     res.json(runs);
@@ -343,11 +358,12 @@ router.put('/runs/:id/complete', validateCompleteCheckRun, handleValidationError
 
 /**
  * POST /api/truck-checks/results
- * Create a check result for an item
+ * Create a check result for an item (assigns station)
  */
 router.post('/results', validateCreateCheckResult, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy } = req.body;
+    const stationId = getStationIdFromRequest(req);
     
     if (!runId || !itemId || !itemName || !itemDescription || !status) {
       return res.status(400).json({ 
@@ -368,7 +384,8 @@ router.post('/results', validateCreateCheckResult, handleValidationErrors, async
       status as CheckStatus,
       comment,
       photoUrl,
-      completedBy
+      completedBy,
+      stationId
     );
     
     // Emit real-time update for collaborative checking

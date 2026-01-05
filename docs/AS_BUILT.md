@@ -511,6 +511,142 @@ backend/src/
 
 ---
 
+## Multi-Station Architecture
+
+### Overview
+
+**Status:** ✅ Implemented (January 2026)
+
+The system supports multi-tenant operation where each RFS station's data (members, activities, events, truck checks) is isolated by `stationId`. This enables:
+- **Single deployment serving multiple stations** - Cost-effective shared infrastructure
+- **Data isolation** - Stations cannot access each other's data
+- **Brigade-level visibility** - Future support for brigades with multiple stations
+- **Backward compatibility** - Existing single-station deployments unaffected
+
+### Station Identification
+
+Stations are identified using the `X-Station-Id` HTTP header or `stationId` query parameter:
+
+```http
+# Via header (primary method)
+GET /api/members
+X-Station-Id: bungeendore-north
+
+# Via query parameter (fallback for GET requests)
+GET /api/members?stationId=bungeendore-north
+
+# Without stationId (defaults to 'default-station')
+GET /api/members
+```
+
+**Priority:** Header → Query Parameter → `DEFAULT_STATION_ID` (`'default-station'`)
+
+### Station Middleware
+
+All API routes use `stationMiddleware` to extract and attach `stationId` to requests:
+
+```typescript
+// backend/src/middleware/stationMiddleware.ts
+export function stationMiddleware(req: Request, res: Response, next: NextFunction) {
+  const headerStationId = req.headers['x-station-id'];
+  const queryStationId = req.query.stationId;
+  const rawStationId = headerStationId || queryStationId;
+  req.stationId = getEffectiveStationId(rawStationId); // Defaults to DEFAULT_STATION_ID
+  next();
+}
+```
+
+### Station Filtering Behavior
+
+#### GET Endpoints (Read Operations)
+All GET endpoints filter results by `stationId`:
+
+| Endpoint | Filtering Behavior |
+|----------|-------------------|
+| `GET /api/members` | Returns only members belonging to specified station |
+| `GET /api/activities` | Returns station-specific + shared activities |
+| `GET /api/checkins` | Returns check-ins for specified station |
+| `GET /api/events` | Returns events for specified station |
+| `GET /api/truck-checks/appliances` | Returns appliances for specified station |
+| `GET /api/reports/*` | All reports filtered by station |
+
+#### POST Endpoints (Write Operations)
+All POST endpoints assign `stationId` to newly created entities:
+
+| Endpoint | Assignment Behavior |
+|----------|-------------------|
+| `POST /api/members` | New member assigned to station from header/query |
+| `POST /api/activities` | New activity assigned to station |
+| `POST /api/checkins` | Check-in assigned to station |
+| `POST /api/events` | Event assigned to station |
+| `POST /api/events/:id/participants` | Participant inherits event's stationId |
+| `POST /api/truck-checks/appliances` | Appliance assigned to station |
+
+### Database Schema Updates
+
+All entities now include optional `stationId` field:
+
+```typescript
+interface Member {
+  id: string;
+  name: string;
+  stationId?: string; // Defaults to 'default-station'
+  // ... other fields
+}
+
+interface Activity {
+  id: string;
+  name: string;
+  stationId?: string; // Shared activities use 'default-station'
+  // ... other fields
+}
+
+// Similar for CheckIn, Event, CheckRun, etc.
+```
+
+### Shared vs Station-Specific Data
+
+**Station-Specific Data:**
+- Members (always belong to one station)
+- Check-ins (tied to member's station)
+- Events (tied to specific station)
+- Event participants (inherit event's stationId)
+- Truck check runs (belong to station)
+- Custom activities (created by station)
+
+**Shared Data:**
+- Default activities (Training, Maintenance, Meeting) - visible to all stations
+- Station registry (defines available stations)
+
+### Testing
+
+Station filtering is validated with 32+ automated tests in `backend/src/__tests__/stationFiltering.test.ts`:
+
+- ✅ Middleware extraction (header, query, default)
+- ✅ Members filtering by station
+- ✅ Activities filtering by station
+- ✅ Check-ins filtering by station
+- ✅ Events filtering by station
+- ✅ Reports filtering by station
+- ✅ Data isolation (no cross-station leakage)
+- ✅ Backward compatibility (no stationId = default)
+
+### Performance Impact
+
+Station filtering has minimal performance impact:
+- **Index-based filtering:** Table Storage queries use partition keys efficiently
+- **In-memory filtering:** O(n) scan but small datasets (<1000 members per station)
+- **No degradation:** Existing tests show no performance regression
+
+### Migration Path
+
+For existing deployments:
+1. **No action required** - System defaults to `DEFAULT_STATION_ID` for backward compatibility
+2. **Optional:** Assign existing data to appropriate `stationId` using migration scripts
+3. **Enable multi-station:** Start passing `X-Station-Id` header in API calls
+
+---
+
 ## API Endpoints
 
 ### Machine-Readable API Registry
