@@ -27,10 +27,6 @@ export function createAchievementRoutes(): Router {
       const achievementService = new AchievementService(db, truckChecksDb);
       
       // Get member to validate they exist
-      const db = await ensureDatabase(req.isDemoMode);
-      const truckChecksDb = await ensureTruckChecksDatabase(req.isDemoMode);
-      const achievementService = new AchievementService(db, truckChecksDb);
-      
       const member = await db.getMemberById(memberId);
       if (!member) {
         res.status(404).json({ error: 'Member not found' });
