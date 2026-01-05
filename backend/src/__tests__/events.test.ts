@@ -386,4 +386,74 @@ describe('Events API', () => {
       expect(response.body.error).toContain('Participant not found');
     });
   });
+
+  describe('DELETE /api/events/:eventId', () => {
+    it('should soft delete an event', async () => {
+      // Create an event
+      const createResponse = await request(app)
+        .post('/api/events')
+        .send({ activityId: testActivityId, createdBy: testMemberId });
+      const eventId = createResponse.body.id;
+
+      // Delete the event
+      const response = await request(app)
+        .delete(`/api/events/${eventId}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('message', 'Event deleted successfully');
+      expect(response.body.event).toHaveProperty('id', eventId);
+      expect(response.body.event).toHaveProperty('isDeleted', true);
+    });
+
+    it('should not show deleted event in GET /api/events', async () => {
+      // Create an event
+      const createResponse = await request(app)
+        .post('/api/events')
+        .send({ activityId: testActivityId, createdBy: testMemberId });
+      const eventId = createResponse.body.id;
+
+      // Delete the event
+      await request(app)
+        .delete(`/api/events/${eventId}`)
+        .expect(200);
+
+      // Get all events - deleted event should not be in the list
+      const eventsResponse = await request(app)
+        .get('/api/events')
+        .expect(200);
+
+      const deletedEvent = eventsResponse.body.find((e: any) => e.id === eventId);
+      expect(deletedEvent).toBeUndefined();
+    });
+
+    it('should not show deleted event in GET /api/events/active', async () => {
+      // Create an event
+      const createResponse = await request(app)
+        .post('/api/events')
+        .send({ activityId: testActivityId, createdBy: testMemberId });
+      const eventId = createResponse.body.id;
+
+      // Delete the event
+      await request(app)
+        .delete(`/api/events/${eventId}`)
+        .expect(200);
+
+      // Get active events - deleted event should not be in the list
+      const activeEventsResponse = await request(app)
+        .get('/api/events/active')
+        .expect(200);
+
+      const deletedEvent = activeEventsResponse.body.find((e: any) => e.id === eventId);
+      expect(deletedEvent).toBeUndefined();
+    });
+
+    it('should return 404 if event does not exist', async () => {
+      const response = await request(app)
+        .delete('/api/events/non-existent-event')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('Event not found');
+    });
+  });
 });

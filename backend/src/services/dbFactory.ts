@@ -34,6 +34,7 @@ export interface IDatabase {
   getAllActivities(): Promise<Activity[]> | Activity[];
   getActivityById(id: string): Promise<Activity | null | undefined> | Activity | null | undefined;
   createActivity(name: string, createdBy?: string): Promise<Activity> | Activity;
+  deleteActivity(id: string): Promise<Activity | null> | Activity | null;
   
   // Active Activity
   getActiveActivity(): Promise<ActiveActivity | null> | ActiveActivity | null;
@@ -56,6 +57,7 @@ export interface IDatabase {
   getEventById(eventId: string): Promise<Event | null | undefined> | Event | null | undefined;
   endEvent(eventId: string): Promise<Event | null> | Event | null;
   reactivateEvent(eventId: string): Promise<Event | null> | Event | null;
+  deleteEvent(eventId: string): Promise<Event | null> | Event | null;
   addEventParticipant(eventId: string, memberId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean): Promise<EventParticipant> | EventParticipant;
   getEventParticipants(eventId: string): Promise<EventParticipant[]> | EventParticipant[];
   getEventWithParticipants(eventId: string): Promise<EventWithParticipants | null> | EventWithParticipants | null;
