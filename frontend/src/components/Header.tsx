@@ -3,12 +3,14 @@
  * 
  * Main application header displaying:
  * - Application title and logo
+ * - Station selector dropdown
  * - Theme toggle (light/dark mode)
  * - Connection status indicator
  * - Database status warning (in-memory vs persistent)
  */
 
 import { useTheme } from '../hooks/useTheme';
+import { StationSelector } from './StationSelector';
 import './Header.css';
 
 interface HeaderProps {
@@ -29,6 +31,9 @@ export function Header({ isConnected, databaseStatus }: HeaderProps) {
         <div className="header-logo">
           <div className="logo-icon">🚒</div>
           <h1>Station Manager</h1>
+        </div>
+        <div className="header-center">
+          <StationSelector />
         </div>
         <div className="header-status">
           <button 
