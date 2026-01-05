@@ -31,8 +31,10 @@
 #   - Includes automatic retry logic for 404/502/503 responses (deployment stabilization)
 #   - Polls health endpoint every 10s (max 10 attempts = 100s) before running tests
 #   - Tests proceed as soon as app is ready, or after 100s timeout
-#   - Version verification can take up to 120s additional time (13 attempts × 10s)
-#   - Total stabilization time: up to 100s polling + up to 120s verification = 220s max
+#   - Individual tests can retry up to 6 times (60s max per request)
+#   - Overall test suite timeout: 10 minutes to prevent indefinite hanging
+#   - Version verification can take up to 60s additional time (7 attempts × 10s)
+#   - Total stabilization time: up to 100s polling + up to 60s verification = 160s max
 #
 # Optimizations:
 #   - Parallel job execution for independent tasks
@@ -561,10 +563,16 @@ jobs:
           APP_URL: ${{ secrets.APP_URL }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
           TEST_TIMEOUT: 30000
-          MAX_RETRIES: 12
+          MAX_RETRIES: 6
           GITHUB_SHA: ${{ github.sha }}
         run: |
           cd backend
+          echo "🧪 Running post-deployment tests..."
+          echo "   Target: $APP_URL"
+          echo "   Commit: ${{ github.sha }}"
+          echo "   Max retries: 6 (60s per request)"
+          echo "   Overall timeout: 10 minutes"
+          echo ""
           npm run test:post-deploy
 
       - name: Post-deployment test summary
