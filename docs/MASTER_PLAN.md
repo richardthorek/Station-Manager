@@ -1580,7 +1580,10 @@ Priority: **MEDIUM** - Long-term enhancements
 **Steps**:
 1. Create Station and StationHierarchy TypeScript interfaces
    - Model jurisdiction → area → district → brigade → station hierarchy
+   - **Design assumption**: Brigade-to-station is typically 1:1 (brigade name = station name)
+   - Only a few brigades have multiple stations (e.g., "Bungendore North" and "Bungendore South")
    - Include location (lat/long) and contact info fields
+   - Add brigadeName field to Station for easy reference
 2. Add optional stationId field to all entity types
    - Member, Activity, CheckIn, Event, EventParticipant
    - Appliance, ChecklistTemplate, CheckRun, CheckResult
@@ -1816,6 +1819,7 @@ Priority: **MEDIUM** - Long-term enhancements
 2. Create CSV parser service
    - Parse station name, location, brigade, district, area
    - Map to StationHierarchy structure
+   - **Apply 1:1 brigade-station naming**: Most stations should have brigade name = station name
    - Handle data inconsistencies
 3. Implement search functionality
    - Full-text search by name, brigade, district
@@ -2026,6 +2030,8 @@ Priority: **MEDIUM** - Long-term enhancements
    - Pagination for large lists
 3. Create CreateStationModal component
    - Form with station details (name, brigade, etc.)
+   - **Default behavior**: Pre-fill station name with brigade name (1:1 assumption)
+   - Allow override for multi-station brigades (e.g., "North", "South" suffix)
    - Integration with national dataset lookup
    - Auto-populate from lookup selection
    - Hierarchy dropdown selectors

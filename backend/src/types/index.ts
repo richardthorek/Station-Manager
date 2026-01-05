@@ -4,22 +4,30 @@
 
 /**
  * Represents the hierarchical structure of RFS organization
+ * 
+ * Note: Most brigades have 1 station (brigade name = station name).
+ * Only a few brigades have multiple stations (e.g., "Bungendore North" and "Bungendore South").
  */
 export interface StationHierarchy {
   jurisdiction: string;     // State level (e.g., "NSW")
   area: string;             // Area/Region level
   district: string;         // District level
-  brigade: string;          // Brigade level (may have multiple stations)
-  station: string;          // Individual station
+  brigade: string;          // Brigade name (typically same as station name for 1:1 brigades)
+  station: string;          // Station name (same as brigade for most stations)
 }
 
 /**
  * Represents an RFS station
+ * 
+ * Design: Brigade-to-station is typically 1:1, so station name usually matches brigade name.
+ * For brigades with multiple stations, brigade name is shared (e.g., brigade: "Bungendore",
+ * stations: "Bungendore North", "Bungendore South").
  */
 export interface Station {
   id: string;                   // Unique station ID
-  name: string;                 // Station name
-  brigadeId: string;            // Brigade ID (for cross-station visibility)
+  name: string;                 // Station name (defaults to brigade name for 1:1 relationship)
+  brigadeId: string;            // Brigade ID (for cross-station visibility within same brigade)
+  brigadeName: string;          // Brigade name (typically same as station name)
   hierarchy: StationHierarchy;  // Full organizational hierarchy
   location?: {
     address?: string;
