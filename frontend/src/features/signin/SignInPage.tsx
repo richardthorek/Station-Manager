@@ -110,7 +110,8 @@ export function SignInPage() {
   const loadMembers = async () => {
     try {
       const data = await api.getMembers();
-      setMembers(data);
+      // Defensive check: ensure data is an array
+      setMembers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error loading members:', err);
     }
@@ -119,7 +120,8 @@ export function SignInPage() {
   const loadActivities = async () => {
     try {
       const data = await api.getActivities();
-      setActivities(data);
+      // Defensive check: ensure data is an array
+      setActivities(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error loading activities:', err);
     }
@@ -138,21 +140,23 @@ export function SignInPage() {
       }
 
       const data = await api.getEvents(limit, currentOffset);
+      // Defensive check: ensure data is an array
+      const eventsArray = Array.isArray(data) ? data : [];
       
       if (reset) {
-        setEvents(data);
-        setOffset(data.length);
+        setEvents(eventsArray);
+        setOffset(eventsArray.length);
         // Auto-select first active event
-        const firstActive = data.find(e => e.isActive);
+        const firstActive = eventsArray.find(e => e.isActive);
         if (firstActive && !selectedEventId) {
           setSelectedEventId(firstActive.id);
         }
       } else {
-        setEvents(prev => [...prev, ...data]);
-        setOffset(prev => prev + data.length);
+        setEvents(prev => [...prev, ...eventsArray]);
+        setOffset(prev => prev + eventsArray.length);
       }
 
-      setHasMore(data.length === limit);
+      setHasMore(eventsArray.length === limit);
     } catch (err) {
       console.error('Error loading events:', err);
     } finally {

@@ -144,9 +144,9 @@ export function ReportsPage() {
         api.getTruckCheckCompliance(startDateStr, endDateStr),
       ]);
 
-      setAttendanceSummary(attendanceRes.summary);
-      setMemberParticipation(participationRes.participation);
-      setActivityBreakdown(breakdownRes.breakdown);
+      setAttendanceSummary(Array.isArray(attendanceRes.summary) ? attendanceRes.summary : []);
+      setMemberParticipation(Array.isArray(participationRes.participation) ? participationRes.participation : []);
+      setActivityBreakdown(Array.isArray(breakdownRes.breakdown) ? breakdownRes.breakdown : []);
       setEventStatistics(statisticsRes.statistics);
       setTruckCheckCompliance(complianceRes.compliance);
     } catch (err) {

@@ -32,7 +32,8 @@ export function AdminDashboardPage() {
   async function loadData() {
     try {
       const appliancesData = await api.getAppliances();
-      setAppliances(appliancesData);
+      // Defensive check: ensure data is an array
+      setAppliances(Array.isArray(appliancesData) ? appliancesData : []);
       await loadCheckRuns();
     } catch (err) {
       setError('Failed to load data');
@@ -53,7 +54,8 @@ export function AdminDashboardPage() {
       }
       
       const data = await api.getCheckRuns(filters);
-      setCheckRuns(data);
+      // Defensive check: ensure data is an array
+      setCheckRuns(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Failed to load check runs');
       console.error(err);

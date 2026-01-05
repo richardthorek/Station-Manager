@@ -65,8 +65,9 @@ export function UserProfilePage() {
       ]);
       
       setMember(memberData);
-      setCheckInHistory(historyData);
-      setActivities(activitiesData);
+      // Defensive checks: ensure data is an array
+      setCheckInHistory(Array.isArray(historyData) ? historyData : []);
+      setActivities(Array.isArray(activitiesData) ? activitiesData : []);
       setAchievements(achievementsData);
       setEditedName(memberData.name);
       setEditedRank(memberData.rank || 'Visitor');

@@ -40,11 +40,13 @@ export function TruckCheckPage() {
         api.getAppliances(),
         api.getCheckRuns()
       ]);
-      setAppliances(appliancesData);
+      // Defensive checks: ensure data is an array
+      setAppliances(Array.isArray(appliancesData) ? appliancesData : []);
       
       // Map active checks by appliance ID
       const activeMap = new Map<string, CheckRun>();
-      checkRunsData
+      const checkRuns = Array.isArray(checkRunsData) ? checkRunsData : [];
+      checkRuns
         .filter((run: CheckRun) => run.status === 'in-progress')
         .forEach((run: CheckRun) => {
           activeMap.set(run.applianceId, run);
