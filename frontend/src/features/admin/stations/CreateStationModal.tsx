@@ -11,7 +11,7 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
-import type { Station } from '../../../types';
+import type { Station, StationLookupResult } from '../../../types';
 import { StationLookup } from './StationLookup';
 import './CreateStationModal.css';
 
@@ -72,7 +72,7 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
   /**
    * Handle lookup result selection
    */
-  const handleLookupSelect = (result: any) => {
+  const handleLookupSelect = (result: StationLookupResult) => {
     setFormData({
       name: result.name || result.brigade || '',
       brigadeId: generateBrigadeId(result.brigade || result.name),

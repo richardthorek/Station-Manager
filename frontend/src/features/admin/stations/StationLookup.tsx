@@ -7,17 +7,18 @@
  * - One-click populate from search results
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../../services/api';
+import type { StationLookupResult } from '../../../types';
 import './StationLookup.css';
 
 interface StationLookupProps {
-  onSelect: (result: any) => void;
+  onSelect: (result: StationLookupResult) => void;
 }
 
 export function StationLookup({ onSelect }: StationLookupProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<StationLookupResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -46,18 +47,9 @@ export function StationLookup({ onSelect }: StationLookupProps) {
   }, []);
 
   /**
-   * Load closest stations on mount (if location available)
-   */
-  useEffect(() => {
-    if (userLocation && !searchQuery) {
-      loadClosestStations();
-    }
-  }, [userLocation]);
-
-  /**
    * Load closest 10 stations
    */
-  const loadClosestStations = async () => {
+  const loadClosestStations = useCallback(async () => {
     if (!userLocation) return;
 
     setLoading(true);
@@ -77,7 +69,16 @@ export function StationLookup({ onSelect }: StationLookupProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userLocation]);
+
+  /**
+   * Load closest stations on mount (if location available)
+   */
+  useEffect(() => {
+    if (userLocation && !searchQuery) {
+      loadClosestStations();
+    }
+  }, [userLocation, loadClosestStations, searchQuery]);
 
   /**
    * Handle search

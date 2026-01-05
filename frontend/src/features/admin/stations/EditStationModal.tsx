@@ -7,7 +7,7 @@
  * - Save/cancel actions
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { api } from '../../../services/api';
 import type { Station } from '../../../types';
 import './EditStationModal.css';

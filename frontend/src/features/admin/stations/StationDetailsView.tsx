@@ -41,7 +41,7 @@ export function StationDetailsView({ station, onClose, onEdit }: StationDetailsV
     const loadStatistics = async () => {
       try {
         setLoadingStats(true);
-        const stats = await api.getStationStatistics(station.id);
+        const stats = await api.getStationStatistics();
         setStatistics(stats);
       } catch (err) {
         console.error('Error loading statistics:', err);
@@ -51,7 +51,7 @@ export function StationDetailsView({ station, onClose, onEdit }: StationDetailsV
     };
 
     loadStatistics();
-  }, [station.id]);
+  }, []);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
