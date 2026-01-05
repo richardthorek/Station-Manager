@@ -1,3 +1,40 @@
+// ============================================
+// Multi-Station Support Types
+// ============================================
+
+/**
+ * Represents the hierarchical structure of RFS organization
+ */
+export interface StationHierarchy {
+  jurisdiction: string;     // State level (e.g., "NSW")
+  area: string;             // Area/Region level
+  district: string;         // District level
+  brigade: string;          // Brigade level (may have multiple stations)
+  station: string;          // Individual station
+}
+
+/**
+ * Represents an RFS station
+ */
+export interface Station {
+  id: string;                   // Unique station ID
+  name: string;                 // Station name
+  brigadeId: string;            // Brigade ID (for cross-station visibility)
+  hierarchy: StationHierarchy;  // Full organizational hierarchy
+  location?: {
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  contactInfo?: {
+    phone?: string;
+    email?: string;
+  };
+  isActive: boolean;            // Whether station is currently active
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Member {
   id: string;
   name: string;
@@ -6,6 +43,7 @@ export interface Member {
   rank?: string | null;
   firstName?: string;
   lastName?: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +55,7 @@ export interface Activity {
   category?: 'training' | 'maintenance' | 'meeting' | 'other';
   tagColor?: string; // CSS color or color name for UI tags
   createdBy?: string;
+  stationId?: string;            // Multi-station support (optional, shared activities use 'default')
   createdAt: Date;
 }
 
@@ -24,6 +63,7 @@ export interface CheckIn {
   id: string;
   memberId: string;
   activityId: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   checkInTime: Date;
   checkInMethod: 'kiosk' | 'mobile' | 'qr';
   location?: string;
@@ -36,6 +76,7 @@ export interface CheckIn {
 export interface ActiveActivity {
   id: string;
   activityId: string;
+  stationId?: string;            // Multi-station support (optional, each station has its own active activity)
   setAt: Date;
   setBy?: string;
 }
@@ -60,6 +101,7 @@ export interface Event {
   id: string;
   activityId: string;
   activityName: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   startTime: Date;
   endTime?: Date;
   isActive: boolean;
@@ -77,6 +119,7 @@ export interface EventParticipant {
   memberId: string;
   memberName: string;
   memberRank?: string | null;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   checkInTime: Date;
   checkInMethod: 'kiosk' | 'mobile' | 'qr';
   location?: string;
@@ -104,6 +147,7 @@ export interface Appliance {
   name: string;
   description?: string;
   photoUrl?: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   createdAt: Date;
   updatedAt: Date;
 }
@@ -115,6 +159,7 @@ export interface ChecklistTemplate {
   id: string;
   applianceId: string;
   applianceName: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   items: ChecklistItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -144,6 +189,7 @@ export interface CheckRun {
   id: string;
   applianceId: string;
   applianceName: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   startTime: Date;
   endTime?: Date;
   completedBy: string;
@@ -165,6 +211,7 @@ export interface CheckResult {
   itemId: string;
   itemName: string;
   itemDescription: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   status: CheckStatus;
   comment?: string;
   photoUrl?: string;
