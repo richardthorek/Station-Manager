@@ -7,13 +7,22 @@
  * - Activity breakdown (by category)
  * - Event statistics
  * - Truck check compliance
+ * 
+ * Multi-Station Support:
+ * - All endpoints filter by stationId (from X-Station-Id header or query param)
+ * - Reports can be filtered to single station or cross-station (admin feature)
+ * - Backward compatible: defaults to DEFAULT_STATION_ID if no stationId provided
  */
 
 import { Router } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
+import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 
 const router = Router();
+
+// Apply station middleware to all routes
+router.use(stationMiddleware);
 
 /**
  * Helper function to parse date range parameters
@@ -41,15 +50,16 @@ function parseDateRange(req: any): { startDate: Date; endDate: Date } {
 
 /**
  * GET /api/reports/attendance-summary
- * Get monthly attendance statistics
+ * Get monthly attendance statistics (filtered by station)
  * Query params: startDate, endDate (ISO date strings)
  */
 router.get('/attendance-summary', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     const { startDate, endDate } = parseDateRange(req);
     
-    const summary = await db.getAttendanceSummary(startDate, endDate);
+    const summary = await db.getAttendanceSummary(startDate, endDate, stationId);
     
     res.json({
       startDate,
@@ -64,16 +74,17 @@ router.get('/attendance-summary', async (req, res) => {
 
 /**
  * GET /api/reports/member-participation
- * Get top members by participation
+ * Get top members by participation (filtered by station)
  * Query params: startDate, endDate, limit (default 10)
  */
 router.get('/member-participation', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     const { startDate, endDate } = parseDateRange(req);
     const limit = parseInt(req.query.limit as string) || 10;
     
-    const participation = await db.getMemberParticipation(startDate, endDate, limit);
+    const participation = await db.getMemberParticipation(startDate, endDate, limit, stationId);
     
     res.json({
       startDate,
@@ -89,15 +100,16 @@ router.get('/member-participation', async (req, res) => {
 
 /**
  * GET /api/reports/activity-breakdown
- * Get activity breakdown by category
+ * Get activity breakdown by category (filtered by station)
  * Query params: startDate, endDate
  */
 router.get('/activity-breakdown', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     const { startDate, endDate } = parseDateRange(req);
     
-    const breakdown = await db.getActivityBreakdown(startDate, endDate);
+    const breakdown = await db.getActivityBreakdown(startDate, endDate, stationId);
     
     res.json({
       startDate,
@@ -112,15 +124,16 @@ router.get('/activity-breakdown', async (req, res) => {
 
 /**
  * GET /api/reports/event-statistics
- * Get event statistics
+ * Get event statistics (filtered by station)
  * Query params: startDate, endDate
  */
 router.get('/event-statistics', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     const { startDate, endDate } = parseDateRange(req);
     
-    const statistics = await db.getEventStatistics(startDate, endDate);
+    const statistics = await db.getEventStatistics(startDate, endDate, stationId);
     
     res.json({
       startDate,
@@ -135,15 +148,16 @@ router.get('/event-statistics', async (req, res) => {
 
 /**
  * GET /api/reports/truckcheck-compliance
- * Get truck check compliance statistics
+ * Get truck check compliance statistics (filtered by station)
  * Query params: startDate, endDate
  */
 router.get('/truckcheck-compliance', async (req, res) => {
   try {
     const truckDb = await ensureTruckChecksDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     const { startDate, endDate } = parseDateRange(req);
     
-    const compliance = await truckDb.getTruckCheckCompliance(startDate, endDate);
+    const compliance = await truckDb.getTruckCheckCompliance(startDate, endDate, stationId);
     
     res.json({
       startDate,
