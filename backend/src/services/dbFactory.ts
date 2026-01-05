@@ -15,7 +15,8 @@ import type {
   CheckIn, 
   Event, 
   EventParticipant, 
-  EventWithParticipants 
+  EventWithParticipants,
+  Station
 } from '../types';
 import { db as inMemoryDb } from './database';
 import { tableStorageDb, tableStorageTestDb } from './tableStorageDatabase';
@@ -23,52 +24,60 @@ import { initializeDatabase } from './dbFactoryHelper';
 
 // Interface that both database services must implement
 export interface IDatabase {
+  // Stations
+  getAllStations(): Promise<Station[]> | Station[];
+  getStationById(id: string): Promise<Station | null | undefined> | Station | null | undefined;
+  getStationsByBrigade(brigadeId: string): Promise<Station[]> | Station[];
+  createStation(station: Omit<Station, 'id' | 'createdAt' | 'updatedAt'>): Promise<Station> | Station;
+  updateStation(id: string, updates: Partial<Omit<Station, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Station | null> | Station | null;
+  deleteStation(id: string): Promise<boolean> | boolean;
+  
   // Members
-  getAllMembers(): Promise<Member[]> | Member[];
+  getAllMembers(stationId?: string): Promise<Member[]> | Member[];
   getMemberById(id: string): Promise<Member | null | undefined> | Member | null | undefined;
   getMemberByQRCode(qrCode: string): Promise<Member | null | undefined> | Member | null | undefined;
-  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string }): Promise<Member> | Member;
+  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }): Promise<Member> | Member;
   updateMember(id: string, name: string, rank?: string | null): Promise<Member | null | undefined> | Member | null | undefined;
   
   // Activities
-  getAllActivities(): Promise<Activity[]> | Activity[];
+  getAllActivities(stationId?: string): Promise<Activity[]> | Activity[];
   getActivityById(id: string): Promise<Activity | null | undefined> | Activity | null | undefined;
-  createActivity(name: string, createdBy?: string): Promise<Activity> | Activity;
+  createActivity(name: string, createdBy?: string, stationId?: string): Promise<Activity> | Activity;
   
   // Active Activity
-  getActiveActivity(): Promise<ActiveActivity | null> | ActiveActivity | null;
-  setActiveActivity(activityId: string, setBy?: string): Promise<ActiveActivity> | ActiveActivity;
+  getActiveActivity(stationId?: string): Promise<ActiveActivity | null> | ActiveActivity | null;
+  setActiveActivity(activityId: string, setBy?: string, stationId?: string): Promise<ActiveActivity> | ActiveActivity;
   
   // Check-ins
-  getAllCheckIns(): Promise<CheckIn[]> | CheckIn[];
-  getActiveCheckIns(): Promise<CheckIn[]> | CheckIn[];
+  getAllCheckIns(stationId?: string): Promise<CheckIn[]> | CheckIn[];
+  getActiveCheckIns(stationId?: string): Promise<CheckIn[]> | CheckIn[];
   getCheckInByMember(memberId: string): Promise<CheckIn | null | undefined> | CheckIn | null | undefined;
   getCheckInsByMember(memberId: string): Promise<CheckIn[]> | CheckIn[];
-  createCheckIn(memberId: string, activityId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean): Promise<CheckIn> | CheckIn;
+  createCheckIn(memberId: string, activityId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): Promise<CheckIn> | CheckIn;
   deactivateCheckIn(checkInId: string): Promise<boolean> | boolean;
   deactivateCheckInByMember(memberId: string): Promise<boolean> | boolean;
-  clearAllActiveCheckIns(): Promise<void> | void;
+  clearAllActiveCheckIns(stationId?: string): Promise<void> | void;
   
   // Events
-  createEvent(activityId: string, createdBy?: string): Promise<Event> | Event;
-  getEvents(limit?: number, offset?: number): Promise<Event[]> | Event[];
-  getActiveEvents(): Promise<Event[]> | Event[];
+  createEvent(activityId: string, createdBy?: string, stationId?: string): Promise<Event> | Event;
+  getEvents(limit?: number, offset?: number, stationId?: string): Promise<Event[]> | Event[];
+  getActiveEvents(stationId?: string): Promise<Event[]> | Event[];
   getEventById(eventId: string): Promise<Event | null | undefined> | Event | null | undefined;
   endEvent(eventId: string): Promise<Event | null> | Event | null;
   reactivateEvent(eventId: string): Promise<Event | null> | Event | null;
-  addEventParticipant(eventId: string, memberId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean): Promise<EventParticipant> | EventParticipant;
+  addEventParticipant(eventId: string, memberId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): Promise<EventParticipant> | EventParticipant;
   getEventParticipants(eventId: string): Promise<EventParticipant[]> | EventParticipant[];
   getEventWithParticipants(eventId: string): Promise<EventWithParticipants | null> | EventWithParticipants | null;
-  getEventsWithParticipants(limit?: number, offset?: number): Promise<EventWithParticipants[]> | EventWithParticipants[];
+  getEventsWithParticipants(limit?: number, offset?: number, stationId?: string): Promise<EventWithParticipants[]> | EventWithParticipants[];
   removeEventParticipant(participantId: string): Promise<boolean> | boolean;
   getMemberParticipantInEvent(eventId: string, memberId: string): Promise<EventParticipant | undefined> | EventParticipant | undefined;
-  getAllActiveParticipants(): Promise<EventParticipant[]> | EventParticipant[];
+  getAllActiveParticipants(stationId?: string): Promise<EventParticipant[]> | EventParticipant[];
   
   // Reports
-  getAttendanceSummary(startDate: Date, endDate: Date): Promise<Array<{ month: string; count: number }>> | Array<{ month: string; count: number }>;
-  getMemberParticipation(startDate: Date, endDate: Date, limit: number): Promise<Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>> | Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>;
-  getActivityBreakdown(startDate: Date, endDate: Date): Promise<Array<{ category: string; count: number; percentage: number }>> | Array<{ category: string; count: number; percentage: number }>;
-  getEventStatistics(startDate: Date, endDate: Date): Promise<{ totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number }> | { totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number };
+  getAttendanceSummary(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{ month: string; count: number }>> | Array<{ month: string; count: number }>;
+  getMemberParticipation(startDate: Date, endDate: Date, limit: number, stationId?: string): Promise<Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>> | Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>;
+  getActivityBreakdown(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{ category: string; count: number; percentage: number }>> | Array<{ category: string; count: number; percentage: number }>;
+  getEventStatistics(startDate: Date, endDate: Date, stationId?: string): Promise<{ totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number }> | { totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number };
 }
 
 /**
