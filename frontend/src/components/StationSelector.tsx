@@ -83,7 +83,7 @@ export function StationSelector() {
   useEffect(() => {
     if (isOpen && listRef.current) {
       const highlightedElement = listRef.current.children[highlightedIndex] as HTMLElement;
-      if (highlightedElement) {
+      if (highlightedElement && typeof highlightedElement.scrollIntoView === 'function') {
         highlightedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     }
