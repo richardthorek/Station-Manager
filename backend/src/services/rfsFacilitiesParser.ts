@@ -1,0 +1,342 @@
+import * as fs from 'fs';
+import * as path from 'path';
+import type { StationHierarchy, StationSearchResult } from '../types/stations';
+
+/**
+ * RFS Facilities Parser Service
+ * Parses the national RFS facilities CSV dataset and provides search/lookup functionality
+ */
+class RFSFacilitiesParser {
+  private stations: StationHierarchy[] = [];
+  private isLoaded = false;
+  private readonly csvPath: string;
+
+  constructor() {
+    // In production (dist/), path is dist/services/../data/rfs-facilities.csv
+    // In tests (src/), path is src/services/../data/rfs-facilities.csv
+    this.csvPath = path.join(__dirname, '../data/rfs-facilities.csv');
+  }
+
+  /**
+   * Load and parse the CSV file
+   */
+  async loadData(): Promise<void> {
+    if (this.isLoaded) {
+      return;
+    }
+
+    try {
+      // Check if file exists
+      if (!fs.existsSync(this.csvPath)) {
+        throw new Error(`CSV file not found at ${this.csvPath}`);
+      }
+
+      const csvContent = fs.readFileSync(this.csvPath, 'utf-8');
+      const lines = csvContent.split('\n');
+      
+      // Skip header row
+      const dataLines = lines.slice(1);
+      
+      this.stations = dataLines
+        .map(line => this.parseCSVLine(line))
+        .filter((station): station is StationHierarchy => 
+          station !== null && 
+          station.state === 'NEW SOUTH WALES'
+        );
+
+      this.isLoaded = true;
+      console.log(`✅ Loaded ${this.stations.length} NSW RFS facilities from ${this.csvPath}`);
+    } catch (error) {
+      console.error('❌ Error loading RFS facilities CSV:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Parse a single CSV line into StationHierarchy
+   * CSV fields (zero-indexed):
+   * 0: X (longitude), 1: Y (latitude), 2: comment_, 3: objectid, 4: featuretype,
+   * 5: descripton, 6: class, 7: facility_name, 8: facility_operationalstatus,
+   * 9: facility_address, 10: abs_suburb, 11: facility_state, 12: abs_postcode, ...
+   */
+  private parseCSVLine(line: string): StationHierarchy | null {
+    if (!line || line.trim() === '') {
+      return null;
+    }
+
+    const fields = this.parseCSVFields(line);
+    
+    if (fields.length < 25) {
+      return null;
+    }
+
+    const longitude = parseFloat(fields[0]); // X
+    const latitude = parseFloat(fields[1]);  // Y
+    const facilityName = fields[7];          // facility_name (index 7, not 8!)
+    const operationalStatus = fields[8];     // facility_operationalstatus
+    const suburb = fields[10];               // abs_suburb (index 10, not 11!)
+    const state = fields[11];                // facility_state (index 11, not 12!)
+    const postcode = fields[12];             // abs_postcode (index 12, not 13!)
+
+    // Validate required fields
+    if (!facilityName || !suburb || !state || isNaN(latitude) || isNaN(longitude)) {
+      return null;
+    }
+
+    // Generate unique ID from name and location
+    const id = this.generateStationId(facilityName, suburb, postcode);
+
+    // Apply 1:1 brigade-station naming convention
+    // Most stations have brigade name = station name
+    const brigade = facilityName;
+
+    return {
+      id,
+      name: facilityName,
+      brigade,
+      suburb,
+      state,
+      postcode: postcode || '',
+      latitude,
+      longitude,
+      operationalStatus
+    };
+  }
+
+  /**
+   * Parse CSV fields handling quoted values properly
+   * This handles commas inside quotes and escaped quotes
+   */
+  private parseCSVFields(line: string): string[] {
+    const fields: string[] = [];
+    let currentField = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < line.length) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+      
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Escaped quote
+          currentField += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote mode
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // Field separator
+        fields.push(currentField.trim());
+        currentField = '';
+      } else {
+        currentField += char;
+      }
+      
+      i++;
+    }
+    
+    // Add last field
+    fields.push(currentField.trim());
+    
+    return fields;
+  }
+
+  /**
+   * Generate a unique station ID
+   */
+  private generateStationId(name: string, suburb: string, postcode: string): string {
+    const normalized = `${name}-${suburb}-${postcode}`
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    return `station-${normalized}`;
+  }
+
+  /**
+   * Calculate distance between two points using Haversine formula
+   * @param lat1 Latitude of point 1 (degrees)
+   * @param lon1 Longitude of point 1 (degrees)
+   * @param lat2 Latitude of point 2 (degrees)
+   * @param lon2 Longitude of point 2 (degrees)
+   * @returns Distance in kilometers
+   */
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = this.toRadians(lat2 - lat1);
+    const dLon = this.toRadians(lon2 - lon1);
+    
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    
+    return Math.round(distance * 10) / 10; // Round to 1 decimal place
+  }
+
+  /**
+   * Convert degrees to radians
+   */
+  private toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180);
+  }
+
+  /**
+   * Search stations by text query (name, suburb)
+   * @param query Search query string
+   * @returns Matching stations with relevance scores
+   */
+  searchStations(query: string): StationSearchResult[] {
+    if (!this.isLoaded) {
+      throw new Error('RFS facilities data not loaded. Call loadData() first.');
+    }
+
+    if (!query || query.trim() === '') {
+      return [];
+    }
+
+    const searchTerm = query.toLowerCase().trim();
+    const results: StationSearchResult[] = [];
+
+    for (const station of this.stations) {
+      const nameMatch = station.name.toLowerCase().includes(searchTerm);
+      const suburbMatch = station.suburb.toLowerCase().includes(searchTerm);
+      const brigadeMatch = station.brigade?.toLowerCase().includes(searchTerm);
+
+      if (nameMatch || suburbMatch || brigadeMatch) {
+        // Calculate relevance score (0-1)
+        let score = 0;
+        
+        // Exact name match gets highest score
+        if (station.name.toLowerCase() === searchTerm) {
+          score = 1.0;
+        } else if (station.name.toLowerCase().startsWith(searchTerm)) {
+          score = 0.9;
+        } else if (nameMatch) {
+          score = 0.7;
+        } else if (station.suburb.toLowerCase() === searchTerm) {
+          score = 0.8;
+        } else if (suburbMatch) {
+          score = 0.5;
+        } else if (brigadeMatch) {
+          score = 0.6;
+        }
+
+        results.push({
+          ...station,
+          relevanceScore: score
+        });
+      }
+    }
+
+    // Sort by relevance score descending
+    return results.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+  }
+
+  /**
+   * Get closest stations to a geographic location
+   * @param latitude User latitude
+   * @param longitude User longitude
+   * @param limit Maximum number of results (default 10)
+   * @returns Closest stations with distance information
+   */
+  getClosestStations(latitude: number, longitude: number, limit: number = 10): StationSearchResult[] {
+    if (!this.isLoaded) {
+      throw new Error('RFS facilities data not loaded. Call loadData() first.');
+    }
+
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return [];
+    }
+
+    // Calculate distance for all stations
+    const stationsWithDistance: StationSearchResult[] = this.stations.map(station => ({
+      ...station,
+      distance: this.calculateDistance(latitude, longitude, station.latitude, station.longitude)
+    }));
+
+    // Sort by distance ascending and return top N
+    return stationsWithDistance
+      .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
+      .slice(0, limit);
+  }
+
+  /**
+   * Combined lookup: closest stations + search results
+   * @param query Optional search query
+   * @param latitude Optional user latitude
+   * @param longitude Optional user longitude
+   * @param limit Maximum number of results per category (default 10)
+   * @returns Combined and deduplicated results
+   */
+  lookup(
+    query?: string,
+    latitude?: number,
+    longitude?: number,
+    limit: number = 10
+  ): StationSearchResult[] {
+    if (!this.isLoaded) {
+      throw new Error('RFS facilities data not loaded. Call loadData() first.');
+    }
+
+    const results: StationSearchResult[] = [];
+    const seenIds = new Set<string>();
+
+    // Get closest stations if location provided
+    if (latitude !== undefined && longitude !== undefined && !isNaN(latitude) && !isNaN(longitude)) {
+      const closest = this.getClosestStations(latitude, longitude, limit);
+      for (const station of closest) {
+        results.push(station);
+        seenIds.add(station.id);
+      }
+    }
+
+    // Get search results if query provided
+    if (query && query.trim() !== '') {
+      const searchResults = this.searchStations(query);
+      
+      // Add search results, skipping duplicates
+      for (const station of searchResults.slice(0, limit)) {
+        if (!seenIds.has(station.id)) {
+          results.push(station);
+          seenIds.add(station.id);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Get all stations (for debugging/testing)
+   */
+  getAllStations(): StationHierarchy[] {
+    return [...this.stations];
+  }
+
+  /**
+   * Get total count of loaded stations
+   */
+  getCount(): number {
+    return this.stations.length;
+  }
+}
+
+// Singleton instance
+let parserInstance: RFSFacilitiesParser | null = null;
+
+/**
+ * Get the singleton parser instance
+ */
+export function getRFSFacilitiesParser(): RFSFacilitiesParser {
+  if (!parserInstance) {
+    parserInstance = new RFSFacilitiesParser();
+  }
+  return parserInstance;
+}
+
+export default RFSFacilitiesParser;
