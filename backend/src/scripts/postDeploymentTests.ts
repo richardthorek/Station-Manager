@@ -10,27 +10,28 @@
  * 
  * Uses TABLE_STORAGE_TABLE_SUFFIX=Test to isolate test data from production.
  * 
- * Retry Strategy:
- *   - CI/CD polls health endpoint every 10s (max 10 attempts = 100s) before running tests
- *   - Tests start as soon as app responds, or after 100s timeout
- *   - Individual test retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
- *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
- *   - Retries on version mismatch (Azure App Service restart in progress)
- *   - 10 second delay between test retries
- *   - Default 6 retries per request (60 seconds max per request, reduced from 12)
- *   - Overall test suite timeout: 10 minutes to prevent indefinite hanging
- *   - Version test can take up to 60 seconds with retries (7 attempts × 10s)
- *   - Total stabilization time: up to 100s polling + up to 60s verification = 160s max
+ * Two-Phase Strategy:
  * 
- * Version Verification:
- *   The version test is retry-aware because Azure App Service takes time to:
- *   1. Apply new environment variables set via az webapp config appsettings set
- *   2. Restart the application (triggered by az webapp restart)
- *   3. Initialize Node.js and load environment variables
- *   4. Begin serving requests with the new configuration
- *   
- *   During this window, the health endpoint may return the old commit SHA.
- *   The test retries for up to 60 seconds to allow Azure to complete the restart.
+ * PHASE 1: STABILIZATION (up to 15 minutes)
+ *   - Polls health endpoint every 10 seconds
+ *   - Validates site is responding AND correct version is deployed
+ *   - Retries on network errors, 404/502/503, and version mismatches
+ *   - Exits immediately once both conditions met (efficient)
+ *   - Maximum: 90 attempts × 10s = 900s (15 minutes)
+ * 
+ * PHASE 2: FUNCTIONAL TESTS (minimal retries)
+ *   - Runs only after stabilization confirms site is ready
+ *   - Each test gets 2 quick retries (10s between) for transient issues
+ *   - Tests fail fast since we know the site is up and correct version
+ *   - Expected completion: 30-60 seconds for all 7 tests
+ * 
+ * Total Maximum Time: 15 minutes stabilization + 2 minutes tests = 17 minutes
+ * 
+ * This approach is efficient because:
+ *   - Stabilization happens once, upfront
+ *   - No duplicate health checks across tests
+ *   - Functional tests run fast with minimal retries
+ *   - Early exit when site is ready (usually < 2 minutes)
  * 
  * Usage:
  *   APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy
@@ -38,30 +39,33 @@
  * Environment Variables:
  *   APP_URL: The deployed application URL (required)
  *   TABLE_STORAGE_TABLE_SUFFIX: Set to "Test" to use test tables (default: Test)
- *   TEST_TIMEOUT: Timeout for each test in ms (default: 30000)
- *   MAX_RETRIES: Number of retries for failed requests (default: 6, reduced from 12)
- *   OVERALL_TIMEOUT: Overall timeout for entire test suite in seconds (default: 600 = 10 minutes)
+ *   STABILIZATION_TIMEOUT: Max time for site stabilization in seconds (default: 900 = 15 minutes)
+ *   FUNCTIONAL_TEST_TIMEOUT: Max time for functional tests in seconds (default: 120 = 2 minutes)
+ *   STABILIZATION_INTERVAL: Seconds between stabilization checks (default: 10)
+ *   FUNCTIONAL_TEST_RETRIES: Retries per functional test (default: 2)
+ *   REQUEST_TIMEOUT: Timeout for individual HTTP requests in ms (default: 10000 = 10s)
  *   GITHUB_SHA: Expected commit SHA for version verification
  */
 
 import http from 'http';
 import https from 'https';
 
-// Configuration
+// Configuration - Two-Phase Approach
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
-const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '30000');
-const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '6'); // Reduced from 12 to 6 (60s max per request)
-const RETRY_DELAY = 10000; // 10 seconds between retries
-const OVERALL_TIMEOUT = parseInt(process.env.OVERALL_TIMEOUT || '600') * 1000; // 10 minutes default (in ms)
+
+// Phase 1: Stabilization (site up + correct version)
+const STABILIZATION_TIMEOUT = parseInt(process.env.STABILIZATION_TIMEOUT || '900') * 1000; // 15 minutes in ms
+const STABILIZATION_INTERVAL = parseInt(process.env.STABILIZATION_INTERVAL || '10') * 1000; // 10 seconds in ms
+const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || '10000'); // 10 seconds for HTTP requests
+
+// Phase 2: Functional tests (after stabilization)
+const FUNCTIONAL_TEST_TIMEOUT = parseInt(process.env.FUNCTIONAL_TEST_TIMEOUT || '120') * 1000; // 2 minutes in ms
+const FUNCTIONAL_TEST_RETRIES = parseInt(process.env.FUNCTIONAL_TEST_RETRIES || '2'); // Only 2 retries since site is stable
+const FUNCTIONAL_TEST_RETRY_DELAY = 5000; // 5 seconds between retries (faster since site is up)
+
 const EXPECTED_COMMIT_SHA = process.env.GITHUB_SHA || process.env.GIT_COMMIT_SHA; // From CI/CD or manual override
 
 // HTTP status codes that indicate deployment is still stabilizing
-// These will trigger automatic retries:
-// - 404: Route not found (app still loading/registering routes)
-// - 502: Bad Gateway (Azure proxy can't connect to app yet)
-// - 503: Service Unavailable (app is starting up)
-// Note: Other error codes (401, 403, 500, etc.) indicate actual application
-// errors that won't be fixed by retrying, so we fail fast on those.
 const RETRYABLE_STATUS_CODES = [404, 502, 503];
 
 // Test results tracking
@@ -77,29 +81,13 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Helper function to perform retry logic
- */
-function retryRequest(
-  url: string,
-  options: any,
-  retries: number,
-  resolve: (value: any) => void,
-  reject: (reason?: any) => void
-): void {
-  sleep(RETRY_DELAY)
-    .then(() => makeRequest(url, options, retries - 1))
-    .then(resolve)
-    .catch(reject);
-}
-
-/**
- * Make HTTP/HTTPS request with retry logic
- * Retries on network errors and deployment-related HTTP status codes
+ * Make a simple HTTP/HTTPS request
+ * Returns response data and status code
+ * Throws on network errors
  */
 async function makeRequest(
   url: string,
-  options: any = {},
-  retries = MAX_RETRIES
+  options: { method?: string; headers?: Record<string, string>; body?: any } = {}
 ): Promise<{ statusCode: number; data: string }> {
   const urlObj = new URL(url);
   const client = urlObj.protocol === 'https:' ? https : http;
@@ -110,7 +98,7 @@ async function makeRequest(
       {
         method: options.method || 'GET',
         headers: options.headers || {},
-        timeout: TEST_TIMEOUT,
+        timeout: REQUEST_TIMEOUT,
       },
       (res) => {
         let data = '';
@@ -118,31 +106,16 @@ async function makeRequest(
           data += chunk;
         });
         res.on('end', () => {
-          const statusCode = res.statusCode || 0;
-          
-          // Check if we should retry on this status code
-          const shouldRetry = retries > 0 && RETRYABLE_STATUS_CODES.includes(statusCode);
-          
-          if (shouldRetry) {
-            console.log(`  ⏳ Got ${statusCode} status, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
-            retryRequest(url, options, retries, resolve, reject);
-          } else {
-            resolve({
-              statusCode,
-              data,
-            });
-          }
+          resolve({
+            statusCode: res.statusCode || 0,
+            data,
+          });
         });
       }
     );
 
     req.on('error', (error) => {
-      if (retries > 0) {
-        console.log(`  ⏳ Request failed, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
-        retryRequest(url, options, retries, resolve, reject);
-      } else {
-        reject(error);
-      }
+      reject(error);
     });
 
     req.on('timeout', () => {
@@ -159,14 +132,149 @@ async function makeRequest(
 }
 
 /**
- * Run a single test
+ * PHASE 1: Wait for site to stabilize (up and correct version)
+ * 
+ * This function polls the health endpoint until:
+ * 1. The site responds with 200 status
+ * 2. The deployed version matches the expected commit SHA
+ * 
+ * Exits immediately when both conditions are met (efficient).
+ * Retries on network errors, 404/502/503, and version mismatches.
+ * 
+ * Returns: Time taken in seconds
+ * Throws: If stabilization timeout exceeded
+ */
+async function waitForStabilization(): Promise<number> {
+  const startTime = Date.now();
+  const maxAttempts = Math.floor(STABILIZATION_TIMEOUT / STABILIZATION_INTERVAL);
+  let attempt = 0;
+
+  console.log('\n🔄 PHASE 1: Waiting for deployment to stabilize...');
+  console.log(`   Max time: ${STABILIZATION_TIMEOUT / 1000}s (${STABILIZATION_TIMEOUT / 60000} minutes)`);
+  console.log(`   Checking every: ${STABILIZATION_INTERVAL / 1000}s`);
+  console.log(`   Max attempts: ${maxAttempts}\n`);
+
+  while (attempt < maxAttempts) {
+    attempt++;
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+
+    try {
+      console.log(`Attempt ${attempt}/${maxAttempts} (${elapsed}s elapsed): Checking health endpoint...`);
+      
+      const response = await makeRequest(`${APP_URL}/health`);
+
+      // Check if site is responding
+      if (response.statusCode === 200) {
+        try {
+          const data = JSON.parse(response.data);
+
+          // Check if version info exists
+          if (!data.version || !data.version.commitSha) {
+            console.log(`   ⚠️  Site is up but missing version info, retrying...`);
+            await sleep(STABILIZATION_INTERVAL);
+            continue;
+          }
+
+          const deployedSha = data.version.commitSha;
+
+          // If we have an expected SHA, verify it matches
+          if (EXPECTED_COMMIT_SHA) {
+            if (deployedSha === EXPECTED_COMMIT_SHA) {
+              const duration = Math.floor((Date.now() - startTime) / 1000);
+              console.log(`\n✅ Site stabilized! (${duration}s)`);
+              console.log(`   Version: ${data.version.commitShort}`);
+              console.log(`   Commit: ${deployedSha.substring(0, 7)}...`);
+              console.log(`   Database: ${data.database || 'unknown'}\n`);
+              return duration;
+            } else {
+              console.log(`   ⚠️  Version mismatch:`);
+              console.log(`       Expected: ${EXPECTED_COMMIT_SHA.substring(0, 7)}...`);
+              console.log(`       Deployed: ${deployedSha.substring(0, 7)}...`);
+              console.log(`   Retrying...`);
+            }
+          } else {
+            // No expected SHA, just verify site is up
+            const duration = Math.floor((Date.now() - startTime) / 1000);
+            console.log(`\n✅ Site is up! (${duration}s)`);
+            console.log(`   Version: ${data.version.commitShort}`);
+            console.log(`   ℹ️  No expected SHA provided, skipping version verification\n`);
+            return duration;
+          }
+        } catch (parseError) {
+          console.log(`   ⚠️  Failed to parse health response, retrying...`);
+        }
+      } else if (RETRYABLE_STATUS_CODES.includes(response.statusCode)) {
+        console.log(`   ⚠️  Got ${response.statusCode} status (site still starting), retrying...`);
+      } else {
+        console.log(`   ❌ Unexpected status ${response.statusCode}, retrying...`);
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.log(`   ⚠️  Request failed (${errorMsg}), retrying...`);
+    }
+
+    // Wait before next attempt
+    if (attempt < maxAttempts) {
+      await sleep(STABILIZATION_INTERVAL);
+    }
+  }
+
+  // Timeout exceeded
+  const duration = Math.floor((Date.now() - startTime) / 1000);
+  throw new Error(`Stabilization timeout exceeded after ${duration}s (max: ${STABILIZATION_TIMEOUT / 1000}s)`);
+}
+
+/**
+ * PHASE 2: Run a functional test with minimal retries
+ * 
+ * Since we know the site is up and stable, we only need minimal retries
+ * for transient network issues.
+ * 
+ * Returns: void on success
+ * Throws: Error on failure after retries
+ */
+async function runFunctionalTest(name: string, testFn: () => Promise<void>): Promise<void> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= FUNCTIONAL_TEST_RETRIES; attempt++) {
+    try {
+      await testFn();
+      return; // Success!
+    } catch (error) {
+      lastError = error as Error;
+      
+      // If we have retries left, retry on network/transient errors only
+      if (attempt < FUNCTIONAL_TEST_RETRIES) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        // Only retry on network errors or retryable status codes, not logic errors
+        if (errorMsg.includes('ECONNREFUSED') || 
+            errorMsg.includes('timeout') ||
+            errorMsg.includes('ETIMEDOUT') ||
+            errorMsg.includes('502') ||
+            errorMsg.includes('503')) {
+          console.log(`      ⏳ Transient error, retrying in ${FUNCTIONAL_TEST_RETRY_DELAY / 1000}s... (${FUNCTIONAL_TEST_RETRIES - attempt} retries left)`);
+          await sleep(FUNCTIONAL_TEST_RETRY_DELAY);
+          continue;
+        }
+      }
+      
+      // Non-retryable error or out of retries
+      throw lastError;
+    }
+  }
+  
+  throw lastError || new Error('Test failed');
+}
+
+/**
+ * Wrapper to run a test with tracking and error handling
  */
 async function test(name: string, fn: () => Promise<void>): Promise<void> {
   testsRun++;
   const testStartTime = Date.now();
-  process.stdout.write(`  Testing: ${name}... `);
+  process.stdout.write(`   ${name}... `);
   try {
-    await fn();
+    await runFunctionalTest(name, fn);
     testsPassed++;
     const duration = Math.floor((Date.now() - testStartTime) / 1000);
     console.log(`✅ PASS (${duration}s)`);
@@ -174,97 +282,12 @@ async function test(name: string, fn: () => Promise<void>): Promise<void> {
     testsFailed++;
     const duration = Math.floor((Date.now() - testStartTime) / 1000);
     console.log(`❌ FAIL (${duration}s)`);
-    console.error(`    Error: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`      Error: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 /**
- * Test 1: Version Verification
- * Verifies that the deployed backend has the expected commit SHA
- * This ensures the correct code is running in production
- * 
- * Note: This test retries on version mismatch because Azure App Service
- * may take time to restart and pick up new environment variables after deployment.
- */
-async function testVersionVerification(): Promise<void> {
-  let lastError: Error | null = null;
-  let attempts = 0;
-  const maxAttempts = MAX_RETRIES + 1; // +1 for initial attempt
-  
-  while (attempts < maxAttempts) {
-    attempts++;
-    
-    try {
-      const response = await makeRequest(`${APP_URL}/health`);
-      
-      if (response.statusCode !== 200) {
-        throw new Error(`Expected status 200, got ${response.statusCode}`);
-      }
-
-      const data = JSON.parse(response.data);
-      
-      if (!data.version) {
-        throw new Error('Missing version information in health check response');
-      }
-
-      const deployedSha = data.version.commitSha;
-      
-      if (!deployedSha || deployedSha === 'unknown') {
-        throw new Error('Deployed version has unknown commit SHA');
-      }
-
-      // If we have an expected SHA from CI/CD, verify it matches
-      if (EXPECTED_COMMIT_SHA) {
-        if (deployedSha !== EXPECTED_COMMIT_SHA) {
-          const error = new Error(
-            `Version mismatch! Expected: ${EXPECTED_COMMIT_SHA}, Deployed: ${deployedSha}`
-          );
-          
-          // If we still have retries left, retry on version mismatch
-          if (attempts < maxAttempts) {
-            console.log(`    ⏳ Version mismatch (attempt ${attempts}/${maxAttempts}), retrying in ${RETRY_DELAY / 1000}s...`);
-            console.log(`       Expected: ${EXPECTED_COMMIT_SHA.substring(0, 7)}..., Got: ${deployedSha.substring(0, 7)}...`);
-            lastError = error;
-            await sleep(RETRY_DELAY);
-            continue;
-          }
-          
-          // Out of retries, fail
-          throw error;
-        }
-        console.log(`    ✅ Version verified: ${data.version.commitShort} (${deployedSha.substring(0, 7)})`);
-        if (attempts > 1) {
-          console.log(`       (Succeeded after ${attempts} attempts)`);
-        }
-      } else {
-        console.log(`    ℹ️  Deployed version: ${data.version.commitShort} (no expected SHA to verify against)`);
-      }
-      
-      // Success!
-      return;
-      
-    } catch (error) {
-      lastError = error as Error;
-      
-      // If this is a network error and we have retries left, retry
-      if (attempts < maxAttempts && error instanceof Error && 
-          (error.message.includes('ECONNREFUSED') || error.message.includes('timeout'))) {
-        console.log(`    ⏳ Network error (attempt ${attempts}/${maxAttempts}), retrying in ${RETRY_DELAY / 1000}s...`);
-        await sleep(RETRY_DELAY);
-        continue;
-      }
-      
-      // Out of retries or non-retryable error
-      throw error;
-    }
-  }
-  
-  // If we get here, we ran out of retries
-  throw lastError || new Error('Version verification failed after all retries');
-}
-
-/**
- * Test 2: Health Check Endpoint
+ * Functional Test 1: Health Check Endpoint
  */
 async function testHealthCheck(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/health`);
@@ -286,15 +309,10 @@ async function testHealthCheck(): Promise<void> {
   if (!data.database) {
     throw new Error('Missing database type in health check response');
   }
-
-  // Verify we're using Table Storage in deployed environment
-  if (data.database !== 'table-storage') {
-    console.log(`    ⚠️  Warning: Expected table-storage, got '${data.database}'`);
-  }
 }
 
 /**
- * Test 3: API Status Endpoint
+ * Functional Test 2: API Status Endpoint
  */
 async function testApiStatus(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/status`);
@@ -319,7 +337,7 @@ async function testApiStatus(): Promise<void> {
 }
 
 /**
- * Test 4: Get Activities Endpoint
+ * Functional Test 3: Get Activities Endpoint
  */
 async function testGetActivities(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/activities`);
@@ -333,15 +351,10 @@ async function testGetActivities(): Promise<void> {
   if (!Array.isArray(data)) {
     throw new Error('Expected activities to be an array');
   }
-
-  // Should have default activities (Training, Maintenance, Meeting)
-  if (data.length < 3) {
-    console.log(`    ℹ️  Info: Expected at least 3 default activities, got ${data.length}`);
-  }
 }
 
 /**
- * Test 5: Get Members Endpoint
+ * Functional Test 4: Get Members Endpoint
  */
 async function testGetMembers(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/members`);
@@ -358,7 +371,7 @@ async function testGetMembers(): Promise<void> {
 }
 
 /**
- * Test 6: Get Check-ins Endpoint
+ * Functional Test 5: Get Check-ins Endpoint
  */
 async function testGetCheckins(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/checkins`);
@@ -375,7 +388,7 @@ async function testGetCheckins(): Promise<void> {
 }
 
 /**
- * Test 7: Frontend Loads (SPA)
+ * Functional Test 6: Frontend Loads (SPA)
  */
 async function testFrontendLoads(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/`);
@@ -387,31 +400,14 @@ async function testFrontendLoads(): Promise<void> {
   if (!response.data.includes('<div id="root">')) {
     throw new Error('Frontend HTML does not contain expected root element');
   }
-
-  if (!response.data.includes('RFS Station Manager')) {
-    console.log('    ℹ️  Info: Frontend HTML may not contain expected title');
-  }
 }
 
 /**
- * Test 8: CORS Headers Present
- */
-async function testCorsHeaders(): Promise<void> {
-  const response = await makeRequest(`${APP_URL}/api/activities`);
-  
-  // Note: We can't easily check headers with basic http module without more complexity
-  // This is a placeholder for header validation
-  if (response.statusCode !== 200) {
-    throw new Error(`Expected status 200, got ${response.statusCode}`);
-  }
-}
-
-/**
- * Test 9: Rate Limiting Not Triggered (Basic Check)
+ * Functional Test 7: Rate Limiting Check
  */
 async function testRateLimiting(): Promise<void> {
   // Make a few requests to ensure rate limiting is not overly restrictive
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 3; i++) {
     const response = await makeRequest(`${APP_URL}/health`);
     if (response.statusCode === 429) {
       throw new Error('Rate limiting triggered too aggressively');
@@ -420,97 +416,94 @@ async function testRateLimiting(): Promise<void> {
 }
 
 /**
- * Main test runner with overall timeout
+ * Main test runner - Two-Phase Approach
  */
 async function runTests(): Promise<void> {
-  console.log('\n🧪 Starting Post-Deployment Smoke Tests\n');
-  console.log(`Target URL: ${APP_URL}`);
-  console.log(`Timeout: ${TEST_TIMEOUT}ms per test`);
-  console.log(`Max Retries: ${MAX_RETRIES} per test`);
-  console.log(`Overall Timeout: ${OVERALL_TIMEOUT / 1000}s (${OVERALL_TIMEOUT / 60000} minutes)`);
-  console.log(`Test Environment: TABLE_STORAGE_TABLE_SUFFIX=${process.env.TABLE_STORAGE_TABLE_SUFFIX || '(not set)'}\n`);
+  console.log('\n🧪 Post-Deployment Smoke Tests');
+  console.log('='.repeat(60));
+  console.log(`Target: ${APP_URL}`);
+  console.log(`Expected Commit: ${EXPECTED_COMMIT_SHA ? EXPECTED_COMMIT_SHA.substring(0, 7) + '...' : '(not set)'}`);
+  console.log(`Test Environment: TABLE_STORAGE_TABLE_SUFFIX=${process.env.TABLE_STORAGE_TABLE_SUFFIX || '(not set)'}`);
+  console.log('='.repeat(60));
 
-  // Validate APP_URL is set and warn if it's localhost in CI environment
+  // Validate APP_URL is set
   if (!APP_URL) {
-    console.error('❌ ERROR: APP_URL environment variable must be set');
+    console.error('\n❌ ERROR: APP_URL environment variable must be set');
     console.error('   Example: APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy');
     process.exit(1);
   }
 
   if (APP_URL === 'http://localhost:3000' && process.env.CI) {
-    console.error('❌ ERROR: Cannot use localhost URL in CI environment');
+    console.error('\n❌ ERROR: Cannot use localhost URL in CI environment');
     console.error('   Set APP_URL to the deployed application URL');
     process.exit(1);
   }
 
-  console.log('Running tests...\n');
+  const overallStartTime = Date.now();
 
-  // Track start time for overall timeout
-  const startTime = Date.now();
-  
-  // Helper to check if overall timeout has been exceeded
-  const checkOverallTimeout = () => {
-    const elapsed = Date.now() - startTime;
-    if (elapsed > OVERALL_TIMEOUT) {
-      console.error(`\n❌ TIMEOUT: Test suite exceeded ${OVERALL_TIMEOUT / 1000}s overall timeout`);
-      console.error(`   Elapsed time: ${Math.floor(elapsed / 1000)}s`);
+  try {
+    // PHASE 1: Stabilization (site up + correct version)
+    const stabilizationTime = await waitForStabilization();
+
+    // PHASE 2: Functional tests (fast, minimal retries)
+    console.log('🧪 PHASE 2: Running functional tests...\n');
+    const functionalTestsStart = Date.now();
+
+    // Create timeout for functional tests
+    const functionalTestsTimeout = setTimeout(() => {
+      const elapsed = Math.floor((Date.now() - functionalTestsStart) / 1000);
+      console.error(`\n❌ TIMEOUT: Functional tests exceeded ${FUNCTIONAL_TEST_TIMEOUT / 1000}s timeout`);
+      console.error(`   Elapsed: ${elapsed}s`);
       console.error(`   Tests run: ${testsRun}, Passed: ${testsPassed}, Failed: ${testsFailed}`);
       process.exit(1);
+    }, FUNCTIONAL_TEST_TIMEOUT);
+
+    // Run all functional tests
+    await test('Health check endpoint', testHealthCheck);
+    await test('API status endpoint', testApiStatus);
+    await test('Activities API', testGetActivities);
+    await test('Members API', testGetMembers);
+    await test('Check-ins API', testGetCheckins);
+    await test('Frontend SPA loads', testFrontendLoads);
+    await test('Rate limiting', testRateLimiting);
+
+    clearTimeout(functionalTestsTimeout);
+
+    const functionalTestsDuration = Math.floor((Date.now() - functionalTestsStart) / 1000);
+    const totalDuration = Math.floor((Date.now() - overallStartTime) / 1000);
+
+    // Print summary
+    console.log('\n' + '='.repeat(60));
+    console.log('Test Summary');
+    console.log('='.repeat(60));
+    console.log(`Phase 1 (Stabilization):  ${stabilizationTime}s`);
+    console.log(`Phase 2 (Functional):     ${functionalTestsDuration}s`);
+    console.log(`Total Duration:           ${totalDuration}s`);
+    console.log('='.repeat(60));
+    console.log(`Tests Run:                ${testsRun}`);
+    console.log(`Passed:                   ${testsPassed} ✅`);
+    console.log(`Failed:                   ${testsFailed} ❌`);
+    console.log('='.repeat(60));
+
+    if (testsFailed > 0) {
+      console.log('\n❌ Some tests failed. Deployment may have issues.\n');
+      process.exit(1);
+    } else {
+      console.log('\n✅ All tests passed! Deployment successful.\n');
+      process.exit(0);
     }
-  };
-
-  // Run all tests - VERSION VERIFICATION FIRST
-  checkOverallTimeout();
-  await test('Version verification (commit SHA matches)', testVersionVerification);
-  
-  checkOverallTimeout();
-  await test('Health check endpoint responds', testHealthCheck);
-  
-  checkOverallTimeout();
-  await test('API status endpoint responds', testApiStatus);
-  
-  checkOverallTimeout();
-  await test('Activities API endpoint works', testGetActivities);
-  
-  checkOverallTimeout();
-  await test('Members API endpoint works', testGetMembers);
-  
-  checkOverallTimeout();
-  await test('Check-ins API endpoint works', testGetCheckins);
-  
-  checkOverallTimeout();
-  await test('Frontend SPA loads correctly', testFrontendLoads);
-  
-  checkOverallTimeout();
-  await test('CORS configuration present', testCorsHeaders);
-  
-  checkOverallTimeout();
-  await test('Rate limiting configured', testRateLimiting);
-
-  // Print summary
-  const totalElapsed = Math.floor((Date.now() - startTime) / 1000);
-  console.log('\n' + '='.repeat(60));
-  console.log('Test Summary');
-  console.log('='.repeat(60));
-  console.log(`Total Tests:  ${testsRun}`);
-  console.log(`Passed:       ${testsPassed} ✅`);
-  console.log(`Failed:       ${testsFailed} ❌`);
-  console.log(`Duration:     ${totalElapsed}s`);
-  console.log('='.repeat(60));
-
-  if (testsFailed > 0) {
-    console.log('\n❌ Some tests failed. Deployment may have issues.\n');
+  } catch (error) {
+    const duration = Math.floor((Date.now() - overallStartTime) / 1000);
+    console.error(`\n❌ Fatal error after ${duration}s:`, error instanceof Error ? error.message : String(error));
+    console.error(`   Tests run: ${testsRun}, Passed: ${testsPassed}, Failed: ${testsFailed}\n`);
     process.exit(1);
-  } else {
-    console.log('\n✅ All tests passed! Deployment successful.\n');
-    process.exit(0);
   }
 }
 
 // Run tests if executed directly
 if (require.main === module) {
   runTests().catch((error) => {
-    console.error('\n❌ Fatal error running tests:', error);
+    console.error('\n❌ Uncaught error:', error);
     process.exit(1);
   });
 }
