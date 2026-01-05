@@ -194,6 +194,26 @@ export function SignInPage() {
     }
   };
 
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await api.deleteEvent(eventId);
+      
+      // Remove the event from the list
+      setEvents(events.filter(e => e.id !== eventId));
+      
+      // If deleting the selected event, select another active event
+      if (selectedEventId === eventId) {
+        const nextActive = events.find(e => e.isActive && e.id !== eventId);
+        setSelectedEventId(nextActive?.id || null);
+      }
+      
+      emit('event-deleted', { eventId });
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      alert('Failed to delete event');
+    }
+  };
+
   const handleSelectEvent = (eventId: string) => {
     setSelectedEventId(eventId);
   };
@@ -215,6 +235,27 @@ export function SignInPage() {
     } catch (err) {
       console.error('Error checking in:', err);
       alert('Failed to check in');
+    }
+  };
+
+  const handleRemoveParticipant = async (memberId: string) => {
+    if (!selectedEventId) {
+      alert('Please select an event first');
+      return;
+    }
+
+    try {
+      // Use the same endpoint - it toggles, so it will remove if already checked in
+      const result = await api.addEventParticipant(selectedEventId, memberId, 'mobile');
+      
+      // Reload the specific event to get updated participants
+      const updatedEvent = await api.getEvent(selectedEventId);
+      setEvents(events.map(e => e.id === selectedEventId ? updatedEvent : e));
+      
+      emit('participant-change', { eventId: selectedEventId, ...result });
+    } catch (err) {
+      console.error('Error removing participant:', err);
+      alert('Failed to remove participant');
     }
   };
 
@@ -241,6 +282,20 @@ export function SignInPage() {
     } catch (err) {
       console.error('Error creating activity:', err);
       alert('Failed to create activity');
+    }
+  };
+
+  const handleDeleteActivity = async (activityId: string) => {
+    try {
+      await api.deleteActivity(activityId);
+      
+      // Remove the activity from the list
+      setActivities(activities.filter(a => a.id !== activityId));
+      
+      emit('activity-deleted', { activityId });
+    } catch (err) {
+      console.error('Error deleting activity:', err);
+      alert('Failed to delete activity');
     }
   };
 
@@ -316,6 +371,7 @@ export function SignInPage() {
               selectedEventId={selectedEventId}
               onSelectEvent={handleSelectEvent}
               onEndEvent={handleEndEvent}
+              onDeleteEvent={handleDeleteEvent}
               onLoadMore={handleLoadMoreEvents}
               hasMore={hasMore}
               isLoading={loadingMore}
@@ -323,7 +379,10 @@ export function SignInPage() {
           </div>
 
           <div className="middle-column">
-            <CurrentEventParticipants event={selectedEvent} />
+            <CurrentEventParticipants 
+              event={selectedEvent} 
+              onRemoveParticipant={handleRemoveParticipant}
+            />
           </div>
 
           <div className="right-column">
@@ -361,6 +420,7 @@ export function SignInPage() {
         activities={activities}
         onClose={() => setShowNewEventModal(false)}
         onCreate={handleCreateEvent}
+        onDeleteActivity={handleDeleteActivity}
       />
     </div>
   );

@@ -65,6 +65,7 @@ export interface Activity {
   createdBy?: string;
   stationId?: string;            // Multi-station support (optional, shared activities use 'default')
   createdAt: Date;
+  isDeleted?: boolean; // Soft delete flag - hides from UI but retains in backend
 }
 
 export interface CheckIn {
@@ -116,6 +117,7 @@ export interface Event {
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
+  isDeleted?: boolean; // Soft delete flag - hides from UI but retains in backend
 }
 
 /**
@@ -234,3 +236,9 @@ export interface CheckResult {
 export interface CheckRunWithResults extends CheckRun {
   results: CheckResult[];
 }
+
+// ============================================
+// Station Types (RFS Facilities)
+// ============================================
+
+export * from './stations';

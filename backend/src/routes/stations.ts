@@ -8,6 +8,7 @@
  * - Updating station information
  * - Soft deleting stations
  * - Getting stations by brigade
+ * - National dataset lookup (RFS facilities)
  */
 
 import { Router, Request, Response } from 'express';
@@ -20,8 +21,100 @@ import {
   validateStationQuery,
 } from '../middleware/stationValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
+import { getRFSFacilitiesParser } from '../services/rfsFacilitiesParser';
 
 const router = Router();
+
+/**
+ * GET /api/stations/lookup
+ * Search and locate fire service stations from national dataset
+ * Supports all Australian states and territories
+ * Query params:
+ *   - q: search query (station name, suburb, brigade)
+ *   - lat: user latitude (for geolocation sorting)
+ *   - lon: user longitude (for geolocation sorting)
+ *   - limit: max results per category (default 10, max 50)
+ * 
+ * Note: This endpoint must be defined before /:id route to avoid conflicts
+ */
+router.get('/lookup', async (req, res) => {
+  try {
+    const query = req.query.q as string | undefined;
+    const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
+    const lon = req.query.lon ? parseFloat(req.query.lon as string) : undefined;
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
+
+    const parser = getRFSFacilitiesParser();
+    
+    // Ensure data is loaded
+    await parser.loadData();
+
+    // Validate that at least one parameter is provided
+    if (!query && (lat === undefined || lon === undefined)) {
+      return res.status(400).json({
+        error: 'At least one of query (q) or location (lat, lon) must be provided'
+      });
+    }
+
+    // Perform lookup
+    const results = parser.lookup(query, lat, lon, limit);
+
+    res.json({
+      results,
+      count: results.length,
+      query,
+      location: lat !== undefined && lon !== undefined ? { lat, lon } : undefined
+    });
+  } catch (error) {
+    console.error('Error in station lookup:', error);
+    res.status(500).json({
+      error: 'Failed to lookup stations',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * GET /api/stations/count
+ * Get count of loaded fire service stations nationally (for debugging/monitoring)
+ * 
+ * Note: This endpoint must be defined before /:id route to avoid conflicts
+ */
+router.get('/count', async (req, res) => {
+  try {
+    const parser = getRFSFacilitiesParser();
+    await parser.loadData();
+    
+    res.json({
+      count: parser.getCount()
+    });
+  } catch (error) {
+    console.error('Error getting station count:', error);
+    res.status(500).json({
+      error: 'Failed to get station count',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * GET /api/stations/brigade/:brigadeId
+ * Get all stations in a specific brigade
+ */
+router.get('/brigade/:brigadeId', validateBrigadeId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stations = await db.getStationsByBrigade(req.params.brigadeId);
+    
+    // Sort by name
+    stations.sort((a, b) => a.name.localeCompare(b.name));
+    
+    res.json({ stations, count: stations.length });
+  } catch (error) {
+    console.error('Error fetching stations by brigade:', error);
+    res.status(500).json({ error: 'Failed to fetch stations' });
+  }
+});
 
 /**
  * GET /api/stations
@@ -95,51 +188,38 @@ router.get('/:id', validateStationId, handleValidationErrors, async (req: Reques
 });
 
 /**
- * GET /api/stations/brigade/:brigadeId
- * Get all stations in a brigade
- */
-router.get('/brigade/:brigadeId', validateBrigadeId, handleValidationErrors, async (req: Request, res: Response) => {
-  try {
-    const db = await ensureDatabase(req.isDemoMode);
-    const stations = await db.getStationsByBrigade(req.params.brigadeId);
-    
-    // Sort by name
-    stations.sort((a, b) => a.name.localeCompare(b.name));
-    
-    res.json(stations);
-  } catch (error) {
-    console.error('Error fetching stations by brigade:', error);
-    res.status(500).json({ error: 'Failed to fetch stations' });
-  }
-});
-
-/**
  * POST /api/stations
  * Create a new station
  */
 router.post('/', validateCreateStation, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { name, brigadeId, brigadeName, hierarchy, location, contactInfo } = req.body;
-    
-    // Create the station
-    const station = await db.createStation({
+    const {
       name,
-      brigadeId,
       brigadeName,
+      brigadeId,
+      hierarchy,
+      location,
+      contactInfo,
+    } = req.body;
+    
+    const newStation = await db.createStation({
+      name,
+      brigadeName,
+      brigadeId,
       hierarchy,
       location,
       contactInfo,
       isActive: true,
     });
     
-    // Emit WebSocket event for real-time updates
-    const io = (req as any).app.get('io');
+    // Emit WebSocket event
+    const io = req.app.get('io');
     if (io) {
-      io.emit('station-created', station);
+      io.emit('station-created', newStation);
     }
     
-    res.status(201).json(station);
+    res.status(201).json(newStation);
   } catch (error) {
     console.error('Error creating station:', error);
     res.status(500).json({ error: 'Failed to create station' });
@@ -150,27 +230,34 @@ router.post('/', validateCreateStation, handleValidationErrors, async (req: Requ
  * PUT /api/stations/:id
  * Update a station
  */
-router.put('/:id', validateUpdateStation, handleValidationErrors, async (req: Request, res: Response) => {
+router.put('/:id', validateStationId, validateUpdateStation, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { id } = req.params;
-    const updates = req.body;
     
-    // Check if station exists
-    const existingStation = await db.getStationById(id);
-    if (!existingStation) {
-      return res.status(404).json({ error: 'Station not found' });
-    }
+    const updates = {
+      name: req.body.name,
+      brigadeName: req.body.brigadeName,
+      brigadeId: req.body.brigadeId,
+      hierarchy: req.body.hierarchy,
+      location: req.body.location,
+      contactInfo: req.body.contactInfo,
+      isActive: req.body.isActive,
+    };
     
-    // Update the station
+    // Remove undefined values
+    Object.keys(updates).forEach(key => 
+      updates[key as keyof typeof updates] === undefined && delete updates[key as keyof typeof updates]
+    );
+    
     const updatedStation = await db.updateStation(id, updates);
     
     if (!updatedStation) {
-      return res.status(500).json({ error: 'Failed to update station' });
+      return res.status(404).json({ error: 'Station not found' });
     }
     
-    // Emit WebSocket event for real-time updates
-    const io = (req as any).app.get('io');
+    // Emit WebSocket event
+    const io = req.app.get('io');
     if (io) {
       io.emit('station-updated', updatedStation);
     }
@@ -184,58 +271,38 @@ router.put('/:id', validateUpdateStation, handleValidationErrors, async (req: Re
 
 /**
  * DELETE /api/stations/:id
- * Soft delete a station (set isActive=false)
- * Prevents deletion if station has members or data
+ * Soft delete a station (sets isActive to false)
+ * Cannot delete if station has members, events, or other data
  */
 router.delete('/:id', validateStationId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { id } = req.params;
     
-    // Check if station exists
-    const station = await db.getStationById(id);
-    if (!station) {
-      return res.status(404).json({ error: 'Station not found' });
-    }
-    
-    // Check if station has members
+    // Check if station has any data
     const members = await db.getAllMembers(id);
-    if (members.length > 0) {
+    const events = await db.getEvents(undefined, undefined, id);
+    
+    if (members.length > 0 || events.length > 0) {
       return res.status(400).json({ 
-        error: 'Cannot delete station with existing members',
-        memberCount: members.length,
+        error: 'Cannot delete station with existing data',
+        details: {
+          memberCount: members.length,
+          eventCount: events.length,
+        },
       });
     }
     
-    // Check if station has active check-ins
-    const activeCheckIns = await db.getActiveCheckIns(id);
-    if (activeCheckIns.length > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete station with active check-ins',
-        checkInCount: activeCheckIns.length,
-      });
-    }
-    
-    // Check if station has events
-    const events = await db.getEvents(1, 0, id);
-    if (events.length > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete station with existing events',
-        message: 'Archive events first or transfer data to another station',
-      });
-    }
-    
-    // Perform soft delete
     const success = await db.deleteStation(id);
     
     if (!success) {
-      return res.status(500).json({ error: 'Failed to delete station' });
+      return res.status(404).json({ error: 'Station not found' });
     }
     
-    // Emit WebSocket event for real-time updates
-    const io = (req as any).app.get('io');
+    // Emit WebSocket event
+    const io = req.app.get('io');
     if (io) {
-      io.emit('station-deleted', { id, name: station.name });
+      io.emit('station-deleted', { stationId: id });
     }
     
     res.json({ 

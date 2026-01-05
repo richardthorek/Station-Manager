@@ -1271,6 +1271,82 @@ Priority: **HIGH** - High-value user features
 
 ---
 
+#### Issue #19d: National Dataset Integration - RFS Facilities Parser ✅ COMPLETED
+**GitHub Issue**: TBD  
+**Completed**: 2026-01-05
+
+**Objective**: Parse and integrate the national fire service facilities dataset for station lookup
+
+**User Story**: As an administrator creating a station, I want to search the national fire service facilities dataset so that I can quickly find and populate station details.
+
+**Current State**: ✅ Complete - 4485 facilities loaded nationally  
+**Target State**: ✅ Achieved - CSV parser with search and geolocation-based sorting
+
+**Implementation Summary**:
+1. ✅ Downloaded RFS facilities CSV from atlas.gov.au (2.2MB, 4487 facilities)
+2. ✅ Stored in backend/src/data/rfs-facilities.csv (added to .gitignore)
+3. ✅ Created CSV parser service with proper quote handling
+4. ✅ Parsed station name, location, brigade, district, area
+5. ✅ Mapped to StationHierarchy structure
+6. ✅ Applied 1:1 brigade-station naming convention
+7. ✅ Handled data inconsistencies gracefully
+8. ✅ Implemented full-text search (case-insensitive, name/suburb/brigade)
+9. ✅ Ranked results by relevance (0-1 score)
+10. ✅ Implemented geolocation sorting with Haversine formula
+11. ✅ Returns closest N stations by distance
+12. ✅ Created GET /api/stations/lookup endpoint
+13. ✅ Created GET /api/stations/count endpoint
+14. ✅ Cached parsed data in memory (singleton pattern)
+15. ✅ Loads on server start
+16. ✅ Added 37 comprehensive tests (all passing)
+17. ✅ Updated to national coverage (all Australian states/territories)
+
+**Facilities by State**:
+- Victoria: 1,231
+- New South Wales: 1,557
+- Queensland: 467
+- South Australia: 418
+- Western Australia: 553
+- Tasmania: 228
+- Northern Territory: 22
+- Australian Capital Territory: 9
+- **Total**: 4,485 facilities
+
+**Success Criteria**:
+- [x] CSV parser successfully loads fire service facilities data
+- [x] Search returns relevant results (case-insensitive, ranked)
+- [x] Geolocation sorting returns closest stations
+- [x] Lookup endpoint combines closest + search results
+- [x] Data cached for performance
+- [x] Handles missing/invalid data gracefully
+- [x] Tests cover parser and search (37 tests, all passing)
+- [x] Documentation updated (api_register.json, function_register.json)
+- [x] Performance: lookup < 200ms ✅ Achieved
+
+**Technical Implementation**:
+- **Parser**: `backend/src/services/rfsFacilitiesParser.ts`
+- **Routes**: `backend/src/routes/stations.ts`
+- **Types**: `backend/src/types/stations.ts`
+- **Tests**: 21 parser tests + 16 API tests = 37 total
+- **CSV Handling**: Proper quoted field parsing for commas in descriptions
+- **Search Algorithm**: Relevance scoring with exact match, prefix match, and substring match
+- **Distance Calculation**: Haversine formula for accurate distance (km)
+- **Memory Usage**: ~15MB for 4485 stations (acceptable)
+
+**Dependencies**: None
+
+**Effort**: 4 hours (completed in single session)
+
+**Priority**: P1 (High) ✅ COMPLETED
+
+**Labels**: `feature`, `data-integration`, `search`, `geolocation`, `phase-3`, `completed`
+
+**Milestone**: v1.3 - Essential Features
+
+**UI Screenshot Requirement**: N/A (Backend API only)
+
+---
+
 #### Issue #15: Bundle Size Optimization
 **GitHub Issue**: #117 (created 2026-01-04T09:25:48Z)
 

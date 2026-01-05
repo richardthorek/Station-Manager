@@ -373,7 +373,11 @@ export class TableStorageDatabase {
 
     const activities: Activity[] = [];
     for await (const entity of entities) {
-      activities.push(this.entityToActivity(entity));
+      const activity = this.entityToActivity(entity);
+      // Filter out deleted activities
+      if (!activity.isDeleted) {
+        activities.push(activity);
+      }
     }
 
     // Sort: default activities first, then custom
@@ -414,6 +418,7 @@ export class TableStorageDatabase {
       tagColor,
       createdBy,
       createdAt: new Date(),
+      isDeleted: false,
     };
 
     const entity: TableEntity = {
@@ -425,10 +430,26 @@ export class TableStorageDatabase {
       tagColor: activity.tagColor || '',
       createdBy: activity.createdBy || '',
       createdAt: activity.createdAt.toISOString(),
+      isDeleted: false,
     };
 
     await this.activitiesTable.createEntity(entity);
     return activity;
+  }
+
+  async deleteActivity(id: string): Promise<Activity | null> {
+    try {
+      const entity = await this.activitiesTable.getEntity<TableEntity>('Activity', id);
+      
+      // Soft delete - update isDeleted field
+      entity.isDeleted = true;
+      await this.activitiesTable.updateEntity(entity, 'Merge');
+      
+      return this.entityToActivity(entity);
+    } catch (error: any) {
+      if (error.statusCode === 404) return null;
+      throw error;
+    }
   }
 
   private entityToActivity(entity: TableEntity): Activity {
@@ -453,6 +474,7 @@ export class TableStorageDatabase {
       tagColor,
       createdBy: (entity.createdBy as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
+      isDeleted: (entity.isDeleted as boolean) || false,
     };
   }
 
@@ -523,6 +545,7 @@ export class TableStorageDatabase {
       createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),
+      isDeleted: false,
     };
 
     // Partition by month for efficient queries
@@ -539,6 +562,7 @@ export class TableStorageDatabase {
       createdBy: event.createdBy || '',
       createdAt: event.createdAt.toISOString(),
       updatedAt: event.updatedAt.toISOString(),
+      isDeleted: false,
     };
 
     await this.eventsTable.createEntity(entity);
@@ -563,7 +587,11 @@ export class TableStorageDatabase {
       });
 
       for await (const entity of entities) {
-        allEvents.push(this.entityToEvent(entity));
+        const event = this.entityToEvent(entity);
+        // Filter out deleted events
+        if (!event.isDeleted) {
+          allEvents.push(event);
+        }
       }
     }
 
@@ -576,7 +604,7 @@ export class TableStorageDatabase {
 
   async getActiveEvents(): Promise<Event[]> {
     const events = await this.getEvents(100, 0);
-    const activeEvents = events.filter(e => e.isActive);
+    const activeEvents = events.filter(e => e.isActive && !e.isDeleted); // Filter out deleted events
     
     // Auto-expire events that have exceeded time limit
     // Expired events remain visible in getEvents(), they're just marked as inactive
@@ -584,7 +612,7 @@ export class TableStorageDatabase {
     
     // Return currently active events (excluding ones we just expired)
     const updatedEvents = await this.getEvents(100, 0);
-    return updatedEvents.filter(e => e.isActive);
+    return updatedEvents.filter(e => e.isActive && !e.isDeleted); // Filter out deleted events
   }
 
   async getEventById(eventId: string): Promise<Event | null> {
@@ -647,6 +675,25 @@ export class TableStorageDatabase {
     }
   }
 
+  async deleteEvent(eventId: string): Promise<Event | null> {
+    const event = await this.getEventById(eventId);
+    if (!event) return null;
+
+    const monthKey = event.startTime.toISOString().slice(0, 7);
+    
+    try {
+      const entity = await this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId);
+      entity.isDeleted = true;
+      entity.updatedAt = new Date().toISOString();
+
+      await this.eventsTable.updateEntity(entity, 'Replace');
+      
+      return this.entityToEvent(entity);
+    } catch (error) {
+      return null;
+    }
+  }
+
   private entityToEvent(entity: TableEntity): Event {
     return {
       id: entity.rowKey as string,
@@ -658,6 +705,7 @@ export class TableStorageDatabase {
       createdBy: (entity.createdBy as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
+      isDeleted: (entity.isDeleted as boolean) || false,
     };
   }
 

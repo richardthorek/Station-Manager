@@ -50,3 +50,6 @@ azure.env
 
 
 bungendore_members.csv
+
+# Large data files (>1MB)
+backend/src/data/rfs-facilities.csv

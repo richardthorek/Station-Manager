@@ -47,6 +47,7 @@ import stationsRouter from './routes/stations';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
+import { getRFSFacilitiesParser } from './services/rfsFacilitiesParser';
 import { getVersionInfo } from './services/version';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 import { demoModeMiddleware } from './middleware/demoModeMiddleware';
@@ -135,6 +136,7 @@ app.use('/api/events', apiRateLimiter, eventsRouter);
 app.use('/api/stations', apiRateLimiter, stationsRouter);
 app.use('/api/truck-checks', apiRateLimiter, truckChecksRouter);
 app.use('/api/reports', apiRateLimiter, reportsRouter);
+app.use('/api/stations', apiRateLimiter, stationsRouter);
 
 // Achievement routes (now handles database selection per-request based on demo mode)
 app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());
@@ -198,6 +200,10 @@ async function startServer() {
     console.log('🚀 Starting server...');
     await ensureDatabase();
     await ensureTruckChecksDatabase();
+    
+    // Load RFS facilities data
+    const parser = getRFSFacilitiesParser();
+    await parser.loadData();
     
     // Start HTTP server
     httpServer.listen(PORT, () => {
