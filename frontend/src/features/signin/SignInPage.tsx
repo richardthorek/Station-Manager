@@ -240,6 +240,7 @@ export function SignInPage() {
 
   const handleRemoveParticipant = async (memberId: string) => {
     if (!selectedEventId) {
+      alert('Please select an event first');
       return;
     }
 
