@@ -72,10 +72,12 @@ export function StationSelector() {
 
   /**
    * Reset highlighted index when filtered list changes
+   * Instead of using useEffect, we'll reset in the search change handler
    */
-  useEffect(() => {
-    setHighlightedIndex(0);
-  }, [filteredStations]);
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setHighlightedIndex(0); // Reset to first item when search changes
+  };
 
   /**
    * Scroll highlighted item into view
@@ -186,7 +188,7 @@ export function StationSelector() {
               className="station-search-input"
               placeholder="Search stations..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               aria-label="Search stations"
             />
           </div>

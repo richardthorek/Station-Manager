@@ -217,6 +217,7 @@ export function StationProvider({ children }: StationProviderProps) {
 /**
  * Hook to use station context
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useStation() {
   const context = useContext(StationContext);
   if (context === undefined) {

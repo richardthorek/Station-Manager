@@ -13,6 +13,8 @@ module.exports = {
     '!src/services/azureStorage.ts',
     '!src/services/tableStorageDatabase.ts',
     '!src/services/tableStorageTruckChecksDatabase.ts',
+    // Exclude RFS facilities parser (requires 2.2MB CSV file that's gitignored)
+    '!src/services/rfsFacilitiesParser.ts',
     // Exclude scripts (development utilities, not production code)
     '!src/scripts/**',
     // Exclude types (type definitions only, no runtime code)
