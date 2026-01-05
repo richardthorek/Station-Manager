@@ -242,10 +242,13 @@ These variables ensure the backend `/health` endpoint returns the correct versio
 
 **Retry Strategy:**
 - 100-second initial wait for deployment stabilization (polling health endpoint every 10s)
-- 12 retries per request with 10-second delays
+- 6 retries per request with 10-second delays (60s max per request)
 - Automatic retry on 404, 502, 503 status codes (deployment stabilizing)
+- Automatic retry on network errors and request timeouts
 - Automatic retry on version mismatch (Azure App Service restart)
-- Total maximum time: 220 seconds (100s polling + 120s version verification)
+- Overall test suite timeout: 15 minutes (increased from 10 to account for cumulative retries)
+- Version verification can take up to 70 seconds (7 attempts × 10s)
+- Worst case for all tests: ~590 seconds (~10 minutes), well within 15-minute timeout
 
 **Success Criteria:**
 - All 9 smoke tests must pass
