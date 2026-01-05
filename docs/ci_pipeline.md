@@ -230,30 +230,43 @@ These variables ensure the backend `/health` endpoint returns the correct versio
 - **Tool**: TypeScript smoke tests (`backend/src/scripts/postDeploymentTests.ts`)
 
 **Test Coverage:**
-1. **Version Verification**: Confirms deployed code matches expected commit SHA
+1. **Stabilization Phase** (Phase 1): Confirms site is up and correct version deployed
 2. **Health Check**: Validates `/health` endpoint responds correctly
 3. **API Status**: Verifies `/api/status` endpoint is functional
 4. **Activities API**: Tests `/api/activities` endpoint
 5. **Members API**: Tests `/api/members` endpoint
 6. **Check-ins API**: Tests `/api/checkins` endpoint
 7. **Frontend SPA**: Validates frontend loads correctly
-8. **CORS Configuration**: Verifies CORS headers are present
-9. **Rate Limiting**: Ensures rate limiting is configured
+8. **Rate Limiting**: Ensures rate limiting is configured
 
-**Retry Strategy:**
-- 100-second initial wait for deployment stabilization (polling health endpoint every 10s)
-- 6 retries per request with 10-second delays (60s max per request)
-- Automatic retry on 404, 502, 503 status codes (deployment stabilizing)
-- Automatic retry on network errors and request timeouts
-- Automatic retry on version mismatch (Azure App Service restart)
-- Overall test suite timeout: 15 minutes (increased from 10 to account for cumulative retries)
-- Version verification can take up to 70 seconds (7 attempts × 10s)
-- Worst case for all tests: ~590 seconds (~10 minutes), well within 15-minute timeout
+**Two-Phase Strategy:**
+
+**Phase 1: Stabilization (up to 15 minutes)**
+- Polls health endpoint every 10 seconds
+- Validates site responds with 200 status
+- Verifies deployed version matches expected commit SHA
+- Exits immediately when both conditions met (efficient!)
+- Maximum: 90 attempts × 10s = 900s (15 minutes)
+- Typical: 1-2 minutes (exits early when ready)
+
+**Phase 2: Functional Tests (minimal retries)**
+- Runs only after stabilization confirms site is ready
+- Each test gets 2 quick retries (5s between) for transient issues
+- Tests fail fast since site is known to be up and correct version
+- Expected completion: 30-60 seconds for all 7 tests
+- Maximum: 120 seconds timeout
 
 **Success Criteria:**
-- All 9 smoke tests must pass
-- Deployed commit SHA must match GitHub deployment SHA
-- All critical API endpoints must respond with 200 status
+- Phase 1: Site must respond with 200 status AND correct commit SHA
+- Phase 2: All 7 functional tests must pass
+- Total maximum time: 17 minutes (15 min stabilization + 2 min tests)
+- Typical time: 3 minutes (2 min stabilization + 1 min tests)
+
+**Efficiency Benefits:**
+- Single stabilization phase (no duplicate health checks)
+- Early exit when site is ready (no wasted time)
+- Minimal retries in functional tests (fast execution)
+- Clear separation of concerns (stability vs functionality)
 
 ---
 
