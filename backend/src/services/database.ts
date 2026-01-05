@@ -974,10 +974,19 @@ class DatabaseService {
   }
 
   /**
-   * Delete a station
+   * Delete a station (soft delete - sets isActive=false)
    */
   deleteStation(id: string): boolean {
-    return this.stations.delete(id);
+    const station = this.stations.get(id);
+    if (!station) {
+      return false;
+    }
+    
+    // Soft delete: set isActive to false
+    station.isActive = false;
+    station.updatedAt = new Date();
+    this.stations.set(id, station);
+    return true;
   }
 }
 
