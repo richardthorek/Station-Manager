@@ -61,7 +61,7 @@ const upload = multer({
  */
 router.get('/appliances', async (req: Request, res: Response) => {
   try {
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const appliances = await db.getAllAppliances();
     res.json(appliances);
   } catch (error) {
@@ -76,7 +76,7 @@ router.get('/appliances', async (req: Request, res: Response) => {
  */
 router.get('/appliances/:id', validateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const appliance = await db.getApplianceById(req.params.id);
     if (!appliance) {
       return res.status(404).json({ error: 'Appliance not found' });
@@ -100,7 +100,7 @@ router.post('/appliances', validateCreateAppliance, handleValidationErrors, asyn
       return res.status(400).json({ error: 'Name is required' });
     }
 
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const appliance = await db.createAppliance(name, description, photoUrl);
     res.status(201).json(appliance);
   } catch (error) {
@@ -121,7 +121,7 @@ router.put('/appliances/:id', validateUpdateAppliance, handleValidationErrors, a
       return res.status(400).json({ error: 'Name is required' });
     }
 
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const appliance = await db.updateAppliance(req.params.id, name, description, photoUrl);
     if (!appliance) {
       return res.status(404).json({ error: 'Appliance not found' });
@@ -140,7 +140,7 @@ router.put('/appliances/:id', validateUpdateAppliance, handleValidationErrors, a
  */
 router.delete('/appliances/:id', validateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const deleted = await db.deleteAppliance(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Appliance not found' });
@@ -162,7 +162,7 @@ router.delete('/appliances/:id', validateApplianceId, handleValidationErrors, as
  */
 router.get('/templates/:applianceId', validateTemplateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const template = await db.getTemplateByApplianceId(req.params.applianceId);
     if (!template) {
       return res.status(404).json({ error: 'Template not found' });
@@ -186,7 +186,7 @@ router.put('/templates/:applianceId', validateUpdateTemplate, handleValidationEr
       return res.status(400).json({ error: 'Items array is required' });
     }
 
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const template = await db.updateTemplate(req.params.applianceId, items);
     res.json(template);
   } catch (error) {
@@ -212,7 +212,7 @@ router.post('/runs', validateCreateCheckRun, handleValidationErrors, async (req:
       return res.status(400).json({ error: 'applianceId and completedBy are required' });
     }
 
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     
     // Check for existing active check run
     let checkRun = await db.getActiveCheckRunForAppliance(applianceId);
@@ -257,7 +257,7 @@ router.post('/runs', validateCreateCheckRun, handleValidationErrors, async (req:
  */
 router.get('/runs/:id', validateCheckRunId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const checkRun = await db.getCheckRunWithResults(req.params.id);
     if (!checkRun) {
       return res.status(404).json({ error: 'Check run not found' });
@@ -276,7 +276,7 @@ router.get('/runs/:id', validateCheckRunId, handleValidationErrors, async (req: 
 router.get('/runs', validateCheckRunQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { applianceId, startDate, endDate, withIssues } = req.query;
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     
     let runs;
     
@@ -316,7 +316,7 @@ router.put('/runs/:id/complete', validateCompleteCheckRun, handleValidationError
   try {
     const { additionalComments } = req.body;
     
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const checkRun = await db.completeCheckRun(req.params.id, additionalComments);
     if (!checkRun) {
       return res.status(404).json({ error: 'Check run not found' });
@@ -359,7 +359,7 @@ router.post('/results', validateCreateCheckResult, handleValidationErrors, async
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const result = await db.createCheckResult(
       runId,
       itemId,
@@ -402,7 +402,7 @@ router.put('/results/:id', validateUpdateCheckResult, handleValidationErrors, as
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const result = await db.updateCheckResult(
       req.params.id,
       status as CheckStatus,
@@ -427,7 +427,7 @@ router.put('/results/:id', validateUpdateCheckResult, handleValidationErrors, as
  */
 router.delete('/results/:id', validateCheckResultId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureTruckChecksDatabase();
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const deleted = await db.deleteCheckResult(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: 'Check result not found' });
