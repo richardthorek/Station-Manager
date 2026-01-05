@@ -230,6 +230,27 @@ router.delete('/:eventId/participants/:participantId', validateRemoveParticipant
 });
 
 /**
+ * Delete an event (soft delete)
+ */
+router.delete('/:eventId', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const { eventId } = req.params;
+    
+    const event = await db.deleteEvent(eventId);
+    
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    
+    res.json({ message: 'Event deleted successfully', event });
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
+
+/**
  * Manual rollover trigger - deactivates all expired events
  * POST /api/events/admin/rollover
  */

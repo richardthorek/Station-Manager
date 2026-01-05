@@ -7,9 +7,10 @@ interface NewEventModalProps {
   activities: Activity[];
   onClose: () => void;
   onCreate: (activityId: string) => void;
+  onDeleteActivity: (activityId: string) => void;
 }
 
-export function NewEventModal({ isOpen, activities, onClose, onCreate }: NewEventModalProps) {
+export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteActivity }: NewEventModalProps) {
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
 
   if (!isOpen) return null;
@@ -44,17 +45,32 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate }: NewEven
 
           <div className="activity-grid">
             {activities.map((activity) => (
-              <button
-                key={activity.id}
-                className={`activity-option ${selectedActivityId === activity.id ? 'selected' : ''}`}
-                onClick={() => setSelectedActivityId(activity.id)}
-              >
-                <span className="activity-icon">📋</span>
-                <span className="activity-name">{activity.name}</span>
+              <div key={activity.id} className="activity-option-wrapper">
+                <button
+                  className={`activity-option ${selectedActivityId === activity.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedActivityId(activity.id)}
+                >
+                  <span className="activity-icon">📋</span>
+                  <span className="activity-name">{activity.name}</span>
+                  {activity.isCustom && (
+                    <span className="custom-badge">Custom</span>
+                  )}
+                </button>
                 {activity.isCustom && (
-                  <span className="custom-badge">Custom</span>
+                  <button
+                    className="activity-delete-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`Are you sure you want to delete the "${activity.name}" activity? This cannot be undone.`)) {
+                        onDeleteActivity(activity.id);
+                      }
+                    }}
+                    title="Delete activity"
+                  >
+                    🗑️
+                  </button>
                 )}
-              </button>
+              </div>
             ))}
           </div>
         </div>

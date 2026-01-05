@@ -8,9 +8,10 @@ interface EventCardProps {
   isSelected: boolean;
   onSelect: (eventId: string) => void;
   onEnd: (eventId: string) => void;
+  onDelete: (eventId: string) => void;
 }
 
-export function EventCard({ event, isActive, isSelected, onSelect, onEnd }: EventCardProps) {
+export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDelete }: EventCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const formatTime = (timestamp: string) => {
@@ -125,16 +126,31 @@ export function EventCard({ event, isActive, isSelected, onSelect, onEnd }: Even
             </div>
           )}
           
-          <button
-            className="btn-end-event"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEnd(event.id);
-            }}
-            disabled={!isActive}
-          >
-            {isActive ? 'End Event' : 'Event Ended'}
-          </button>
+          <div className="event-card-actions">
+            <button
+              className="btn-end-event"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEnd(event.id);
+              }}
+              disabled={!isActive}
+            >
+              {isActive ? 'End Event' : 'Event Ended'}
+            </button>
+            
+            <button
+              className="btn-delete-event"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`Are you sure you want to delete this ${event.activityName} event? This cannot be undone.`)) {
+                  onDelete(event.id);
+                }
+              }}
+              title="Delete event"
+            >
+              🗑️ Delete
+            </button>
+          </div>
         </div>
       )}
     </div>

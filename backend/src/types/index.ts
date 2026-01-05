@@ -18,6 +18,7 @@ export interface Activity {
   tagColor?: string; // CSS color or color name for UI tags
   createdBy?: string;
   createdAt: Date;
+  isDeleted?: boolean; // Soft delete flag - hides from UI but retains in backend
 }
 
 export interface CheckIn {
@@ -66,6 +67,7 @@ export interface Event {
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
+  isDeleted?: boolean; // Soft delete flag - hides from UI but retains in backend
 }
 
 /**

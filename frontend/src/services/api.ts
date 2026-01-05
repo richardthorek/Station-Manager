@@ -106,6 +106,13 @@ class ApiService {
     return response.json();
   }
 
+  async deleteActivity(activityId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/activities/${activityId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete activity');
+  }
+
   // Check-ins
   async getActiveCheckIns(): Promise<CheckInWithDetails[]> {
     const response = await fetch(`${API_BASE_URL}/checkins/active`);
@@ -181,6 +188,13 @@ class ApiService {
     });
     if (!response.ok) throw new Error('Failed to end event');
     return response.json();
+  }
+
+  async deleteEvent(eventId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete event');
   }
 
   async addEventParticipant(

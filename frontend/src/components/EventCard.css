@@ -179,8 +179,14 @@
   border-radius: 12px;
 }
 
-.btn-end-event {
+.event-card-actions {
+  display: flex;
+  gap: 0.5rem;
   width: 100%;
+}
+
+.btn-end-event {
+  flex: 1;
   padding: 0.75rem;
   background: #E2231A;
   color: #ffffff;
@@ -207,6 +213,25 @@
   cursor: not-allowed;
   opacity: 0.6;
   transform: none;
+}
+
+.btn-delete-event {
+  padding: 0.75rem 1rem;
+  background: #4d4d4f;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-delete-event:hover {
+  background: #2a2a2b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(77, 77, 79, 0.3);
 }
 
 /* Scrollbar styling */
