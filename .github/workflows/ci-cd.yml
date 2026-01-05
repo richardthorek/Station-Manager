@@ -403,6 +403,7 @@ jobs:
           mkdir -p deploy/frontend
           cp package.json deploy/
           cp -r backend/dist deploy/backend/
+          cp -r backend/node_modules deploy/backend/
           cp backend/package.json deploy/backend/
           cp backend/package-lock.json deploy/backend/
           cp -r frontend/dist deploy/frontend/
