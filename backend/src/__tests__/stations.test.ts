@@ -289,9 +289,12 @@ describe('Stations API', () => {
         .get(`/api/stations/brigade/${testBrigadeId}`)
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
-      response.body.forEach((station: any) => {
+      expect(response.body).toHaveProperty('stations');
+      expect(response.body).toHaveProperty('count');
+      expect(Array.isArray(response.body.stations)).toBe(true);
+      expect(response.body.stations.length).toBeGreaterThan(0);
+      expect(response.body.count).toBe(response.body.stations.length);
+      response.body.stations.forEach((station: any) => {
         expect(station.brigadeId).toBe(testBrigadeId);
       });
     });
@@ -301,8 +304,11 @@ describe('Stations API', () => {
         .get('/api/stations/brigade/non-existent-brigade')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBe(0);
+      expect(response.body).toHaveProperty('stations');
+      expect(response.body).toHaveProperty('count');
+      expect(Array.isArray(response.body.stations)).toBe(true);
+      expect(response.body.stations.length).toBe(0);
+      expect(response.body.count).toBe(0);
     });
 
     it('should return stations sorted by name within brigade', async () => {
@@ -310,7 +316,8 @@ describe('Stations API', () => {
         .get(`/api/stations/brigade/${testBrigadeId}`)
         .expect(200);
 
-      const names = response.body.map((s: any) => s.name);
+      expect(response.body).toHaveProperty('stations');
+      const names = response.body.stations.map((s: any) => s.name);
       const sortedNames = [...names].sort();
       expect(names).toEqual(sortedNames);
     });
@@ -422,8 +429,10 @@ describe('Stations API', () => {
         .delete(`/api/stations/${testStationId}`)
         .expect(400);
 
-      expect(response.body.error).toContain('members');
-      expect(response.body).toHaveProperty('memberCount');
+      expect(response.body.error).toBe('Cannot delete station with existing data');
+      expect(response.body).toHaveProperty('details');
+      expect(response.body.details).toHaveProperty('memberCount');
+      expect(response.body.details.memberCount).toBeGreaterThan(0);
     });
 
     it('should prevent deletion of station with active check-ins', async () => {

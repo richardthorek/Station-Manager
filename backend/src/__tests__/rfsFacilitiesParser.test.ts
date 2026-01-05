@@ -1,7 +1,16 @@
 import { getRFSFacilitiesParser } from '../services/rfsFacilitiesParser';
 import type { StationHierarchy } from '../types/stations';
+import * as fs from 'fs';
+import * as path from 'path';
 
-describe('RFS Facilities Parser', () => {
+// Check if the CSV file exists - it's gitignored due to size (2.2MB)
+const csvPath = path.join(__dirname, '../data/rfs-facilities.csv');
+const csvExists = fs.existsSync(csvPath);
+
+// Skip all tests if CSV file doesn't exist (expected in CI/CD environments)
+const describeOrSkip = csvExists ? describe : describe.skip;
+
+describeOrSkip('RFS Facilities Parser', () => {
   let parser: ReturnType<typeof getRFSFacilitiesParser>;
 
   beforeAll(async () => {
