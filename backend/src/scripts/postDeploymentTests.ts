@@ -16,11 +16,13 @@
  *   - Individual test retries on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
  *   - Retries on 404, 502, 503 status codes (deployment still stabilizing)
  *   - Retries on version mismatch (Azure App Service restart in progress)
+ *   - Retries on request timeouts (network delays)
  *   - 10 second delay between test retries
  *   - Default 6 retries per request (60 seconds max per request, reduced from 12)
- *   - Overall test suite timeout: 10 minutes to prevent indefinite hanging
- *   - Version test can take up to 60 seconds with retries (7 attempts × 10s)
- *   - Total stabilization time: up to 100s polling + up to 60s verification = 160s max
+ *   - Overall test suite timeout: 15 minutes to prevent indefinite hanging (increased from 10 to account for cumulative retries)
+ *   - Version test can take up to 70 seconds with retries (7 attempts × 10s)
+ *   - Total stabilization time: up to 100s polling + up to 70s verification = 170s max
+ *   - Worst case for all tests: 100s + 70s + (7 tests × 60s) = ~590s = ~10 minutes
  * 
  * Version Verification:
  *   The version test is retry-aware because Azure App Service takes time to:
@@ -40,7 +42,7 @@
  *   TABLE_STORAGE_TABLE_SUFFIX: Set to "Test" to use test tables (default: Test)
  *   TEST_TIMEOUT: Timeout for each test in ms (default: 30000)
  *   MAX_RETRIES: Number of retries for failed requests (default: 6, reduced from 12)
- *   OVERALL_TIMEOUT: Overall timeout for entire test suite in seconds (default: 600 = 10 minutes)
+ *   OVERALL_TIMEOUT: Overall timeout for entire test suite in seconds (default: 900 = 15 minutes, increased from 10 to account for cumulative retries)
  *   GITHUB_SHA: Expected commit SHA for version verification
  */
 
@@ -52,7 +54,7 @@ const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '30000');
 const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '6'); // Reduced from 12 to 6 (60s max per request)
 const RETRY_DELAY = 10000; // 10 seconds between retries
-const OVERALL_TIMEOUT = parseInt(process.env.OVERALL_TIMEOUT || '600') * 1000; // 10 minutes default (in ms)
+const OVERALL_TIMEOUT = parseInt(process.env.OVERALL_TIMEOUT || '900') * 1000; // 15 minutes default (in ms), increased from 10 to handle cumulative retry delays
 const EXPECTED_COMMIT_SHA = process.env.GITHUB_SHA || process.env.GIT_COMMIT_SHA; // From CI/CD or manual override
 
 // HTTP status codes that indicate deployment is still stabilizing
@@ -147,7 +149,12 @@ async function makeRequest(
 
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Request timeout'));
+      if (retries > 0) {
+        console.log(`  ⏳ Request timeout, retrying in ${RETRY_DELAY / 1000}s... (${retries} retries left)`);
+        retryRequest(url, options, retries, resolve, reject);
+      } else {
+        reject(new Error('Request timeout'));
+      }
     });
 
     if (options.body) {
@@ -426,7 +433,7 @@ async function runTests(): Promise<void> {
   console.log('\n🧪 Starting Post-Deployment Smoke Tests\n');
   console.log(`Target URL: ${APP_URL}`);
   console.log(`Timeout: ${TEST_TIMEOUT}ms per test`);
-  console.log(`Max Retries: ${MAX_RETRIES} per test`);
+  console.log(`Max Retries: ${MAX_RETRIES} per test (${MAX_RETRIES * RETRY_DELAY / 1000}s max per request)`);
   console.log(`Overall Timeout: ${OVERALL_TIMEOUT / 1000}s (${OVERALL_TIMEOUT / 60000} minutes)`);
   console.log(`Test Environment: TABLE_STORAGE_TABLE_SUFFIX=${process.env.TABLE_STORAGE_TABLE_SUFFIX || '(not set)'}\n`);
 

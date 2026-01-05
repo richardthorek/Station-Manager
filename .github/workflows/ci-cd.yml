@@ -32,9 +32,10 @@
 #   - Polls health endpoint every 10s (max 10 attempts = 100s) before running tests
 #   - Tests proceed as soon as app is ready, or after 100s timeout
 #   - Individual tests can retry up to 6 times (60s max per request)
-#   - Overall test suite timeout: 10 minutes to prevent indefinite hanging
-#   - Version verification can take up to 60s additional time (7 attempts × 10s)
-#   - Total stabilization time: up to 100s polling + up to 60s verification = 160s max
+#   - Overall test suite timeout: 15 minutes to prevent indefinite hanging (increased from 10 to account for cumulative retries)
+#   - Version verification can take up to 70s additional time (7 attempts × 10s)
+#   - Total stabilization time: up to 100s polling + up to 70s verification = 170s max
+#   - Worst case for all tests: ~590s = ~10 minutes, well within 15-minute timeout
 #
 # Optimizations:
 #   - Parallel job execution for independent tasks
@@ -564,6 +565,7 @@ jobs:
           TABLE_STORAGE_TABLE_SUFFIX: Test
           TEST_TIMEOUT: 30000
           MAX_RETRIES: 6
+          OVERALL_TIMEOUT: 900
           GITHUB_SHA: ${{ github.sha }}
         run: |
           cd backend
@@ -571,7 +573,7 @@ jobs:
           echo "   Target: $APP_URL"
           echo "   Commit: ${{ github.sha }}"
           echo "   Max retries: 6 (60s per request)"
-          echo "   Overall timeout: 10 minutes"
+          echo "   Overall timeout: 15 minutes"
           echo ""
           npm run test:post-deploy
 
