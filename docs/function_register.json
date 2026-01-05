@@ -97,6 +97,89 @@
           "complexity": "O(n)",
           "sideEffects": "none"
         },
+        "getAllStations": {
+          "signature": "getAllStations(): Station[]",
+          "line": 923,
+          "description": "Get all stations",
+          "returns": "Station[]",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "getStationById": {
+          "signature": "getStationById(id: string): Station | undefined",
+          "line": 928,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Station UUID"
+            }
+          ],
+          "returns": "Station | undefined",
+          "complexity": "O(1)",
+          "sideEffects": "none"
+        },
+        "getStationsByBrigade": {
+          "signature": "getStationsByBrigade(brigadeId: string): Station[]",
+          "line": 933,
+          "parameters": [
+            {
+              "name": "brigadeId",
+              "type": "string",
+              "description": "Brigade ID"
+            }
+          ],
+          "returns": "Station[]",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "createStation": {
+          "signature": "createStation(station: Omit<Station, 'id' | 'createdAt' | 'updatedAt'>): Station",
+          "line": 938,
+          "parameters": [
+            {
+              "name": "station",
+              "type": "Omit<Station, 'id' | 'createdAt' | 'updatedAt'>",
+              "description": "Station data without ID and timestamps"
+            }
+          ],
+          "returns": "Station",
+          "complexity": "O(1)",
+          "sideEffects": "Adds station to database, generates UUID and timestamps"
+        },
+        "updateStation": {
+          "signature": "updateStation(id: string, updates: Partial<Omit<Station, 'id' | 'createdAt' | 'updatedAt'>>): Station | null",
+          "line": 952,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Station UUID"
+            },
+            {
+              "name": "updates",
+              "type": "Partial<Omit<Station, 'id' | 'createdAt' | 'updatedAt'>>",
+              "description": "Partial station updates"
+            }
+          ],
+          "returns": "Station | null",
+          "complexity": "O(1)",
+          "sideEffects": "Updates station in database"
+        },
+        "deleteStation": {
+          "signature": "deleteStation(id: string): boolean",
+          "line": 979,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Station UUID"
+            }
+          ],
+          "returns": "boolean",
+          "complexity": "O(1)",
+          "sideEffects": "Soft deletes station (sets isActive=false)"
+        },
         "getAllActivities": {
           "signature": "getAllActivities(): Activity[]",
           "line": 247,
