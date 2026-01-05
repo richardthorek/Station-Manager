@@ -72,11 +72,11 @@ class DatabaseService {
   private initializeDefaultData() {
     // Add default activities
     const defaultActivities: Activity[] = [
-      { id: uuidv4(), name: 'Training', isCustom: false, category: 'training', tagColor: '#008550', createdAt: new Date() },
-      { id: uuidv4(), name: 'Maintenance', isCustom: false, category: 'maintenance', tagColor: '#fbb034', createdAt: new Date() },
-      { id: uuidv4(), name: 'Meeting', isCustom: false, category: 'meeting', tagColor: '#215e9e', createdAt: new Date() },
-      { id: uuidv4(), name: 'Brigade Training', isCustom: false, category: 'training', tagColor: '#cbdb2a', createdAt: new Date() },
-      { id: uuidv4(), name: 'District Training', isCustom: false, category: 'training', tagColor: '#008550', createdAt: new Date() },
+      { id: uuidv4(), name: 'Training', isCustom: false, category: 'training', tagColor: '#008550', createdAt: new Date(), isDeleted: false },
+      { id: uuidv4(), name: 'Maintenance', isCustom: false, category: 'maintenance', tagColor: '#fbb034', createdAt: new Date(), isDeleted: false },
+      { id: uuidv4(), name: 'Meeting', isCustom: false, category: 'meeting', tagColor: '#215e9e', createdAt: new Date(), isDeleted: false },
+      { id: uuidv4(), name: 'Brigade Training', isCustom: false, category: 'training', tagColor: '#cbdb2a', createdAt: new Date(), isDeleted: false },
+      { id: uuidv4(), name: 'District Training', isCustom: false, category: 'training', tagColor: '#008550', createdAt: new Date(), isDeleted: false },
     ];
 
     defaultActivities.forEach(activity => {
@@ -181,6 +181,7 @@ class DatabaseService {
         isActive: i < 2, // Keep 2 most recent events active
         createdAt: eventTime,
         updatedAt: eventTime,
+        isDeleted: false,
       };
       
       this.events.set(event.id, event);
@@ -280,17 +281,21 @@ class DatabaseService {
 
   // Activity methods
   getAllActivities(): Activity[] {
-    return Array.from(this.activities.values()).sort((a, b) => {
-      // Default activities first, then custom ones
-      if (a.isCustom !== b.isCustom) {
-        return a.isCustom ? 1 : -1;
-      }
-      return a.name.localeCompare(b.name);
-    });
+    return Array.from(this.activities.values())
+      .filter(a => !a.isDeleted) // Filter out deleted activities
+      .sort((a, b) => {
+        // Default activities first, then custom ones
+        if (a.isCustom !== b.isCustom) {
+          return a.isCustom ? 1 : -1;
+        }
+        return a.name.localeCompare(b.name);
+      });
   }
 
   getActivityById(id: string): Activity | undefined {
-    return this.activities.get(id);
+    const activity = this.activities.get(id);
+    // Return activity even if deleted (needed for historical references)
+    return activity;
   }
 
   createActivity(name: string, createdBy?: string): Activity {
@@ -304,8 +309,20 @@ class DatabaseService {
       tagColor: this.colorForCategory(category),
       createdBy,
       createdAt: new Date(),
+      isDeleted: false,
     };
     this.activities.set(activity.id, activity);
+    return activity;
+  }
+
+  deleteActivity(id: string): Activity | null {
+    const activity = this.activities.get(id);
+    if (!activity) {
+      return null;
+    }
+    // Soft delete - mark as deleted but keep in database
+    activity.isDeleted = true;
+    this.activities.set(id, activity);
     return activity;
   }
 
@@ -435,6 +452,7 @@ class DatabaseService {
       createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),
+      isDeleted: false,
     };
     
     this.events.set(event.id, event);
@@ -449,6 +467,7 @@ class DatabaseService {
    */
   getEvents(limit: number = 50, offset: number = 0): Event[] {
     return Array.from(this.events.values())
+      .filter(e => !e.isDeleted) // Filter out deleted events
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime())
       .slice(offset, offset + limit);
   }
@@ -460,7 +479,7 @@ class DatabaseService {
    */
   getActiveEvents(): Event[] {
     const activeEvents = Array.from(this.events.values())
-      .filter(event => event.isActive)
+      .filter(event => event.isActive && !event.isDeleted) // Filter out deleted events
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
     
     // Auto-expire events that have exceeded time limit
@@ -473,7 +492,7 @@ class DatabaseService {
     
     // Return only currently active events (excluding ones we just expired)
     return Array.from(this.events.values())
-      .filter(event => event.isActive)
+      .filter(event => event.isActive && !event.isDeleted) // Filter out deleted events
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }
 
@@ -481,7 +500,9 @@ class DatabaseService {
    * Get a specific event by ID
    */
   getEventById(eventId: string): Event | undefined {
-    return this.events.get(eventId);
+    const event = this.events.get(eventId);
+    // Return event even if deleted (needed for historical references)
+    return event;
   }
 
   /**
@@ -513,6 +534,23 @@ class DatabaseService {
     event.isActive = true;
     event.updatedAt = new Date();
 
+    return event;
+  }
+
+  /**
+   * Soft delete an event (marks as deleted but keeps in database)
+   */
+  deleteEvent(eventId: string): Event | null {
+    const event = this.events.get(eventId);
+    if (!event) {
+      return null;
+    }
+    
+    // Soft delete - mark as deleted but keep in database
+    event.isDeleted = true;
+    event.updatedAt = new Date();
+    this.events.set(eventId, event);
+    
     return event;
   }
 

@@ -239,4 +239,73 @@ describe('Activities API', () => {
       expect(getActiveResponse.body.activity.isCustom).toBe(true);
     });
   });
+
+  describe('DELETE /api/activities/:activityId', () => {
+    it('should soft delete a custom activity', async () => {
+      // Create a custom activity
+      const createResponse = await request(app)
+        .post('/api/activities')
+        .send({ name: 'Activity to Delete', createdBy: 'test-user' })
+        .expect(201);
+      
+      const activityId = createResponse.body.id;
+
+      // Delete the activity
+      const deleteResponse = await request(app)
+        .delete(`/api/activities/${activityId}`)
+        .expect(200);
+
+      expect(deleteResponse.body).toHaveProperty('message', 'Activity deleted successfully');
+      expect(deleteResponse.body.activity).toHaveProperty('id', activityId);
+      expect(deleteResponse.body.activity).toHaveProperty('isDeleted', true);
+    });
+
+    it('should not show deleted activity in GET /api/activities', async () => {
+      // Create a custom activity
+      const createResponse = await request(app)
+        .post('/api/activities')
+        .send({ name: 'Activity to Hide', createdBy: 'test-user' })
+        .expect(201);
+      
+      const activityId = createResponse.body.id;
+
+      // Delete the activity
+      await request(app)
+        .delete(`/api/activities/${activityId}`)
+        .expect(200);
+
+      // Get all activities - deleted activity should not be in the list
+      const activitiesResponse = await request(app)
+        .get('/api/activities')
+        .expect(200);
+
+      const deletedActivity = activitiesResponse.body.find((a: any) => a.id === activityId);
+      expect(deletedActivity).toBeUndefined();
+    });
+
+    it('should return 404 if activity does not exist', async () => {
+      const response = await request(app)
+        .delete('/api/activities/non-existent-activity')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('Activity not found');
+    });
+
+    it('should allow deleting default activities (though not recommended)', async () => {
+      // Get a default activity
+      const activitiesResponse = await request(app)
+        .get('/api/activities')
+        .expect(200);
+      
+      const defaultActivity = activitiesResponse.body.find((a: any) => !a.isCustom);
+      
+      // Delete it
+      const deleteResponse = await request(app)
+        .delete(`/api/activities/${defaultActivity.id}`)
+        .expect(200);
+
+      expect(deleteResponse.body).toHaveProperty('message', 'Activity deleted successfully');
+    });
+  });
 });

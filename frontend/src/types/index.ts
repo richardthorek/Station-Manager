@@ -16,6 +16,7 @@ export interface Activity {
   isCustom: boolean;
   createdBy?: string;
   createdAt: string;
+  isDeleted?: boolean;
 }
 
 export interface CheckIn {
@@ -61,6 +62,7 @@ export interface Event {
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  isDeleted?: boolean;
 }
 
 /**

@@ -8,6 +8,7 @@ interface EventLogProps {
   selectedEventId: string | null;
   onSelectEvent: (eventId: string) => void;
   onEndEvent: (eventId: string) => void;
+  onDeleteEvent: (eventId: string) => void;
   onLoadMore: () => void;
   hasMore: boolean;
   isLoading: boolean;
@@ -18,6 +19,7 @@ export function EventLog({
   selectedEventId,
   onSelectEvent,
   onEndEvent,
+  onDeleteEvent,
   onLoadMore,
   hasMore,
   isLoading,
@@ -80,6 +82,7 @@ export function EventLog({
                     isSelected={selectedEventId === event.id}
                     onSelect={onSelectEvent}
                     onEnd={onEndEvent}
+                    onDelete={onDeleteEvent}
                   />
                 ))}
               </div>
@@ -96,6 +99,7 @@ export function EventLog({
                     isSelected={false}
                     onSelect={() => {}}
                     onEnd={() => {}}
+                    onDelete={onDeleteEvent}
                   />
                 ))}
               </div>

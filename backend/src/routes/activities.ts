@@ -91,4 +91,27 @@ router.post('/', validateCreateActivity, handleValidationErrors, async (req: Req
   }
 });
 
+// Delete activity (soft delete)
+router.delete('/:activityId', async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const { activityId } = req.params;
+    
+    if (!activityId) {
+      return res.status(400).json({ error: 'Activity ID is required' });
+    }
+
+    const activity = await db.deleteActivity(activityId);
+    
+    if (!activity) {
+      return res.status(404).json({ error: 'Activity not found' });
+    }
+
+    res.json({ message: 'Activity deleted successfully', activity });
+  } catch (error) {
+    console.error('Error deleting activity:', error);
+    res.status(500).json({ error: 'Failed to delete activity' });
+  }
+});
+
 export default router;
