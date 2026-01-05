@@ -1621,6 +1621,114 @@
         },
         "implementation": "backend/src/routes/reports.ts"
       }
+    },
+    "stations": {
+      "GET /api/stations/lookup": {
+        "method": "GET",
+        "path": "/api/stations/lookup",
+        "description": "Search and locate fire service stations nationally with geolocation sorting. Supports all Australian states and territories.",
+        "authentication": "none",
+        "parameters": {
+          "query": {
+            "q": {
+              "type": "string",
+              "required": false,
+              "description": "Search query (station name, suburb, brigade)"
+            },
+            "lat": {
+              "type": "number",
+              "required": false,
+              "description": "User latitude for geolocation sorting"
+            },
+            "lon": {
+              "type": "number",
+              "required": false,
+              "description": "User longitude for geolocation sorting"
+            },
+            "limit": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50,
+              "required": false,
+              "description": "Maximum results per category (default 10, max 50)"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Station lookup results",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/StationSearchResult" }
+                },
+                "count": { "type": "integer" },
+                "query": { "type": "string" },
+                "location": {
+                  "type": "object",
+                  "properties": {
+                    "lat": { "type": "number" },
+                    "lon": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid parameters (missing both query and location)" },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/stations.ts:17",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000,
+            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "headers": ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset"]
+          }
+        },
+        "notes": [
+          "Returns merged results: closest stations by distance + matching search results",
+          "Results are deduplicated by station ID",
+          "Distance calculated using Haversine formula",
+          "Search is case-insensitive and matches name, suburb, or brigade",
+          "Performance target: < 200ms response time"
+        ]
+      },
+      "GET /api/stations/count": {
+        "method": "GET",
+        "path": "/api/stations/count",
+        "description": "Get total count of loaded fire service stations (debugging/monitoring)",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Station count",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "count": { "type": "integer", "description": "Total facilities loaded (typically 4400+)" }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        },
+        "implementation": "backend/src/routes/stations.ts:56",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000,
+            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "headers": ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset"]
+          }
+        }
+      }
     }
   },
   "socketEvents": {
@@ -2008,6 +2116,36 @@
           "type": "number"
         }
       }
+    },
+    "StationHierarchy": {
+      "type": "object",
+      "description": "Fire service station organizational structure. Supports all Australian states/territories.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique station identifier" },
+        "name": { "type": "string", "description": "Station/brigade name" },
+        "brigade": { "type": "string", "description": "Brigade name (typically matches station name 1:1)" },
+        "district": { "type": "string", "nullable": true, "description": "District (organizational level)" },
+        "area": { "type": "string", "nullable": true, "description": "Area (organizational level)" },
+        "suburb": { "type": "string", "description": "Suburb/locality" },
+        "state": { "type": "string", "description": "Australian state/territory", "enum": ["NEW SOUTH WALES", "VICTORIA", "QUEENSLAND", "SOUTH AUSTRALIA", "WESTERN AUSTRALIA", "TASMANIA", "NORTHERN TERRITORY", "AUSTRALIAN CAPITAL TERRITORY"] },
+        "postcode": { "type": "string", "description": "Postcode" },
+        "latitude": { "type": "number", "description": "Latitude coordinate" },
+        "longitude": { "type": "number", "description": "Longitude coordinate" },
+        "operationalStatus": { "type": "string", "nullable": true, "description": "Current operational status" }
+      },
+      "required": ["id", "name", "suburb", "state", "postcode", "latitude", "longitude"]
+    },
+    "StationSearchResult": {
+      "allOf": [
+        { "$ref": "#/definitions/StationHierarchy" },
+        {
+          "type": "object",
+          "properties": {
+            "distance": { "type": "number", "nullable": true, "description": "Distance in kilometers from user location (if location provided)" },
+            "relevanceScore": { "type": "number", "nullable": true, "minimum": 0, "maximum": 1, "description": "Search relevance score 0-1 (if search query provided)" }
+          }
+        }
+      ]
     }
   },
   "maintenance": {
