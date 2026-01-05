@@ -15,9 +15,10 @@
  * Note: Data is lost on server restart. Use Azure Table Storage for persistence.
  */
 
-import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants } from '../types';
+import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants, Station } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { autoExpireEvents } from './rolloverService';
+import { DEFAULT_STATION_ID, DEMO_STATION_ID, DEMO_BRIGADE_ID, getEffectiveStationId } from '../constants/stations';
 
 class DatabaseService {
   private members: Map<string, Member> = new Map();
@@ -28,6 +29,9 @@ class DatabaseService {
   // Event-based system data structures
   private events: Map<string, Event> = new Map();
   private eventParticipants: Map<string, EventParticipant> = new Map();
+  
+  // Multi-station support
+  private stations: Map<string, Station> = new Map();
 
   constructor() {
     this.initializeDefaultData();
@@ -92,6 +96,25 @@ class DatabaseService {
       };
     }
 
+    // Create default station
+    const defaultStation: Station = {
+      id: DEFAULT_STATION_ID,
+      name: 'Default Station',
+      brigadeId: 'default-brigade',
+      brigadeName: 'Default Brigade',
+      hierarchy: {
+        jurisdiction: 'NSW',
+        area: 'Default Area',
+        district: 'Default District',
+        brigade: 'Default Brigade',
+        station: 'Default Station',
+      },
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.stations.set(defaultStation.id, defaultStation);
+
     // Add sample members for testing
     const sampleMembers = [
       'John Smith',
@@ -150,6 +173,35 @@ class DatabaseService {
 
   private initializeDevData() {
     console.log('🔧 Initializing development data...');
+    
+    // Create demo station
+    const demoStation: Station = {
+      id: DEMO_STATION_ID,
+      name: 'Demo Station',
+      brigadeId: DEMO_BRIGADE_ID,
+      brigadeName: 'Demo Brigade',
+      hierarchy: {
+        jurisdiction: 'NSW',
+        area: 'Demo Area',
+        district: 'Demo District',
+        brigade: 'Demo Brigade',
+        station: 'Demo Station',
+      },
+      location: {
+        address: '123 Demo Street, Demo Town NSW 2000',
+        latitude: -35.2809,
+        longitude: 149.1300,
+      },
+      contactInfo: {
+        phone: '1300 000 000',
+        email: 'demo@example.com',
+      },
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.stations.set(demoStation.id, demoStation);
+    console.log(`✅ Created demo station: ${demoStation.name}`);
     
     const members = Array.from(this.members.values());
     const activities = Array.from(this.activities.values());
@@ -216,10 +268,16 @@ class DatabaseService {
   }
 
   // Member methods
-  getAllMembers(): Member[] {
+  getAllMembers(stationId?: string): Member[] {
     // Calculate date 6 months ago
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    // Filter members by station if specified
+    let members = Array.from(this.members.values());
+    if (stationId) {
+      members = members.filter(m => getEffectiveStationId(m.stationId) === stationId);
+    }
     
     // Count check-ins per member in the last 6 months
     const checkInCounts = new Map<string, number>();
@@ -232,7 +290,7 @@ class DatabaseService {
     });
     
     // Sort members by check-in count (descending), then by name
-    return Array.from(this.members.values()).sort((a, b) => {
+    return members.sort((a, b) => {
       const countA = checkInCounts.get(a.id) || 0;
       const countB = checkInCounts.get(b.id) || 0;
       
@@ -251,7 +309,7 @@ class DatabaseService {
     return Array.from(this.members.values()).find(m => m.qrCode === qrCode);
   }
 
-  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string }): Member {
+  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }): Member {
     const member: Member = {
       id: uuidv4(),
       name,
@@ -260,6 +318,7 @@ class DatabaseService {
       rank: details?.rank || undefined,
       firstName: details?.firstName || undefined,
       lastName: details?.lastName || undefined,
+      stationId: getEffectiveStationId(details?.stationId),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -279,8 +338,19 @@ class DatabaseService {
   }
 
   // Activity methods
-  getAllActivities(): Activity[] {
-    return Array.from(this.activities.values()).sort((a, b) => {
+  getAllActivities(stationId?: string): Activity[] {
+    let activities = Array.from(this.activities.values());
+    
+    // Filter by station if specified
+    if (stationId) {
+      activities = activities.filter(a => {
+        const activityStationId = getEffectiveStationId(a.stationId);
+        // Include both station-specific activities and shared (default) activities
+        return activityStationId === stationId || activityStationId === DEFAULT_STATION_ID;
+      });
+    }
+    
+    return activities.sort((a, b) => {
       // Default activities first, then custom ones
       if (a.isCustom !== b.isCustom) {
         return a.isCustom ? 1 : -1;
@@ -293,7 +363,7 @@ class DatabaseService {
     return this.activities.get(id);
   }
 
-  createActivity(name: string, createdBy?: string): Activity {
+  createActivity(name: string, createdBy?: string, stationId?: string): Activity {
     const isCustom = !this.isDefaultActivityName(name);
     const category: Activity['category'] = isCustom ? 'other' : this.inferCategoryFromName(name);
     const activity: Activity = {
@@ -303,6 +373,7 @@ class DatabaseService {
       category,
       tagColor: this.colorForCategory(category),
       createdBy,
+      stationId: getEffectiveStationId(stationId),
       createdAt: new Date(),
     };
     this.activities.set(activity.id, activity);
@@ -310,14 +381,22 @@ class DatabaseService {
   }
 
   // Active Activity methods
-  getActiveActivity(): ActiveActivity | null {
-    return this.activeActivity;
+  getActiveActivity(stationId?: string): ActiveActivity | null {
+    // For multi-station support, we need to track active activity per station
+    // For now, returning the global active activity
+    // TODO: Implement per-station active activity tracking
+    const effectiveStationId = getEffectiveStationId(stationId);
+    if (this.activeActivity && getEffectiveStationId(this.activeActivity.stationId) === effectiveStationId) {
+      return this.activeActivity;
+    }
+    return this.activeActivity; // Fallback to global for backward compatibility
   }
 
-  setActiveActivity(activityId: string, setBy?: string): ActiveActivity {
+  setActiveActivity(activityId: string, setBy?: string, stationId?: string): ActiveActivity {
     this.activeActivity = {
       id: uuidv4(),
       activityId,
+      stationId: getEffectiveStationId(stationId),
       setAt: new Date(),
       setBy,
     };
@@ -325,8 +404,12 @@ class DatabaseService {
   }
 
   // Check-in methods
-  getAllCheckIns(): CheckIn[] {
-    return Array.from(this.checkIns.values());
+  getAllCheckIns(stationId?: string): CheckIn[] {
+    let checkIns = Array.from(this.checkIns.values());
+    if (stationId) {
+      checkIns = checkIns.filter(c => getEffectiveStationId(c.stationId) === stationId);
+    }
+    return checkIns;
   }
 
   getCheckInsByMember(memberId: string): CheckIn[] {
@@ -335,10 +418,15 @@ class DatabaseService {
       .sort((a, b) => b.checkInTime.getTime() - a.checkInTime.getTime());
   }
 
-  getActiveCheckIns(): CheckInWithDetails[] {
-    const activeCheckIns = Array.from(this.checkIns.values())
-      .filter(checkIn => checkIn.isActive)
-      .sort((a, b) => b.checkInTime.getTime() - a.checkInTime.getTime());
+  getActiveCheckIns(stationId?: string): CheckInWithDetails[] {
+    let activeCheckIns = Array.from(this.checkIns.values())
+      .filter(checkIn => checkIn.isActive);
+    
+    if (stationId) {
+      activeCheckIns = activeCheckIns.filter(c => getEffectiveStationId(c.stationId) === stationId);
+    }
+    
+    activeCheckIns = activeCheckIns.sort((a, b) => b.checkInTime.getTime() - a.checkInTime.getTime());
 
     return activeCheckIns.map(checkIn => {
       const member = this.members.get(checkIn.memberId);
@@ -362,12 +450,14 @@ class DatabaseService {
     activityId: string,
     method: 'kiosk' | 'mobile' | 'qr',
     location?: string,
-    isOffsite: boolean = false
+    isOffsite: boolean = false,
+    stationId?: string
   ): CheckIn {
     const checkIn: CheckIn = {
       id: uuidv4(),
       memberId,
       activityId,
+      stationId: getEffectiveStationId(stationId),
       checkInTime: new Date(),
       checkInMethod: method,
       location,
@@ -402,9 +492,13 @@ class DatabaseService {
     return false;
   }
 
-  clearAllActiveCheckIns(): void {
+  clearAllActiveCheckIns(stationId?: string): void {
     Array.from(this.checkIns.values())
-      .filter(checkIn => checkIn.isActive)
+      .filter(checkIn => {
+        if (!checkIn.isActive) return false;
+        if (stationId && getEffectiveStationId(checkIn.stationId) !== stationId) return false;
+        return true;
+      })
       .forEach(checkIn => {
         checkIn.isActive = false;
         checkIn.updatedAt = new Date();
@@ -419,7 +513,7 @@ class DatabaseService {
    * Create a new event from an activity type
    * This starts a discrete activity instance
    */
-  createEvent(activityId: string, createdBy?: string): Event {
+  createEvent(activityId: string, createdBy?: string, stationId?: string): Event {
     const activity = this.activities.get(activityId);
     if (!activity) {
       throw new Error('Activity not found');
@@ -429,6 +523,7 @@ class DatabaseService {
       id: uuidv4(),
       activityId,
       activityName: activity.name,
+      stationId: getEffectiveStationId(stationId),
       startTime: new Date(),
       endTime: undefined,
       isActive: true,
@@ -446,9 +541,14 @@ class DatabaseService {
    * Returns most recent events first
    * @param limit - Maximum number of events to return
    * @param offset - Number of events to skip
+   * @param stationId - Optional station ID to filter by
    */
-  getEvents(limit: number = 50, offset: number = 0): Event[] {
-    return Array.from(this.events.values())
+  getEvents(limit: number = 50, offset: number = 0, stationId?: string): Event[] {
+    let events = Array.from(this.events.values());
+    if (stationId) {
+      events = events.filter(e => getEffectiveStationId(e.stationId) === stationId);
+    }
+    return events
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime())
       .slice(offset, offset + limit);
   }
@@ -457,11 +557,17 @@ class DatabaseService {
    * Get only active events (not yet ended and not expired)
    * Note: This auto-expires events that have exceeded the time limit.
    * Expired events remain visible in getEvents(), they're just marked as inactive.
+   * @param stationId - Optional station ID to filter by
    */
-  getActiveEvents(): Event[] {
-    const activeEvents = Array.from(this.events.values())
-      .filter(event => event.isActive)
-      .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+  getActiveEvents(stationId?: string): Event[] {
+    let activeEvents = Array.from(this.events.values())
+      .filter(event => event.isActive);
+    
+    if (stationId) {
+      activeEvents = activeEvents.filter(e => getEffectiveStationId(e.stationId) === stationId);
+    }
+    
+    activeEvents = activeEvents.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
     
     // Auto-expire events that have exceeded time limit
     // This is synchronous because in-memory DB operations are instant
@@ -472,9 +578,14 @@ class DatabaseService {
     });
     
     // Return only currently active events (excluding ones we just expired)
-    return Array.from(this.events.values())
-      .filter(event => event.isActive)
-      .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+    let result = Array.from(this.events.values())
+      .filter(event => event.isActive);
+    
+    if (stationId) {
+      result = result.filter(e => getEffectiveStationId(e.stationId) === stationId);
+    }
+    
+    return result.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }
 
   /**
@@ -524,7 +635,8 @@ class DatabaseService {
     memberId: string,
     method: 'kiosk' | 'mobile' | 'qr',
     location?: string,
-    isOffsite: boolean = false
+    isOffsite: boolean = false,
+    stationId?: string
   ): EventParticipant {
     const event = this.events.get(eventId);
     if (!event) {
@@ -542,6 +654,7 @@ class DatabaseService {
       memberId,
       memberName: member.name,
       memberRank: member.rank || null,
+      stationId: getEffectiveStationId(stationId),
       checkInTime: new Date(),
       checkInMethod: method,
       location,
@@ -585,8 +698,8 @@ class DatabaseService {
   /**
    * Get multiple events with participants (for log view)
    */
-  getEventsWithParticipants(limit: number = 50, offset: number = 0): EventWithParticipants[] {
-    const events = this.getEvents(limit, offset);
+  getEventsWithParticipants(limit: number = 50, offset: number = 0, stationId?: string): EventWithParticipants[] {
+    const events = this.getEvents(limit, offset, stationId);
     
     return events.map(event => {
       const participants = this.getEventParticipants(event.id);
@@ -629,12 +742,15 @@ class DatabaseService {
   /**
    * Get all active participants across all active events
    */
-  getAllActiveParticipants(): EventParticipant[] {
-    const activeEventIds = new Set(
-      Array.from(this.events.values())
-        .filter(e => e.isActive)
-        .map(e => e.id)
-    );
+  getAllActiveParticipants(stationId?: string): EventParticipant[] {
+    let activeEvents = Array.from(this.events.values())
+      .filter(e => e.isActive);
+    
+    if (stationId) {
+      activeEvents = activeEvents.filter(e => getEffectiveStationId(e.stationId) === stationId);
+    }
+    
+    const activeEventIds = new Set(activeEvents.map(e => e.id));
 
     return Array.from(this.eventParticipants.values())
       .filter(p => activeEventIds.has(p.eventId))
@@ -648,9 +764,13 @@ class DatabaseService {
   /**
    * Get attendance summary - monthly participant counts
    */
-  getAttendanceSummary(startDate: Date, endDate: Date): Array<{ month: string; count: number }> {
-    const participants = Array.from(this.eventParticipants.values())
+  getAttendanceSummary(startDate: Date, endDate: Date, stationId?: string): Array<{ month: string; count: number }> {
+    let participants = Array.from(this.eventParticipants.values())
       .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
+    
+    if (stationId) {
+      participants = participants.filter(p => getEffectiveStationId(p.stationId) === stationId);
+    }
 
     // Group by month
     const monthCounts = new Map<string, number>();
@@ -667,14 +787,18 @@ class DatabaseService {
   /**
    * Get member participation - top members by event participation
    */
-  getMemberParticipation(startDate: Date, endDate: Date, limit: number = 10): Array<{
+  getMemberParticipation(startDate: Date, endDate: Date, limit: number = 10, stationId?: string): Array<{
     memberId: string;
     memberName: string;
     participationCount: number;
     lastCheckIn: string;
   }> {
-    const participants = Array.from(this.eventParticipants.values())
+    let participants = Array.from(this.eventParticipants.values())
       .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
+    
+    if (stationId) {
+      participants = participants.filter(p => getEffectiveStationId(p.stationId) === stationId);
+    }
 
     // Group by member
     const memberStats = new Map<string, { name: string; count: number; lastCheckIn: Date }>();
@@ -708,13 +832,17 @@ class DatabaseService {
   /**
    * Get activity breakdown - count by activity category
    */
-  getActivityBreakdown(startDate: Date, endDate: Date): Array<{
+  getActivityBreakdown(startDate: Date, endDate: Date, stationId?: string): Array<{
     category: string;
     count: number;
     percentage: number;
   }> {
-    const events = Array.from(this.events.values())
+    let events = Array.from(this.events.values())
       .filter(e => e.startTime >= startDate && e.startTime <= endDate);
+    
+    if (stationId) {
+      events = events.filter(e => getEffectiveStationId(e.stationId) === stationId);
+    }
 
     const categoryCounts = new Map<string, number>();
     events.forEach(event => {
@@ -736,7 +864,7 @@ class DatabaseService {
   /**
    * Get event statistics
    */
-  getEventStatistics(startDate: Date, endDate: Date): {
+  getEventStatistics(startDate: Date, endDate: Date, stationId?: string): {
     totalEvents: number;
     activeEvents: number;
     completedEvents: number;
@@ -744,14 +872,22 @@ class DatabaseService {
     averageParticipantsPerEvent: number;
     averageDuration: number; // in minutes
   } {
-    const events = Array.from(this.events.values())
+    let events = Array.from(this.events.values())
       .filter(e => e.startTime >= startDate && e.startTime <= endDate);
+    
+    if (stationId) {
+      events = events.filter(e => getEffectiveStationId(e.stationId) === stationId);
+    }
 
     const activeEvents = events.filter(e => e.isActive).length;
     const completedEvents = events.filter(e => !e.isActive && e.endTime).length;
 
-    const participants = Array.from(this.eventParticipants.values())
+    let participants = Array.from(this.eventParticipants.values())
       .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
+    
+    if (stationId) {
+      participants = participants.filter(p => getEffectiveStationId(p.stationId) === stationId);
+    }
 
     // Calculate average duration for completed events
     const durations = events
@@ -772,6 +908,76 @@ class DatabaseService {
         : 0,
       averageDuration,
     };
+  }
+
+  // ============================================
+  // Station Management Methods
+  // ============================================
+
+  /**
+   * Get all stations
+   */
+  getAllStations(): Station[] {
+    return Array.from(this.stations.values())
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Get a station by ID
+   */
+  getStationById(id: string): Station | undefined {
+    return this.stations.get(id);
+  }
+
+  /**
+   * Get all stations belonging to a brigade
+   */
+  getStationsByBrigade(brigadeId: string): Station[] {
+    return Array.from(this.stations.values())
+      .filter(station => station.brigadeId === brigadeId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Create a new station
+   */
+  createStation(stationData: Omit<Station, 'id' | 'createdAt' | 'updatedAt'>): Station {
+    const station: Station = {
+      id: uuidv4(),
+      ...stationData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.stations.set(station.id, station);
+    return station;
+  }
+
+  /**
+   * Update an existing station
+   */
+  updateStation(id: string, updates: Partial<Omit<Station, 'id' | 'createdAt' | 'updatedAt'>>): Station | null {
+    const station = this.stations.get(id);
+    if (!station) {
+      return null;
+    }
+
+    const updatedStation: Station = {
+      ...station,
+      ...updates,
+      id: station.id, // Ensure ID doesn't change
+      createdAt: station.createdAt, // Preserve creation date
+      updatedAt: new Date(),
+    };
+    
+    this.stations.set(id, updatedStation);
+    return updatedStation;
+  }
+
+  /**
+   * Delete a station
+   */
+  deleteStation(id: string): boolean {
+    return this.stations.delete(id);
   }
 }
 
