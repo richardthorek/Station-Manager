@@ -181,3 +181,9 @@ export interface CheckResult {
 export interface CheckRunWithResults extends CheckRun {
   results: CheckResult[];
 }
+
+// ============================================
+// Station Types (RFS Facilities)
+// ============================================
+
+export * from './stations';
