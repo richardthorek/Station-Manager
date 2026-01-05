@@ -5,7 +5,7 @@
   grid-template-rows: auto 1fr auto;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   color: var(--text-primary);
-  overflow: hidden;
+  overflow: auto;
 }
 
 .landing-header {
@@ -79,7 +79,7 @@
   flex-direction: column;
   gap: 1.5rem;
   min-height: 0;
-  overflow: visible;
+  overflow-y: auto;
 }
 
 .welcome-section {
