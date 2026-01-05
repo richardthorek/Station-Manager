@@ -10,10 +10,17 @@ import { AdminDashboardPage } from './features/truckcheck/AdminDashboardPage';
 import { TemplateSelectionPage } from './features/truckcheck/TemplateSelectionPage';
 import { TemplateEditorPage } from './features/truckcheck/TemplateEditorPage';
 import { ReportsPage } from './features/reports/ReportsPage';
+import { DemoModeBanner } from './components/DemoModeBanner';
+import { useDemoMode } from './hooks/useDemoMode';
 
 function App() {
+  const { isDemoMode, bannerDismissed, dismissBanner } = useDemoMode();
+
   return (
     <BrowserRouter>
+      {isDemoMode && !bannerDismissed && (
+        <DemoModeBanner onDismiss={dismissBanner} />
+      )}
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/signin" element={<SignInPage />} />

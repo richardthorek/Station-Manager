@@ -2,19 +2,16 @@
  * Achievement Routes
  * 
  * API endpoints for fetching member achievements and gamification data
+ * Supports demo mode via req.isDemoMode flag
  */
 
 import { Router, Request, Response } from 'express';
 import { AchievementService } from '../services/achievementService';
-import type { IDatabase } from '../services/dbFactory';
-import type { ITruckChecksDatabase } from '../services/truckChecksDbFactory';
+import { ensureDatabase } from '../services/dbFactory';
+import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 
-export function createAchievementRoutes(
-  db: IDatabase,
-  truckChecksDb: ITruckChecksDatabase
-): Router {
+export function createAchievementRoutes(): Router {
   const router = Router();
-  const achievementService = new AchievementService(db, truckChecksDb);
 
   /**
    * GET /api/achievements/:memberId
@@ -23,6 +20,11 @@ export function createAchievementRoutes(
   router.get('/:memberId', async (req: Request, res: Response): Promise<void> => {
     try {
       const { memberId } = req.params;
+      
+      // Get database instances based on demo mode
+      const db = await ensureDatabase(req.isDemoMode);
+      const truckChecksDb = await ensureTruckChecksDatabase(req.isDemoMode);
+      const achievementService = new AchievementService(db, truckChecksDb);
       
       // Get member to validate they exist
       const member = await db.getMemberById(memberId);
@@ -49,6 +51,10 @@ export function createAchievementRoutes(
     try {
       const { memberId } = req.params;
       
+      const db = await ensureDatabase(req.isDemoMode);
+      const truckChecksDb = await ensureTruckChecksDatabase(req.isDemoMode);
+      const achievementService = new AchievementService(db, truckChecksDb);
+      
       const member = await db.getMemberById(memberId);
       if (!member) {
         res.status(404).json({ error: 'Member not found' });
@@ -74,6 +80,10 @@ export function createAchievementRoutes(
   router.get('/:memberId/progress', async (req: Request, res: Response): Promise<void> => {
     try {
       const { memberId } = req.params;
+      
+      const db = await ensureDatabase(req.isDemoMode);
+      const truckChecksDb = await ensureTruckChecksDatabase(req.isDemoMode);
+      const achievementService = new AchievementService(db, truckChecksDb);
       
       const member = await db.getMemberById(memberId);
       if (!member) {

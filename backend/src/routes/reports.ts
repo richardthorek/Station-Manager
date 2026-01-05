@@ -46,7 +46,7 @@ function parseDateRange(req: any): { startDate: Date; endDate: Date } {
  */
 router.get('/attendance-summary', async (req, res) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { startDate, endDate } = parseDateRange(req);
     
     const summary = await db.getAttendanceSummary(startDate, endDate);
@@ -69,7 +69,7 @@ router.get('/attendance-summary', async (req, res) => {
  */
 router.get('/member-participation', async (req, res) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { startDate, endDate } = parseDateRange(req);
     const limit = parseInt(req.query.limit as string) || 10;
     
@@ -94,7 +94,7 @@ router.get('/member-participation', async (req, res) => {
  */
 router.get('/activity-breakdown', async (req, res) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { startDate, endDate } = parseDateRange(req);
     
     const breakdown = await db.getActivityBreakdown(startDate, endDate);
@@ -117,7 +117,7 @@ router.get('/activity-breakdown', async (req, res) => {
  */
 router.get('/event-statistics', async (req, res) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { startDate, endDate } = parseDateRange(req);
     
     const statistics = await db.getEventStatistics(startDate, endDate);
@@ -140,7 +140,7 @@ router.get('/event-statistics', async (req, res) => {
  */
 router.get('/truckcheck-compliance', async (req, res) => {
   try {
-    const truckDb = await ensureTruckChecksDatabase();
+    const truckDb = await ensureTruckChecksDatabase(req.isDemoMode);
     const { startDate, endDate } = parseDateRange(req);
     
     const compliance = await truckDb.getTruckCheckCompliance(startDate, endDate);

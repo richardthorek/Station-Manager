@@ -14,19 +14,25 @@ import { autoExpireEvents } from './rolloverService';
 // Note: we intentionally avoid importing IDatabase here to prevent circular type issues
 
 // Build table names with optional prefix/suffix so dev/test can share prod storage without mixing tables
-function buildTableName(baseName: string): string {
+function buildTableName(baseName: string, overrideSuffix?: string): string {
   const sanitize = (value: string) => value.replace(/[^A-Za-z0-9]/g, '');
   const prefix = sanitize(process.env.TABLE_STORAGE_TABLE_PREFIX || '');
   
-  // Auto-suffix based on environment if not explicitly set
-  let defaultSuffix = '';
-  if (process.env.NODE_ENV === 'test') {
-    defaultSuffix = 'Test';
-  } else if (process.env.NODE_ENV === 'development') {
-    defaultSuffix = 'Dev';
+  // Use override suffix if provided, otherwise use environment-based logic
+  let suffix = '';
+  if (overrideSuffix !== undefined) {
+    suffix = sanitize(overrideSuffix);
+  } else {
+    // Auto-suffix based on environment if not explicitly set
+    let defaultSuffix = '';
+    if (process.env.NODE_ENV === 'test') {
+      defaultSuffix = 'Test';
+    } else if (process.env.NODE_ENV === 'development') {
+      defaultSuffix = 'Dev';
+    }
+    suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || defaultSuffix);
   }
   
-  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || defaultSuffix);
   const name = `${prefix}${baseName}${suffix}`;
   return name || baseName; // Fallback to base if everything was stripped
 }
@@ -89,18 +95,20 @@ export class TableStorageDatabase {
   private checkInsTable!: TableClient;
   private activeActivityTable!: TableClient;
   private isConnected: boolean = false;
+  private tableSuffix: string;
 
-  constructor(connectionString?: string) {
+  constructor(connectionString?: string, tableSuffix?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
+    this.tableSuffix = tableSuffix !== undefined ? tableSuffix : '';
     
     // Initialize table clients only if connection string is available
     if (this.connectionString) {
-      this.membersTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Members'));
-      this.activitiesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Activities'));
-      this.eventsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Events'));
-      this.eventParticipantsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('EventParticipants'));
-      this.checkInsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckIns'));
-      this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ActiveActivity'));
+      this.membersTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Members', this.tableSuffix));
+      this.activitiesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Activities', this.tableSuffix));
+      this.eventsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Events', this.tableSuffix));
+      this.eventParticipantsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('EventParticipants', this.tableSuffix));
+      this.checkInsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckIns', this.tableSuffix));
+      this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ActiveActivity', this.tableSuffix));
     }
   }
 
@@ -942,5 +950,6 @@ export class TableStorageDatabase {
   }
 }
 
-// Export singleton instance
-export const tableStorageDb = new TableStorageDatabase();
+// Export singleton instances - one for production, one for demo/test
+export const tableStorageDb = new TableStorageDatabase(); // Production instance (uses env suffix)
+export const tableStorageTestDb = new TableStorageDatabase(undefined, 'Test'); // Demo/test instance

@@ -12,19 +12,25 @@ import {
 import { ITruckChecksDatabase } from './truckChecksDbFactory';
 
 // Build table names with optional prefix/suffix so dev/test can share prod storage without mixing tables
-function buildTableName(baseName: string): string {
+function buildTableName(baseName: string, overrideSuffix?: string): string {
   const sanitize = (value: string) => value.replace(/[^A-Za-z0-9]/g, '');
   const prefix = sanitize(process.env.TABLE_STORAGE_TABLE_PREFIX || '');
   
-  // Auto-suffix based on environment if not explicitly set
-  let defaultSuffix = '';
-  if (process.env.NODE_ENV === 'test') {
-    defaultSuffix = 'Test';
-  } else if (process.env.NODE_ENV === 'development') {
-    defaultSuffix = 'Dev';
+  // Use override suffix if provided, otherwise use environment-based logic
+  let suffix = '';
+  if (overrideSuffix !== undefined) {
+    suffix = sanitize(overrideSuffix);
+  } else {
+    // Auto-suffix based on environment if not explicitly set
+    let defaultSuffix = '';
+    if (process.env.NODE_ENV === 'test') {
+      defaultSuffix = 'Test';
+    } else if (process.env.NODE_ENV === 'development') {
+      defaultSuffix = 'Dev';
+    }
+    suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || defaultSuffix);
   }
   
-  const suffix = sanitize(process.env.TABLE_STORAGE_TABLE_SUFFIX || defaultSuffix);
   const name = `${prefix}${baseName}${suffix}`;
   return name || baseName; // Fallback to base if everything was stripped
 }
@@ -45,16 +51,18 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
   private checkRunsTable!: TableClient;
   private checkResultsTable!: TableClient;
   private isConnected: boolean = false;
+  private tableSuffix: string;
 
-  constructor(connectionString?: string) {
+  constructor(connectionString?: string, tableSuffix?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
+    this.tableSuffix = tableSuffix !== undefined ? tableSuffix : '';
     
     // Initialize table clients only if connection string is available
     if (this.connectionString) {
-      this.appliancesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Appliances'));
-      this.templatesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ChecklistTemplates'));
-      this.checkRunsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckRuns'));
-      this.checkResultsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckResults'));
+      this.appliancesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Appliances', this.tableSuffix));
+      this.templatesTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ChecklistTemplates', this.tableSuffix));
+      this.checkRunsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckRuns', this.tableSuffix));
+      this.checkResultsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckResults', this.tableSuffix));
     }
   }
 
@@ -706,5 +714,6 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
   }
 }
 
-// Export singleton instance
-export const tableStorageTruckChecksDb = new TableStorageTruckChecksDatabase();
+// Export singleton instances - one for production, one for demo/test
+export const tableStorageTruckChecksDb = new TableStorageTruckChecksDatabase(); // Production instance (uses env suffix)
+export const tableStorageTruckChecksTestDb = new TableStorageTruckChecksDatabase(undefined, 'Test'); // Demo/test instance

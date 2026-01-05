@@ -42,11 +42,13 @@ import checkinsRouter from './routes/checkins';
 import eventsRouter from './routes/events';
 import truckChecksRouter from './routes/truckChecks';
 import reportsRouter from './routes/reports';
+import demoRouter from './routes/demo';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
 import { getVersionInfo } from './services/version';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
+import { demoModeMiddleware } from './middleware/demoModeMiddleware';
 
 const app = express();
 const httpServer = createServer(app);
@@ -62,6 +64,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(demoModeMiddleware); // Detect demo mode from query parameter
 
 // Serve static files from frontend build (for production)
 const frontendPath = path.join(__dirname, '../../frontend/dist');
@@ -120,6 +123,7 @@ app.get('/api/status', apiRateLimiter, async (req, res) => {
 });
 
 // API Routes with rate limiting
+app.use('/api/demo', apiRateLimiter, demoRouter);
 app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, checkinsRouter);
@@ -127,12 +131,8 @@ app.use('/api/events', apiRateLimiter, eventsRouter);
 app.use('/api/truck-checks', apiRateLimiter, truckChecksRouter);
 app.use('/api/reports', apiRateLimiter, reportsRouter);
 
-// Achievement routes (initialized with database instances)
-(async () => {
-  const db = await ensureDatabase();
-  const truckChecksDb = await ensureTruckChecksDatabase();
-  app.use('/api/achievements', apiRateLimiter, createAchievementRoutes(db, truckChecksDb));
-})();
+// Achievement routes (now handles database selection per-request based on demo mode)
+app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());
 
 // Socket.io connection handling
 io.on('connection', (socket) => {

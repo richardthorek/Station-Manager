@@ -11,8 +11,6 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import { createAchievementRoutes } from '../routes/achievements';
 import membersRouter from '../routes/members';
-import { ensureDatabase } from '../services/dbFactory';
-import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 
 let app: Express;
 let testMemberId: string;
@@ -22,12 +20,8 @@ beforeAll(async () => {
   app = express();
   app.use(express.json());
   
-  // Get database instances
-  const db = await ensureDatabase();
-  const truckChecksDb = await ensureTruckChecksDatabase();
-  
-  // Set up routes
-  app.use('/api/achievements', createAchievementRoutes(db, truckChecksDb));
+  // Set up routes (achievements route now handles database selection internally)
+  app.use('/api/achievements', createAchievementRoutes());
   app.use('/api/members', membersRouter);
 
   // Get test member

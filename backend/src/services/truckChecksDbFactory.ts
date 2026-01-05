@@ -1,11 +1,15 @@
 /**
  * Truck Checks Database Factory
- * Determines which database service to use based on environment
+ * Determines which database service to use based on environment and demo mode
  * Priority: Table Storage > In-Memory
+ * 
+ * Supports dual-instance mode for per-device demo functionality:
+ * - Production instance: Uses TABLE_STORAGE_TABLE_SUFFIX from env
+ * - Test instance: Always uses 'Test' suffix for demo mode
  */
 
 import { truckChecksDb as inMemoryTruckChecksDb } from './truckChecksDatabase';
-import { tableStorageTruckChecksDb } from './tableStorageTruckChecksDatabase';
+import { tableStorageTruckChecksDb, tableStorageTruckChecksTestDb } from './tableStorageTruckChecksDatabase';
 import { initializeDatabase } from './dbFactoryHelper';
 import {
   Appliance,
@@ -77,11 +81,24 @@ async function initializeTruckChecksDatabaseService(): Promise<ITruckChecksDatab
   });
 }
 
-// Export a promise that resolves to the database instance
-export const getTruckChecksDatabase = initializeTruckChecksDatabaseService();
+/**
+ * Initialize test/demo truck checks database instance
+ */
+async function initializeTestTruckChecksDatabaseService(): Promise<ITruckChecksDatabase> {
+  return initializeDatabase({
+    name: 'Test Truck Checks',
+    inMemoryDb: inMemoryTruckChecksDb as ITruckChecksDatabase,
+    tableStorageDb: tableStorageTruckChecksTestDb as ITruckChecksDatabase & { connect: () => Promise<void> },
+  });
+}
 
-// Export a synchronous wrapper for route handlers
+// Export promises that resolve to the database instances
+export const getTruckChecksDatabase = initializeTruckChecksDatabaseService();
+export const getTestTruckChecksDatabase = initializeTestTruckChecksDatabaseService();
+
+// Cache for both database instances
 let truckChecksDbInstance: ITruckChecksDatabase | null = null;
+let testTruckChecksDbInstance: ITruckChecksDatabase | null = null;
 
 /**
  * Ensure truck checks database is initialized and return the instance
@@ -89,12 +106,24 @@ let truckChecksDbInstance: ITruckChecksDatabase | null = null;
  * This is the primary function for accessing the truck checks database in route handlers.
  * It handles lazy initialization and caches the database instance.
  * 
+ * @param useTestData - If true, returns the test database instance (for demo mode)
  * @returns Promise that resolves to the initialized truck checks database instance
  * @example
  * const db = await ensureTruckChecksDatabase();
  * const appliances = await db.getAllAppliances();
+ * 
+ * // Demo mode:
+ * const db = await ensureTruckChecksDatabase(true);
+ * const testAppliances = await db.getAllAppliances();
  */
-export async function ensureTruckChecksDatabase(): Promise<ITruckChecksDatabase> {
+export async function ensureTruckChecksDatabase(useTestData = false): Promise<ITruckChecksDatabase> {
+  if (useTestData) {
+    if (!testTruckChecksDbInstance) {
+      testTruckChecksDbInstance = await getTestTruckChecksDatabase;
+    }
+    return testTruckChecksDbInstance;
+  }
+  
   if (!truckChecksDbInstance) {
     truckChecksDbInstance = await getTruckChecksDatabase;
   }
@@ -107,14 +136,16 @@ export async function ensureTruckChecksDatabase(): Promise<ITruckChecksDatabase>
  * Only use this if you're certain the database has been initialized.
  * Most code should use ensureTruckChecksDatabase() instead.
  * 
+ * @param useTestData - If true, returns the test database instance
  * @throws Error if database is not initialized
  * @returns The truck checks database instance
  */
-export function getTruckChecksDbSync(): ITruckChecksDatabase {
-  if (!truckChecksDbInstance) {
+export function getTruckChecksDbSync(useTestData = false): ITruckChecksDatabase {
+  const instance = useTestData ? testTruckChecksDbInstance : truckChecksDbInstance;
+  if (!instance) {
     throw new Error('Truck Checks Database not initialized. Call ensureTruckChecksDatabase() first.');
   }
-  return truckChecksDbInstance;
+  return instance;
 }
 
 /**
@@ -127,5 +158,6 @@ export function getTruckChecksDbSync(): ITruckChecksDatabase {
  */
 export function __resetTruckChecksDatabase(): void {
   truckChecksDbInstance = null;
+  testTruckChecksDbInstance = null;
 }
 

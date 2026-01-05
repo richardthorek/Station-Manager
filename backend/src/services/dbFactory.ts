@@ -1,7 +1,11 @@
 /**
  * Database Factory
- * Determines which database service to use based on environment
+ * Determines which database service to use based on environment and demo mode
  * Priority: Table Storage > In-Memory
+ * 
+ * Supports dual-instance mode for per-device demo functionality:
+ * - Production instance: Uses TABLE_STORAGE_TABLE_SUFFIX from env
+ * - Test instance: Always uses 'Test' suffix for demo mode
  */
 
 import type { 
@@ -14,7 +18,7 @@ import type {
   EventWithParticipants 
 } from '../types';
 import { db as inMemoryDb } from './database';
-import { tableStorageDb } from './tableStorageDatabase';
+import { tableStorageDb, tableStorageTestDb } from './tableStorageDatabase';
 import { initializeDatabase } from './dbFactoryHelper';
 
 // Interface that both database services must implement
@@ -79,11 +83,24 @@ async function initializeDatabaseService(): Promise<IDatabase> {
   });
 }
 
-// Export a promise that resolves to the database instance
-export const getDatabase = initializeDatabaseService();
+/**
+ * Initialize test/demo database instance
+ */
+async function initializeTestDatabaseService(): Promise<IDatabase> {
+  return initializeDatabase({
+    name: 'Test Database',
+    inMemoryDb: inMemoryDb as IDatabase,
+    tableStorageDb: tableStorageTestDb as IDatabase & { connect: () => Promise<void> },
+  });
+}
 
-// Export a synchronous wrapper for route handlers
+// Export promises that resolve to the database instances
+export const getDatabase = initializeDatabaseService();
+export const getTestDatabase = initializeTestDatabaseService();
+
+// Cache for both database instances
 let dbInstance: IDatabase | null = null;
+let testDbInstance: IDatabase | null = null;
 
 /**
  * Ensure database is initialized and return the instance
@@ -91,12 +108,24 @@ let dbInstance: IDatabase | null = null;
  * This is the primary function for accessing the database in route handlers.
  * It handles lazy initialization and caches the database instance.
  * 
+ * @param useTestData - If true, returns the test database instance (for demo mode)
  * @returns Promise that resolves to the initialized database instance
  * @example
  * const db = await ensureDatabase();
  * const members = await db.getAllMembers();
+ * 
+ * // Demo mode:
+ * const db = await ensureDatabase(true);
+ * const testMembers = await db.getAllMembers();
  */
-export async function ensureDatabase(): Promise<IDatabase> {
+export async function ensureDatabase(useTestData = false): Promise<IDatabase> {
+  if (useTestData) {
+    if (!testDbInstance) {
+      testDbInstance = await getTestDatabase;
+    }
+    return testDbInstance;
+  }
+  
   if (!dbInstance) {
     dbInstance = await getDatabase;
   }
@@ -109,14 +138,16 @@ export async function ensureDatabase(): Promise<IDatabase> {
  * Only use this if you're certain the database has been initialized.
  * Most code should use ensureDatabase() instead.
  * 
+ * @param useTestData - If true, returns the test database instance
  * @throws Error if database is not initialized
  * @returns The database instance
  */
-export function getDbSync(): IDatabase {
-  if (!dbInstance) {
+export function getDbSync(useTestData = false): IDatabase {
+  const instance = useTestData ? testDbInstance : dbInstance;
+  if (!instance) {
     throw new Error('Database not initialized. Call ensureDatabase() first.');
   }
-  return dbInstance;
+  return instance;
 }
 
 /**
@@ -129,5 +160,6 @@ export function getDbSync(): IDatabase {
  */
 export function __resetDatabase(): void {
   dbInstance = null;
+  testDbInstance = null;
 }
 

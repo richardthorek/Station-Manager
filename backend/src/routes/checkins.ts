@@ -23,7 +23,7 @@ const router = Router();
 // Get all check-ins (both active and inactive)
 router.get('/', async (req, res) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const checkIns = await db.getAllCheckIns();
     res.json(checkIns);
   } catch (error) {
@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
 // Get all active check-ins
 router.get('/active', async (req, res) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const checkIns = await db.getActiveCheckIns();
     res.json(checkIns);
   } catch (error) {
@@ -47,7 +47,7 @@ router.get('/active', async (req, res) => {
 // Check in a member
 router.post('/', validateCreateCheckIn, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { memberId, activityId, method, location, isOffsite } = req.body;
 
     // Validate required fields
@@ -110,7 +110,7 @@ router.post('/', validateCreateCheckIn, handleValidationErrors, async (req: Requ
 // Undo check-in (alternative endpoint)
 router.delete('/:memberId', validateMemberIdParam, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { memberId } = req.params;
     const success = await db.deactivateCheckInByMember(memberId);
     
@@ -128,7 +128,7 @@ router.delete('/:memberId', validateMemberIdParam, handleValidationErrors, async
 // URL-based check-in
 router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { identifier } = req.body;
 
     if (!identifier || typeof identifier !== 'string') {

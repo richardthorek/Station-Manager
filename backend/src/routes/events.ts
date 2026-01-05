@@ -29,7 +29,7 @@ const router = Router();
  */
 router.get('/', validateEventQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
     
@@ -46,7 +46,7 @@ router.get('/', validateEventQuery, handleValidationErrors, async (req: Request,
  */
 router.get('/active', async (req, res) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const activeEvents = await db.getActiveEvents();
     const eventsWithParticipants = await Promise.all(
       activeEvents.map(async event => {
@@ -71,7 +71,7 @@ router.get('/active', async (req, res) => {
  */
 router.get('/:eventId', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
     const event = await db.getEventWithParticipants(eventId);
     
@@ -91,7 +91,7 @@ router.get('/:eventId', validateEventId, handleValidationErrors, async (req: Req
  */
 router.post('/', validateCreateEvent, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { activityId, createdBy } = req.body;
     
     if (!activityId) {
@@ -118,7 +118,7 @@ router.post('/', validateCreateEvent, handleValidationErrors, async (req: Reques
  */
 router.put('/:eventId/end', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
     const event = await db.endEvent(eventId);
     
@@ -139,7 +139,7 @@ router.put('/:eventId/end', validateEventId, handleValidationErrors, async (req:
  */
 router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
     const event = await db.reactivateEvent(eventId);
     
@@ -160,7 +160,7 @@ router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, asyn
  */
 router.post('/:eventId/participants', validateAddParticipant, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
     const { memberId, method, location, isOffsite } = req.body;
     
@@ -214,7 +214,7 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
  */
 router.delete('/:eventId/participants/:participantId', validateRemoveParticipant, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { participantId } = req.params;
     const success = await db.removeEventParticipant(participantId);
     
@@ -235,7 +235,7 @@ router.delete('/:eventId/participants/:participantId', validateRemoveParticipant
  */
 router.post('/admin/rollover', async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const deactivatedEventIds = await deactivateExpiredEvents(db);
     
     res.json({

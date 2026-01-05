@@ -24,7 +24,7 @@ const router = Router();
 // Get all members
 router.get('/', async (req, res) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const members = await db.getAllMembers();
     res.json(members);
   } catch (error) {
@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
 // Get member by ID
 router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const member = await db.getMemberById(req.params.id);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
@@ -51,7 +51,7 @@ router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request
 // Get member by QR code
 router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const member = await db.getMemberByQRCode(req.params.qrCode);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
@@ -66,7 +66,7 @@ router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Re
 // Create new member
 router.post('/', validateCreateMember, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { name, firstName, lastName, preferredName, rank } = req.body || {};
 
     const clean = (val: unknown): string => (typeof val === 'string' ? val.trim() : '');
@@ -98,7 +98,7 @@ router.post('/', validateCreateMember, handleValidationErrors, async (req: Reque
 // Update member
 router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const { name, rank } = req.body;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Valid name is required' });
@@ -117,7 +117,7 @@ router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Req
 // Get member check-in history
 router.get('/:id/history', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const db = await ensureDatabase();
+    const db = await ensureDatabase(req.isDemoMode);
     const member = await db.getMemberById(req.params.id);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });

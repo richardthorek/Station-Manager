@@ -116,6 +116,11 @@ export function LandingPage() {
             </>
           )}
         </p>
+        <p className="demo-mode-link">
+          <a href="/?demo=true" className="discrete-link" title="View demo with test data">
+            Demo Mode
+          </a>
+        </p>
       </footer>
     </div>
   );
