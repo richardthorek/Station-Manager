@@ -40,6 +40,7 @@
  *   TABLE_STORAGE_TABLE_SUFFIX: Set to "Test" to use test tables (default: Test)
  *   TEST_TIMEOUT: Timeout for each test in ms (default: 30000)
  *   MAX_RETRIES: Number of retries for failed requests (default: 6, reduced from 12)
+ *   OVERALL_TIMEOUT: Overall timeout for entire test suite in seconds (default: 600 = 10 minutes)
  *   GITHUB_SHA: Expected commit SHA for version verification
  */
 
@@ -51,6 +52,7 @@ const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '30000');
 const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '6'); // Reduced from 12 to 6 (60s max per request)
 const RETRY_DELAY = 10000; // 10 seconds between retries
+const OVERALL_TIMEOUT = parseInt(process.env.OVERALL_TIMEOUT || '600') * 1000; // 10 minutes default (in ms)
 const EXPECTED_COMMIT_SHA = process.env.GITHUB_SHA || process.env.GIT_COMMIT_SHA; // From CI/CD or manual override
 
 // HTTP status codes that indicate deployment is still stabilizing
@@ -425,6 +427,7 @@ async function runTests(): Promise<void> {
   console.log(`Target URL: ${APP_URL}`);
   console.log(`Timeout: ${TEST_TIMEOUT}ms per test`);
   console.log(`Max Retries: ${MAX_RETRIES} per test`);
+  console.log(`Overall Timeout: ${OVERALL_TIMEOUT / 1000}s (${OVERALL_TIMEOUT / 60000} minutes)`);
   console.log(`Test Environment: TABLE_STORAGE_TABLE_SUFFIX=${process.env.TABLE_STORAGE_TABLE_SUFFIX || '(not set)'}\n`);
 
   // Validate APP_URL is set and warn if it's localhost in CI environment
@@ -444,13 +447,12 @@ async function runTests(): Promise<void> {
 
   // Track start time for overall timeout
   const startTime = Date.now();
-  const OVERALL_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes max for entire test suite
   
   // Helper to check if overall timeout has been exceeded
   const checkOverallTimeout = () => {
     const elapsed = Date.now() - startTime;
-    if (elapsed > OVERALL_TIMEOUT_MS) {
-      console.error(`\n❌ TIMEOUT: Test suite exceeded ${OVERALL_TIMEOUT_MS / 1000}s overall timeout`);
+    if (elapsed > OVERALL_TIMEOUT) {
+      console.error(`\n❌ TIMEOUT: Test suite exceeded ${OVERALL_TIMEOUT / 1000}s overall timeout`);
       console.error(`   Elapsed time: ${Math.floor(elapsed / 1000)}s`);
       console.error(`   Tests run: ${testsRun}, Passed: ${testsPassed}, Failed: ${testsFailed}`);
       process.exit(1);
