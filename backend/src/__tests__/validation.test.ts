@@ -372,4 +372,22 @@ describe('Enum Validation', () => {
       expect([200, 201]).toContain(response.status);
     }
   });
+
+  it('should validate isOffsite is a boolean when provided', async () => {
+    const memberResponse = await request(app)
+      .post('/api/members')
+        .send({ name: 'Test Member Offsite' });
+    
+    const memberId = memberResponse.body.id;
+
+    const response = await request(app)
+      .post('/api/checkins')
+      .send({ 
+        memberId,
+        isOffsite: 'yes' // Should be a boolean
+      })
+      .expect(400);
+
+    expect(response.body.error).toBe('Validation failed');
+  });
 });
