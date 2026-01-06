@@ -24,23 +24,23 @@ import {
 // Interface shared by truck checks database implementations
 export interface ITruckChecksDatabase {
   // Appliances
-  getAllAppliances(): Promise<Appliance[]> | Appliance[];
+  getAllAppliances(stationId?: string): Promise<Appliance[]> | Appliance[];
   getApplianceById(id: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
-  createAppliance(name: string, description?: string, photoUrl?: string): Promise<Appliance> | Appliance;
+  createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string): Promise<Appliance> | Appliance;
   updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
   deleteAppliance(id: string): Promise<boolean> | boolean;
 
   // Templates
   getTemplateByApplianceId(applianceId: string): Promise<ChecklistTemplate | null | undefined> | ChecklistTemplate | null | undefined;
   getTemplateById(id: string): Promise<ChecklistTemplate | null | undefined> | ChecklistTemplate | null | undefined;
-  updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[]): Promise<ChecklistTemplate> | ChecklistTemplate;
+  updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[], stationId?: string): Promise<ChecklistTemplate> | ChecklistTemplate;
 
   // Check Runs
-  createCheckRun(applianceId: string, completedBy: string, completedByName?: string): Promise<CheckRun> | CheckRun;
+  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string): Promise<CheckRun> | CheckRun;
   getCheckRunById(id: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
-  getAllCheckRuns(): Promise<CheckRun[]> | CheckRun[];
+  getAllCheckRuns(stationId?: string): Promise<CheckRun[]> | CheckRun[];
   getCheckRunsByAppliance(applianceId: string): Promise<CheckRun[]> | CheckRun[];
-  getCheckRunsByDateRange(startDate: Date, endDate: Date): Promise<CheckRun[]> | CheckRun[];
+  getCheckRunsByDateRange(startDate: Date, endDate: Date, stationId?: string): Promise<CheckRun[]> | CheckRun[];
   completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
   getActiveCheckRunForAppliance(applianceId: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
   addContributorToCheckRun(runId: string, contributorName: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
@@ -54,7 +54,8 @@ export interface ITruckChecksDatabase {
     status: CheckStatus,
     comment?: string,
     photoUrl?: string,
-    completedBy?: string
+    completedBy?: string,
+    stationId?: string
   ): Promise<CheckResult> | CheckResult;
   getResultsByRunId(runId: string): Promise<CheckResult[]> | CheckResult[];
   getCheckRunWithResults(runId: string): Promise<CheckRunWithResults | null> | CheckRunWithResults | null;
@@ -62,11 +63,11 @@ export interface ITruckChecksDatabase {
   deleteCheckResult(id: string): Promise<boolean> | boolean;
 
   // Query Methods
-  getRunsWithIssues(): Promise<CheckRunWithResults[]> | CheckRunWithResults[];
-  getAllRunsWithResults(): Promise<CheckRunWithResults[]> | CheckRunWithResults[];
+  getRunsWithIssues(stationId?: string): Promise<CheckRunWithResults[]> | CheckRunWithResults[];
+  getAllRunsWithResults(stationId?: string): Promise<CheckRunWithResults[]> | CheckRunWithResults[];
   
   // Reports
-  getTruckCheckCompliance(startDate: Date, endDate: Date): Promise<{ totalChecks: number; completedChecks: number; inProgressChecks: number; checksWithIssues: number; complianceRate: number; applianceStats: Array<{ applianceId: string; applianceName: string; checkCount: number; lastCheckDate: string | null }> }> | { totalChecks: number; completedChecks: number; inProgressChecks: number; checksWithIssues: number; complianceRate: number; applianceStats: Array<{ applianceId: string; applianceName: string; checkCount: number; lastCheckDate: string | null }> };
+  getTruckCheckCompliance(startDate: Date, endDate: Date, stationId?: string): Promise<{ totalChecks: number; completedChecks: number; inProgressChecks: number; checksWithIssues: number; complianceRate: number; applianceStats: Array<{ applianceId: string; applianceName: string; checkCount: number; lastCheckDate: string | null }> }> | { totalChecks: number; completedChecks: number; inProgressChecks: number; checksWithIssues: number; complianceRate: number; applianceStats: Array<{ applianceId: string; applianceName: string; checkCount: number; lastCheckDate: string | null }> };
 }
 
 /**

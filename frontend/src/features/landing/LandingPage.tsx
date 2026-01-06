@@ -78,14 +78,14 @@ export function LandingPage() {
             </Link>
           </div>
 
-          <div className="feature-card feature-card-disabled">
+          <div className="feature-card">
             <div className="feature-icon">⚙️</div>
-            <h3>Admin Dashboard</h3>
-            <p>Station configuration, user management, and system settings.</p>
-            <div className="feature-link feature-link-disabled">
-              Coming Soon
-              <span className="badge">Future</span>
-            </div>
+            <h3>Station Management</h3>
+            <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
+            <Link to="/admin/stations" className="feature-link">
+              Go to Admin
+              <span className="arrow">→</span>
+            </Link>
           </div>
 
           <div className="info-card">

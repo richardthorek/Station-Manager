@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.1.0",
-  "lastUpdated": "2026-01-04",
-  "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager",
+  "version": "1.2.0",
+  "lastUpdated": "2026-01-05",
+  "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager\n\nMulti-Station Support: Database methods now accept optional stationId parameter for filtering. All methods filter by stationId when provided, default to 'default-station' otherwise.",
   "services": {
     "database": {
       "file": "backend/src/services/database.ts",
@@ -10,9 +10,17 @@
       "type": "class",
       "methods": {
         "getAllMembers": {
-          "signature": "getAllMembers(): Member[]",
+          "signature": "getAllMembers(stationId?: string): Member[]",
           "line": 184,
-          "description": "Get all members sorted by activity level (check-ins in last 6 months)",
+          "description": "Get all members sorted by activity level (check-ins in last 6 months), filtered by stationId if provided",
+          "parameters": [
+            {
+              "name": "stationId",
+              "type": "string | undefined",
+              "description": "Optional station ID for filtering members by station",
+              "optional": true
+            }
+          ],
           "returns": "Member[]",
           "complexity": "O(n log n)",
           "sideEffects": "none"
@@ -46,18 +54,32 @@
           "sideEffects": "none"
         },
         "createMember": {
-          "signature": "createMember(name: string): Member",
+          "signature": "createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }): Member",
           "line": 219,
           "parameters": [
             {
               "name": "name",
               "type": "string",
               "description": "Member full name"
+            },
+            {
+              "name": "details",
+              "type": "object",
+              "description": "Optional member details including stationId",
+              "optional": true,
+              "properties": {
+                "rank": "string | null",
+                "firstName": "string",
+                "lastName": "string",
+                "preferredName": "string",
+                "memberNumber": "string",
+                "stationId": "string - Station ID to assign"
+              }
             }
           ],
           "returns": "Member",
           "complexity": "O(1)",
-          "sideEffects": "Adds member to database, generates UUID and QR code"
+          "sideEffects": "Adds member to database, generates UUID and QR code, assigns stationId"
         },
         "updateMember": {
           "signature": "updateMember(id: string, name: string, rank: string | null): Member | undefined",
@@ -96,6 +118,89 @@
           "returns": "CheckIn[]",
           "complexity": "O(n)",
           "sideEffects": "none"
+        },
+        "getAllStations": {
+          "signature": "getAllStations(): Station[]",
+          "line": 923,
+          "description": "Get all stations",
+          "returns": "Station[]",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "getStationById": {
+          "signature": "getStationById(id: string): Station | undefined",
+          "line": 928,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Station UUID"
+            }
+          ],
+          "returns": "Station | undefined",
+          "complexity": "O(1)",
+          "sideEffects": "none"
+        },
+        "getStationsByBrigade": {
+          "signature": "getStationsByBrigade(brigadeId: string): Station[]",
+          "line": 933,
+          "parameters": [
+            {
+              "name": "brigadeId",
+              "type": "string",
+              "description": "Brigade ID"
+            }
+          ],
+          "returns": "Station[]",
+          "complexity": "O(n)",
+          "sideEffects": "none"
+        },
+        "createStation": {
+          "signature": "createStation(station: Omit<Station, 'id' | 'createdAt' | 'updatedAt'>): Station",
+          "line": 938,
+          "parameters": [
+            {
+              "name": "station",
+              "type": "Omit<Station, 'id' | 'createdAt' | 'updatedAt'>",
+              "description": "Station data without ID and timestamps"
+            }
+          ],
+          "returns": "Station",
+          "complexity": "O(1)",
+          "sideEffects": "Adds station to database, generates UUID and timestamps"
+        },
+        "updateStation": {
+          "signature": "updateStation(id: string, updates: Partial<Omit<Station, 'id' | 'createdAt' | 'updatedAt'>>): Station | null",
+          "line": 952,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Station UUID"
+            },
+            {
+              "name": "updates",
+              "type": "Partial<Omit<Station, 'id' | 'createdAt' | 'updatedAt'>>",
+              "description": "Partial station updates"
+            }
+          ],
+          "returns": "Station | null",
+          "complexity": "O(1)",
+          "sideEffects": "Updates station in database"
+        },
+        "deleteStation": {
+          "signature": "deleteStation(id: string): boolean",
+          "line": 979,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Station UUID"
+            }
+          ],
+          "returns": "boolean",
+          "complexity": "O(1)",
+          "sideEffects": "Soft deletes station (sets isActive=false)"
         },
         "getAllActivities": {
           "signature": "getAllActivities(): Activity[]",

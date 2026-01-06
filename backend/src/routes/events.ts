@@ -7,6 +7,12 @@
  * - Tracking event start/end times
  * - Pagination support for event history
  * - Active event management
+ * 
+ * Multi-Station Support:
+ * - All GET endpoints filter by stationId (from X-Station-Id header or query param)
+ * - POST endpoints assign stationId to new events
+ * - Participants inherit event's stationId
+ * - Backward compatible: defaults to DEFAULT_STATION_ID if no stationId provided
  */
 
 import { Router, Request, Response } from 'express';
@@ -20,20 +26,25 @@ import {
   validateEventQuery,
 } from '../middleware/eventValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
+import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 
 const router = Router();
 
+// Apply station middleware to all routes
+router.use(stationMiddleware);
+
 /**
- * Get events with pagination support
+ * Get events with pagination support (filtered by station)
  * Query params: limit (default 50), offset (default 0)
  */
 router.get('/', validateEventQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
     
-    const events = await db.getEventsWithParticipants(limit, offset);
+    const events = await db.getEventsWithParticipants(limit, offset, stationId);
     res.json(events);
   } catch (error) {
     console.error('Error fetching events:', error);
@@ -42,12 +53,13 @@ router.get('/', validateEventQuery, handleValidationErrors, async (req: Request,
 });
 
 /**
- * Get all active events (not yet ended)
+ * Get all active events (not yet ended, filtered by station)
  */
 router.get('/active', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const activeEvents = await db.getActiveEvents();
+    const stationId = getStationIdFromRequest(req);
+    const activeEvents = await db.getActiveEvents(stationId);
     const eventsWithParticipants = await Promise.all(
       activeEvents.map(async event => {
         const participants = await db.getEventParticipants(event.id);
@@ -87,12 +99,13 @@ router.get('/:eventId', validateEventId, handleValidationErrors, async (req: Req
 });
 
 /**
- * Create a new event from an activity type
+ * Create a new event from an activity type (assigns station)
  */
 router.post('/', validateCreateEvent, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { activityId, createdBy } = req.body;
+    const stationId = getStationIdFromRequest(req);
     
     if (!activityId) {
       return res.status(400).json({ error: 'Activity ID is required' });
@@ -103,7 +116,7 @@ router.post('/', validateCreateEvent, handleValidationErrors, async (req: Reques
       return res.status(404).json({ error: 'Activity not found' });
     }
     
-    const event = await db.createEvent(activityId, createdBy);
+    const event = await db.createEvent(activityId, createdBy, stationId);
     const eventWithParticipants = await db.getEventWithParticipants(event.id);
     
     res.status(201).json(eventWithParticipants);
@@ -156,13 +169,14 @@ router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, asyn
 });
 
 /**
- * Add a participant to an event (check-in)
+ * Add a participant to an event (check-in, participant inherits event's stationId)
  */
 router.post('/:eventId/participants', validateAddParticipant, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
     const { memberId, method, location, isOffsite } = req.body;
+    const stationId = getStationIdFromRequest(req);
     
     if (!memberId) {
       return res.status(400).json({ error: 'Member ID is required' });
@@ -190,13 +204,14 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
       });
     }
     
-    // Add participant
+    // Add participant (inherits event's stationId)
     const participant = await db.addEventParticipant(
       eventId,
       memberId,
       method || 'mobile',
       location,
-      isOffsite || false
+      isOffsite || false,
+      event.stationId
     );
     
     res.status(201).json({
