@@ -647,6 +647,94 @@ class ApiService {
     return response.json();
   }
 
+  // ============================================
+  // Cross-Station Reports
+  // ============================================
+
+  async getCrossStationAttendanceSummary(stationIds: string[], startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    stationIds: string[];
+    summaries: Record<string, Array<{ month: string; count: number }>>;
+  }> {
+    const idsParam = stationIds.join(',');
+    const response = await fetch(`${API_BASE_URL}/reports/cross-station/attendance-summary?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch cross-station attendance summary');
+    return response.json();
+  }
+
+  async getCrossStationMemberParticipation(stationIds: string[], startDate: string, endDate: string, limit: number = 10): Promise<{
+    startDate: string;
+    endDate: string;
+    stationIds: string[];
+    limit: number;
+    participation: Record<string, Array<{
+      memberId: string;
+      memberName: string;
+      participationCount: number;
+      lastCheckIn: string;
+    }>>;
+  }> {
+    const idsParam = stationIds.join(',');
+    const response = await fetch(`${API_BASE_URL}/reports/cross-station/member-participation?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}&limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch cross-station member participation');
+    return response.json();
+  }
+
+  async getCrossStationActivityBreakdown(stationIds: string[], startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    stationIds: string[];
+    breakdowns: Record<string, Array<{
+      category: string;
+      count: number;
+      percentage: number;
+    }>>;
+  }> {
+    const idsParam = stationIds.join(',');
+    const response = await fetch(`${API_BASE_URL}/reports/cross-station/activity-breakdown?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch cross-station activity breakdown');
+    return response.json();
+  }
+
+  async getCrossStationEventStatistics(stationIds: string[], startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    stationIds: string[];
+    statistics: Record<string, {
+      totalEvents: number;
+      activeEvents: number;
+      completedEvents: number;
+      totalParticipants: number;
+      averageParticipantsPerEvent: number;
+      averageDuration: number;
+    }>;
+  }> {
+    const idsParam = stationIds.join(',');
+    const response = await fetch(`${API_BASE_URL}/reports/cross-station/event-statistics?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch cross-station event statistics');
+    return response.json();
+  }
+
+  async getBrigadeSummary(brigadeId: string, startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    brigadeId: string;
+    stations: Array<{ id: string; name: string }>;
+    summary: {
+      totalEvents: number;
+      totalParticipants: number;
+      totalCompletedEvents: number;
+      totalStations: number;
+      averageEventsPerStation: number;
+      averageParticipantsPerStation: number;
+    };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/brigade-summary?brigadeId=${brigadeId}&startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch brigade summary');
+    return response.json();
+  }
+
   // Demo Mode
   async getDemoStatus(): Promise<{
     isDemo: boolean;
