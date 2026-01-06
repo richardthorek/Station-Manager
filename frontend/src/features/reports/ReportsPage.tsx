@@ -189,6 +189,9 @@ export function ReportsPage() {
       <header className="reports-header">
         <Link to="/" className="back-link">← Back to Home</Link>
         <h1>Reports & Analytics</h1>
+        <Link to="/reports/cross-station" className="cross-station-link">
+          View Cross-Station Reports →
+        </Link>
       </header>
 
       {/* Date Range Selector */}
