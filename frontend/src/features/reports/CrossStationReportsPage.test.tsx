@@ -148,24 +148,6 @@ const mockEventStatistics = {
   },
 };
 
-const mockBrigadeSummary = {
-  startDate: '2024-01-01T00:00:00.000Z',
-  endDate: '2024-01-31T23:59:59.999Z',
-  brigadeId: 'brigade-1',
-  stations: [
-    { id: 'station-1', name: 'Blacktown Fire Station' },
-    { id: 'station-2', name: 'Penrith Fire Station' },
-  ],
-  summary: {
-    totalEvents: 75,
-    totalParticipants: 230,
-    totalCompletedEvents: 72,
-    totalStations: 2,
-    averageEventsPerStation: 37.5,
-    averageParticipantsPerStation: 115,
-  },
-};
-
 describe('CrossStationReportsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
