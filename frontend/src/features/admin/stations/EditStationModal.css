@@ -1,0 +1,9 @@
+/**
+ * Edit Station Modal Styles
+ * 
+ * Imports shared modal styles from CreateStationModal
+ */
+
+@import './CreateStationModal.css';
+
+/* Additional styles specific to edit modal can be added here */

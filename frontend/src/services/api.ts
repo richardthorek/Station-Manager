@@ -13,7 +13,8 @@ import type {
   CheckRunWithResults,
   CheckResult,
   CheckStatus,
-  Station
+  Station,
+  StationLookupResult
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 
@@ -66,6 +67,84 @@ class ApiService {
     });
     if (!response.ok) throw new Error('Failed to fetch station');
     return response.json();
+  }
+
+  async createStation(stationData: Partial<Station>): Promise<Station> {
+    const response = await fetch(`${API_BASE_URL}/stations`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(stationData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create station');
+    }
+    return response.json();
+  }
+
+  async updateStation(id: string, updates: Partial<Station>): Promise<Station> {
+    const response = await fetch(`${API_BASE_URL}/stations/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(updates),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update station');
+    }
+    return response.json();
+  }
+
+  async deleteStation(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/stations/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete station');
+    }
+    return response.json();
+  }
+
+  async lookupStations(query?: string, lat?: number, lon?: number, limit: number = 10): Promise<{
+    results: StationLookupResult[];
+    count: number;
+  }> {
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (lat !== undefined) params.append('lat', lat.toString());
+    if (lon !== undefined) params.append('lon', lon.toString());
+    params.append('limit', limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/stations/lookup?${params}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to lookup stations');
+    return response.json();
+  }
+
+  async getStationStatistics(): Promise<{
+    memberCount: number;
+    eventCount: number;
+    checkInCount: number;
+    activeCheckInCount: number;
+  }> {
+    // Note: This is a simplified version that gets counts for the current station
+    // The stationId parameter is kept for API compatibility but not used
+    // as all API calls already filter by the current station via X-Station-Id header
+    const [members, events, activeCheckIns] = await Promise.all([
+      this.getMembers(),
+      this.getEvents(),
+      this.getActiveCheckIns(),
+    ]);
+
+    return {
+      memberCount: members.length,
+      eventCount: events.length,
+      checkInCount: 0, // Historical check-in count not available in this simplified version
+      activeCheckInCount: activeCheckIns.length,
+    };
   }
 
   // System Status

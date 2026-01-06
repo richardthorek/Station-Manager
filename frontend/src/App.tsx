@@ -11,6 +11,7 @@ import { AdminDashboardPage } from './features/truckcheck/AdminDashboardPage';
 import { TemplateSelectionPage } from './features/truckcheck/TemplateSelectionPage';
 import { TemplateEditorPage } from './features/truckcheck/TemplateEditorPage';
 import { ReportsPage } from './features/reports/ReportsPage';
+import { StationManagementPage } from './features/admin/stations/StationManagementPage';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
           <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/admin/stations" element={<StationManagementPage />} />
         </Routes>
       </StationProvider>
     </BrowserRouter>

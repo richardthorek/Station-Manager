@@ -36,6 +36,23 @@ export interface Station {
   updatedAt: string;
 }
 
+/**
+ * Station lookup result from national dataset
+ */
+export interface StationLookupResult {
+  id: string;
+  name: string;
+  brigade?: string;
+  district?: string;
+  area?: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+  latitude: number;
+  longitude: number;
+  distance?: number; // Distance in kilometers from user location
+}
+
 export interface Member {
   id: string;
   name: string;

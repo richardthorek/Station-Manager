@@ -58,7 +58,7 @@ describe('LandingPage', () => {
     expect(screen.getByText('Station Sign-In')).toBeInTheDocument()
     expect(screen.getByText('Truck Check')).toBeInTheDocument()
     expect(screen.getByText('Reports & Analytics')).toBeInTheDocument()
-    expect(screen.getByText('Admin Dashboard')).toBeInTheDocument()
+    expect(screen.getByText('Station Management')).toBeInTheDocument()
 
     // Verify info cards are present
     expect(screen.getByText('Multi-Device Support')).toBeInTheDocument()
