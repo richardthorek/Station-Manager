@@ -2349,6 +2349,71 @@
             "windowMs": 900000
           }
         }
+      },
+      "POST /api/stations/demo/reset": {
+        "method": "POST",
+        "path": "/api/stations/demo/reset",
+        "description": "Reset demo station with fresh sample data. Deletes all demo station data and recreates it with realistic samples including members, activities, events, and appliances.",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Demo station reset successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "stationId": {
+                  "type": "string",
+                  "description": "ID of the demo station (demo-station)"
+                },
+                "resetAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Timestamp when reset completed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error during reset",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "implementation": "backend/src/routes/stations.ts:320",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        },
+        "notes": [
+          "Demo station ID is 'demo-station'",
+          "Creates 20 diverse sample members with various ranks",
+          "Creates 5 standard activities",
+          "Creates 10 recent check-ins",
+          "Creates 3-4 events (1 active, rest completed)",
+          "Creates 2 appliances with sample check runs",
+          "Operation may take several seconds to complete",
+          "Emits 'demo-station-reset' WebSocket event on success"
+        ]
       }
     }
   },
@@ -2471,6 +2536,25 @@
           }
         },
         "trigger": "DELETE /api/stations/:id"
+      },
+      "demo-station-reset": {
+        "event": "demo-station-reset",
+        "description": "Demo station has been reset with fresh data",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "stationId": {
+              "type": "string",
+              "description": "ID of demo station (demo-station)"
+            },
+            "resetAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp when reset completed"
+            }
+          }
+        },
+        "trigger": "POST /api/stations/demo/reset"
       }
     }
   },
