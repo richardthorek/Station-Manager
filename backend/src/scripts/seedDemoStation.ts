@@ -282,10 +282,17 @@ async function seedDemoStation() {
     console.log(`  - Appliances: ${DEMO_APPLIANCES.length}`);
     console.log('');
     
-    process.exit(0);
+    // Only exit if called directly from command line
+    if (require.main === module) {
+      process.exit(0);
+    }
   } catch (error) {
     console.error('❌ Failed to seed demo station:', error);
-    process.exit(1);
+    // Only exit if called directly from command line
+    if (require.main === module) {
+      process.exit(1);
+    }
+    throw error;
   }
 }
 
