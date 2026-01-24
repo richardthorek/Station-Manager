@@ -107,6 +107,23 @@ class ApiService {
     return response.json();
   }
 
+  async resetDemoStation(): Promise<{ 
+    success: boolean; 
+    message: string; 
+    stationId: string;
+    resetAt: string;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/stations/demo/reset`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to reset demo station');
+    }
+    return response.json();
+  }
+
   async lookupStations(query?: string, lat?: number, lon?: number, limit: number = 10): Promise<{
     results: StationLookupResult[];
     count: number;
