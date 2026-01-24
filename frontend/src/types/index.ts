@@ -1,3 +1,58 @@
+// ============================================
+// Multi-Station Support Types
+// ============================================
+
+/**
+ * Represents the hierarchical structure of RFS organization
+ */
+export interface StationHierarchy {
+  jurisdiction: string;     // State level (e.g., "NSW")
+  area: string;             // Area/Region level
+  district: string;         // District level
+  brigade: string;          // Brigade name (typically same as station name for 1:1 brigades)
+  station: string;          // Station name (same as brigade for most stations)
+}
+
+/**
+ * Represents an RFS station
+ */
+export interface Station {
+  id: string;                   // Unique station ID
+  name: string;                 // Station name (defaults to brigade name for 1:1 relationship)
+  brigadeId: string;            // Brigade ID (for cross-station visibility within same brigade)
+  brigadeName: string;          // Brigade name (typically same as station name)
+  hierarchy: StationHierarchy;  // Full organizational hierarchy
+  location?: {
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  contactInfo?: {
+    phone?: string;
+    email?: string;
+  };
+  isActive: boolean;            // Whether station is currently active
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Station lookup result from national dataset
+ */
+export interface StationLookupResult {
+  id: string;
+  name: string;
+  brigade?: string;
+  district?: string;
+  area?: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+  latitude: number;
+  longitude: number;
+  distance?: number; // Distance in kilometers from user location
+}
+
 export interface Member {
   id: string;
   name: string;

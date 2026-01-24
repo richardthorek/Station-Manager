@@ -505,6 +505,12 @@ npm run test:coverage # Generate coverage report
   - **Bug fixes**: Add regression tests to prevent future recurrence
   - **Refactoring**: Maintain or improve existing test coverage
 
+- **Coverage Exclusions:**
+  - Services requiring external data files (e.g., `rfsFacilitiesParser.ts` needs 2.2MB CSV)
+  - Services requiring Azure credentials (e.g., `tableStorageDatabase.ts`, `azureStorage.ts`)
+  - Use `describe.skip` for tests requiring external resources not available in CI
+  - Document why tests are skipped in test file comments
+
 - **Why This Matters:**
   - CI will fail if coverage drops below thresholds
   - Untested code leads to bugs in production

@@ -8,9 +8,11 @@ import {
   CheckInWithDetails,
   Event,
   EventParticipant,
-  EventWithParticipants
+  EventWithParticipants,
+  Station
 } from '../types';
 import { autoExpireEvents } from './rolloverService';
+import { DEFAULT_STATION_ID, DEMO_STATION_ID, DEMO_BRIGADE_ID, getEffectiveStationId } from '../constants/stations';
 // Note: we intentionally avoid importing IDatabase here to prevent circular type issues
 
 // Build table names with optional prefix/suffix so dev/test can share prod storage without mixing tables
@@ -94,6 +96,7 @@ export class TableStorageDatabase {
   private eventParticipantsTable!: TableClient;
   private checkInsTable!: TableClient;
   private activeActivityTable!: TableClient;
+  private stationsTable!: TableClient;
   private isConnected: boolean = false;
   private tableSuffix: string;
 
@@ -109,6 +112,7 @@ export class TableStorageDatabase {
       this.eventParticipantsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('EventParticipants', this.tableSuffix));
       this.checkInsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckIns', this.tableSuffix));
       this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ActiveActivity', this.tableSuffix));
+      this.stationsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Stations', this.tableSuffix));
     }
   }
 
@@ -157,10 +161,18 @@ export class TableStorageDatabase {
               console.warn('Warning creating ActiveActivity table:', err.message);
             }
           }),
+          this.stationsTable.createTable().catch((err) => {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
+              console.warn('Warning creating Stations table:', err.message);
+            }
+          }),
         ]);
 
         // Initialize default activities if empty
         await this.initializeDefaultActivities();
+        
+        // Initialize default station if empty
+        await this.initializeDefaultStation();
 
         this.isConnected = true;
         console.log(`✅ Connected to Azure Table Storage (attempt ${attempt}/${retries})`);
@@ -203,6 +215,45 @@ export class TableStorageDatabase {
       }
     } catch (error) {
       console.error('Error initializing default activities:', error);
+    }
+  }
+
+  private async initializeDefaultStation(): Promise<void> {
+    try {
+      // Check if default station exists
+      try {
+        await this.stationsTable.getEntity('Station', DEFAULT_STATION_ID);
+        // Station already exists, no need to create
+        return;
+      } catch (error: any) {
+        if (error.statusCode !== 404) {
+          throw error; // Unexpected error
+        }
+        // Station doesn't exist, create it
+      }
+
+      // Create default station
+      const defaultStation: Station = {
+        id: DEFAULT_STATION_ID,
+        name: 'Default Station',
+        brigadeId: 'default-brigade',
+        brigadeName: 'Default Brigade',
+        hierarchy: {
+          jurisdiction: 'NSW',
+          area: 'Default Area',
+          district: 'Default District',
+          brigade: 'Default Brigade',
+          station: 'Default Station',
+        },
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await this.createStation(defaultStation);
+      console.log('✅ Initialized default station');
+    } catch (error) {
+      console.error('Error initializing default station:', error);
     }
   }
 
@@ -969,6 +1020,127 @@ export class TableStorageDatabase {
         : 0,
       averageDuration,
     };
+  }
+
+  // ===== STATION METHODS =====
+
+  /**
+   * Convert TableEntity to Station
+   */
+  private entityToStation(entity: TableEntity): Station {
+    return {
+      id: entity.rowKey as string,
+      name: entity.name as string,
+      brigadeId: entity.brigadeId as string,
+      brigadeName: entity.brigadeName as string,
+      hierarchy: JSON.parse(entity.hierarchy as string),
+      location: entity.location ? JSON.parse(entity.location as string) : undefined,
+      contactInfo: entity.contactInfo ? JSON.parse(entity.contactInfo as string) : undefined,
+      isActive: entity.isActive as boolean,
+      createdAt: new Date(entity.createdAt as string),
+      updatedAt: new Date(entity.updatedAt as string),
+    };
+  }
+
+  /**
+   * Convert Station to TableEntity
+   */
+  private stationToEntity(station: Station): TableEntity {
+    return {
+      partitionKey: 'Station',
+      rowKey: station.id,
+      name: station.name,
+      brigadeId: station.brigadeId,
+      brigadeName: station.brigadeName,
+      hierarchy: JSON.stringify(station.hierarchy),
+      location: station.location ? JSON.stringify(station.location) : undefined,
+      contactInfo: station.contactInfo ? JSON.stringify(station.contactInfo) : undefined,
+      isActive: station.isActive,
+      createdAt: station.createdAt.toISOString(),
+      updatedAt: station.updatedAt.toISOString(),
+    };
+  }
+
+  async getAllStations(): Promise<Station[]> {
+    const entities = this.stationsTable.listEntities<TableEntity>({
+      queryOptions: { filter: odata`PartitionKey eq 'Station'` }
+    });
+
+    const stations: Station[] = [];
+    for await (const entity of entities) {
+      stations.push(this.entityToStation(entity));
+    }
+
+    stations.sort((a, b) => a.name.localeCompare(b.name));
+    return stations;
+  }
+
+  async getStationById(id: string): Promise<Station | null> {
+    try {
+      const entity = await this.stationsTable.getEntity<TableEntity>('Station', id);
+      return this.entityToStation(entity);
+    } catch (error: any) {
+      if (error.statusCode === 404) return null;
+      throw error;
+    }
+  }
+
+  async getStationsByBrigade(brigadeId: string): Promise<Station[]> {
+    const entities = this.stationsTable.listEntities<TableEntity>({
+      queryOptions: { filter: odata`PartitionKey eq 'Station' and brigadeId eq ${brigadeId}` }
+    });
+
+    const stations: Station[] = [];
+    for await (const entity of entities) {
+      stations.push(this.entityToStation(entity));
+    }
+
+    stations.sort((a, b) => a.name.localeCompare(b.name));
+    return stations;
+  }
+
+  async createStation(stationData: Omit<Station, 'id' | 'createdAt' | 'updatedAt'> | Station): Promise<Station> {
+    const station: Station = 'id' in stationData && stationData.id ? {
+      ...stationData,
+      createdAt: 'createdAt' in stationData ? stationData.createdAt : new Date(),
+      updatedAt: 'updatedAt' in stationData ? stationData.updatedAt : new Date(),
+    } : {
+      id: uuidv4(),
+      ...stationData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const entity = this.stationToEntity(station);
+    await this.stationsTable.createEntity(entity);
+    return station;
+  }
+
+  async updateStation(id: string, updates: Partial<Omit<Station, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Station | null> {
+    const existing = await this.getStationById(id);
+    if (!existing) return null;
+
+    const updated: Station = {
+      ...existing,
+      ...updates,
+      id: existing.id,
+      createdAt: existing.createdAt,
+      updatedAt: new Date(),
+    };
+
+    const entity = this.stationToEntity(updated);
+    await this.stationsTable.updateEntity(entity, 'Replace');
+    return updated;
+  }
+
+  async deleteStation(id: string): Promise<boolean> {
+    try {
+      await this.stationsTable.deleteEntity('Station', id);
+      return true;
+    } catch (error: any) {
+      if (error.statusCode === 404) return false;
+      throw error;
+    }
   }
 
   /**

@@ -1,0 +1,147 @@
+/**
+ * Delete Confirmation Dialog Styles
+ */
+
+.delete-dialog {
+  max-width: 500px;
+}
+
+.loading-message {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.warning-message {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(251, 176, 52, 0.1);
+  border: 2px solid var(--ui-amber);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.warning-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.warning-content h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--ui-amber);
+  font-size: 1.1rem;
+}
+
+.warning-content p {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.data-summary {
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.data-summary h4 {
+  margin: 0 0 0.75rem 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.data-summary ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: var(--text-primary);
+}
+
+.data-summary li {
+  margin-bottom: 0.5rem;
+}
+
+.confirm-message {
+  margin-bottom: 1.5rem;
+}
+
+.confirm-message p {
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.confirm-message p:last-child {
+  margin-bottom: 0;
+}
+
+.confirm-message strong {
+  color: var(--rfs-core-red);
+  font-weight: 600;
+}
+
+.warning-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.error-message {
+  padding: 1rem;
+  background: rgba(229, 40, 27, 0.1);
+  border: 2px solid var(--rfs-core-red);
+  border-radius: 8px;
+  color: var(--rfs-core-red);
+  margin-bottom: 1.5rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.danger-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--rfs-white);
+  background: var(--rfs-core-red);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #c71f15;
+  transform: translateY(-1px);
+}
+
+.danger-button:active {
+  transform: translateY(0);
+}
+
+.danger-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dialog-actions {
+    flex-direction: column;
+  }
+
+  .dialog-actions button {
+    width: 100%;
+  }
+
+  .warning-message {
+    flex-direction: column;
+    text-align: center;
+  }
+}

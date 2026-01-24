@@ -31,8 +31,24 @@
 .reports-header h1 {
   color: var(--rfs-white);
   font-size: 2rem;
-  margin: 0;
+  margin: 0 0 0.75rem 0;
   font-weight: 700;
+}
+
+.reports-header .cross-station-link {
+  display: inline-block;
+  color: var(--rfs-white);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.reports-header .cross-station-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(2px);
 }
 
 /* Date Range Selector */

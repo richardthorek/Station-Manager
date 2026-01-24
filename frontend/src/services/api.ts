@@ -12,7 +12,9 @@ import type {
   CheckRun,
   CheckRunWithResults,
   CheckResult,
-  CheckStatus
+  CheckStatus,
+  Station,
+  StationLookupResult
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 
@@ -20,7 +22,148 @@ import type { MemberAchievementSummary } from '../types/achievements';
 const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 const API_BASE_URL = rawApiBase.endsWith('/api') ? rawApiBase : `${rawApiBase.replace(/\/$/, '')}/api`;
 
+// Default station ID for backward compatibility
+const DEFAULT_STATION_ID = 'default-station';
+
+// Station ID provider - will be set by StationContext
+let currentStationId: string | null = null;
+
+export function setCurrentStationId(stationId: string | null) {
+  currentStationId = stationId;
+}
+
+export function getCurrentStationId(): string {
+  return currentStationId || DEFAULT_STATION_ID;
+}
+
 class ApiService {
+  /**
+   * Create headers with X-Station-Id for multi-station support
+   */
+  private getHeaders(additionalHeaders?: HeadersInit): HeadersInit {
+    const headers: HeadersInit = {
+      'X-Station-Id': getCurrentStationId(),
+      ...additionalHeaders,
+    };
+    return headers;
+  }
+
+  // ============================================
+  // Stations
+  // ============================================
+  
+  async getStations(): Promise<Station[]> {
+    const response = await fetch(`${API_BASE_URL}/stations`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch stations');
+    const data = await response.json();
+    return data.stations || data;
+  }
+
+  async getStation(id: string): Promise<Station> {
+    const response = await fetch(`${API_BASE_URL}/stations/${id}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch station');
+    return response.json();
+  }
+
+  async createStation(stationData: Partial<Station>): Promise<Station> {
+    const response = await fetch(`${API_BASE_URL}/stations`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(stationData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create station');
+    }
+    return response.json();
+  }
+
+  async updateStation(id: string, updates: Partial<Station>): Promise<Station> {
+    const response = await fetch(`${API_BASE_URL}/stations/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(updates),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update station');
+    }
+    return response.json();
+  }
+
+  async deleteStation(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/stations/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete station');
+    }
+    return response.json();
+  }
+
+  async resetDemoStation(): Promise<{ 
+    success: boolean; 
+    message: string; 
+    stationId: string;
+    resetAt: string;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/stations/demo/reset`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to reset demo station');
+    }
+    return response.json();
+  }
+
+  async lookupStations(query?: string, lat?: number, lon?: number, limit: number = 10): Promise<{
+    results: StationLookupResult[];
+    count: number;
+  }> {
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (lat !== undefined) params.append('lat', lat.toString());
+    if (lon !== undefined) params.append('lon', lon.toString());
+    params.append('limit', limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/stations/lookup?${params}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to lookup stations');
+    return response.json();
+  }
+
+  async getStationStatistics(): Promise<{
+    memberCount: number;
+    eventCount: number;
+    checkInCount: number;
+    activeCheckInCount: number;
+  }> {
+    // Note: This is a simplified version that gets counts for the current station
+    // The stationId parameter is kept for API compatibility but not used
+    // as all API calls already filter by the current station via X-Station-Id header
+    const [members, events, activeCheckIns] = await Promise.all([
+      this.getMembers(),
+      this.getEvents(),
+      this.getActiveCheckIns(),
+    ]);
+
+    return {
+      memberCount: members.length,
+      eventCount: events.length,
+      checkInCount: 0, // Historical check-in count not available in this simplified version
+      activeCheckInCount: activeCheckIns.length,
+    };
+  }
+
   // System Status
   async getStatus(): Promise<{
     status: string;
@@ -29,20 +172,26 @@ class ApiService {
     usingInMemory: boolean;
     timestamp: string;
   }> {
-    const response = await fetch(`${API_BASE_URL}/status`);
+    const response = await fetch(`${API_BASE_URL}/status`, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) throw new Error('Failed to fetch status');
     return response.json();
   }
 
   // Members
   async getMembers(): Promise<Member[]> {
-    const response = await fetch(`${API_BASE_URL}/members`);
+    const response = await fetch(`${API_BASE_URL}/members`, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) throw new Error('Failed to fetch members');
     return response.json();
   }
 
   async getMember(id: string): Promise<Member> {
-    const response = await fetch(`${API_BASE_URL}/members/${id}`);
+    const response = await fetch(`${API_BASE_URL}/members/${id}`, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) throw new Error('Failed to fetch member');
     return response.json();
   }
@@ -50,7 +199,7 @@ class ApiService {
   async createMember(name: string): Promise<Member> {
     const response = await fetch(`${API_BASE_URL}/members`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name }),
     });
     if (!response.ok) throw new Error('Failed to create member');
@@ -60,7 +209,7 @@ class ApiService {
   async updateMember(id: string, name: string, rank?: string | null): Promise<Member> {
     const response = await fetch(`${API_BASE_URL}/members/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, rank }),
     });
     if (!response.ok) throw new Error('Failed to update member');
@@ -89,7 +238,7 @@ class ApiService {
   async setActiveActivity(activityId: string, setBy?: string): Promise<ActiveActivity> {
     const response = await fetch(`${API_BASE_URL}/activities/active`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ activityId, setBy }),
     });
     if (!response.ok) throw new Error('Failed to set active activity');
@@ -99,7 +248,7 @@ class ApiService {
   async createActivity(name: string, createdBy?: string): Promise<Activity> {
     const response = await fetch(`${API_BASE_URL}/activities`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, createdBy }),
     });
     if (!response.ok) throw new Error('Failed to create activity');
@@ -129,7 +278,7 @@ class ApiService {
   ): Promise<{ action: string; checkIn: CheckIn }> {
     const response = await fetch(`${API_BASE_URL}/checkins`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ memberId, method, activityId, location, isOffsite }),
     });
     if (!response.ok) throw new Error('Failed to check in');
@@ -146,7 +295,7 @@ class ApiService {
   async urlCheckIn(identifier: string): Promise<{ action: string; member: string; checkIn?: CheckIn }> {
     const response = await fetch(`${API_BASE_URL}/checkins/url-checkin`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ identifier }),
     });
     if (!response.ok) throw new Error('Failed to perform URL check-in');
@@ -174,7 +323,7 @@ class ApiService {
   async createEvent(activityId: string, createdBy?: string): Promise<EventWithParticipants> {
     const response = await fetch(`${API_BASE_URL}/events`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ activityId, createdBy }),
     });
     if (!response.ok) throw new Error('Failed to create event');
@@ -184,7 +333,7 @@ class ApiService {
   async endEvent(eventId: string): Promise<EventWithParticipants> {
     const response = await fetch(`${API_BASE_URL}/events/${eventId}/end`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
     });
     if (!response.ok) throw new Error('Failed to end event');
     return response.json();
@@ -206,7 +355,7 @@ class ApiService {
   ): Promise<{ action: string; participant: EventParticipant }> {
     const response = await fetch(`${API_BASE_URL}/events/${eventId}/participants`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ memberId, method, location, isOffsite }),
     });
     if (!response.ok) throw new Error('Failed to add participant');
@@ -240,7 +389,7 @@ class ApiService {
   async createAppliance(name: string, description?: string, photoUrl?: string): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, description, photoUrl }),
     });
     if (!response.ok) throw new Error('Failed to create appliance');
@@ -250,7 +399,7 @@ class ApiService {
   async updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, description, photoUrl }),
     });
     if (!response.ok) throw new Error('Failed to update appliance');
@@ -286,7 +435,7 @@ class ApiService {
   async updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[]): Promise<ChecklistTemplate> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/templates/${applianceId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ items }),
     });
     if (!response.ok) throw new Error('Failed to update template');
@@ -297,7 +446,7 @@ class ApiService {
   async createCheckRun(applianceId: string, completedBy: string, completedByName?: string): Promise<CheckRun> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/runs`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ applianceId, completedBy, completedByName }),
     });
     if (!response.ok) throw new Error('Failed to create check run');
@@ -330,7 +479,7 @@ class ApiService {
   async completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}/complete`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ additionalComments }),
     });
     if (!response.ok) throw new Error('Failed to complete check run');
@@ -350,7 +499,7 @@ class ApiService {
   ): Promise<CheckResult> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/results`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy }),
     });
     if (!response.ok) throw new Error('Failed to create check result');
@@ -365,7 +514,7 @@ class ApiService {
   ): Promise<CheckResult> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/results/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ status, comment, photoUrl }),
     });
     if (!response.ok) throw new Error('Failed to update check result');
@@ -512,6 +661,94 @@ class ApiService {
   }> {
     const response = await fetch(`${API_BASE_URL}/reports/truckcheck-compliance?startDate=${startDate}&endDate=${endDate}`);
     if (!response.ok) throw new Error('Failed to fetch truck check compliance');
+    return response.json();
+  }
+
+  // ============================================
+  // Cross-Station Reports
+  // ============================================
+
+  async getCrossStationAttendanceSummary(stationIds: string[], startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    stationIds: string[];
+    summaries: Record<string, Array<{ month: string; count: number }>>;
+  }> {
+    const idsParam = stationIds.join(',');
+    const response = await fetch(`${API_BASE_URL}/reports/cross-station/attendance-summary?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch cross-station attendance summary');
+    return response.json();
+  }
+
+  async getCrossStationMemberParticipation(stationIds: string[], startDate: string, endDate: string, limit: number = 10): Promise<{
+    startDate: string;
+    endDate: string;
+    stationIds: string[];
+    limit: number;
+    participation: Record<string, Array<{
+      memberId: string;
+      memberName: string;
+      participationCount: number;
+      lastCheckIn: string;
+    }>>;
+  }> {
+    const idsParam = stationIds.join(',');
+    const response = await fetch(`${API_BASE_URL}/reports/cross-station/member-participation?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}&limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch cross-station member participation');
+    return response.json();
+  }
+
+  async getCrossStationActivityBreakdown(stationIds: string[], startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    stationIds: string[];
+    breakdowns: Record<string, Array<{
+      category: string;
+      count: number;
+      percentage: number;
+    }>>;
+  }> {
+    const idsParam = stationIds.join(',');
+    const response = await fetch(`${API_BASE_URL}/reports/cross-station/activity-breakdown?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch cross-station activity breakdown');
+    return response.json();
+  }
+
+  async getCrossStationEventStatistics(stationIds: string[], startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    stationIds: string[];
+    statistics: Record<string, {
+      totalEvents: number;
+      activeEvents: number;
+      completedEvents: number;
+      totalParticipants: number;
+      averageParticipantsPerEvent: number;
+      averageDuration: number;
+    }>;
+  }> {
+    const idsParam = stationIds.join(',');
+    const response = await fetch(`${API_BASE_URL}/reports/cross-station/event-statistics?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch cross-station event statistics');
+    return response.json();
+  }
+
+  async getBrigadeSummary(brigadeId: string, startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    brigadeId: string;
+    stations: Array<{ id: string; name: string }>;
+    summary: {
+      totalEvents: number;
+      totalParticipants: number;
+      totalCompletedEvents: number;
+      totalStations: number;
+      averageEventsPerStation: number;
+      averageParticipantsPerStation: number;
+    };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/brigade-summary?brigadeId=${brigadeId}&startDate=${startDate}&endDate=${endDate}`);
+    if (!response.ok) throw new Error('Failed to fetch brigade summary');
     return response.json();
   }
 

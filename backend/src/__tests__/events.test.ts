@@ -456,4 +456,58 @@ describe('Events API', () => {
       expect(response.body.error).toContain('Event not found');
     });
   });
+
+  describe('PUT /api/events/:eventId/reactivate', () => {
+    it('should reactivate an ended event', async () => {
+      // Create a new event
+      const createResponse = await request(app)
+        .post('/api/events')
+        .send({ activityId: testActivityId })
+        .expect(201);
+
+      const eventId = createResponse.body.id;
+
+      // End the event
+      await request(app)
+        .put(`/api/events/${eventId}/end`)
+        .expect(200);
+
+      // Reactivate the event
+      const reactivateResponse = await request(app)
+        .put(`/api/events/${eventId}/reactivate`)
+        .expect(200);
+
+      expect(reactivateResponse.body).toHaveProperty('id', eventId);
+      expect(reactivateResponse.body).toHaveProperty('isActive', true);
+      // endTime should be null or undefined after reactivation
+      expect(reactivateResponse.body.endTime).toBeUndefined();
+    });
+
+    it('should return 404 if event does not exist', async () => {
+      const response = await request(app)
+        .put('/api/events/non-existent-event/reactivate')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('Event not found');
+    });
+
+    it('should work on already active events (idempotent)', async () => {
+      // Create a new event (starts active)
+      const createResponse = await request(app)
+        .post('/api/events')
+        .send({ activityId: testActivityId })
+        .expect(201);
+
+      const eventId = createResponse.body.id;
+
+      // Reactivate an already active event
+      const reactivateResponse = await request(app)
+        .put(`/api/events/${eventId}/reactivate`)
+        .expect(200);
+
+      expect(reactivateResponse.body).toHaveProperty('id', eventId);
+      expect(reactivateResponse.body).toHaveProperty('isActive', true);
+    });
+  });
 });
