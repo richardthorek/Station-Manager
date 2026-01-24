@@ -7,6 +7,35 @@
   z-index: 100;
 }
 
+/* Demo mode header has subtle amber tint */
+.header.demo-mode {
+  background: linear-gradient(135deg, #d4692e 0%, #C21F17 100%);
+}
+
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--ui-amber);
+  color: var(--rfs-black);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  animation: pulse-badge 3s ease-in-out infinite;
+  cursor: help;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
 .header-content {
   max-width: 1400px;
   margin: 0 auto;

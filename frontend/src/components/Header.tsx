@@ -4,6 +4,7 @@
  * Main application header displaying:
  * - Application title and logo
  * - Station selector dropdown
+ * - Demo mode indicator (when applicable)
  * - Theme toggle (light/dark mode)
  * - Connection status indicator
  * - Database status warning (in-memory vs persistent)
@@ -11,6 +12,7 @@
 
 import { useTheme } from '../hooks/useTheme';
 import { StationSelector } from './StationSelector';
+import { useStation } from '../contexts/StationContext';
 import './Header.css';
 
 interface HeaderProps {
@@ -23,14 +25,21 @@ interface HeaderProps {
 
 export function Header({ isConnected, databaseStatus }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const { isDemoStation } = useStation();
   const showDatabaseWarning = databaseStatus?.usingInMemory;
+  const isDemo = isDemoStation();
 
   return (
-    <header className="header">
+    <header className={`header ${isDemo ? 'demo-mode' : ''}`}>
       <div className="header-content">
         <div className="header-logo">
           <div className="logo-icon">🚒</div>
           <h1>Station Manager</h1>
+          {isDemo && (
+            <div className="demo-badge" title="Demo Mode - Data can be reset at any time">
+              🎭 DEMO MODE
+            </div>
+          )}
         </div>
         <div className="header-center">
           <StationSelector />
