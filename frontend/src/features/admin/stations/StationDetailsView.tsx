@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
 import type { Station } from '../../../types';
 import { DEMO_STATION_ID } from '../../../contexts/StationContext';
+import { DemoResetButton } from './DemoResetButton';
 import './StationDetailsView.css';
 
 interface StationDetailsViewProps {
@@ -201,6 +202,20 @@ export function StationDetailsView({ station, onClose, onEdit }: StationDetailsV
               <div className="stats-error">Failed to load statistics</div>
             )}
           </div>
+
+          {/* Demo Station Reset Control */}
+          {isDemoStation && (
+            <div className="details-section">
+              <h3>Demo Controls</h3>
+              <div className="demo-controls-info">
+                <p>
+                  Reset the demo station to restore fresh sample data. 
+                  This will delete all current demo data and recreate it with new realistic samples.
+                </p>
+              </div>
+              <DemoResetButton onResetComplete={onClose} />
+            </div>
+          )}
 
           {/* Timestamps */}
           <div className="details-section">

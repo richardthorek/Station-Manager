@@ -158,3 +158,19 @@
     width: 100%;
   }
 }
+
+/* Demo Controls Section */
+.demo-controls-info {
+  background: var(--surface-elevated);
+  border-left: 4px solid var(--ui-amber);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.demo-controls-info p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
