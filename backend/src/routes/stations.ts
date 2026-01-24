@@ -316,4 +316,92 @@ router.delete('/:id', validateStationId, handleValidationErrors, async (req: Req
   }
 });
 
+/**
+ * POST /api/stations/demo/reset
+ * Reset the demo station with fresh sample data
+ * 
+ * This endpoint:
+ * 1. Deletes all demo station data (members, events, check-ins, appliances, etc.)
+ * 2. Recreates the demo station
+ * 3. Seeds with fresh sample data
+ * 
+ * Note: This route must be defined before /:id to avoid conflicts
+ */
+router.post('/demo/reset', async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const truckChecksDb = await (await import('../services/truckChecksDbFactory')).ensureTruckChecksDatabase(req.isDemoMode);
+    const { DEMO_STATION_ID } = await import('../constants/stations');
+    
+    console.log('🔄 Resetting demo station...');
+    
+    // Step 1: Delete all demo station data
+    console.log('  🗑️  Deleting demo station data...');
+    
+    // Delete check-ins
+    const checkIns = await db.getAllCheckIns(DEMO_STATION_ID);
+    for (const checkIn of checkIns) {
+      if (checkIn.isActive) {
+        await db.deactivateCheckIn(checkIn.id);
+      }
+    }
+    
+    // Delete event participants and events
+    const events = await db.getEvents(1000, 0, DEMO_STATION_ID);
+    for (const event of events) {
+      const participants = await db.getEventParticipants(event.id);
+      for (const participant of participants) {
+        await db.removeEventParticipant(participant.id);
+      }
+      await db.deleteEvent(event.id);
+    }
+    
+    // Delete truck check results and runs
+    const checkRuns = await truckChecksDb.getAllCheckRuns(DEMO_STATION_ID);
+    for (const run of checkRuns) {
+      const results = await truckChecksDb.getResultsByRunId(run.id);
+      for (const result of results) {
+        await truckChecksDb.deleteCheckResult(result.id);
+      }
+    }
+    
+    // Delete appliances (templates are auto-deleted)
+    const appliances = await truckChecksDb.getAllAppliances(DEMO_STATION_ID);
+    for (const appliance of appliances) {
+      await truckChecksDb.deleteAppliance(appliance.id);
+    }
+    
+    console.log('  ✅ Demo station data deleted');
+    
+    // Step 2: Reseed demo station
+    console.log('  🌱 Reseeding demo station...');
+    const { seedDemoStation } = await import('../scripts/seedDemoStation');
+    await seedDemoStation();
+    
+    console.log('✅ Demo station reset complete');
+    
+    // Emit WebSocket event to notify clients
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('demo-station-reset', { 
+        stationId: DEMO_STATION_ID,
+        resetAt: new Date(),
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Demo station reset successfully',
+      stationId: DEMO_STATION_ID,
+      resetAt: new Date(),
+    });
+  } catch (error) {
+    console.error('Error resetting demo station:', error);
+    res.status(500).json({ 
+      error: 'Failed to reset demo station',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 export default router;
