@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { StationProvider } from './contexts/StationContext';
+import { DemoLandingPrompt, hasSeenDemoPrompt } from './components/DemoLandingPrompt';
 import { LandingPage } from './features/landing/LandingPage';
 import { SignInPage } from './features/signin/SignInPage';
 import { SignInLinkPage } from './features/signin/SignInLinkPage';
@@ -15,9 +17,24 @@ import { CrossStationReportsPage } from './features/reports/CrossStationReportsP
 import { StationManagementPage } from './features/admin/stations/StationManagementPage';
 
 function App() {
+  const [showDemoPrompt, setShowDemoPrompt] = useState(false);
+
+  useEffect(() => {
+    // Show demo prompt on first visit
+    if (!hasSeenDemoPrompt()) {
+      // Small delay for better UX
+      setTimeout(() => {
+        setShowDemoPrompt(true);
+      }, 500);
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <StationProvider>
+        {showDemoPrompt && (
+          <DemoLandingPrompt onDismiss={() => setShowDemoPrompt(false)} />
+        )}
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignInPage />} />
