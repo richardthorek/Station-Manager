@@ -167,7 +167,8 @@ describe('Stations API', () => {
       expect(response.body).toHaveProperty('count');
       expect(typeof response.body.count).toBe('number');
       expect(response.body.count).toBeGreaterThan(0);
-      expect(response.body.count).toBeGreaterThan(4000); // Should have 4400+ facilities nationally
+      // In test environment, we have 10 test stations (not the full 4400+ dataset)
+      expect(response.body.count).toBe(10);
     });
   });
 
