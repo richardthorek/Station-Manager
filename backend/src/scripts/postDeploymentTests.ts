@@ -12,12 +12,12 @@
  * 
  * Two-Phase Strategy:
  * 
- * PHASE 1: STABILIZATION (up to 15 minutes)
+ * PHASE 1: STABILIZATION (up to 30 minutes)
  *   - Polls health endpoint every 10 seconds
  *   - Validates site is responding AND correct version is deployed
  *   - Retries on network errors, 404/502/503, and version mismatches
  *   - Exits immediately once both conditions met (efficient)
- *   - Maximum: 90 attempts × 10s = 900s (15 minutes)
+ *   - Maximum: 180 attempts × 10s = 1800s (30 minutes)
  * 
  * PHASE 2: FUNCTIONAL TESTS (minimal retries)
  *   - Runs only after stabilization confirms site is ready
@@ -25,7 +25,7 @@
  *   - Tests fail fast since we know the site is up and correct version
  *   - Expected completion: 30-60 seconds for all 7 tests
  * 
- * Total Maximum Time: 15 minutes stabilization + 2 minutes tests = 17 minutes
+ * Total Maximum Time: 30 minutes stabilization + 2 minutes tests = 32 minutes
  * 
  * This approach is efficient because:
  *   - Stabilization happens once, upfront
@@ -39,7 +39,7 @@
  * Environment Variables:
  *   APP_URL: The deployed application URL (required)
  *   TABLE_STORAGE_TABLE_SUFFIX: Set to "Test" to use test tables (default: Test)
- *   STABILIZATION_TIMEOUT: Max time for site stabilization in seconds (default: 900 = 15 minutes)
+ *   STABILIZATION_TIMEOUT: Max time for site stabilization in seconds (default: 1800 = 30 minutes)
  *   FUNCTIONAL_TEST_TIMEOUT: Max time for functional tests in seconds (default: 120 = 2 minutes)
  *   STABILIZATION_INTERVAL: Seconds between stabilization checks (default: 10)
  *   FUNCTIONAL_TEST_RETRIES: Retries per functional test (default: 2)
@@ -54,7 +54,7 @@ import https from 'https';
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 
 // Phase 1: Stabilization (site up + correct version)
-const STABILIZATION_TIMEOUT = parseInt(process.env.STABILIZATION_TIMEOUT || '900') * 1000; // 15 minutes in ms
+const STABILIZATION_TIMEOUT = parseInt(process.env.STABILIZATION_TIMEOUT || '1800') * 1000; // 30 minutes in ms
 const STABILIZATION_INTERVAL = parseInt(process.env.STABILIZATION_INTERVAL || '10') * 1000; // 10 seconds in ms
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || '10000'); // 10 seconds for HTTP requests
 
