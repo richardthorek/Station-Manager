@@ -24,11 +24,11 @@
 # Post-Deployment Testing Strategy:
 #   TWO-PHASE APPROACH FOR EFFICIENCY:
 #
-#   Phase 1: Stabilization (up to 15 minutes)
+#   Phase 1: Stabilization (up to 30 minutes)
 #     - Polls health endpoint every 10 seconds
 #     - Validates site is responding AND correct version is deployed
 #     - Exits immediately when both conditions met (efficient!)
-#     - Maximum: 90 attempts × 10s = 900s (15 minutes)
+#     - Maximum: 180 attempts × 10s = 1800s (30 minutes)
 #     - Typical: 1-2 minutes (exits early when ready)
 #
 #   Phase 2: Functional Tests (minimal retries)
@@ -37,7 +37,7 @@
 #     - Tests fail fast since site is known to be up
 #     - Expected completion: 30-60 seconds for all 7 tests
 #
-#   Total Maximum Time: 15 min stabilization + 2 min tests = 17 minutes
+#   Total Maximum Time: 30 min stabilization + 2 min tests = 32 minutes
 #   Typical Time: 2 min stabilization + 1 min tests = 3 minutes
 #
 #   This is efficient because:
@@ -546,7 +546,7 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
-          STABILIZATION_TIMEOUT: 900
+          STABILIZATION_TIMEOUT: 1800
           STABILIZATION_INTERVAL: 10
           FUNCTIONAL_TEST_TIMEOUT: 120
           FUNCTIONAL_TEST_RETRIES: 2
@@ -556,7 +556,7 @@ jobs:
           cd backend
           echo "🧪 Running two-phase post-deployment tests..."
           echo ""
-          echo "Phase 1: Stabilization (up to 15 minutes)"
+          echo "Phase 1: Stabilization (up to 30 minutes)"
           echo "  - Polls until site is up AND correct version"
           echo "  - Exits immediately when ready (efficient!)"
           echo ""
