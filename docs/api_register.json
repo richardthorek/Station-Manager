@@ -1,8 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.0.0",
-  "lastUpdated": "2026-01-04",
-  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).",
+  "version": "1.1.0",
+  "lastUpdated": "2026-01-05",
+  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.",
+  "commonHeaders": {
+    "X-Station-Id": {
+      "description": "Optional station identifier for multi-station filtering. If not provided, defaults to 'default-station' for backward compatibility.",
+      "type": "string",
+      "required": false,
+      "example": "station-123",
+      "appliesTo": "all endpoints except /health and /api/status"
+    }
+  },
   "baseUrl": {
     "development": "http://localhost:3000",
     "production": "https://bungrfsstation.azurewebsites.net"
@@ -1432,22 +1441,35 @@
             "schema": {
               "type": "object",
               "properties": {
-                "startDate": { "type": "string", "format": "date-time" },
-                "endDate": { "type": "string", "format": "date-time" },
+                "startDate": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endDate": {
+                  "type": "string",
+                  "format": "date-time"
+                },
                 "summary": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "month": { "type": "string", "example": "2024-01" },
-                      "count": { "type": "number" }
+                      "month": {
+                        "type": "string",
+                        "example": "2024-01"
+                      },
+                      "count": {
+                        "type": "number"
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "500": { "description": "Server error" }
+          "500": {
+            "description": "Server error"
+          }
         },
         "implementation": "backend/src/routes/reports.ts"
       },
@@ -1458,8 +1480,14 @@
         "authentication": "none",
         "parameters": {
           "query": {
-            "startDate": { "type": "string", "format": "date-time" },
-            "endDate": { "type": "string", "format": "date-time" },
+            "startDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "endDate": {
+              "type": "string",
+              "format": "date-time"
+            },
             "limit": {
               "type": "number",
               "default": 10,
@@ -1474,25 +1502,42 @@
             "schema": {
               "type": "object",
               "properties": {
-                "startDate": { "type": "string" },
-                "endDate": { "type": "string" },
-                "limit": { "type": "number" },
+                "startDate": {
+                  "type": "string"
+                },
+                "endDate": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "number"
+                },
                 "participation": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "memberId": { "type": "string" },
-                      "memberName": { "type": "string" },
-                      "participationCount": { "type": "number" },
-                      "lastCheckIn": { "type": "string", "format": "date-time" }
+                      "memberId": {
+                        "type": "string"
+                      },
+                      "memberName": {
+                        "type": "string"
+                      },
+                      "participationCount": {
+                        "type": "number"
+                      },
+                      "lastCheckIn": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "500": { "description": "Server error" }
+          "500": {
+            "description": "Server error"
+          }
         },
         "implementation": "backend/src/routes/reports.ts"
       },
@@ -1503,8 +1548,14 @@
         "authentication": "none",
         "parameters": {
           "query": {
-            "startDate": { "type": "string", "format": "date-time" },
-            "endDate": { "type": "string", "format": "date-time" }
+            "startDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "endDate": {
+              "type": "string",
+              "format": "date-time"
+            }
           }
         },
         "requestBody": null,
@@ -1514,23 +1565,41 @@
             "schema": {
               "type": "object",
               "properties": {
-                "startDate": { "type": "string" },
-                "endDate": { "type": "string" },
+                "startDate": {
+                  "type": "string"
+                },
+                "endDate": {
+                  "type": "string"
+                },
                 "breakdown": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "category": { "type": "string", "enum": ["training", "maintenance", "meeting", "other"] },
-                      "count": { "type": "number" },
-                      "percentage": { "type": "number" }
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "training",
+                          "maintenance",
+                          "meeting",
+                          "other"
+                        ]
+                      },
+                      "count": {
+                        "type": "number"
+                      },
+                      "percentage": {
+                        "type": "number"
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "500": { "description": "Server error" }
+          "500": {
+            "description": "Server error"
+          }
         },
         "implementation": "backend/src/routes/reports.ts"
       },
@@ -1541,8 +1610,14 @@
         "authentication": "none",
         "parameters": {
           "query": {
-            "startDate": { "type": "string", "format": "date-time" },
-            "endDate": { "type": "string", "format": "date-time" }
+            "startDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "endDate": {
+              "type": "string",
+              "format": "date-time"
+            }
           }
         },
         "requestBody": null,
@@ -1552,23 +1627,42 @@
             "schema": {
               "type": "object",
               "properties": {
-                "startDate": { "type": "string" },
-                "endDate": { "type": "string" },
+                "startDate": {
+                  "type": "string"
+                },
+                "endDate": {
+                  "type": "string"
+                },
                 "statistics": {
                   "type": "object",
                   "properties": {
-                    "totalEvents": { "type": "number" },
-                    "activeEvents": { "type": "number" },
-                    "completedEvents": { "type": "number" },
-                    "totalParticipants": { "type": "number" },
-                    "averageParticipantsPerEvent": { "type": "number" },
-                    "averageDuration": { "type": "number", "description": "Average event duration in minutes" }
+                    "totalEvents": {
+                      "type": "number"
+                    },
+                    "activeEvents": {
+                      "type": "number"
+                    },
+                    "completedEvents": {
+                      "type": "number"
+                    },
+                    "totalParticipants": {
+                      "type": "number"
+                    },
+                    "averageParticipantsPerEvent": {
+                      "type": "number"
+                    },
+                    "averageDuration": {
+                      "type": "number",
+                      "description": "Average event duration in minutes"
+                    }
                   }
                 }
               }
             }
           },
-          "500": { "description": "Server error" }
+          "500": {
+            "description": "Server error"
+          }
         },
         "implementation": "backend/src/routes/reports.ts"
       },
@@ -1579,8 +1673,14 @@
         "authentication": "none",
         "parameters": {
           "query": {
-            "startDate": { "type": "string", "format": "date-time" },
-            "endDate": { "type": "string", "format": "date-time" }
+            "startDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "endDate": {
+              "type": "string",
+              "format": "date-time"
+            }
           }
         },
         "requestBody": null,
@@ -1590,25 +1690,50 @@
             "schema": {
               "type": "object",
               "properties": {
-                "startDate": { "type": "string" },
-                "endDate": { "type": "string" },
+                "startDate": {
+                  "type": "string"
+                },
+                "endDate": {
+                  "type": "string"
+                },
                 "compliance": {
                   "type": "object",
                   "properties": {
-                    "totalChecks": { "type": "number" },
-                    "completedChecks": { "type": "number" },
-                    "inProgressChecks": { "type": "number" },
-                    "checksWithIssues": { "type": "number" },
-                    "complianceRate": { "type": "number", "description": "Percentage (0-100)" },
+                    "totalChecks": {
+                      "type": "number"
+                    },
+                    "completedChecks": {
+                      "type": "number"
+                    },
+                    "inProgressChecks": {
+                      "type": "number"
+                    },
+                    "checksWithIssues": {
+                      "type": "number"
+                    },
+                    "complianceRate": {
+                      "type": "number",
+                      "description": "Percentage (0-100)"
+                    },
                     "applianceStats": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "applianceId": { "type": "string" },
-                          "applianceName": { "type": "string" },
-                          "checkCount": { "type": "number" },
-                          "lastCheckDate": { "type": "string", "format": "date-time", "nullable": true }
+                          "applianceId": {
+                            "type": "string"
+                          },
+                          "applianceName": {
+                            "type": "string"
+                          },
+                          "checkCount": {
+                            "type": "number"
+                          },
+                          "lastCheckDate": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
                         }
                       }
                     }
@@ -1617,7 +1742,9 @@
               }
             }
           },
-          "500": { "description": "Server error" }
+          "500": {
+            "description": "Server error"
+          }
         },
         "implementation": "backend/src/routes/reports.ts"
       }
@@ -1664,22 +1791,36 @@
               "properties": {
                 "results": {
                   "type": "array",
-                  "items": { "$ref": "#/definitions/StationSearchResult" }
+                  "items": {
+                    "$ref": "#/definitions/StationSearchResult"
+                  }
                 },
-                "count": { "type": "integer" },
-                "query": { "type": "string" },
+                "count": {
+                  "type": "integer"
+                },
+                "query": {
+                  "type": "string"
+                },
                 "location": {
                   "type": "object",
                   "properties": {
-                    "lat": { "type": "number" },
-                    "lon": { "type": "number" }
+                    "lat": {
+                      "type": "number"
+                    },
+                    "lon": {
+                      "type": "number"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Invalid parameters (missing both query and location)" },
-          "500": { "description": "Server error" }
+          "400": {
+            "description": "Invalid parameters (missing both query and location)"
+          },
+          "500": {
+            "description": "Server error"
+          }
         },
         "implementation": "backend/src/routes/stations.ts:17",
         "security": {
@@ -1688,7 +1829,11 @@
             "maxRequests": 100,
             "windowMs": 900000,
             "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset"]
+            "headers": [
+              "RateLimit-Limit",
+              "RateLimit-Remaining",
+              "RateLimit-Reset"
+            ]
           }
         },
         "notes": [
@@ -1712,11 +1857,16 @@
             "schema": {
               "type": "object",
               "properties": {
-                "count": { "type": "integer", "description": "Total facilities loaded (typically 4400+)" }
+                "count": {
+                  "type": "integer",
+                  "description": "Total facilities loaded (typically 4400+)"
+                }
               }
             }
           },
-          "500": { "description": "Server error" }
+          "500": {
+            "description": "Server error"
+          }
         },
         "implementation": "backend/src/routes/stations.ts:56",
         "security": {
@@ -1725,9 +1875,545 @@
             "maxRequests": 100,
             "windowMs": 900000,
             "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset"]
+            "headers": [
+              "RateLimit-Limit",
+              "RateLimit-Remaining",
+              "RateLimit-Reset"
+            ]
           }
         }
+      },
+      "GET /api/stations": {
+        "method": "GET",
+        "path": "/api/stations",
+        "description": "Get all stations with optional filtering and pagination",
+        "authentication": "none",
+        "parameters": {
+          "query": {
+            "brigadeId": {
+              "type": "string",
+              "required": false,
+              "description": "Filter by brigade ID"
+            },
+            "area": {
+              "type": "string",
+              "required": false,
+              "description": "Filter by area"
+            },
+            "district": {
+              "type": "string",
+              "required": false,
+              "description": "Filter by district"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "required": false,
+              "description": "Maximum number of results"
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "required": false,
+              "description": "Pagination offset"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Paginated list of stations",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "stations": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Station"
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "number"
+                    },
+                    "limit": {
+                      "type": "number"
+                    },
+                    "offset": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/stations.ts:28",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        }
+      },
+      "GET /api/stations/:id": {
+        "method": "GET",
+        "path": "/api/stations/:id",
+        "description": "Get specific station by ID",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "required": true,
+              "description": "Station ID"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Station object",
+            "schema": {
+              "$ref": "#/definitions/Station"
+            }
+          },
+          "404": {
+            "description": "Station not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/stations.ts:76",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        }
+      },
+      "GET /api/stations/brigade/:brigadeId": {
+        "method": "GET",
+        "path": "/api/stations/brigade/:brigadeId",
+        "description": "Get all stations in a brigade",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "brigadeId": {
+              "type": "string",
+              "required": true,
+              "description": "Brigade ID"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Array of stations in the brigade",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Station"
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/stations.ts:95",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        }
+      },
+      "POST /api/stations": {
+        "method": "POST",
+        "path": "/api/stations",
+        "description": "Create a new station",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": [
+              "name",
+              "brigadeId",
+              "brigadeName",
+              "hierarchy"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "brigadeId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "brigadeName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "hierarchy": {
+                "type": "object",
+                "required": [
+                  "jurisdiction",
+                  "area",
+                  "district",
+                  "brigade",
+                  "station"
+                ],
+                "properties": {
+                  "jurisdiction": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "area": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "district": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "brigade": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "station": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                }
+              },
+              "location": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                }
+              },
+              "contactInfo": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Station created successfully",
+            "schema": {
+              "$ref": "#/definitions/Station"
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/stations.ts:114",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        }
+      },
+      "PUT /api/stations/:id": {
+        "method": "PUT",
+        "path": "/api/stations/:id",
+        "description": "Update an existing station",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "required": true,
+              "description": "Station ID"
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "brigadeName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "hierarchy": {
+                "type": "object",
+                "properties": {
+                  "jurisdiction": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "area": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "district": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "brigade": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "station": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                }
+              },
+              "location": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                }
+              },
+              "contactInfo": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 200
+                  }
+                }
+              },
+              "isActive": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Station updated successfully",
+            "schema": {
+              "$ref": "#/definitions/Station"
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Station not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/stations.ts:143",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        }
+      },
+      "DELETE /api/stations/:id": {
+        "method": "DELETE",
+        "path": "/api/stations/:id",
+        "description": "Soft delete a station (sets isActive=false). Prevents deletion if station has members, active check-ins, or events.",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "required": true,
+              "description": "Station ID"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Station deactivated successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "stationId": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot delete station with existing data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "memberCount": {
+                  "type": "number"
+                },
+                "checkInCount": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Station not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/stations.ts:178",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        }
+      },
+      "POST /api/stations/demo/reset": {
+        "method": "POST",
+        "path": "/api/stations/demo/reset",
+        "description": "Reset demo station with fresh sample data. Deletes all demo station data and recreates it with realistic samples including members, activities, events, and appliances.",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Demo station reset successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "stationId": {
+                  "type": "string",
+                  "description": "ID of the demo station (demo-station)"
+                },
+                "resetAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Timestamp when reset completed"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error during reset",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "implementation": "backend/src/routes/stations.ts:320",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        },
+        "notes": [
+          "Demo station ID is 'demo-station'",
+          "Creates 20 diverse sample members with various ranks",
+          "Creates 5 standard activities",
+          "Creates 10 recent check-ins",
+          "Creates 3-4 events (1 active, rest completed)",
+          "Creates 2 appliances with sample check runs",
+          "Operation may take several seconds to complete",
+          "Emits 'demo-station-reset' WebSocket event on success"
+        ]
       }
     }
   },
@@ -1817,6 +2503,58 @@
           "$ref": "#/definitions/Achievement"
         },
         "trigger": "Achievement calculation"
+      },
+      "station-created": {
+        "event": "station-created",
+        "description": "New station created",
+        "payload": {
+          "$ref": "#/definitions/Station"
+        },
+        "trigger": "POST /api/stations"
+      },
+      "station-updated": {
+        "event": "station-updated",
+        "description": "Station details updated",
+        "payload": {
+          "$ref": "#/definitions/Station"
+        },
+        "trigger": "PUT /api/stations/:id"
+      },
+      "station-deleted": {
+        "event": "station-deleted",
+        "description": "Station deactivated (soft deleted)",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        "trigger": "DELETE /api/stations/:id"
+      },
+      "demo-station-reset": {
+        "event": "demo-station-reset",
+        "description": "Demo station has been reset with fresh data",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "stationId": {
+              "type": "string",
+              "description": "ID of demo station (demo-station)"
+            },
+            "resetAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp when reset completed"
+            }
+          }
+        },
+        "trigger": "POST /api/stations/demo/reset"
       }
     }
   },
@@ -2117,32 +2855,135 @@
         }
       }
     },
-    "StationHierarchy": {
+    "Station": {
       "type": "object",
-      "description": "Fire service station organizational structure. Supports all Australian states/territories.",
       "properties": {
-        "id": { "type": "string", "description": "Unique station identifier" },
-        "name": { "type": "string", "description": "Station/brigade name" },
-        "brigade": { "type": "string", "description": "Brigade name (typically matches station name 1:1)" },
-        "district": { "type": "string", "nullable": true, "description": "District (organizational level)" },
-        "area": { "type": "string", "nullable": true, "description": "Area (organizational level)" },
-        "suburb": { "type": "string", "description": "Suburb/locality" },
-        "state": { "type": "string", "description": "Australian state/territory", "enum": ["NEW SOUTH WALES", "VICTORIA", "QUEENSLAND", "SOUTH AUSTRALIA", "WESTERN AUSTRALIA", "TASMANIA", "NORTHERN TERRITORY", "AUSTRALIAN CAPITAL TERRITORY"] },
-        "postcode": { "type": "string", "description": "Postcode" },
-        "latitude": { "type": "number", "description": "Latitude coordinate" },
-        "longitude": { "type": "number", "description": "Longitude coordinate" },
-        "operationalStatus": { "type": "string", "nullable": true, "description": "Current operational status" }
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "description": "Station name (typically same as brigade name for 1:1 relationships)"
+        },
+        "brigadeId": {
+          "type": "string",
+          "description": "Brigade ID for grouping stations"
+        },
+        "brigadeName": {
+          "type": "string",
+          "description": "Brigade name"
+        },
+        "hierarchy": {
+          "type": "object",
+          "properties": {
+            "jurisdiction": {
+              "type": "string",
+              "description": "State level (e.g., NSW)"
+            },
+            "area": {
+              "type": "string",
+              "description": "Area/Region level"
+            },
+            "district": {
+              "type": "string",
+              "description": "District level"
+            },
+            "brigade": {
+              "type": "string",
+              "description": "Brigade name"
+            },
+            "station": {
+              "type": "string",
+              "description": "Station name"
+            }
+          },
+          "required": [
+            "jurisdiction",
+            "area",
+            "district",
+            "brigade",
+            "station"
+          ]
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "string",
+              "nullable": true
+            },
+            "latitude": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "nullable": true
+            },
+            "longitude": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180,
+              "nullable": true
+            }
+          }
+        },
+        "contactInfo": {
+          "type": "object",
+          "properties": {
+            "phone": {
+              "type": "string",
+              "nullable": true
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "nullable": true
+            }
+          }
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["id", "name", "suburb", "state", "postcode", "latitude", "longitude"]
+      "required": [
+        "id",
+        "name",
+        "brigadeId",
+        "brigadeName",
+        "hierarchy",
+        "isActive",
+        "createdAt",
+        "updatedAt"
+      ]
     },
     "StationSearchResult": {
       "allOf": [
-        { "$ref": "#/definitions/StationHierarchy" },
+        {
+          "$ref": "#/definitions/StationHierarchy"
+        },
         {
           "type": "object",
           "properties": {
-            "distance": { "type": "number", "nullable": true, "description": "Distance in kilometers from user location (if location provided)" },
-            "relevanceScore": { "type": "number", "nullable": true, "minimum": 0, "maximum": 1, "description": "Search relevance score 0-1 (if search query provided)" }
+            "distance": {
+              "type": "number",
+              "nullable": true,
+              "description": "Distance in kilometers from user location (if location provided)"
+            },
+            "relevanceScore": {
+              "type": "number",
+              "nullable": true,
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Search relevance score 0-1 (if search query provided)"
+            }
           }
         }
       ]

@@ -7,6 +7,11 @@
  * - Creating new members with auto-generated QR codes
  * - Updating member information
  * - Deleting members
+ * 
+ * Multi-Station Support:
+ * - All GET endpoints filter by stationId (from X-Station-Id header or query param)
+ * - POST endpoints assign stationId to new members
+ * - Backward compatible: defaults to DEFAULT_STATION_ID if no stationId provided
  */
 
 import { Router, Request, Response } from 'express';
@@ -18,14 +23,19 @@ import {
   validateQRCode,
 } from '../middleware/memberValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
+import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 
 const router = Router();
 
-// Get all members
+// Apply station middleware to all routes
+router.use(stationMiddleware);
+
+// Get all members (filtered by station)
 router.get('/', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const members = await db.getAllMembers();
+    const stationId = getStationIdFromRequest(req);
+    const members = await db.getAllMembers(stationId);
     res.json(members);
   } catch (error) {
     console.error('Error fetching members:', error);
@@ -63,11 +73,12 @@ router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Re
   }
 });
 
-// Create new member
+// Create new member (assigns station)
 router.post('/', validateCreateMember, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { name, firstName, lastName, preferredName, rank } = req.body || {};
+    const stationId = getStationIdFromRequest(req);
 
     const clean = (val: unknown): string => (typeof val === 'string' ? val.trim() : '');
     const fn = clean(firstName);
@@ -87,6 +98,7 @@ router.post('/', validateCreateMember, handleValidationErrors, async (req: Reque
       firstName: fn || undefined,
       lastName: ln || undefined,
       preferredName: pn || undefined,
+      stationId,
     });
     res.status(201).json(member);
   } catch (error) {
@@ -114,7 +126,7 @@ router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Req
   }
 });
 
-// Get member check-in history
+// Get member check-in history (filtered by station if member belongs to current station)
 router.get('/:id/history', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
@@ -122,6 +134,7 @@ router.get('/:id/history', validateMemberId, handleValidationErrors, async (req:
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
+    // Check-ins are filtered by the member's station (member already filtered by getMemberById)
     const checkIns = await db.getCheckInsByMember(req.params.id);
     res.json(checkIns);
   } catch (error) {

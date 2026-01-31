@@ -63,6 +63,9 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 3000;
 
+// Make Socket.io instance available to routes
+app.set('io', io);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -130,6 +133,7 @@ app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, checkinsRouter);
 app.use('/api/events', apiRateLimiter, eventsRouter);
+app.use('/api/stations', apiRateLimiter, stationsRouter);
 app.use('/api/truck-checks', apiRateLimiter, truckChecksRouter);
 app.use('/api/reports', apiRateLimiter, reportsRouter);
 app.use('/api/stations', apiRateLimiter, stationsRouter);
