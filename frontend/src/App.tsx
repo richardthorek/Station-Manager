@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { StationProvider } from './contexts/StationContext';
-import { DemoLandingPrompt, hasSeenDemoPrompt } from './components/DemoLandingPrompt';
+import { DemoLandingPrompt } from './components/DemoLandingPrompt';
+import { hasSeenDemoPrompt } from './utils/demoPromptUtils';
 import { LandingPage } from './features/landing/LandingPage';
 import { SignInPage } from './features/signin/SignInPage';
 import { SignInLinkPage } from './features/signin/SignInLinkPage';
