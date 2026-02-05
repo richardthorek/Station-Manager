@@ -24,11 +24,11 @@
 # Post-Deployment Testing Strategy:
 #   TWO-PHASE APPROACH FOR EFFICIENCY:
 #
-#   Phase 1: Stabilization (up to 30 minutes)
+#   Phase 1: Stabilization (up to 5 minutes)
 #     - Polls health endpoint every 10 seconds
 #     - Validates site is responding AND correct version is deployed
 #     - Exits immediately when both conditions met (efficient!)
-#     - Maximum: 180 attempts × 10s = 1800s (30 minutes)
+#     - Maximum: 30 attempts × 10s = 300s (5 minutes)
 #     - Typical: 1-2 minutes (exits early when ready)
 #
 #   Phase 2: Functional Tests (minimal retries)
@@ -37,7 +37,7 @@
 #     - Tests fail fast since site is known to be up
 #     - Expected completion: 30-60 seconds for all 7 tests
 #
-#   Total Maximum Time: 30 min stabilization + 2 min tests = 32 minutes
+#   Total Maximum Time: 5 min stabilization + 2 min tests = 7 minutes
 #   Typical Time: 2 min stabilization + 1 min tests = 3 minutes
 #
 #   This is efficient because:
@@ -55,9 +55,10 @@
 #   - Parallel job execution for independent tasks
 #   - Dependency caching (npm)
 #   - Concurrency control (cancels outdated PR runs)
+#   - Path filtering: Skip pipeline for documentation-only changes
+#     (docs/**, *.md files) to reduce deployment frequency
 #
 # Future Optimizations:
-#   - Skip deployment on documentation-only changes (future enhancement)
 #   - Conditional execution based on file changes (future enhancement)
 #
 # Failure Handling:
@@ -81,6 +82,10 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/*.md'
   pull_request:
     branches:
       - main
@@ -546,7 +551,7 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
-          STABILIZATION_TIMEOUT: 1800
+          STABILIZATION_TIMEOUT: 300
           STABILIZATION_INTERVAL: 10
           FUNCTIONAL_TEST_TIMEOUT: 120
           FUNCTIONAL_TEST_RETRIES: 2
@@ -556,7 +561,7 @@ jobs:
           cd backend
           echo "🧪 Running two-phase post-deployment tests..."
           echo ""
-          echo "Phase 1: Stabilization (up to 30 minutes)"
+          echo "Phase 1: Stabilization (up to 5 minutes)"
           echo "  - Polls until site is up AND correct version"
           echo "  - Exits immediately when ready (efficient!)"
           echo ""
