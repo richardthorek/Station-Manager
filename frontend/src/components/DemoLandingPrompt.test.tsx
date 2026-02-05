@@ -5,7 +5,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { DemoLandingPrompt, hasSeenDemoPrompt, resetDemoPrompt } from './DemoLandingPrompt';
+import { DemoLandingPrompt } from './DemoLandingPrompt';
+import { hasSeenDemoPrompt, resetDemoPrompt } from '../utils/demoPromptUtils';
 import { StationProvider } from '../contexts/StationContext';
 
 // Mock API
