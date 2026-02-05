@@ -23,6 +23,7 @@ module.exports = {
   // Coverage thresholds removed to allow the app to stabilize
   // Will be re-enabled once the app reaches maturity
   // Coverage reporting still enabled for visibility
+  coverageReporters: ['text', 'json', 'json-summary', 'lcov', 'clover'],
   moduleNameMapper: {
     '^uuid$': require.resolve('uuid'),
   },
