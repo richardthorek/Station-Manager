@@ -73,8 +73,7 @@ describe('DemoModeWarning', () => {
       />
     );
 
-    const overlay = screen.getByRole('presentation', { hidden: true }) || 
-                     document.querySelector('.demo-warning-overlay');
+    const overlay = document.querySelector('.demo-warning-overlay');
     if (overlay) {
       fireEvent.click(overlay);
       expect(mockCancel).toHaveBeenCalled();

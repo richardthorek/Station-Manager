@@ -12,9 +12,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStation } from '../contexts/StationContext';
 import { DEMO_STATION_ID } from '../contexts/StationContext';
+import { markDemoPromptAsSeen } from '../utils/demoPromptUtils';
 import './DemoLandingPrompt.css';
-
-const STORAGE_KEY = 'hasSeenDemoPrompt';
 
 interface DemoLandingPromptProps {
   onDismiss: () => void;
@@ -30,7 +29,7 @@ export function DemoLandingPrompt({ onDismiss }: DemoLandingPromptProps) {
     selectStation(DEMO_STATION_ID);
     
     // Mark as seen
-    localStorage.setItem(STORAGE_KEY, 'true');
+    markDemoPromptAsSeen();
     
     // Close prompt
     setIsClosing(true);
@@ -41,7 +40,7 @@ export function DemoLandingPrompt({ onDismiss }: DemoLandingPromptProps) {
 
   const handleUseRealStation = () => {
     // Mark as seen
-    localStorage.setItem(STORAGE_KEY, 'true');
+    markDemoPromptAsSeen();
     
     // Close prompt - user can select their station from the dropdown
     setIsClosing(true);
@@ -56,7 +55,7 @@ export function DemoLandingPrompt({ onDismiss }: DemoLandingPromptProps) {
   };
 
   const handleClose = () => {
-    localStorage.setItem(STORAGE_KEY, 'true');
+    markDemoPromptAsSeen();
     setIsClosing(true);
     setTimeout(() => {
       onDismiss();
@@ -139,18 +138,4 @@ export function DemoLandingPrompt({ onDismiss }: DemoLandingPromptProps) {
       </div>
     </div>
   );
-}
-
-/**
- * Check if user has seen the demo prompt
- */
-export function hasSeenDemoPrompt(): boolean {
-  return localStorage.getItem(STORAGE_KEY) === 'true';
-}
-
-/**
- * Reset the demo prompt flag (for testing)
- */
-export function resetDemoPrompt(): void {
-  localStorage.removeItem(STORAGE_KEY);
 }
