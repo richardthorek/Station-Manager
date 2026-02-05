@@ -55,9 +55,10 @@
 #   - Parallel job execution for independent tasks
 #   - Dependency caching (npm)
 #   - Concurrency control (cancels outdated PR runs)
+#   - Path filtering: Skip pipeline for documentation-only changes
+#     (docs/**, *.md files) to reduce deployment frequency
 #
 # Future Optimizations:
-#   - Skip deployment on documentation-only changes (future enhancement)
 #   - Conditional execution based on file changes (future enhancement)
 #
 # Failure Handling:
@@ -81,6 +82,12 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/*.md'
+      - 'CHANGELOG.md'
+      - 'README.md'
   pull_request:
     branches:
       - main
