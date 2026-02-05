@@ -89,13 +89,12 @@ Every PR (including AI-generated PRs) MUST:
    - Modifies project structure rules
    - Updates deployment or CI/CD processes
 
-6. **Add tests for all new code** (REQUIRED):
+6. **Add tests for all new code** (RECOMMENDED):
    - Backend: Add tests in `backend/src/__tests__/` for new routes, services, utilities
    - Frontend: Add tests next to components (`.test.tsx` files) for new components, hooks, pages
-   - Run `npm run test:coverage` to verify coverage thresholds are met
-   - Coverage must stay above thresholds: Backend (70% statements/functions/lines, 65% branches)
-   - Include test additions in the same PR as code changes
-   - Tests are NOT optional - CI will fail if coverage drops below thresholds
+   - Run `npm test` to verify tests pass
+   - Include test additions in the same PR as code changes when feasible
+   - Coverage thresholds are not enforced during the app stabilization phase
 
 7. **Validate machine-readable files**:
    - Run `jsonlint` on all modified JSON registry files
@@ -480,24 +479,22 @@ npm run test:coverage # Generate coverage report
 - Test user interactions with `@testing-library/user-event`
 - Test accessibility (semantic HTML, ARIA labels, keyboard navigation)
 
-**Coverage Requirements - CRITICAL:**
+**Testing Guidelines:**
 
-**ALL new code MUST include tests to maintain coverage thresholds:**
+**Tests are encouraged but coverage thresholds are not enforced:**
 
-- **Backend Coverage Thresholds** (enforced in CI):
-  - Statements: 70%
-  - Branches: 65%
-  - Functions: 70%
-  - Lines: 70%
+- **Testing Status**:
+  - Coverage thresholds temporarily disabled to allow the app to stabilize
+  - Will be re-enabled once the app reaches maturity
+  - Tests are still valuable for catching bugs and documenting behavior
 
-- **When adding new code, you MUST:**
-  1. Write tests for new functions, routes, and services
-  2. Ensure new code doesn't lower overall coverage below thresholds
-  3. Run `npm run test:coverage` before committing
-  4. If coverage drops below thresholds, add more tests or refactor
-  5. Include test additions in the same PR as the code changes
+- **When adding new code:**
+  1. Write tests for new functions, routes, and services when feasible
+  2. Run `npm test` to verify tests pass
+  3. Include test additions in the same PR as code changes when practical
+  4. Focus on critical paths and bug-prone areas
 
-- **Test Coverage Best Practices:**
+- **Test Best Practices:**
   - **New routes**: Add integration tests in `backend/src/__tests__/`
   - **New services**: Add unit tests covering main code paths
   - **New components**: Add React component tests with user interactions
@@ -511,11 +508,11 @@ npm run test:coverage # Generate coverage report
   - Use `describe.skip` for tests requiring external resources not available in CI
   - Document why tests are skipped in test file comments
 
-- **Why This Matters:**
-  - CI will fail if coverage drops below thresholds
+- **Why Testing Matters:**
   - Untested code leads to bugs in production
   - Tests serve as documentation for future developers
-  - High coverage enables confident refactoring
+  - Good coverage enables confident refactoring
+  - Catches regressions early
 
 - **Example - Adding a New API Endpoint:**
   ```typescript

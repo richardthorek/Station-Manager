@@ -416,12 +416,6 @@ describe('Stations API', () => {
 
       expect(response.body).toHaveProperty('details');
       expect(response.body.error).toBe('Validation failed');
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('count');
-      expect(typeof response.body.count).toBe('number');
-      expect(response.body.count).toBeGreaterThan(0);
-      // In test environment, we have 10 test stations (not the full 4400+ dataset)
-      expect(response.body.count).toBe(10);
     });
   });
 
