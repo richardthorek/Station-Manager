@@ -161,3 +161,14 @@ export function getActiveTokenCount(): number {
   clearExpiredTokens(); // Clean up first
   return tokenStore.size;
 }
+
+/**
+ * Clear all tokens (for testing purposes)
+ * 
+ * @returns Number of tokens removed
+ */
+export function clearAllTokens(): number {
+  const count = tokenStore.size;
+  tokenStore.clear();
+  return count;
+}
