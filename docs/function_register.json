@@ -712,7 +712,41 @@
       "file": "backend/src/services/tableStorageDatabase.ts",
       "description": "Azure Table Storage implementation (production database)",
       "type": "class",
-      "note": "All methods are async and use @azure/data-tables SDK"
+      "note": "All methods are async and use @azure/data-tables SDK. Fixed Feb 2026: getAllMembers now properly filters by stationId.",
+      "methods": {
+        "getAllMembers": {
+          "signature": "getAllMembers(stationId?: string): Promise<Member[]>",
+          "line": 267,
+          "description": "Get all members filtered by stationId if provided. Fixed Feb 2026 to properly filter by station.",
+          "parameters": [
+            {
+              "name": "stationId",
+              "type": "string | undefined",
+              "description": "Optional station ID for filtering members by station. Validated to prevent injection attacks.",
+              "optional": true
+            }
+          ],
+          "returns": "Promise<Member[]>",
+          "complexity": "O(n) with OData filter",
+          "sideEffects": "Queries Azure Table Storage",
+          "security": "Validates stationId format (alphanumeric, dash, underscore only)"
+        },
+        "validateStationId": {
+          "signature": "validateStationId(stationId: string | undefined): void",
+          "line": 109,
+          "description": "Private helper to validate stationId format",
+          "parameters": [
+            {
+              "name": "stationId",
+              "type": "string | undefined",
+              "description": "Station ID to validate"
+            }
+          ],
+          "returns": "void",
+          "throws": "Error if stationId contains invalid characters",
+          "security": "Prevents injection attacks by validating format"
+        }
+      }
     },
     "tableStorageTruckChecksDatabase": {
       "file": "backend/src/services/tableStorageTruckChecksDatabase.ts",
