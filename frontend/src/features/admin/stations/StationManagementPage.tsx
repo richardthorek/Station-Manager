@@ -242,13 +242,18 @@ export function StationManagementPage() {
               aria-label="Search stations"
             />
           </div>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="primary-button"
-            aria-label="Create new station"
-          >
-            + Create Station
-          </button>
+          <div className="toolbar-actions">
+            <Link to="/admin/brigade-access" className="secondary-button">
+              🔑 Brigade Access
+            </Link>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="primary-button"
+              aria-label="Create new station"
+            >
+              + Create Station
+            </button>
+          </div>
         </div>
 
         {/* Station List */}

@@ -163,6 +163,16 @@ export function getActiveTokenCount(): number {
 }
 
 /**
+ * Get all active brigade access tokens (for admin utility)
+ * 
+ * @returns Array of all active brigade access tokens
+ */
+export function getAllBrigadeAccessTokens(): BrigadeAccessToken[] {
+  clearExpiredTokens(); // Clean up expired tokens first
+  return Array.from(tokenStore.values());
+}
+
+/**
  * Clear all tokens (for testing purposes)
  * 
  * @returns Number of tokens removed

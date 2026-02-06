@@ -159,6 +159,12 @@
   flex: 1;
 }
 
+.feature-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .feature-link {
   display: inline-flex;
   align-items: center;
@@ -171,6 +177,11 @@
   font-weight: 600;
   transition: background 0.2s;
   align-self: flex-start;
+}
+
+.feature-links .feature-link {
+  width: 100%;
+  justify-content: space-between;
 }
 
 .feature-link:hover {
