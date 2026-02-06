@@ -116,7 +116,7 @@ class DatabaseService {
     };
     this.stations.set(defaultStation.id, defaultStation);
 
-    // Seed default station with DEFAULT_MEMBERS (120+ real brigade members)
+    // Seed default station with DEFAULT_MEMBERS (105 real brigade members)
     DEFAULT_MEMBERS.forEach(seedMember => {
       const member: Member = {
         id: uuidv4(),
