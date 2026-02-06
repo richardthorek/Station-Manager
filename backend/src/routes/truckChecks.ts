@@ -38,6 +38,7 @@ import {
 } from '../middleware/truckCheckValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -75,7 +76,7 @@ router.get('/appliances', async (req: Request, res: Response) => {
     const appliances = await db.getAllAppliances(stationId);
     res.json(appliances);
   } catch (error) {
-    console.error('Error fetching appliances:', error);
+    logger.error('Error fetching appliances:', error);
     res.status(500).json({ error: 'Failed to fetch appliances' });
   }
 });
@@ -93,7 +94,7 @@ router.get('/appliances/:id', validateApplianceId, handleValidationErrors, async
     }
     res.json(appliance);
   } catch (error) {
-    console.error('Error fetching appliance:', error);
+    logger.error('Error fetching appliance:', error);
     res.status(500).json({ error: 'Failed to fetch appliance' });
   }
 });
@@ -115,7 +116,7 @@ router.post('/appliances', validateCreateAppliance, handleValidationErrors, asyn
     const appliance = await db.createAppliance(name, description, photoUrl, stationId);
     res.status(201).json(appliance);
   } catch (error) {
-    console.error('Error creating appliance:', error);
+    logger.error('Error creating appliance:', error);
     res.status(500).json({ error: 'Failed to create appliance' });
   }
 });
@@ -140,7 +141,7 @@ router.put('/appliances/:id', validateUpdateAppliance, handleValidationErrors, a
     
     res.json(appliance);
   } catch (error) {
-    console.error('Error updating appliance:', error);
+    logger.error('Error updating appliance:', error);
     res.status(500).json({ error: 'Failed to update appliance' });
   }
 });
@@ -158,7 +159,7 @@ router.delete('/appliances/:id', validateApplianceId, handleValidationErrors, as
     }
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting appliance:', error);
+    logger.error('Error deleting appliance:', error);
     res.status(500).json({ error: 'Failed to delete appliance' });
   }
 });
@@ -180,7 +181,7 @@ router.get('/templates/:applianceId', validateTemplateApplianceId, handleValidat
     }
     res.json(template);
   } catch (error) {
-    console.error('Error fetching template:', error);
+    logger.error('Error fetching template:', error);
     res.status(500).json({ error: 'Failed to fetch template' });
   }
 });
@@ -202,7 +203,7 @@ router.put('/templates/:applianceId', validateUpdateTemplate, handleValidationEr
     const template = await db.updateTemplate(req.params.applianceId, items, stationId);
     res.json(template);
   } catch (error) {
-    console.error('Error updating template:', error);
+    logger.error('Error updating template:', error);
     res.status(500).json({ error: 'Failed to update template' });
   }
 });
@@ -259,7 +260,7 @@ router.post('/runs', validateCreateCheckRun, handleValidationErrors, async (req:
       res.status(201).json({ ...checkRun, joined: false });
     }
   } catch (error) {
-    console.error('Error creating/joining check run:', error);
+    logger.error('Error creating/joining check run:', error);
     res.status(500).json({ error: 'Failed to create/join check run' });
   }
 });
@@ -277,7 +278,7 @@ router.get('/runs/:id', validateCheckRunId, handleValidationErrors, async (req: 
     }
     res.json(checkRun);
   } catch (error) {
-    console.error('Error fetching check run:', error);
+    logger.error('Error fetching check run:', error);
     res.status(500).json({ error: 'Failed to fetch check run' });
   }
 });
@@ -318,7 +319,7 @@ router.get('/runs', validateCheckRunQuery, handleValidationErrors, async (req: R
     
     res.json(runs);
   } catch (error) {
-    console.error('Error fetching check runs:', error);
+    logger.error('Error fetching check runs:', error);
     res.status(500).json({ error: 'Failed to fetch check runs' });
   }
 });
@@ -347,7 +348,7 @@ router.put('/runs/:id/complete', validateCompleteCheckRun, handleValidationError
     
     res.json(checkRun);
   } catch (error) {
-    console.error('Error completing check run:', error);
+    logger.error('Error completing check run:', error);
     res.status(500).json({ error: 'Failed to complete check run' });
   }
 });
@@ -398,7 +399,7 @@ router.post('/results', validateCreateCheckResult, handleValidationErrors, async
     
     res.status(201).json(result);
   } catch (error) {
-    console.error('Error creating check result:', error);
+    logger.error('Error creating check result:', error);
     res.status(500).json({ error: 'Failed to create check result' });
   }
 });
@@ -433,7 +434,7 @@ router.put('/results/:id', validateUpdateCheckResult, handleValidationErrors, as
     
     res.json(result);
   } catch (error) {
-    console.error('Error updating check result:', error);
+    logger.error('Error updating check result:', error);
     res.status(500).json({ error: 'Failed to update check result' });
   }
 });
@@ -451,7 +452,7 @@ router.delete('/results/:id', validateCheckResultId, handleValidationErrors, asy
     }
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting check result:', error);
+    logger.error('Error deleting check result:', error);
     res.status(500).json({ error: 'Failed to delete check result' });
   }
 });
@@ -484,7 +485,7 @@ router.post('/upload/reference-photo', upload.single('photo'), async (req: Reque
 
     res.status(201).json({ photoUrl });
   } catch (error) {
-    console.error('Error uploading reference photo:', error);
+    logger.error('Error uploading reference photo:', error);
     res.status(500).json({ error: 'Failed to upload reference photo' });
   }
 });
@@ -513,7 +514,7 @@ router.post('/upload/result-photo', upload.single('photo'), async (req: Request,
 
     res.status(201).json({ photoUrl });
   } catch (error) {
-    console.error('Error uploading result photo:', error);
+    logger.error('Error uploading result photo:', error);
     res.status(500).json({ error: 'Failed to upload result photo' });
   }
 });

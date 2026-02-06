@@ -15,6 +15,7 @@ import { AchievementService } from '../services/achievementService';
 import { ensureDatabase } from '../services/dbFactory';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { stationMiddleware } from '../middleware/stationMiddleware';
+import { logger } from '../services/logger';
 
 export function createAchievementRoutes(): Router {
   const router = Router();
@@ -47,7 +48,7 @@ export function createAchievementRoutes(): Router {
       
       res.json(summary);
     } catch (error) {
-      console.error('Error fetching achievements:', error);
+      logger.error('Error fetching achievements:', { error, requestId: req.id }, error);
       res.status(500).json({ error: 'Failed to fetch achievements' });
     }
   });
@@ -77,7 +78,7 @@ export function createAchievementRoutes(): Router {
         totalNew: summary.recentlyEarned.length,
       });
     } catch (error) {
-      console.error('Error fetching recent achievements:', error);
+      logger.error('Error fetching recent achievements:', { error, requestId: req.id }, error);
       res.status(500).json({ error: 'Failed to fetch recent achievements' });
     }
   });
@@ -107,7 +108,7 @@ export function createAchievementRoutes(): Router {
         activeStreaks: summary.activeStreaks,
       });
     } catch (error) {
-      console.error('Error fetching achievement progress:', error);
+      logger.error('Error fetching achievement progress:', { error, requestId: req.id }, error);
       res.status(500).json({ error: 'Failed to fetch achievement progress' });
     }
   });

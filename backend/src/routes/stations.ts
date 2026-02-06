@@ -22,6 +22,7 @@ import {
 } from '../middleware/stationValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { getRFSFacilitiesParser } from '../services/rfsFacilitiesParser';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -74,7 +75,7 @@ router.get('/lookup', async (req, res) => {
       location: lat !== undefined && lon !== undefined ? { lat, lon } : undefined
     });
   } catch (error) {
-    console.error('Error in station lookup:', error);
+    logger.error('Error in station lookup:', error);
     res.status(500).json({
       error: 'Failed to lookup stations',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -106,7 +107,7 @@ router.get('/count', async (req, res) => {
       available: true
     });
   } catch (error) {
-    console.error('Error getting station count:', error);
+    logger.error('Error getting station count:', error);
     res.status(500).json({
       error: 'Failed to get station count',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -128,7 +129,7 @@ router.get('/brigade/:brigadeId', validateBrigadeId, handleValidationErrors, asy
     
     res.json({ stations, count: stations.length });
   } catch (error) {
-    console.error('Error fetching stations by brigade:', error);
+    logger.error('Error fetching stations by brigade:', error);
     res.status(500).json({ error: 'Failed to fetch stations' });
   }
 });
@@ -179,7 +180,7 @@ router.get('/', validateStationQuery, handleValidationErrors, async (req: Reques
       },
     });
   } catch (error) {
-    console.error('Error fetching stations:', error);
+    logger.error('Error fetching stations:', error);
     res.status(500).json({ error: 'Failed to fetch stations' });
   }
 });
@@ -199,7 +200,7 @@ router.get('/:id', validateStationId, handleValidationErrors, async (req: Reques
     
     res.json(station);
   } catch (error) {
-    console.error('Error fetching station:', error);
+    logger.error('Error fetching station:', error);
     res.status(500).json({ error: 'Failed to fetch station' });
   }
 });
@@ -238,7 +239,7 @@ router.post('/', validateCreateStation, handleValidationErrors, async (req: Requ
     
     res.status(201).json(newStation);
   } catch (error) {
-    console.error('Error creating station:', error);
+    logger.error('Error creating station:', error);
     res.status(500).json({ error: 'Failed to create station' });
   }
 });
@@ -281,7 +282,7 @@ router.put('/:id', validateStationId, validateUpdateStation, handleValidationErr
     
     res.json(updatedStation);
   } catch (error) {
-    console.error('Error updating station:', error);
+    logger.error('Error updating station:', error);
     res.status(500).json({ error: 'Failed to update station' });
   }
 });
@@ -328,7 +329,7 @@ router.delete('/:id', validateStationId, handleValidationErrors, async (req: Req
       stationId: id,
     });
   } catch (error) {
-    console.error('Error deleting station:', error);
+    logger.error('Error deleting station:', error);
     res.status(500).json({ error: 'Failed to delete station' });
   }
 });
@@ -350,10 +351,10 @@ router.post('/demo/reset', async (req: Request, res: Response) => {
     const truckChecksDb = await (await import('../services/truckChecksDbFactory')).ensureTruckChecksDatabase(req.isDemoMode);
     const { DEMO_STATION_ID } = await import('../constants/stations');
     
-    console.log('🔄 Resetting demo station...');
+    logger.info('Resetting demo station');
     
     // Step 1: Delete all demo station data
-    console.log('  🗑️  Deleting demo station data...');
+    logger.info('Deleting demo station data');
     
     // Delete check-ins
     const checkIns = await db.getAllCheckIns(DEMO_STATION_ID);
@@ -388,14 +389,14 @@ router.post('/demo/reset', async (req: Request, res: Response) => {
       await truckChecksDb.deleteAppliance(appliance.id);
     }
     
-    console.log('  ✅ Demo station data deleted');
+    logger.info('Demo station data deleted');
     
     // Step 2: Reseed demo station
-    console.log('  🌱 Reseeding demo station...');
+    logger.info('Reseeding demo station');
     const { seedDemoStation } = await import('../scripts/seedDemoStation');
     await seedDemoStation();
     
-    console.log('✅ Demo station reset complete');
+    logger.info('Demo station reset complete');
     
     // Emit WebSocket event to notify clients
     const io = req.app.get('io');
@@ -413,7 +414,7 @@ router.post('/demo/reset', async (req: Request, res: Response) => {
       resetAt: new Date(),
     });
   } catch (error) {
-    console.error('Error resetting demo station:', error);
+    logger.error('Error resetting demo station:', error);
     res.status(500).json({ 
       error: 'Failed to reset demo station',
       message: error instanceof Error ? error.message : 'Unknown error',

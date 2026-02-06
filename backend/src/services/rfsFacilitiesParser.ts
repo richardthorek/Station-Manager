@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { logger } from './logger';
 import * as path from 'path';
 import { BlobServiceClient } from '@azure/storage-blob';
 import type { StationHierarchy, StationSearchResult } from '../types/stations';
@@ -30,12 +31,12 @@ class RFSFacilitiesParser {
     const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     
     if (!connectionString) {
-      console.log('   ℹ️  Azure Storage not configured - skipping blob download');
+      logger.info('   ℹ️  Azure Storage not configured - skipping blob download');
       return false;
     }
 
     try {
-      console.log('   🌐 Attempting to download CSV from Azure Blob Storage...');
+      logger.info('   🌐 Attempting to download CSV from Azure Blob Storage...');
       
       const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
       const containerClient = blobServiceClient.getContainerClient(this.blobContainerName);
@@ -44,7 +45,7 @@ class RFSFacilitiesParser {
       // Check if blob exists
       const exists = await blobClient.exists();
       if (!exists) {
-        console.log(`   ℹ️  Blob ${this.blobName} not found in container ${this.blobContainerName}`);
+        logger.info(`   ℹ️  Blob ${this.blobName} not found in container ${this.blobContainerName}`);
         return false;
       }
 
@@ -56,10 +57,10 @@ class RFSFacilitiesParser {
 
       // Download the blob to local file
       await blobClient.downloadToFile(this.csvPath);
-      console.log(`   ✅ Downloaded CSV from blob storage to ${this.csvPath}`);
+      logger.info(`   ✅ Downloaded CSV from blob storage to ${this.csvPath}`);
       return true;
     } catch (error) {
-      console.error('   ❌ Error downloading CSV from blob storage:', error);
+      logger.error('   ❌ Error downloading CSV from blob storage:', error);
       return false;
     }
   }
@@ -79,15 +80,15 @@ class RFSFacilitiesParser {
       
       // If file doesn't exist, try to download from blob storage
       if (!fileExists) {
-        console.log('   📂 CSV file not found locally, checking Azure Blob Storage...');
+        logger.info('   📂 CSV file not found locally, checking Azure Blob Storage...');
         fileExists = await this.downloadFromBlobStorage();
       }
       
       if (!fileExists) {
-        console.warn(`⚠️  CSV file not found at ${this.csvPath} - Station lookup features will be unavailable`);
-        console.warn(`   To enable station lookup, either:`);
-        console.warn(`   1. Upload rfs-facilities.csv to Azure Blob Storage container '${this.blobContainerName}'`);
-        console.warn(`   2. Download from atlas.gov.au and place at ${this.csvPath}`);
+        logger.warn(`⚠️  CSV file not found at ${this.csvPath} - Station lookup features will be unavailable`);
+        logger.warn(`   To enable station lookup, either:`);
+        logger.warn(`   1. Upload rfs-facilities.csv to Azure Blob Storage container '${this.blobContainerName}'`);
+        logger.warn(`   2. Download from atlas.gov.au and place at ${this.csvPath}`);
         // Dual-flag pattern: isLoaded=true prevents repeated warnings, loadSucceeded=false tracks actual status
         this.isLoaded = true; 
         this.loadSucceeded = false;
@@ -114,11 +115,11 @@ class RFSFacilitiesParser {
         return acc;
       }, {} as Record<string, number>);
       
-      console.log(`✅ Loaded ${this.stations.length} fire service facilities nationally from ${this.csvPath}`);
-      console.log(`   Breakdown by state: ${Object.entries(byState).map(([state, count]) => `${state}: ${count}`).join(', ')}`);
+      logger.info(`✅ Loaded ${this.stations.length} fire service facilities nationally from ${this.csvPath}`);
+      logger.info(`   Breakdown by state: ${Object.entries(byState).map(([state, count]) => `${state}: ${count}`).join(', ')}`);
       return true;
     } catch (error) {
-      console.error('❌ Error loading fire service facilities CSV:', error);
+      logger.error('❌ Error loading fire service facilities CSV:', error);
       // Dual-flag pattern: isLoaded=true prevents repeated errors, loadSucceeded=false tracks actual status
       this.isLoaded = true;
       this.loadSucceeded = false;

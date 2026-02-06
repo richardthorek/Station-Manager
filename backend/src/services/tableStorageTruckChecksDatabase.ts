@@ -1,4 +1,5 @@
 import { TableClient, TableEntity, odata } from '@azure/data-tables';
+import { logger } from './logger';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Appliance,
@@ -76,27 +77,27 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     let lastError: any;
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        console.log(`🔌 Connecting to Azure Table Storage for Truck Checks (attempt ${attempt}/${retries})...`);
+        logger.info(`🔌 Connecting to Azure Table Storage for Truck Checks (attempt ${attempt}/${retries})...`);
         
         await Promise.all([
           this.appliancesTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating Appliances table:', err.message);
+              logger.warn('Warning creating Appliances table:', err.message);
             }
           }),
           this.templatesTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating Templates table:', err.message);
+              logger.warn('Warning creating Templates table:', err.message);
             }
           }),
           this.checkRunsTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating CheckRuns table:', err.message);
+              logger.warn('Warning creating CheckRuns table:', err.message);
             }
           }),
           this.checkResultsTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating CheckResults table:', err.message);
+              logger.warn('Warning creating CheckResults table:', err.message);
             }
           }),
         ]);
@@ -104,21 +105,21 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
         await this.initializeDefaultAppliances();
         
         this.isConnected = true;
-        console.log(`✅ Connected to Table Storage for Truck Checks (attempt ${attempt}/${retries})`);
+        logger.info(`✅ Connected to Table Storage for Truck Checks (attempt ${attempt}/${retries})`);
         return; // Success, exit function
       } catch (error) {
         lastError = error;
-        console.error(`❌ Failed to connect to Table Storage for Truck Checks (attempt ${attempt}/${retries}):`, error);
+        logger.error(`❌ Failed to connect to Table Storage for Truck Checks (attempt ${attempt}/${retries}):`, error);
         
         if (attempt < retries) {
-          console.log(`⏳ Retrying in ${delayMs}ms...`);
+          logger.info(`⏳ Retrying in ${delayMs}ms...`);
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
       }
     }
     
     // All retries failed
-    console.error('❌ All connection attempts failed for Truck Checks. Last error:', lastError);
+    logger.error('❌ All connection attempts failed for Truck Checks. Last error:', lastError);
     throw lastError || new Error(`Failed to connect to Table Storage for Truck Checks after ${retries} attempts`);
   }
 
@@ -148,10 +149,10 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
           await this.createAppliance(app.name, app.description);
         }
 
-        console.log('✅ Initialized default appliances');
+        logger.info('✅ Initialized default appliances');
       }
     } catch (error) {
-      console.error('Error initializing default appliances:', error);
+      logger.error('Error initializing default appliances:', error);
     }
   }
 
@@ -585,14 +586,14 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
   ): Promise<CheckResult | null> {
     // Need to find which run this result belongs to
     // This is inefficient without the runId
-    console.warn('updateCheckResult: Inefficient without runId in Table Storage');
+    logger.warn('updateCheckResult: Inefficient without runId in Table Storage');
     return null;
   }
 
   async deleteCheckResult(id: string): Promise<boolean> {
     // Need to find which run this result belongs to
     // This is inefficient without the runId
-    console.warn('deleteCheckResult: Inefficient without runId in Table Storage');
+    logger.warn('deleteCheckResult: Inefficient without runId in Table Storage');
     return false;
   }
 
