@@ -266,6 +266,10 @@ export class TableStorageDatabase {
     let filter = odata`PartitionKey eq 'Member'`;
     
     if (stationId) {
+      // Validate stationId to prevent injection (alphanumeric, dash, underscore only)
+      if (!/^[a-zA-Z0-9_-]+$/.test(stationId)) {
+        throw new Error('Invalid stationId: must contain only alphanumeric characters, dashes, and underscores');
+      }
       // Filter by specific station
       filter = odata`PartitionKey eq 'Member' and stationId eq ${stationId}`;
     }
@@ -311,6 +315,11 @@ export class TableStorageDatabase {
     name: string,
     details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }
   ): Promise<Member> {
+    // Validate stationId if provided
+    if (details?.stationId && !/^[a-zA-Z0-9_-]+$/.test(details.stationId)) {
+      throw new Error('Invalid stationId: must contain only alphanumeric characters, dashes, and underscores');
+    }
+    
     const now = new Date();
     const member: Member = {
       id: uuidv4(),
