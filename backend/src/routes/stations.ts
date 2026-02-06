@@ -49,6 +49,14 @@ router.get('/lookup', async (req, res) => {
     // Ensure data is loaded
     await parser.loadData();
 
+    // Check if CSV data is available
+    if (!parser.isDataAvailable()) {
+      return res.status(503).json({
+        error: 'Station lookup service unavailable',
+        message: 'RFS facilities CSV data is not available. Please contact the administrator.'
+      });
+    }
+
     // Validate that at least one parameter is provided
     if (!query && (lat === undefined || lon === undefined)) {
       return res.status(400).json({
@@ -85,8 +93,17 @@ router.get('/count', async (req, res) => {
     const parser = getRFSFacilitiesParser();
     await parser.loadData();
     
+    if (!parser.isDataAvailable()) {
+      return res.json({
+        count: 0,
+        available: false,
+        message: 'RFS facilities CSV data is not available'
+      });
+    }
+    
     res.json({
-      count: parser.getCount()
+      count: parser.getCount(),
+      available: true
     });
   } catch (error) {
     console.error('Error getting station count:', error);

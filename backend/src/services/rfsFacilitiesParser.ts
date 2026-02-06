@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { BlobServiceClient } from '@azure/storage-blob';
 import type { StationHierarchy, StationSearchResult } from '../types/stations';
 
 /**
@@ -11,6 +12,8 @@ class RFSFacilitiesParser {
   private stations: StationHierarchy[] = [];
   private isLoaded = false;
   private readonly csvPath: string;
+  private readonly blobContainerName = 'data-files';
+  private readonly blobName = 'rfs-facilities.csv';
 
   constructor() {
     // In production (dist/), path is dist/services/../data/rfs-facilities.csv
@@ -19,17 +22,73 @@ class RFSFacilitiesParser {
   }
 
   /**
-   * Load and parse the CSV file
+   * Download CSV file from Azure Blob Storage if not present locally
+   * Returns true if file was downloaded successfully or already exists
    */
-  async loadData(): Promise<void> {
-    if (this.isLoaded) {
-      return;
+  private async downloadFromBlobStorage(): Promise<boolean> {
+    const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+    
+    if (!connectionString) {
+      console.log('   ℹ️  Azure Storage not configured - skipping blob download');
+      return false;
     }
 
     try {
-      // Check if file exists
-      if (!fs.existsSync(this.csvPath)) {
-        throw new Error(`CSV file not found at ${this.csvPath}`);
+      console.log('   🌐 Attempting to download CSV from Azure Blob Storage...');
+      
+      const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+      const containerClient = blobServiceClient.getContainerClient(this.blobContainerName);
+      const blobClient = containerClient.getBlobClient(this.blobName);
+      
+      // Check if blob exists
+      const exists = await blobClient.exists();
+      if (!exists) {
+        console.log(`   ℹ️  Blob ${this.blobName} not found in container ${this.blobContainerName}`);
+        return false;
+      }
+
+      // Create directory if it doesn't exist
+      const dir = path.dirname(this.csvPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      // Download the blob to local file
+      await blobClient.downloadToFile(this.csvPath);
+      console.log(`   ✅ Downloaded CSV from blob storage to ${this.csvPath}`);
+      return true;
+    } catch (error) {
+      console.error('   ❌ Error downloading CSV from blob storage:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Load and parse the CSV file
+   * Returns true if data was loaded, false if file not found (graceful degradation)
+   */
+  async loadData(): Promise<boolean> {
+    if (this.isLoaded) {
+      return this.stations.length > 0;
+    }
+
+    try {
+      // Check if file exists locally
+      let fileExists = fs.existsSync(this.csvPath);
+      
+      // If file doesn't exist, try to download from blob storage
+      if (!fileExists) {
+        console.log('   📂 CSV file not found locally, checking Azure Blob Storage...');
+        fileExists = await this.downloadFromBlobStorage();
+      }
+      
+      if (!fileExists) {
+        console.warn(`⚠️  CSV file not found at ${this.csvPath} - Station lookup features will be unavailable`);
+        console.warn(`   To enable station lookup, either:`);
+        console.warn(`   1. Upload rfs-facilities.csv to Azure Blob Storage container '${this.blobContainerName}'`);
+        console.warn(`   2. Download from atlas.gov.au and place at ${this.csvPath}`);
+        this.isLoaded = true; // Mark as loaded to prevent repeated warnings
+        return false;
       }
 
       const csvContent = fs.readFileSync(this.csvPath, 'utf-8');
@@ -53,9 +112,12 @@ class RFSFacilitiesParser {
       
       console.log(`✅ Loaded ${this.stations.length} fire service facilities nationally from ${this.csvPath}`);
       console.log(`   Breakdown by state: ${Object.entries(byState).map(([state, count]) => `${state}: ${count}`).join(', ')}`);
+      return true;
     } catch (error) {
       console.error('❌ Error loading fire service facilities CSV:', error);
-      throw error;
+      // Don't throw - allow app to start without CSV data
+      this.isLoaded = true; // Mark as loaded to prevent repeated errors
+      return false;
     }
   }
 
@@ -330,6 +392,14 @@ class RFSFacilitiesParser {
    */
   getCount(): number {
     return this.stations.length;
+  }
+
+  /**
+   * Check if CSV data is available
+   * Returns true if CSV data was successfully loaded, false otherwise
+   */
+  isDataAvailable(): boolean {
+    return this.isLoaded && this.stations.length > 0;
   }
 }
 
