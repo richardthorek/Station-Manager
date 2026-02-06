@@ -65,6 +65,10 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 3000;
 
+// Trust first proxy (Azure App Service) for correct client IP identification
+// This enables express-rate-limit to work correctly with X-Forwarded-For header
+app.set('trust proxy', 1);
+
 // Make Socket.io instance available to routes
 app.set('io', io);
 
