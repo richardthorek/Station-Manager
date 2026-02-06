@@ -1,0 +1,358 @@
+/* Bulk Import Modal Styles */
+
+.bulk-import-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.bulk-import-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--rfs-light-grey);
+}
+
+.bulk-import-modal .modal-header h2 {
+  margin: 0;
+  color: var(--rfs-core-red);
+  font-size: 1.75rem;
+}
+
+.bulk-import-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* Import Instructions */
+.import-instructions {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.import-instructions p {
+  margin-bottom: 1rem;
+  color: var(--rfs-dark-grey);
+  line-height: 1.5;
+}
+
+.btn-download-sample {
+  background-color: var(--ui-blue);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 200ms;
+}
+
+.btn-download-sample:hover {
+  background-color: #184a7a;
+}
+
+/* Upload Area */
+.upload-area {
+  border: 3px dashed var(--rfs-light-grey);
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 200ms;
+  background-color: #f9f9f9;
+}
+
+.upload-area:hover,
+.upload-area.dragging {
+  border-color: var(--rfs-core-red);
+  background-color: #fff5f5;
+}
+
+.upload-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.upload-area p {
+  margin: 0.5rem 0;
+  color: var(--rfs-dark-grey);
+  font-size: 1.1rem;
+}
+
+.upload-or {
+  color: var(--rfs-light-grey);
+  font-weight: 500;
+  margin: 1rem 0 !important;
+}
+
+.btn-browse {
+  background-color: var(--rfs-core-red);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 200ms;
+}
+
+.btn-browse:hover {
+  background-color: #c71f15;
+}
+
+/* File Info */
+.file-info {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.file-info p {
+  margin: 0.25rem 0;
+  color: var(--rfs-dark-grey);
+}
+
+.btn-change-file {
+  background-color: var(--rfs-light-grey);
+  color: var(--rfs-dark-grey);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 200ms;
+}
+
+.btn-change-file:hover {
+  background-color: var(--rfs-dark-grey);
+  color: white;
+}
+
+/* Preview Table */
+.preview-table-container {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--rfs-light-grey);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.preview-table thead {
+  position: sticky;
+  top: 0;
+  background-color: var(--rfs-core-red);
+  color: white;
+  z-index: 1;
+}
+
+.preview-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.preview-table tbody tr {
+  border-bottom: 1px solid var(--rfs-light-grey);
+}
+
+.preview-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.preview-table td {
+  padding: 0.75rem 1rem;
+}
+
+.preview-table tr.valid {
+  background-color: #f0fdf4;
+}
+
+.preview-table tr.duplicate {
+  background-color: #fffbeb;
+}
+
+.preview-table tr.invalid {
+  background-color: #fef2f2;
+}
+
+.status-valid {
+  color: var(--ui-green);
+  font-weight: 600;
+}
+
+.status-duplicate {
+  color: var(--ui-amber);
+  font-weight: 600;
+}
+
+.status-invalid {
+  color: var(--rfs-core-red);
+  font-weight: 600;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rfs-light-grey);
+}
+
+.btn-cancel {
+  background-color: transparent;
+  color: var(--rfs-dark-grey);
+  border: 2px solid var(--rfs-light-grey);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 200ms;
+}
+
+.btn-cancel:hover {
+  border-color: var(--rfs-dark-grey);
+  background-color: var(--rfs-dark-grey);
+  color: white;
+}
+
+.btn-import {
+  background-color: var(--ui-green);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 200ms;
+}
+
+.btn-import:hover:not(:disabled) {
+  background-color: #006b40;
+}
+
+.btn-import:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Import Result */
+.import-result {
+  text-align: center;
+  padding: 2rem;
+}
+
+.import-result h3 {
+  color: var(--ui-green);
+  margin-bottom: 1rem;
+  font-size: 1.75rem;
+}
+
+.result-summary {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.failed-imports {
+  background-color: #fef2f2;
+  border: 1px solid var(--rfs-core-red);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.failed-imports h4 {
+  color: var(--rfs-core-red);
+  margin-bottom: 0.5rem;
+}
+
+.failed-imports ul {
+  list-style: none;
+  padding: 0;
+}
+
+.failed-imports li {
+  padding: 0.25rem 0;
+  color: var(--rfs-dark-grey);
+}
+
+.btn-close-result {
+  background-color: var(--rfs-core-red);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 200ms;
+}
+
+.btn-close-result:hover {
+  background-color: #c71f15;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: var(--rfs-dark-grey);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 200ms;
+}
+
+.btn-close:hover {
+  background-color: #f0f0f0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .bulk-import-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .preview-table-container {
+    max-height: 300px;
+  }
+
+  .file-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-import {
+    width: 100%;
+  }
+}

@@ -230,6 +230,68 @@ class ApiService {
     return response.json();
   }
 
+  async importMembersCSV(file: File): Promise<{
+    totalRows: number;
+    validCount: number;
+    invalidCount: number;
+    duplicateCount: number;
+    validationResults: Array<{
+      row: number;
+      data: {
+        firstName?: string;
+        lastName?: string;
+        name: string;
+        rank?: string;
+        roles?: string;
+      };
+      isValid: boolean;
+      isDuplicate: boolean;
+      errors: string[];
+    }>;
+  }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/members/import`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to import CSV');
+    }
+
+    return response.json();
+  }
+
+  async executeMemberImport(members: Array<{
+    firstName?: string;
+    lastName?: string;
+    name: string;
+    rank?: string;
+  }>): Promise<{
+    totalAttempted: number;
+    successCount: number;
+    failureCount: number;
+    successful: Array<{ name: string; id: string; qrCode: string }>;
+    failed: Array<{ name: string; error: string }>;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/members/import/execute`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ members }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to execute import');
+    }
+
+    return response.json();
+  }
+
   // Activities
   async getActivities(): Promise<Activity[]> {
     const response = await fetch(`${API_BASE_URL}/activities`);
