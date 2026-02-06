@@ -11,6 +11,7 @@ import type { StationHierarchy, StationSearchResult } from '../types/stations';
 class RFSFacilitiesParser {
   private stations: StationHierarchy[] = [];
   private isLoaded = false;
+  private loadSucceeded = false; // Track whether data was successfully loaded
   private readonly csvPath: string;
   private readonly blobContainerName = 'data-files';
   private readonly blobName = 'rfs-facilities.csv';
@@ -69,7 +70,7 @@ class RFSFacilitiesParser {
    */
   async loadData(): Promise<boolean> {
     if (this.isLoaded) {
-      return this.stations.length > 0;
+      return this.loadSucceeded; // Return whether previous load was successful
     }
 
     try {
@@ -88,6 +89,7 @@ class RFSFacilitiesParser {
         console.warn(`   1. Upload rfs-facilities.csv to Azure Blob Storage container '${this.blobContainerName}'`);
         console.warn(`   2. Download from atlas.gov.au and place at ${this.csvPath}`);
         this.isLoaded = true; // Mark as loaded to prevent repeated warnings
+        this.loadSucceeded = false;
         return false;
       }
 
@@ -103,6 +105,7 @@ class RFSFacilitiesParser {
         .filter((station): station is StationHierarchy => station !== null);
 
       this.isLoaded = true;
+      this.loadSucceeded = true;
       
       // Count by state for logging
       const byState = this.stations.reduce((acc, s) => {
@@ -117,6 +120,7 @@ class RFSFacilitiesParser {
       console.error('❌ Error loading fire service facilities CSV:', error);
       // Don't throw - allow app to start without CSV data
       this.isLoaded = true; // Mark as loaded to prevent repeated errors
+      this.loadSucceeded = false;
       return false;
     }
   }
@@ -399,7 +403,7 @@ class RFSFacilitiesParser {
    * Returns true if CSV data was successfully loaded, false otherwise
    */
   isDataAvailable(): boolean {
-    return this.isLoaded && this.stations.length > 0;
+    return this.loadSucceeded && this.stations.length > 0;
   }
 }
 
