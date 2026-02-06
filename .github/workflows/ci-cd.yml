@@ -21,27 +21,33 @@
 #   - Deployment only occurs if all above gates pass
 #   - Post-deployment tests validate live application
 #
-# Deployment Optimization Strategy:
-#   OPTIMIZED FOR SPEED AND RELIABILITY:
+# Deployment Strategy:
+#   OPTIMIZED FOR RELIABILITY:
 #
 #   Artifact Packaging:
 #     - Ships pre-built backend/dist (compiled TypeScript)
 #     - Ships pre-built frontend/dist (optimized static assets)
-#     - Ships package.json and package-lock.json (for dependency installation)
-#     - Does NOT ship node_modules (reduces artifact size by 50-100MB)
+#     - Ships backend/node_modules (production dependencies pre-installed)
+#     - Ships package.json and package-lock.json (for reference)
 #     - Does NOT ship source code (.ts files)
 #
-#   Azure App Service Deployment:
+#   Azure App Service Deployment (Windows/IIS):
 #     - SCM_DO_BUILD_DURING_DEPLOYMENT=false (no redundant builds)
-#     - Dependencies installed fresh on server via npm ci --production
-#     - startup.sh handles dependency installation gracefully
+#     - Dependencies pre-installed in CI/CD (deterministic, fast startup)
+#     - No server-side npm install needed (avoids network/timing issues)
 #     - Ensures consistent environment with locked dependencies
 #
+#   Why Include node_modules:
+#     - Azure App Service on Windows/IIS doesn't execute startup.sh
+#     - With SCM_DO_BUILD_DURING_DEPLOYMENT=false, no npm install runs
+#     - Pre-installing deps in CI/CD ensures immediate availability
+#     - Deterministic builds with exact versions from package-lock.json
+#
 #   Benefits:
-#     - 50-60% faster deployment (2-3 min vs 4-6 min)
-#     - Smaller artifact size (faster upload)
-#     - Fresh dependency installation (no version drift)
-#     - Clean, reproducible deployments
+#     - Reliable deployments (no missing dependencies)
+#     - Fast startup time (no npm install delay)
+#     - Deterministic builds (exact versions every time)
+#     - No dependency resolution failures in production
 #
 # Post-Deployment Testing Strategy:
 #   TWO-PHASE APPROACH FOR EFFICIENCY:
@@ -421,12 +427,18 @@ jobs:
           echo "GIT_COMMIT_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)" >> backend/dist/.env
           echo "BUILD_TIMESTAMP=${BUILD_TIMESTAMP}" >> backend/dist/.env
 
+      - name: Install production dependencies
+        run: |
+          cd backend
+          npm ci --production
+      
       - name: Create deployment package
         run: |
           mkdir -p deploy/backend
           mkdir -p deploy/frontend
           cp package.json deploy/
           cp -r backend/dist deploy/backend/
+          cp -r backend/node_modules deploy/backend/
           cp backend/package.json deploy/backend/
           cp backend/package-lock.json deploy/backend/
           cp -r frontend/dist deploy/frontend/
