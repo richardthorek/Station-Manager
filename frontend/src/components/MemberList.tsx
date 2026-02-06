@@ -96,13 +96,47 @@ export function MemberList({
   }, [debouncedSearchTerm, filter, sort, initialMembers]);
 
   // Apply letter filter locally (after API filtering)
+  // Also apply partitioning: active members (within last year) at top, inactive at bottom
   const displayedMembers = useMemo(() => {
+    let result = [...filteredMembers];
+    
+    // Apply letter filter if selected
     if (selectedLetter) {
-      return filteredMembers.filter(member =>
+      result = result.filter(member =>
         member.name.toLowerCase().startsWith(selectedLetter.toLowerCase())
       );
+      // When letter filter is active, don't partition - just return filtered list
+      return result;
     }
-    return filteredMembers;
+    
+    // Partition members by activity (only when no letter filter)
+    // Active: signed in within last year OR created within last year (grace period)
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    
+    const activeMembers: typeof result = [];
+    const inactiveMembers: typeof result = [];
+    
+    result.forEach(member => {
+      const lastSignIn = member.lastSignIn ? new Date(member.lastSignIn) : null;
+      const createdAt = new Date(member.createdAt);
+      
+      // Member is "active" if they signed in within a year OR were created within a year
+      const isActive = (lastSignIn && lastSignIn >= oneYearAgo) || createdAt >= oneYearAgo;
+      
+      if (isActive) {
+        activeMembers.push(member);
+      } else {
+        inactiveMembers.push(member);
+      }
+    });
+    
+    // Sort each partition alphabetically
+    activeMembers.sort((a, b) => a.name.localeCompare(b.name));
+    inactiveMembers.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Combine: active first, then inactive
+    return [...activeMembers, ...inactiveMembers];
   }, [filteredMembers, selectedLetter]);
 
   const handleAddMember = () => {
