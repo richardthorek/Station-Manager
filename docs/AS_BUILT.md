@@ -622,13 +622,15 @@ If CSV data is unavailable:
 
 ### Overview
 
-**Status:** ✅ Implemented (January 2026)
+**Status:** ✅ Implemented (January 2026) - **Fixed:** Brigade membership isolation bug (February 2026)
 
 The system supports multi-tenant operation where each RFS station's data (members, activities, events, truck checks) is isolated by `stationId`. This enables:
 - **Single deployment serving multiple stations** - Cost-effective shared infrastructure
 - **Data isolation** - Stations cannot access each other's data
 - **Brigade-level visibility** - Future support for brigades with multiple stations
 - **Backward compatibility** - Existing single-station deployments unaffected
+
+**Recent Fix (February 2026):** Fixed critical bug in Azure Table Storage implementation where `getAllMembers()` was not filtering by `stationId`, causing new brigades to incorrectly show all members from other stations. The fix ensures proper data isolation across all database implementations.
 
 ### Station Identification
 
@@ -710,6 +712,19 @@ interface Activity {
 
 // Similar for CheckIn, Event, CheckRun, etc.
 ```
+
+#### Database Implementation Notes
+
+**In-Memory Database (`database.ts`):**
+- ✅ Correctly filters by `stationId` in `getAllMembers(stationId?: string)`
+- ✅ Stores `stationId` in member entities
+- ✅ Uses `getEffectiveStationId()` for default handling
+
+**Table Storage Database (`tableStorageDatabase.ts`):**
+- ✅ Fixed (Feb 2026): Now filters by `stationId` in `getAllMembers(stationId?: string)`
+- ✅ Stores `stationId` in member table entities
+- ✅ Validates `stationId` format to prevent injection attacks (alphanumeric, dash, underscore only)
+- ✅ Consistent with in-memory database behavior
 
 ### Shared vs Station-Specific Data
 

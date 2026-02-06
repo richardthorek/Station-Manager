@@ -100,6 +100,16 @@ export class TableStorageDatabase {
   private isConnected: boolean = false;
   private tableSuffix: string;
 
+  /**
+   * Validate stationId format to prevent injection attacks
+   * @throws Error if stationId contains invalid characters
+   */
+  private validateStationId(stationId: string | undefined): void {
+    if (stationId && !/^[a-zA-Z0-9_-]+$/.test(stationId)) {
+      throw new Error('Invalid stationId: must contain only alphanumeric characters, dashes, and underscores');
+    }
+  }
+
   constructor(connectionString?: string, tableSuffix?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
     this.tableSuffix = tableSuffix !== undefined ? tableSuffix : '';
@@ -261,9 +271,20 @@ export class TableStorageDatabase {
 
   // ===== MEMBER METHODS =====
 
-  async getAllMembers(): Promise<Member[]> {
+  async getAllMembers(stationId?: string): Promise<Member[]> {
+    // Validate stationId to prevent injection
+    this.validateStationId(stationId);
+    
+    // Build filter based on stationId parameter
+    let filter = odata`PartitionKey eq 'Member'`;
+    
+    if (stationId) {
+      // Filter by specific station
+      filter = odata`PartitionKey eq 'Member' and stationId eq ${stationId}`;
+    }
+    
     const entities = this.membersTable.listEntities<TableEntity>({
-      queryOptions: { filter: odata`PartitionKey eq 'Member'` }
+      queryOptions: { filter }
     });
 
     const members: Member[] = [];
@@ -301,8 +322,11 @@ export class TableStorageDatabase {
 
   async createMember(
     name: string,
-    details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string }
+    details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }
   ): Promise<Member> {
+    // Validate stationId if provided
+    this.validateStationId(details?.stationId);
+    
     const now = new Date();
     const member: Member = {
       id: uuidv4(),
@@ -312,6 +336,7 @@ export class TableStorageDatabase {
       rank: details?.rank || undefined,
       firstName: details?.firstName || undefined,
       lastName: details?.lastName || undefined,
+      stationId: details?.stationId || undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -325,6 +350,7 @@ export class TableStorageDatabase {
       rank: member.rank || '',
       firstName: member.firstName || '',
       lastName: member.lastName || '',
+      stationId: member.stationId || '',
       createdAt: member.createdAt.toISOString(),
       updatedAt: member.updatedAt.toISOString(),
     };
@@ -359,6 +385,7 @@ export class TableStorageDatabase {
       rank: (entity.rank as string) || undefined,
       firstName: (entity.firstName as string) || undefined,
       lastName: (entity.lastName as string) || undefined,
+      stationId: (entity.stationId as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };
