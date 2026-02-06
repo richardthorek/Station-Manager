@@ -76,13 +76,26 @@ class RFSFacilitiesParser {
     timeoutMs: number,
     operationName: string
   ): Promise<T> {
+    let timeoutId: NodeJS.Timeout | undefined;
+    
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
       }, timeoutMs);
     });
 
-    return Promise.race([promise, timeoutPromise]);
+    try {
+      const result = await Promise.race([promise, timeoutPromise]);
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+      return result;
+    } catch (error) {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+      throw error;
+    }
   }
 
   /**
