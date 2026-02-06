@@ -22,6 +22,7 @@ import {
   getBrigadeAccessTokens,
   getStationAccessTokens,
   getActiveTokenCount,
+  getAllBrigadeAccessTokens,
 } from '../services/brigadeAccessService';
 import { logger } from '../services/logger';
 
@@ -292,6 +293,40 @@ router.get('/stats', async (req: Request, res: Response) => {
     logger.error('Error fetching token stats:', error);
     res.status(500).json({
       error: 'Failed to fetch token stats',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /api/brigade-access/all-tokens
+ * Get all active tokens across all stations (for admin utility)
+ * Returns a map of tokens with their associated station info
+ */
+router.get('/all-tokens', async (req: Request, res: Response) => {
+  try {
+    const allTokens = getAllBrigadeAccessTokens();
+    
+    // Format tokens with full kiosk URLs
+    const tokensWithUrls = allTokens.map(t => ({
+      token: t.token,
+      brigadeId: t.brigadeId,
+      stationId: t.stationId,
+      description: t.description,
+      createdAt: t.createdAt,
+      expiresAt: t.expiresAt,
+      kioskUrl: `${req.protocol}://${req.get('host')}/signin?brigade=${t.token}`,
+    }));
+    
+    res.json({
+      tokens: tokensWithUrls,
+      count: tokensWithUrls.length,
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    console.error('Error fetching all tokens:', error);
+    res.status(500).json({
+      error: 'Failed to fetch all tokens',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }

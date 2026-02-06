@@ -82,10 +82,16 @@ export function LandingPage() {
             <div className="feature-icon">⚙️</div>
             <h3>Station Management</h3>
             <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
-            <Link to="/admin/stations" className="feature-link">
-              Go to Admin
-              <span className="arrow">→</span>
-            </Link>
+            <div className="feature-links">
+              <Link to="/admin/stations" className="feature-link">
+                Stations
+                <span className="arrow">→</span>
+              </Link>
+              <Link to="/admin/brigade-access" className="feature-link">
+                Brigade Access
+                <span className="arrow">→</span>
+              </Link>
+            </div>
           </div>
 
           <div className="info-card">

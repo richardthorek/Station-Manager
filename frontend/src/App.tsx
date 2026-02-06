@@ -16,6 +16,7 @@ import { TemplateEditorPage } from './features/truckcheck/TemplateEditorPage';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { CrossStationReportsPage } from './features/reports/CrossStationReportsPage';
 import { StationManagementPage } from './features/admin/stations/StationManagementPage';
+import { BrigadeAccessPage } from './features/admin/brigade-access/BrigadeAccessPage';
 
 function App() {
   const [showDemoPrompt, setShowDemoPrompt] = useState(false);
@@ -50,6 +51,7 @@ function App() {
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
           <Route path="/admin/stations" element={<StationManagementPage />} />
+          <Route path="/admin/brigade-access" element={<BrigadeAccessPage />} />
         </Routes>
       </StationProvider>
     </BrowserRouter>

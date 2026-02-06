@@ -760,6 +760,73 @@ class ApiService {
     return response.json();
   }
 
+  // ============================================
+  // Brigade Access (Kiosk Mode Tokens)
+  // ============================================
+
+  async generateBrigadeAccessToken(data: {
+    brigadeId: string;
+    stationId: string;
+    description?: string;
+    expiresInDays?: number;
+  }): Promise<{
+    success: boolean;
+    token: string;
+    brigadeId: string;
+    stationId: string;
+    description?: string;
+    createdAt: string;
+    expiresAt?: string;
+    kioskUrl: string;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/brigade-access/generate`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to generate brigade access token');
+    }
+    return response.json();
+  }
+
+  async getAllBrigadeAccessTokens(): Promise<{
+    tokens: Array<{
+      token: string;
+      brigadeId: string;
+      stationId: string;
+      description?: string;
+      createdAt: string;
+      expiresAt?: string;
+      kioskUrl: string;
+    }>;
+    count: number;
+    timestamp: string;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/brigade-access/all-tokens`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch brigade access tokens');
+    return response.json();
+  }
+
+  async revokeBrigadeAccessToken(token: string): Promise<{
+    success: boolean;
+    message: string;
+    token: string;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/brigade-access/${token}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to revoke token');
+    }
+    return response.json();
+  }
+
   // Demo Mode
   async getDemoStatus(): Promise<{
     isDemo: boolean;

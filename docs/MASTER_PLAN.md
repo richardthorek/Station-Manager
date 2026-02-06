@@ -85,6 +85,14 @@ Provide NSW Rural Fire Service volunteer stations with a modern, reliable, and u
 - Cross-feature achievements
 - Animated unlock notifications
 
+**Brigade Access Management:**
+- Master admin utility for station sign-in URL management
+- Brigade access token generation and management
+- QR code generation for kiosk URLs
+- Copy-to-clipboard functionality for easy sharing
+- Token revocation and lifecycle management
+- Station-specific kiosk mode locking
+
 **Technical Foundation:**
 - TypeScript backend (Node.js/Express 5)
 - React 19 frontend with real-time updates
@@ -1079,6 +1087,75 @@ Priority: **HIGH** - Critical for production scale
 ### PHASE 3: ESSENTIAL FEATURES (Q2 2026) - v1.3
 
 Priority: **HIGH** - High-value user features
+
+---
+
+#### Issue #11a: Brigade Access Management (Admin Utility) ✅ COMPLETED
+**GitHub Issue**: TBD (completed 2026-02-06)
+
+**Objective**: Provide master admin utility to view and share station sign-in URLs with brigade tokens for easy brigade setup
+
+**User Story**: As a master admin, I need a streamlined way to view and share station sign-in URLs (including brigade tokens) directly from the Station Manager interface so that I can quickly set up new brigades without complex authentication steps.
+
+**Current State**: ✅ Complete - Brigade access tokens can now be managed through dedicated admin interface  
+**Target State**: ✅ Achieved - Master admin can view all station URLs/tokens with copy/share functionality
+
+**Implementation Summary**:
+1. ✅ Backend API enhancements
+   - Added `GET /api/brigade-access/all-tokens` endpoint
+   - Added `getAllBrigadeAccessTokens()` service function
+   - Returns tokens with full kiosk URLs
+2. ✅ Frontend admin interface
+   - Created `/admin/brigade-access` route
+   - Built BrigadeAccessPage component
+   - Created StationTokenCard component
+3. ✅ Features implemented
+   - Statistics dashboard (total stations, with/without tokens, active tokens)
+   - Search functionality for stations
+   - Copy-to-clipboard for kiosk URLs
+   - QR code generation for physical distribution
+   - Token generation for stations without tokens
+   - Token revocation with confirmation
+   - Real-time updates via WebSocket
+4. ✅ Navigation
+   - Added link from landing page admin card
+   - Added button in StationManagementPage toolbar
+5. ✅ Testing
+   - Backend API endpoints tested and working
+   - UI tested on iPad portrait (768x1024) and landscape (1024x768)
+   - QR code generation verified
+
+**Success Criteria**:
+- [x] Master admin can see all station sign-in URLs with brigade tokens
+- [x] Interface includes copy/share option for each URL
+- [x] QR code generation for physical distribution
+- [x] Feature accessible from admin navigation
+- [x] No additional authentication required (leverages existing admin access)
+- [x] Statistics showing token overview
+- [x] Search functionality for stations
+- [x] Real-time updates when tokens change
+- [x] UI screenshots on iPad portrait and landscape
+
+**Security Considerations**:
+- Tokens are UUIDs (128-bit random) for security
+- Feature accessible from admin navigation only
+- Admin access should be restricted at network/infrastructure level in production
+- Kiosk URLs lock sign-in to specific station via token validation
+
+**Dependencies**: None (built on existing kiosk mode infrastructure)
+
+**Effort Estimate**: 1-2 days (Completed in 1 day)
+
+**Priority**: P1 (High - requested feature)
+
+**Labels**: `feature`, `admin`, `brigade-access`, `phase-3`, `completed`
+
+**Milestone**: v1.3 - Essential Features
+
+**UI Screenshots**:
+- iPad Portrait (768x1024): https://github.com/user-attachments/assets/040e79e3-23be-4cee-ad82-dd491fdbde65
+- iPad Landscape (1024x768): https://github.com/user-attachments/assets/021aaf91-6ba4-4db1-ace6-3c127e516285
+- QR Code Feature: https://github.com/user-attachments/assets/67612662-0784-45a1-a6b7-3f1f98f3d92a
 
 ---
 
