@@ -760,6 +760,118 @@ Station filtering has minimal performance impact:
 - **In-memory filtering:** O(n) scan but small datasets (<1000 members per station)
 - **No degradation:** Existing tests show no performance regression
 
+### Kiosk Mode & Brigade Access Tokens
+
+**Status:** ✅ Implemented (February 2026)
+
+Kiosk mode provides strict brigade/station locking for shared devices (iPads, tablets) to prevent cross-brigade data access.
+
+#### Purpose
+
+- **Data Isolation:** Ensures kiosk devices can only access their assigned brigade's data
+- **Unattended Operation:** Prevents users from switching stations on shared devices
+- **Security:** Cryptographically secure tokens (UUID v4, 128-bit) prevent unauthorized access
+
+#### How It Works
+
+1. **Token Generation:** Administrator generates a brigade access token for each device
+2. **URL-Based Activation:** Device accesses station manager via special URL with token: `?brigade=<uuid-token>`
+3. **Session Locking:** Token validated on load, station locked for browser session
+4. **UI Indication:** Lock icon 🔒 and "Kiosk Mode" badge displayed
+
+#### Architecture
+
+**Backend Components:**
+- `services/brigadeAccessService.ts` - Token lifecycle management (create, validate, revoke, query)
+- `middleware/kioskModeMiddleware.ts` - Validates brigade tokens from URL query parameters
+- `routes/brigadeAccess.ts` - REST API for token management (6 endpoints)
+
+**Frontend Components:**
+- `utils/kioskMode.ts` - Kiosk mode detection and management
+- `contexts/StationContext.tsx` - Validates tokens on initialization, locks station selection
+- `components/StationSelector.tsx` - Shows locked UI in kiosk mode, disables dropdown
+
+#### Token Security
+
+```typescript
+interface BrigadeAccessToken {
+  token: string;          // UUID v4 (128-bit random)
+  brigadeId: string;      // Brigade this token grants access to
+  stationId: string;      // Station to lock to
+  createdAt: Date;
+  expiresAt?: Date;       // Optional expiration for rotation
+  description?: string;   // Device identification (e.g., "Main Kiosk iPad")
+}
+```
+
+**Security Properties:**
+- Tokens are UUID v4 (2^128 possible values = statistically unguessable)
+- Generated using Node.js `crypto.randomUUID()` (cryptographically secure PRNG)
+- Server-side validation on every request via middleware
+- Optional expiration dates enforce regular token rotation
+- Stored in sessionStorage (cleared on browser close) not localStorage
+
+#### API Endpoints
+
+**Brigade Access Management:**
+- `POST /api/brigade-access/generate` - Generate new kiosk token (returns kioskUrl)
+- `POST /api/brigade-access/validate` - Validate token and get station info
+- `DELETE /api/brigade-access/:token` - Revoke token immediately
+- `GET /api/brigade-access/brigade/:brigadeId` - List all tokens for brigade
+- `GET /api/brigade-access/station/:stationId` - List all tokens for station
+- `GET /api/brigade-access/stats` - Get active token statistics
+
+#### Usage Example
+
+```bash
+# Generate token for a kiosk device
+curl -X POST /api/brigade-access/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "brigadeId": "main-brigade",
+    "stationId": "main-station-1",
+    "description": "Main Entrance Kiosk iPad",
+    "expiresInDays": 365
+  }'
+
+# Response
+{
+  "success": true,
+  "token": "a3d5e8f2-1234-4abc-8def-9876543210ab",
+  "brigadeId": "main-brigade",
+  "stationId": "main-station-1",
+  "description": "Main Entrance Kiosk iPad",
+  "createdAt": "2026-02-06T00:00:00.000Z",
+  "expiresAt": "2027-02-06T00:00:00.000Z",
+  "kioskUrl": "https://stationmanager.com/signin?brigade=a3d5e8f2-1234-4abc-8def-9876543210ab"
+}
+```
+
+#### Testing
+
+Comprehensive test coverage with 38 new tests:
+- **brigadeAccessService.test.ts** - 20 tests covering:
+  - Token generation (with/without expiration, description)
+  - Token validation (valid, invalid, expired)
+  - Token revocation
+  - Brigade/station token queries
+  - Token expiration and cleanup
+  
+- **brigadeAccessRoutes.test.ts** - 18 integration tests covering:
+  - All 6 API endpoints
+  - Request validation (400 errors)
+  - Token not found (404 errors)
+  - Success responses (200/201)
+  - UUID format validation
+
+**Result:** All 358 backend tests passing (includes 38 new kiosk mode tests)
+
+#### Documentation
+
+- **Administrator Guide:** `docs/KIOSK_MODE_SETUP.md` - Complete setup and troubleshooting guide
+- **Security Model:** Token best practices, rotation policies, physical security recommendations
+- **API Reference:** Full curl examples for all endpoints
+
 ### Migration Path
 
 For existing deployments:
@@ -834,6 +946,14 @@ The API register contains:
 
 **Health Check**
 - `GET /health` - Server health status
+
+**Brigade Access (6 endpoints)**
+- `POST /api/brigade-access/generate` - Generate kiosk token
+- `POST /api/brigade-access/validate` - Validate token
+- `DELETE /api/brigade-access/:token` - Revoke token
+- `GET /api/brigade-access/brigade/:brigadeId` - List brigade tokens
+- `GET /api/brigade-access/station/:stationId` - List station tokens
+- `GET /api/brigade-access/stats` - Token statistics
 
 ---
 
