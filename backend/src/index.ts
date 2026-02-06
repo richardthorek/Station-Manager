@@ -32,6 +32,11 @@ candidateEnvPaths.forEach(envPath => {
   dotenv.config({ path: envPath, override: false });
 });
 
+// Initialize Azure Application Insights early (before other imports)
+// This ensures all subsequent operations can be tracked
+import { initializeAppInsights } from './services/appInsights';
+initializeAppInsights();
+
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -54,6 +59,9 @@ import { getVersionInfo } from './services/version';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 import { demoModeMiddleware } from './middleware/demoModeMiddleware';
 import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
+import { requestIdMiddleware } from './middleware/requestId';
+import { requestLoggingMiddleware } from './middleware/requestLogging';
+import { logger } from './services/logger';
 
 const app = express();
 const httpServer = createServer(app);
@@ -92,6 +100,8 @@ app.use(compression({
   }
 }));
 
+app.use(requestIdMiddleware); // Add unique request ID to each request
+app.use(requestLoggingMiddleware); // Log all HTTP requests and responses
 app.use(demoModeMiddleware); // Detect demo mode from query parameter
 app.use(kioskModeMiddleware); // Detect and validate kiosk mode from brigade token
 
@@ -167,41 +177,47 @@ app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+  logger.info('WebSocket client connected', { socketId: socket.id });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    logger.info('WebSocket client disconnected', { socketId: socket.id });
   });
 
   // Handle check-in events
   socket.on('checkin', (data) => {
+    logger.debug('WebSocket event: checkin', { data });
     // Broadcast to all other clients
     socket.broadcast.emit('checkin-update', data);
   });
 
   // Handle activity change events
   socket.on('activity-change', (data) => {
+    logger.debug('WebSocket event: activity-change', { data });
     // Broadcast to all clients including sender
     io.emit('activity-update', data);
   });
 
   // Handle member addition
   socket.on('member-added', (data) => {
+    logger.debug('WebSocket event: member-added', { data });
     socket.broadcast.emit('member-update', data);
   });
 
   // Handle event creation
   socket.on('event-created', (data) => {
+    logger.debug('WebSocket event: event-created', { data });
     io.emit('event-update', data);
   });
 
   // Handle event end
   socket.on('event-ended', (data) => {
+    logger.debug('WebSocket event: event-ended', { data });
     io.emit('event-update', data);
   });
 
   // Handle participant added/removed
   socket.on('participant-change', (data) => {
+    logger.debug('WebSocket event: participant-change', { data });
     io.emit('event-update', data);
   });
 });
@@ -213,7 +229,13 @@ app.get(/^\/(?!api).*/, spaRateLimiter, (req, res) => {
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
+  logger.error('Unhandled error', { 
+    error: err.message, 
+    stack: err.stack,
+    requestId: req.id,
+    method: req.method,
+    path: req.path,
+  });
   res.status(500).json({ error: 'Internal server error' });
 });
 
@@ -221,7 +243,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 async function startServer() {
   try {
     // Initialize database connections
-    console.log('🚀 Starting server...');
+    logger.info('Starting server...');
     await ensureDatabase();
     await ensureTruckChecksDatabase();
     
@@ -231,40 +253,48 @@ async function startServer() {
     
     // Start HTTP server
     httpServer.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-      console.log(`Health check: http://localhost:${PORT}/health`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Server running on port ${PORT}`);
+      logger.info(`Health check: http://localhost:${PORT}/health`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
       const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
       const useTableStorage = storageConnectionString && !explicitlyDisabled;
       if (useTableStorage) {
         const suffix = process.env.TABLE_STORAGE_TABLE_SUFFIX ? ` (tables suffixed '${process.env.TABLE_STORAGE_TABLE_SUFFIX}')` : '';
         const prefix = process.env.TABLE_STORAGE_TABLE_PREFIX ? ` (tables prefixed '${process.env.TABLE_STORAGE_TABLE_PREFIX}')` : '';
-        console.log(`Database: Azure Table Storage${prefix || suffix ? ` ${prefix}${suffix}` : ''}`);
+        logger.info(`Database: Azure Table Storage${prefix || suffix ? ` ${prefix}${suffix}` : ''}`);
       } else {
-        console.log(`Database: In-memory (data will be lost on restart)`);
+        logger.info('Database: In-memory (data will be lost on restart)');
       }
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error('Failed to start server', { error });
     process.exit(1);
   }
 }
 
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+  logger.info('SIGTERM signal received: closing HTTP server');
+  const { flushAppInsights } = await import('./services/appInsights');
   httpServer.close(async () => {
-    console.log('HTTP server closed');
-    process.exit(0);
+    logger.info('HTTP server closed');
+    // Flush any pending Application Insights telemetry
+    flushAppInsights(() => {
+      process.exit(0);
+    });
   });
 });
 
 process.on('SIGINT', async () => {
-  console.log('SIGINT signal received: closing HTTP server');
+  logger.info('SIGINT signal received: closing HTTP server');
+  const { flushAppInsights } = await import('./services/appInsights');
   httpServer.close(async () => {
-    console.log('HTTP server closed');
-    process.exit(0);
+    logger.info('HTTP server closed');
+    // Flush any pending Application Insights telemetry
+    flushAppInsights(() => {
+      process.exit(0);
+    });
   });
 });
 

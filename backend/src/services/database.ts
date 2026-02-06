@@ -20,6 +20,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { autoExpireEvents } from './rolloverService';
 import { DEFAULT_STATION_ID, DEMO_STATION_ID, DEMO_BRIGADE_ID, getEffectiveStationId } from '../constants/stations';
 import { DEFAULT_MEMBERS, buildDisplayName } from './defaultMembers';
+import { logger } from './logger';
 
 class DatabaseService {
   private members: Map<string, Member> = new Map();
@@ -134,7 +135,7 @@ class DatabaseService {
   }
 
   private initializeDevData() {
-    console.log('🔧 Initializing development data...');
+    logger.info('Initializing development data');
     
     // Create demo station
     const demoStation: Station = {
@@ -163,13 +164,13 @@ class DatabaseService {
       updatedAt: new Date(),
     };
     this.stations.set(demoStation.id, demoStation);
-    console.log(`✅ Created demo station: ${demoStation.name}`);
+    logger.info('Created demo station', { stationName: demoStation.name });
     
     const members = Array.from(this.members.values());
     const activities = Array.from(this.activities.values());
     
     if (members.length === 0 || activities.length === 0) {
-      console.warn('No members or activities available for dev data');
+      logger.warn('No members or activities available for dev data');
       return;
     }
 
@@ -226,7 +227,7 @@ class DatabaseService {
       }
     }
     
-    console.log(`✅ Created ${eventsToCreate} dev events with participants`);
+    logger.info('Created dev events with participants', { count: eventsToCreate });
   }
 
   // Member methods
@@ -541,7 +542,7 @@ class DatabaseService {
     autoExpireEvents(activeEvents, this as any).then(() => {
       // Events have been marked inactive in the database
     }).catch(err => {
-      console.error('Error auto-expiring events:', err);
+      logger.error('Error auto-expiring events', { error: err });
     });
     
     // Return only currently active events (excluding ones we just expired)

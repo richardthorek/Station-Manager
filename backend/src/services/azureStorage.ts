@@ -1,5 +1,6 @@
 import { BlobServiceClient, ContainerClient, BlockBlobClient, BlobSASPermissions, generateBlobSASQueryParameters, StorageSharedKeyCredential } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from './logger';
 
 /**
  * Azure Blob Storage Service for handling image uploads
@@ -24,8 +25,8 @@ class AzureStorageService {
     const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     
     if (!connectionString) {
-      console.warn('Azure Storage not configured. Photo upload features will be disabled.');
-      console.warn('Set AZURE_STORAGE_CONNECTION_STRING environment variable to enable photo uploads.');
+      logger.warn('Azure Storage not configured. Photo upload features will be disabled.');
+      logger.warn('Set AZURE_STORAGE_CONNECTION_STRING environment variable to enable photo uploads.');
       return;
     }
 
@@ -47,9 +48,9 @@ class AzureStorageService {
       this.resultPhotosContainer = this.blobServiceClient.getContainerClient(resultContainerName);
       
       this.isEnabled = true;
-      console.log('Azure Storage initialized successfully');
+      logger.info('Azure Storage initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize Azure Storage:', error);
+      logger.error('Failed to initialize Azure Storage', { error });
       this.isEnabled = false;
     }
   }
@@ -69,9 +70,9 @@ class AzureStorageService {
       // Create result photos container if it doesn't exist (private access)
       await this.resultPhotosContainer.createIfNotExists();
 
-      console.log('Storage containers verified/created');
+      logger.info('Storage containers verified/created');
     } catch (error) {
-      console.error('Error creating storage containers:', error);
+      logger.error('Error creating storage containers', { error });
       throw error;
     }
   }
@@ -108,7 +109,7 @@ class AzureStorageService {
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
       return `${blockBlobClient.url}?${sasToken}`;
     } catch (error) {
-      console.error('Error generating SAS URL:', error);
+      logger.error('Error generating SAS URL', { error, blobName });
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
       return blockBlobClient.url;
     }
@@ -148,7 +149,7 @@ class AzureStorageService {
       // Return SAS URL instead of direct URL
       return this.generateSasUrl(this.referencePhotosContainer, blobName);
     } catch (error) {
-      console.error('Error uploading reference photo:', error);
+      logger.error('Error uploading reference photo', { error, blobName });
       throw error;
     }
   }
@@ -187,7 +188,7 @@ class AzureStorageService {
       // Return SAS URL instead of direct URL
       return this.generateSasUrl(this.resultPhotosContainer, blobName);
     } catch (error) {
-      console.error('Error uploading result photo:', error);
+      logger.error('Error uploading result photo', { error, blobName });
       throw error;
     }
   }
@@ -209,7 +210,7 @@ class AzureStorageService {
       await blockBlobClient.deleteIfExists();
       return true;
     } catch (error) {
-      console.error('Error deleting reference photo:', error);
+      logger.error('Error deleting reference photo', { error, photoUrl });
       return false;
     }
   }
@@ -231,7 +232,7 @@ class AzureStorageService {
       await blockBlobClient.deleteIfExists();
       return true;
     } catch (error) {
-      console.error('Error deleting result photo:', error);
+      logger.error('Error deleting result photo', { error, photoUrl });
       return false;
     }
   }

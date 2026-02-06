@@ -1,4 +1,5 @@
 import { TableClient, TableEntity, odata } from '@azure/data-tables';
+import { logger } from './logger';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Member,
@@ -136,44 +137,44 @@ export class TableStorageDatabase {
     let lastError: any;
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        console.log(`🔌 Connecting to Azure Table Storage (attempt ${attempt}/${retries})...`);
+        logger.info(`🔌 Connecting to Azure Table Storage (attempt ${attempt}/${retries})...`);
         
         // Create tables if they don't exist
         await Promise.all([
           this.membersTable.createTable().catch((err) => {
             // Ignore "table already exists" errors, but log others
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating Members table:', err.message);
+              logger.warn('Warning creating Members table:', err.message);
             }
           }),
           this.activitiesTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating Activities table:', err.message);
+              logger.warn('Warning creating Activities table:', err.message);
             }
           }),
           this.eventsTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating Events table:', err.message);
+              logger.warn('Warning creating Events table:', err.message);
             }
           }),
           this.eventParticipantsTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating EventParticipants table:', err.message);
+              logger.warn('Warning creating EventParticipants table:', err.message);
             }
           }),
           this.checkInsTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating CheckIns table:', err.message);
+              logger.warn('Warning creating CheckIns table:', err.message);
             }
           }),
           this.activeActivityTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating ActiveActivity table:', err.message);
+              logger.warn('Warning creating ActiveActivity table:', err.message);
             }
           }),
           this.stationsTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
-              console.warn('Warning creating Stations table:', err.message);
+              logger.warn('Warning creating Stations table:', err.message);
             }
           }),
         ]);
@@ -185,21 +186,21 @@ export class TableStorageDatabase {
         await this.initializeDefaultStation();
 
         this.isConnected = true;
-        console.log(`✅ Connected to Azure Table Storage (attempt ${attempt}/${retries})`);
+        logger.info(`✅ Connected to Azure Table Storage (attempt ${attempt}/${retries})`);
         return; // Success, exit function
       } catch (error) {
         lastError = error;
-        console.error(`❌ Failed to connect to Table Storage (attempt ${attempt}/${retries}):`, error);
+        logger.error(`❌ Failed to connect to Table Storage (attempt ${attempt}/${retries}):`, error);
         
         if (attempt < retries) {
-          console.log(`⏳ Retrying in ${delayMs}ms...`);
+          logger.info(`⏳ Retrying in ${delayMs}ms...`);
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
       }
     }
     
     // All retries failed
-    console.error('❌ All connection attempts failed. Last error:', lastError);
+    logger.error('❌ All connection attempts failed. Last error:', lastError);
     throw lastError || new Error(`Failed to connect to Table Storage after ${retries} attempts`);
   }
 
@@ -221,10 +222,10 @@ export class TableStorageDatabase {
           await this.createActivity(activity.name);
         }
 
-        console.log('✅ Initialized default activities');
+        logger.info('✅ Initialized default activities');
       }
     } catch (error) {
-      console.error('Error initializing default activities:', error);
+      logger.error('Error initializing default activities:', error);
     }
   }
 
@@ -261,9 +262,9 @@ export class TableStorageDatabase {
       };
 
       await this.createStation(defaultStation);
-      console.log('✅ Initialized default station');
+      logger.info('✅ Initialized default station');
     } catch (error) {
-      console.error('Error initializing default station:', error);
+      logger.error('Error initializing default station:', error);
     }
   }
 
@@ -843,7 +844,7 @@ export class TableStorageDatabase {
     // Need to find which event this participant belongs to
     // This is inefficient - we'd need to search across all events
     // For now, return false - this feature may need rethinking
-    console.warn('removeEventParticipant not efficiently supported in Table Storage');
+    logger.warn('removeEventParticipant not efficiently supported in Table Storage');
     return false;
   }
 

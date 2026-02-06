@@ -6,6 +6,7 @@
  */
 
 import type { Response } from 'express';
+import { logger } from './logger';
 
 /**
  * Standard error response format
@@ -32,11 +33,11 @@ export function sendErrorResponse(
   error?: unknown,
   includeDetails = false
 ): void {
-  // Log error details to console
+  // Log error details
   if (error) {
-    console.error(`Error [${statusCode}]:`, message, error);
+    logger.error(`Error [${statusCode}]: ${message}`, { error, statusCode });
   } else {
-    console.error(`Error [${statusCode}]:`, message);
+    logger.error(`Error [${statusCode}]: ${message}`, { statusCode });
   }
 
   // Build response

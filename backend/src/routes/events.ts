@@ -27,6 +27,7 @@ import {
 } from '../middleware/eventValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -47,7 +48,7 @@ router.get('/', validateEventQuery, handleValidationErrors, async (req: Request,
     const events = await db.getEventsWithParticipants(limit, offset, stationId);
     res.json(events);
   } catch (error) {
-    console.error('Error fetching events:', error);
+    logger.error('Error fetching events', { error, stationId: getStationIdFromRequest(req), requestId: req.id });
     res.status(500).json({ error: 'Failed to fetch events' });
   }
 });
@@ -73,7 +74,7 @@ router.get('/active', async (req, res) => {
     
     res.json(eventsWithParticipants);
   } catch (error) {
-    console.error('Error fetching active events:', error);
+    logger.error('Error fetching active events', { error, stationId: getStationIdFromRequest(req), requestId: req.id });
     res.status(500).json({ error: 'Failed to fetch active events' });
   }
 });
@@ -93,7 +94,7 @@ router.get('/:eventId', validateEventId, handleValidationErrors, async (req: Req
     
     res.json(event);
   } catch (error) {
-    console.error('Error fetching event:', error);
+    logger.error('Error fetching event', { error, eventId: req.params.id, requestId: req.id });
     res.status(500).json({ error: 'Failed to fetch event' });
   }
 });
@@ -121,7 +122,7 @@ router.post('/', validateCreateEvent, handleValidationErrors, async (req: Reques
     
     res.status(201).json(eventWithParticipants);
   } catch (error) {
-    console.error('Error creating event:', error);
+    logger.error('Error creating event', { error, stationId: getStationIdFromRequest(req), requestId: req.id });
     res.status(500).json({ error: 'Failed to create event' });
   }
 });
@@ -142,7 +143,7 @@ router.put('/:eventId/end', validateEventId, handleValidationErrors, async (req:
     const eventWithParticipants = await db.getEventWithParticipants(event.id);
     res.json(eventWithParticipants);
   } catch (error) {
-    console.error('Error ending event:', error);
+    logger.error('Error ending event', { error, eventId: req.params.id, requestId: req.id });
     res.status(500).json({ error: 'Failed to end event' });
   }
 });
@@ -163,7 +164,7 @@ router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, asyn
     const eventWithParticipants = await db.getEventWithParticipants(event.id);
     res.json(eventWithParticipants);
   } catch (error) {
-    console.error('Error reactivating event:', error);
+    logger.error('Error reactivating event', { error, eventId: req.params.id, requestId: req.id });
     res.status(500).json({ error: 'Failed to reactivate event' });
   }
 });
@@ -219,7 +220,7 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
       participant,
     });
   } catch (error) {
-    console.error('Error adding participant:', error);
+    logger.error('Error adding participant', { error, eventId: req.params.id, requestId: req.id });
     res.status(500).json({ error: 'Failed to add participant' });
   }
 });
@@ -239,7 +240,7 @@ router.delete('/:eventId/participants/:participantId', validateRemoveParticipant
     
     res.json({ message: 'Participant removed successfully' });
   } catch (error) {
-    console.error('Error removing participant:', error);
+    logger.error('Error removing participant', { error, eventId: req.params.id, requestId: req.id });
     res.status(500).json({ error: 'Failed to remove participant' });
   }
 });
@@ -260,7 +261,7 @@ router.delete('/:eventId', validateEventId, handleValidationErrors, async (req: 
     
     res.json({ message: 'Event deleted successfully', event });
   } catch (error) {
-    console.error('Error deleting event:', error);
+    logger.error('Error deleting event', { error, eventId: req.params.id, requestId: req.id });
     res.status(500).json({ error: 'Failed to delete event' });
   }
 });
@@ -282,7 +283,7 @@ router.post('/admin/rollover', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error during manual rollover:', error);
+    logger.error('Error during manual rollover', { error, requestId: req.id });
     res.status(500).json({ error: 'Failed to perform rollover' });
   }
 });
