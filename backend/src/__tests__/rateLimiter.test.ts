@@ -253,7 +253,7 @@ describe('Rate Limiter Middleware', () => {
     });
 
     it('should handle X-Forwarded-For with port number (Azure App Service edge case)', async () => {
-      // This test verifies the fix for Issue #8: IP validation error
+      // This test verifies the fix for Issue #284: IP validation error
       // Azure App Service sometimes includes port in X-Forwarded-For: "104.209.11.16:50178"
       const testApp = express();
       testApp.set('trust proxy', 1);
