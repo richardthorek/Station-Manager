@@ -100,6 +100,16 @@ export class TableStorageDatabase {
   private isConnected: boolean = false;
   private tableSuffix: string;
 
+  /**
+   * Validate stationId format to prevent injection attacks
+   * @throws Error if stationId contains invalid characters
+   */
+  private validateStationId(stationId: string | undefined): void {
+    if (stationId && !/^[a-zA-Z0-9_-]+$/.test(stationId)) {
+      throw new Error('Invalid stationId: must contain only alphanumeric characters, dashes, and underscores');
+    }
+  }
+
   constructor(connectionString?: string, tableSuffix?: string) {
     this.connectionString = connectionString || process.env.AZURE_STORAGE_CONNECTION_STRING || '';
     this.tableSuffix = tableSuffix !== undefined ? tableSuffix : '';
@@ -262,14 +272,13 @@ export class TableStorageDatabase {
   // ===== MEMBER METHODS =====
 
   async getAllMembers(stationId?: string): Promise<Member[]> {
+    // Validate stationId to prevent injection
+    this.validateStationId(stationId);
+    
     // Build filter based on stationId parameter
     let filter = odata`PartitionKey eq 'Member'`;
     
     if (stationId) {
-      // Validate stationId to prevent injection (alphanumeric, dash, underscore only)
-      if (!/^[a-zA-Z0-9_-]+$/.test(stationId)) {
-        throw new Error('Invalid stationId: must contain only alphanumeric characters, dashes, and underscores');
-      }
       // Filter by specific station
       filter = odata`PartitionKey eq 'Member' and stationId eq ${stationId}`;
     }
@@ -316,20 +325,18 @@ export class TableStorageDatabase {
     details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }
   ): Promise<Member> {
     // Validate stationId if provided
-    if (details?.stationId && !/^[a-zA-Z0-9_-]+$/.test(details.stationId)) {
-      throw new Error('Invalid stationId: must contain only alphanumeric characters, dashes, and underscores');
-    }
+    this.validateStationId(details?.stationId);
     
     const now = new Date();
     const member: Member = {
       id: uuidv4(),
       name,
       qrCode: uuidv4(),
-      memberNumber: details?.memberNumber || undefined,
-      rank: details?.rank || undefined,
-      firstName: details?.firstName || undefined,
-      lastName: details?.lastName || undefined,
-      stationId: details?.stationId || undefined,
+      memberNumber: details?.memberNumber,
+      rank: details?.rank,
+      firstName: details?.firstName,
+      lastName: details?.lastName,
+      stationId: details?.stationId,
       createdAt: now,
       updatedAt: now,
     };
