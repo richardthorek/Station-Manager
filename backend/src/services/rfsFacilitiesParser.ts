@@ -88,7 +88,8 @@ class RFSFacilitiesParser {
         console.warn(`   To enable station lookup, either:`);
         console.warn(`   1. Upload rfs-facilities.csv to Azure Blob Storage container '${this.blobContainerName}'`);
         console.warn(`   2. Download from atlas.gov.au and place at ${this.csvPath}`);
-        this.isLoaded = true; // Mark as loaded to prevent repeated warnings
+        // Dual-flag pattern: isLoaded=true prevents repeated warnings, loadSucceeded=false tracks actual status
+        this.isLoaded = true; 
         this.loadSucceeded = false;
         return false;
       }
@@ -118,8 +119,8 @@ class RFSFacilitiesParser {
       return true;
     } catch (error) {
       console.error('❌ Error loading fire service facilities CSV:', error);
-      // Don't throw - allow app to start without CSV data
-      this.isLoaded = true; // Mark as loaded to prevent repeated errors
+      // Dual-flag pattern: isLoaded=true prevents repeated errors, loadSucceeded=false tracks actual status
+      this.isLoaded = true;
       this.loadSucceeded = false;
       return false;
     }

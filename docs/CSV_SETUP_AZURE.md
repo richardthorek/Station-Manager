@@ -68,6 +68,12 @@ AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...;A
 - **Container Name**: `data-files`
 - **Blob Name**: `rfs-facilities.csv`
 - **Access Level**: Blob (public read access)
+  - **Rationale**: Public read access is used because:
+    - The CSV contains only public facility data (no sensitive information)
+    - Application downloads CSV at startup before credentials are fully initialized
+    - Simpler architecture (no SAS token management or renewal)
+    - Reduces authentication complexity during startup
+    - Data is already publicly available from atlas.gov.au
 - **Content Type**: text/csv
 
 ### Troubleshooting
