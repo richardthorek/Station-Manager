@@ -783,6 +783,75 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to fetch demo info');
     return response.json();
   }
+
+  // ============================================
+  // Data Export
+  // ============================================
+
+  /**
+   * Export members to CSV file
+   */
+  async exportMembers(): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/export/members`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to export members');
+    return response.blob();
+  }
+
+  /**
+   * Export check-ins to CSV file with optional date range
+   * @param startDate Optional start date (ISO string)
+   * @param endDate Optional end date (ISO string)
+   */
+  async exportCheckIns(startDate?: string, endDate?: string): Promise<Blob> {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    
+    const url = `${API_BASE_URL}/export/checkins${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to export check-ins');
+    return response.blob();
+  }
+
+  /**
+   * Export events to CSV file with optional date range
+   * @param startDate Optional start date (ISO string)
+   * @param endDate Optional end date (ISO string)
+   */
+  async exportEvents(startDate?: string, endDate?: string): Promise<Blob> {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    
+    const url = `${API_BASE_URL}/export/events${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to export events');
+    return response.blob();
+  }
+
+  /**
+   * Export truck check results to CSV file with optional date range
+   * @param startDate Optional start date (ISO string)
+   * @param endDate Optional end date (ISO string)
+   */
+  async exportTruckCheckResults(startDate?: string, endDate?: string): Promise<Blob> {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    
+    const url = `${API_BASE_URL}/export/truckcheck-results${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to export truck check results');
+    return response.blob();
+  }
 }
 
 export const api = new ApiService();
