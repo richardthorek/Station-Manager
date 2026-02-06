@@ -247,9 +247,18 @@ class DatabaseService {
     }
     
     // Count check-ins per member in the last 6 months (for sorting and filtering)
+    // Also track lastCheckIn across ALL time (not just 6 months)
     const checkInCounts = new Map<string, { count: number; lastCheckIn: Date | null }>();
+    const allTimeLastCheckIn = new Map<string, Date>();
     
     Array.from(this.eventParticipants.values()).forEach(participant => {
+      // Track all-time last check-in
+      const currentAllTime = allTimeLastCheckIn.get(participant.memberId);
+      if (!currentAllTime || participant.checkInTime > currentAllTime) {
+        allTimeLastCheckIn.set(participant.memberId, participant.checkInTime);
+      }
+      
+      // Track 6-month counts for filtering/sorting
       if (participant.checkInTime >= sixMonthsAgo) {
         const current = checkInCounts.get(participant.memberId) || { count: 0, lastCheckIn: null };
         current.count++;
@@ -306,18 +315,24 @@ class DatabaseService {
       }
     }
     
+    // Attach lastSignIn to each member
+    const membersWithLastSignIn = members.map(m => ({
+      ...m,
+      lastSignIn: allTimeLastCheckIn.get(m.id) || null
+    }));
+    
     // Apply sorting
     if (options?.sort) {
       switch (options.sort) {
         case 'name-asc':
-          members.sort((a, b) => a.name.localeCompare(b.name));
+          membersWithLastSignIn.sort((a, b) => a.name.localeCompare(b.name));
           break;
         case 'name-desc':
-          members.sort((a, b) => b.name.localeCompare(a.name));
+          membersWithLastSignIn.sort((a, b) => b.name.localeCompare(a.name));
           break;
         case 'activity':
           // Most active first (by count)
-          members.sort((a, b) => {
+          membersWithLastSignIn.sort((a, b) => {
             const countA = checkInCounts.get(a.id)?.count || 0;
             const countB = checkInCounts.get(b.id)?.count || 0;
             if (countB !== countA) return countB - countA;
@@ -326,7 +341,7 @@ class DatabaseService {
           break;
         case 'recent':
           // Most recently active first
-          members.sort((a, b) => {
+          membersWithLastSignIn.sort((a, b) => {
             const lastA = checkInCounts.get(a.id)?.lastCheckIn;
             const lastB = checkInCounts.get(b.id)?.lastCheckIn;
             if (!lastA && !lastB) return a.name.localeCompare(b.name);
@@ -340,7 +355,7 @@ class DatabaseService {
           break;
         default:
           // Default sort: by activity (count), then alphabetically
-          members.sort((a, b) => {
+          membersWithLastSignIn.sort((a, b) => {
             const countA = checkInCounts.get(a.id)?.count || 0;
             const countB = checkInCounts.get(b.id)?.count || 0;
             if (countB !== countA) return countB - countA;
@@ -349,7 +364,7 @@ class DatabaseService {
       }
     } else {
       // Default sort: by activity (count), then alphabetically
-      members.sort((a, b) => {
+      membersWithLastSignIn.sort((a, b) => {
         const countA = checkInCounts.get(a.id)?.count || 0;
         const countB = checkInCounts.get(b.id)?.count || 0;
         if (countB !== countA) return countB - countA;
@@ -357,7 +372,7 @@ class DatabaseService {
       });
     }
     
-    return members;
+    return membersWithLastSignIn;
   }
 
   getMemberById(id: string): Member | undefined {

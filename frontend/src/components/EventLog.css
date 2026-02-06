@@ -14,12 +14,41 @@
   padding: 1.5rem;
   border-bottom: 2px solid var(--border-color);
   background: var(--bg-card);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-left {
+  flex: 1;
+  min-width: 0;
 }
 
 .event-log-header h2 {
   margin: 0 0 0.5rem 0;
   font-size: 1.5rem;
   color: var(--text-primary);
+}
+
+.btn-start-event-inline {
+  padding: 0.6rem 1.25rem;
+  background: var(--color-lime-green);
+  color: var(--rfs-black);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-start-event-inline:hover {
+  background: #b5c529;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(198, 217, 49, 0.3);
 }
 
 .event-count {

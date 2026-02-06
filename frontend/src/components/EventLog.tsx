@@ -12,6 +12,7 @@ interface EventLogProps {
   onLoadMore: () => void;
   hasMore: boolean;
   isLoading: boolean;
+  onStartNewEvent?: () => void;
 }
 
 export function EventLog({
@@ -23,6 +24,7 @@ export function EventLog({
   onLoadMore,
   hasMore,
   isLoading,
+  onStartNewEvent,
 }: EventLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(false);
@@ -56,10 +58,21 @@ export function EventLog({
   return (
     <div className="event-log card">
       <div className="event-log-header">
-        <h2>Event Log</h2>
-        <span className="event-count">
-          {activeEvents.length} active • {endedEvents.length} ended
-        </span>
+        <div className="header-left">
+          <h2>Event Log</h2>
+          <span className="event-count">
+            {activeEvents.length} active • {endedEvents.length} ended
+          </span>
+        </div>
+        {onStartNewEvent && (
+          <button 
+            className="btn-start-event-inline" 
+            onClick={onStartNewEvent}
+            title="Start a new event"
+          >
+            + New Event
+          </button>
+        )}
       </div>
 
       <div className="event-log-content" ref={scrollRef}>

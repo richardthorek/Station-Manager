@@ -380,35 +380,18 @@ export function SignInPage() {
 
   return (
     <div className="app">
-      <Header isConnected={isConnected} databaseStatus={databaseStatus} />
+      <Header 
+        isConnected={isConnected} 
+        databaseStatus={databaseStatus}
+        onManageUsers={() => setShowUserManagement(true)}
+        onExportData={() => setShowExportData(!showExportData)}
+        onAddActivityType={() => {
+          const name = prompt('Enter activity name:');
+          if (name) handleCreateActivity(name);
+        }}
+      />
       
       <main className="main-content">
-        <div className="page-header">
-          <button 
-            className="btn-manage-users" 
-            onClick={() => setShowUserManagement(true)}
-          >
-            ⚙️ Manage Users
-          </button>
-          <button
-            className="btn-export-data"
-            onClick={() => setShowExportData(!showExportData)}
-          >
-            📊 {showExportData ? 'Hide' : 'Export Data'}
-          </button>
-        </div>
-        <div className="toolbar">
-          <button className="btn-new-event" onClick={() => setShowNewEventModal(true)}>
-            + Start New Event
-          </button>
-          <button className="btn-add-activity" onClick={() => {
-            const name = prompt('Enter activity name:');
-            if (name) handleCreateActivity(name);
-          }}>
-            + Add Activity Type
-          </button>
-        </div>
-
         {showExportData && (
           <div className="export-data-section">
             <ExportData />
@@ -426,6 +409,7 @@ export function SignInPage() {
               onLoadMore={handleLoadMoreEvents}
               hasMore={hasMore}
               isLoading={loadingMore}
+              onStartNewEvent={() => setShowNewEventModal(true)}
             />
           </div>
 
