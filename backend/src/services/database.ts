@@ -231,10 +231,14 @@ class DatabaseService {
   }
 
   // Member methods
-  getAllMembers(stationId?: string): Member[] {
-    // Calculate date 6 months ago
+  getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Member[] {
+    // Calculate date 6 months ago for activity filtering
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    // Calculate 30 days ago for "active" filter
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     // Filter members by station if specified
     let members = Array.from(this.members.values());
@@ -242,26 +246,118 @@ class DatabaseService {
       members = members.filter(m => getEffectiveStationId(m.stationId) === stationId);
     }
     
-    // Count check-ins per member in the last 6 months
-    const checkInCounts = new Map<string, number>();
+    // Count check-ins per member in the last 6 months (for sorting and filtering)
+    const checkInCounts = new Map<string, { count: number; lastCheckIn: Date | null }>();
     
     Array.from(this.eventParticipants.values()).forEach(participant => {
       if (participant.checkInTime >= sixMonthsAgo) {
-        const currentCount = checkInCounts.get(participant.memberId) || 0;
-        checkInCounts.set(participant.memberId, currentCount + 1);
+        const current = checkInCounts.get(participant.memberId) || { count: 0, lastCheckIn: null };
+        current.count++;
+        if (!current.lastCheckIn || participant.checkInTime > current.lastCheckIn) {
+          current.lastCheckIn = participant.checkInTime;
+        }
+        checkInCounts.set(participant.memberId, current);
       }
     });
     
-    // Sort members by check-in count (descending), then by name
-    return members.sort((a, b) => {
-      const countA = checkInCounts.get(a.id) || 0;
-      const countB = checkInCounts.get(b.id) || 0;
-      
-      if (countB !== countA) {
-        return countB - countA; // More check-ins first
+    // Get currently checked-in members
+    const checkedInMemberIds = new Set<string>();
+    Array.from(this.events.values())
+      .filter(e => e.isActive)
+      .forEach(event => {
+        Array.from(this.eventParticipants.values())
+          .filter(p => p.eventId === event.id)
+          .forEach(p => checkedInMemberIds.add(p.memberId));
+      });
+    
+    // Apply search filter
+    if (options?.search) {
+      const searchLower = options.search.toLowerCase();
+      members = members.filter(m => {
+        return (
+          m.name.toLowerCase().includes(searchLower) ||
+          (m.rank && m.rank.toLowerCase().includes(searchLower)) ||
+          (m.memberNumber && m.memberNumber.toLowerCase().includes(searchLower))
+        );
+      });
+    }
+    
+    // Apply activity filter
+    if (options?.filter) {
+      switch (options.filter) {
+        case 'checked-in':
+          members = members.filter(m => checkedInMemberIds.has(m.id));
+          break;
+        case 'active':
+          // Active in last 30 days
+          members = members.filter(m => {
+            const stats = checkInCounts.get(m.id);
+            return stats && stats.lastCheckIn && stats.lastCheckIn >= thirtyDaysAgo;
+          });
+          break;
+        case 'inactive':
+          // No activity in last 30 days or no activity at all
+          members = members.filter(m => {
+            const stats = checkInCounts.get(m.id);
+            return !stats || !stats.lastCheckIn || stats.lastCheckIn < thirtyDaysAgo;
+          });
+          break;
+        // 'all' or undefined - no filtering
       }
-      return a.name.localeCompare(b.name); // Alphabetical for ties
-    });
+    }
+    
+    // Apply sorting
+    if (options?.sort) {
+      switch (options.sort) {
+        case 'name-asc':
+          members.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case 'name-desc':
+          members.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        case 'activity':
+          // Most active first (by count)
+          members.sort((a, b) => {
+            const countA = checkInCounts.get(a.id)?.count || 0;
+            const countB = checkInCounts.get(b.id)?.count || 0;
+            if (countB !== countA) return countB - countA;
+            return a.name.localeCompare(b.name); // Alphabetical for ties
+          });
+          break;
+        case 'recent':
+          // Most recently active first
+          members.sort((a, b) => {
+            const lastA = checkInCounts.get(a.id)?.lastCheckIn;
+            const lastB = checkInCounts.get(b.id)?.lastCheckIn;
+            if (!lastA && !lastB) return a.name.localeCompare(b.name);
+            if (!lastA) return 1;
+            if (!lastB) return -1;
+            if (lastB.getTime() !== lastA.getTime()) {
+              return lastB.getTime() - lastA.getTime();
+            }
+            return a.name.localeCompare(b.name);
+          });
+          break;
+        default:
+          // Default sort: by activity (count), then alphabetically
+          members.sort((a, b) => {
+            const countA = checkInCounts.get(a.id)?.count || 0;
+            const countB = checkInCounts.get(b.id)?.count || 0;
+            if (countB !== countA) return countB - countA;
+            return a.name.localeCompare(b.name);
+          });
+      }
+    } else {
+      // Default sort: by activity (count), then alphabetically
+      members.sort((a, b) => {
+        const countA = checkInCounts.get(a.id)?.count || 0;
+        const countB = checkInCounts.get(b.id)?.count || 0;
+        if (countB !== countA) return countB - countA;
+        return a.name.localeCompare(b.name);
+      });
+    }
+    
+    return members;
   }
 
   getMemberById(id: string): Member | undefined {
