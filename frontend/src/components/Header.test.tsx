@@ -6,6 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { render } from '../test/utils/test-utils'
 import { Header } from './Header'
 import { StationProvider } from '../contexts/StationContext'
@@ -115,5 +116,117 @@ describe('Header', () => {
     renderWithProvider({ isConnected: true })
 
     expect(screen.getByLabelText('Toggle theme')).toBeInTheDocument()
+  })
+
+  it('does not render admin menu when no callbacks provided', async () => {
+    renderWithProvider({ isConnected: true })
+
+    expect(screen.queryByLabelText('Admin menu')).not.toBeInTheDocument()
+  })
+
+  it('renders admin menu button when callbacks provided', async () => {
+    const onManageUsers = vi.fn()
+    const onExportData = vi.fn()
+    const onAddActivityType = vi.fn()
+
+    renderWithProvider({
+      isConnected: true,
+      onManageUsers,
+      onExportData,
+      onAddActivityType,
+    })
+
+    expect(screen.getByLabelText('Admin menu')).toBeInTheDocument()
+  })
+
+  it('opens and closes admin menu on button click', async () => {
+    const onManageUsers = vi.fn()
+    const user = userEvent.setup()
+    
+    renderWithProvider({
+      isConnected: true,
+      onManageUsers,
+    })
+
+    const menuButton = screen.getByLabelText('Admin menu')
+    
+    // Initially, menu items should not be visible
+    expect(screen.queryByText('Manage Users')).not.toBeInTheDocument()
+
+    // Click to open menu
+    await user.click(menuButton)
+    
+    // Menu items should now be visible
+    expect(screen.getByText('Manage Users')).toBeInTheDocument()
+
+    // Click to close menu
+    await user.click(menuButton)
+    
+    // Menu items should be hidden again
+    await waitFor(() => {
+      expect(screen.queryByText('Manage Users')).not.toBeInTheDocument()
+    })
+  })
+
+  it('calls onManageUsers when menu item clicked', async () => {
+    const onManageUsers = vi.fn()
+    const user = userEvent.setup()
+    
+    renderWithProvider({
+      isConnected: true,
+      onManageUsers,
+    })
+
+    // Open menu
+    await user.click(screen.getByLabelText('Admin menu'))
+    
+    // Click menu item
+    await user.click(screen.getByText('Manage Users'))
+    
+    expect(onManageUsers).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes menu when clicking outside', async () => {
+    const onManageUsers = vi.fn()
+    const user = userEvent.setup()
+    
+    renderWithProvider({
+      isConnected: true,
+      onManageUsers,
+    })
+
+    // Open menu
+    await user.click(screen.getByLabelText('Admin menu'))
+    expect(screen.getByText('Manage Users')).toBeInTheDocument()
+
+    // Click outside (on the header itself)
+    await user.click(screen.getByText('Station Manager'))
+    
+    // Menu should close
+    await waitFor(() => {
+      expect(screen.queryByText('Manage Users')).not.toBeInTheDocument()
+    })
+  })
+
+  it('closes menu when pressing Escape key', async () => {
+    const onManageUsers = vi.fn()
+    const user = userEvent.setup()
+    
+    renderWithProvider({
+      isConnected: true,
+      onManageUsers,
+    })
+
+    // Open menu
+    await user.click(screen.getByLabelText('Admin menu'))
+    expect(screen.getByText('Manage Users')).toBeInTheDocument()
+
+    // Press Escape
+    await user.keyboard('{Escape}')
+    
+    // Menu should close
+    await waitFor(() => {
+      expect(screen.queryByText('Manage Users')).not.toBeInTheDocument()
+    })
   })
 })
