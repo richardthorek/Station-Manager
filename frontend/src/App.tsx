@@ -3,7 +3,10 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { StationProvider } from './contexts/StationContext';
 import { DemoLandingPrompt } from './components/DemoLandingPrompt';
 import { LoadingFallback } from './components/LoadingFallback';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { InstallPrompt } from './components/InstallPrompt';
 import { hasSeenDemoPrompt } from './utils/demoPromptUtils';
+import { initDB } from './services/offlineStorage';
 
 // Lazy load all route components for better code splitting
 const LandingPage = lazy(() => import('./features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -25,6 +28,11 @@ function App() {
   const [showDemoPrompt, setShowDemoPrompt] = useState(false);
 
   useEffect(() => {
+    // Initialize IndexedDB for offline storage
+    initDB().catch(err => {
+      console.error('Failed to initialize offline database:', err);
+    });
+
     // Show demo prompt on first visit
     if (!hasSeenDemoPrompt()) {
       // Small delay for better UX
@@ -37,6 +45,8 @@ function App() {
   return (
     <BrowserRouter>
       <StationProvider>
+        <OfflineIndicator />
+        <InstallPrompt />
         {showDemoPrompt && (
           <DemoLandingPrompt onDismiss={() => setShowDemoPrompt(false)} />
         )}

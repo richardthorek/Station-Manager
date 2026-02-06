@@ -1,0 +1,246 @@
+.offline-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.offline-indicator > * {
+  pointer-events: auto;
+}
+
+.offline-indicator__banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: var(--rfs-dark-grey);
+  color: var(--rfs-white);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.offline-indicator__banner.offline {
+  background: var(--ui-amber);
+  color: var(--rfs-black);
+}
+
+.offline-indicator__banner.online {
+  background: var(--ui-blue);
+  color: var(--rfs-white);
+}
+
+.offline-indicator__status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.online {
+  background: var(--ui-green);
+  box-shadow: 0 0 8px var(--ui-green);
+  animation: pulse 2s infinite;
+}
+
+.status-dot.offline {
+  background: #ff6b6b;
+  box-shadow: 0 0 8px #ff6b6b;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.status-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.offline-indicator__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.view-queue-btn,
+.sync-now-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.view-queue-btn:hover,
+.sync-now-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.sync-now-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.offline-indicator__queue {
+  background: var(--rfs-white);
+  border-bottom: 1px solid var(--rfs-light-grey);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.queue-header {
+  padding: 1rem 1.5rem;
+  background: var(--rfs-black);
+  color: var(--rfs-white);
+  border-bottom: 2px solid var(--rfs-core-red);
+}
+
+.queue-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.queue-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--rfs-light-grey);
+  background: var(--rfs-white);
+  transition: background 0.2s ease;
+}
+
+.queue-item:hover {
+  background: #f8f8f8;
+}
+
+.queue-item.syncing {
+  background: #f0f7ff;
+}
+
+.queue-item.failed {
+  background: #fff5f5;
+}
+
+.queue-item__icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.queue-item__details {
+  flex: 1;
+  min-width: 0;
+}
+
+.queue-item__label {
+  font-weight: 600;
+  color: var(--rfs-black);
+  margin-bottom: 0.25rem;
+}
+
+.queue-item__time {
+  font-size: 0.85rem;
+  color: var(--rfs-dark-grey);
+}
+
+.queue-item__error {
+  font-size: 0.8rem;
+  color: #d32f2f;
+  margin-top: 0.25rem;
+  font-family: monospace;
+}
+
+.queue-item__status {
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.queue-item.pending .queue-item__status {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.queue-item.syncing .queue-item__status {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.queue-item.failed .queue-item__status {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .offline-indicator__banner {
+    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .status-text {
+    font-size: 0.85rem;
+  }
+
+  .view-queue-btn,
+  .sync-now-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .queue-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .queue-item {
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .queue-item__icon {
+    font-size: 1.25rem;
+  }
+}
+
+/* Tablet landscape optimizations */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .offline-indicator__banner {
+    padding: 0.6rem 1.25rem;
+  }
+
+  .queue-list {
+    max-height: 300px;
+  }
+}

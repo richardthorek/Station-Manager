@@ -160,12 +160,60 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 |-----------|---------|---------|
 | React | 19.2.0 | UI framework |
 | TypeScript | ~5.9.3 | Type-safe development |
-| Vite | ^7.2.2 | Build tool and dev server |
-| React Router DOM | ^7.9.6 | Client-side routing |
+| Vite | ^7.3.1 | Build tool and dev server |
+| React Router DOM | ^7.12.0 | Client-side routing |
 | Socket.io Client | ^4.8.1 | Real-time WebSocket communication |
 | Framer Motion | ^12.23.24 | Animations and transitions |
 | QRCode.react | ^4.2.0 | QR code generation |
+| **vite-plugin-pwa** | **^1.2.0** | **PWA service worker generation** |
+| **workbox-window** | **Latest** | **Service worker runtime library** |
+| **idb** | **Latest** | **IndexedDB wrapper for offline storage** |
 | ESLint | ^9.39.1 | Code quality and linting |
+| Vitest | ^4.0.16 | Testing framework |
+
+### Progressive Web App (PWA) Features
+
+**Status**: ✅ Implemented (February 2026)
+
+The application is a fully-featured Progressive Web App with:
+
+1. **Service Worker** - Automatic caching and offline support
+   - Cache-first strategy for static assets (JS, CSS, images, fonts)
+   - Network-first strategy for API calls (10s timeout, then cache fallback)
+   - Automatic background updates
+   - Cache cleanup and versioning
+   
+2. **Offline Queue System**
+   - IndexedDB-based persistent storage
+   - Automatic sync when connection restored
+   - Retry logic with exponential backoff (up to 3 attempts)
+   - Support for check-ins, member creation, events, and more
+   
+3. **Installability**
+   - Install prompt with feature highlights
+   - Add to Home Screen on iOS and Android
+   - Standalone display mode
+   - Appropriate icons (192x192, 512x512)
+   
+4. **Offline Indicator**
+   - Real-time connection status banner
+   - Queued actions display with details
+   - Manual sync trigger
+   - Visual feedback for sync progress
+
+**Implementation Files**:
+- `frontend/vite.config.ts` - PWA plugin configuration
+- `frontend/src/services/offlineStorage.ts` - IndexedDB wrapper (225 lines)
+- `frontend/src/services/offlineQueue.ts` - Queue manager (188 lines)
+- `frontend/src/services/offlineSupport.ts` - Helper utilities (216 lines)
+- `frontend/src/components/OfflineIndicator.tsx` - Status UI (221 lines)
+- `frontend/src/components/InstallPrompt.tsx` - Install prompt (159 lines)
+
+**Caching Strategy**:
+- Static assets: Cache-first, 30-day expiration
+- API responses: Network-first with 10s timeout, 24-hour cache
+- Images: Cache-first, 30-day expiration, max 50 entries
+- Google Fonts: Cache-first, 1-year expiration
 
 ### Backend Technologies
 
