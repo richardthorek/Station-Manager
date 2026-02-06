@@ -321,7 +321,7 @@ export class TableStorageDatabase {
     });
     
     // Get currently checked-in members
-    const activeEvents = await this.getActiveEvents(stationId);
+    const activeEvents = await this.getActiveEvents();
     const checkedInMemberIds = new Set<string>();
     for (const event of activeEvents) {
       const eventParticipants = await this.getEventParticipants(event.id);

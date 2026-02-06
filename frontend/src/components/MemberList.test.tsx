@@ -6,11 +6,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { render } from '../test/utils/test-utils'
 import { MemberList } from './MemberList'
-import { mockMembers, mockCheckIns } from '../test/mocks/api'
+import { mockMembers, mockCheckIns, createMockApi } from '../test/mocks/api'
+
+// Mock the API module
+vi.mock('../services/api', () => ({
+  api: createMockApi()
+}))
 
 describe('MemberList', () => {
   const mockOnCheckIn = vi.fn()
@@ -20,7 +25,7 @@ describe('MemberList', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the member list', () => {
+  it('renders the member list', async () => {
     render(
       <MemberList
         members={mockMembers}
@@ -31,10 +36,15 @@ describe('MemberList', () => {
     )
 
     expect(screen.getByText('Sign In')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Search members...')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Search by name, rank, or member #...')).toBeInTheDocument()
+    
+    // Wait for members to load
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+    })
   })
 
-  it('displays all members', () => {
+  it('displays all members', async () => {
     render(
       <MemberList
         members={mockMembers}
@@ -44,8 +54,11 @@ describe('MemberList', () => {
       />
     )
 
-    mockMembers.forEach(member => {
-      expect(screen.getByText(member.name)).toBeInTheDocument()
+    // Wait for members to load
+    await waitFor(() => {
+      mockMembers.forEach(member => {
+        expect(screen.getByText(member.name)).toBeInTheDocument()
+      })
     })
   })
 
@@ -61,11 +74,16 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...')
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...')
     await user.type(searchInput, 'John')
 
-    expect(screen.getByText('John Smith')).toBeInTheDocument()
-    expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument()
+    // Wait for filtered results
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+    })
+    await waitFor(() => {
+      expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument()
+    })
   })
 
   it('shows clear button when search has text', async () => {
@@ -80,7 +98,7 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...')
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...')
     
     // Initially no clear button
     expect(screen.queryByLabelText('Clear search')).not.toBeInTheDocument()
@@ -104,7 +122,7 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...') as HTMLInputElement
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...') as HTMLInputElement
     await user.type(searchInput, 'John')
     expect(searchInput.value).toBe('John')
 
@@ -344,7 +362,7 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...')
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...')
     await user.type(searchInput, 'Nonexistent Member')
 
     expect(screen.getByText('No members found')).toBeInTheDocument()
@@ -362,7 +380,7 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...') as HTMLInputElement
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...') as HTMLInputElement
     await user.type(searchInput, 'John')
     expect(searchInput.value).toBe('John')
 
@@ -386,7 +404,7 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...') as HTMLInputElement
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...') as HTMLInputElement
     await user.type(searchInput, 'John')
     expect(searchInput.value).toBe('John')
 

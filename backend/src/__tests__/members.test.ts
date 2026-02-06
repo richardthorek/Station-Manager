@@ -246,4 +246,100 @@ describe('Members API', () => {
       expect(response.body.error).toContain('not found');
     });
   });
+
+  describe('GET /api/members with query parameters', () => {
+    beforeAll(async () => {
+      // Create test members with different attributes for search/filter/sort tests
+      await request(app)
+        .post('/api/members')
+        .send({ name: 'Alice Anderson', rank: 'Captain' });
+      
+      await request(app)
+        .post('/api/members')
+        .send({ name: 'Bob Baker', rank: 'Senior Deputy Captain' });
+      
+      await request(app)
+        .post('/api/members')
+        .send({ name: 'Charlie Cooper' });
+    });
+
+    describe('Search functionality', () => {
+      it('should filter members by name', async () => {
+        const response = await request(app)
+          .get('/api/members?search=Alice')
+          .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.length).toBeGreaterThan(0);
+        expect(response.body.some((m: any) => m.name.includes('Alice'))).toBe(true);
+      });
+
+      it('should filter members by rank', async () => {
+        const response = await request(app)
+          .get('/api/members?search=Captain')
+          .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.length).toBeGreaterThan(0);
+        // Should find members with rank containing "Captain"
+        expect(response.body.some((m: any) => m.rank && m.rank.includes('Captain'))).toBe(true);
+      });
+
+      it('should return empty array when no matches found', async () => {
+        const response = await request(app)
+          .get('/api/members?search=NonExistentMember12345')
+          .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.length).toBe(0);
+      });
+    });
+
+    describe('Sort functionality', () => {
+      it('should sort members by name ascending', async () => {
+        const response = await request(app)
+          .get('/api/members?sort=name-asc')
+          .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+        if (response.body.length > 1) {
+          const names = response.body.map((m: any) => m.name);
+          const sortedNames = [...names].sort((a, b) => a.localeCompare(b));
+          expect(names).toEqual(sortedNames);
+        }
+      });
+
+      it('should sort members by name descending', async () => {
+        const response = await request(app)
+          .get('/api/members?sort=name-desc')
+          .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+        if (response.body.length > 1) {
+          const names = response.body.map((m: any) => m.name);
+          const sortedNames = [...names].sort((a, b) => b.localeCompare(a));
+          expect(names).toEqual(sortedNames);
+        }
+      });
+    });
+
+    describe('Combined filters', () => {
+      it('should apply both search and sort', async () => {
+        const response = await request(app)
+          .get('/api/members?search=e&sort=name-asc')
+          .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+        // Should only return members with 'e' in their name, rank, or member number
+        if (response.body.length > 0) {
+          response.body.forEach((m: any) => {
+            const hasE = m.name.toLowerCase().includes('e') ||
+                        (m.rank && m.rank.toLowerCase().includes('e')) ||
+                        (m.memberNumber && m.memberNumber.toLowerCase().includes('e'));
+            expect(hasE).toBe(true);
+          });
+        }
+      });
+    });
+  });
 });

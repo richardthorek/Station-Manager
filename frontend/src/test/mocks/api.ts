@@ -114,7 +114,28 @@ export const createMockApi = () => ({
   }),
 
   // Members
-  getMembers: vi.fn().mockResolvedValue(mockMembers),
+  getMembers: vi.fn((options?: { search?: string; filter?: string; sort?: string }) => {
+    let filtered = [...mockMembers];
+    
+    // Apply search
+    if (options?.search) {
+      const searchLower = options.search.toLowerCase();
+      filtered = filtered.filter(m =>
+        m.name.toLowerCase().includes(searchLower) ||
+        (m.rank && m.rank.toLowerCase().includes(searchLower)) ||
+        (m.memberNumber && m.memberNumber.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Apply sort
+    if (options?.sort === 'name-asc') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (options?.sort === 'name-desc') {
+      filtered.sort((a, b) => b.name.localeCompare(a.name));
+    }
+    
+    return Promise.resolve(filtered);
+  }),
   getMember: vi.fn((id: string) => Promise.resolve(mockMembers.find(m => m.id === id))),
   createMember: vi.fn((name: string) => 
     Promise.resolve({
