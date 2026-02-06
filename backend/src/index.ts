@@ -286,11 +286,7 @@ async function startServer() {
     await ensureDatabase();
     await ensureTruckChecksDatabase();
     
-    // Load RFS facilities data
-    const parser = getRFSFacilitiesParser();
-    await parser.loadData();
-    
-    // Start HTTP server
+    // Start HTTP server first - don't block on RFS data loading
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Health check: http://localhost:${PORT}/health`);
@@ -305,6 +301,13 @@ async function startServer() {
       } else {
         logger.info('Database: In-memory (data will be lost on restart)');
       }
+    });
+    
+    // Load RFS facilities data in background (non-blocking)
+    // This allows the server to start immediately even if data loading is slow
+    const parser = getRFSFacilitiesParser();
+    parser.loadData().catch((error) => {
+      logger.error('Background RFS data loading failed', { error });
     });
   } catch (error) {
     logger.error('Failed to start server', { error });

@@ -42,8 +42,9 @@ class RFSFacilitiesParser {
       const containerClient = blobServiceClient.getContainerClient(this.blobContainerName);
       const blobClient = containerClient.getBlobClient(this.blobName);
       
-      // Check if blob exists
-      const exists = await blobClient.exists();
+      // Check if blob exists with 30-second timeout
+      const existsPromise = blobClient.exists();
+      const exists = await this.withTimeout(existsPromise, 30000, 'blob exists check');
       if (!exists) {
         logger.info(`   ℹ️  Blob ${this.blobName} not found in container ${this.blobContainerName}`);
         return false;
@@ -55,14 +56,33 @@ class RFSFacilitiesParser {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      // Download the blob to local file
-      await blobClient.downloadToFile(this.csvPath);
+      // Download the blob to local file with 60-second timeout
+      const downloadPromise = blobClient.downloadToFile(this.csvPath);
+      await this.withTimeout(downloadPromise, 60000, 'blob download');
       logger.info(`   ✅ Downloaded CSV from blob storage to ${this.csvPath}`);
       return true;
     } catch (error) {
       logger.error('   ❌ Error downloading CSV from blob storage:', error);
       return false;
     }
+  }
+
+  /**
+   * Wrap a promise with a timeout
+   * Throws if the operation exceeds the timeout
+   */
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    operationName: string
+  ): Promise<T> {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeoutPromise]);
   }
 
   /**
