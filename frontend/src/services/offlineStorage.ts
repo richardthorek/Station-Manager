@@ -71,7 +71,7 @@ export async function initDB(): Promise<IDBPDatabase<StationManagerDB>> {
  */
 export async function addToQueue(action: Omit<QueuedAction, 'id' | 'timestamp' | 'retryCount' | 'status'>): Promise<string> {
   const database = await initDB();
-  const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const id = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   
   const queuedAction: QueuedAction = {
     ...action,
