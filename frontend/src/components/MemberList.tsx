@@ -31,6 +31,7 @@ export function MemberList({
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
+  const [showFilterSort, setShowFilterSort] = useState(false);
   
   // Filter and sort state with localStorage persistence
   const [filter, setFilter] = useState<FilterOption>(() => {
@@ -158,6 +159,15 @@ export function MemberList({
           )}
         </div>
         <button 
+          className={`btn-filter-sort ${showFilterSort ? 'active' : ''}`}
+          onClick={() => setShowFilterSort(!showFilterSort)}
+          title="Filter and Sort Options"
+          aria-label="Toggle filter and sort options"
+          aria-expanded={showFilterSort}
+        >
+          🔍
+        </button>
+        <button 
           className="btn-add-member"
           onClick={() => setShowAddMember(true)}
           title="Add New Member"
@@ -166,38 +176,40 @@ export function MemberList({
         </button>
       </div>
 
-      <div className="filter-sort-controls">
-        <div className="control-group">
-          <label htmlFor="filter-select">Filter:</label>
-          <select
-            id="filter-select"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as FilterOption)}
-            className="filter-select"
-          >
-            <option value="all">All Members</option>
-            <option value="checked-in">Checked In</option>
-            <option value="active">Active (Last 30 Days)</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
+      {showFilterSort && (
+        <div className="filter-sort-panel">
+          <div className="control-group">
+            <label htmlFor="filter-select">Filter:</label>
+            <select
+              id="filter-select"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as FilterOption)}
+              className="filter-select"
+            >
+              <option value="all">All Members</option>
+              <option value="checked-in">Checked In</option>
+              <option value="active">Active (Last 30 Days)</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
 
-        <div className="control-group">
-          <label htmlFor="sort-select">Sort:</label>
-          <select
-            id="sort-select"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortOption)}
-            className="sort-select"
-          >
-            <option value="default">Default</option>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="activity">Most Active</option>
-            <option value="recent">Recently Active</option>
-          </select>
+          <div className="control-group">
+            <label htmlFor="sort-select">Sort:</label>
+            <select
+              id="sort-select"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortOption)}
+              className="sort-select"
+            >
+              <option value="default">Default</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+              <option value="activity">Most Active</option>
+              <option value="recent">Recently Active</option>
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="result-count">
         {loading ? (

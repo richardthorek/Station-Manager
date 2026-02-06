@@ -21,6 +21,64 @@
   flex-shrink: 0;
 }
 
+.btn-filter-sort {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  background: var(--color-gray-light);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-filter-sort:hover {
+  background: var(--color-gray-medium);
+  border-color: var(--color-primary-red);
+  transform: scale(1.05);
+}
+
+.btn-filter-sort.active {
+  background: var(--color-primary-red);
+  color: var(--color-white);
+  border-color: var(--color-primary-red);
+}
+
+.btn-filter-sort.active:hover {
+  background: var(--color-ruby-red);
+}
+
+.filter-sort-panel {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: var(--color-gray-light);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-shrink: 0;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .filter-sort-controls {
   display: flex;
   gap: 16px;
