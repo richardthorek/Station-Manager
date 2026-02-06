@@ -1249,11 +1249,11 @@ Potential improvements (not in current scope):
    - **Helmet Middleware**: Industry-standard security headers via helmet 8.1.0
    - **Content-Security-Policy (CSP)**: Protects against XSS and injection attacks
      - `default-src 'self'` - Only allow resources from same origin by default
-     - `script-src 'self'` - JavaScript only from same origin
-     - `style-src 'self' 'unsafe-inline'` - Styles from same origin + inline (required for React)
+     - `script-src 'self' https://www.clarity.ms` - JavaScript from same origin + Microsoft Clarity analytics
+     - `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com` - Styles from same origin + inline (React) + Google Fonts
+     - `font-src 'self' data: https://fonts.gstatic.com` - Fonts from same origin, data URIs, and Google Fonts
      - `img-src 'self' data: blob: https:` - Images from same origin, data URIs, blobs, and HTTPS
-     - `connect-src 'self' ws: wss:` - WebSocket connections allowed for Socket.io
-     - `font-src 'self' data:` - Fonts from same origin and data URIs
+     - `connect-src 'self' ws: wss: https://www.clarity.ms` - WebSocket (Socket.io) + Clarity analytics endpoint
      - `object-src 'none'` - Block object/embed/applet elements
      - `media-src 'self'` - Media only from same origin
      - `frame-src 'none'` - Block all iframe embedding of external content
@@ -1267,8 +1267,13 @@ Potential improvements (not in current scope):
      - `payment=()` - Blocks payment APIs
    - **Strict-Transport-Security (HSTS)** - Enforces HTTPS (max-age: 1 year, includeSubDomains)
    - **X-Powered-By** - Header hidden to avoid revealing server technology
-   - **Test Coverage**: 27 dedicated security header tests (100% pass rate)
+   - **Test Coverage**: 31 dedicated security header tests (100% pass rate)
    - **Implementation**: Applied before other middleware in `backend/src/index.ts`
+   - **CSP Rationale**:
+     - **Google Fonts**: Whitelisted specific domains (`fonts.googleapis.com` for CSS, `fonts.gstatic.com` for font files) for brand compliance with NSW RFS style guide
+     - **Microsoft Clarity**: Analytics script source whitelisted for user behavior tracking
+     - **Inline Styles**: `'unsafe-inline'` required for React's CSS-in-JS and Framer Motion animations
+     - **No Inline Scripts**: All scripts externalized to separate files for better CSP security
 
 2. **CORS Configuration**
    - Configured for specific frontend URL
