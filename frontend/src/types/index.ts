@@ -32,6 +32,7 @@ export interface Station {
     email?: string;
   };
   isActive: boolean;            // Whether station is currently active
+  kioskToken?: string;          // Secure token for kiosk mode access (optional)
   createdAt: string;
   updatedAt: string;
 }

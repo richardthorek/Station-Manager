@@ -44,6 +44,7 @@ import truckChecksRouter from './routes/truckChecks';
 import reportsRouter from './routes/reports';
 import demoRouter from './routes/demo';
 import stationsRouter from './routes/stations';
+import brigadeAccessRouter from './routes/brigadeAccess';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -51,6 +52,7 @@ import { getRFSFacilitiesParser } from './services/rfsFacilitiesParser';
 import { getVersionInfo } from './services/version';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 import { demoModeMiddleware } from './middleware/demoModeMiddleware';
+import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
 
 const app = express();
 const httpServer = createServer(app);
@@ -70,6 +72,7 @@ app.set('io', io);
 app.use(cors());
 app.use(express.json());
 app.use(demoModeMiddleware); // Detect demo mode from query parameter
+app.use(kioskModeMiddleware); // Detect and validate kiosk mode from brigade token
 
 // Serve static files from frontend build (for production)
 const frontendPath = path.join(__dirname, '../../frontend/dist');
@@ -136,7 +139,7 @@ app.use('/api/events', apiRateLimiter, eventsRouter);
 app.use('/api/stations', apiRateLimiter, stationsRouter);
 app.use('/api/truck-checks', apiRateLimiter, truckChecksRouter);
 app.use('/api/reports', apiRateLimiter, reportsRouter);
-app.use('/api/stations', apiRateLimiter, stationsRouter);
+app.use('/api/brigade-access', apiRateLimiter, brigadeAccessRouter);
 
 // Achievement routes (now handles database selection per-request based on demo mode)
 app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());

@@ -290,3 +290,32 @@
     scroll-behavior: auto;
   }
 }
+
+/* Kiosk Mode Styles */
+.station-selector.kiosk-locked {
+  pointer-events: none;
+}
+
+.station-selector-button.locked {
+  background: var(--bg-secondary);
+  border-color: var(--rfs-dark-grey);
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+.station-selector-button.locked:hover {
+  border-color: var(--rfs-dark-grey);
+  background: var(--bg-secondary);
+}
+
+.kiosk-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--rfs-dark-grey);
+  color: var(--rfs-white);
+  border-radius: 4px;
+  white-space: nowrap;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

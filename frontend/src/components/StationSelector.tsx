@@ -16,7 +16,14 @@ import { useStation, DEMO_STATION_ID } from '../contexts/StationContext';
 import './StationSelector.css';
 
 export function StationSelector() {
-  const { selectedStation, stations, selectStation, isDemoStation } = useStation();
+  const { 
+    selectedStation, 
+    stations, 
+    selectStation, 
+    isDemoStation,
+    isKioskMode,
+    canSwitchStations,
+  } = useStation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -144,6 +151,11 @@ export function StationSelector() {
    * Toggle dropdown open/closed
    */
   const toggleDropdown = () => {
+    // Prevent opening dropdown in kiosk mode
+    if (isKioskMode || !canSwitchStations()) {
+      return;
+    }
+    
     setIsOpen(!isOpen);
     if (isOpen) {
       setSearchQuery('');
@@ -164,6 +176,19 @@ export function StationSelector() {
     // Show both if different
     return `${station.brigadeName} - ${station.name}`;
   };
+
+  // Don't render dropdown if in kiosk mode - just show locked station
+  if (isKioskMode) {
+    return (
+      <div className="station-selector kiosk-locked">
+        <div className="station-selector-button locked">
+          <span className="station-icon">🔒</span>
+          <span className="station-name">{getStationDisplayName(selectedStation)}</span>
+          <span className="kiosk-badge">Kiosk Mode</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="station-selector" ref={dropdownRef} onKeyDown={handleKeyDown}>

@@ -7,11 +7,19 @@
  * - Persisting selection to localStorage
  * - Syncing selection across browser tabs
  * - Providing station data to all components
+ * - Kiosk mode: Brigade-locked station selection for kiosk devices
  */
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { api, setCurrentStationId } from '../services/api';
 import type { Station } from '../types';
+import { 
+  isKioskMode, 
+  getKioskStationId, 
+  initializeKioskMode, 
+  validateKioskToken,
+  canSwitchStation 
+} from '../utils/kioskMode';
 
 // LocalStorage key for persisting station selection
 const STORAGE_KEY = 'selectedStationId';
@@ -28,6 +36,7 @@ interface StationContextType {
   stations: Station[];
   isLoading: boolean;
   error: string | null;
+  isKioskMode: boolean;
   
   // Actions
   selectStation: (stationId: string) => void;
@@ -37,6 +46,7 @@ interface StationContextType {
   // Helper methods
   isDemoStation: () => boolean;
   isDefaultStation: () => boolean;
+  canSwitchStations: () => boolean;
 }
 
 const StationContext = createContext<StationContextType | undefined>(undefined);
@@ -50,6 +60,7 @@ export function StationProvider({ children }: StationProviderProps) {
   const [stations, setStations] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [kioskMode, setKioskMode] = useState(false);
 
   /**
    * Load stations from API
@@ -69,10 +80,47 @@ export function StationProvider({ children }: StationProviderProps) {
   }, []);
 
   /**
-   * Load persisted selection from localStorage and set initial station
+   * Load persisted selection from localStorage or kiosk mode
    */
   const loadPersistedSelection = useCallback(async (availableStations: Station[]) => {
     try {
+      // Check if in kiosk mode first
+      const inKioskMode = isKioskMode();
+      setKioskMode(inKioskMode);
+      
+      if (inKioskMode) {
+        // Validate kiosk token
+        const validation = await validateKioskToken();
+        
+        if (!validation.valid) {
+          setError('Invalid or expired kiosk access token. Please contact your administrator.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Lock to kiosk station
+        const kioskStationId = validation.stationId || getKioskStationId();
+        if (kioskStationId) {
+          const kioskStation = availableStations.find(s => s.id === kioskStationId);
+          if (kioskStation) {
+            // Initialize kiosk mode with validated station info
+            if (validation.stationId && validation.brigadeId) {
+              initializeKioskMode(validation.stationId, validation.brigadeId);
+            }
+            
+            setSelectedStation(kioskStation);
+            setCurrentStationId(kioskStation.id);
+            setIsLoading(false);
+            return;
+          }
+        }
+        
+        setError('Kiosk station not found. Please contact your administrator.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Normal mode: Load from localStorage
       const persistedId = localStorage.getItem(STORAGE_KEY);
       
       if (persistedId && availableStations.length > 0) {
@@ -137,18 +185,30 @@ export function StationProvider({ children }: StationProviderProps) {
    * Select a station by ID
    */
   const selectStation = useCallback((stationId: string) => {
+    // Prevent station switching in kiosk mode
+    if (kioskMode) {
+      console.warn('Station switching is disabled in kiosk mode');
+      return;
+    }
+    
     const station = stations.find(s => s.id === stationId);
     if (station) {
       setSelectedStation(station);
       setCurrentStationId(station.id);
       localStorage.setItem(STORAGE_KEY, station.id);
     }
-  }, [stations]);
+  }, [stations, kioskMode]);
 
   /**
    * Clear station selection (revert to default)
    */
   const clearStation = useCallback(() => {
+    // Prevent station clearing in kiosk mode
+    if (kioskMode) {
+      console.warn('Station clearing is disabled in kiosk mode');
+      return;
+    }
+    
     localStorage.removeItem(STORAGE_KEY);
     const defaultStation = stations.find(s => s.id === DEFAULT_STATION_ID);
     if (defaultStation) {
@@ -158,7 +218,7 @@ export function StationProvider({ children }: StationProviderProps) {
       setSelectedStation(stations[0]);
       setCurrentStationId(stations[0].id);
     }
-  }, [stations]);
+  }, [stations, kioskMode]);
 
   /**
    * Refresh stations from API
@@ -195,16 +255,25 @@ export function StationProvider({ children }: StationProviderProps) {
     return !selectedStation || selectedStation.id === DEFAULT_STATION_ID;
   }, [selectedStation]);
 
+  /**
+   * Check if station switching is allowed
+   */
+  const canSwitchStations = useCallback(() => {
+    return canSwitchStation();
+  }, []);
+
   const value: StationContextType = {
     selectedStation,
     stations,
     isLoading,
     error,
+    isKioskMode: kioskMode,
     selectStation,
     clearStation,
     refreshStations,
     isDemoStation,
     isDefaultStation,
+    canSwitchStations,
   };
 
   return (
