@@ -882,3 +882,162 @@ curl http://localhost:3000/api/events/active
 # End an event
 curl -X PUT http://localhost:3000/api/events/event-uuid/end
 ```
+
+---
+
+## Data Export Endpoints
+
+### Export Members
+Export all members to CSV format.
+
+**Endpoint**: `GET /api/export/members`
+
+**Headers**:
+- `X-Station-Id`: Station identifier (optional, defaults to 'default-station')
+
+**Response**:
+- Content-Type: `text/csv`
+- Content-Disposition: `attachment; filename="members-YYYY-MM-DD.csv"`
+- Body: CSV file with member data
+
+**Fields**:
+- ID, Name, First Name, Last Name, Rank, Member Number, QR Code, Station ID, Created At, Updated At
+
+**Example**:
+```bash
+curl -X GET http://localhost:3000/api/export/members \
+  -H "X-Station-Id: station-123" \
+  -o members.csv
+```
+
+---
+
+### Export Check-Ins
+Export check-ins with optional date range filtering.
+
+**Endpoint**: `GET /api/export/checkins`
+
+**Headers**:
+- `X-Station-Id`: Station identifier (optional)
+
+**Query Parameters**:
+- `startDate` (optional): Start date for filtering (ISO 8601 format: YYYY-MM-DD)
+- `endDate` (optional): End date for filtering (ISO 8601 format: YYYY-MM-DD)
+
+**Response**:
+- Content-Type: `text/csv`
+- Content-Disposition: `attachment; filename="checkins-[date-range]-YYYY-MM-DD.csv"`
+- Body: CSV file with check-in data
+
+**Fields**:
+- ID, Member ID, Member Name, Activity ID, Activity Name, Station ID, Check-In Time, Check-In Method, Location, Is Offsite, Is Active, Created At
+
+**Example**:
+```bash
+# Export all check-ins
+curl -X GET http://localhost:3000/api/export/checkins -o checkins.csv
+
+# Export check-ins for January 2024
+curl -X GET "http://localhost:3000/api/export/checkins?startDate=2024-01-01&endDate=2024-01-31" \
+  -o checkins-jan-2024.csv
+```
+
+**Errors**:
+- `400`: Invalid date format
+
+---
+
+### Export Events
+Export events with participants and optional date range filtering.
+
+**Endpoint**: `GET /api/export/events`
+
+**Headers**:
+- `X-Station-Id`: Station identifier (optional)
+
+**Query Parameters**:
+- `startDate` (optional): Start date for filtering (ISO 8601 format: YYYY-MM-DD)
+- `endDate` (optional): End date for filtering (ISO 8601 format: YYYY-MM-DD)
+
+**Response**:
+- Content-Type: `text/csv`
+- Content-Disposition: `attachment; filename="events-[date-range]-YYYY-MM-DD.csv"`
+- Body: CSV file with event data (flattened: one row per participant)
+
+**Fields**:
+- Event ID, Activity Name, Activity ID, Station ID, Start Time, End Time, Is Active, Created By, Participant Count
+- Participant ID, Participant Member ID, Participant Member Name, Participant Rank, Participant Check-In Time, Participant Check-In Method, Participant Location, Participant Is Offsite
+
+**Example**:
+```bash
+# Export all events
+curl -X GET http://localhost:3000/api/export/events -o events.csv
+
+# Export events for a specific date range
+curl -X GET "http://localhost:3000/api/export/events?startDate=2024-01-01&endDate=2024-12-31" \
+  -o events-2024.csv
+```
+
+**Errors**:
+- `400`: Invalid date format
+
+---
+
+### Export Truck Check Results
+Export truck check results with optional date range filtering.
+
+**Endpoint**: `GET /api/export/truckcheck-results`
+
+**Headers**:
+- `X-Station-Id`: Station identifier (optional)
+
+**Query Parameters**:
+- `startDate` (optional): Start date for filtering (ISO 8601 format: YYYY-MM-DD)
+- `endDate` (optional): End date for filtering (ISO 8601 format: YYYY-MM-DD)
+
+**Response**:
+- Content-Type: `text/csv`
+- Content-Disposition: `attachment; filename="truckcheck-results-[date-range]-YYYY-MM-DD.csv"`
+- Body: CSV file with truck check data (flattened: one row per check result)
+
+**Fields**:
+- Run ID, Appliance ID, Appliance Name, Station ID, Start Time, End Time, Completed By, Completed By Name, Contributors, Additional Comments, Run Status, Has Issues
+- Result ID, Item ID, Item Name, Item Description, Result Status, Result Comment, Result Photo URL, Result Completed By
+
+**Example**:
+```bash
+# Export all truck check results
+curl -X GET http://localhost:3000/api/export/truckcheck-results -o truckcheck-results.csv
+
+# Export truck checks for last 3 months
+curl -X GET "http://localhost:3000/api/export/truckcheck-results?startDate=2024-01-01&endDate=2024-03-31" \
+  -o truckcheck-q1-2024.csv
+```
+
+**Errors**:
+- `400`: Invalid date format
+
+---
+
+## Example Usage - Data Export
+
+```bash
+# Export all members for a specific station
+curl -X GET http://localhost:3000/api/export/members \
+  -H "X-Station-Id: bungendore-north" \
+  -o members.csv
+
+# Export check-ins for the current month
+START_DATE=$(date +%Y-%m-01)
+END_DATE=$(date +%Y-%m-%d)
+curl -X GET "http://localhost:3000/api/export/checkins?startDate=$START_DATE&endDate=$END_DATE" \
+  -o checkins-current-month.csv
+
+# Export all events from 2024
+curl -X GET "http://localhost:3000/api/export/events?startDate=2024-01-01&endDate=2024-12-31" \
+  -o events-2024.csv
+
+# Export truck checks with issues from last quarter
+curl -X GET "http://localhost:3000/api/export/truckcheck-results?startDate=2024-01-01&endDate=2024-03-31" \
+  -o truckcheck-q1-2024.csv
+```
