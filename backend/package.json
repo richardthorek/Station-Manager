@@ -31,6 +31,7 @@
     "@azure/data-tables": "^13.3.2",
     "@azure/storage-blob": "^12.29.1",
     "@types/multer": "^2.0.0",
+    "@types/papaparse": "^5.5.2",
     "applicationinsights": "^3.13.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
@@ -41,6 +42,7 @@
     "helmet": "^8.1.0",
     "json2csv": "^6.0.0-alpha.2",
     "multer": "^2.0.2",
+    "papaparse": "^5.5.3",
     "socket.io": "^4.8.1",
     "uuid": "^13.0.0",
     "winston": "^3.19.0"

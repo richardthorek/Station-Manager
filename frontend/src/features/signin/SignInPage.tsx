@@ -21,6 +21,7 @@ import { EventLog } from '../../components/EventLog';
 import { CurrentEventParticipants } from '../../components/CurrentEventParticipants';
 import { MemberList } from '../../components/MemberList';
 import { UserManagement } from '../../components/UserManagement';
+import { BulkImportModal } from '../../components/BulkImportModal';
 import { NewEventModal } from '../../components/NewEventModal';
 import { ExportData } from '../../components/ExportData';
 import { useSocket } from '../../hooks/useSocket';
@@ -39,6 +40,7 @@ export function SignInPage() {
   const [offset, setOffset] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [showNewEventModal, setShowNewEventModal] = useState(false);
   const [showExportData, setShowExportData] = useState(false);
   const [databaseStatus, setDatabaseStatus] = useState<{
@@ -311,6 +313,41 @@ export function SignInPage() {
       throw err;
     }
   };
+
+  const handleBulkImport = async (membersToImport: Array<{
+    firstName?: string;
+    lastName?: string;
+    name: string;
+    rank?: string;
+  }>) => {
+    try {
+      const result = await api.executeMemberImport(membersToImport);
+      
+      // Reload members to include newly imported ones
+      await loadMembers();
+      
+      // Emit socket event for all successful imports
+      result.successful.forEach(member => {
+        emit('member-added', member);
+      });
+
+      return result;
+    } catch (err) {
+      console.error('Error importing members:', err);
+      throw err;
+    }
+  };
+
+  const handleOpenBulkImport = () => {
+    setShowUserManagement(false);
+    setShowBulkImport(true);
+  };
+
+  const handleCloseBulkImport = () => {
+    setShowBulkImport(false);
+    loadMembers(); // Reload members after import
+  };
+
   // Get participants signed into selected event to highlight in member list
   const activeParticipantIds = selectedEvent?.participants.map(p => p.memberId) || [];
 
@@ -427,8 +464,19 @@ export function SignInPage() {
           members={members}
           onClose={() => setShowUserManagement(false)}
           onUpdateMember={handleUpdateMember}
+          onBulkImport={handleOpenBulkImport}
         />
       )}
+
+      {showBulkImport && (
+        <BulkImportModal
+          existingMembers={members}
+          onClose={() => setShowBulkImport(false)}
+          onImportComplete={handleCloseBulkImport}
+          onImport={handleBulkImport}
+        />
+      )}
+
       <NewEventModal
         isOpen={showNewEventModal}
         activities={activities}

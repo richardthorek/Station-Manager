@@ -7,9 +7,10 @@ interface UserManagementProps {
   members: Member[];
   onClose: () => void;
   onUpdateMember: (id: string, name: string) => Promise<void>;
+  onBulkImport?: () => void;
 }
 
-export function UserManagement({ members, onClose, onUpdateMember }: UserManagementProps) {
+export function UserManagement({ members, onClose, onUpdateMember, onBulkImport }: UserManagementProps) {
   const navigate = useNavigate();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -79,6 +80,11 @@ export function UserManagement({ members, onClose, onUpdateMember }: UserManagem
         <div className="modal-header">
           <h2>Manage Users</h2>
           <div className="header-actions">
+            {onBulkImport && (
+              <button className="btn-import" onClick={onBulkImport}>
+                📂 Bulk Import
+              </button>
+            )}
             <button className="btn-export" onClick={handleExportUrls}>
               📋 Export Sign-In URLs
             </button>
