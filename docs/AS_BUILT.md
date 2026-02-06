@@ -46,13 +46,15 @@ When updating this document, also update:
 3. [Technology Stack](#technology-stack)
 4. [Database Design](#database-design)
 5. [Application Components](#application-components)
-6. [API Endpoints](#api-endpoints)
-7. [Real-Time Communication](#real-time-communication)
-8. [Security & Authentication](#security--authentication)
-9. [Deployment Architecture](#deployment-architecture)
-10. [Performance Characteristics](#performance-characteristics)
-11. [Testing Coverage](#testing-coverage)
-12. [Monitoring & Maintenance](#monitoring--maintenance)
+6. [National Fire Service Facilities Dataset](#national-fire-service-facilities-dataset)
+7. [Multi-Station Architecture](#multi-station-architecture)
+8. [API Endpoints](#api-endpoints)
+9. [Real-Time Communication](#real-time-communication)
+10. [Security & Authentication](#security--authentication)
+11. [Deployment Architecture](#deployment-architecture)
+12. [Performance Characteristics](#performance-characteristics)
+13. [Testing Coverage](#testing-coverage)
+14. [Monitoring & Maintenance](#monitoring--maintenance)
 
 ---
 
@@ -498,7 +500,8 @@ backend/src/
 │   ├── truckChecksDbFactory.ts
 │   ├── achievementService.ts
 │   ├── rolloverService.ts    # Event auto-expiry service
-│   └── azureStorage.ts       # File storage
+│   ├── azureStorage.ts       # File storage
+│   └── rfsFacilitiesParser.ts # National station lookup (CSV from blob storage)
 ├── types/                     # Type definitions
 │   ├── index.ts
 │   └── achievements.ts
@@ -508,6 +511,110 @@ backend/src/
     ├── checkins.test.ts
     └── setup.ts
 ```
+
+---
+
+## National Fire Service Facilities Dataset
+
+### Overview
+
+**Status:** ✅ Implemented with Azure Blob Storage integration (February 2026)
+
+The system includes a national fire service facilities lookup feature that provides:
+- **4,487 fire service facilities** across all Australian states and territories
+- **Full-text search** by station name, suburb, or brigade
+- **Geolocation-based sorting** for finding nearest stations
+- **Multi-state support** (NSW RFS, VIC CFA, QLD QFES, etc.)
+
+### Data Source
+
+**Source:** Australian Digital Atlas of Emergency Services  
+**Dataset:** Rural Fire Service and CFA Facilities  
+**Format:** CSV (rfs-facilities.csv)  
+**Size:** ~2.2MB  
+**Records:** 4,487 facilities  
+
+### Storage Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Development Environment                                │
+│  CSV stored locally at: backend/src/data/               │
+│  Gitignored due to size (2.2MB)                         │
+└─────────────────────────────────────────────────────────┘
+                              │
+                              │ Upload (one-time)
+                              ▼
+┌─────────────────────────────────────────────────────────┐
+│  Azure Blob Storage (Production)                        │
+│  Container: data-files                                  │
+│  Blob: rfs-facilities.csv                               │
+│  Access: Public read                                     │
+└─────────────────────────────────────────────────────────┘
+                              │
+                              │ Download at startup
+                              ▼
+┌─────────────────────────────────────────────────────────┐
+│  Azure App Service (Runtime)                            │
+│  Path: /home/site/wwwroot/backend/dist/data/            │
+│  Cached locally for subsequent restarts                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Implementation Details
+
+**Service:** `backend/src/services/rfsFacilitiesParser.ts`  
+**Upload Script:** `backend/src/scripts/uploadCsvToBlobStorage.ts`  
+**Routes:** `backend/src/routes/stations.ts` (`/api/stations/lookup`, `/api/stations/count`)
+
+**Key Features:**
+- ✅ Automatic download from Azure Blob Storage if CSV not present locally
+- ✅ Graceful degradation (app starts even if CSV unavailable)
+- ✅ Efficient in-memory caching for fast lookups
+- ✅ Station lookup returns 503 when data unavailable
+- ✅ Singleton pattern for single instance per app
+
+**Setup Process:**
+1. Download CSV from atlas.gov.au (one-time)
+2. Upload to Azure Blob Storage: `npm run upload:csv`
+3. Deploy application - CSV auto-downloads at startup
+
+**Documentation:** `docs/CSV_SETUP_AZURE.md` - Comprehensive setup guide
+
+### API Endpoints
+
+**GET /api/stations/lookup**
+- Search and locate fire service stations nationally
+- Supports text search and geolocation-based sorting
+- Returns StationHierarchy objects with full facility details
+
+**GET /api/stations/count**
+- Get count of loaded facilities (for monitoring)
+- Returns `{ count: number, available: boolean }`
+
+### CSV Data Fields
+
+Parsed fields from atlas.gov.au dataset:
+- **Location**: Longitude (X), Latitude (Y), Address, Suburb, Postcode
+- **Naming**: Facility Name, Brigade Name (1:1 mapping)
+- **Hierarchy**: State, Area, District, Zone, Region
+- **Status**: Operational Status
+- **Type**: RFS Station, CFA Station, QFES Station
+
+### Performance
+
+- **Load Time:** ~100-200ms to parse CSV (4,487 records)
+- **Memory Usage:** ~5-10MB for in-memory storage
+- **Search Performance:** Sub-millisecond for text/location queries
+- **Caching:** Singleton instance reused across all requests
+
+### Graceful Degradation
+
+If CSV data is unavailable:
+- ✅ Application starts normally
+- ✅ Station lookup endpoints return 503 with helpful message
+- ✅ Other features (members, events, truck checks) unaffected
+- ✅ Logs warning with instructions for enabling feature
 
 ---
 
@@ -1015,7 +1122,10 @@ Potential improvements (not in current scope):
 │  │ Cost: $0.01-0.20/month per station                 ││
 │  │ Region: Australia East                              ││
 │  │ Tables: Members, Activities, Events, etc.          ││
-│  │ + Blob Storage: Appliance/check images            ││
+│  │ + Blob Storage:                                    ││
+│  │   - Container: reference-photos (checklist images) ││
+│  │   - Container: result-photos (check result photos) ││
+│  │   - Container: data-files (rfs-facilities.csv)    ││
 │  │ Connection: AZURE_STORAGE_CONNECTION_STRING         ││
 │  │ Enable: USE_TABLE_STORAGE=true                     ││
 │  └────────────────────────────────────────────────────┘│

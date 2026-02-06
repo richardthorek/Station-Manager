@@ -1317,6 +1317,11 @@ Priority: **HIGH** - High-value user features
 15. ✅ Loads on server start
 16. ✅ Added 37 comprehensive tests (all passing)
 17. ✅ Updated to national coverage (all Australian states/territories)
+18. ✅ **[Feb 2026] Azure Blob Storage integration for production deployment**
+    - Uploads CSV to `data-files` container via `npm run upload:csv`
+    - Auto-downloads at app startup if not present locally
+    - Graceful degradation if CSV unavailable (app starts, lookup returns 503)
+    - Comprehensive setup documentation in `docs/CSV_SETUP_AZURE.md`
 
 **Facilities by State**:
 - Victoria: 1,231
