@@ -251,5 +251,47 @@ describe('Rate Limiter Middleware', () => {
 
       expect(response.body.ok).toBe(true);
     });
+
+    it('should handle X-Forwarded-For with port number (Azure App Service edge case)', async () => {
+      // This test verifies the fix for Issue #284: IP validation error
+      // Azure App Service sometimes includes port in X-Forwarded-For: "104.209.11.16:50178"
+      const testApp = express();
+      testApp.set('trust proxy', 1);
+      
+      testApp.get('/port-test', apiRateLimiter, (req, res) => {
+        res.json({ ok: true, ip: req.ip });
+      });
+
+      // Simulate Azure App Service sending IP with port
+      // The custom keyGenerator should strip the port
+      const response = await request(testApp)
+        .get('/port-test')
+        .set('X-Forwarded-For', '104.209.11.16:50178')
+        .expect(200);
+
+      expect(response.body.ok).toBe(true);
+      // Rate limiting should work without ValidationError
+      expect(response.headers).toHaveProperty('ratelimit-limit');
+      expect(response.headers).toHaveProperty('ratelimit-remaining');
+    });
+
+    it('should correctly handle IPv6 addresses', async () => {
+      // Verify IPv6 addresses are handled correctly
+      const testApp = express();
+      testApp.set('trust proxy', 1);
+      
+      testApp.get('/ipv6-test', apiRateLimiter, (req, res) => {
+        res.json({ ok: true });
+      });
+
+      // Test with IPv6 address (with brackets as Express formats them)
+      const response = await request(testApp)
+        .get('/ipv6-test')
+        .set('X-Forwarded-For', '2001:db8::1')
+        .expect(200);
+
+      expect(response.body.ok).toBe(true);
+      expect(response.headers).toHaveProperty('ratelimit-limit');
+    });
   });
 });
