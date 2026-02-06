@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react';
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { Station } from '../../../types';
 
 interface TokenInfo {
@@ -167,11 +167,11 @@ export function StationTokenCard({
                 {showQR === token.token && (
                   <div className="qr-code-section">
                     <div className="qr-code-container">
-                      <QRCode
+                      <QRCodeSVG
                         value={token.kioskUrl}
                         size={256}
                         level="M"
-                        includeMargin={true}
+                        marginSize={4}
                       />
                     </div>
                     <p className="qr-code-caption">
