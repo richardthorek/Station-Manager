@@ -18,6 +18,7 @@ import { Router } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -67,7 +68,7 @@ router.get('/attendance-summary', async (req, res) => {
       summary,
     });
   } catch (error) {
-    console.error('Error generating attendance summary:', error);
+    logger.error('Error generating attendance summary:', error);
     res.status(500).json({ error: 'Failed to generate attendance summary' });
   }
 });
@@ -93,7 +94,7 @@ router.get('/member-participation', async (req, res) => {
       participation,
     });
   } catch (error) {
-    console.error('Error generating member participation:', error);
+    logger.error('Error generating member participation:', error);
     res.status(500).json({ error: 'Failed to generate member participation' });
   }
 });
@@ -117,7 +118,7 @@ router.get('/activity-breakdown', async (req, res) => {
       breakdown,
     });
   } catch (error) {
-    console.error('Error generating activity breakdown:', error);
+    logger.error('Error generating activity breakdown:', error);
     res.status(500).json({ error: 'Failed to generate activity breakdown' });
   }
 });
@@ -141,7 +142,7 @@ router.get('/event-statistics', async (req, res) => {
       statistics,
     });
   } catch (error) {
-    console.error('Error generating event statistics:', error);
+    logger.error('Error generating event statistics:', error);
     res.status(500).json({ error: 'Failed to generate event statistics' });
   }
 });
@@ -165,7 +166,7 @@ router.get('/truckcheck-compliance', async (req, res) => {
       compliance,
     });
   } catch (error) {
-    console.error('Error generating truck check compliance:', error);
+    logger.error('Error generating truck check compliance:', error);
     res.status(500).json({ error: 'Failed to generate truck check compliance' });
   }
 });
@@ -200,7 +201,7 @@ router.get('/cross-station/attendance-summary', async (req, res) => {
       summaries,
     });
   } catch (error) {
-    console.error('Error generating cross-station attendance summary:', error);
+    logger.error('Error generating cross-station attendance summary:', error);
     res.status(500).json({ error: 'Failed to generate cross-station attendance summary' });
   }
 });
@@ -243,7 +244,7 @@ router.get('/cross-station/member-participation', async (req, res) => {
       participation,
     });
   } catch (error) {
-    console.error('Error generating cross-station member participation:', error);
+    logger.error('Error generating cross-station member participation:', error);
     res.status(500).json({ error: 'Failed to generate cross-station member participation' });
   }
 });
@@ -283,7 +284,7 @@ router.get('/cross-station/activity-breakdown', async (req, res) => {
       breakdowns,
     });
   } catch (error) {
-    console.error('Error generating cross-station activity breakdown:', error);
+    logger.error('Error generating cross-station activity breakdown:', error);
     res.status(500).json({ error: 'Failed to generate cross-station activity breakdown' });
   }
 });
@@ -326,7 +327,7 @@ router.get('/cross-station/event-statistics', async (req, res) => {
       statistics,
     });
   } catch (error) {
-    console.error('Error generating cross-station event statistics:', error);
+    logger.error('Error generating cross-station event statistics:', error);
     res.status(500).json({ error: 'Failed to generate cross-station event statistics' });
   }
 });
@@ -390,7 +391,7 @@ router.get('/brigade-summary', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error generating brigade summary:', error);
+    logger.error('Error generating brigade summary:', error);
     res.status(500).json({ error: 'Failed to generate brigade summary' });
   }
 });

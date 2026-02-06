@@ -9,6 +9,7 @@
  */
 
 import express from 'express';
+import { logger } from '../services/logger';
 
 const router = express.Router();
 
@@ -47,7 +48,7 @@ router.get('/status', (req, res) => {
       instructions,
     });
   } catch (error) {
-    console.error('Error getting demo mode status:', error);
+    logger.error('Error getting demo mode status:', error);
     res.status(500).json({
       error: 'Failed to get demo mode status',
       isDemo: false,
@@ -100,7 +101,7 @@ router.get('/info', (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting demo mode info:', error);
+    logger.error('Error getting demo mode info:', error);
     res.status(500).json({
       error: 'Failed to get demo mode info'
     });

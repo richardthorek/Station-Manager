@@ -17,6 +17,7 @@
 
 import type { IDatabase } from './dbFactory';
 import type { Event } from '../types';
+import { logger } from './logger';
 
 /**
  * Configuration for event expiry
@@ -59,13 +60,17 @@ export async function autoExpireEvents(events: Event[], db: IDatabase): Promise<
       const result = await db.endEvent(event.id);
       if (result) {
         expiredEventIds.push(event.id);
-        console.log(`🕐 Auto-expired event: ${event.activityName} (started: ${event.startTime.toISOString()})`);
+        logger.info('Auto-expired event', { 
+          eventId: event.id, 
+          activityName: event.activityName, 
+          startTime: event.startTime.toISOString() 
+        });
       }
     }
   }
   
   if (expiredEventIds.length > 0) {
-    console.log(`✅ Auto-expiry: ${expiredEventIds.length} event(s) marked inactive`);
+    logger.info('Auto-expiry completed', { count: expiredEventIds.length });
   }
   
   return expiredEventIds;

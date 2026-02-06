@@ -24,6 +24,7 @@ import {
   getActiveTokenCount,
   getAllBrigadeAccessTokens,
 } from '../services/brigadeAccessService';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -92,7 +93,7 @@ router.post(
         kioskUrl: `${req.protocol}://${req.get('host')}/signin?brigade=${accessToken.token}`,
       });
     } catch (error) {
-      console.error('Error generating brigade access token:', error);
+      logger.error('Error generating brigade access token:', error);
       res.status(500).json({
         error: 'Failed to generate brigade access token',
         message: error instanceof Error ? error.message : 'Unknown error',
@@ -141,7 +142,7 @@ router.post(
         expiresAt: accessToken.expiresAt,
       });
     } catch (error) {
-      console.error('Error validating brigade access token:', error);
+      logger.error('Error validating brigade access token:', error);
       res.status(500).json({
         error: 'Failed to validate brigade access token',
         message: error instanceof Error ? error.message : 'Unknown error',
@@ -183,7 +184,7 @@ router.delete(
         token,
       });
     } catch (error) {
-      console.error('Error revoking brigade access token:', error);
+      logger.error('Error revoking brigade access token:', error);
       res.status(500).json({
         error: 'Failed to revoke brigade access token',
         message: error instanceof Error ? error.message : 'Unknown error',
@@ -225,7 +226,7 @@ router.get(
         count: tokens.length,
       });
     } catch (error) {
-      console.error('Error fetching brigade tokens:', error);
+      logger.error('Error fetching brigade tokens:', error);
       res.status(500).json({
         error: 'Failed to fetch brigade tokens',
         message: error instanceof Error ? error.message : 'Unknown error',
@@ -267,7 +268,7 @@ router.get(
         count: tokens.length,
       });
     } catch (error) {
-      console.error('Error fetching station tokens:', error);
+      logger.error('Error fetching station tokens:', error);
       res.status(500).json({
         error: 'Failed to fetch station tokens',
         message: error instanceof Error ? error.message : 'Unknown error',
@@ -289,7 +290,7 @@ router.get('/stats', async (req: Request, res: Response) => {
       timestamp: new Date(),
     });
   } catch (error) {
-    console.error('Error fetching token stats:', error);
+    logger.error('Error fetching token stats:', error);
     res.status(500).json({
       error: 'Failed to fetch token stats',
       message: error instanceof Error ? error.message : 'Unknown error',

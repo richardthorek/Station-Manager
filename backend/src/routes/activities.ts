@@ -22,6 +22,7 @@ import {
 } from '../middleware/activityValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -36,7 +37,11 @@ router.get('/', async (req, res) => {
     const activities = await db.getAllActivities(stationId);
     res.json(activities);
   } catch (error) {
-    console.error('Error fetching activities:', error);
+    logger.error('Error fetching activities', { 
+      error, 
+      stationId: getStationIdFromRequest(req),
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to fetch activities' });
   }
 });
@@ -57,7 +62,11 @@ router.get('/active', async (req, res) => {
       activity,
     });
   } catch (error) {
-    console.error('Error fetching active activity:', error);
+    logger.error('Error fetching active activity', { 
+      error, 
+      stationId: getStationIdFromRequest(req),
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to fetch active activity' });
   }
 });
@@ -83,7 +92,12 @@ router.post('/active', validateSetActiveActivity, handleValidationErrors, async 
       activity,
     });
   } catch (error) {
-    console.error('Error setting active activity:', error);
+    logger.error('Error setting active activity', { 
+      error, 
+      activityId: req.body.activityId,
+      stationId: getStationIdFromRequest(req),
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to set active activity' });
   }
 });
@@ -100,7 +114,11 @@ router.post('/', validateCreateActivity, handleValidationErrors, async (req: Req
     const activity = await db.createActivity(name.trim(), createdBy, stationId);
     res.status(201).json(activity);
   } catch (error) {
-    console.error('Error creating activity:', error);
+    logger.error('Error creating activity', { 
+      error, 
+      stationId: getStationIdFromRequest(req),
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to create activity' });
   }
 });
@@ -128,7 +146,11 @@ router.delete('/:activityId', async (req: Request, res: Response) => {
 
     res.json({ message: 'Activity deleted successfully', activity });
   } catch (error) {
-    console.error('Error deleting activity:', error);
+    logger.error('Error deleting activity', { 
+      error, 
+      activityId: req.params.activityId,
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to delete activity' });
   }
 });

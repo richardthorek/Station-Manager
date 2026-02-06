@@ -23,6 +23,7 @@ import {
 } from '../middleware/checkinValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -37,7 +38,7 @@ router.get('/', async (req, res) => {
     const checkIns = await db.getAllCheckIns(stationId);
     res.json(checkIns);
   } catch (error) {
-    console.error('Error fetching check-ins:', error);
+    logger.error('Error fetching check-ins', { error, stationId: getStationIdFromRequest(req), requestId: req.id });
     res.status(500).json({ error: 'Failed to fetch check-ins' });
   }
 });
@@ -50,7 +51,7 @@ router.get('/active', async (req, res) => {
     const checkIns = await db.getActiveCheckIns(stationId);
     res.json(checkIns);
   } catch (error) {
-    console.error('Error fetching active check-ins:', error);
+    logger.error('Error fetching active check-ins', { error, stationId: getStationIdFromRequest(req), requestId: req.id });
     res.status(500).json({ error: 'Failed to fetch active check-ins' });
   }
 });
@@ -115,7 +116,7 @@ router.post('/', validateCreateCheckIn, handleValidationErrors, async (req: Requ
       checkIn,
     });
   } catch (error) {
-    console.error('Check-in error:', error);
+    logger.error('Check-in error', { error, requestId: req.id });
     res.status(500).json({ error: 'Failed to process check-in' });
   }
 });
@@ -133,7 +134,7 @@ router.delete('/:memberId', validateMemberIdParam, handleValidationErrors, async
 
     res.json({ message: 'Check-in undone successfully' });
   } catch (error) {
-    console.error('Error undoing check-in:', error);
+    logger.error('Error undoing check-in', { error, memberId: req.params.memberId, requestId: req.id });
     res.status(500).json({ error: 'Failed to undo check-in' });
   }
 });
@@ -191,7 +192,7 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
       checkIn,
     });
   } catch (error) {
-    console.error('URL check-in error:', error);
+    logger.error('URL check-in error', { error, requestId: req.id });
     res.status(500).json({ error: 'Failed to process URL check-in' });
   }
 });

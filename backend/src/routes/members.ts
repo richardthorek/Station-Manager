@@ -24,6 +24,7 @@ import {
 } from '../middleware/memberValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -38,7 +39,11 @@ router.get('/', async (req, res) => {
     const members = await db.getAllMembers(stationId);
     res.json(members);
   } catch (error) {
-    console.error('Error fetching members:', error);
+    logger.error('Error fetching members', { 
+      error, 
+      stationId: getStationIdFromRequest(req),
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to fetch members' });
   }
 });
@@ -53,7 +58,11 @@ router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request
     }
     res.json(member);
   } catch (error) {
-    console.error('Error fetching member:', error);
+    logger.error('Error fetching member', { 
+      error, 
+      memberId: req.params.id,
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to fetch member' });
   }
 });
@@ -68,7 +77,11 @@ router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Re
     }
     res.json(member);
   } catch (error) {
-    console.error('Error fetching member by QR code:', error);
+    logger.error('Error fetching member by QR code', { 
+      error, 
+      qrCode: req.params.qrCode,
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to fetch member' });
   }
 });
@@ -102,7 +115,11 @@ router.post('/', validateCreateMember, handleValidationErrors, async (req: Reque
     });
     res.status(201).json(member);
   } catch (error) {
-    console.error('Error creating member:', error);
+    logger.error('Error creating member', { 
+      error, 
+      requestId: req.id,
+      stationId: getStationIdFromRequest(req),
+    });
     res.status(500).json({ error: 'Failed to create member' });
   }
 });
@@ -121,7 +138,11 @@ router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Req
     }
     res.json(member);
   } catch (error) {
-    console.error('Error updating member:', error);
+    logger.error('Error updating member', { 
+      error, 
+      memberId: req.params.id,
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to update member' });
   }
 });
@@ -138,7 +159,11 @@ router.get('/:id/history', validateMemberId, handleValidationErrors, async (req:
     const checkIns = await db.getCheckInsByMember(req.params.id);
     res.json(checkIns);
   } catch (error) {
-    console.error('Error fetching member history:', error);
+    logger.error('Error fetching member history', { 
+      error, 
+      memberId: req.params.id,
+      requestId: req.id,
+    });
     res.status(500).json({ error: 'Failed to fetch member history' });
   }
 });
