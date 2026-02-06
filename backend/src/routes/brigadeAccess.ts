@@ -88,7 +88,7 @@ router.post(
         description: accessToken.description,
         createdAt: accessToken.createdAt,
         expiresAt: accessToken.expiresAt,
-        kioskUrl: `${req.protocol}://${req.get('host')}/kiosk?brigade=${accessToken.token}`,
+        kioskUrl: `${req.protocol}://${req.get('host')}/signin?brigade=${accessToken.token}`,
       });
     } catch (error) {
       console.error('Error generating brigade access token:', error);
