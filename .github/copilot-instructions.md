@@ -397,9 +397,19 @@ backend/src/
 **Adding New Features:**
 1. Create directory in `frontend/src/features/feature-name/`
 2. Create `FeaturePage.tsx` and `FeaturePage.css`
-3. Register route in `App.tsx`
+3. Register route in `App.tsx` with lazy loading:
+   ```typescript
+   const FeaturePage = lazy(() => import('./features/feature-name/FeaturePage').then(m => ({ default: m.FeaturePage })));
+   ```
 4. Add feature card to `LandingPage.tsx`
 5. Add backend routes if needed in `backend/src/routes/`
+
+**Code Splitting and Lazy Loading:**
+- All route components MUST use lazy loading with `React.lazy()`
+- Wrap routes in `<Suspense fallback={<LoadingFallback />}>`
+- Use `LoadingFallback` component for consistent loading UX
+- This maintains optimal bundle size and initial load performance
+- Bundle analyzer report available in `dist/stats.html` after build
 
 **Shared Components:**
 - Place in `frontend/src/components/` if reusable across features

@@ -1,22 +1,25 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { StationProvider } from './contexts/StationContext';
 import { DemoLandingPrompt } from './components/DemoLandingPrompt';
+import { LoadingFallback } from './components/LoadingFallback';
 import { hasSeenDemoPrompt } from './utils/demoPromptUtils';
-import { LandingPage } from './features/landing/LandingPage';
-import { SignInPage } from './features/signin/SignInPage';
-import { SignInLinkPage } from './features/signin/SignInLinkPage';
-import { UserProfilePage } from './features/profile/UserProfilePage';
-import { TruckCheckPage } from './features/truckcheck/TruckCheckPage';
-import { CheckWorkflowPage } from './features/truckcheck/CheckWorkflowPage';
-import { CheckSummaryPage } from './features/truckcheck/CheckSummaryPage';
-import { AdminDashboardPage } from './features/truckcheck/AdminDashboardPage';
-import { TemplateSelectionPage } from './features/truckcheck/TemplateSelectionPage';
-import { TemplateEditorPage } from './features/truckcheck/TemplateEditorPage';
-import { ReportsPage } from './features/reports/ReportsPage';
-import { CrossStationReportsPage } from './features/reports/CrossStationReportsPage';
-import { StationManagementPage } from './features/admin/stations/StationManagementPage';
-import { BrigadeAccessPage } from './features/admin/brigade-access/BrigadeAccessPage';
+
+// Lazy load all route components for better code splitting
+const LandingPage = lazy(() => import('./features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
+const SignInPage = lazy(() => import('./features/signin/SignInPage').then(m => ({ default: m.SignInPage })));
+const SignInLinkPage = lazy(() => import('./features/signin/SignInLinkPage').then(m => ({ default: m.SignInLinkPage })));
+const UserProfilePage = lazy(() => import('./features/profile/UserProfilePage').then(m => ({ default: m.UserProfilePage })));
+const TruckCheckPage = lazy(() => import('./features/truckcheck/TruckCheckPage').then(m => ({ default: m.TruckCheckPage })));
+const CheckWorkflowPage = lazy(() => import('./features/truckcheck/CheckWorkflowPage').then(m => ({ default: m.CheckWorkflowPage })));
+const CheckSummaryPage = lazy(() => import('./features/truckcheck/CheckSummaryPage').then(m => ({ default: m.CheckSummaryPage })));
+const AdminDashboardPage = lazy(() => import('./features/truckcheck/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+const TemplateSelectionPage = lazy(() => import('./features/truckcheck/TemplateSelectionPage').then(m => ({ default: m.TemplateSelectionPage })));
+const TemplateEditorPage = lazy(() => import('./features/truckcheck/TemplateEditorPage').then(m => ({ default: m.TemplateEditorPage })));
+const ReportsPage = lazy(() => import('./features/reports/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const CrossStationReportsPage = lazy(() => import('./features/reports/CrossStationReportsPage').then(m => ({ default: m.CrossStationReportsPage })));
+const StationManagementPage = lazy(() => import('./features/admin/stations/StationManagementPage').then(m => ({ default: m.StationManagementPage })));
+const BrigadeAccessPage = lazy(() => import('./features/admin/brigade-access/BrigadeAccessPage').then(m => ({ default: m.BrigadeAccessPage })));
 
 function App() {
   const [showDemoPrompt, setShowDemoPrompt] = useState(false);
@@ -37,22 +40,24 @@ function App() {
         {showDemoPrompt && (
           <DemoLandingPrompt onDismiss={() => setShowDemoPrompt(false)} />
         )}
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/signin" element={<SignInPage />} />
-          <Route path="/sign-in" element={<SignInLinkPage />} />
-          <Route path="/profile/:memberId" element={<UserProfilePage />} />
-          <Route path="/truckcheck" element={<TruckCheckPage />} />
-          <Route path="/truckcheck/check/:applianceId" element={<CheckWorkflowPage />} />
-          <Route path="/truckcheck/summary/:runId" element={<CheckSummaryPage />} />
-          <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
-          <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
-          <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
-          <Route path="/admin/stations" element={<StationManagementPage />} />
-          <Route path="/admin/brigade-access" element={<BrigadeAccessPage />} />
-        </Routes>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/sign-in" element={<SignInLinkPage />} />
+            <Route path="/profile/:memberId" element={<UserProfilePage />} />
+            <Route path="/truckcheck" element={<TruckCheckPage />} />
+            <Route path="/truckcheck/check/:applianceId" element={<CheckWorkflowPage />} />
+            <Route path="/truckcheck/summary/:runId" element={<CheckSummaryPage />} />
+            <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
+            <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
+            <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
+            <Route path="/admin/stations" element={<StationManagementPage />} />
+            <Route path="/admin/brigade-access" element={<BrigadeAccessPage />} />
+          </Routes>
+        </Suspense>
       </StationProvider>
     </BrowserRouter>
   );

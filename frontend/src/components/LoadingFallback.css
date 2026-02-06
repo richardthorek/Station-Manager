@@ -1,0 +1,28 @@
+.loading-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--rfs-white);
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 1.5rem;
+}
+
+.spinner-circle {
+  width: 100%;
+  height: 100%;
+  border: 4px solid var(--rfs-light-grey);
+  border-top-color: var(--rfs-core-red);
+  border-radius: 50%;
+}
+
+.loading-message {
+  font-size: 1rem;
+  color: var(--rfs-dark-grey);
+  font-weight: 500;
+}
