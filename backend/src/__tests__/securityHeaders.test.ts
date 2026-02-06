@@ -26,8 +26,11 @@ beforeAll(() => {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        // Allow self-hosted scripts only (Clarity moved to external file)
-        scriptSrc: ["'self'"],
+        // Allow self-hosted scripts and Microsoft Clarity analytics
+        scriptSrc: [
+          "'self'",
+          "https://www.clarity.ms", // Microsoft Clarity analytics (dynamically loads script)
+        ],
         // Allow inline styles for React and Google Fonts stylesheet
         styleSrc: [
           "'self'",
@@ -104,6 +107,14 @@ describe('Security Headers - Helmet Middleware', () => {
 
       const csp = response.headers['content-security-policy'];
       expect(csp).toContain("script-src 'self'");
+    });
+
+    it('should allow Microsoft Clarity analytics scripts', async () => {
+      const response = await request(app)
+        .get('/api/test');
+
+      const csp = response.headers['content-security-policy'];
+      expect(csp).toMatch(/script-src[^;]*https:\/\/www\.clarity\.ms/);
     });
 
     it('should allow inline styles for React', async () => {

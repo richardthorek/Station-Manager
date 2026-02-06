@@ -90,8 +90,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      // Allow self-hosted scripts only (Clarity moved to external file)
-      scriptSrc: ["'self'"],
+      // Allow self-hosted scripts and Microsoft Clarity analytics
+      scriptSrc: [
+        "'self'",
+        "https://www.clarity.ms", // Microsoft Clarity analytics (dynamically loads script)
+      ],
       // Allow inline styles for React and Google Fonts stylesheet
       styleSrc: [
         "'self'",
