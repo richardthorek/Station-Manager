@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { execSync } from 'child_process'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // Get git commit SHA and build timestamp
 const getGitCommitSha = () => {
@@ -26,7 +27,15 @@ const getBuildTimestamp = () => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    visualizer({
+      open: false,
+      filename: 'dist/stats.html',
+      gzipSize: true,
+      brotliSize: true,
+    }),
+  ],
   define: {
     '__APP_VERSION__': JSON.stringify({
       commitSha: getGitCommitSha(),
