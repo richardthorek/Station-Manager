@@ -76,27 +76,7 @@ export function BulkImportModal({ existingMembers, onClose, onImportComplete, on
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && (droppedFile.type === 'text/csv' || droppedFile.name.endsWith('.csv'))) {
-      processFile(droppedFile);
-    } else {
-      alert('Please upload a CSV file');
-    }
-  }, []);
-
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      processFile(selectedFile);
-    }
-  }, []);
-
-  const processFile = (file: File) => {
+  const processFile = useCallback((file: File) => {
     setFile(file);
     setImportResult(null);
 
@@ -162,7 +142,27 @@ export function BulkImportModal({ existingMembers, onClose, onImportComplete, on
       });
     };
     reader.readAsText(file);
-  };
+  }, [existingMembers]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile && (droppedFile.type === 'text/csv' || droppedFile.name.endsWith('.csv'))) {
+      processFile(droppedFile);
+    } else {
+      alert('Please upload a CSV file');
+    }
+  }, [processFile]);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      processFile(selectedFile);
+    }
+  }, [processFile]);
 
   const handleBrowseClick = () => {
     fileInputRef.current?.click();

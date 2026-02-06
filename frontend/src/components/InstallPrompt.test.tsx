@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, waitFor } from '@testing-library/react';
 import { InstallPrompt } from './InstallPrompt';
 
 describe('InstallPrompt', () => {
@@ -83,7 +82,6 @@ describe('InstallPrompt', () => {
   });
 
   it('should hide prompt when close button is clicked', async () => {
-    const user = userEvent.setup();
     const { container } = render(<InstallPrompt />);
 
     // Create and dispatch mock event

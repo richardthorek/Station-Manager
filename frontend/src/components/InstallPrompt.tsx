@@ -10,25 +10,22 @@ interface BeforeInstallPromptEvent extends Event {
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() =>
+    window.matchMedia('(display-mode: standalone)').matches
+  );
+  const [isRecentlyDismissed, setIsRecentlyDismissed] = useState(() => {
+    const dismissed = localStorage.getItem('install-prompt-dismissed');
+    if (!dismissed) {
+      return false;
+    }
+    const dismissedTime = parseInt(dismissed, 10);
+    const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+    return daysSinceDismissed < 30;
+  });
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
+    if (isInstalled || isRecentlyDismissed) {
       return;
-    }
-
-    // Check if user has previously dismissed
-    const dismissed = localStorage.getItem('install-prompt-dismissed');
-    if (dismissed) {
-      const dismissedTime = parseInt(dismissed, 10);
-      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-      
-      // Only show again after 30 days
-      if (daysSinceDismissed < 30) {
-        return;
-      }
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -58,7 +55,7 @@ export function InstallPrompt() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [isInstalled, isRecentlyDismissed]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
@@ -82,16 +79,18 @@ export function InstallPrompt() {
     } else {
       // User dismissed, store timestamp
       localStorage.setItem('install-prompt-dismissed', Date.now().toString());
+      setIsRecentlyDismissed(true);
     }
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
     localStorage.setItem('install-prompt-dismissed', Date.now().toString());
+    setIsRecentlyDismissed(true);
   };
 
   // Don't show if already installed or no prompt available
-  if (isInstalled || !showPrompt || !deferredPrompt) {
+  if (isInstalled || isRecentlyDismissed || !showPrompt || !deferredPrompt) {
     return null;
   }
 
