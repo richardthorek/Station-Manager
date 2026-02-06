@@ -82,6 +82,25 @@
   box-shadow: 0 4px 8px rgba(198, 217, 49, 0.3);
 }
 
+.btn-import {
+  background: #215e9e;
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-import:hover {
+  background: #1a4a7a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(33, 94, 158, 0.3);
+}
+
 .btn-close {
   background: none;
   border: none;

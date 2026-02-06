@@ -15,6 +15,8 @@
  */
 
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
+import Papa from 'papaparse';
 import { ensureDatabase } from '../services/dbFactory';
 import {
   validateCreateMember,
@@ -27,6 +29,21 @@ import { stationMiddleware, getStationIdFromRequest } from '../middleware/statio
 import { logger } from '../services/logger';
 
 const router = Router();
+
+// Configure multer for CSV upload (memory storage)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV files are allowed'));
+    }
+  },
+});
 
 // Apply station middleware to all routes
 router.use(stationMiddleware);
@@ -171,6 +188,179 @@ router.get('/:id/history', validateMemberId, handleValidationErrors, async (req:
       requestId: req.id,
     });
     res.status(500).json({ error: 'Failed to fetch member history' });
+  }
+});
+
+// Bulk import members from CSV
+router.post('/import', upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    const stationId = getStationIdFromRequest(req);
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Parse CSV
+    const csvText = req.file.buffer.toString('utf-8');
+    const parseResult = Papa.parse<Record<string, string>>(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (header) => header.trim(),
+    });
+
+    if (parseResult.errors.length > 0) {
+      return res.status(400).json({ 
+        error: 'CSV parsing failed',
+        details: parseResult.errors,
+      });
+    }
+
+    const db = await ensureDatabase(req.isDemoMode);
+    const existingMembers = await db.getAllMembers(stationId);
+    const existingNames = new Set(existingMembers.map(m => m.name.toLowerCase()));
+
+    interface ValidationResult {
+      row: number;
+      data: {
+        firstName?: string;
+        lastName?: string;
+        name: string;
+        rank?: string;
+        roles?: string;
+      };
+      isValid: boolean;
+      isDuplicate: boolean;
+      errors: string[];
+    }
+
+    const validationResults: ValidationResult[] = parseResult.data.map((row, index) => {
+      const errors: string[] = [];
+      const clean = (val: unknown): string => (typeof val === 'string' ? val.trim() : '');
+      
+      // Handle both "First Name"/"Last Name" and "name" columns
+      const firstName = clean(row['First Name'] || row['firstName'] || '');
+      const lastName = clean(row['Last Name'] || row['lastName'] || '');
+      const directName = clean(row['name'] || row['Name'] || '');
+      const rank = clean(row['Rank'] || row['rank'] || '');
+      const roles = clean(row['Roles'] || row['roles'] || '');
+
+      // Construct the full name
+      let name = '';
+      if (firstName || lastName) {
+        name = `${firstName}${lastName ? ` ${lastName}` : ''}`.trim();
+      } else if (directName) {
+        name = directName;
+      }
+
+      // Validation
+      if (!name) {
+        errors.push('Name is required (either First Name + Last Name or Name column)');
+      }
+
+      const isDuplicate = name ? existingNames.has(name.toLowerCase()) : false;
+
+      return {
+        row: index + 2, // +2 because: +1 for 1-indexed, +1 for header row
+        data: {
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          name,
+          rank: rank || undefined,
+          roles: roles || undefined,
+        },
+        isValid: errors.length === 0,
+        isDuplicate,
+        errors,
+      };
+    });
+
+    // Filter valid members for import
+    const validMembers = validationResults.filter(r => r.isValid && !r.isDuplicate);
+    const invalidCount = validationResults.filter(r => !r.isValid).length;
+    const duplicateCount = validationResults.filter(r => r.isDuplicate && r.isValid).length;
+
+    // Return validation results for preview
+    res.json({
+      totalRows: validationResults.length,
+      validCount: validMembers.length,
+      invalidCount,
+      duplicateCount,
+      validationResults,
+    });
+  } catch (error) {
+    logger.error('Error importing members', { 
+      error, 
+      requestId: req.id,
+      stationId: getStationIdFromRequest(req),
+    });
+    res.status(500).json({ error: 'Failed to import members' });
+  }
+});
+
+// Execute bulk import (after validation/preview)
+router.post('/import/execute', async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const { members } = req.body;
+
+    if (!Array.isArray(members) || members.length === 0) {
+      return res.status(400).json({ error: 'No members provided for import' });
+    }
+
+    const results = {
+      successful: [] as any[],
+      failed: [] as any[],
+    };
+
+    // Import members one by one
+    for (const memberData of members) {
+      try {
+        const { firstName, lastName, name, rank } = memberData;
+        
+        // Validate name is not empty
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+          results.failed.push({
+            name: name || 'Unknown',
+            error: 'Valid name is required',
+          });
+          continue;
+        }
+
+        const member = await db.createMember(name, {
+          rank: rank || undefined,
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          stationId,
+        });
+
+        results.successful.push({
+          name: member.name,
+          id: member.id,
+          qrCode: member.qrCode,
+        });
+      } catch (error) {
+        results.failed.push({
+          name: memberData.name,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    res.json({
+      totalAttempted: members.length,
+      successCount: results.successful.length,
+      failureCount: results.failed.length,
+      successful: results.successful,
+      failed: results.failed,
+    });
+  } catch (error) {
+    logger.error('Error executing bulk import', { 
+      error, 
+      requestId: req.id,
+      stationId: getStationIdFromRequest(req),
+    });
+    res.status(500).json({ error: 'Failed to execute bulk import' });
   }
 });
 

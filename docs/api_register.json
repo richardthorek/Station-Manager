@@ -372,6 +372,163 @@
             ]
           }
         }
+      },
+      "POST /api/members/import": {
+        "method": "POST",
+        "path": "/api/members/import",
+        "description": "Validate CSV file for bulk member import",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "contentType": "multipart/form-data",
+          "schema": {
+            "type": "object",
+            "required": ["file"],
+            "properties": {
+              "file": {
+                "type": "string",
+                "format": "binary",
+                "description": "CSV file with columns: First Name, Last Name, Rank, Roles"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CSV validation results",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "totalRows": {"type": "number"},
+                "validCount": {"type": "number"},
+                "invalidCount": {"type": "number"},
+                "duplicateCount": {"type": "number"},
+                "validationResults": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "row": {"type": "number"},
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "firstName": {"type": "string"},
+                          "lastName": {"type": "string"},
+                          "name": {"type": "string"},
+                          "rank": {"type": "string"},
+                          "roles": {"type": "string"}
+                        }
+                      },
+                      "isValid": {"type": "boolean"},
+                      "isDuplicate": {"type": "boolean"},
+                      "errors": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No file uploaded or CSV parsing failed"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/members.ts:196",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          },
+          "fileValidation": {
+            "maxSize": "5MB",
+            "allowedTypes": ["text/csv"],
+            "allowedExtensions": [".csv"]
+          }
+        }
+      },
+      "POST /api/members/import/execute": {
+        "method": "POST",
+        "path": "/api/members/import/execute",
+        "description": "Execute bulk member import after validation",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["members"],
+            "properties": {
+              "members": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "firstName": {"type": "string"},
+                    "lastName": {"type": "string"},
+                    "name": {"type": "string", "required": true},
+                    "rank": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import results",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "totalAttempted": {"type": "number"},
+                "successCount": {"type": "number"},
+                "failureCount": {"type": "number"},
+                "successful": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {"type": "string"},
+                      "id": {"type": "string"},
+                      "qrCode": {"type": "string"}
+                    }
+                  }
+                },
+                "failed": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {"type": "string"},
+                      "error": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No members provided"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/members.ts:301",
+        "socketEvent": "member-added (for each successful import)",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        }
       }
     },
     "activities": {
