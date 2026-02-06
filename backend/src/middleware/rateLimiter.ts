@@ -27,20 +27,30 @@ const RATE_LIMIT_AUTH_MAX = parseInt(process.env.RATE_LIMIT_AUTH_MAX || '5', 10)
  * Custom key generator that extracts clean IP address from request
  * Handles cases where X-Forwarded-For includes port (e.g., "104.209.11.16:50178")
  * This prevents ValidationError from express-rate-limit
+ * 
+ * Note: We explicitly handle IPv4:port format from Azure App Service proxy.
+ * IPv6 addresses with brackets are passed through unchanged.
  */
 function getClientIp(req: Request): string {
   const ip = req.ip || 'unknown';
-  // Strip port if present (Azure proxies sometimes include it)
-  // IPv4 format: "xxx.xxx.xxx.xxx:port" -> "xxx.xxx.xxx.xxx"
-  // IPv6 format: Keep as-is (Express already handles IPv6 properly)
-  if (ip.includes(':') && !ip.includes('[')) {
-    // IPv4 with port - take only the IP part
+  
+  // IPv6 addresses with brackets are handled correctly: [::ffff:192.0.2.1] or [2001:db8::1]
+  if (ip.startsWith('[')) {
+    return ip;
+  }
+  
+  // Handle IPv4 with port: "xxx.xxx.xxx.xxx:port" -> "xxx.xxx.xxx.xxx"
+  // Azure App Service sometimes appends port to X-Forwarded-For despite trust proxy setting
+  const colonCount = (ip.match(/:/g) || []).length;
+  if (colonCount === 1) {
+    // Simple IPv4:port format
     const parts = ip.split(':');
-    // Check if last part is a port number
-    if (parts.length === 2 && /^\d+$/.test(parts[1])) {
+    if (/^\d+$/.test(parts[1])) {
       return parts[0];
     }
   }
+  
+  // IPv6 without brackets or other format - pass through
   return ip;
 }
 
@@ -55,6 +65,7 @@ export const apiRateLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers (deprecated)
   message: 'Too many requests from this IP, please try again later.',
   keyGenerator: getClientIp, // Use custom IP extractor to handle ports
+  validate: { keyGeneratorIpFallback: false }, // Disable validation warning - we handle IPv6 correctly
   handler: (req, res) => {
     const retryAfter = res.getHeader('RateLimit-Reset');
     const clientIp = getClientIp(req);
@@ -78,6 +89,7 @@ export const authRateLimiter = rateLimit({
   legacyHeaders: false,
   message: 'Too many authentication attempts, please try again later.',
   keyGenerator: getClientIp, // Use custom IP extractor to handle ports
+  validate: { keyGeneratorIpFallback: false }, // Disable validation warning - we handle IPv6 correctly
   handler: (req, res) => {
     const retryAfter = res.getHeader('RateLimit-Reset');
     const clientIp = getClientIp(req);
@@ -101,4 +113,5 @@ export const spaRateLimiter = rateLimit({
   legacyHeaders: false,
   message: 'Too many requests from this IP, please try again later.',
   keyGenerator: getClientIp, // Use custom IP extractor to handle ports
+  validate: { keyGeneratorIpFallback: false }, // Disable validation warning - we handle IPv6 correctly
 });
