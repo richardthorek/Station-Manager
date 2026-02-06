@@ -5,6 +5,8 @@
  * Reduces code duplication between dbFactory and truckChecksDbFactory.
  */
 
+import { logger } from './logger';
+
 /**
  * Configuration for database initialization
  */
@@ -36,7 +38,7 @@ export async function initializeDatabase<TDatabase>(
   
   // In tests, default to in-memory unless explicitly forced on
   if (nodeEnv === 'test' && process.env.TEST_USE_TABLE_STORAGE !== 'true') {
-    console.log(`🧪 Using in-memory ${config.name.toLowerCase()} for tests (Table Storage disabled by default)`);
+    logger.info(`Using in-memory ${config.name.toLowerCase()} for tests (Table Storage disabled by default)`);
     return config.inMemoryDb;
   }
 
@@ -48,23 +50,23 @@ export async function initializeDatabase<TDatabase>(
 
   // Prefer Table Storage if connection string is available and not explicitly disabled
   if (useTableStorage) {
-    console.log(`🔌 Connecting to Azure Table Storage for ${config.name}...`);
+    logger.info(`Connecting to Azure Table Storage for ${config.name}...`);
     try {
       await config.tableStorageDb.connect();
-      console.log(`✅ Connected to Azure Table Storage for ${config.name}`);
+      logger.info(`Connected to Azure Table Storage for ${config.name}`);
       return config.tableStorageDb;
     } catch (error) {
-      console.error(`❌ Failed to connect to Table Storage for ${config.name}:`, error);
-      console.log('⚠️  Falling back to in-memory database');
+      logger.error(`Failed to connect to Table Storage for ${config.name}`, { error });
+      logger.warn('Falling back to in-memory database');
     }
   }
 
   // Fallback to in-memory database
   if (nodeEnv === 'production') {
-    console.warn(`⚠️  WARNING: Running ${config.name} in production with in-memory database!`);
-    console.warn('⚠️  Data will be lost on restart. Set AZURE_STORAGE_CONNECTION_STRING to enable Table Storage.');
+    logger.warn(`WARNING: Running ${config.name} in production with in-memory database!`);
+    logger.warn('Data will be lost on restart. Set AZURE_STORAGE_CONNECTION_STRING to enable Table Storage.');
   } else {
-    console.log(`📦 Using in-memory ${config.name.toLowerCase()} for development`);
+    logger.info(`Using in-memory ${config.name.toLowerCase()} for development`);
   }
 
   return config.inMemoryDb;

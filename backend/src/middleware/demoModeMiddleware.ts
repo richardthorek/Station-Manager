@@ -12,6 +12,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../services/logger';
 
 // Extend Express Request type to include demo mode flag
 declare global {
@@ -44,7 +45,11 @@ export function demoModeMiddleware(req: Request, res: Response, next: NextFuncti
   
   // Log demo mode activation for debugging
   if (req.isDemoMode && req.method !== 'OPTIONS') {
-    console.log(`🎭 Demo mode request: ${req.method} ${req.path}`);
+    logger.debug('Demo mode request', { 
+      method: req.method, 
+      path: req.path,
+      requestId: req.id,
+    });
   }
   
   next();

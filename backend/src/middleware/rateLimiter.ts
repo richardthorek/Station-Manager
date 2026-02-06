@@ -17,6 +17,7 @@
 
 import rateLimit from 'express-rate-limit';
 import type { Request } from 'express';
+import { logger } from '../services/logger';
 
 // Parse environment variables with defaults
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10); // 15 minutes
@@ -74,7 +75,12 @@ export const apiRateLimiter = rateLimit({
   handler: (req, res) => {
     const retryAfter = res.getHeader('RateLimit-Reset');
     const clientIp = getClientIp(req);
-    console.warn(`Rate limit exceeded for IP ${clientIp} on ${req.path}`);
+    logger.warn('Rate limit exceeded', { 
+      clientIp, 
+      path: req.path,
+      method: req.method,
+      requestId: req.id,
+    });
     res.status(429).json({
       error: 'Too many requests',
       message: 'You have exceeded the rate limit. Please try again later.',
@@ -98,7 +104,12 @@ export const authRateLimiter = rateLimit({
   handler: (req, res) => {
     const retryAfter = res.getHeader('RateLimit-Reset');
     const clientIp = getClientIp(req);
-    console.warn(`Auth rate limit exceeded for IP ${clientIp} on ${req.path}`);
+    logger.warn('Auth rate limit exceeded', { 
+      clientIp, 
+      path: req.path,
+      method: req.method,
+      requestId: req.id,
+    });
     res.status(429).json({
       error: 'Too many authentication attempts',
       message: 'You have exceeded the authentication rate limit. Please try again later.',
