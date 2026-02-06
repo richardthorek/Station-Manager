@@ -39,8 +39,22 @@ export interface Station {
     email?: string;
   };
   isActive: boolean;            // Whether station is currently active
+  kioskToken?: string;          // Secure, unguessable token for kiosk mode access (optional)
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * Brigade Access Token
+ * Used to lock kiosk devices to a specific brigade
+ */
+export interface BrigadeAccessToken {
+  token: string;                // Unique, unguessable token (UUID)
+  brigadeId: string;            // Brigade ID this token grants access to
+  stationId: string;            // Specific station within the brigade
+  createdAt: Date;
+  expiresAt?: Date;             // Optional expiration date
+  description?: string;         // Optional description (e.g., "Main Kiosk")
 }
 
 export interface Member {
