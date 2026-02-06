@@ -209,4 +209,47 @@ describe('Rate Limiter Middleware', () => {
       expect(response.body.error).toBe('Too many requests');
     });
   });
+
+  describe('Trust Proxy Configuration', () => {
+    it('should correctly identify client IP from X-Forwarded-For when trust proxy is enabled', async () => {
+      // Create app with trust proxy enabled (mimicking production config)
+      const testApp = express();
+      testApp.set('trust proxy', 1);
+      
+      testApp.get('/ip-test', apiRateLimiter, (req, res) => {
+        res.json({ ip: req.ip });
+      });
+
+      // Make request with X-Forwarded-For header (as Azure App Service does)
+      const response = await request(testApp)
+        .get('/ip-test')
+        .set('X-Forwarded-For', '203.0.113.1')
+        .expect(200);
+
+      // When trust proxy is enabled, Express should use the X-Forwarded-For IP
+      expect(response.body.ip).toBe('203.0.113.1');
+      
+      // Rate limit headers should still be present
+      expect(response.headers).toHaveProperty('ratelimit-limit');
+      expect(response.headers).toHaveProperty('ratelimit-remaining');
+    });
+
+    it('should not throw ValidationError when X-Forwarded-For is set and trust proxy is enabled', async () => {
+      // This test verifies the fix for the Azure App Service issue
+      const testApp = express();
+      testApp.set('trust proxy', 1);
+      
+      testApp.get('/validate', apiRateLimiter, (req, res) => {
+        res.json({ ok: true });
+      });
+
+      // This should NOT throw a ValidationError
+      const response = await request(testApp)
+        .get('/validate')
+        .set('X-Forwarded-For', '203.0.113.1')
+        .expect(200);
+
+      expect(response.body.ok).toBe(true);
+    });
+  });
 });

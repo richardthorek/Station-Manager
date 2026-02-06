@@ -1195,6 +1195,7 @@ Potential improvements (not in current scope):
    - **Custom Error Messages:** Clear 429 responses with retry information
    - **Logging:** Rate limit violations logged for monitoring
    - **Configuration:** Adjustable via environment variables (`RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_API_MAX`, `RATE_LIMIT_AUTH_MAX`)
+   - **Trust Proxy:** Enabled (`trust proxy` set to `1`) for Azure App Service deployment to correctly identify client IPs from `X-Forwarded-For` header
 
 3. **Input Validation & Sanitization** ✅ ENHANCED (2026-01-04)
    - **express-validator** integrated on all POST/PUT/DELETE endpoints

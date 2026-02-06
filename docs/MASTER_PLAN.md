@@ -876,6 +876,13 @@ Priority: **HIGH** - Critical for production scale
 
 **Status**: ✅ **COMPLETED** (2026-01-04)
 
+**Bug Fix**: ✅ **Express Trust Proxy Configuration** (2026-02-06)
+- **Issue**: Azure App Service sets `X-Forwarded-For` header but Express `trust proxy` was disabled, causing ValidationError from express-rate-limit
+- **Fix**: Added `app.set('trust proxy', 1)` to trust Azure App Service reverse proxy
+- **Impact**: Rate limiting now correctly identifies client IPs from `X-Forwarded-For` header
+- **Tests**: Added 2 new tests to verify trust proxy configuration and X-Forwarded-For handling
+- **Documentation**: Updated AS_BUILT.md to document trust proxy setting
+
 **Dependencies**: None
 
 **Effort Estimate**: Half day
