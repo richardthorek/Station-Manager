@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Development build artifacts (PWA service worker)
+dev-dist
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
