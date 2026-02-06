@@ -281,6 +281,8 @@ export class TableStorageDatabase {
     if (stationId) {
       // For default station, include members with empty stationId (legacy members)
       // For other stations, only match exact stationId
+      // TODO: Consider adding migration script to backfill empty stationId values with DEFAULT_STATION_ID
+      // This would simplify query logic and remove this workaround
       if (stationId === DEFAULT_STATION_ID) {
         filter = odata`PartitionKey eq 'Member' and (stationId eq ${stationId} or stationId eq '')`;
       } else {

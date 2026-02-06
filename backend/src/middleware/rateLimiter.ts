@@ -43,10 +43,15 @@ function getClientIp(req: Request): string {
   // Azure App Service sometimes appends port to X-Forwarded-For despite trust proxy setting
   const colonCount = (ip.match(/:/g) || []).length;
   if (colonCount === 1) {
-    // Simple IPv4:port format
+    // Simple IPv4:port format - validate it looks like IPv4
     const parts = ip.split(':');
-    if (/^\d+$/.test(parts[1])) {
-      return parts[0];
+    const potentialIp = parts[0];
+    const potentialPort = parts[1];
+    
+    // Basic IPv4 validation: 4 numeric octets separated by dots
+    // Port validation: numeric value
+    if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(potentialIp) && /^\d+$/.test(potentialPort)) {
+      return potentialIp;
     }
   }
   
