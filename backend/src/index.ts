@@ -36,6 +36,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import helmet from 'helmet';
 import compression from 'compression';
 import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
@@ -72,6 +73,42 @@ app.set('trust proxy', 1);
 
 // Make Socket.io instance available to routes
 app.set('io', io);
+
+// Security headers middleware - must be applied early
+// Helmet provides protection against common web vulnerabilities
+app.use(helmet({
+  // Content Security Policy - controls what resources can be loaded
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for React
+      imgSrc: ["'self'", "data:", "blob:", "https:"], // Allow data URIs and external images
+      connectSrc: ["'self'", "ws:", "wss:"], // Allow WebSocket connections for Socket.io
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  // Prevent clickjacking by disabling iframe embedding
+  xFrameOptions: {
+    action: 'deny'
+  },
+  // Referrer policy for privacy
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  },
+}));
+
+// Add Permissions-Policy header manually for browser feature restrictions
+app.use((req, res, next) => {
+  res.setHeader(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), payment=()'
+  );
+  next();
+});
 
 // Middleware
 app.use(cors());
