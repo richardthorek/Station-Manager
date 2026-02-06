@@ -36,6 +36,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import compression from 'compression';
 import membersRouter from './routes/members';
 import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
@@ -75,6 +76,22 @@ app.set('io', io);
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Response compression - reduces bandwidth and improves load times
+// Configured with balanced settings for production use
+app.use(compression({
+  level: 6,        // Compression level (0-9): 6 is balanced between speed and compression
+  threshold: 1024, // Only compress responses larger than 1KB
+  filter: (req, res) => {
+    // Don't compress responses if explicitly disabled via header
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use default compression filter (compresses text-based content types)
+    return compression.filter(req, res);
+  }
+}));
+
 app.use(demoModeMiddleware); // Detect demo mode from query parameter
 app.use(kioskModeMiddleware); // Detect and validate kiosk mode from brigade token
 
