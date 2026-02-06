@@ -32,6 +32,11 @@ candidateEnvPaths.forEach(envPath => {
   dotenv.config({ path: envPath, override: false });
 });
 
+// Initialize Azure Application Insights early (before other imports)
+// This ensures all subsequent operations can be tracked
+import { initializeAppInsights } from './services/appInsights';
+initializeAppInsights();
+
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -271,17 +276,25 @@ async function startServer() {
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM signal received: closing HTTP server');
+  const { flushAppInsights } = await import('./services/appInsights');
   httpServer.close(async () => {
     logger.info('HTTP server closed');
-    process.exit(0);
+    // Flush any pending Application Insights telemetry
+    flushAppInsights(() => {
+      process.exit(0);
+    });
   });
 });
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing HTTP server');
+  const { flushAppInsights } = await import('./services/appInsights');
   httpServer.close(async () => {
     logger.info('HTTP server closed');
-    process.exit(0);
+    // Flush any pending Application Insights telemetry
+    flushAppInsights(() => {
+      process.exit(0);
+    });
   });
 });
 

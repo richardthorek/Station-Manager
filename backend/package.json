@@ -31,6 +31,7 @@
     "@azure/data-tables": "^13.3.2",
     "@azure/storage-blob": "^12.29.1",
     "@types/multer": "^2.0.0",
+    "applicationinsights": "^3.13.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

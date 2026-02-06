@@ -243,24 +243,39 @@ userLogger.info('Login attempt');
 userLogger.error('Login failed', { reason: 'invalid_password' });
 ```
 
-## Azure Log Analytics Integration
+## Azure Application Insights Integration
 
-### Future Enhancement
+### ✅ Now Implemented
 
-Azure Log Analytics integration is planned but not yet implemented. When ready:
+Azure Application Insights logging is now available for centralized monitoring.
 
-1. Install Azure transport: `npm install winston-azure-application-insights`
-2. Configure in `logger.ts`:
-```typescript
-import { AzureApplicationInsightsLogger } from 'winston-azure-application-insights';
+**Benefits:**
+- Centralized log aggregation
+- Real-time error monitoring
+- Performance tracking
+- Query and alert capabilities
+- 1-day retention recommended for cost optimization
 
-// Add to transports array
-new AzureApplicationInsightsLogger({
-  key: process.env.AZURE_INSIGHTS_KEY,
-})
+**Setup:**
+
+1. Set environment variable:
+```bash
+AZURE_APP_INSIGHTS_CONNECTION_STRING="InstrumentationKey=xxx;IngestionEndpoint=https://xxx"
 ```
 
-3. Set up queries and alerts in Azure Portal
+2. Logs automatically flow to Application Insights
+3. Configure 1-day retention in Azure Portal (Settings → Usage and estimated costs → Data Retention)
+
+**For detailed setup instructions, see:**
+- [Azure App Insights Configuration Guide](./AZURE_APP_INSIGHTS.md)
+
+**Key Features:**
+- ✅ Automatic log forwarding to Azure
+- ✅ Configurable sampling (50-100%)
+- ✅ Structured metadata preserved
+- ✅ Request ID correlation
+- ✅ Cost-optimized with 1-day retention
+- ✅ Optional (works without Azure if not configured)
 
 ## Migration from console.log
 

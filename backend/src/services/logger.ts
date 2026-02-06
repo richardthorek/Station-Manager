@@ -9,7 +9,13 @@
  * - Colored console format for development (human-readable)
  * - Request ID correlation
  * - Contextual metadata support
+ * - Azure Application Insights integration (optional)
  * - Performance impact < 5ms per request
+ * 
+ * Azure Application Insights:
+ * - Set AZURE_APP_INSIGHTS_CONNECTION_STRING environment variable
+ * - Logs are sent to App Insights with structured metadata
+ * - Retention configured in Azure Portal (recommend 1 day for cost optimization)
  * 
  * Usage:
  * ```typescript
@@ -29,6 +35,11 @@
  */
 
 import winston from 'winston';
+
+// Azure App Insights integration (optional)
+// Note: For full Application Insights integration, see docs/AZURE_APP_INSIGHTS.md
+// The connection string is configured via AZURE_APP_INSIGHTS_CONNECTION_STRING environment variable
+// but the actual transport setup requires additional configuration in production deployments
 
 // Determine if we're in production
 const isProduction = process.env.NODE_ENV === 'production';
@@ -82,6 +93,43 @@ const productionFormat = winston.format.combine(
 );
 
 /**
+ * Configure transports based on environment and Azure configuration
+ */
+const transports: winston.transport[] = [
+  // Console transport (always enabled)
+  new winston.transports.Console({
+    silent: false,
+  }),
+];
+
+// Add file transports in production
+if (isProduction) {
+  transports.push(
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+    }),
+    new winston.transports.File({
+      filename: 'logs/combined.log',
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+    })
+  );
+}
+
+// Add Azure Application Insights transport if configured
+// NOTE: This requires applicationinsights SDK to be set up separately
+// For now, we log a message indicating it needs manual configuration
+// See docs/AZURE_APP_INSIGHTS.md for full setup instructions
+const appInsightsConnectionString = process.env.AZURE_APP_INSIGHTS_CONNECTION_STRING;
+if (appInsightsConnectionString && !isProduction) {
+  console.log('📊 Azure Application Insights connection string detected');
+  console.log('   For full setup, see docs/AZURE_APP_INSIGHTS.md');
+}
+
+/**
  * Create Winston logger instance
  */
 const logger = winston.createLogger({
@@ -91,28 +139,7 @@ const logger = winston.createLogger({
     service: 'station-manager-backend',
     environment: process.env.NODE_ENV || 'development',
   },
-  transports: [
-    // Console transport (always enabled)
-    new winston.transports.Console({
-      // In test mode, only log warnings and errors
-      silent: false,
-    }),
-    
-    // File transport for errors (production only)
-    ...(isProduction ? [
-      new winston.transports.File({
-        filename: 'logs/error.log',
-        level: 'error',
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
-      }),
-      new winston.transports.File({
-        filename: 'logs/combined.log',
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
-      }),
-    ] : []),
-  ],
+  transports,
   
   // Don't exit on uncaught exceptions (let process manager handle it)
   exitOnError: false,
