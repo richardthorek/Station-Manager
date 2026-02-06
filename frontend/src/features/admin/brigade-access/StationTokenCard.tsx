@@ -74,7 +74,6 @@ export function StationTokenCard({
   };
 
   const hasTokens = tokens.length > 0;
-  const primaryToken = hasTokens ? tokens[0] : null;
 
   return (
     <div className={`station-token-card ${!hasTokens ? 'no-token' : ''}`}>
