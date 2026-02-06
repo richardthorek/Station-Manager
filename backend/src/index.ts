@@ -52,6 +52,7 @@ import reportsRouter from './routes/reports';
 import demoRouter from './routes/demo';
 import stationsRouter from './routes/stations';
 import brigadeAccessRouter from './routes/brigadeAccess';
+import exportRouter from './routes/export';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -208,6 +209,7 @@ app.use('/api/stations', apiRateLimiter, stationsRouter);
 app.use('/api/truck-checks', apiRateLimiter, truckChecksRouter);
 app.use('/api/reports', apiRateLimiter, reportsRouter);
 app.use('/api/brigade-access', apiRateLimiter, brigadeAccessRouter);
+app.use('/api/export', apiRateLimiter, exportRouter);
 
 // Achievement routes (now handles database selection per-request based on demo mode)
 app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());

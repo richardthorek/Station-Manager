@@ -22,6 +22,7 @@ import { CurrentEventParticipants } from '../../components/CurrentEventParticipa
 import { MemberList } from '../../components/MemberList';
 import { UserManagement } from '../../components/UserManagement';
 import { NewEventModal } from '../../components/NewEventModal';
+import { ExportData } from '../../components/ExportData';
 import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import type { Member, Activity, EventWithParticipants } from '../../types';
@@ -39,6 +40,7 @@ export function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showNewEventModal, setShowNewEventModal] = useState(false);
+  const [showExportData, setShowExportData] = useState(false);
   const [databaseStatus, setDatabaseStatus] = useState<{
     databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
@@ -351,6 +353,12 @@ export function SignInPage() {
           >
             ⚙️ Manage Users
           </button>
+          <button
+            className="btn-export-data"
+            onClick={() => setShowExportData(!showExportData)}
+          >
+            📊 {showExportData ? 'Hide' : 'Export Data'}
+          </button>
         </div>
         <div className="toolbar">
           <button className="btn-new-event" onClick={() => setShowNewEventModal(true)}>
@@ -363,6 +371,12 @@ export function SignInPage() {
             + Add Activity Type
           </button>
         </div>
+
+        {showExportData && (
+          <div className="export-data-section">
+            <ExportData />
+          </div>
+        )}
 
         <div className="content-grid">
           <div className="left-column">
