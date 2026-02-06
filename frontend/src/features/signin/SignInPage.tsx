@@ -183,7 +183,7 @@ export function SignInPage() {
   const handleEndEvent = async (eventId: string) => {
     try {
       const updatedEvent = await api.endEvent(eventId);
-      setEvents(events.map(e => e.id === eventId ? updatedEvent : e));
+      setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? updatedEvent : e));
       
       // If ending the selected event, select another active event
       if (selectedEventId === eventId) {
@@ -203,7 +203,7 @@ export function SignInPage() {
       await api.deleteEvent(eventId);
       
       // Remove the event from the list
-      setEvents(events.filter(e => e.id !== eventId));
+      setEvents(prevEvents => prevEvents.filter(e => e.id !== eventId));
       
       // If deleting the selected event, select another active event
       if (selectedEventId === eventId) {
@@ -233,7 +233,7 @@ export function SignInPage() {
       
       // Reload the specific event to get updated participants
       const updatedEvent = await api.getEvent(selectedEventId);
-      setEvents(events.map(e => e.id === selectedEventId ? updatedEvent : e));
+      setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
       
       emit('participant-change', { eventId: selectedEventId, ...result });
     } catch (err) {
@@ -254,7 +254,7 @@ export function SignInPage() {
       
       // Reload the specific event to get updated participants
       const updatedEvent = await api.getEvent(selectedEventId);
-      setEvents(events.map(e => e.id === selectedEventId ? updatedEvent : e));
+      setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
       
       emit('participant-change', { eventId: selectedEventId, ...result });
     } catch (err) {

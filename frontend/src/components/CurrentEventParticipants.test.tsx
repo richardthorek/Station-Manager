@@ -159,6 +159,20 @@ describe('CurrentEventParticipants', () => {
       const removeHints = screen.queryAllByText('Tap to remove');
       expect(removeHints).toHaveLength(0);
     });
+
+    it('does not make participant cards clickable for ended events (isActive=false)', () => {
+      const endedEvent: EventWithParticipants = {
+        ...mockEvent,
+        isActive: false,
+        endTime: new Date().toISOString(),
+      };
+      
+      // Handler not provided for ended events - this is expected behavior
+      render(<CurrentEventParticipants event={endedEvent} />);
+      
+      const participantCards = screen.queryAllByRole('button');
+      expect(participantCards).toHaveLength(0);
+    });
   });
 
   describe('rank helmet display', () => {
