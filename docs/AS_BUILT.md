@@ -74,7 +74,7 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 - **Backend Code:** ~5,600 lines (TypeScript)
 - **Frontend Code:** ~2,900 lines (TypeScript/React)
 - **Test Coverage:** 376 backend tests (100% pass rate) + 95 frontend tests
-- **API Endpoints:** 42+ REST endpoints (includes event auto-expiry management and reporting)
+- **API Endpoints:** 43+ REST endpoints (includes event auto-expiry, reporting, and brigade access admin)
 - **Real-time Events:** 10+ Socket.io event types
 
 ---
@@ -454,9 +454,17 @@ frontend/src/
 │   │   ├── CheckWorkflowPage.tsx
 │   │   ├── AdminDashboardPage.tsx
 │   │   └── [styles]
-│   └── reports/               # Reports & Analytics
-│       ├── ReportsPage.tsx
-│       └── ReportsPage.css
+│   ├── reports/               # Reports & Analytics
+│   │   ├── ReportsPage.tsx
+│   │   └── ReportsPage.css
+│   └── admin/                 # Admin features
+│       ├── stations/          # Station management
+│       │   ├── StationManagementPage.tsx
+│       │   └── [styles]
+│       └── brigade-access/    # Brigade access token management
+│           ├── BrigadeAccessPage.tsx
+│           ├── StationTokenCard.tsx
+│           └── BrigadeAccessPage.css
 ├── components/                # Shared components
 │   ├── Header.tsx
 │   ├── Footer.tsx
@@ -491,7 +499,10 @@ backend/src/
 │   ├── checkins.ts
 │   ├── events.ts
 │   ├── truckChecks.ts
-│   └── achievements.ts
+│   ├── achievements.ts
+│   ├── stations.ts
+│   ├── brigadeAccess.ts      # Kiosk mode token management
+│   └── reports.ts
 ├── services/                  # Business logic
 │   ├── database.ts           # In-memory DB service
 │   ├── tableStorageDatabase.ts # Table Storage service (production)
@@ -500,6 +511,7 @@ backend/src/
 │   ├── tableStorageTruckChecksDatabase.ts # Table Storage truck checks (production)
 │   ├── truckChecksDbFactory.ts
 │   ├── achievementService.ts
+│   ├── brigadeAccessService.ts # Brigade access token service
 │   ├── rolloverService.ts    # Event auto-expiry service
 │   ├── azureStorage.ts       # File storage
 │   └── rfsFacilitiesParser.ts # National station lookup (CSV from blob storage)
@@ -948,13 +960,14 @@ The API register contains:
 **Health Check**
 - `GET /health` - Server health status
 
-**Brigade Access (6 endpoints)**
+**Brigade Access (7 endpoints)**
 - `POST /api/brigade-access/generate` - Generate kiosk token
 - `POST /api/brigade-access/validate` - Validate token
 - `DELETE /api/brigade-access/:token` - Revoke token
 - `GET /api/brigade-access/brigade/:brigadeId` - List brigade tokens
 - `GET /api/brigade-access/station/:stationId` - List station tokens
 - `GET /api/brigade-access/stats` - Token statistics
+- `GET /api/brigade-access/all-tokens` - List all tokens (admin utility)
 
 ---
 
