@@ -31,6 +31,7 @@
     "@azure/data-tables": "^13.3.2",
     "@azure/storage-blob": "^12.29.1",
     "@types/multer": "^2.0.0",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
@@ -42,6 +43,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/jest": "^30.0.0",
