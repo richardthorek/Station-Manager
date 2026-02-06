@@ -117,6 +117,24 @@ describe('DemoLandingPrompt', () => {
 
     expect(screen.getByText(/You can switch between stations anytime/i)).toBeInTheDocument();
   });
+
+  it('should have proper CSS classes for overlay and dialog', () => {
+    const mockDismiss = vi.fn();
+
+    render(<MockedDemoLandingPrompt onDismiss={mockDismiss} />);
+
+    // Check that the overlay exists with proper class
+    const overlay = document.querySelector('.demo-prompt-overlay');
+    expect(overlay).toBeInTheDocument();
+    
+    // Check that the dialog exists with proper class
+    const dialog = document.querySelector('.demo-prompt-dialog');
+    expect(dialog).toBeInTheDocument();
+    
+    // Verify the overlay has the expected structure for proper styling
+    expect(overlay?.classList.contains('demo-prompt-overlay')).toBe(true);
+    expect(dialog?.classList.contains('demo-prompt-dialog')).toBe(true);
+  });
 });
 
 describe('Demo Prompt Utilities', () => {
