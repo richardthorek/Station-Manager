@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.2.0",
-  "lastUpdated": "2026-01-05",
+  "version": "1.3.0",
+  "lastUpdated": "2026-02-06",
   "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager\n\nMulti-Station Support: Database methods now accept optional stationId parameter for filtering. All methods filter by stationId when provided, default to 'default-station' otherwise.",
   "services": {
     "database": {
@@ -275,7 +275,7 @@
           "line": 291,
           "description": "Get all active check-ins with member and activity details",
           "returns": "CheckInWithDetails[]",
-          "complexity": "O(n\u00b2)",
+          "complexity": "O(n²)",
           "sideEffects": "none"
         },
         "getCheckInByMember": {
@@ -905,6 +905,163 @@
           "complexity": "O(n)",
           "sideEffects": "Queries database and marks expired events as inactive"
         }
+      }
+    },
+    "brigadeAccessService": {
+      "file": "backend/src/services/brigadeAccessService.ts",
+      "description": "Brigade access token management service for kiosk mode station locking",
+      "type": "module",
+      "functions": {
+        "generateBrigadeAccessToken": {
+          "signature": "generateBrigadeAccessToken(brigadeId: string, stationId: string, description?: string, expiresAt?: Date): BrigadeAccessToken",
+          "line": 34,
+          "description": "Generate a new brigade access token with UUID. Token locks kiosk mode to specific station.",
+          "parameters": [
+            {
+              "name": "brigadeId",
+              "type": "string",
+              "description": "Brigade ID to associate with the token"
+            },
+            {
+              "name": "stationId",
+              "type": "string",
+              "description": "Station ID to lock kiosk access to"
+            },
+            {
+              "name": "description",
+              "type": "string | undefined",
+              "description": "Optional description for the token (e.g., 'Main Kiosk')",
+              "optional": true
+            },
+            {
+              "name": "expiresAt",
+              "type": "Date | undefined",
+              "description": "Optional expiration date for the token",
+              "optional": true
+            }
+          ],
+          "returns": "BrigadeAccessToken",
+          "complexity": "O(1)",
+          "sideEffects": "Stores token in in-memory tokenStore Map"
+        },
+        "validateBrigadeAccessToken": {
+          "signature": "validateBrigadeAccessToken(token: string): BrigadeAccessToken | null",
+          "line": 62,
+          "description": "Validate a brigade access token and return associated station info. Automatically removes expired tokens.",
+          "parameters": [
+            {
+              "name": "token",
+              "type": "string",
+              "description": "UUID token to validate"
+            }
+          ],
+          "returns": "BrigadeAccessToken | null",
+          "complexity": "O(1)",
+          "sideEffects": "Deletes expired tokens from tokenStore"
+        },
+        "revokeBrigadeAccessToken": {
+          "signature": "revokeBrigadeAccessToken(token: string): boolean",
+          "line": 84,
+          "description": "Revoke a brigade access token, making it invalid for future use",
+          "parameters": [
+            {
+              "name": "token",
+              "type": "string",
+              "description": "UUID token to revoke"
+            }
+          ],
+          "returns": "boolean",
+          "complexity": "O(1)",
+          "sideEffects": "Deletes token from tokenStore Map"
+        },
+        "getBrigadeAccessTokens": {
+          "signature": "getBrigadeAccessTokens(brigadeId: string): BrigadeAccessToken[]",
+          "line": 94,
+          "description": "Get all active (non-expired) tokens for a brigade. Automatically cleans up expired tokens.",
+          "parameters": [
+            {
+              "name": "brigadeId",
+              "type": "string",
+              "description": "Brigade ID to filter tokens"
+            }
+          ],
+          "returns": "BrigadeAccessToken[]",
+          "complexity": "O(n)",
+          "sideEffects": "Removes expired tokens from tokenStore during iteration"
+        },
+        "getStationAccessTokens": {
+          "signature": "getStationAccessTokens(stationId: string): BrigadeAccessToken[]",
+          "line": 118,
+          "description": "Get all active (non-expired) tokens for a station. Automatically cleans up expired tokens.",
+          "parameters": [
+            {
+              "name": "stationId",
+              "type": "string",
+              "description": "Station ID to filter tokens"
+            }
+          ],
+          "returns": "BrigadeAccessToken[]",
+          "complexity": "O(n)",
+          "sideEffects": "Removes expired tokens from tokenStore during iteration"
+        },
+        "clearExpiredTokens": {
+          "signature": "clearExpiredTokens(): number",
+          "line": 141,
+          "description": "Maintenance function to remove all expired tokens from storage",
+          "parameters": [],
+          "returns": "number",
+          "complexity": "O(n)",
+          "sideEffects": "Removes expired tokens from tokenStore Map"
+        },
+        "getActiveTokenCount": {
+          "signature": "getActiveTokenCount(): number",
+          "line": 160,
+          "description": "Get total number of active (non-expired) tokens. Cleans up expired tokens first.",
+          "parameters": [],
+          "returns": "number",
+          "complexity": "O(n)",
+          "sideEffects": "Removes expired tokens from tokenStore via clearExpiredTokens()"
+        },
+        "getAllBrigadeAccessTokens": {
+          "signature": "getAllBrigadeAccessTokens(): BrigadeAccessToken[]",
+          "line": 168,
+          "description": "Get all active brigade access tokens across all stations (admin utility). Cleans up expired tokens first.",
+          "parameters": [],
+          "returns": "BrigadeAccessToken[]",
+          "complexity": "O(n)",
+          "sideEffects": "Removes expired tokens from tokenStore via clearExpiredTokens()"
+        },
+        "clearAllTokens": {
+          "signature": "clearAllTokens(): number",
+          "line": 177,
+          "description": "Clear all tokens from storage (for testing purposes only)",
+          "parameters": [],
+          "returns": "number",
+          "complexity": "O(1)",
+          "sideEffects": "Clears entire tokenStore Map"
+        }
+      },
+      "storage": {
+        "tokenStore": {
+          "type": "Map<string, BrigadeAccessToken>",
+          "description": "In-memory storage for brigade access tokens. Should be persisted to database in production.",
+          "persistence": "volatile",
+          "notes": [
+            "Tokens are lost on server restart",
+            "Consider migrating to Table Storage for production use",
+            "Current implementation optimized for development and testing"
+          ]
+        }
+      },
+      "security": {
+        "tokenGeneration": "UUID v4 (128-bit random)",
+        "tokenValidation": "Checks existence and expiration",
+        "autoExpiry": "Tokens automatically removed when expired",
+        "notes": [
+          "No authentication on token generation endpoints (current design)",
+          "Should add admin authentication in production",
+          "Tokens provide station-level access control"
+        ]
       }
     }
   },

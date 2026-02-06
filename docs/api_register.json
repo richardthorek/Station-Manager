@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.1.0",
-  "lastUpdated": "2026-01-05",
+  "version": "1.2.0",
+  "lastUpdated": "2026-02-06",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -2415,6 +2415,465 @@
           "Emits 'demo-station-reset' WebSocket event on success"
         ]
       }
+    },
+    "brigade-access": {
+      "POST /api/brigade-access/generate": {
+        "method": "POST",
+        "path": "/api/brigade-access/generate",
+        "description": "Generate a new brigade access token for kiosk mode. Tokens lock the sign-in interface to a specific station.",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "brigadeId": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "Brigade ID to associate with the token"
+              },
+              "stationId": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "Station ID to lock access to"
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 200,
+                "description": "Optional description for the token (e.g., 'Main Kiosk')"
+              },
+              "expiresInDays": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3650,
+                "description": "Optional expiration period in days (default: no expiration)"
+              }
+            },
+            "required": [
+              "brigadeId",
+              "stationId"
+            ]
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Token generated successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "token": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Generated UUID token"
+                },
+                "brigadeId": {
+                  "type": "string"
+                },
+                "stationId": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "kioskUrl": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Full kiosk sign-in URL with token",
+                  "example": "https://host/signin?brigade=uuid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/brigadeAccess.ts:39",
+        "security": {
+          "notes": [
+            "No authentication required per current design",
+            "Should be protected with admin authentication in production",
+            "Tokens are UUIDs (128-bit random) for security"
+          ]
+        }
+      },
+      "POST /api/brigade-access/validate": {
+        "method": "POST",
+        "path": "/api/brigade-access/validate",
+        "description": "Validate a brigade access token and return associated station info",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": {
+          "required": true,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Token to validate"
+              }
+            },
+            "required": [
+              "token"
+            ]
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token is valid",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "valid": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                },
+                "brigadeId": {
+                  "type": "string"
+                },
+                "stationId": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found or expired",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "valid": {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/brigadeAccess.ts:110",
+        "security": {
+          "notes": [
+            "Public endpoint used by kiosk mode middleware",
+            "Expired tokens are automatically removed"
+          ]
+        }
+      },
+      "DELETE /api/brigade-access/:token": {
+        "method": "DELETE",
+        "path": "/api/brigade-access/:token",
+        "description": "Revoke a brigade access token",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "token": {
+              "type": "string",
+              "format": "uuid",
+              "required": true,
+              "description": "Token to revoke"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Token revoked successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "token": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/brigadeAccess.ts:155",
+        "security": {
+          "notes": [
+            "Should be protected with admin authentication in production"
+          ]
+        }
+      },
+      "GET /api/brigade-access/brigade/:brigadeId": {
+        "method": "GET",
+        "path": "/api/brigade-access/brigade/:brigadeId",
+        "description": "Get all active tokens for a brigade",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "brigadeId": {
+              "type": "string",
+              "maxLength": 100,
+              "required": true,
+              "description": "Brigade ID to filter tokens"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Brigade tokens retrieved",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "brigadeId": {
+                  "type": "string"
+                },
+                "tokens": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/BrigadeAccessToken"
+                  }
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/brigadeAccess.ts:199",
+        "security": {
+          "notes": [
+            "Returns only non-expired tokens",
+            "Should be protected with admin authentication in production"
+          ]
+        }
+      },
+      "GET /api/brigade-access/station/:stationId": {
+        "method": "GET",
+        "path": "/api/brigade-access/station/:stationId",
+        "description": "Get all active tokens for a station",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "stationId": {
+              "type": "string",
+              "maxLength": 100,
+              "required": true,
+              "description": "Station ID to filter tokens"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Station tokens retrieved",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "stationId": {
+                  "type": "string"
+                },
+                "tokens": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/BrigadeAccessToken"
+                  }
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/brigadeAccess.ts:240",
+        "security": {
+          "notes": [
+            "Returns only non-expired tokens",
+            "Should be protected with admin authentication in production"
+          ]
+        }
+      },
+      "GET /api/brigade-access/stats": {
+        "method": "GET",
+        "path": "/api/brigade-access/stats",
+        "description": "Get statistics about active tokens",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Token statistics",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "totalActiveTokens": {
+                  "type": "integer",
+                  "description": "Number of active (non-expired) tokens"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/brigadeAccess.ts:282",
+        "security": {
+          "notes": [
+            "Public endpoint for monitoring",
+            "Automatically cleans up expired tokens before counting"
+          ]
+        }
+      },
+      "GET /api/brigade-access/all-tokens": {
+        "method": "GET",
+        "path": "/api/brigade-access/all-tokens",
+        "description": "Get all active tokens across all stations (admin utility). Returns tokens with full kiosk URLs for easy distribution.",
+        "authentication": "none",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "All tokens retrieved",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "tokens": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "token": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "brigadeId": {
+                        "type": "string"
+                      },
+                      "stationId": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                      },
+                      "kioskUrl": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "Full kiosk sign-in URL with embedded token",
+                        "example": "https://host/signin?brigade=uuid"
+                      }
+                    }
+                  }
+                },
+                "count": {
+                  "type": "integer",
+                  "description": "Total number of active tokens"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/brigadeAccess.ts:300",
+        "security": {
+          "notes": [
+            "Master admin utility endpoint",
+            "Returns only non-expired tokens",
+            "Should be protected with admin authentication in production",
+            "Used by /admin/brigade-access frontend page"
+          ]
+        },
+        "notes": [
+          "Automatically cleans up expired tokens before returning results",
+          "Each token includes pre-formatted kiosk URL for easy copy/paste",
+          "Frontend provides QR code generation and copy-to-clipboard features"
+        ]
+      }
     }
   },
   "socketEvents": {
@@ -2986,6 +3445,47 @@
             }
           }
         }
+      ]
+    },
+    "BrigadeAccessToken": {
+      "type": "object",
+      "description": "Brigade access token for kiosk mode station locking",
+      "properties": {
+        "token": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique token identifier (UUID v4)"
+        },
+        "brigadeId": {
+          "type": "string",
+          "description": "Associated brigade ID"
+        },
+        "stationId": {
+          "type": "string",
+          "description": "Associated station ID - kiosk will be locked to this station"
+        },
+        "description": {
+          "type": "string",
+          "nullable": true,
+          "description": "Optional description for the token (e.g., 'Main Kiosk', 'Mobile Tablet')"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Token creation timestamp"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true,
+          "description": "Optional expiration timestamp - token is invalid after this time"
+        }
+      },
+      "required": [
+        "token",
+        "brigadeId",
+        "stationId",
+        "createdAt"
       ]
     }
   },
