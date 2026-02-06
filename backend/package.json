@@ -30,6 +30,7 @@
   "dependencies": {
     "@azure/data-tables": "^13.3.2",
     "@azure/storage-blob": "^12.29.1",
+    "@types/json2csv": "^5.0.7",
     "@types/multer": "^2.0.0",
     "applicationinsights": "^3.13.0",
     "compression": "^1.8.1",
@@ -39,6 +40,7 @@
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.3.1",
     "helmet": "^8.1.0",
+    "json2csv": "^6.0.0-alpha.2",
     "multer": "^2.0.2",
     "socket.io": "^4.8.1",
     "uuid": "^13.0.0",
