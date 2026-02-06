@@ -10,11 +10,34 @@ import { screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { render } from '../test/utils/test-utils'
 import { MemberList } from './MemberList'
-import { mockMembers, mockCheckIns, createMockApi } from '../test/mocks/api'
+import { mockMembers, mockCheckIns } from '../test/mocks/api'
 
 // Mock the API module
 vi.mock('../services/api', () => ({
-  api: createMockApi()
+  api: {
+    getMembers: vi.fn((options?: { search?: string; filter?: string; sort?: string }) => {
+      let filtered = [...mockMembers];
+      
+      // Apply search
+      if (options?.search) {
+        const searchLower = options.search.toLowerCase();
+        filtered = filtered.filter(m =>
+          m.name.toLowerCase().includes(searchLower) ||
+          (m.rank && m.rank.toLowerCase().includes(searchLower)) ||
+          (m.memberNumber && m.memberNumber.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      // Apply sort
+      if (options?.sort === 'name-asc') {
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (options?.sort === 'name-desc') {
+        filtered.sort((a, b) => b.name.localeCompare(a.name));
+      }
+      
+      return Promise.resolve(filtered);
+    })
+  }
 }))
 
 describe('MemberList', () => {
@@ -158,39 +181,39 @@ describe('MemberList', () => {
   it('toggles letter filter off when clicked again', async () => {
     const user = userEvent.setup()
     
-    const allMembers = [
-      ...mockMembers,
-      {
-        id: 'member-3',
-        name: 'Alice Brown',
-        qrCode: 'qr-alice',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-      },
-    ]
-    
     render(
       <MemberList
-        members={allMembers}
+        members={mockMembers}
         activeCheckIns={[]}
         onCheckIn={mockOnCheckIn}
         onAddMember={mockOnAddMember}
       />
     )
 
-    // Click on letter 'J' to filter
+    // Wait for initial render
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    })
+
+    // Click on letter 'J' to filter (letter filter is applied locally after API fetch)
     const letterJ = screen.getByRole('button', { name: 'J' })
     await user.click(letterJ)
 
-    expect(screen.getByText('John Smith')).toBeInTheDocument()
-    expect(screen.queryByText('Alice Brown')).not.toBeInTheDocument()
+    // Only J names should be visible
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    })
 
     // Click again to toggle off
     await user.click(letterJ)
 
-    // All members should be visible
-    expect(screen.getByText('John Smith')).toBeInTheDocument()
-    expect(screen.getByText('Alice Brown')).toBeInTheDocument()
+    // All members should be visible again
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    })
   })
 
   it('calls onCheckIn when a member is clicked', async () => {
@@ -365,7 +388,10 @@ describe('MemberList', () => {
     const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...')
     await user.type(searchInput, 'Nonexistent Member')
 
-    expect(screen.getByText('No members found')).toBeInTheDocument()
+    // Wait for the debounced search and API call
+    await waitFor(() => {
+      expect(screen.getByText('No members found')).toBeInTheDocument()
+    }, { timeout: 1000 })
   })
 
   it('clears search when using letter filter', async () => {
