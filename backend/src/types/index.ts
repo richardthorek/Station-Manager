@@ -66,6 +66,7 @@ export interface Member {
   firstName?: string;
   lastName?: string;
   stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
+  lastSignIn?: Date | null;      // Last time member participated in an event
   createdAt: Date;
   updatedAt: Date;
 }

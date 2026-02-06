@@ -31,6 +31,7 @@ export function MemberList({
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
+  const [showFilterSort, setShowFilterSort] = useState(false);
   
   // Filter and sort state with localStorage persistence
   const [filter, setFilter] = useState<FilterOption>(() => {
@@ -95,13 +96,47 @@ export function MemberList({
   }, [debouncedSearchTerm, filter, sort, initialMembers]);
 
   // Apply letter filter locally (after API filtering)
+  // Also apply partitioning: active members (within last year) at top, inactive at bottom
   const displayedMembers = useMemo(() => {
+    let result = [...filteredMembers];
+    
+    // Apply letter filter if selected
     if (selectedLetter) {
-      return filteredMembers.filter(member =>
+      result = result.filter(member =>
         member.name.toLowerCase().startsWith(selectedLetter.toLowerCase())
       );
+      // When letter filter is active, don't partition - just return filtered list
+      return result;
     }
-    return filteredMembers;
+    
+    // Partition members by activity (only when no letter filter)
+    // Active: signed in within last year OR created within last year (grace period)
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    
+    const activeMembers: typeof result = [];
+    const inactiveMembers: typeof result = [];
+    
+    result.forEach(member => {
+      const lastSignIn = member.lastSignIn ? new Date(member.lastSignIn) : null;
+      const createdAt = new Date(member.createdAt);
+      
+      // Member is "active" if they signed in within a year OR were created within a year
+      const isActive = (lastSignIn && lastSignIn >= oneYearAgo) || createdAt >= oneYearAgo;
+      
+      if (isActive) {
+        activeMembers.push(member);
+      } else {
+        inactiveMembers.push(member);
+      }
+    });
+    
+    // Sort each partition alphabetically
+    activeMembers.sort((a, b) => a.name.localeCompare(b.name));
+    inactiveMembers.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Combine: active first, then inactive
+    return [...activeMembers, ...inactiveMembers];
   }, [filteredMembers, selectedLetter]);
 
   const handleAddMember = () => {
@@ -158,6 +193,15 @@ export function MemberList({
           )}
         </div>
         <button 
+          className={`btn-filter-sort ${showFilterSort ? 'active' : ''}`}
+          onClick={() => setShowFilterSort(!showFilterSort)}
+          title="Filter and Sort Options"
+          aria-label="Toggle filter and sort options"
+          aria-expanded={showFilterSort}
+        >
+          🔍
+        </button>
+        <button 
           className="btn-add-member"
           onClick={() => setShowAddMember(true)}
           title="Add New Member"
@@ -166,38 +210,40 @@ export function MemberList({
         </button>
       </div>
 
-      <div className="filter-sort-controls">
-        <div className="control-group">
-          <label htmlFor="filter-select">Filter:</label>
-          <select
-            id="filter-select"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as FilterOption)}
-            className="filter-select"
-          >
-            <option value="all">All Members</option>
-            <option value="checked-in">Checked In</option>
-            <option value="active">Active (Last 30 Days)</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
+      {showFilterSort && (
+        <div className="filter-sort-panel">
+          <div className="control-group">
+            <label htmlFor="filter-select">Filter:</label>
+            <select
+              id="filter-select"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as FilterOption)}
+              className="filter-select"
+            >
+              <option value="all">All Members</option>
+              <option value="checked-in">Checked In</option>
+              <option value="active">Active (Last 30 Days)</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
 
-        <div className="control-group">
-          <label htmlFor="sort-select">Sort:</label>
-          <select
-            id="sort-select"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortOption)}
-            className="sort-select"
-          >
-            <option value="default">Default</option>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="activity">Most Active</option>
-            <option value="recent">Recently Active</option>
-          </select>
+          <div className="control-group">
+            <label htmlFor="sort-select">Sort:</label>
+            <select
+              id="sort-select"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortOption)}
+              className="sort-select"
+            >
+              <option value="default">Default</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+              <option value="activity">Most Active</option>
+              <option value="recent">Recently Active</option>
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="result-count">
         {loading ? (

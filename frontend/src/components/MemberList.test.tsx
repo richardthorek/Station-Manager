@@ -440,4 +440,104 @@ describe('MemberList', () => {
     // Search should be cleared after check-in
     expect(searchInput.value).toBe('')
   })
+
+  it('shows filter/sort panel when toggle button is clicked', async () => {
+    const user = userEvent.setup()
+    
+    render(
+      <MemberList
+        members={mockMembers}
+        activeCheckIns={[]}
+        onCheckIn={mockOnCheckIn}
+        onAddMember={mockOnAddMember}
+      />
+    )
+
+    // Filter/sort panel should be hidden initially
+    expect(screen.queryByLabelText('Filter:')).not.toBeInTheDocument()
+
+    // Click toggle button
+    const toggleButton = screen.getByLabelText('Toggle filter and sort options')
+    await user.click(toggleButton)
+
+    // Filter/sort panel should now be visible
+    expect(screen.getByLabelText('Filter:')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sort:')).toBeInTheDocument()
+  })
+
+  it('hides filter/sort panel when toggle button is clicked again', async () => {
+    const user = userEvent.setup()
+    
+    render(
+      <MemberList
+        members={mockMembers}
+        activeCheckIns={[]}
+        onCheckIn={mockOnCheckIn}
+        onAddMember={mockOnAddMember}
+      />
+    )
+
+    // Open panel
+    const toggleButton = screen.getByLabelText('Toggle filter and sort options')
+    await user.click(toggleButton)
+    expect(screen.getByLabelText('Filter:')).toBeInTheDocument()
+
+    // Close panel
+    await user.click(toggleButton)
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Filter:')).not.toBeInTheDocument()
+    })
+  })
+
+  it('applies filter when filter option is changed', async () => {
+    const user = userEvent.setup()
+    
+    render(
+      <MemberList
+        members={mockMembers}
+        activeCheckIns={[]}
+        onCheckIn={mockOnCheckIn}
+        onAddMember={mockOnAddMember}
+      />
+    )
+
+    // Open filter/sort panel
+    const toggleButton = screen.getByLabelText('Toggle filter and sort options')
+    await user.click(toggleButton)
+
+    // Change filter
+    const filterSelect = screen.getByLabelText('Filter:')
+    await user.selectOptions(filterSelect, 'active')
+
+    // The filter should be applied (API call happens automatically)
+    await waitFor(() => {
+      expect(filterSelect).toHaveValue('active')
+    })
+  })
+
+  it('applies sort when sort option is changed', async () => {
+    const user = userEvent.setup()
+    
+    render(
+      <MemberList
+        members={mockMembers}
+        activeCheckIns={[]}
+        onCheckIn={mockOnCheckIn}
+        onAddMember={mockOnAddMember}
+      />
+    )
+
+    // Open filter/sort panel
+    const toggleButton = screen.getByLabelText('Toggle filter and sort options')
+    await user.click(toggleButton)
+
+    // Change sort
+    const sortSelect = screen.getByLabelText('Sort:')
+    await user.selectOptions(sortSelect, 'name-asc')
+
+    // The sort should be applied (API call happens automatically)
+    await waitFor(() => {
+      expect(sortSelect).toHaveValue('name-asc')
+    })
+  })
 })

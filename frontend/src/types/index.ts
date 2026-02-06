@@ -62,6 +62,7 @@ export interface Member {
   rank?: string | null;
   firstName?: string;
   lastName?: string;
+  lastSignIn?: string | null;    // Last time member participated in an event (ISO string)
   createdAt: string;
   updatedAt: string;
 }

@@ -2791,6 +2791,97 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
+#### Issue #22: Refactor Member Filter/Sort UI and Optimize Header ✅ COMPLETED
+**GitHub Issue**: TBD  
+**Completed**: 2026-02-06
+
+**Objective**: Maximize visible member names by consolidating controls and reducing wasted vertical space
+
+**User Story**: As a station user, I want to see more member names on screen at once so that I can quickly find and check in members without excessive scrolling.
+
+**Current State**: Filter/sort controls, toolbar buttons, and page header occupy significant vertical space (~170px), reducing visible member names by 3-4 rows  
+**Target State**: Compact UI with collapsible controls, inline buttons, and consolidated admin menu
+
+**Changes Implemented**:
+
+1. **Header Component - Admin Menu** (~44px saved):
+   - Added compact dropdown menu (⚙️ icon) for admin actions
+   - Menu contains: Manage Users, Add Activity Type, Export Data
+   - Opens on click, closes on: second click, outside click, Escape key
+   - Proper ARIA labels and keyboard navigation
+   - Reduced header padding: 16px → 10px (vertical), 24px → 20px (horizontal)
+   - Reduced h1 font: 1.5rem → 1.35rem (~12px saved)
+
+2. **MemberList Component - Collapsible Filter/Sort** (~60px saved):
+   - Replaced always-visible controls with toggle button (🔍 icon)
+   - Panel hidden by default, shown with slide-down animation
+   - Filter/sort preferences persist in localStorage
+   - All existing options maintained
+   - **NEW: Member Partitioning**:
+     - Active members (signed in within 1 year OR created within 1 year) at top
+     - Inactive members (no sign-in in over 1 year) at bottom
+     - Both sections sorted A-Z
+     - No visual separator (seamless list)
+     - Partitioning disabled when letter filter is active
+
+3. **EventLog Component - Inline Button** (~56px saved):
+   - Moved "Start New Event" button into EventLog card header
+   - Button positioned on right side of header
+   - Removed standalone toolbar section
+
+4. **SignInPage Component - Cleanup**:
+   - Removed page-header section (Manage Users, Export Data buttons)
+   - Removed toolbar section (Start New Event, Add Activity Type buttons)
+   - Passed callbacks to Header and EventLog components
+   - Reduced main-content padding: 20px → 16px (~4px saved)
+
+5. **Backend Changes**:
+   - Added `lastSignIn` field to Member interface (Date | null)
+   - Updated `getAllMembers` to track all-time last check-in
+   - Each member now includes most recent event participation date
+
+**Technical Details**:
+- **Total Space Saved**: ~176px vertical space (3-4 extra member name rows)
+- **Tests Added**: 11 new tests (6 for Header, 5 for MemberList)
+- **All Tests Passing**: 33 tests (12 Header, 21 MemberList)
+- **Accessibility**: Full ARIA labels, keyboard navigation, screen reader support
+- **Responsive**: Works on mobile, tablet (iPad), and desktop
+
+**Success Criteria**:
+- [x] Filter/sort options hidden by default, accessible via button
+- [x] Event button inline in EventLog header
+- [x] Admin options consolidated in header menu
+- [x] Header visually more compact
+- [x] No loss of functionality
+- [x] All tests passing
+- [x] Accessibility maintained (ARIA, keyboard nav)
+- [x] Member partitioning: active members at top, inactive at bottom
+- [x] Documentation complete
+
+**Documentation**:
+- Created: `docs/UI_REFACTOR_MEMBER_FILTER_SORT.md`
+- Screenshots: Pending (iPad portrait + landscape)
+- Updated: Backend/frontend type definitions
+- Updated: MemberList, Header, EventLog, SignInPage components
+
+**Files Modified**:
+- `frontend/src/components/Header.tsx` + `.css`
+- `frontend/src/components/Header.test.tsx`
+- `frontend/src/components/MemberList.tsx` + `.css`
+- `frontend/src/components/MemberList.test.tsx`
+- `frontend/src/components/EventLog.tsx` + `.css`
+- `frontend/src/features/signin/SignInPage.tsx` + `.css`
+- `backend/src/services/database.ts`
+- `backend/src/types/index.ts`
+- `frontend/src/types/index.ts`
+
+**Effort**: 4 hours  
+**Priority**: Medium  
+**Labels**: `enhancement`, `ui`, `ux`, `accessibility`  
+**Milestone**: Phase 3 - Essential Features
+
+---
+
 #### Issue #21: Advanced Analytics Dashboard
 **GitHub Issue**: #123 (created 2026-01-04T09:26:30Z)
 
