@@ -90,11 +90,26 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
+      // Allow self-hosted scripts only (Clarity moved to external file)
       scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for React
+      // Allow inline styles for React and Google Fonts stylesheet
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'", // Required for React inline styles
+        "https://fonts.googleapis.com", // Google Fonts CSS
+      ],
       imgSrc: ["'self'", "data:", "blob:", "https:"], // Allow data URIs and external images
-      connectSrc: ["'self'", "ws:", "wss:"], // Allow WebSocket connections for Socket.io
-      fontSrc: ["'self'", "data:"],
+      connectSrc: [
+        "'self'",
+        "ws:", "wss:", // WebSocket connections for Socket.io
+        "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
+      ],
+      // Allow self-hosted fonts, data URIs, and Google Fonts
+      fontSrc: [
+        "'self'",
+        "data:",
+        "https://fonts.gstatic.com", // Google Fonts files
+      ],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"],

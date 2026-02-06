@@ -26,11 +26,26 @@ beforeAll(() => {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
+        // Allow self-hosted scripts only (Clarity moved to external file)
         scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        // Allow inline styles for React and Google Fonts stylesheet
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'", // Required for React inline styles
+          "https://fonts.googleapis.com", // Google Fonts CSS
+        ],
         imgSrc: ["'self'", "data:", "blob:", "https:"],
-        connectSrc: ["'self'", "ws:", "wss:"],
-        fontSrc: ["'self'", "data:"],
+        connectSrc: [
+          "'self'",
+          "ws:", "wss:", // WebSocket connections for Socket.io
+          "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
+        ],
+        // Allow self-hosted fonts, data URIs, and Google Fonts
+        fontSrc: [
+          "'self'",
+          "data:",
+          "https://fonts.gstatic.com", // Google Fonts files
+        ],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
@@ -99,12 +114,36 @@ describe('Security Headers - Helmet Middleware', () => {
       expect(csp).toMatch(/style-src[^;]*'unsafe-inline'/);
     });
 
+    it('should allow Google Fonts stylesheet', async () => {
+      const response = await request(app)
+        .get('/api/test');
+
+      const csp = response.headers['content-security-policy'];
+      expect(csp).toMatch(/style-src[^;]*https:\/\/fonts\.googleapis\.com/);
+    });
+
+    it('should allow Google Fonts files', async () => {
+      const response = await request(app)
+        .get('/api/test');
+
+      const csp = response.headers['content-security-policy'];
+      expect(csp).toMatch(/font-src[^;]*https:\/\/fonts\.gstatic\.com/);
+    });
+
     it('should allow WebSocket connections for Socket.io', async () => {
       const response = await request(app)
         .get('/api/test');
 
       const csp = response.headers['content-security-policy'];
       expect(csp).toMatch(/connect-src[^;]*(ws:|wss:)/);
+    });
+
+    it('should allow Microsoft Clarity analytics endpoint', async () => {
+      const response = await request(app)
+        .get('/api/test');
+
+      const csp = response.headers['content-security-policy'];
+      expect(csp).toMatch(/connect-src[^;]*https:\/\/www\.clarity\.ms/);
     });
 
     it('should allow data URIs and external images', async () => {
