@@ -1413,18 +1413,31 @@ Priority: **HIGH** - High-value user features
 10. Update documentation
 
 **Success Criteria**:
-- [ ] CSV upload UI working
-- [ ] Drag-and-drop supported
-- [ ] CSV parsing working
-- [ ] Validation working (required fields, format)
-- [ ] Duplicate detection working
-- [ ] Preview shows all members with validation status
-- [ ] Batch import working
-- [ ] QR codes generated for all imported members
-- [ ] Error handling graceful
-- [ ] Sample CSV template available
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] CSV upload UI working
+- [x] Drag-and-drop supported
+- [x] CSV parsing working
+- [x] Validation working (required fields, format)
+- [x] Duplicate detection working
+- [x] Preview shows all members with validation status
+- [x] Batch import working
+- [x] QR codes generated for all imported members
+- [x] Error handling graceful
+- [x] Sample CSV template available
+- [x] Tests passing
+- [x] Documentation updated
+
+**Status**: ✅ COMPLETED (2026-02-06)
+
+**Implementation Notes**:
+- Backend: POST /api/members/import for validation, POST /api/members/import/execute for batch import
+- Frontend: BulkImportModal component with drag-and-drop support
+- Uses papaparse for CSV parsing
+- Validates FirstName+LastName or Name columns (required)
+- Supports optional Rank and Roles columns
+- Duplicate detection by name (case-insensitive)
+- Preview table shows validation status for each row
+- Sample CSV template downloadable from UI
+- All 31 backend tests passing (including 6 new bulk import tests)
 
 **Dependencies**: None
 
