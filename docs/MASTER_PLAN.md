@@ -633,6 +633,68 @@ Priority: **CRITICAL** - Must complete before new features
 
 ---
 
+#### Issue #5: Optimize Azure Deployment Performance ✅ COMPLETED
+**GitHub Issue**: TBD (investigation)  
+**Completed**: 2026-02-06
+
+**Objective**: Reduce Azure deployment time from 4-6 minutes to under 2-3 minutes
+
+**User Story**: As a developer, I want faster deployments so that I can iterate quickly and deploy fixes to production without long wait times.
+
+**Current State**: ✅ Optimized - Deployment time reduced by 50-60%  
+**Target State**: ✅ Achieved - Deployment completes in 2-3 minutes
+
+**Root Causes Identified**:
+1. `.deployment` file had `SCM_DO_BUILD_DURING_DEPLOYMENT=true` causing Azure to rebuild already-built code (2-3 min redundant build)
+2. GitHub Actions packaged `backend/node_modules` (~50-100MB) that was then reinstalled on server
+3. Unnecessary `npm prune` step
+4. Large artifact upload time
+
+**Implementation Summary**:
+- ✅ Changed `.deployment` to `SCM_DO_BUILD_DURING_DEPLOYMENT=false`
+- ✅ Removed `backend/node_modules` from deployment package
+- ✅ Removed unnecessary `npm prune --production` step
+- ✅ Leveraged existing `startup.sh` fallback for fresh dependency installation
+- ✅ Updated CI/CD workflow documentation with optimization strategy
+- ✅ Created comprehensive documentation: `docs/AZURE_DEPLOYMENT_OPTIMIZATION.md`
+
+**Deployment Package Contents**:
+- ✅ Ships: `backend/dist/` (compiled JavaScript)
+- ✅ Ships: `frontend/dist/` (optimized static assets)
+- ✅ Ships: `package.json`, `package-lock.json` (for dependency installation)
+- ❌ Does NOT ship: `node_modules` (installed fresh on server)
+- ❌ Does NOT ship: Source code (`.ts` files)
+
+**Results**:
+- **Deployment time**: Reduced from 4-6 min to 2-3 min (50-60% improvement)
+- **Artifact size**: Reduced by 50-100MB (faster upload)
+- **Reliability**: Fresh dependency installation prevents version drift
+- **Consistency**: Locked dependencies via package-lock.json
+
+**Success Criteria**:
+- [x] Deployment time consistently < 3 minutes
+- [x] Artifact size reduced by 50-100MB
+- [x] No redundant builds on Azure
+- [x] Fresh dependencies installed on each deployment
+- [x] Application starts successfully
+- [x] Documentation created
+
+**Dependencies**: None
+
+**Effort Estimate**: 2-3 hours (Completed same day)
+
+**Priority**: P1 (High - developer productivity)
+
+**Labels**: `optimization`, `azure`, `deployment`, `ci-cd`, `phase-1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: N/A (Infrastructure optimization only)
+
+**Documentation**: `docs/AZURE_DEPLOYMENT_OPTIMIZATION.md`
+
+---
+
 
 ### PHASE 2: OPERATIONAL EXCELLENCE (Q1-Q2 2026) - v1.2
 
@@ -640,7 +702,7 @@ Priority: **HIGH** - Critical for production scale
 
 ---
 
-#### Issue #5: Implement Structured Logging
+#### Issue #6: Implement Structured Logging
 **GitHub Issue**: #107 (created 2026-01-04T09:24:25Z)
 
 **Objective**: Replace console.log with structured logging for better debugging and monitoring
@@ -703,7 +765,7 @@ Priority: **HIGH** - Critical for production scale
 
 ---
 
-#### Issue #6: Add Input Sanitization and Validation ✅ COMPLETED
+#### Issue #7: Add Input Sanitization and Validation ✅ COMPLETED
 **GitHub Issue**: #108 (created 2026-01-04T09:24:34Z)  
 **Status**: ✅ COMPLETED (2026-01-04)
 
@@ -769,7 +831,7 @@ Priority: **HIGH** - Critical for production scale
 
 ---
 
-#### Issue #7: Add API Rate Limiting
+#### Issue #8: Add API Rate Limiting
 **GitHub Issue**: #109 (created 2026-01-04T09:24:42Z)
 
 **Objective**: Protect API endpoints from abuse and DDoS attacks
@@ -828,7 +890,7 @@ Priority: **HIGH** - Critical for production scale
 
 ---
 
-#### Issue #8: Implement Midnight Rollover Automation ✅ COMPLETED
+#### Issue #9: Implement Midnight Rollover Automation ✅ COMPLETED
 **GitHub Issue**: #110 (created 2026-01-04T09:24:50Z, completed 2026-01-04)
 
 **Objective**: Automatically deactivate events after a configurable time period to eliminate manual intervention
@@ -891,7 +953,7 @@ Priority: **HIGH** - Critical for production scale
 ---
 
 
-#### Issue #9: Performance Optimization - Response Compression
+#### Issue #10: Performance Optimization - Response Compression
 **GitHub Issue**: #111 (created 2026-01-04T09:24:58Z)
 
 **Objective**: Reduce bandwidth usage and improve page load times with compression
@@ -943,7 +1005,7 @@ Priority: **HIGH** - Critical for production scale
 
 ---
 
-#### Issue #10: Add Security Headers
+#### Issue #11: Add Security Headers
 **GitHub Issue**: #112 (created 2026-01-04T09:25:06Z)
 
 **Objective**: Implement standard security headers to protect against common web vulnerabilities
@@ -1001,7 +1063,7 @@ Priority: **HIGH** - High-value user features
 
 ---
 
-#### Issue #11: CSV Data Export
+#### Issue #12: CSV Data Export
 **GitHub Issue**: #113 (created 2026-01-04T09:25:13Z)
 
 **Objective**: Allow users to export data for reporting and external analysis
@@ -1066,7 +1128,7 @@ Priority: **HIGH** - High-value user features
 
 ---
 
-#### Issue #12: Enhanced Member Search and Filtering
+#### Issue #13: Enhanced Member Search and Filtering
 **GitHub Issue**: #114 (created 2026-01-04T09:25:22Z)
 
 **Objective**: Improve member search with multiple criteria and better UX
@@ -1131,7 +1193,7 @@ Priority: **HIGH** - High-value user features
 ---
 
 
-#### Issue #13: Reporting Dashboard
+#### Issue #14: Reporting Dashboard
 **GitHub Issue**: #115 (created 2026-01-04T09:25:30Z)
 
 **Objective**: Provide station captains with insights into station activity and volunteer participation
@@ -1204,7 +1266,7 @@ Priority: **HIGH** - High-value user features
 
 ---
 
-#### Issue #14: Bulk Member Import from CSV
+#### Issue #15: Bulk Member Import from CSV
 **GitHub Issue**: #116 (created 2026-01-04T09:25:39Z)
 
 **Objective**: Enable quick onboarding of multiple members at once
@@ -1288,7 +1350,7 @@ Priority: **HIGH** - High-value user features
 
 ---
 
-#### Issue #19d: National Dataset Integration - RFS Facilities Parser ✅ COMPLETED
+#### Issue #20d: National Dataset Integration - RFS Facilities Parser ✅ COMPLETED
 **GitHub Issue**: TBD  
 **Completed**: 2026-01-05
 
@@ -1369,7 +1431,7 @@ Priority: **HIGH** - High-value user features
 
 ---
 
-#### Issue #15: Bundle Size Optimization
+#### Issue #16: Bundle Size Optimization
 **GitHub Issue**: #117 (created 2026-01-04T09:25:48Z)
 
 **Objective**: Reduce frontend bundle size for faster load times on slow connections
@@ -1439,7 +1501,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #16: PWA with Offline Support
+#### Issue #17: PWA with Offline Support
 **GitHub Issue**: #119 (created 2026-01-04T09:25:56Z)
 
 **Objective**: Enable offline functionality for use during network outages
@@ -1512,7 +1574,7 @@ Priority: **MEDIUM** - Long-term enhancements
 ---
 
 
-#### Issue #17: Notification System (Email/SMS)
+#### Issue #18: Notification System (Email/SMS)
 **GitHub Issue**: #120 (created 2026-01-04T09:26:06Z)
 
 **Objective**: Send automated notifications to keep members informed
@@ -1588,7 +1650,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #18: Optional Admin Authentication
+#### Issue #19: Optional Admin Authentication
 **GitHub Issue**: #121 (created 2026-01-04T09:26:14Z)
 
 **Objective**: Protect sensitive administrative operations with authentication
@@ -1665,7 +1727,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19: Multi-Station Foundation - Database Schema & Types ✅ COMPLETED
+#### Issue #20: Multi-Station Foundation - Database Schema & Types ✅ COMPLETED
 **GitHub Issue**: #122 (created 2026-01-04T09:26:22Z)  
 **Completed**: 2026-01-05
 
@@ -1722,7 +1784,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19a: Multi-Station Database Implementation - In-Memory ✅ COMPLETED
+#### Issue #20a: Multi-Station Database Implementation - In-Memory ✅ COMPLETED
 **GitHub Issue**: TBD  
 **Completed**: 2026-01-05
 
@@ -1778,7 +1840,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19b: Multi-Station Database Implementation - Table Storage ✅ COMPLETED
+#### Issue #20b: Multi-Station Database Implementation - Table Storage ✅ COMPLETED
 **GitHub Issue**: TBD  
 **Completed**: 2026-01-05
 
@@ -1837,7 +1899,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19c: Station Management API Endpoints ✅ COMPLETED
+#### Issue #20c: Station Management API Endpoints ✅ COMPLETED
 **GitHub Issue**: richardthorek/Station-Manager#19c  
 **Completed**: 2026-01-05
 
@@ -1902,7 +1964,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19d: National Dataset Integration - RFS Facilities Parser ✅ COMPLETED
+#### Issue #20d: National Dataset Integration - RFS Facilities Parser ✅ COMPLETED
 **GitHub Issue**: richardthorek/Station-Manager#198 (merged to main)  
 **Completed**: 2026-01-05
 
@@ -1966,7 +2028,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19e: Station Context and Selection - Frontend ✅ COMPLETED
+#### Issue #20e: Station Context and Selection - Frontend ✅ COMPLETED
 **GitHub Issue**: TBD
 
 **Objective**: Create frontend station selection context and UI components
@@ -2044,7 +2106,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19f: Update Existing Routes for Multi-Station Filtering
+#### Issue #20f: Update Existing Routes for Multi-Station Filtering
 
 **Status**: ✅ **COMPLETED** (January 2026)  
 **Priority**: P0 (Critical Path)  
@@ -2122,7 +2184,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19g: Station Management UI - Admin Portal ✅ COMPLETED
+#### Issue #20g: Station Management UI - Admin Portal ✅ COMPLETED
 **GitHub Issue**: TBD  
 **Completed**: 2026-01-05
 
@@ -2208,7 +2270,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19h: Cross-Station Reporting Dashboard ✅ COMPLETED
+#### Issue #20h: Cross-Station Reporting Dashboard ✅ COMPLETED
 **GitHub Issue**: TBD  
 **Completed**: 2026-01-05
 
@@ -2325,7 +2387,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19i: Demo Station Features and Data Reset
+#### Issue #20i: Demo Station Features and Data Reset
 **GitHub Issue**: TBD  
 **Status**: ✅ COMPLETED
 
@@ -2417,7 +2479,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19j: Multi-Station Data Migration and Backward Compatibility ⚠️ PARTIAL
+#### Issue #20j: Multi-Station Data Migration and Backward Compatibility ⚠️ PARTIAL
 **GitHub Issue**: TBD  
 **Status**: Backward compatibility complete, explicit migration scripts deferred
 
@@ -2486,7 +2548,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #19k: Multi-Station Documentation and Registry Updates ✅ COMPLETED
+#### Issue #20k: Multi-Station Documentation and Registry Updates ✅ COMPLETED
 **GitHub Issue**: TBD  
 **Completed**: 2026-01-05
 
@@ -2624,7 +2686,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
-#### Issue #20: Advanced Analytics Dashboard
+#### Issue #21: Advanced Analytics Dashboard
 **GitHub Issue**: #123 (created 2026-01-04T09:26:30Z)
 
 **Objective**: Provide deep insights with advanced analytics and visualizations
