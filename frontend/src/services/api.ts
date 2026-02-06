@@ -180,8 +180,16 @@ class ApiService {
   }
 
   // Members
-  async getMembers(): Promise<Member[]> {
-    const response = await fetch(`${API_BASE_URL}/members`, {
+  async getMembers(options?: { search?: string; filter?: string; sort?: string }): Promise<Member[]> {
+    const params = new URLSearchParams();
+    if (options?.search) params.append('search', options.search);
+    if (options?.filter) params.append('filter', options.filter);
+    if (options?.sort) params.append('sort', options.sort);
+    
+    const queryString = params.toString();
+    const url = queryString ? `${API_BASE_URL}/members?${queryString}` : `${API_BASE_URL}/members`;
+    
+    const response = await fetch(url, {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch members');

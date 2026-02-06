@@ -272,7 +272,7 @@ export class TableStorageDatabase {
 
   // ===== MEMBER METHODS =====
 
-  async getAllMembers(stationId?: string): Promise<Member[]> {
+  async getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Promise<Member[]> {
     // Validate stationId to prevent injection
     this.validateStationId(stationId);
     
@@ -295,13 +295,115 @@ export class TableStorageDatabase {
       queryOptions: { filter }
     });
 
-    const members: Member[] = [];
+    let members: Member[] = [];
     for await (const entity of entities) {
       members.push(this.entityToMember(entity));
     }
 
-    // Sort by name
-    members.sort((a, b) => a.name.localeCompare(b.name));
+    // Calculate activity stats for filtering and sorting
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    // Get participant data for activity calculations
+    const participants = await this.getAllEventParticipants(sixMonthsAgo, new Date());
+    const checkInCounts = new Map<string, { count: number; lastCheckIn: Date | null }>();
+    
+    participants.forEach(p => {
+      const checkInTime = new Date(p.checkInTime);
+      const current = checkInCounts.get(p.memberId) || { count: 0, lastCheckIn: null };
+      current.count++;
+      if (!current.lastCheckIn || checkInTime > current.lastCheckIn) {
+        current.lastCheckIn = checkInTime;
+      }
+      checkInCounts.set(p.memberId, current);
+    });
+    
+    // Get currently checked-in members
+    const activeEvents = await this.getActiveEvents();
+    const checkedInMemberIds = new Set<string>();
+    for (const event of activeEvents) {
+      const eventParticipants = await this.getEventParticipants(event.id);
+      eventParticipants.forEach(p => checkedInMemberIds.add(p.memberId));
+    }
+    
+    // Apply search filter
+    if (options?.search) {
+      const searchLower = options.search.toLowerCase();
+      members = members.filter(m => {
+        return (
+          m.name.toLowerCase().includes(searchLower) ||
+          (m.rank && m.rank.toLowerCase().includes(searchLower)) ||
+          (m.memberNumber && m.memberNumber.toLowerCase().includes(searchLower))
+        );
+      });
+    }
+    
+    // Apply activity filter
+    if (options?.filter) {
+      switch (options.filter) {
+        case 'checked-in':
+          members = members.filter(m => checkedInMemberIds.has(m.id));
+          break;
+        case 'active':
+          // Active in last 30 days
+          members = members.filter(m => {
+            const stats = checkInCounts.get(m.id);
+            return stats && stats.lastCheckIn && stats.lastCheckIn >= thirtyDaysAgo;
+          });
+          break;
+        case 'inactive':
+          // No activity in last 30 days or no activity at all
+          members = members.filter(m => {
+            const stats = checkInCounts.get(m.id);
+            return !stats || !stats.lastCheckIn || stats.lastCheckIn < thirtyDaysAgo;
+          });
+          break;
+        // 'all' or undefined - no filtering
+      }
+    }
+    
+    // Apply sorting
+    if (options?.sort) {
+      switch (options.sort) {
+        case 'name-asc':
+          members.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case 'name-desc':
+          members.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        case 'activity':
+          // Most active first (by count)
+          members.sort((a, b) => {
+            const countA = checkInCounts.get(a.id)?.count || 0;
+            const countB = checkInCounts.get(b.id)?.count || 0;
+            if (countB !== countA) return countB - countA;
+            return a.name.localeCompare(b.name); // Alphabetical for ties
+          });
+          break;
+        case 'recent':
+          // Most recently active first
+          members.sort((a, b) => {
+            const lastA = checkInCounts.get(a.id)?.lastCheckIn;
+            const lastB = checkInCounts.get(b.id)?.lastCheckIn;
+            if (!lastA && !lastB) return a.name.localeCompare(b.name);
+            if (!lastA) return 1;
+            if (!lastB) return -1;
+            if (lastB.getTime() !== lastA.getTime()) {
+              return lastB.getTime() - lastA.getTime();
+            }
+            return a.name.localeCompare(b.name);
+          });
+          break;
+        default:
+          // Default sort: alphabetically
+          members.sort((a, b) => a.name.localeCompare(b.name));
+      }
+    } else {
+      // Default sort: alphabetically
+      members.sort((a, b) => a.name.localeCompare(b.name));
+    }
     
     return members;
   }

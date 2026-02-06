@@ -31,12 +31,18 @@ const router = Router();
 // Apply station middleware to all routes
 router.use(stationMiddleware);
 
-// Get all members (filtered by station)
+// Get all members (filtered by station with search, filter, and sort)
 router.get('/', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
-    const members = await db.getAllMembers(stationId);
+    
+    // Extract query parameters
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+    const filter = typeof req.query.filter === 'string' ? req.query.filter : undefined;
+    const sort = typeof req.query.sort === 'string' ? req.query.sort : undefined;
+    
+    const members = await db.getAllMembers(stationId, { search, filter, sort });
     res.json(members);
   } catch (error) {
     logger.error('Error fetching members', { 

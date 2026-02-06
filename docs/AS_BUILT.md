@@ -75,6 +75,8 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 - **Frontend Code:** ~2,900 lines (TypeScript/React)
 - **Test Coverage:** 376 backend tests (100% pass rate) + 95 frontend tests
 - **API Endpoints:** 43+ REST endpoints (includes event auto-expiry, reporting, and brigade access admin)
+- **Test Coverage:** 403 backend tests (100% pass rate) + 179 frontend tests
+- **API Endpoints:** 42+ REST endpoints (includes event auto-expiry management and reporting)
 - **Real-time Events:** 10+ Socket.io event types
 
 ---
@@ -1195,12 +1197,37 @@ Potential improvements (not in current scope):
 
 ### Current Security Measures
 
-1. **CORS Configuration**
+1. **Security Headers (Helmet)** ✅ IMPLEMENTED (2026-02-06)
+   - **Helmet Middleware**: Industry-standard security headers via helmet 8.1.0
+   - **Content-Security-Policy (CSP)**: Protects against XSS and injection attacks
+     - `default-src 'self'` - Only allow resources from same origin by default
+     - `script-src 'self'` - JavaScript only from same origin
+     - `style-src 'self' 'unsafe-inline'` - Styles from same origin + inline (required for React)
+     - `img-src 'self' data: blob: https:` - Images from same origin, data URIs, blobs, and HTTPS
+     - `connect-src 'self' ws: wss:` - WebSocket connections allowed for Socket.io
+     - `font-src 'self' data:` - Fonts from same origin and data URIs
+     - `object-src 'none'` - Block object/embed/applet elements
+     - `media-src 'self'` - Media only from same origin
+     - `frame-src 'none'` - Block all iframe embedding of external content
+   - **X-Frame-Options: DENY** - Prevents clickjacking by blocking iframe embedding
+   - **X-Content-Type-Options: nosniff** - Prevents MIME type sniffing attacks
+   - **Referrer-Policy: strict-origin-when-cross-origin** - Privacy-focused referrer control
+   - **Permissions-Policy** - Restricts browser features:
+     - `camera=()` - Blocks camera access
+     - `microphone=()` - Blocks microphone access
+     - `geolocation=()` - Blocks location access
+     - `payment=()` - Blocks payment APIs
+   - **Strict-Transport-Security (HSTS)** - Enforces HTTPS (max-age: 1 year, includeSubDomains)
+   - **X-Powered-By** - Header hidden to avoid revealing server technology
+   - **Test Coverage**: 27 dedicated security header tests (100% pass rate)
+   - **Implementation**: Applied before other middleware in `backend/src/index.ts`
+
+2. **CORS Configuration**
    - Configured for specific frontend URL
    - Methods restricted to GET, POST
    - Credentials not required
 
-2. **Rate Limiting**
+3. **Rate Limiting**
    - **API Routes:** 100 requests per 15 minutes per IP (configurable via `RATE_LIMIT_API_MAX`)
    - **Auth Routes:** 5 requests per 15 minutes per IP (configurable via `RATE_LIMIT_AUTH_MAX`) - Reserved for future auth endpoints
    - **SPA Fallback:** 100 requests per 15 minutes per IP
@@ -1211,7 +1238,7 @@ Potential improvements (not in current scope):
    - **Configuration:** Adjustable via environment variables (`RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_API_MAX`, `RATE_LIMIT_AUTH_MAX`)
    - **Trust Proxy:** Enabled (`trust proxy` set to `1`) for Azure App Service deployment to correctly identify client IPs from `X-Forwarded-For` header
 
-3. **Input Validation & Sanitization** ✅ ENHANCED (2026-01-04)
+4. **Input Validation & Sanitization** ✅ ENHANCED (2026-01-04)
    - **express-validator** integrated on all POST/PUT/DELETE endpoints
    - **XSS Protection**: HTML entity escaping (< > & ' " characters)
    - **Type Validation**: String, boolean, enum validation
@@ -1228,11 +1255,11 @@ Potential improvements (not in current scope):
      - `backend/src/middleware/truckCheckValidation.ts` - Truck checks endpoints
    - **Test Coverage**: 25 dedicated validation tests (147 total tests passing)
 
-4. **HTTPS/WSS**
+5. **HTTPS/WSS**
    - Production uses HTTPS for HTTP traffic
    - WSS (WebSocket Secure) for Socket.io
 
-5. **Environment Variables**
+6. **Environment Variables**
    - Sensitive data in environment variables
    - Not committed to version control
    - Azure App Service application settings

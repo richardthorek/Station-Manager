@@ -322,11 +322,50 @@ Open multiple browser windows to `http://localhost:5173` and test real-time sync
 
 ## 🔒 Security
 
-- HTTPS required in production
-- CORS configuration for frontend
-- WebSocket security (WSS in production)
-- No sensitive data in QR codes
-- Input validation on all endpoints
+The Station Manager implements multiple layers of security protection:
+
+### Security Headers (Helmet)
+- **Content-Security-Policy (CSP)**: Protects against XSS and injection attacks
+  - Restricts resource loading to same-origin by default
+  - Allows WebSocket connections for real-time features
+  - Permits inline styles required by React
+- **X-Frame-Options: DENY**: Prevents clickjacking attacks
+- **X-Content-Type-Options: nosniff**: Prevents MIME type sniffing
+- **Referrer-Policy**: Privacy-focused referrer control
+- **Permissions-Policy**: Blocks camera, microphone, geolocation, payment APIs
+- **HSTS**: Enforces HTTPS in production (1 year max-age)
+- **X-Powered-By**: Hidden to avoid revealing server technology
+
+### Network Security
+- **HTTPS Required**: All production traffic uses HTTPS
+- **WSS (WebSocket Secure)**: Encrypted WebSocket connections in production
+- **CORS Configuration**: Restricted to specific frontend URL
+- **Trust Proxy**: Configured for Azure App Service
+
+### Input Security
+- **Input Validation**: express-validator on all POST/PUT/DELETE endpoints
+- **XSS Protection**: HTML entity escaping for user input
+- **Type & Length Validation**: Enforced on all fields
+- **Pattern Validation**: Name fields restricted to safe characters
+- **Whitespace Trimming**: Automatic sanitization
+
+### Rate Limiting
+- **API Routes**: 100 requests per 15 minutes per IP
+- **Auth Routes**: 5 requests per 15 minutes per IP (reserved for future)
+- **SPA Fallback**: 100 requests per 15 minutes per IP
+- **Standard Headers**: RateLimit-* headers for client feedback
+
+### Data Protection
+- **No Sensitive Data**: QR codes contain only member IDs
+- **Environment Variables**: Secrets not committed to version control
+- **Azure Key Vault**: For production secrets (recommended)
+
+### Testing
+- **27 Security Header Tests**: Comprehensive validation of all headers
+- **25 Input Validation Tests**: Coverage of all validation rules
+- **100% Test Pass Rate**: All security tests passing
+
+For detailed security configuration, see [Security & Authentication](docs/AS_BUILT.md#security--authentication) in the as-built documentation.
 
 Future enhancements may include optional authentication for admin functions.
 

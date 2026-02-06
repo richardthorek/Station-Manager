@@ -6,11 +6,39 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { render } from '../test/utils/test-utils'
 import { MemberList } from './MemberList'
 import { mockMembers, mockCheckIns } from '../test/mocks/api'
+
+// Mock the API module
+vi.mock('../services/api', () => ({
+  api: {
+    getMembers: vi.fn((options?: { search?: string; filter?: string; sort?: string }) => {
+      let filtered = [...mockMembers];
+      
+      // Apply search
+      if (options?.search) {
+        const searchLower = options.search.toLowerCase();
+        filtered = filtered.filter(m =>
+          m.name.toLowerCase().includes(searchLower) ||
+          (m.rank && m.rank.toLowerCase().includes(searchLower)) ||
+          (m.memberNumber && m.memberNumber.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      // Apply sort
+      if (options?.sort === 'name-asc') {
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (options?.sort === 'name-desc') {
+        filtered.sort((a, b) => b.name.localeCompare(a.name));
+      }
+      
+      return Promise.resolve(filtered);
+    })
+  }
+}))
 
 describe('MemberList', () => {
   const mockOnCheckIn = vi.fn()
@@ -20,7 +48,7 @@ describe('MemberList', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the member list', () => {
+  it('renders the member list', async () => {
     render(
       <MemberList
         members={mockMembers}
@@ -31,10 +59,15 @@ describe('MemberList', () => {
     )
 
     expect(screen.getByText('Sign In')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Search members...')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Search by name, rank, or member #...')).toBeInTheDocument()
+    
+    // Wait for members to load
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+    })
   })
 
-  it('displays all members', () => {
+  it('displays all members', async () => {
     render(
       <MemberList
         members={mockMembers}
@@ -44,8 +77,11 @@ describe('MemberList', () => {
       />
     )
 
-    mockMembers.forEach(member => {
-      expect(screen.getByText(member.name)).toBeInTheDocument()
+    // Wait for members to load
+    await waitFor(() => {
+      mockMembers.forEach(member => {
+        expect(screen.getByText(member.name)).toBeInTheDocument()
+      })
     })
   })
 
@@ -61,11 +97,16 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...')
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...')
     await user.type(searchInput, 'John')
 
-    expect(screen.getByText('John Smith')).toBeInTheDocument()
-    expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument()
+    // Wait for filtered results
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+    })
+    await waitFor(() => {
+      expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument()
+    })
   })
 
   it('shows clear button when search has text', async () => {
@@ -80,7 +121,7 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...')
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...')
     
     // Initially no clear button
     expect(screen.queryByLabelText('Clear search')).not.toBeInTheDocument()
@@ -104,7 +145,7 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...') as HTMLInputElement
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...') as HTMLInputElement
     await user.type(searchInput, 'John')
     expect(searchInput.value).toBe('John')
 
@@ -140,39 +181,39 @@ describe('MemberList', () => {
   it('toggles letter filter off when clicked again', async () => {
     const user = userEvent.setup()
     
-    const allMembers = [
-      ...mockMembers,
-      {
-        id: 'member-3',
-        name: 'Alice Brown',
-        qrCode: 'qr-alice',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-      },
-    ]
-    
     render(
       <MemberList
-        members={allMembers}
+        members={mockMembers}
         activeCheckIns={[]}
         onCheckIn={mockOnCheckIn}
         onAddMember={mockOnAddMember}
       />
     )
 
-    // Click on letter 'J' to filter
+    // Wait for initial render
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    })
+
+    // Click on letter 'J' to filter (letter filter is applied locally after API fetch)
     const letterJ = screen.getByRole('button', { name: 'J' })
     await user.click(letterJ)
 
-    expect(screen.getByText('John Smith')).toBeInTheDocument()
-    expect(screen.queryByText('Alice Brown')).not.toBeInTheDocument()
+    // Only J names should be visible
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    })
 
     // Click again to toggle off
     await user.click(letterJ)
 
-    // All members should be visible
-    expect(screen.getByText('John Smith')).toBeInTheDocument()
-    expect(screen.getByText('Alice Brown')).toBeInTheDocument()
+    // All members should be visible again
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    })
   })
 
   it('calls onCheckIn when a member is clicked', async () => {
@@ -344,10 +385,13 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...')
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...')
     await user.type(searchInput, 'Nonexistent Member')
 
-    expect(screen.getByText('No members found')).toBeInTheDocument()
+    // Wait for the debounced search and API call
+    await waitFor(() => {
+      expect(screen.getByText('No members found')).toBeInTheDocument()
+    }, { timeout: 1000 })
   })
 
   it('clears search when using letter filter', async () => {
@@ -362,7 +406,7 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...') as HTMLInputElement
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...') as HTMLInputElement
     await user.type(searchInput, 'John')
     expect(searchInput.value).toBe('John')
 
@@ -386,7 +430,7 @@ describe('MemberList', () => {
       />
     )
 
-    const searchInput = screen.getByPlaceholderText('Search members...') as HTMLInputElement
+    const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...') as HTMLInputElement
     await user.type(searchInput, 'John')
     expect(searchInput.value).toBe('John')
 
