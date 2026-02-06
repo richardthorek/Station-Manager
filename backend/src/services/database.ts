@@ -19,6 +19,7 @@ import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, E
 import { v4 as uuidv4 } from 'uuid';
 import { autoExpireEvents } from './rolloverService';
 import { DEFAULT_STATION_ID, DEMO_STATION_ID, DEMO_BRIGADE_ID, getEffectiveStationId } from '../constants/stations';
+import { DEFAULT_MEMBERS, buildDisplayName } from './defaultMembers';
 
 class DatabaseService {
   private members: Map<string, Member> = new Map();
@@ -115,55 +116,16 @@ class DatabaseService {
     };
     this.stations.set(defaultStation.id, defaultStation);
 
-    // Add sample members for testing
-    const sampleMembers = [
-      'John Smith',
-      'Sarah Johnson',
-      'Michael Brown',
-      'Emily Davis',
-      'David Wilson',
-      'Lisa Anderson',
-      'James Taylor',
-      'Jennifer Martinez',
-      'Robert Lee',
-      'Mary Williams',
-      'Christopher Thompson',
-      'Patricia Garcia',
-      'Daniel Rodriguez',
-      'Linda Martinez',
-      'Matthew Anderson',
-      'Barbara Thomas',
-      'Joseph Jackson',
-      'Elizabeth White',
-      'Charles Harris',
-      'Susan Clark',
-      'Thomas Lewis',
-      'Jessica Robinson',
-      'Christopher Walker',
-      'Sarah Hall',
-      'Joshua Allen',
-      'Nancy Young',
-      'Andrew King',
-      'Margaret Wright',
-      'Ryan Lopez',
-      'Dorothy Hill',
-      'Nicholas Scott',
-      'Betty Green',
-      'Jonathan Adams',
-      'Helen Baker',
-      'Brandon Nelson',
-      'Sandra Carter',
-      'Benjamin Mitchell',
-      'Ashley Perez',
-      'Samuel Roberts',
-      'Kimberly Turner',
-    ];
-
-    sampleMembers.forEach(name => {
+    // Seed default station with DEFAULT_MEMBERS (120+ real brigade members)
+    DEFAULT_MEMBERS.forEach(seedMember => {
       const member: Member = {
         id: uuidv4(),
-        name,
+        name: buildDisplayName(seedMember),
         qrCode: uuidv4(),
+        firstName: seedMember.firstName,
+        lastName: seedMember.lastName,
+        rank: seedMember.rank,
+        stationId: DEFAULT_STATION_ID, // Explicitly set to default station
         createdAt: new Date(),
         updatedAt: new Date(),
       };

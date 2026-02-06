@@ -279,8 +279,13 @@ export class TableStorageDatabase {
     let filter = odata`PartitionKey eq 'Member'`;
     
     if (stationId) {
-      // Filter by specific station
-      filter = odata`PartitionKey eq 'Member' and stationId eq ${stationId}`;
+      // For default station, include members with empty stationId (legacy members)
+      // For other stations, only match exact stationId
+      if (stationId === DEFAULT_STATION_ID) {
+        filter = odata`PartitionKey eq 'Member' and (stationId eq ${stationId} or stationId eq '')`;
+      } else {
+        filter = odata`PartitionKey eq 'Member' and stationId eq ${stationId}`;
+      }
     }
     
     const entities = this.membersTable.listEntities<TableEntity>({

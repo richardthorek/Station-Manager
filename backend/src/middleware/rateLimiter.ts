@@ -16,11 +16,33 @@
  */
 
 import rateLimit from 'express-rate-limit';
+import type { Request } from 'express';
 
 // Parse environment variables with defaults
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10); // 15 minutes
 const RATE_LIMIT_API_MAX = parseInt(process.env.RATE_LIMIT_API_MAX || '100', 10);
 const RATE_LIMIT_AUTH_MAX = parseInt(process.env.RATE_LIMIT_AUTH_MAX || '5', 10);
+
+/**
+ * Custom key generator that extracts clean IP address from request
+ * Handles cases where X-Forwarded-For includes port (e.g., "104.209.11.16:50178")
+ * This prevents ValidationError from express-rate-limit
+ */
+function getClientIp(req: Request): string {
+  const ip = req.ip || 'unknown';
+  // Strip port if present (Azure proxies sometimes include it)
+  // IPv4 format: "xxx.xxx.xxx.xxx:port" -> "xxx.xxx.xxx.xxx"
+  // IPv6 format: Keep as-is (Express already handles IPv6 properly)
+  if (ip.includes(':') && !ip.includes('[')) {
+    // IPv4 with port - take only the IP part
+    const parts = ip.split(':');
+    // Check if last part is a port number
+    if (parts.length === 2 && /^\d+$/.test(parts[1])) {
+      return parts[0];
+    }
+  }
+  return ip;
+}
 
 /**
  * Rate limiter for general API routes
@@ -32,9 +54,11 @@ export const apiRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers (deprecated)
   message: 'Too many requests from this IP, please try again later.',
+  keyGenerator: getClientIp, // Use custom IP extractor to handle ports
   handler: (req, res) => {
     const retryAfter = res.getHeader('RateLimit-Reset');
-    console.warn(`Rate limit exceeded for IP ${req.ip} on ${req.path}`);
+    const clientIp = getClientIp(req);
+    console.warn(`Rate limit exceeded for IP ${clientIp} on ${req.path}`);
     res.status(429).json({
       error: 'Too many requests',
       message: 'You have exceeded the rate limit. Please try again later.',
@@ -53,9 +77,11 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Too many authentication attempts, please try again later.',
+  keyGenerator: getClientIp, // Use custom IP extractor to handle ports
   handler: (req, res) => {
     const retryAfter = res.getHeader('RateLimit-Reset');
-    console.warn(`Auth rate limit exceeded for IP ${req.ip} on ${req.path}`);
+    const clientIp = getClientIp(req);
+    console.warn(`Auth rate limit exceeded for IP ${clientIp} on ${req.path}`);
     res.status(429).json({
       error: 'Too many authentication attempts',
       message: 'You have exceeded the authentication rate limit. Please try again later.',
@@ -74,4 +100,5 @@ export const spaRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Too many requests from this IP, please try again later.',
+  keyGenerator: getClientIp, // Use custom IP extractor to handle ports
 });
