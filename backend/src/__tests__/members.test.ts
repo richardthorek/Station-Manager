@@ -342,4 +342,136 @@ describe('Members API', () => {
       });
     });
   });
+
+  describe('POST /api/members/import', () => {
+    it('should validate CSV and return validation results', async () => {
+      const csvContent = `First Name,Last Name,Rank,Roles
+John,Doe,Captain,
+Jane,Smith,,Driver
+Bob,Brown,,`;
+
+      const response = await request(app)
+        .post('/api/members/import')
+        .attach('file', Buffer.from(csvContent), 'members.csv')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('totalRows');
+      expect(response.body).toHaveProperty('validCount');
+      expect(response.body).toHaveProperty('invalidCount');
+      expect(response.body).toHaveProperty('duplicateCount');
+      expect(response.body).toHaveProperty('validationResults');
+      expect(Array.isArray(response.body.validationResults)).toBe(true);
+      expect(response.body.totalRows).toBe(3);
+    });
+
+    it('should detect duplicate members', async () => {
+      // Create an existing member
+      await request(app)
+        .post('/api/members')
+        .send({ name: 'John Doe' });
+
+      const csvContent = `First Name,Last Name,Rank,Roles
+John,Doe,Captain,`;
+
+      const response = await request(app)
+        .post('/api/members/import')
+        .attach('file', Buffer.from(csvContent), 'members.csv')
+        .expect(200);
+
+      expect(response.body.duplicateCount).toBeGreaterThan(0);
+      expect(response.body.validationResults[0].isDuplicate).toBe(true);
+    });
+
+    it('should return 400 when no file is uploaded', async () => {
+      const response = await request(app)
+        .post('/api/members/import')
+        .expect(400);
+
+      expect(response.body.error).toContain('No file uploaded');
+    });
+
+    it('should handle CSV with empty rows', async () => {
+      const csvContent = `First Name,Last Name,Rank,Roles
+John,Doe,,
+
+Jane,Smith,,`;
+
+      const response = await request(app)
+        .post('/api/members/import')
+        .attach('file', Buffer.from(csvContent), 'members.csv')
+        .expect(200);
+
+      // Should skip empty lines
+      expect(response.body.totalRows).toBe(2);
+    });
+
+    it('should validate required name field', async () => {
+      const csvContent = `First Name,Last Name,Rank,Roles
+,,Captain,`;
+
+      const response = await request(app)
+        .post('/api/members/import')
+        .attach('file', Buffer.from(csvContent), 'members.csv')
+        .expect(200);
+
+      expect(response.body.invalidCount).toBeGreaterThan(0);
+      expect(response.body.validationResults[0].isValid).toBe(false);
+      expect(response.body.validationResults[0].errors).toContain('Name is required (either First Name + Last Name or Name column)');
+    });
+  });
+
+  describe('POST /api/members/import/execute', () => {
+    it('should import valid members', async () => {
+      const membersToImport = [
+        { name: 'Test Import 1', firstName: 'Test', lastName: 'Import 1', rank: 'Captain' },
+        { name: 'Test Import 2', firstName: 'Test', lastName: 'Import 2' },
+      ];
+
+      const response = await request(app)
+        .post('/api/members/import/execute')
+        .send({ members: membersToImport })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('totalAttempted');
+      expect(response.body).toHaveProperty('successCount');
+      expect(response.body).toHaveProperty('failureCount');
+      expect(response.body).toHaveProperty('successful');
+      expect(response.body).toHaveProperty('failed');
+      expect(response.body.totalAttempted).toBe(2);
+      expect(response.body.successCount).toBeGreaterThan(0);
+      expect(Array.isArray(response.body.successful)).toBe(true);
+
+      // Verify members were created with QR codes
+      response.body.successful.forEach((member: any) => {
+        expect(member).toHaveProperty('name');
+        expect(member).toHaveProperty('id');
+        expect(member).toHaveProperty('qrCode');
+      });
+    });
+
+    it('should return 400 when no members provided', async () => {
+      const response = await request(app)
+        .post('/api/members/import/execute')
+        .send({ members: [] })
+        .expect(400);
+
+      expect(response.body.error).toContain('No members provided');
+    });
+
+    it('should handle partial failures gracefully', async () => {
+      const membersToImport = [
+        { name: 'Valid Member', firstName: 'Valid', lastName: 'Member' },
+        { name: '', firstName: '', lastName: '' }, // Invalid
+      ];
+
+      const response = await request(app)
+        .post('/api/members/import/execute')
+        .send({ members: membersToImport })
+        .expect(200);
+
+      expect(response.body.successCount).toBeGreaterThan(0);
+      expect(response.body.failureCount).toBeGreaterThan(0);
+      expect(response.body.failed.length).toBeGreaterThan(0);
+    });
+  });
 });

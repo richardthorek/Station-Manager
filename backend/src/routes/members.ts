@@ -258,9 +258,6 @@ router.post('/import', upload.single('file'), async (req: Request, res: Response
       }
 
       const isDuplicate = name ? existingNames.has(name.toLowerCase()) : false;
-      if (isDuplicate) {
-        errors.push('Duplicate member name');
-      }
 
       return {
         row: index + 2, // +2 because: +1 for 1-indexed, +1 for header row
@@ -321,6 +318,15 @@ router.post('/import/execute', async (req: Request, res: Response) => {
       try {
         const { firstName, lastName, name, rank } = memberData;
         
+        // Validate name is not empty
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+          results.failed.push({
+            name: name || 'Unknown',
+            error: 'Valid name is required',
+          });
+          continue;
+        }
+
         const member = await db.createMember(name, {
           rank: rank || undefined,
           firstName: firstName || undefined,
