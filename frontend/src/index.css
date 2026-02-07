@@ -1,7 +1,10 @@
 :root {
   /* NSW RFS Brand Colors (from Style Guide Sept 2024) */
   --rfs-core-red: #e5281B;
+  --rfs-core-red-dark: #c21f17;
+  --rfs-core-red-light: #ff3d2e;
   --rfs-lime: #cbdb2a;
+  --rfs-lime-dark: #b0c020;
   --rfs-dark-grey: #4d4d4f;
   --rfs-light-grey: #bcbec0;
   --rfs-black: #000000;
@@ -18,6 +21,27 @@
   --rfs-neutral-light: #f4f4f4; /* Style guide uses specific greys, this might need to align with --rfs-light-grey or similar */
   --rfs-neutral-medium: #e0e0e0; /* Assess against style guide greys */
   --rfs-neutral-dark: #333333; /* Consider replacing with --rfs-dark-grey or another specified grey */
+
+  /* Design System - Spacing Scale */
+  --spacing-xs: 0.25rem;   /* 4px */
+  --spacing-sm: 0.5rem;    /* 8px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-xl: 2rem;      /* 32px */
+  --spacing-2xl: 3rem;     /* 48px */
+
+  /* Design System - Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Design System - Shadow Levels */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.2);
 
   /* Legacy variable mapping for backward compatibility */
   --color-primary-red: var(--rfs-core-red);
@@ -72,23 +96,29 @@
   --color-white: #1a1a1a;
   --color-gray-light: #333333;
   --color-gray-medium: #555555;
-  --color-gray-dark: #bcbec0;
+  --color-gray-dark: #d0d0d0;  /* Improved contrast from #bcbec0 */
   --text-color-light: #1a1a1a;
-  --text-color-dark: #e0e0e0;
-  
-  --bg-primary: #000000;
+  --text-color-dark: #e8e8e8;  /* Improved contrast from #e0e0e0 */
+
+  --bg-primary: #0a0a0a;      /* Slightly lighter than pure black for depth */
   --bg-secondary: #1a1a1a;
-  --bg-card: #1a1a1a;
+  --bg-card: #252525;          /* Improved contrast for cards */
   --text-primary: #ffffff;
-  --text-secondary: #e0e0e0;
-  --border-color: #333333;
-  --shadow-color: rgba(0, 0, 0, 0.3);
-  
+  --text-secondary: #d0d0d0;   /* Improved contrast */
+  --border-color: #404040;     /* Improved visibility from #333333 */
+  --shadow-color: rgba(0, 0, 0, 0.5);
+
   /* Surface variables for overlays and elevated components */
   --background-color: #1a1a1a;
-  --surface-elevated: #2a2a2a;
-  --surface-hover: #333333;
-  
+  --surface-elevated: #2d2d2d;
+  --surface-hover: #3a3a3a;
+
+  /* Override shadow levels for dark mode */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.6);
+
   color-scheme: dark;
   color: var(--text-primary);
   background-color: var(--bg-primary);
@@ -122,27 +152,36 @@ h1, h2, h3, h4, h5, h6 {
 button {
   font-family: inherit;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  transition: all 0.2s ease;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 button:active {
   transform: translateY(0);
+  box-shadow: var(--shadow-md);
 }
 
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--rfs-lime);
+  outline-offset: 2px;
 }
 
 input, select {
@@ -169,51 +208,97 @@ input:focus, select:focus {
  * - Use semantic color variables for theme consistency
  */
 
-/* Utility Classes */
+/* Utility Classes - Modern Button Variants */
 .btn-primary {
-  background-color: var(--color-primary-red);
+  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
   color: #ffffff;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-  background-color: #C21F17;
+  background: linear-gradient(135deg, var(--rfs-core-red-dark) 0%, #a81912 100%);
   color: #ffffff;
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-secondary {
-  background-color: var(--color-gray-dark);
-  color: #ffffff;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-black);
-  color: #ffffff;
+  background: var(--surface-hover);
+  border-color: var(--rfs-core-red);
+  color: var(--text-primary);
 }
 
 .btn-success {
-  background-color: var(--color-success);
+  background: linear-gradient(135deg, var(--ui-green) 0%, #006940 100%);
   color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-success:hover {
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-accent {
-  background-color: var(--color-lime-green);
+  background: linear-gradient(135deg, var(--rfs-lime) 0%, var(--rfs-lime-dark) 100%);
   color: #000000;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-accent:hover {
   color: #000000;
+  box-shadow: var(--shadow-lg);
 }
 
+.btn-ghost {
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  background: var(--surface-hover);
+  transform: none;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-danger:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Card Variants */
 .card {
-  background: var(--color-white);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-  transition: box-shadow 0.3s ease;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-xl);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-color);
 }
 
 .card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card-elevated {
+  box-shadow: var(--shadow-lg);
+}
+
+.card-flat {
+  box-shadow: none;
+  border: 1px solid var(--border-color);
 }
 
 /* Animations */
