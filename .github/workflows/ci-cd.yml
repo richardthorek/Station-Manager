@@ -495,16 +495,24 @@ jobs:
         # These are typically transient issues caused by concurrent operations
         continue-on-error: true
       
-      - name: Retry deployment if needed (handle 409 conflicts)
+      - name: Check deployment result
+        id: check-deploy
         if: steps.deploy-to-webapp.outcome == 'failure'
         run: |
-          echo "⚠️  Initial deployment failed (likely 409 Conflict)"
+          echo "⚠️  Initial deployment failed"
+          echo "Checking if this is a retriable error (409 Conflict)..."
+          echo "deployment_failed=true" >> $GITHUB_OUTPUT
+      
+      - name: Wait before retry (handle 409 conflicts)
+        if: steps.check-deploy.outputs.deployment_failed == 'true'
+        run: |
           echo "🔄 Waiting 60 seconds before retry..."
+          echo "Note: 409 Conflict errors are common with Azure Oryx builds"
           sleep 60
           echo "🚀 Retrying deployment..."
       
       - name: Deploy to Azure Web App (Retry)
-        if: steps.deploy-to-webapp.outcome == 'failure'
+        if: steps.check-deploy.outputs.deployment_failed == 'true'
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bungrfsstation'
