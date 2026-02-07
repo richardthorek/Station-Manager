@@ -64,6 +64,8 @@ export interface Member {
   lastName?: string;
   membershipStartDate?: string | null;  // When member joined the brigade (ISO string, can differ from createdAt)
   lastSignIn?: string | null;    // Last time member participated in an event (ISO string)
+  isActive?: boolean;            // Whether member is active/visible
+  isDeleted?: boolean;           // Soft delete flag to retain history
   createdAt: string;
   updatedAt: string;
 }
