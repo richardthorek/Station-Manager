@@ -500,14 +500,14 @@ jobs:
         if: steps.deploy-to-webapp.outcome == 'failure'
         run: |
           echo "⚠️  Initial deployment failed"
-          echo "Checking if this is a retriable error (409 Conflict)..."
+          echo "Common causes: 409 Conflict (Oryx build), Azure updates, concurrent deployments"
+          echo "Will retry once after a delay..."
           echo "deployment_failed=true" >> $GITHUB_OUTPUT
       
-      - name: Wait before retry (handle 409 conflicts)
+      - name: Wait before retry
         if: steps.check-deploy.outputs.deployment_failed == 'true'
         run: |
-          echo "🔄 Waiting 60 seconds before retry..."
-          echo "Note: 409 Conflict errors are common with Azure Oryx builds"
+          echo "🔄 Waiting 60 seconds to allow Azure operations to complete..."
           sleep 60
           echo "🚀 Retrying deployment..."
       
@@ -518,6 +518,7 @@ jobs:
           app-name: 'bungrfsstation'
           slot-name: 'Production'
           package: release.zip
+        # Note: Retry step does not continue-on-error - if retry fails, workflow fails
 
       - name: Set Azure App Service environment variables
         run: |
