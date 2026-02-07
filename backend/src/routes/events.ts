@@ -28,6 +28,7 @@ import {
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 import { logger } from '../services/logger';
+import { extractDeviceInfo, extractLocationInfo, sanitizeNotes } from '../utils/auditUtils';
 
 const router = Router();
 const REACTIVATE_WINDOW_HOURS = 24;
@@ -202,7 +203,7 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
-    const { memberId, method, location, isOffsite } = req.body;
+    const { memberId, method, location, isOffsite, performedBy, notes } = req.body;
     const stationId = getStationIdFromRequest(req);
     
     if (!memberId) {
@@ -220,11 +221,34 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
       return res.status(400).json({ error: 'Cannot add participants to an ended event' });
     }
     
+    // Extract device and location information for audit trail
+    const deviceInfo = extractDeviceInfo(req);
+    const locationInfo = extractLocationInfo(req);
+    const sanitizedNotes = sanitizeNotes(notes);
+    
     // Check if member already checked in to this event
     const existing = await db.getMemberParticipantInEvent(eventId, memberId);
     if (existing) {
       // Remove participant (undo check-in)
       await db.removeEventParticipant(existing.id);
+      
+      // Create audit log for removal
+      await db.createEventAuditLog(
+        eventId,
+        'participant-removed',
+        existing.id,
+        existing.memberId,
+        existing.memberName,
+        existing.memberRank,
+        existing.checkInMethod,
+        performedBy,
+        deviceInfo,
+        locationInfo,
+        stationId,
+        req.id,
+        sanitizedNotes || 'Undo check-in (toggle)'
+      );
+      
       return res.json({ 
         action: 'removed',
         participant: existing,
@@ -239,6 +263,23 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
       location,
       isOffsite || false,
       event.stationId
+    );
+    
+    // Create audit log for addition
+    await db.createEventAuditLog(
+      eventId,
+      'participant-added',
+      participant.id,
+      participant.memberId,
+      participant.memberName,
+      participant.memberRank,
+      participant.checkInMethod,
+      performedBy,
+      deviceInfo,
+      locationInfo,
+      stationId,
+      req.id,
+      sanitizedNotes
     );
     
     res.status(201).json({
@@ -257,17 +298,80 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
 router.delete('/:eventId/participants/:participantId', validateRemoveParticipant, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { participantId } = req.params;
+    const { eventId, participantId } = req.params;
+    const { performedBy, notes } = req.body;
+    const stationId = getStationIdFromRequest(req);
+    
+    // Get participant details before removal for audit log
+    const participants = await db.getEventParticipants(eventId);
+    const participant = participants.find(p => p.id === participantId);
+    
+    if (!participant) {
+      return res.status(404).json({ error: 'Participant not found' });
+    }
+    
+    // Extract device and location information for audit trail
+    const deviceInfo = extractDeviceInfo(req);
+    const locationInfo = extractLocationInfo(req);
+    const sanitizedNotes = sanitizeNotes(notes);
+    
+    // Remove participant
     const success = await db.removeEventParticipant(participantId);
     
     if (!success) {
       return res.status(404).json({ error: 'Participant not found' });
     }
     
+    // Create audit log for removal
+    await db.createEventAuditLog(
+      eventId,
+      'participant-removed',
+      participantId,
+      participant.memberId,
+      participant.memberName,
+      participant.memberRank,
+      participant.checkInMethod,
+      performedBy,
+      deviceInfo,
+      locationInfo,
+      stationId,
+      req.id,
+      sanitizedNotes
+    );
+    
     res.json({ message: 'Participant removed successfully' });
   } catch (error) {
     logger.error('Error removing participant', { error, eventId: req.params.id, requestId: req.id });
     res.status(500).json({ error: 'Failed to remove participant' });
+  }
+});
+
+/**
+ * Get audit logs for a specific event
+ * Returns chronological log of all participant additions and removals
+ */
+router.get('/:eventId/audit', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const { eventId } = req.params;
+    
+    // Verify event exists
+    const event = await db.getEventById(eventId);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    
+    // Get audit logs for this event
+    const auditLogs = await db.getEventAuditLogs(eventId);
+    
+    res.json({
+      eventId,
+      totalLogs: auditLogs.length,
+      logs: auditLogs,
+    });
+  } catch (error) {
+    logger.error('Error fetching event audit logs', { error, eventId: req.params.eventId, requestId: req.id });
+    res.status(500).json({ error: 'Failed to fetch audit logs' });
   }
 });
 

@@ -161,6 +161,62 @@ export interface EventWithParticipants extends Event {
   participantCount: number;
 }
 
+/**
+ * Device information for audit logging
+ */
+export interface DeviceInfo {
+  type?: string;           // Device type (e.g., 'mobile', 'tablet', 'desktop', 'kiosk')
+  model?: string;          // Device model/name if available
+  deviceId?: string;       // Unique device identifier if available (e.g., kiosk token)
+  userAgent?: string;      // Browser user agent string
+  ip?: string;             // IP address of the request
+}
+
+/**
+ * Location information for audit logging
+ */
+export interface LocationInfo {
+  latitude?: number;       // Geographic latitude
+  longitude?: number;      // Geographic longitude
+  accuracy?: number;       // Location accuracy in meters
+  address?: string;        // Human-readable address or location name
+  ipLocation?: string;     // IP-based location (city, state, country)
+}
+
+/**
+ * Audit log entry for event membership changes
+ * Provides complete traceability of who added/removed whom, when, where, and from what device
+ */
+export interface EventAuditLog {
+  id: string;
+  eventId: string;
+  action: 'participant-added' | 'participant-removed';
+  timestamp: Date;
+  
+  // Who performed the action
+  performedBy?: string;    // User/member who performed the action (if known)
+  
+  // Who was affected
+  memberId: string;
+  memberName: string;
+  memberRank?: string | null;
+  
+  // Participant details at time of action
+  participantId: string;   // ID of the EventParticipant record
+  checkInMethod?: 'kiosk' | 'mobile' | 'qr' | 'manual';
+  
+  // Device and location traceability
+  deviceInfo?: DeviceInfo;
+  locationInfo?: LocationInfo;
+  
+  // Additional context
+  stationId?: string;      // Station where action occurred
+  requestId?: string;      // Correlation ID for request tracing
+  notes?: string;          // Optional notes or reason for action
+  
+  createdAt: Date;
+}
+
 // ============================================
 // Truck Checks Types
 // ============================================

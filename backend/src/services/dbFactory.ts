@@ -16,7 +16,10 @@ import type {
   Event, 
   EventParticipant, 
   EventWithParticipants,
-  Station
+  Station,
+  EventAuditLog,
+  DeviceInfo,
+  LocationInfo
 } from '../types';
 import { db as inMemoryDb } from './database';
 import { tableStorageDb, tableStorageTestDb } from './tableStorageDatabase';
@@ -79,6 +82,25 @@ export interface IDatabase {
   getMemberParticipation(startDate: Date, endDate: Date, limit: number, stationId?: string): Promise<Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>> | Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>;
   getActivityBreakdown(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{ category: string; count: number; percentage: number }>> | Array<{ category: string; count: number; percentage: number }>;
   getEventStatistics(startDate: Date, endDate: Date, stationId?: string): Promise<{ totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number }> | { totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number };
+  
+  // Event Audit Logs
+  createEventAuditLog(
+    eventId: string,
+    action: 'participant-added' | 'participant-removed',
+    participantId: string,
+    memberId: string,
+    memberName: string,
+    memberRank: string | null | undefined,
+    checkInMethod: 'kiosk' | 'mobile' | 'qr' | 'manual',
+    performedBy?: string,
+    deviceInfo?: DeviceInfo,
+    locationInfo?: LocationInfo,
+    stationId?: string,
+    requestId?: string,
+    notes?: string
+  ): Promise<EventAuditLog> | EventAuditLog;
+  getEventAuditLogs(eventId: string): Promise<EventAuditLog[]> | EventAuditLog[];
+  getAllAuditLogs(limit?: number, offset?: number, stationId?: string): Promise<EventAuditLog[]> | EventAuditLog[];
 }
 
 /**

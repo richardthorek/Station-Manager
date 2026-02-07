@@ -10,7 +10,10 @@ import {
   Event,
   EventParticipant,
   EventWithParticipants,
-  Station
+  Station,
+  EventAuditLog,
+  DeviceInfo,
+  LocationInfo
 } from '../types';
 import { autoExpireEvents } from './rolloverService';
 import { DEFAULT_STATION_ID, DEMO_STATION_ID, DEMO_BRIGADE_ID, getEffectiveStationId } from '../constants/stations';
@@ -98,6 +101,7 @@ export class TableStorageDatabase {
   private checkInsTable!: TableClient;
   private activeActivityTable!: TableClient;
   private stationsTable!: TableClient;
+  private eventAuditLogsTable!: TableClient;
   private isConnected: boolean = false;
   private tableSuffix: string;
 
@@ -124,6 +128,7 @@ export class TableStorageDatabase {
       this.checkInsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('CheckIns', this.tableSuffix));
       this.activeActivityTable = TableClient.fromConnectionString(this.connectionString, buildTableName('ActiveActivity', this.tableSuffix));
       this.stationsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('Stations', this.tableSuffix));
+      this.eventAuditLogsTable = TableClient.fromConnectionString(this.connectionString, buildTableName('EventAuditLogs', this.tableSuffix));
     }
   }
 
@@ -175,6 +180,11 @@ export class TableStorageDatabase {
           this.stationsTable.createTable().catch((err) => {
             if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
               logger.warn('Warning creating Stations table:', err.message);
+            }
+          }),
+          this.eventAuditLogsTable.createTable().catch((err) => {
+            if (err instanceof Error && !err.message.includes('TableAlreadyExists')) {
+              logger.warn('Warning creating EventAuditLogs table:', err.message);
             }
           }),
         ]);
@@ -1310,6 +1320,197 @@ export class TableStorageDatabase {
     }
     
     return allParticipants;
+  }
+
+  // ============================================
+  // Event Audit Log Methods
+  // ============================================
+
+  /**
+   * Create an audit log entry for event membership changes
+   * Captures who, what, when, where, and how for compliance and traceability
+   */
+  async createEventAuditLog(
+    eventId: string,
+    action: 'participant-added' | 'participant-removed',
+    participantId: string,
+    memberId: string,
+    memberName: string,
+    memberRank: string | null | undefined,
+    checkInMethod: 'kiosk' | 'mobile' | 'qr' | 'manual',
+    performedBy?: string,
+    deviceInfo?: DeviceInfo,
+    locationInfo?: LocationInfo,
+    stationId?: string,
+    requestId?: string,
+    notes?: string
+  ): Promise<EventAuditLog> {
+    const id = uuidv4();
+    const now = new Date();
+    const effectiveStationId = getEffectiveStationId(stationId);
+    
+    const entity: TableEntity = {
+      partitionKey: eventId, // Partition by event for efficient queries
+      rowKey: id,
+      id,
+      eventId,
+      action,
+      timestamp: now,
+      performedBy: performedBy || '',
+      memberId,
+      memberName,
+      memberRank: memberRank || '',
+      participantId,
+      checkInMethod,
+      // Flatten device info
+      deviceType: deviceInfo?.type || '',
+      deviceModel: deviceInfo?.model || '',
+      deviceId: deviceInfo?.deviceId || '',
+      deviceUserAgent: deviceInfo?.userAgent || '',
+      deviceIp: deviceInfo?.ip || '',
+      // Flatten location info
+      locationLatitude: locationInfo?.latitude || 0,
+      locationLongitude: locationInfo?.longitude || 0,
+      locationAccuracy: locationInfo?.accuracy || 0,
+      locationAddress: locationInfo?.address || '',
+      locationIpLocation: locationInfo?.ipLocation || '',
+      stationId: effectiveStationId,
+      requestId: requestId || '',
+      notes: notes || '',
+      createdAt: now,
+    };
+
+    await this.eventAuditLogsTable.createEntity(entity);
+
+    // Reconstruct the audit log object
+    const auditLog: EventAuditLog = {
+      id,
+      eventId,
+      action,
+      timestamp: now,
+      performedBy,
+      memberId,
+      memberName,
+      memberRank: memberRank || null,
+      participantId,
+      checkInMethod,
+      deviceInfo: deviceInfo ? {
+        type: deviceInfo.type,
+        model: deviceInfo.model,
+        deviceId: deviceInfo.deviceId,
+        userAgent: deviceInfo.userAgent,
+        ip: deviceInfo.ip,
+      } : undefined,
+      locationInfo: locationInfo ? {
+        latitude: locationInfo.latitude,
+        longitude: locationInfo.longitude,
+        accuracy: locationInfo.accuracy,
+        address: locationInfo.address,
+        ipLocation: locationInfo.ipLocation,
+      } : undefined,
+      stationId: effectiveStationId,
+      requestId,
+      notes,
+      createdAt: now,
+    };
+
+    return auditLog;
+  }
+
+  /**
+   * Get all audit logs for a specific event, sorted chronologically
+   */
+  async getEventAuditLogs(eventId: string): Promise<EventAuditLog[]> {
+    try {
+      const entities = this.eventAuditLogsTable.listEntities({
+        queryOptions: { filter: odata`PartitionKey eq ${eventId}` }
+      });
+
+      const logs: EventAuditLog[] = [];
+      for await (const entity of entities) {
+        logs.push(this.entityToAuditLog(entity));
+      }
+
+      // Sort chronologically
+      return logs.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    } catch (error) {
+      logger.error('Error fetching event audit logs', { error, eventId });
+      return [];
+    }
+  }
+
+  /**
+   * Get all audit logs with pagination support
+   * Sorted in reverse chronological order (newest first)
+   */
+  async getAllAuditLogs(limit: number = 100, offset: number = 0, stationId?: string): Promise<EventAuditLog[]> {
+    try {
+      const filter = stationId 
+        ? odata`stationId eq ${stationId}`
+        : undefined;
+
+      const entities = this.eventAuditLogsTable.listEntities({
+        queryOptions: filter ? { filter } : undefined
+      });
+
+      const logs: EventAuditLog[] = [];
+      for await (const entity of entities) {
+        logs.push(this.entityToAuditLog(entity));
+      }
+
+      // Sort in reverse chronological order
+      logs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+      // Apply pagination
+      return logs.slice(offset, offset + limit);
+    } catch (error) {
+      logger.error('Error fetching all audit logs', { error, stationId });
+      return [];
+    }
+  }
+
+  /**
+   * Convert Table Storage entity to EventAuditLog
+   */
+  private entityToAuditLog(entity: TableEntity): EventAuditLog {
+    const deviceInfo = (entity.deviceType || entity.deviceModel || entity.deviceId || entity.deviceUserAgent || entity.deviceIp)
+      ? {
+          type: entity.deviceType as string | undefined,
+          model: entity.deviceModel as string | undefined,
+          deviceId: entity.deviceId as string | undefined,
+          userAgent: entity.deviceUserAgent as string | undefined,
+          ip: entity.deviceIp as string | undefined,
+        }
+      : undefined;
+
+    const locationInfo = (entity.locationLatitude || entity.locationLongitude || entity.locationAddress || entity.locationIpLocation)
+      ? {
+          latitude: entity.locationLatitude as number | undefined,
+          longitude: entity.locationLongitude as number | undefined,
+          accuracy: entity.locationAccuracy as number | undefined,
+          address: entity.locationAddress as string | undefined,
+          ipLocation: entity.locationIpLocation as string | undefined,
+        }
+      : undefined;
+
+    return {
+      id: entity.id as string,
+      eventId: entity.eventId as string,
+      action: entity.action as 'participant-added' | 'participant-removed',
+      timestamp: new Date(entity.timestamp as Date),
+      performedBy: entity.performedBy as string | undefined,
+      memberId: entity.memberId as string,
+      memberName: entity.memberName as string,
+      memberRank: (entity.memberRank as string) || null,
+      participantId: entity.participantId as string,
+      checkInMethod: entity.checkInMethod as 'kiosk' | 'mobile' | 'qr' | 'manual',
+      deviceInfo,
+      locationInfo,
+      stationId: entity.stationId as string | undefined,
+      requestId: entity.requestId as string | undefined,
+      notes: entity.notes as string | undefined,
+      createdAt: new Date(entity.createdAt as Date),
+    };
   }
 }
 
