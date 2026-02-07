@@ -139,7 +139,7 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
       setIsClosing(true);
       setTimeout(() => {
         onClose();
-        navigate(step.actionPath);
+        navigate(step.actionPath!);
       }, 300);
     }
   };
