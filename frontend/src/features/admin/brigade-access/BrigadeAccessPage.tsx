@@ -1,13 +1,13 @@
 /**
- * Brigade Access Admin Page
+ * Brigade Access Admin Page - Modernized
  * 
  * Master admin utility for viewing and sharing station sign-in URLs with brigade tokens.
  * Provides:
- * - List of all stations with their active access tokens
- * - Easy copy-to-clipboard functionality for kiosk URLs
- * - QR code generation for physical distribution
- * - Token generation for stations without tokens
- * - Token management (revoke, regenerate)
+ * - Modern dashboard with statistics
+ * - Improved token card design
+ * - Enhanced token management features
+ * - Better visual hierarchy
+ * - Compact layout for admin efficiency
  */
 
 import { useState, useEffect } from 'react';
@@ -39,6 +39,7 @@ export function BrigadeAccessPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   
   const socket = useSocket();
 
@@ -58,6 +59,7 @@ export function BrigadeAccessPage() {
       
       setStations(stationsData);
       setTokens(tokensData.tokens);
+      setLastRefresh(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
       console.error('Error loading brigade access data:', err);
@@ -175,19 +177,28 @@ export function BrigadeAccessPage() {
 
   return (
     <div className="brigade-access-page">
-      <header className="brigade-access-header">
-        <div className="header-nav">
-          <Link to="/" className="back-link">← Back to Home</Link>
-          <Link to="/admin/stations" className="back-link">← Station Management</Link>
+      <header className="page-header-compact">
+        <div className="header-top">
+          <div className="header-nav">
+            <Link to="/" className="back-link">← Home</Link>
+            <Link to="/admin/stations" className="back-link">← Stations</Link>
+          </div>
+          <div className="header-actions">
+            <button onClick={loadData} className="icon-button" title="Refresh">
+              🔄
+            </button>
+            <span className="last-refresh">
+              Updated {lastRefresh.toLocaleTimeString()}
+            </span>
+          </div>
         </div>
         <h1>Brigade Access Management</h1>
         <p className="page-description">
           Manage station sign-in URLs and brigade access tokens for kiosk mode.
-          Share these URLs with brigade members to enable locked sign-in access.
         </p>
       </header>
 
-      <main id="main-content" tabIndex={-1}>
+      <main className="page-content" id="main-content" tabIndex={-1}>
         {error && (
           <div className="error-message">
             <p>⚠️ {error}</p>
@@ -202,54 +213,53 @@ export function BrigadeAccessPage() {
           </div>
         ) : (
           <>
-            {/* Statistics Cards */}
-            <section className="stats-section">
-            <div className="stat-card">
-              <div className="stat-icon">🏢</div>
-              <div className="stat-content">
-                <div className="stat-value">{stats.totalStations}</div>
-                <div className="stat-label">Total Stations</div>
+            {/* Dashboard Statistics */}
+            <div className="dashboard-stats">
+              <div className="stat-card gradient-red">
+                <div className="stat-icon">🏢</div>
+                <div className="stat-content">
+                  <div className="stat-value">{stats.totalStations}</div>
+                  <div className="stat-label">Total Stations</div>
+                </div>
+              </div>
+              
+              <div className="stat-card gradient-green">
+                <div className="stat-icon">✓</div>
+                <div className="stat-content">
+                  <div className="stat-value">{stats.stationsWithTokens}</div>
+                  <div className="stat-label">With Tokens</div>
+                </div>
+              </div>
+              
+              <div className="stat-card gradient-amber">
+                <div className="stat-icon">⚠️</div>
+                <div className="stat-content">
+                  <div className="stat-value">{stats.stationsWithoutTokens}</div>
+                  <div className="stat-label">Need Tokens</div>
+                </div>
+              </div>
+              
+              <div className="stat-card gradient-blue">
+                <div className="stat-icon">🔑</div>
+                <div className="stat-content">
+                  <div className="stat-value">{stats.totalTokens}</div>
+                  <div className="stat-label">Active Tokens</div>
+                </div>
               </div>
             </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">✓</div>
-              <div className="stat-content">
-                <div className="stat-value">{stats.stationsWithTokens}</div>
-                <div className="stat-label">With Tokens</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">⚠️</div>
-              <div className="stat-content">
-                <div className="stat-value">{stats.stationsWithoutTokens}</div>
-                <div className="stat-label">Without Tokens</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">🔑</div>
-              <div className="stat-content">
-                <div className="stat-value">{stats.totalTokens}</div>
-                <div className="stat-label">Active Tokens</div>
-              </div>
-            </div>
-          </section>
 
-          {/* Search */}
-          <section className="search-section">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search stations by name, brigade, or district..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </section>
+            {/* Toolbar */}
+            <div className="toolbar-compact">
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search stations by name, brigade, or district..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
 
-          {/* Station List */}
-          <section className="stations-section">
+            {/* Station List */}
             {filteredStations.length === 0 ? (
               <div className="empty-state">
                 <p>No stations found matching "{searchQuery}"</p>
@@ -268,9 +278,8 @@ export function BrigadeAccessPage() {
                 ))}
               </div>
             )}
-          </section>
-        </>
-      )}
+          </>
+        )}
       </main>
     </div>
   );
