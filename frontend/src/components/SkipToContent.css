@@ -1,0 +1,40 @@
+/**
+ * Skip to Content Link Styles
+ * 
+ * - Hidden off-screen by default (not display:none to maintain tab order)
+ * - Visible when focused
+ * - High contrast and prominent styling
+ * - Does not add vertical space when not focused
+ */
+
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  z-index: 10000;
+  padding: 1rem 1.5rem;
+  background-color: var(--rfs-core-red);
+  color: var(--rfs-white);
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 0 0 0.5rem 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: top 0.2s ease-in-out;
+}
+
+.skip-to-content:focus {
+  top: 0;
+  outline: 3px solid var(--rfs-lime);
+  outline-offset: 2px;
+}
+
+.skip-to-content:hover {
+  background-color: #c01f16; /* Darker shade of RFS red */
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .skip-to-content {
+    border: 2px solid currentColor;
+  }
+}

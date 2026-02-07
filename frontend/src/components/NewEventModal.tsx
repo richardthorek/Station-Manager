@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Activity } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import './NewEventModal.css';
 
 interface NewEventModalProps {
@@ -12,6 +13,21 @@ interface NewEventModalProps {
 
 export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteActivity }: NewEventModalProps) {
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
+  const modalRef = useFocusTrap<HTMLDivElement>(isOpen);
+
+  // Handle Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -29,28 +45,45 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
   };
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={handleClose} role="presentation">
+      <div 
+        ref={modalRef}
+        className="modal-content" 
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="event-modal-title"
+        aria-describedby="event-modal-description"
+      >
         <div className="modal-header">
-          <h2>Start New Event</h2>
-          <button className="modal-close" onClick={handleClose}>
+          <h2 id="event-modal-title">Start New Event</h2>
+          <button 
+            type="button"
+            className="modal-close" 
+            onClick={handleClose}
+            aria-label="Close dialog"
+          >
             ✕
           </button>
         </div>
 
         <div className="modal-body">
-          <p className="modal-description">
+          <p id="event-modal-description" className="modal-description">
             Select an activity type to start a new event. Participants can sign in to this event.
           </p>
 
-          <div className="activity-grid">
+          <div className="activity-grid" role="radiogroup" aria-label="Activity type selection">
             {activities.map((activity) => (
               <div key={activity.id} className="activity-option-wrapper">
                 <button
+                  type="button"
                   className={`activity-option ${selectedActivityId === activity.id ? 'selected' : ''}`}
                   onClick={() => setSelectedActivityId(activity.id)}
+                  role="radio"
+                  aria-checked={selectedActivityId === activity.id}
+                  aria-label={`${activity.name}${activity.isCustom ? ' (custom activity)' : ''}`}
                 >
-                  <span className="activity-icon">📋</span>
+                  <span className="activity-icon" aria-hidden="true">📋</span>
                   <span className="activity-name">{activity.name}</span>
                   {activity.isCustom && (
                     <span className="custom-badge">Custom</span>
@@ -58,6 +91,7 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
                 </button>
                 {activity.isCustom && (
                   <button
+                    type="button"
                     className="activity-delete-btn"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -65,6 +99,7 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
                         onDeleteActivity(activity.id);
                       }
                     }}
+                    aria-label={`Delete ${activity.name} activity`}
                     title="Delete activity"
                   >
                     🗑️
@@ -76,13 +111,15 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
         </div>
 
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={handleClose}>
+          <button type="button" className="btn-secondary" onClick={handleClose}>
             Cancel
           </button>
           <button
+            type="button"
             className="btn-primary"
             onClick={handleCreate}
             disabled={!selectedActivityId}
+            aria-disabled={!selectedActivityId}
           >
             Start Event
           </button>
