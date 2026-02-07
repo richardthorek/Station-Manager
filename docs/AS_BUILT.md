@@ -73,8 +73,9 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 - **Total Lines of Code:** ~8,500 lines
 - **Backend Code:** ~5,600 lines (TypeScript)
 - **Frontend Code:** ~2,900 lines (TypeScript/React)
-- **Test Coverage:** 463 backend tests (100% pass rate) + 214 frontend tests
-- **API Endpoints:** 51+ REST endpoints (includes station management with duplicate prevention)
+- **Test Coverage:** 481 backend tests (100% pass rate) + 214 frontend tests
+- **API Endpoints:** 52+ REST endpoints (includes audit logging for event membership changes)
+- **Database Tables:** 11 tables (includes EventAuditLogs for compliance)
 - **Real-time Events:** 10+ Socket.io event types
 
 ---
@@ -343,6 +344,7 @@ Efficient query patterns through strategic partitioning:
 | Activities | `'Activity'` | `activityId` | All activities together |
 | Events | `'Event_YYYY-MM'` | `eventId` | Partitioned by month |
 | EventParticipants | `eventId` | `participantId` | Co-located with event |
+| EventAuditLogs | `eventId` | `auditLogId` | Audit trail co-located with event |
 | ActiveActivity | `'ActiveActivity'` | `activityId` | Singleton current activity |
 | CheckIns | `'CheckIn'` | `checkInId` | Legacy support |
 | Appliances | `'Appliance'` | `applianceId` | Truck check appliances |
@@ -353,8 +355,9 @@ Efficient query patterns through strategic partitioning:
 **Design Benefits:**
 - Single-partition queries for members and activities (fast)
 - Month-based partitioning for time-series data (events, check runs)
-- Co-location pattern for related entities (participants with events)
+- Co-location pattern for related entities (participants with events, audit logs with events)
 - Efficient range queries on time-based data
+- Complete audit trail for compliance and traceability
 
 ### Collections Overview
 
@@ -462,7 +465,66 @@ interface EventParticipant {
 }
 ```
 
-#### 7. **appliances**
+#### 7. **event_audit_logs** ✨ NEW
+Comprehensive audit trail for event membership changes. Provides complete traceability of who added/removed whom, when, where, and from what device.
+
+```typescript
+interface EventAuditLog {
+  id: string;                              // UUID
+  eventId: string;                         // Event being audited
+  action: 'participant-added' | 'participant-removed'; // Action type
+  timestamp: Date;                         // When action occurred
+  
+  // Who performed the action
+  performedBy?: string;                    // User/member who performed action
+  
+  // Who was affected
+  memberId: string;                        // Member added/removed
+  memberName: string;                      // Member name (snapshot)
+  memberRank?: string;                     // Member rank (snapshot)
+  
+  // Participant details
+  participantId: string;                   // EventParticipant record ID
+  checkInMethod: 'kiosk' | 'mobile' | 'qr' | 'manual';
+  
+  // Device and location traceability
+  deviceInfo?: {
+    type?: string;                         // Device type (mobile, tablet, desktop, kiosk)
+    model?: string;                        // Device model
+    deviceId?: string;                     // Device identifier (e.g., kiosk token)
+    userAgent?: string;                    // Browser user agent
+    ip?: string;                           // IP address
+  };
+  locationInfo?: {
+    latitude?: number;                     // GPS latitude
+    longitude?: number;                    // GPS longitude
+    accuracy?: number;                     // GPS accuracy (meters)
+    address?: string;                      // Human-readable address
+    ipLocation?: string;                   // IP-based location estimate
+  };
+  
+  // Additional context
+  stationId?: string;                      // Station where action occurred
+  requestId?: string;                      // Request correlation ID
+  notes?: string;                          // Optional reason/notes (max 500 chars)
+  
+  createdAt: Date;
+}
+```
+
+**Purpose:**
+- **Compliance**: Complete audit trail for suspicious activity review
+- **Traceability**: Track off-site sign-ins and post-event modifications
+- **Accountability**: Record who made changes and why
+- **Security**: Detect unauthorized access patterns
+
+**Privacy & Security:**
+- Device IDs and location data sanitized and anonymized where appropriate
+- Notes limited to 500 characters with control character stripping
+- IP addresses captured for security monitoring only
+- Compliant with privacy policies for volunteer organizations
+
+#### 8. **appliances**
 Station vehicles/appliances.
 
 ```typescript
@@ -1067,15 +1129,16 @@ The API register contains:
 - `POST /api/checkins` - Check in/out (toggle)
 - `POST /api/checkins/url-checkin` - URL-based check-in
 
-**Events (8 endpoints)**
+**Events (9 endpoints)** ✨ NEW: Audit logging
 - `GET /api/events` - List events (all, including inactive)
 - `POST /api/events` - Create event
 - `GET /api/events/active` - Get active events (excludes expired)
+- `GET /api/events/:eventId/audit` - Get audit log for event (NEW)
 - `PUT /api/events/:id/end` - End event (mark inactive)
 - `PUT /api/events/:id/reactivate` - Reactivate ended/expired event
 - `POST /api/events/admin/rollover` - Manual expiry check trigger
-- `POST /api/events/:id/participants` - Add participant
-- `DELETE /api/events/:id/participants/:participantId` - Remove participant
+- `POST /api/events/:id/participants` - Add participant (with audit logging)
+- `DELETE /api/events/:id/participants/:participantId` - Remove participant (with audit logging)
 
 **Truck Checks (10+ endpoints)**
 - Appliance management

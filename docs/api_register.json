@@ -1409,7 +1409,7 @@
       "POST /api/events/:id/participants": {
         "method": "POST",
         "path": "/api/events/:id/participants",
-        "description": "Add participant to event",
+        "description": "Add participant to event (check-in). If participant already exists, toggles and removes them (undo check-in). Creates audit log entry for traceability.",
         "authentication": "none",
         "parameters": {
           "path": {
@@ -1431,11 +1431,46 @@
             "properties": {
               "memberId": {
                 "type": "string",
-                "format": "uuid"
+                "format": "uuid",
+                "description": "Member to add to event"
               },
-              "role": {
+              "method": {
                 "type": "string",
-                "nullable": true
+                "enum": ["kiosk", "mobile", "qr", "manual"],
+                "description": "Check-in method (default: 'mobile')"
+              },
+              "location": {
+                "type": "string",
+                "description": "Location description (optional)"
+              },
+              "isOffsite": {
+                "type": "boolean",
+                "description": "Whether check-in is off-site (default: false)"
+              },
+              "performedBy": {
+                "type": "string",
+                "description": "User ID or name of person performing the action (optional)"
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 500,
+                "description": "Optional notes or reason for action (optional)"
+              },
+              "latitude": {
+                "type": "number",
+                "description": "GPS latitude (optional)"
+              },
+              "longitude": {
+                "type": "number",
+                "description": "GPS longitude (optional)"
+              },
+              "accuracy": {
+                "type": "number",
+                "description": "GPS accuracy in meters (optional)"
+              },
+              "address": {
+                "type": "string",
+                "description": "Human-readable location (optional)"
               }
             }
           }
@@ -1444,11 +1479,36 @@
           "201": {
             "description": "Participant added",
             "schema": {
-              "$ref": "#/definitions/EventParticipant"
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["added", "removed"],
+                  "description": "Action performed (added or removed if toggled)"
+                },
+                "participant": {
+                  "$ref": "#/definitions/EventParticipant"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Participant removed (toggle undo)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["removed"]
+                },
+                "participant": {
+                  "$ref": "#/definitions/EventParticipant"
+                }
+              }
             }
           },
           "400": {
-            "description": "Invalid request"
+            "description": "Invalid request or event not active"
           },
           "404": {
             "description": "Event or member not found"
@@ -1457,8 +1517,13 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/events.ts:99",
-        "socketEvent": "participant-added",
+        "implementation": "backend/src/routes/events.ts:201",
+        "socketEvent": "participant-change",
+        "auditLog": {
+          "enabled": true,
+          "captures": ["timestamp", "device", "location", "performedBy", "notes"],
+          "description": "Creates EventAuditLog entry for both additions and removals (toggle undo)"
+        },
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -1476,7 +1541,7 @@
       "DELETE /api/events/:id/participants/:participantId": {
         "method": "DELETE",
         "path": "/api/events/:id/participants/:participantId",
-        "description": "Remove participant from event (check out)",
+        "description": "Remove participant from event (check out). Creates audit log entry for traceability.",
         "authentication": "none",
         "parameters": {
           "path": {
@@ -1494,7 +1559,40 @@
             }
           }
         },
-        "requestBody": null,
+        "requestBody": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "performedBy": {
+                "type": "string",
+                "description": "User ID or name of person performing the removal (optional)"
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 500,
+                "description": "Optional reason or notes for the removal (optional)"
+              },
+              "latitude": {
+                "type": "number",
+                "description": "GPS latitude (optional)"
+              },
+              "longitude": {
+                "type": "number",
+                "description": "GPS longitude (optional)"
+              },
+              "accuracy": {
+                "type": "number",
+                "description": "GPS accuracy in meters (optional)"
+              },
+              "address": {
+                "type": "string",
+                "description": "Human-readable location (optional)"
+              }
+            }
+          },
+          "required": false,
+          "description": "Optional metadata for audit logging"
+        },
         "responses": {
           "200": {
             "description": "Participant removed",
@@ -1509,8 +1607,75 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/events.ts:125",
+        "implementation": "backend/src/routes/events.ts:298",
         "socketEvent": "participant-removed",
+        "auditLog": {
+          "enabled": true,
+          "captures": ["timestamp", "device", "location", "performedBy", "notes"],
+          "description": "Creates EventAuditLog entry for compliance and traceability"
+        },
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000,
+            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "headers": [
+              "RateLimit-Limit",
+              "RateLimit-Remaining",
+              "RateLimit-Reset"
+            ]
+          }
+        }
+      },
+      "GET /api/events/:eventId/audit": {
+        "method": "GET",
+        "path": "/api/events/:eventId/audit",
+        "description": "Get audit log of all participant additions and removals for an event. Returns chronological sequence of membership changes.",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "eventId": {
+              "type": "string",
+              "format": "uuid",
+              "required": true,
+              "description": "Event UUID"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Audit logs for event",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "eventId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "totalLogs": {
+                  "type": "number",
+                  "description": "Total number of audit log entries"
+                },
+                "logs": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/EventAuditLog"
+                  },
+                  "description": "Array of audit log entries in chronological order"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Event not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/events.ts:349",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -3578,6 +3743,136 @@
           "format": "date-time"
         }
       }
+    },
+    "EventAuditLog": {
+      "type": "object",
+      "description": "Audit log entry for event membership changes. Provides complete traceability of participant additions and removals.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for audit log entry"
+        },
+        "eventId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Event ID this log entry relates to"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["participant-added", "participant-removed"],
+          "description": "Type of action performed"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the action occurred"
+        },
+        "performedBy": {
+          "type": "string",
+          "nullable": true,
+          "description": "User or member who performed the action"
+        },
+        "memberId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Member who was added or removed"
+        },
+        "memberName": {
+          "type": "string",
+          "description": "Name of member who was added or removed"
+        },
+        "memberRank": {
+          "type": "string",
+          "nullable": true,
+          "description": "Rank of member who was added or removed"
+        },
+        "participantId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "EventParticipant record ID"
+        },
+        "checkInMethod": {
+          "type": "string",
+          "enum": ["kiosk", "mobile", "qr", "manual"],
+          "description": "Method used for check-in"
+        },
+        "deviceInfo": {
+          "type": "object",
+          "nullable": true,
+          "description": "Device information captured at time of action",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Device type (mobile, tablet, desktop, kiosk)"
+            },
+            "model": {
+              "type": "string",
+              "description": "Device model if available"
+            },
+            "deviceId": {
+              "type": "string",
+              "description": "Device identifier (e.g., kiosk token)"
+            },
+            "userAgent": {
+              "type": "string",
+              "description": "Browser user agent string"
+            },
+            "ip": {
+              "type": "string",
+              "description": "IP address of device"
+            }
+          }
+        },
+        "locationInfo": {
+          "type": "object",
+          "nullable": true,
+          "description": "Location information captured at time of action",
+          "properties": {
+            "latitude": {
+              "type": "number",
+              "description": "GPS latitude"
+            },
+            "longitude": {
+              "type": "number",
+              "description": "GPS longitude"
+            },
+            "accuracy": {
+              "type": "number",
+              "description": "GPS accuracy in meters"
+            },
+            "address": {
+              "type": "string",
+              "description": "Human-readable address"
+            },
+            "ipLocation": {
+              "type": "string",
+              "description": "IP-based location estimate"
+            }
+          }
+        },
+        "stationId": {
+          "type": "string",
+          "description": "Station where action occurred"
+        },
+        "requestId": {
+          "type": "string",
+          "nullable": true,
+          "description": "Request correlation ID for tracing"
+        },
+        "notes": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 500,
+          "description": "Optional notes or reason for action"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When audit log entry was created"
+        }
+      },
+      "required": ["id", "eventId", "action", "timestamp", "memberId", "memberName", "participantId", "checkInMethod", "createdAt"]
     },
     "EventWithParticipants": {
       "allOf": [

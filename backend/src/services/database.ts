@@ -15,7 +15,7 @@
  * Note: Data is lost on server restart. Use Azure Table Storage for persistence.
  */
 
-import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants, Station } from '../types';
+import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants, Station, EventAuditLog, DeviceInfo, LocationInfo } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { autoExpireEvents } from './rolloverService';
 import { DEFAULT_STATION_ID, DEMO_STATION_ID, DEMO_BRIGADE_ID, getEffectiveStationId } from '../constants/stations';
@@ -31,6 +31,9 @@ class DatabaseService {
   // Event-based system data structures
   private events: Map<string, Event> = new Map();
   private eventParticipants: Map<string, EventParticipant> = new Map();
+  
+  // Audit logging for event membership changes
+  private eventAuditLogs: Map<string, EventAuditLog> = new Map();
   
   // Multi-station support
   private stations: Map<string, Station> = new Map();
@@ -1107,6 +1110,78 @@ class DatabaseService {
     station.updatedAt = new Date();
     this.stations.set(id, station);
     return true;
+  }
+
+  // ============================================
+  // Event Audit Log Methods
+  // ============================================
+
+  /**
+   * Create an audit log entry for event membership changes
+   * Captures who, what, when, where, and how for compliance and traceability
+   */
+  createEventAuditLog(
+    eventId: string,
+    action: 'participant-added' | 'participant-removed',
+    participantId: string,
+    memberId: string,
+    memberName: string,
+    memberRank: string | null | undefined,
+    checkInMethod: 'kiosk' | 'mobile' | 'qr' | 'manual',
+    performedBy?: string,
+    deviceInfo?: DeviceInfo,
+    locationInfo?: LocationInfo,
+    stationId?: string,
+    requestId?: string,
+    notes?: string
+  ): EventAuditLog {
+    const auditLog: EventAuditLog = {
+      id: uuidv4(),
+      eventId,
+      action,
+      timestamp: new Date(),
+      performedBy,
+      memberId,
+      memberName,
+      memberRank: memberRank || null,
+      participantId,
+      checkInMethod,
+      deviceInfo,
+      locationInfo,
+      stationId: getEffectiveStationId(stationId),
+      requestId,
+      notes,
+      createdAt: new Date(),
+    };
+
+    this.eventAuditLogs.set(auditLog.id, auditLog);
+    return auditLog;
+  }
+
+  /**
+   * Get all audit logs for a specific event, sorted chronologically
+   */
+  getEventAuditLogs(eventId: string): EventAuditLog[] {
+    return Array.from(this.eventAuditLogs.values())
+      .filter(log => log.eventId === eventId)
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  }
+
+  /**
+   * Get all audit logs with pagination support
+   * Sorted in reverse chronological order (newest first)
+   */
+  getAllAuditLogs(limit: number = 100, offset: number = 0, stationId?: string): EventAuditLog[] {
+    let logs = Array.from(this.eventAuditLogs.values());
+    
+    // Filter by station if provided
+    if (stationId) {
+      logs = logs.filter(log => getEffectiveStationId(log.stationId) === stationId);
+    }
+    
+    return logs
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(offset, offset + limit);
   }
 }
 

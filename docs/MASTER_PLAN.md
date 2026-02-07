@@ -2928,6 +2928,96 @@ Priority: **HIGH** - Critical for production scale
 
 ---
 
+#### Issue #35: Enhance User Log Traceability for Event Membership Changes ✅ COMPLETED
+**GitHub Issue**: Not tracked  
+**Status**: ✅ COMPLETED (2026-02-07)
+
+**Objective**: Implement comprehensive audit logging for event membership changes to enable reliable auditing for suspicious activity such as off-site sign-ins and post-event modifications.
+
+**User Story**: As a station manager or auditor, I want a complete audit trail of event membership changes so that I can investigate suspicious activity, verify compliance, and trace any modifications back to specific users, devices, and locations.
+
+**Current State**: 
+- No audit trail for participant additions/removals
+- Cannot trace who made changes or when
+- No device or location information captured
+- Difficult to detect off-site sign-ins or post-event tampering
+
+**Target State**: 
+- Complete audit log for every participant add/remove action
+- Captures timestamp, device info, location data, and actor
+- Chronological timeline viewable per event
+- "General ledger" style transaction log
+
+**Implementation Summary**:
+1. ✅ Defined audit log schema and TypeScript types
+   - New `EventAuditLog` interface with full traceability fields
+   - `DeviceInfo` and `LocationInfo` types for context
+   - Partition key strategy: `eventId` for efficient querying
+2. ✅ Created audit log database tables
+   - `EventAuditLogs` table in both in-memory and Table Storage
+   - Co-located with events using `eventId` as partition key
+   - Append-only design for immutability
+3. ✅ Implemented audit logging for participant changes
+   - Logs created on POST `/api/events/:id/participants` (add and toggle-remove)
+   - Logs created on DELETE `/api/events/:id/participants/:participantId`
+   - Captures: timestamp, actor, member info, device, location, notes
+4. ✅ Added device and location information capture
+   - Device type detection (mobile, tablet, desktop, kiosk)
+   - Device model extraction from user agent
+   - GPS coordinates (optional, requires permission)
+   - IP address for security monitoring
+5. ✅ Created API endpoint to retrieve audit logs
+   - New endpoint: `GET /api/events/:eventId/audit`
+   - Returns chronological log of all membership changes
+   - Includes full context for each action
+6. ✅ Implemented input sanitization and privacy safeguards
+   - Notes limited to 500 characters
+   - Control characters stripped to prevent injection
+   - Optional fields (location, device ID) only captured when provided
+   - No forced data collection
+7. ✅ Added comprehensive tests
+   - 16 new audit logging tests (all passing)
+   - Tests for device detection, location capture, sanitization
+   - Tests for chronological ordering and complete trails
+   - Security tests for injection prevention
+8. ✅ Updated documentation
+   - Updated `api_register.json` with new endpoint and types
+   - Updated `AS_BUILT.md` with EventAuditLog schema
+   - Created `AUDIT_LOGGING_SECURITY_PRIVACY.md` review document
+   - Updated endpoint counts and metrics
+
+**Success Criteria**:
+- [x] Each add/remove action logged with timestamp, device, location
+- [x] Audit logs accessible via API endpoint
+- [x] Chronological timeline viewable per event
+- [x] Device type and model captured
+- [x] GPS coordinates captured (when available)
+- [x] Privacy safeguards implemented (sanitization, optional fields)
+- [x] All tests passing (481 backend tests, 100% pass rate)
+- [x] Documentation updated
+
+**Security & Privacy**:
+- ✅ Input sanitization prevents injection attacks
+- ✅ Data minimization (only necessary fields captured)
+- ✅ Append-only audit log (immutable)
+- ✅ Station-based access control
+- ✅ Clear purpose: compliance and security monitoring only
+- **Risk Level**: LOW (with implemented mitigations)
+
+**Dependencies**: None
+
+**Effort Estimate**: 1-2 days ✅
+
+**Priority**: P1 (High - Compliance and security)
+
+**Labels**: `security`, `compliance`, `audit`, `phase-2`, `complete`
+
+**Milestone**: v1.2 - Operational Excellence
+
+**UI Screenshot Requirement**: N/A (Backend API only, no UI changes)
+
+---
+
 ### PHASE 3: ESSENTIAL FEATURES (Q2 2026) - v1.3
 
 Priority: **HIGH** - High-value user features
