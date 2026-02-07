@@ -94,7 +94,7 @@ export function AdminDashboardPage() {
           <Link to="/truckcheck" className="back-link">← Back</Link>
           <h1>Error</h1>
         </header>
-        <main className="dashboard-main">
+        <main className="dashboard-main" id="main-content" tabIndex={-1}>
           <div className="error">{error}</div>
         </main>
       </div>
@@ -127,7 +127,7 @@ export function AdminDashboardPage() {
         </div>
       </header>
 
-      <main className="dashboard-main">
+      <main className="dashboard-main" id="main-content" tabIndex={-1}>
         {activeTab === 'vehicles' ? (
           <VehicleManagement appliances={appliances} onUpdate={loadData} />
         ) : (

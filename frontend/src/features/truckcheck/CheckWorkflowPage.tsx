@@ -363,7 +363,7 @@ export function CheckWorkflowPage() {
           </div>
         </aside>
 
-        <main className="workflow-main" ref={scrollContainerRef}>
+        <main className="workflow-main" ref={scrollContainerRef} id="main-content" tabIndex={-1}>
           <div className="items-container">
             {template.items.map((item, index) => (
               <CheckItemCard

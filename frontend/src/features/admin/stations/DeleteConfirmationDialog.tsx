@@ -5,11 +5,14 @@
  * - Check for existing data (members, events, check-ins)
  * - Warning if station has data
  * - Soft delete only
+ * - Focus trap for keyboard accessibility
+ * - Escape key to close
  */
 
 import { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
 import type { Station } from '../../../types';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import './DeleteConfirmationDialog.css';
 
 interface DeleteConfirmationDialogProps {
@@ -29,6 +32,21 @@ export function DeleteConfirmationDialog({ station, onClose, onDeleted }: Delete
   const [error, setError] = useState<string | null>(null);
   const [stationData, setStationData] = useState<StationData | null>(null);
   const [loadingData, setLoadingData] = useState(true);
+  const modalRef = useFocusTrap<HTMLDivElement>(true);
+
+  /**
+   * Handle Escape key to close dialog
+   */
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isDeleting) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isDeleting, onClose]);
 
   /**
    * Load station data to check for dependencies
@@ -90,14 +108,23 @@ export function DeleteConfirmationDialog({ station, onClose, onDeleted }: Delete
   };
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content delete-dialog" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={handleClose} role="presentation">
+      <div 
+        ref={modalRef}
+        className="modal-content delete-dialog" 
+        onClick={(e) => e.stopPropagation()}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
         <div className="modal-header">
-          <h2>Delete Station</h2>
+          <h2 id="delete-dialog-title">Delete Station</h2>
           <button
+            type="button"
             onClick={handleClose}
             className="close-button"
-            aria-label="Close"
+            aria-label="Close dialog"
             disabled={isDeleting}
           >
             ✕

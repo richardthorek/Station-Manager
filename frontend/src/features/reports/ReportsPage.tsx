@@ -262,7 +262,7 @@ export function ReportsPage() {
       )}
 
       {!loading && !error && (
-        <main className="reports-main">
+        <main className="reports-main" id="main-content" tabIndex={-1}>
           {/* Event Statistics Cards */}
           {eventStatistics && (
             <section className="statistics-cards">

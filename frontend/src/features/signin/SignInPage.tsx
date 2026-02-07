@@ -26,6 +26,7 @@ import { NewEventModal } from '../../components/NewEventModal';
 import { ExportData } from '../../components/ExportData';
 import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
+import { announce } from '../../utils/announcer';
 import type { Member, Activity, EventWithParticipants } from '../../types';
 import './SignInPage.css';
 
@@ -235,9 +236,16 @@ export function SignInPage() {
       const updatedEvent = await api.getEvent(selectedEventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
       
+      // Announce check-in to screen readers
+      const member = members.find(m => m.id === memberId);
+      if (member) {
+        announce(`${member.name} checked in successfully`, 'polite');
+      }
+      
       emit('participant-change', { eventId: selectedEventId, ...result });
     } catch (err) {
       console.error('Error checking in:', err);
+      announce('Error: Failed to check in', 'assertive');
       alert('Failed to check in');
     }
   };
@@ -256,9 +264,16 @@ export function SignInPage() {
       const updatedEvent = await api.getEvent(selectedEventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
       
+      // Announce check-out to screen readers
+      const member = members.find(m => m.id === memberId);
+      if (member) {
+        announce(`${member.name} checked out`, 'polite');
+      }
+      
       emit('participant-change', { eventId: selectedEventId, ...result });
     } catch (err) {
       console.error('Error removing participant:', err);
+      announce('Error: Failed to remove participant', 'assertive');
       alert('Failed to remove participant');
     }
   };
@@ -267,9 +282,11 @@ export function SignInPage() {
     try {
       const member = await api.createMember(name);
       setMembers([...members, member]);
+      announce(`Success: ${name} added as new member`, 'polite');
       emit('member-added', member);
     } catch (err) {
       console.error('Error adding member:', err);
+      announce('Error: Failed to add member', 'assertive');
       alert('Failed to add member');
     }
   };

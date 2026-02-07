@@ -226,7 +226,7 @@ export function StationManagementPage() {
         </div>
       )}
 
-      <div className="page-content">
+      <div className="page-content" id="main-content" tabIndex={-1}>
         {/* Toolbar */}
         <div className="toolbar">
           <div className="search-box">
