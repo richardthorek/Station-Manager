@@ -36,6 +36,7 @@
 #     - Dependencies installed by Azure after code deployment
 #     - Faster GitHub Actions execution (no dependency installation in CI)
 #     - Ensures consistent environment with locked dependencies
+#     - Retry logic handles transient 409 Conflict errors
 #
 #   Why Azure Installs Dependencies:
 #     - Significantly faster GitHub Actions execution
@@ -43,11 +44,17 @@
 #     - Azure handles npm install after code is pushed
 #     - Deterministic builds with exact versions from package-lock.json
 #
+#   Deployment Reliability:
+#     - Automatic retry on 409 Conflict errors (common with Oryx builds)
+#     - 60-second wait between retries to allow Azure to complete previous operations
+#     - Handles transient deployment conflicts gracefully
+#
 #   Benefits:
 #     - Faster CI/CD pipeline (less time in GitHub Actions)
 #     - Smaller deployment packages
 #     - Deterministic builds (exact versions from package-lock.json)
 #     - No redundant dependency installation during CI
+#     - Resilient to transient Azure deployment conflicts
 #
 # Post-Deployment Testing Strategy:
 #   TWO-PHASE APPROACH FOR EFFICIENCY:
@@ -479,6 +486,25 @@ jobs:
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'bungrfsstation'
+          slot-name: 'Production'
+          package: release.zip
+        # Retry on 409 Conflict errors (common with Oryx builds and SCM_DO_BUILD_DURING_DEPLOYMENT)
+        # These are typically transient issues caused by concurrent operations
+        continue-on-error: true
+      
+      - name: Retry deployment if needed (handle 409 conflicts)
+        if: steps.deploy-to-webapp.outcome == 'failure'
+        run: |
+          echo "⚠️  Initial deployment failed (likely 409 Conflict)"
+          echo "🔄 Waiting 60 seconds before retry..."
+          sleep 60
+          echo "🚀 Retrying deployment..."
+      
+      - name: Deploy to Azure Web App (Retry)
+        if: steps.deploy-to-webapp.outcome == 'failure'
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bungrfsstation'
