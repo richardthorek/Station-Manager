@@ -10,6 +10,7 @@ interface MemberNameGridProps {
   onCheckIn: (memberId: string) => void;
   onStartNewEvent: () => void;
   onEndEvent: (eventId: string) => void;
+  onCollapse: () => void;
 }
 
 export function MemberNameGrid({
@@ -20,6 +21,7 @@ export function MemberNameGrid({
   onCheckIn,
   onStartNewEvent,
   onEndEvent,
+  onCollapse,
 }: MemberNameGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -63,8 +65,15 @@ export function MemberNameGrid({
     <div className="member-name-grid-container">
       {/* Event Tabs - always show for active events */}
       <div className="event-tabs-header">
-        <div className="event-tabs" role="tablist" aria-label="Active Events">
-          {activeEvents.map(event => (
+        <button
+          className="collapse-grid-btn"
+          onClick={onCollapse}
+          aria-label="Collapse to three-column view"
+          title="Switch to three-column view"
+        >
+          ⊟
+        </button>
+        <div className="event-tabs" role="tablist" aria-label="Active Events">{activeEvents.map(event => (
             <div
               key={event.id}
               role="tab"
@@ -152,7 +161,10 @@ export function MemberNameGrid({
                     aria-label={`${member.name}${isSignedIn ? ' (signed in)' : ''}`}
                     aria-pressed={isSignedIn}
                   >
-                    <span className="member-name-text">{member.name}</span>
+                    <div className="member-card-content">
+                      <span className="member-name-text">{member.name}</span>
+                      {member.rank && <span className="member-rank-badge">{member.rank}</span>}
+                    </div>
                     {isSignedIn && <span className="check-mark" aria-hidden="true">✓</span>}
                   </button>
                 );

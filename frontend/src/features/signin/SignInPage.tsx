@@ -52,6 +52,7 @@ export function SignInPage() {
     usingInMemory: boolean;
   } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isGridExpanded, setIsGridExpanded] = useState(true);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   const { isConnected, emit, on, off } = useSocket();
@@ -63,6 +64,13 @@ export function SignInPage() {
 
   // Check if we have any active events
   const hasActiveEvents = events.some(e => e.isActive);
+
+  // Auto-expand grid when events become active
+  useEffect(() => {
+    if (hasActiveEvents) {
+      setIsGridExpanded(true);
+    }
+  }, [hasActiveEvents]);
 
   // Initial data load
   useEffect(() => {
@@ -465,8 +473,8 @@ export function SignInPage() {
           </div>
         )}
 
-        {/* Show full-width member grid when there are active events */}
-        {hasActiveEvents ? (
+        {/* Show full-width member grid when there are active events and grid is expanded */}
+        {hasActiveEvents && isGridExpanded ? (
           <MemberNameGrid
             members={members}
             events={events}
@@ -475,9 +483,10 @@ export function SignInPage() {
             onCheckIn={handleCheckIn}
             onStartNewEvent={() => setShowNewEventModal(true)}
             onEndEvent={handleEndEvent}
+            onCollapse={() => setIsGridExpanded(false)}
           />
         ) : (
-          /* Show three-column layout when no active events */
+          /* Show three-column layout when no active events or grid is collapsed */
           <div className="content-grid">
           <div className="left-column">
             <EventLog
@@ -490,6 +499,7 @@ export function SignInPage() {
               hasMore={hasMore}
               isLoading={loadingMore}
               onStartNewEvent={() => setShowNewEventModal(true)}
+              onExpandGrid={hasActiveEvents ? () => setIsGridExpanded(true) : undefined}
             />
           </div>
 

@@ -13,6 +13,7 @@ interface EventLogProps {
   hasMore: boolean;
   isLoading: boolean;
   onStartNewEvent?: () => void;
+  onExpandGrid?: () => void;
 }
 
 export function EventLog({
@@ -25,6 +26,7 @@ export function EventLog({
   hasMore,
   isLoading,
   onStartNewEvent,
+  onExpandGrid,
 }: EventLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(false);
@@ -64,15 +66,26 @@ export function EventLog({
             {activeEvents.length} active • {endedEvents.length} ended
           </span>
         </div>
-        {onStartNewEvent && (
-          <button 
-            className="btn-start-event-inline" 
-            onClick={onStartNewEvent}
-            title="Start a new event"
-          >
-            + New Event
-          </button>
-        )}
+        <div className="header-actions">
+          {onExpandGrid && (
+            <button
+              className="btn-expand-grid"
+              onClick={onExpandGrid}
+              title="Expand to full-width grid view"
+            >
+              ⊞
+            </button>
+          )}
+          {onStartNewEvent && (
+            <button
+              className="btn-start-event-inline"
+              onClick={onStartNewEvent}
+              title="Start a new event"
+            >
+              + New Event
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="event-log-content" ref={scrollRef}>

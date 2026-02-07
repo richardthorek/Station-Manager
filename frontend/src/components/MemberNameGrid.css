@@ -22,6 +22,36 @@
   flex-shrink: 0;
 }
 
+.collapse-grid-btn {
+  width: 60px;
+  min-width: 60px;
+  background: var(--color-gray-medium);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: bold;
+  line-height: 1;
+  padding: 0;
+}
+
+.collapse-grid-btn:hover {
+  background: var(--color-primary-red);
+  color: var(--color-white);
+  border-color: var(--color-primary-red);
+  transform: scale(1.05);
+}
+
+.collapse-grid-btn:active {
+  transform: scale(0.98);
+}
+
 .event-tabs {
   display: flex;
   gap: 4px;
@@ -248,10 +278,10 @@
 .member-name-btn {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 16px 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px;
   background: var(--color-white);
   border: 2px solid var(--color-gray-medium);
   border-radius: 12px;
@@ -260,11 +290,38 @@
   font-size: 1rem;
   font-weight: 500;
   color: var(--text-primary);
-  text-align: center;
-  min-height: 60px;
+  text-align: left;
+  min-height: 70px;
   word-wrap: break-word;
   overflow-wrap: break-word;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.member-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.member-name-text {
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.member-rank-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background: var(--color-gray-light);
+  border: 1px solid var(--color-gray-medium);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-self: flex-start;
 }
 
 .member-name-btn:hover {
@@ -278,17 +335,22 @@
   transform: translateY(0);
 }
 
-.member-name-text {
-  flex: 1;
-  line-height: 1.3;
-}
-
 .member-name-btn.signed-in {
   background: linear-gradient(135deg, var(--color-lime-green) 0%, #B8C929 100%);
   border-color: var(--color-lime-green);
   color: #000000;
-  font-weight: 600;
   box-shadow: 0 4px 12px rgba(203, 219, 42, 0.3);
+}
+
+.member-name-btn.signed-in .member-name-text {
+  color: #000000;
+  font-weight: 700;
+}
+
+.member-name-btn.signed-in .member-rank-badge {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.2);
+  color: #000000;
 }
 
 .member-name-btn.signed-in:hover {

@@ -63,6 +63,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={vi.fn()}
         onStartNewEvent={vi.fn()}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
@@ -79,6 +80,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={vi.fn()}
         onStartNewEvent={vi.fn()}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
@@ -104,6 +106,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={vi.fn()}
         onStartNewEvent={vi.fn()}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
@@ -128,6 +131,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={onCheckIn}
         onStartNewEvent={vi.fn()}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
@@ -149,6 +153,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={vi.fn()}
         onStartNewEvent={onStartNewEvent}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
@@ -183,6 +188,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={vi.fn()}
         onStartNewEvent={vi.fn()}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
@@ -216,6 +222,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={vi.fn()}
         onStartNewEvent={vi.fn()}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
@@ -235,6 +242,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={vi.fn()}
         onStartNewEvent={vi.fn()}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
@@ -256,6 +264,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={vi.fn()}
         onStartNewEvent={vi.fn()}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
@@ -294,6 +303,7 @@ describe('MemberNameGrid', () => {
         onCheckIn={vi.fn()}
         onStartNewEvent={vi.fn()}
         onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
       />
     );
 
