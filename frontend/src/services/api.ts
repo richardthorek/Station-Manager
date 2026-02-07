@@ -141,6 +141,26 @@ class ApiService {
     return response.json();
   }
 
+  async checkBrigadeExists(brigadeId: string): Promise<{
+    exists: boolean;
+    station?: Station;
+    message: string;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/stations/check-brigade/${encodeURIComponent(brigadeId)}`, {
+      headers: this.getHeaders(),
+    });
+    
+    if (response.status === 404) {
+      return { exists: false, message: 'No active station found with this brigade ID' };
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to check brigade ID');
+    }
+    
+    return response.json();
+  }
+
   async getStationStatistics(): Promise<{
     memberCount: number;
     eventCount: number;

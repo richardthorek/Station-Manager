@@ -14,7 +14,7 @@
   flex-direction: column;
   max-width: 1800px;
   margin: 0 auto;
-  padding: 16px 24px 24px;
+  padding: 12px 16px 16px;
   width: 100%;
   min-height: 0;
   overflow: hidden;
@@ -22,12 +22,14 @@
 
 /* Export Data Section */
 .export-data-section {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   flex-shrink: 0;
 }
+
+.content-grid {
   display: grid;
   grid-template-columns: 400px 1fr 400px;
-  gap: 20px;
+  gap: 16px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -78,8 +80,8 @@
 /* Card styling */
 .card {
   background: var(--bg-card);
-  border-radius: 16px;
-  padding: 1.5rem;
+  border-radius: 12px;
+  padding: 1.25rem;
   box-shadow: 0 4px 12px var(--shadow-color);
   border: 2px solid var(--border-color);
 }

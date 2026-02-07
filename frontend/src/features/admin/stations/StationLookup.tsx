@@ -151,6 +151,12 @@ export function StationLookup({ onSelect }: StationLookupProps) {
         </div>
       )}
 
+      {searchQuery && results.length > 0 && !loading && (
+        <div className="lookup-info">
+          <span>🔍 Showing search results for "{searchQuery}"</span>
+        </div>
+      )}
+
       {error && (
         <div className="lookup-error">{error}</div>
       )}

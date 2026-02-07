@@ -1,15 +1,122 @@
 # Dependabot configuration for RFS Station Manager
-# Documentation: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
 # This configuration manages automated dependency updates for:
 # - npm packages in root workspace (/)
 # - npm packages in backend (/backend)
 # - npm packages in frontend (/frontend)
 # - GitHub Actions workflows (/.github/workflows)
+#
+# Best Practices Applied:
+# - Grouped updates to reduce PR spam
+# - Separate handling of production and development dependencies
+# - Security-focused patch updates
+# - Version pinning strategies to minimize breaking changes
 
 version: 2
+
 updates:
+  # ========================
+  # Backend npm dependencies
+  # ========================
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Australia/Sydney"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "npm"
+      - "backend"
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-development: "chore(deps-dev):"
+      include: "scope"
+    # Group updates to reduce number of PRs
+    groups:
+      # Security patches get highest priority - apply immediately
+      security:
+        dependency-type: "production"
+        update-types:
+          - "version-update:semver-patch"
+        patterns:
+          - "*"
+      # Minor and patch updates for production dependencies
+      production-minor:
+        dependency-type: "production"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+        exclude-patterns:
+          - "typescript"
+          - "jest"
+      # Development dependency updates
+      development:
+        dependency-type: "development"
+    # Versioning strategy: increase for apps (backend is a server application)
+    versioning-strategy: "increase"
+
+  # ===========================
+  # Frontend npm dependencies
+  # ===========================
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Australia/Sydney"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "npm"
+      - "frontend"
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-development: "chore(deps-dev):"
+      include: "scope"
+    # Group updates to reduce number of PRs and manage risk
+    groups:
+      # Security patches get highest priority and applied immediately
+      security:
+        dependency-type: "production"
+        update-types:
+          - "version-update:semver-patch"
+        patterns:
+          - "*"
+      # Core React ecosystem updates (carefully managed)
+      production-core:
+        dependency-type: "production"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+        patterns:
+          - "react*"
+          - "react-router*"
+          - "framer-motion"
+          - "socket.io-client"
+      # Other production dependencies
+      production-other:
+        dependency-type: "production"
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "react*"
+          - "react-router*"
+          - "framer-motion"
+          - "socket.io-client"
+      # Development dependency updates (build tools, testing, etc)
+      development:
+        dependency-type: "development"
+    # Versioning strategy: increase for apps (frontend is a React SPA)
+    versioning-strategy: "increase"
+
+  # ================================
   # Root workspace npm dependencies
+  # ================================
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -26,41 +133,9 @@ updates:
       prefix: "chore(deps):"
       include: "scope"
 
-  # Backend npm dependencies
-  - package-ecosystem: "npm"
-    directory: "/backend"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Australia/Sydney"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "npm"
-      - "backend"
-    commit-message:
-      prefix: "chore(deps):"
-      include: "scope"
-
-  # Frontend npm dependencies
-  - package-ecosystem: "npm"
-    directory: "/frontend"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Australia/Sydney"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "npm"
-      - "frontend"
-    commit-message:
-      prefix: "chore(deps):"
-      include: "scope"
-
-  # GitHub Actions dependencies
+  # ==================================
+  # GitHub Actions workflow updates
+  # ==================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -68,12 +143,11 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Australia/Sydney"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "github-actions"
+      - "ci-cd"
     commit-message:
-      prefix: "chore(deps):"
+      prefix: "ci(deps):"
       include: "scope"
-      
-

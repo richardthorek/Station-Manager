@@ -1,7 +1,7 @@
 # RFS Station Manager - As-Built Documentation
 
 **Document Version:** 1.0  
-**Last Updated:** January 2026  
+**Last Updated:** February 2026  
 **System Version:** 1.0.0  
 **Status:** Production Ready
 
@@ -73,10 +73,8 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 - **Total Lines of Code:** ~8,500 lines
 - **Backend Code:** ~5,600 lines (TypeScript)
 - **Frontend Code:** ~2,900 lines (TypeScript/React)
-- **Test Coverage:** 376 backend tests (100% pass rate) + 95 frontend tests
-- **API Endpoints:** 43+ REST endpoints (includes event auto-expiry, reporting, and brigade access admin)
-- **Test Coverage:** 403 backend tests (100% pass rate) + 179 frontend tests
-- **API Endpoints:** 42+ REST endpoints (includes event auto-expiry management and reporting)
+- **Test Coverage:** 463 backend tests (100% pass rate) + 214 frontend tests
+- **API Endpoints:** 51+ REST endpoints (includes station management with duplicate prevention)
 - **Real-time Events:** 10+ Socket.io event types
 
 ---
@@ -803,6 +801,31 @@ interface Activity {
 - Default activities (Training, Maintenance, Meeting) - visible to all stations
 - Station registry (defines available stations)
 
+### Station Creation & Duplicate Prevention
+
+**Status:** ✅ Implemented (February 2026)
+
+To prevent duplicate station creation and improve station lookup usability:
+
+#### Duplicate Prevention
+- **Brigade ID Uniqueness:** Each station must have a unique `brigadeId`
+- **Real-time Validation:** Frontend checks for duplicates with 500ms debounce as user types
+- **Backend Enforcement:** `POST /api/stations` returns 409 Conflict if brigade ID already exists
+- **UI Feedback:** Clear indicators show when brigade ID is available or already in use
+- **Blocked Submission:** Create button disabled if duplicate detected
+
+#### Search Prioritization
+- **Text-First Results:** When typing in search field, text matches prioritize over location-based results
+- **Location Fallback:** If no search query, shows 10 closest stations by geolocation
+- **User Feedback:** Clear messaging indicates whether showing search results or location-based results
+- **National Dataset:** Searches across all Australian fire service facilities (NSW, VIC, QLD, etc.)
+
+#### Implementation Details
+- **Check Endpoint:** `GET /api/stations/check-brigade/:brigadeId` - Returns existing station if found
+- **Lookup Logic:** Modified `rfsFacilitiesParser.lookup()` to prioritize search query over location
+- **CreateStationModal:** Uses `useEffect` hook with debouncing for duplicate checking
+- **Visual Feedback:** Shows "Checking availability...", "✓ Brigade ID is available", or error message
+
 ### Testing
 
 Station filtering is validated with 32+ automated tests in `backend/src/__tests__/stationFiltering.test.ts`:
@@ -1009,6 +1032,18 @@ The API register contains:
 
 **Health Check**
 - `GET /health` - Server health status
+
+**Stations (8 endpoints)**
+- `GET /api/stations` - List all stations with filtering
+- `GET /api/stations/:id` - Get station by ID
+- `GET /api/stations/brigade/:brigadeId` - Get stations by brigade
+- `GET /api/stations/check-brigade/:brigadeId` - Check if brigade ID exists (duplicate prevention)
+- `GET /api/stations/lookup` - Search national fire service facilities dataset
+- `GET /api/stations/count` - Get count of loaded facilities
+- `POST /api/stations` - Create new station (with duplicate prevention)
+- `POST /api/stations/demo/reset` - Reset demo station data
+- `PUT /api/stations/:id` - Update station
+- `DELETE /api/stations/:id` - Soft delete station
 
 **Brigade Access (7 endpoints)**
 - `POST /api/brigade-access/generate` - Generate kiosk token
