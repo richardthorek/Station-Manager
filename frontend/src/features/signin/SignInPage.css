@@ -68,9 +68,10 @@
   flex-shrink: 0;
 }
 
-/* Member Name Grid section - full width at top when events are active */
+/* Member Name Grid takes full space when active events exist */
 .member-name-grid-container {
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
 }
 
 .content-grid {

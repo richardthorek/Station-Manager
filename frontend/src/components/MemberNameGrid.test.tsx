@@ -61,15 +61,15 @@ describe('MemberNameGrid', () => {
         selectedEventId={null}
         onSelectEvent={vi.fn()}
         onCheckIn={vi.fn()}
-        isExpanded={true}
-        onToggleExpanded={vi.fn()}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
       />
     );
 
     expect(container.firstChild).toBeNull();
   });
 
-  it('should render event name and member grid when expanded', () => {
+  it('should render event tabs and member grid', () => {
     render(
       <MemberNameGrid
         members={mockMembers}
@@ -77,12 +77,18 @@ describe('MemberNameGrid', () => {
         selectedEventId="event1"
         onSelectEvent={vi.fn()}
         onCheckIn={vi.fn()}
-        isExpanded={true}
-        onToggleExpanded={vi.fn()}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
       />
     );
 
-    expect(screen.getByText('Training Session')).toBeInTheDocument();
+    // Should show event tab
+    expect(screen.getByRole('tab', { name: /Training Session/i })).toBeInTheDocument();
+
+    // Should show new event button
+    expect(screen.getByRole('button', { name: /Start new event/i })).toBeInTheDocument();
+
+    // Should show member names
     expect(screen.getByText('Alice Johnson')).toBeInTheDocument();
     expect(screen.getByText('Bob Smith')).toBeInTheDocument();
     expect(screen.getByText('Charlie Brown')).toBeInTheDocument();
@@ -96,8 +102,8 @@ describe('MemberNameGrid', () => {
         selectedEventId="event1"
         onSelectEvent={vi.fn()}
         onCheckIn={vi.fn()}
-        isExpanded={true}
-        onToggleExpanded={vi.fn()}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
       />
     );
 
@@ -120,8 +126,8 @@ describe('MemberNameGrid', () => {
         selectedEventId="event1"
         onSelectEvent={vi.fn()}
         onCheckIn={onCheckIn}
-        isExpanded={true}
-        onToggleExpanded={vi.fn()}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
       />
     );
 
@@ -131,8 +137,8 @@ describe('MemberNameGrid', () => {
     expect(onCheckIn).toHaveBeenCalledWith('2');
   });
 
-  it('should toggle expansion when button is clicked', () => {
-    const onToggleExpanded = vi.fn();
+  it('should call onStartNewEvent when new event button is clicked', () => {
+    const onStartNewEvent = vi.fn();
 
     render(
       <MemberNameGrid
@@ -141,15 +147,15 @@ describe('MemberNameGrid', () => {
         selectedEventId="event1"
         onSelectEvent={vi.fn()}
         onCheckIn={vi.fn()}
-        isExpanded={true}
-        onToggleExpanded={onToggleExpanded}
+        onStartNewEvent={onStartNewEvent}
+        onEndEvent={vi.fn()}
       />
     );
 
-    const toggleButton = screen.getByRole('button', { name: /Collapse member grid/i });
-    fireEvent.click(toggleButton);
+    const newEventButton = screen.getByRole('button', { name: /Start new event/i });
+    fireEvent.click(newEventButton);
 
-    expect(onToggleExpanded).toHaveBeenCalled();
+    expect(onStartNewEvent).toHaveBeenCalled();
   });
 
   it('should show event tabs when multiple active events', () => {
@@ -175,8 +181,8 @@ describe('MemberNameGrid', () => {
         selectedEventId="event1"
         onSelectEvent={vi.fn()}
         onCheckIn={vi.fn()}
-        isExpanded={true}
-        onToggleExpanded={vi.fn()}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
       />
     );
 
@@ -208,8 +214,8 @@ describe('MemberNameGrid', () => {
         selectedEventId="event1"
         onSelectEvent={onSelectEvent}
         onCheckIn={vi.fn()}
-        isExpanded={true}
-        onToggleExpanded={vi.fn()}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
       />
     );
 
@@ -227,8 +233,8 @@ describe('MemberNameGrid', () => {
         selectedEventId="event1"
         onSelectEvent={vi.fn()}
         onCheckIn={vi.fn()}
-        isExpanded={true}
-        onToggleExpanded={vi.fn()}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
       />
     );
 
@@ -248,8 +254,8 @@ describe('MemberNameGrid', () => {
         selectedEventId="event1"
         onSelectEvent={vi.fn()}
         onCheckIn={vi.fn()}
-        isExpanded={true}
-        onToggleExpanded={vi.fn()}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
       />
     );
 
@@ -263,36 +269,41 @@ describe('MemberNameGrid', () => {
     expect(searchInput.value).toBe('');
   });
 
-  it('should hide content when collapsed', () => {
-    const { rerender } = render(
+  it('should show message when no event is selected', () => {
+    const multipleEvents: EventWithParticipants[] = [
+      ...mockEvents,
+      {
+        id: 'event2',
+        activityName: 'Maintenance',
+        startTime: '2024-01-01T11:00:00.000Z',
+        isActive: true,
+        participantCount: 0,
+        participants: [],
+        activityId: 'a2',
+        createdAt: '2024-01-01T11:00:00.000Z',
+        updatedAt: '2024-01-01T11:00:00.000Z',
+      },
+    ];
+
+    render(
       <MemberNameGrid
         members={mockMembers}
-        events={mockEvents}
-        selectedEventId="event1"
+        events={multipleEvents}
+        selectedEventId={null}
         onSelectEvent={vi.fn()}
         onCheckIn={vi.fn()}
-        isExpanded={true}
-        onToggleExpanded={vi.fn()}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
       />
     );
 
-    // When expanded, member buttons are visible
-    expect(screen.getByRole('button', { name: /Alice Johnson/i })).toBeInTheDocument();
+    // Should show tabs
+    expect(screen.getByRole('tab', { name: /Training Session/i })).toBeInTheDocument();
 
-    // Rerender with collapsed state
-    rerender(
-      <MemberNameGrid
-        members={mockMembers}
-        events={mockEvents}
-        selectedEventId="event1"
-        onSelectEvent={vi.fn()}
-        onCheckIn={vi.fn()}
-        isExpanded={false}
-        onToggleExpanded={vi.fn()}
-      />
-    );
+    // Should show message when no event selected
+    expect(screen.getByText(/Select an event tab above to view members/i)).toBeInTheDocument();
 
-    // When collapsed, member buttons should not be visible
-    expect(screen.queryByRole('button', { name: /Alice Johnson/i })).not.toBeInTheDocument();
+    // Should not show member buttons
+    expect(screen.queryByText('Alice Johnson')).not.toBeInTheDocument();
   });
 });

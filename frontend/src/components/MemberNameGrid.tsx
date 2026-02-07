@@ -8,8 +8,8 @@ interface MemberNameGridProps {
   selectedEventId: string | null;
   onSelectEvent: (eventId: string) => void;
   onCheckIn: (memberId: string) => void;
-  isExpanded: boolean;
-  onToggleExpanded: () => void;
+  onStartNewEvent: () => void;
+  onEndEvent: (eventId: string) => void;
 }
 
 export function MemberNameGrid({
@@ -18,8 +18,8 @@ export function MemberNameGrid({
   selectedEventId,
   onSelectEvent,
   onCheckIn,
-  isExpanded,
-  onToggleExpanded,
+  onStartNewEvent,
+  onEndEvent,
 }: MemberNameGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -59,55 +59,63 @@ export function MemberNameGrid({
   }
 
   return (
-    <div className={`member-name-grid-container ${isExpanded ? 'expanded' : 'collapsed'}`}>
-      {/* Event Tabs - if multiple active events */}
-      {activeEvents.length > 1 && (
+    <div className="member-name-grid-container">
+      {/* Event Tabs - always show for active events */}
+      <div className="event-tabs-header">
         <div className="event-tabs" role="tablist" aria-label="Active Events">
           {activeEvents.map(event => (
-            <button
+            <div
               key={event.id}
               role="tab"
               aria-selected={selectedEventId === event.id}
               aria-controls={`event-panel-${event.id}`}
               className={`event-tab ${selectedEventId === event.id ? 'active' : ''}`}
               onClick={() => onSelectEvent(event.id)}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectEvent(event.id);
+                }
+              }}
             >
-              <span className="event-tab-name">{event.activityName}</span>
-              <span className="event-tab-count">{event.participantCount}</span>
-            </button>
+              <div className="event-tab-content">
+                <span className="event-tab-name">{event.activityName}</span>
+                <span className="event-tab-count">{event.participantCount} signed in</span>
+              </div>
+              {selectedEvent?.id === event.id && (
+                <button
+                  className="event-end-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEndEvent(event.id);
+                  }}
+                  aria-label={`End ${event.activityName}`}
+                  title="End event"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           ))}
         </div>
-      )}
-
-      {/* Header with expand/collapse control */}
-      <div className="member-grid-header">
-        <div className="header-content">
-          <h2 className="event-title">
-            {selectedEvent ? selectedEvent.activityName : 'Select an Event'}
-          </h2>
-          {selectedEvent && (
-            <span className="participant-summary">
-              {selectedEvent.participantCount} signed in • {displayedMembers.length} members
-            </span>
-          )}
-        </div>
         <button
-          className="toggle-expand-btn"
-          onClick={onToggleExpanded}
-          aria-label={isExpanded ? 'Collapse member grid' : 'Expand member grid'}
-          aria-expanded={isExpanded}
+          className="new-event-btn"
+          onClick={onStartNewEvent}
+          aria-label="Start new event"
+          title="Start new event"
         >
-          {isExpanded ? '▼ Collapse' : '▲ Expand'}
+          + New Event
         </button>
       </div>
 
-      {/* Collapsible content */}
-      {isExpanded && (
+      {/* Member Grid Content */}
+      {selectedEvent && (
         <div
           className="member-grid-content"
           role="tabpanel"
-          id={selectedEvent ? `event-panel-${selectedEvent.id}` : undefined}
-          aria-labelledby={selectedEvent ? `event-tab-${selectedEvent.id}` : undefined}
+          id={`event-panel-${selectedEvent.id}`}
+          aria-labelledby={`event-tab-${selectedEvent.id}`}
         >
           {/* Search bar */}
           <div className="grid-search-bar">
@@ -154,6 +162,12 @@ export function MemberNameGrid({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {!selectedEvent && activeEvents.length > 0 && (
+        <div className="no-event-selected">
+          <p>Select an event tab above to view members</p>
         </div>
       )}
     </div>

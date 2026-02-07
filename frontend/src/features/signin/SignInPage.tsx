@@ -52,15 +52,17 @@ export function SignInPage() {
     usingInMemory: boolean;
   } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isGridExpanded, setIsGridExpanded] = useState(true);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   const { isConnected, emit, on, off } = useSocket();
 
   // Get selected event
-  const selectedEvent = selectedEventId 
-    ? events.find(e => e.id === selectedEventId) || null 
+  const selectedEvent = selectedEventId
+    ? events.find(e => e.id === selectedEventId) || null
     : null;
+
+  // Check if we have any active events
+  const hasActiveEvents = events.some(e => e.isActive);
 
   // Initial data load
   useEffect(() => {
@@ -463,18 +465,20 @@ export function SignInPage() {
           </div>
         )}
 
-        {/* Full-width Member Name Grid - shown when events are active */}
-        <MemberNameGrid
-          members={members}
-          events={events}
-          selectedEventId={selectedEventId}
-          onSelectEvent={handleSelectEvent}
-          onCheckIn={handleCheckIn}
-          isExpanded={isGridExpanded}
-          onToggleExpanded={() => setIsGridExpanded(!isGridExpanded)}
-        />
-
-        <div className="content-grid">
+        {/* Show full-width member grid when there are active events */}
+        {hasActiveEvents ? (
+          <MemberNameGrid
+            members={members}
+            events={events}
+            selectedEventId={selectedEventId}
+            onSelectEvent={handleSelectEvent}
+            onCheckIn={handleCheckIn}
+            onStartNewEvent={() => setShowNewEventModal(true)}
+            onEndEvent={handleEndEvent}
+          />
+        ) : (
+          /* Show three-column layout when no active events */
+          <div className="content-grid">
           <div className="left-column">
             <EventLog
               events={events}
@@ -518,6 +522,7 @@ export function SignInPage() {
             />
           </div>
         </div>
+        )}
       </main>
 
       {showUserManagement && (
