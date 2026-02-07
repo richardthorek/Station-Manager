@@ -17,6 +17,7 @@
     "@types/papaparse": "^5.5.2",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.33.0",
+    "html2canvas": "^1.4.1",
     "idb": "^8.0.3",
     "papaparse": "^5.5.3",
     "qrcode.react": "^4.2.0",

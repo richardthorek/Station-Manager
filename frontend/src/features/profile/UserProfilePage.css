@@ -767,3 +767,224 @@
     font-size: 0.75rem;
   }
 }
+
+/* Share Section */
+.share-section {
+  padding: 2rem;
+  text-align: center;
+}
+
+.share-section h2 {
+  margin-bottom: 0.5rem;
+  color: var(--rfs-black);
+}
+
+.share-description {
+  color: var(--rfs-dark-grey);
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.share-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-share {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-share span {
+  font-size: 1.25rem;
+}
+
+.btn-share.btn-primary {
+  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
+  color: white;
+}
+
+.btn-share.btn-primary:hover {
+  background: linear-gradient(135deg, var(--rfs-core-red-dark) 0%, var(--rfs-core-red) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(229, 40, 27, 0.3);
+}
+
+.btn-share.btn-secondary {
+  background: linear-gradient(135deg, var(--rfs-lime) 0%, var(--rfs-lime-dark) 100%);
+  color: var(--rfs-black);
+}
+
+.btn-share.btn-secondary:hover {
+  background: linear-gradient(135deg, var(--rfs-lime-dark) 0%, var(--rfs-lime) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(203, 219, 42, 0.3);
+}
+
+/* Share Card Preview (for download) */
+.share-card-content {
+  background: white;
+  padding: 3rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.share-card-header {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 3px solid var(--rfs-core-red);
+}
+
+.share-card-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  border: 5px solid white;
+  box-shadow: 0 4px 12px rgba(229, 40, 27, 0.3);
+}
+
+.share-card-info h2 {
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--rfs-black);
+}
+
+.share-card-info p {
+  font-size: 1.25rem;
+  color: var(--rfs-dark-grey);
+  margin: 0.25rem 0;
+}
+
+.share-card-duration {
+  font-weight: 600;
+  color: var(--rfs-core-red);
+}
+
+.share-card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.share-stat {
+  text-align: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(229, 40, 27, 0.05) 0%, rgba(203, 219, 42, 0.05) 100%);
+  border-radius: 12px;
+}
+
+.share-stat-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--rfs-core-red);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.share-stat-label {
+  font-size: 1rem;
+  color: var(--rfs-dark-grey);
+  font-weight: 600;
+}
+
+.share-card-footer {
+  padding-top: 2rem;
+  border-top: 2px solid var(--rfs-light-grey);
+  text-align: center;
+}
+
+.share-card-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--rfs-core-red);
+  margin-bottom: 0.5rem;
+}
+
+.share-card-hashtags {
+  font-size: 1rem;
+  color: var(--rfs-dark-grey);
+}
+
+/* Share Modal */
+.share-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  animation: modal-appear 0.3s ease-out;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.share-modal-content {
+  background: white;
+  padding: 2rem 3rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.share-modal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--rfs-lime);
+  color: var(--rfs-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.share-modal-content p {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--rfs-black);
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .share-buttons {
+    flex-direction: column;
+  }
+
+  .btn-share {
+    width: 100%;
+    justify-content: center;
+  }
+}

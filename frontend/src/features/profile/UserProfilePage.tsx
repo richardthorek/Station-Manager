@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/Header';
 import { AchievementGrid } from '../../components/AchievementBadge';
@@ -24,7 +24,9 @@ export function UserProfilePage() {
     databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
   } | null>(null);
-  
+  const [showShareModal, setShowShareModal] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
+
   const { isConnected } = useSocket();
 
   useEffect(() => {
@@ -187,6 +189,65 @@ export function UserProfilePage() {
     alert('Sign-in URL copied to clipboard!');
   };
 
+  const generateShareableText = () => {
+    if (!member) return '';
+
+    const text = `🔥 ${member.name}'s RFS Profile\n` +
+                 `${member.rank || 'Volunteer'} | ${calculateMembershipDuration()}\n\n` +
+                 `📊 ${getTotalCheckIns()} Check-ins | ⏱️ ${calculateTotalHours()} Hours\n` +
+                 `🏆 ${achievements?.totalAchievements || 0} Achievements | 🔥 ${getActiveStreak()} Active Streaks\n\n` +
+                 `#NSWRFSVolunteer #CommunityService`;
+
+    return text;
+  };
+
+  const handleShareProfile = async () => {
+    const shareText = generateShareableText();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${member?.name}'s RFS Profile`,
+          text: shareText,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Error sharing:', err);
+          fallbackCopyToClipboard(shareText);
+        }
+      }
+    } else {
+      fallbackCopyToClipboard(shareText);
+    }
+  };
+
+  const fallbackCopyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setShowShareModal(true);
+    setTimeout(() => setShowShareModal(false), 3000);
+  };
+
+  const downloadProfileCard = async () => {
+    if (!shareCardRef.current || !member) return;
+
+    try {
+      // Use html2canvas if available, otherwise show modal with instructions
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(shareCardRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+      });
+
+      const link = document.createElement('a');
+      link.download = `${member.name.replace(/\s+/g, '_')}_RFS_Profile.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('Error generating image:', err);
+      alert('Please take a screenshot of the profile card to share!');
+    }
+  };
+
   if (loading) {
     return (
       <div className="app">
@@ -288,6 +349,70 @@ export function UserProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Share Profile Section */}
+          <div className="share-section card">
+            <h2>Share Profile</h2>
+            <p className="share-description">
+              Share your volunteer achievements and contributions with the community!
+            </p>
+            <div className="share-buttons">
+              <button className="btn-share btn-primary" onClick={handleShareProfile}>
+                <span>📤</span> Share Profile
+              </button>
+              <button className="btn-share btn-secondary" onClick={downloadProfileCard}>
+                <span>💾</span> Download Card
+              </button>
+            </div>
+
+            {/* Hidden share card for screenshot/download */}
+            <div ref={shareCardRef} className="share-card-preview" style={{ position: 'absolute', left: '-9999px', width: '800px' }}>
+              <div className="share-card-content">
+                <div className="share-card-header">
+                  <div className="share-card-avatar">
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="share-card-info">
+                    <h2>{member.name}</h2>
+                    <p>{member.rank || 'Volunteer'}</p>
+                    <p className="share-card-duration">{calculateMembershipDuration()} of service</p>
+                  </div>
+                </div>
+                <div className="share-card-stats">
+                  <div className="share-stat">
+                    <div className="share-stat-value">{getTotalCheckIns()}</div>
+                    <div className="share-stat-label">Check-ins</div>
+                  </div>
+                  <div className="share-stat">
+                    <div className="share-stat-value">{calculateTotalHours()}</div>
+                    <div className="share-stat-label">Hours</div>
+                  </div>
+                  <div className="share-stat">
+                    <div className="share-stat-value">{achievements?.totalAchievements || 0}</div>
+                    <div className="share-stat-label">Achievements</div>
+                  </div>
+                  <div className="share-stat">
+                    <div className="share-stat-value">{getActiveStreak()}</div>
+                    <div className="share-stat-label">Streaks</div>
+                  </div>
+                </div>
+                <div className="share-card-footer">
+                  <div className="share-card-logo">NSW RFS Volunteer</div>
+                  <div className="share-card-hashtags">#CommunityService #NSWRFSVolunteer</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Share confirmation modal */}
+          {showShareModal && (
+            <div className="share-modal">
+              <div className="share-modal-content">
+                <span className="share-modal-icon">✓</span>
+                <p>Profile text copied to clipboard!</p>
+              </div>
+            </div>
+          )}
 
           <div className="profile-layout">
             <div className="profile-left">
