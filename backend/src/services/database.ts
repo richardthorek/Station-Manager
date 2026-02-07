@@ -383,7 +383,7 @@ class DatabaseService {
     return Array.from(this.members.values()).find(m => m.qrCode === qrCode);
   }
 
-  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }): Member {
+  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; membershipStartDate?: Date | null; stationId?: string }): Member {
     const member: Member = {
       id: uuidv4(),
       name,
@@ -392,6 +392,7 @@ class DatabaseService {
       rank: details?.rank || undefined,
       firstName: details?.firstName || undefined,
       lastName: details?.lastName || undefined,
+      membershipStartDate: details?.membershipStartDate || null,
       stationId: getEffectiveStationId(details?.stationId),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -400,11 +401,14 @@ class DatabaseService {
     return member;
   }
 
-  updateMember(id: string, name: string, rank?: string | null): Member | undefined {
+  updateMember(id: string, name: string, rank?: string | null, membershipStartDate?: Date | null): Member | undefined {
     const member = this.members.get(id);
     if (member) {
       member.name = name;
       member.rank = rank === undefined ? null : rank;
+      if (membershipStartDate !== undefined) {
+        member.membershipStartDate = membershipStartDate;
+      }
       member.updatedAt = new Date();
       return member;
     }

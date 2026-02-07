@@ -143,9 +143,10 @@ export function UserProfilePage() {
 
   const calculateMembershipDuration = () => {
     if (!member) return '';
-    const createdAt = new Date(member.createdAt);
+    // Use membershipStartDate if available, otherwise fall back to createdAt
+    const startDate = new Date(member.membershipStartDate || member.createdAt);
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - createdAt.getTime());
+    const diffTime = Math.abs(now.getTime() - startDate.getTime());
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 30) {

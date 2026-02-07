@@ -432,11 +432,11 @@ export class TableStorageDatabase {
 
   async createMember(
     name: string,
-    details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }
+    details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; membershipStartDate?: Date | null; stationId?: string }
   ): Promise<Member> {
     // Validate stationId if provided
     this.validateStationId(details?.stationId);
-    
+
     const now = new Date();
     const member: Member = {
       id: uuidv4(),
@@ -446,6 +446,7 @@ export class TableStorageDatabase {
       rank: details?.rank || undefined,
       firstName: details?.firstName || undefined,
       lastName: details?.lastName || undefined,
+      membershipStartDate: details?.membershipStartDate || null,
       stationId: details?.stationId || undefined,
       createdAt: now,
       updatedAt: now,
@@ -460,6 +461,7 @@ export class TableStorageDatabase {
       rank: member.rank || '',
       firstName: member.firstName || '',
       lastName: member.lastName || '',
+      membershipStartDate: member.membershipStartDate ? member.membershipStartDate.toISOString() : '',
       stationId: member.stationId || '',
       createdAt: member.createdAt.toISOString(),
       updatedAt: member.updatedAt.toISOString(),
@@ -469,16 +471,19 @@ export class TableStorageDatabase {
     return member;
   }
 
-  async updateMember(id: string, name: string, rank?: string | null): Promise<Member | null> {
+  async updateMember(id: string, name: string, rank?: string | null, membershipStartDate?: Date | null): Promise<Member | null> {
     try {
       const entity = await this.membersTable.getEntity<TableEntity>('Member', id);
-      
+
       entity.name = name;
       entity.rank = rank || '';
+      if (membershipStartDate !== undefined) {
+        entity.membershipStartDate = membershipStartDate ? membershipStartDate.toISOString() : '';
+      }
       entity.updatedAt = new Date().toISOString();
 
       await this.membersTable.updateEntity(entity, 'Replace');
-      
+
       return this.entityToMember(entity);
     } catch (error: any) {
       if (error.statusCode === 404) return null;
@@ -495,6 +500,7 @@ export class TableStorageDatabase {
       rank: (entity.rank as string) || undefined,
       firstName: (entity.firstName as string) || undefined,
       lastName: (entity.lastName as string) || undefined,
+      membershipStartDate: (entity.membershipStartDate as string) ? new Date(entity.membershipStartDate as string) : null,
       stationId: (entity.stationId as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),

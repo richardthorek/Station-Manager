@@ -62,6 +62,7 @@ export interface Member {
   rank?: string | null;
   firstName?: string;
   lastName?: string;
+  membershipStartDate?: string | null;  // When member joined the brigade (ISO string, can differ from createdAt)
   lastSignIn?: string | null;    // Last time member participated in an event (ISO string)
   createdAt: string;
   updatedAt: string;
