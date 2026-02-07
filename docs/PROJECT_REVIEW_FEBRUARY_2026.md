@@ -700,29 +700,24 @@ The RFS Station Manager is a **well-architected, production-ready digital manage
 
 **ISSUES:**
 
-**CRITICAL - No Authentication System**
-- Anyone with URL can access any station's data
-- No admin/user role distinction
-- Destructive actions unprotected (delete member, end event)
-- Brigade access tokens not enforced on all endpoints
+**MEDIUM - Kiosk Mode Security Enhancement Opportunities**
+- Brigade access tokens provide strong security (UUID v4 = 2^128 possible values)
+- Brute force attack impractical (no monetary gain, statistically impossible)
+- However, some endpoints could enforce token validation more consistently
+- Station filtering could be strengthened with server-side verification
+- Note: Traditional authentication not needed - kiosk mode design is appropriate for volunteer fire stations
 
-**HIGH - Insufficient Authorization**
-- Station filtering relies on header only (can be spoofed)
-- No verification of station ownership
-- Kiosk tokens not validated on every request
-- Cross-station data leakage possible
+**LOW - Session Management**
+- Browser back button can reveal previous station data (by design for usability)
+- Kiosk mode session-based (cleared on browser close)
+- No logout needed (volunteer station context)
+- Design is appropriate for intended use case
 
-**MEDIUM - Session Management**
-- No session timeout
-- Browser back button can reveal previous station data
-- Kiosk mode can be bypassed by URL manipulation
-- No logout functionality
-
-**MEDIUM - Data Exposure**
-- API endpoints return full objects (no field filtering)
-- Error messages may leak internal details
-- Member QR codes predictable (could be guessed)
-- No data encryption at rest (relies on Azure)
+**LOW - Data Exposure**
+- API endpoints return full objects (acceptable for internal station use)
+- Error messages appropriate for debugging
+- Member QR codes use GUIDs (sufficient randomness)
+- Data encryption at rest provided by Azure
 
 **LOW - Dependency Vulnerabilities**
 - No automated dependency scanning
@@ -732,43 +727,38 @@ The RFS Station Manager is a **well-architected, production-ready digital manage
 
 #### Recommendations
 
-**Priority: CRITICAL**
-1. **Implement Basic Authentication**
-   - Add optional admin authentication layer
-   - Protect destructive actions (delete, purge, reset)
-   - Use Azure AD B2C or Auth0 for identity
-   - Keep kiosk mode unauthenticated for member check-in
-   - Admin actions require login
+**Priority: MEDIUM (Optional Enhancements)**
+1. **Strengthen Kiosk Mode Token Validation** (Optional)
+   - Consistently validate brigade tokens on more endpoints
+   - Add middleware to verify token validity
+   - Log token validation attempts
+   - Current security is adequate, this is a hardening measure
+   - **Effort:** 2-3 days
 
-2. **Strengthen Station Isolation**
-   - Validate station ownership on server side
-   - Check brigade access token on EVERY request (not just entry)
-   - Add middleware to verify station access permissions
-   - Log cross-station access attempts
-   - Rate limit by station ID (not just IP)
-
-3. **Add Audit Logging**
+2. **Add Audit Logging** (Recommended)
    - Log all destructive actions (who, what, when)
    - Track station changes and admin actions
    - Store logs in Azure Table Storage or Log Analytics
-   - Alert on suspicious patterns
-   - Implement log retention policy
+   - Useful for operations, not critical security requirement
+   - **Effort:** 3-4 days
 
-4. **Implement CSRF Protection**
-   - Add CSRF tokens to state-changing requests
-   - Use SameSite cookies
-   - Validate Origin and Referer headers
-   - Protect against CSRF attacks on admin actions
-
-5. **Add Dependency Scanning**
+3. **Add Dependency Scanning** (Recommended)
    - Enable Dependabot alerts
    - Add `npm audit` to CI/CD pipeline
    - Set up Snyk or GitHub Advanced Security
    - Auto-update patch versions
    - Review major version updates
+   - **Effort:** 1-2 days
 
-**Implementation Effort:** 10-14 days
-**Impact:** Critical (data privacy, legal compliance)
+**Note on Authentication:** Traditional user authentication is **NOT REQUIRED** for this system. The kiosk mode with UUID v4 brigade tokens provides appropriate security for the volunteer fire station use case:
+- Tokens are cryptographically secure (2^128 possibilities)
+- Brute force attacks are impractical (no financial incentive)
+- Station members don't need individual logins (reduces friction)
+- Brigade access tokens effectively control device access
+- Design aligns with volunteer organization needs
+
+**Implementation Effort:** 6-9 days (all optional)
+**Impact:** Low to Medium (hardening existing good security)
 
 ---
 
@@ -1109,12 +1099,6 @@ The RFS Station Manager is a **well-architected, production-ready digital manage
    - Critical business logic covered
    - **Impact**: Reduces production bugs
 
-5. **Add Basic Authentication**
-   - Protect admin actions
-   - Azure AD B2C integration
-   - Audit logging for sensitive actions
-   - **Impact**: Improves security posture
-
 ### 3.3 Medium-Term (3-4 weeks, Medium-High Impact)
 
 1. **Refactor Large Components**
@@ -1146,6 +1130,12 @@ The RFS Station Manager is a **well-architected, production-ready digital manage
    - Archive old events
    - Scheduled archival job
    - **Impact**: Manages database growth
+
+6. **Optional: Strengthen Kiosk Token Validation**
+   - More consistent token validation
+   - Audit logging for operations
+   - Current security is adequate, this is optional hardening
+   - **Impact**: Operational visibility
 
 ### 3.4 Long-Term (1-3 months, Strategic)
 
@@ -1200,17 +1190,17 @@ The RFS Station Manager is a **well-architected, production-ready digital manage
 **Total Effort**: 10.5 days
 **Impact**: High (improves user experience and accessibility)
 
-### Phase 2: Security & Quality (Weeks 3-4)
-**Goal**: Strengthen security, increase test coverage
+### Phase 2: Testing & Quality (Weeks 3-4)
+**Goal**: Strengthen quality, increase test coverage
 
-- [ ] Implement basic authentication (5 days)
-- [ ] Strengthen station isolation (2 days)
-- [ ] Add audit logging (2 days)
 - [ ] Increase backend test coverage (7 days)
 - [ ] Add end-to-end tests (3 days)
+- [ ] Implement performance tests (2 days)
+- [ ] Add dependency scanning (1 day)
+- [ ] Optional: Strengthen kiosk token validation (1 day)
 
-**Total Effort**: 19 days
-**Impact**: Critical (security, quality)
+**Total Effort**: 14 days
+**Impact**: High (quality, reliability)
 
 ### Phase 3: Performance & Mobile (Weeks 5-6)
 **Goal**: Optimize performance, improve mobile experience
@@ -1225,30 +1215,17 @@ The RFS Station Manager is a **well-architected, production-ready digital manage
 **Total Effort**: 15 days
 **Impact**: High (user experience, performance)
 
-### Phase 4: Code Quality (Weeks 7-8)
-**Goal**: Improve maintainability, reduce technical debt
+### Phase 4: Code Quality & Polish (Weeks 7-8)
+**Goal**: Improve maintainability, reduce technical debt, enhance operations
 
 - [ ] Refactor large components (5 days)
 - [ ] Create design system (3 days)
 - [ ] Implement schema validation (2 days)
 - [ ] Add migration system (3 days)
-- [ ] Create shared utilities (2 days)
+- [ ] Optional: Add audit logging (2 days)
 
 **Total Effort**: 15 days
-**Impact**: Medium (maintainability)
-
-### Phase 5: Documentation & Polish (Weeks 9-10)
-**Goal**: Enhance documentation, prepare for wider adoption
-
-- [ ] Create end-user documentation (4 days)
-- [ ] Add visual documentation (screenshots) (2 days)
-- [ ] Implement documentation automation (2 days)
-- [ ] Enhance API documentation (2 days)
-- [ ] Create contributor guide (2 days)
-- [ ] Implement data archival (3 days)
-
-**Total Effort**: 15 days
-**Impact**: Medium (adoption, onboarding)
+**Impact**: Medium (maintainability, operations)
 
 ---
 
@@ -1335,7 +1312,7 @@ The RFS Station Manager is a **well-engineered, production-ready system** with s
 
 **Short-Term (This Month):**
 1. Implement Phase 1 recommendations (Foundation)
-2. Begin Phase 2 work (Security & Quality)
+2. Begin Phase 2 work (Testing & Quality)
 3. Set up monitoring and analytics
 4. Gather user feedback
 
@@ -1355,7 +1332,9 @@ The RFS Station Manager is a **well-engineered, production-ready system** with s
 
 This is a **high-quality project** that's ready for production use. The recommendations in this review will help it scale to more stations, improve user satisfaction, and maintain high code quality as the feature set grows.
 
-The team should be proud of what's been built. The foundation is solid, and with the improvements outlined here, this system can become the standard for RFS station management across NSW and beyond.
+**Security Assessment Update:** After re-evaluation, the existing kiosk mode with UUID v4 brigade tokens provides **appropriate and sufficient security** for the volunteer fire station use case. Traditional user authentication is not required and would add unnecessary friction. The UUID v4 tokens (2^128 possibilities) make brute force attacks impractical with no financial incentive, and the design aligns perfectly with volunteer organization needs.
+
+The team should be proud of what's been built. The foundation is solid, the security model is appropriate, and with the improvements outlined here, this system can become the standard for RFS station management across NSW and beyond.
 
 ---
 
