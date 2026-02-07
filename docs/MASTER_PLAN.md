@@ -291,7 +291,9 @@ features/
 - Rate limiting on routes (100 req/15min)
 - Input validation on all endpoints
 - HTTPS/WSS required in production
-- Future: Optional authentication for admin functions
+- **Kiosk Mode Security**: UUID v4 brigade tokens provide sufficient security for volunteer station use case (2^128 possibilities, brute force impractical)
+- **Authentication**: Traditional user authentication NOT required - would add friction without meaningful security benefit for this context
+- Optional enhancements: Audit logging, dependency scanning, consistent token validation
 
 ---
 
@@ -597,6 +599,435 @@ Priority: **CRITICAL** - Must complete before new features
 **Milestone**: v1.1 - Quality & Testing
 
 **UI Screenshot Requirement**: N/A (Testing infrastructure only)
+
+---
+
+#### Issue #27: Comprehensive Accessibility Improvements (ARIA Labels & Keyboard Navigation)
+**Status**: Ready to Start
+**Created**: February 2026 (from Project Review)
+
+**Objective**: Achieve WCAG 2.1 AA compliance by adding comprehensive ARIA labels, keyboard navigation, and screen reader support
+
+**User Story**: As a user with visual impairments or motor disabilities, I need proper ARIA labels and keyboard navigation so that I can effectively use the Station Manager with assistive technology.
+
+**Current State**: Partial accessibility - semantic HTML used but missing ARIA labels, incomplete keyboard navigation, screen reader gaps
+**Target State**: WCAG 2.1 AA compliant with comprehensive ARIA support and full keyboard navigation
+
+**Steps**:
+1. **ARIA Label Audit** (Day 1)
+   - Audit all interactive elements for missing labels
+   - Identify icon-only buttons without text alternatives
+   - Check modals for proper announcement to screen readers
+   - Verify form fields have associated labels
+
+2. **Add ARIA Labels** (Days 2-3)
+   - Add `aria-label` to all icon-only buttons
+   - Use `aria-labelledby` for complex components
+   - Add `aria-describedby` for additional context
+   - Mark decorative images as `aria-hidden="true"`
+   - Ensure all form inputs have associated labels
+
+3. **Keyboard Navigation** (Days 4-5)
+   - Audit tab order on all pages
+   - Implement focus trap in modals
+   - Add skip-to-content link (hidden until focused)
+   - Ensure all interactive elements are focusable
+   - Add visible focus indicators (outline)
+
+4. **Live Regions for Dynamic Content** (Days 6-7)
+   - Use `aria-live="polite"` for non-urgent updates
+   - Use `aria-live="assertive"` for urgent alerts
+   - Announce check-ins to screen reader users
+   - Announce errors and success messages
+   - Provide feedback for loading states
+
+5. **Add Text Alternatives to Color Coding** (Day 8)
+   - Connection status: Add "Connected" text, not just green dot
+   - Activity tags: Add icons in addition to colors
+   - Error states: Add "Error:" prefix to messages
+   - Success states: Add "Success:" prefix or checkmark icon
+
+6. **Testing** (Days 9-10)
+   - Test with NVDA (Windows)
+   - Test with JAWS (Windows)
+   - Test with VoiceOver (macOS/iOS)
+   - Test with TalkBack (Android)
+   - Document accessibility testing results
+   - Run automated accessibility checker (axe DevTools)
+
+**Success Criteria**:
+- [ ] All interactive elements have proper ARIA labels
+- [ ] Keyboard navigation works on all pages
+- [ ] Focus trap implemented in all modals
+- [ ] Skip-to-content link added to header
+- [ ] Live regions announce dynamic content changes
+- [ ] Color-only information supplemented with text/icons
+- [ ] Tested with 4 major screen readers (NVDA, JAWS, VoiceOver, TalkBack)
+- [ ] Zero critical accessibility issues in axe DevTools scan
+- [ ] Tab order logical on all pages
+- [ ] All form fields have associated labels
+
+**Dependencies**: None
+
+**Effort Estimate**: 8-10 days
+
+**Priority**: P0 (Critical) - Legal requirement (ADA, Section 508)
+
+**Labels**: `accessibility`, `ux`, `wcag`, `phase-1`, `p0`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: N/A (Accessibility improvements, visual changes minimal)
+
+---
+
+#### Issue #28: Interactive Onboarding Wizard for New Users
+**Status**: Ready to Start
+**Created**: February 2026 (from Project Review)
+
+**Objective**: Reduce new user confusion and improve time-to-first-check-in with guided 5-step onboarding
+
+**User Story**: As a new user visiting Station Manager for the first time, I need a guided tour so that I understand how to use the system without trial and error.
+
+**Current State**: Landing page with feature overview, demo prompt on first visit, no guided tutorial
+**Target State**: Interactive 5-step wizard with progress indicator, skip option, and plain language explanations
+
+**Steps**:
+1. **Design Onboarding Flow** (Day 1)
+   - Step 1: Welcome - "Welcome to Station Manager - Let's get started"
+   - Step 2: Station Selection - "Choose your station or use demo mode"
+   - Step 3: Sign-In System - "Track who's at the station and what they're doing"
+   - Step 4: Events - "Organize incidents, training, and meetings"
+   - Step 5: You're Ready - "Explore the system at your own pace"
+   - Add progress indicator (1/5, 2/5, etc.)
+   - Add skip button for experienced users
+
+2. **Implement Onboarding Component** (Days 2-3)
+   - Create `OnboardingWizard.tsx` component
+   - Add onboarding state management (localStorage)
+   - Implement step navigation (next, previous, skip)
+   - Add progress bar visual
+   - Style with RFS branding (modal overlay)
+
+3. **Add Contextual Help System** (Day 4)
+   - Help icon (?) next to complex terms
+   - Tooltips with plain language explanations
+   - Link to documentation
+   - "What's this?" expandable sections
+   - Use existing RFS colors for consistency
+
+4. **Improve Landing Page** (Day 5)
+   - Add "Getting Started" section with step-by-step guide
+   - Add visual previews (screenshots) of each feature
+   - Add "Quick Actions" for frequent tasks
+   - Highlight most common workflow (sign-in system)
+
+5. **Testing & Refinement** (Day 5)
+   - Test onboarding flow on mobile and desktop
+   - Verify localStorage persistence works
+   - Test skip functionality
+   - Get user feedback on clarity
+   - Adjust copy based on feedback
+
+**Success Criteria**:
+- [ ] 5-step onboarding wizard implemented
+- [ ] Progress indicator shows current step (1/5, 2/5, etc.)
+- [ ] Skip button allows experienced users to bypass
+- [ ] Onboarding state stored in localStorage
+- [ ] Onboarding only shown once (unless cleared)
+- [ ] Contextual help icons added to complex terms
+- [ ] Landing page updated with "Getting Started" section
+- [ ] Tested on mobile, tablet, and desktop
+- [ ] User feedback collected and incorporated
+
+**Dependencies**: None
+
+**Effort Estimate**: 3-5 days
+
+**Priority**: P1 (High) - Improves user adoption
+
+**Labels**: `ux`, `onboarding`, `phase-1`, `p1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED - Screenshots of all 5 onboarding steps on iPad (portrait and landscape)
+
+---
+
+#### Issue #29: Mobile Sign-In Page Optimization
+**Status**: Ready to Start
+**Created**: February 2026 (from Project Review)
+
+**Objective**: Optimize sign-in page for mobile and tablet touch interactions with swipe gestures and improved layout
+
+**User Story**: As a volunteer using the Station Manager on a tablet at the station, I need a mobile-optimized sign-in experience so that I can quickly check in with one hand without frustration.
+
+**Current State**: Responsive design but not optimized for touch - member list difficult to scroll, search at top requires reaching, no swipe gestures
+**Target State**: Touch-optimized with sticky search, swipe gestures, collapsible sections, and floating action button
+
+**Steps**:
+1. **Sticky Search Bar** (Day 1)
+   - Make search bar sticky at top of viewport
+   - Always accessible while scrolling
+   - Large touch target (60px minimum)
+   - Clear button easily reachable
+
+2. **Swipe Gestures** (Days 2-3)
+   - Swipe right on member to check in (with haptic feedback if supported)
+   - Swipe left to view profile
+   - Visual feedback during swipe (slide animation)
+   - Confirm action with animation (checkmark, profile icon)
+   - Add undo toast notification after swipe action
+
+3. **Floating Action Button (FAB)** (Day 4)
+   - Add FAB for "New Member" at bottom right
+   - Large touch target (60px)
+   - Sticks to viewport on scroll
+   - RFS red color with white plus icon
+   - Opens member creation modal
+
+4. **Collapsible Sections** (Day 5)
+   - Make "Active Check-Ins" collapsible (tap header to expand/collapse)
+   - Save collapsed state in localStorage
+   - Expand animation using Framer Motion
+   - Icon indicator (chevron up/down)
+
+5. **Pull-to-Refresh** (Day 6)
+   - Add pull-to-refresh gesture for event updates
+   - Visual indicator (spinning icon)
+   - Update all data on refresh
+   - Success feedback when complete
+
+6. **Mobile Modal Improvements** (Days 7-8)
+   - Full-screen modals on mobile (< 600px width)
+   - Slide-up animation from bottom
+   - Large close button at top (X in circle, 60px touch target)
+   - Ensure all form inputs use font-size: 16px minimum (prevent zoom)
+   - Add "Done" button at bottom for easy dismissal
+
+**Success Criteria**:
+- [ ] Search bar sticky on scroll
+- [ ] Swipe right gesture checks in member with haptic feedback
+- [ ] Swipe left gesture opens member profile
+- [ ] Undo toast appears after swipe actions
+- [ ] FAB positioned bottom right for "New Member"
+- [ ] Collapsible sections work smoothly
+- [ ] Pull-to-refresh gesture implemented
+- [ ] Modals full-screen on mobile with slide-up animation
+- [ ] All form inputs 16px minimum font size
+- [ ] Tested on physical iPad and iPhone
+- [ ] Works in both portrait and landscape
+
+**Dependencies**: None
+
+**Effort Estimate**: 6-8 days
+
+**Priority**: P1 (High) - 60%+ of users on mobile/tablet
+
+**Labels**: `mobile`, `ux`, `touch`, `phase-1`, `p1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED - Before/after screenshots on iPad (portrait and landscape) showing swipe gestures, FAB, and mobile modals
+
+---
+
+#### Issue #30: User-Friendly Error Messages & Confirmation Dialogs
+**Status**: Ready to Start
+**Created**: February 2026 (from Project Review)
+
+**Objective**: Replace generic error messages with user-friendly explanations and add confirmation dialogs for destructive actions
+
+**User Story**: As a user, I need clear error messages and confirmations so that I understand what went wrong and don't accidentally delete important data.
+
+**Current State**: Generic error messages ("Failed to load data"), no confirmation for destructive actions, errors not persisted
+**Target State**: User-friendly error messages with actionable next steps, confirmation dialogs for all destructive actions
+
+**Steps**:
+1. **Error Message Mapping** (Day 1)
+   - Create error code to message mapping
+   - Write plain language explanations for common errors
+   - Include actionable next steps in each message
+   - Examples:
+     - ❌ "Failed to load members"
+     - ✅ "We couldn't load the member list. Check your internet connection and try again."
+   - Add "Try Again" button with retry logic
+
+2. **Implement Error Handler Utility** (Day 2)
+   - Create `errorHandler.ts` utility
+   - Centralized error message display
+   - Toast notification system for errors
+   - Log technical details but show friendly message to user
+   - Auto-dismiss success messages (3s)
+
+3. **Confirmation Dialogs** (Days 3-4)
+   - Add confirmation for delete member: "Are you sure? This can't be undone."
+   - Add confirmation for end event: "End this event? Participants will be checked out."
+   - Add confirmation for clear data: "This will delete all data. Type 'DELETE' to confirm."
+   - Use red/danger styling for destructive actions
+   - Modal overlay with large buttons
+   - Escape key and X button to cancel
+
+4. **Action Feedback** (Day 5)
+   - Button press: Visual depression + haptic feedback (mobile)
+   - Check-in: Show checkmark animation (Framer Motion)
+   - Data saved: Toast notification "Changes saved" (auto-dismiss 3s)
+   - Sync complete: Subtle success indicator
+   - Use existing Framer Motion library for smooth animations
+
+5. **Loading States** (Days 6-7)
+   - Replace spinners with skeleton screens
+   - Show progress bar for multi-step operations
+   - Display "x of y complete" for batch operations
+   - Add estimated time for long operations (> 5s)
+   - Allow cancellation of long-running tasks
+
+**Success Criteria**:
+- [ ] All error messages user-friendly with actionable next steps
+- [ ] "Try Again" button with retry logic on errors
+- [ ] Confirmation dialogs for all destructive actions (delete, end, clear)
+- [ ] Success toast notifications for completed actions
+- [ ] Button feedback on press (visual + haptic)
+- [ ] Loading states use skeleton screens instead of spinners
+- [ ] Progress indicators for multi-step operations
+- [ ] Error handler utility centralized and reusable
+- [ ] Tested on common error scenarios (offline, 404, 500, timeout)
+
+**Dependencies**: None
+
+**Effort Estimate**: 5-7 days
+
+**Priority**: P1 (High) - Reduces user frustration
+
+**Labels**: `ux`, `error-handling`, `feedback`, `phase-1`, `p1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED - Screenshots of error messages, confirmation dialogs, and loading states on iPad (portrait and landscape)
+
+---
+
+#### Issue #31: Color Contrast Audit & Dark Mode Fixes (WCAG AA Compliance)
+**Status**: Ready to Start
+**Created**: February 2026 (from Project Review)
+
+**Objective**: Ensure all text/background color combinations meet WCAG AA contrast ratios for accessibility
+
+**User Story**: As a user with visual impairments or using the system in various lighting conditions, I need sufficient color contrast so that I can read all text clearly.
+
+**Current State**: Some dark mode text on backgrounds may fail WCAG AA contrast ratios, red on black can be hard to read
+**Target State**: All text/background combinations meet WCAG AA (4.5:1 for normal text, 3:1 for large text)
+
+**Steps**:
+1. **Contrast Audit** (Day 1)
+   - Run WCAG contrast checker on all pages (light and dark mode)
+   - Test with color blindness simulators
+   - Document failing combinations
+   - Prioritize by page usage frequency
+
+2. **Fix Dark Mode Colors** (Day 1)
+   - Adjust dark mode text colors to meet ratios
+   - Test RFS red (#e5281B) on dark backgrounds
+   - Adjust link colors in dark mode
+   - Test activity tag colors for readability
+
+3. **Update CSS Variables** (Day 1)
+   - Document contrast ratios in `:root` CSS comments
+   - Update dark theme color values
+   - Ensure all color combinations tested
+   - Add utility classes for common patterns
+
+4. **Testing** (Day 1)
+   - Test all pages in light mode
+   - Test all pages in dark mode
+   - Run automated contrast checker
+   - Manual review with actual users if possible
+
+**Success Criteria**:
+- [ ] All text/background combinations meet WCAG AA (4.5:1 normal, 3:1 large)
+- [ ] Dark mode colors adjusted and tested
+- [ ] Contrast ratios documented in CSS
+- [ ] Tested with color blindness simulators
+- [ ] Zero contrast failures in automated checker
+- [ ] Manual review completed
+
+**Dependencies**: None
+
+**Effort Estimate**: 1 day
+
+**Priority**: P1 (High) - Accessibility requirement
+
+**Labels**: `accessibility`, `wcag`, `dark-mode`, `phase-1`, `p1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED - Before/after screenshots showing contrast improvements in dark mode on iPad
+
+---
+
+#### Issue #32: Bundle Size Analysis & Optimization
+**Status**: Ready to Start
+**Created**: February 2026 (from Project Review)
+
+**Objective**: Identify and remove unused code, set bundle budget limits, reduce initial load time
+
+**User Story**: As a user on a slow connection, I need fast page loads so that I can start using the system quickly without waiting.
+
+**Current State**: Bundle size not monitored, may be shipping unused code, initial load time not measured
+**Target State**: Bundle analyzer integrated, unused dependencies removed, main bundle < 250 KB, budget limits enforced
+
+**Steps**:
+1. **Add Bundle Analyzer** (0.5 days)
+   - Install rollup-plugin-visualizer (already installed)
+   - Configure in vite.config.ts
+   - Generate bundle report (stats.html)
+   - Review largest dependencies
+
+2. **Identify Unused Code** (0.5 days)
+   - Review bundle analyzer report
+   - Identify large dependencies (recharts, framer-motion, etc.)
+   - Check for unused imports
+   - Identify opportunities for code splitting
+
+3. **Optimize Dependencies** (1 day)
+   - Dynamic import heavy components (e.g., Chart components)
+   - Use tree-shaking friendly imports
+   - Remove unused dependencies
+   - Consider lighter alternatives for large libs
+
+4. **Set Budget Limits** (0.5 days)
+   - Configure bundle size budgets in vite.config.ts
+   - Set main bundle < 250 KB limit
+   - Set chunk sizes < 100 KB limit
+   - Add to CI/CD to enforce
+
+5. **Measure Improvements** (0.5 days)
+   - Measure initial load time before/after
+   - Run Lighthouse CI
+   - Document improvements
+   - Update AS_BUILT.md with bundle sizes
+
+**Success Criteria**:
+- [ ] Bundle analyzer integrated and working
+- [ ] Bundle report generated (stats.html)
+- [ ] Unused dependencies identified and removed
+- [ ] Heavy components dynamically imported
+- [ ] Main bundle < 250 KB (gzipped)
+- [ ] Budget limits set and enforced in CI/CD
+- [ ] Initial load time measured and improved
+- [ ] Lighthouse score improved
+
+**Dependencies**: None
+
+**Effort Estimate**: 0.5 days
+
+**Priority**: P2 (Medium) - Performance optimization
+
+**Labels**: `performance`, `bundle`, `optimization`, `phase-1`, `p2`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: N/A (Performance optimization, no visual changes)
 
 ---
 
@@ -3290,9 +3721,10 @@ Priority: **MEDIUM** - Long-term enhancements
 |---------|------|--------|---------|
 | 1.0 | Jan 2026 | Initial | Original master plan created |
 | 2.0 | Jan 2026 | Comprehensive Review | Complete restructure: Added architecture guidance, consolidated roadmap into 4 phases (Quality → Stability → Features → Advanced), converted all backlog items into detailed issues with objectives, user stories, steps, success criteria, effort estimates, priorities, labels, and milestones. Added UI screenshot requirements. |
+| 2.1 | Feb 2026 | Security Re-evaluation | Updated security considerations based on kiosk mode re-evaluation. UUID v4 brigade tokens provide sufficient security (2^128 possibilities, brute force impractical, no financial incentive). Traditional user authentication not required - would add friction without meaningful security benefit. Added 6 new ready-to-go issues from Project Review (Issues #27-32): accessibility improvements, onboarding wizard, mobile optimization, error handling, color contrast audit, and bundle optimization. |
 
 ---
 
 **End of Master Plan**
 
-Last Updated: January 4, 2026
+Last Updated: February 7, 2026
