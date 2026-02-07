@@ -139,51 +139,30 @@ export function LandingPage() {
             </div>
           </motion.article>
 
-          <motion.article
-            className="info-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <h3>Multi-Device Support</h3>
-            <p>Access from kiosks, mobile phones, tablets, or via QR codes</p>
-          </motion.article>
-          <motion.article
-            className="info-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <h3>Real-Time Sync</h3>
-            <p>Changes appear instantly across all connected devices</p>
-          </motion.article>
-          <motion.article
-            className="info-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <h3>Professional Branding</h3>
-            <p>Clean, modern design suitable for any fire service</p>
-          </motion.article>
+
         </motion.section>
       </main>
 
       <footer className="landing-footer">
-        <p>Built with ❤️ for the volunteer community</p>
-        <p className="version">
-          Version 1.0 • Build: {__APP_VERSION__.commitShort}
-          {__APP_VERSION__.buildTime && __APP_VERSION__.buildTime !== 'unknown' && (
-            <>
-              {' • '}
-              <span title={`Full SHA: ${__APP_VERSION__.commitSha}\nBuild Time: ${__APP_VERSION__.buildTime}`}>
-                {new Date(__APP_VERSION__.buildTime).toLocaleString()}
-              </span>
-            </>
-          )}
-        </p>
-        <p className="demo-mode-link">
+        <div className="footer-content">
+          <span>Built with ❤️ for the volunteer community</span>
+          <span className="footer-separator">•</span>
+          <span className="version">
+            Version 1.0 • Build: {__APP_VERSION__.commitShort}
+            {__APP_VERSION__.buildTime && __APP_VERSION__.buildTime !== 'unknown' && (
+              <>
+                {' • '}
+                <span title={`Full SHA: ${__APP_VERSION__.commitSha}\nBuild Time: ${__APP_VERSION__.buildTime}`}>
+                  {new Date(__APP_VERSION__.buildTime).toLocaleString()}
+                </span>
+              </>
+            )}
+          </span>
+          <span className="footer-separator">•</span>
           <a href="/?demo=true" className="discrete-link" title="View demo with test data">
             Demo Mode
           </a>
-        </p>
+        </div>
       </footer>
 
         {showOnboarding && (

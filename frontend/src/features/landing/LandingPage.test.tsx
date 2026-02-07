@@ -61,11 +61,6 @@ describe('LandingPage', () => {
     expect(screen.getByText('Reports & Analytics')).toBeInTheDocument()
     expect(screen.getByText('Station Management')).toBeInTheDocument()
 
-    // Verify info cards are present
-    expect(screen.getByText('Multi-Device Support')).toBeInTheDocument()
-    expect(screen.getByText('Real-Time Sync')).toBeInTheDocument()
-    expect(screen.getByText('Professional Branding')).toBeInTheDocument()
-
     // Verify all clickable links are accessible
     expect(screen.getByRole('link', { name: /go to sign-in/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /go to truck checks/i })).toBeInTheDocument()
