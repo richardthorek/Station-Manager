@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent } from 'react';
+import { useSyncExternalStore, useState, type KeyboardEvent } from 'react';
 import type { EventWithParticipants } from '../types';
 import './EventCard.css';
 
@@ -14,8 +14,20 @@ interface EventCardProps {
 
 export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDelete, onReactivate }: EventCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [canReactivate, setCanReactivate] = useState(false);
   const DAY_MS = 24 * 60 * 60 * 1000;
+
+  const now = useSyncExternalStore(
+    (onStoreChange) => {
+      const id = window.setInterval(onStoreChange, 60_000);
+      return () => window.clearInterval(id);
+    },
+    () => Date.now(),
+    () => Date.now()
+  );
+
+  const canReactivate = !isActive && event.endTime
+    ? now - new Date(event.endTime).getTime() <= DAY_MS
+    : false;
 
   const handleCardKeyDown = (eventKey: KeyboardEvent<HTMLDivElement>) => {
     if (isActive && (eventKey.key === 'Enter' || eventKey.key === ' ')) {
@@ -23,16 +35,6 @@ export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDele
       onSelect(event.id);
     }
   };
-
-  useEffect(() => {
-    if (!isActive && event.endTime) {
-      const endTimeMs = new Date(event.endTime).getTime();
-      setCanReactivate(Date.now() - endTimeMs <= DAY_MS);
-      return;
-    }
-
-    setCanReactivate(false);
-  }, [DAY_MS, event.endTime, isActive]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
