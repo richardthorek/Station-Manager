@@ -1605,6 +1605,7 @@ Potential improvements (not in current scope):
    - QR code lookup
    - Input validation
    - History retrieval
+  - Soft delete endpoint (`DELETE /api/members/:id`) hides members while retaining records; responses include `isActive`/`isDeleted` flags
 
 2. **Activities API** (16 tests)
    - List activities

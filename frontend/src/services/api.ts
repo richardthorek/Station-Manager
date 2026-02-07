@@ -276,6 +276,20 @@ class ApiService {
     return response.json();
   }
 
+  async deleteMember(id: string): Promise<{ success: boolean; member: Member }> {
+    const response = await fetch(`${API_BASE_URL}/members/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to delete member');
+    }
+
+    return response.json();
+  }
+
   async getMemberHistory(id: string): Promise<CheckIn[]> {
     const response = await fetch(`${API_BASE_URL}/members/${id}/history`, {
       headers: this.getHeaders(),

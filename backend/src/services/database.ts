@@ -127,6 +127,8 @@ class DatabaseService {
         lastName: seedMember.lastName,
         rank: seedMember.rank,
         stationId: DEFAULT_STATION_ID, // Explicitly set to default station
+        isActive: true,
+        isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -240,8 +242,9 @@ class DatabaseService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    // Filter members by station if specified
-    let members = Array.from(this.members.values());
+    // Filter members by station if specified and exclude soft-deleted entries
+    let members = Array.from(this.members.values())
+      .filter(m => m.isDeleted !== true && m.isActive !== false);
     if (stationId) {
       members = members.filter(m => getEffectiveStationId(m.stationId) === stationId);
     }
@@ -376,11 +379,14 @@ class DatabaseService {
   }
 
   getMemberById(id: string): Member | undefined {
-    return this.members.get(id);
+    const member = this.members.get(id);
+    if (member?.isDeleted || member?.isActive === false) return undefined;
+    return member;
   }
 
   getMemberByQRCode(qrCode: string): Member | undefined {
-    return Array.from(this.members.values()).find(m => m.qrCode === qrCode);
+    return Array.from(this.members.values())
+      .find(m => m.qrCode === qrCode && m.isDeleted !== true && m.isActive !== false);
   }
 
   createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; membershipStartDate?: Date | null; stationId?: string }): Member {
@@ -394,6 +400,8 @@ class DatabaseService {
       lastName: details?.lastName || undefined,
       membershipStartDate: details?.membershipStartDate || null,
       stationId: getEffectiveStationId(details?.stationId),
+      isActive: true,
+      isDeleted: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -413,6 +421,19 @@ class DatabaseService {
       return member;
     }
     return undefined;
+  }
+
+  deleteMember(id: string): Member | null {
+    const member = this.members.get(id);
+    if (!member) return null;
+
+    // Soft delete: retain history but hide from UI and deactivate any active check-ins
+    member.isDeleted = true;
+    member.isActive = false;
+    member.updatedAt = new Date();
+    this.deactivateCheckInByMember(id);
+    this.members.set(id, member);
+    return member;
   }
 
   // Activity methods

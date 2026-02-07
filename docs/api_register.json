@@ -102,7 +102,7 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/members.ts:18",
+          "implementation": "backend/src/routes/members.ts:52",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -147,7 +147,7 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/members.ts:30",
+          "implementation": "backend/src/routes/members.ts:75",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -191,7 +191,7 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/members.ts:45",
+          "implementation": "backend/src/routes/members.ts:94",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -241,7 +241,7 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/members.ts:60",
+          "implementation": "backend/src/routes/members.ts:113",
         "socketEvent": "member-added",
         "security": {
           "rateLimiting": {
@@ -309,8 +309,57 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/members.ts:76",
+        "implementation": "backend/src/routes/members.ts:161",
         "socketEvent": "member-updated",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000,
+            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "headers": [
+              "RateLimit-Limit",
+              "RateLimit-Remaining",
+              "RateLimit-Reset"
+            ]
+          }
+        }
+      },
+      "DELETE /api/members/:id": {
+        "method": "DELETE",
+        "path": "/api/members/:id",
+        "description": "Soft delete a member (mark inactive, hide from UI, retain history)",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "required": true,
+              "description": "Member UUID"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Member soft deleted",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "member": { "$ref": "#/definitions/Member" }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/members.ts:410",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -358,7 +407,7 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/members.ts:95",
+        "implementation": "backend/src/routes/members.ts:197",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -439,7 +488,7 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/members.ts:196",
+        "implementation": "backend/src/routes/members.ts:219",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -520,7 +569,7 @@
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/members.ts:301",
+        "implementation": "backend/src/routes/members.ts:336",
         "socketEvent": "member-added (for each successful import)",
         "security": {
           "rateLimiting": {
@@ -3278,6 +3327,37 @@
         "memberNumber": {
           "type": "string",
           "nullable": true
+        },
+        "firstName": {
+          "type": "string",
+          "nullable": true
+        },
+        "lastName": {
+          "type": "string",
+          "nullable": true
+        },
+        "preferredName": {
+          "type": "string",
+          "nullable": true
+        },
+        "membershipStartDate": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true
+        },
+        "lastSignIn": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true
+        },
+        "stationId": {
+          "type": "string"
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "isDeleted": {
+          "type": "boolean"
         },
         "createdAt": {
           "type": "string",

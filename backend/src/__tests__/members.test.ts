@@ -222,6 +222,41 @@ describe('Members API', () => {
     });
   });
 
+  describe('DELETE /api/members/:id', () => {
+    it('should soft delete a member and hide them from listings', async () => {
+      const createResponse = await request(app)
+        .post('/api/members')
+        .send({ name: 'Delete Test Member' })
+        .expect(201);
+
+      const memberId = createResponse.body.id;
+
+      const deleteResponse = await request(app)
+        .delete(`/api/members/${memberId}`)
+        .expect(200);
+
+      expect(deleteResponse.body.success).toBe(true);
+      expect(deleteResponse.body.member.isDeleted).toBe(true);
+
+      const listResponse = await request(app)
+        .get('/api/members')
+        .expect(200);
+      expect(listResponse.body.some((m: any) => m.id === memberId)).toBe(false);
+
+      await request(app)
+        .get(`/api/members/${memberId}`)
+        .expect(404);
+    });
+
+    it('should return 404 for non-existent member', async () => {
+      const response = await request(app)
+        .delete('/api/members/non-existent-id')
+        .expect(404);
+
+      expect(response.body.error).toContain('not found');
+    });
+  });
+
   describe('GET /api/members/:id/history', () => {
     it('should return empty array for member with no check-ins', async () => {
       // Create a new member
