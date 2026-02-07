@@ -32,7 +32,7 @@ import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { useSocket } from '../../hooks/useSocket';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../hooks/useToast';
 import { useStation } from '../../contexts/StationContext';
 import { api } from '../../services/api';
 import { announce } from '../../utils/announcer';
