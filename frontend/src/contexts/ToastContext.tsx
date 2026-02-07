@@ -1,5 +1,5 @@
 /**
- * Toast Context and Hook
+ * Toast Provider Component
  * 
  * Provides global toast notification management with:
  * - Add/remove toasts from anywhere in the app
@@ -8,22 +8,10 @@
  * - Type-safe toast creation helpers
  */
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import { ToastContainer } from '../components/Toast';
 import type { ToastMessage, ToastType } from '../components/Toast';
-
-interface ToastContextValue {
-  toasts: ToastMessage[];
-  showToast: (message: string, type?: ToastType, options?: Partial<ToastMessage>) => string;
-  showSuccess: (message: string, options?: Partial<ToastMessage>) => string;
-  showError: (message: string, options?: Partial<ToastMessage>) => string;
-  showWarning: (message: string, options?: Partial<ToastMessage>) => string;
-  showInfo: (message: string, options?: Partial<ToastMessage>) => string;
-  dismissToast: (id: string) => void;
-  dismissAll: () => void;
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null);
+import { ToastContext, type ToastContextValue } from './toastContext';
 
 let toastIdCounter = 0;
 
@@ -108,31 +96,4 @@ export function ToastProvider({ children }: ToastProviderProps) {
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </ToastContext.Provider>
   );
-}
-
-/**
- * Hook to access toast notifications
- * 
- * @example
- * ```tsx
- * function MyComponent() {
- *   const { showSuccess, showError } = useToast();
- *   
- *   const handleSave = async () => {
- *     try {
- *       await api.save();
- *       showSuccess('Changes saved successfully!');
- *     } catch (error) {
- *       showError('Failed to save changes. Please try again.');
- *     }
- *   };
- * }
- * ```
- */
-export function useToast(): ToastContextValue {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
 }

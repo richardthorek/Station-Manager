@@ -172,7 +172,6 @@ export function ConfirmationDialog({
                 placeholder={confirmationText}
                 disabled={isProcessing}
                 autoComplete="off"
-                autoFocus
               />
             </div>
           )}
