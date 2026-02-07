@@ -8,6 +8,7 @@
  * Performance: 60fps target with reduced-motion support
  */
 
+import React from 'react';
 import type { Variants, Transition } from 'framer-motion';
 
 /**
@@ -207,11 +208,16 @@ export function getVariants(variants: Variants): Variants {
  * Hook to detect reduced motion preference changes
  */
 export function useReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  const [reducedMotion, setReducedMotion] = React.useState(prefersReducedMotion());
+  // Use lazy initialization to avoid calling prefersReducedMotion on server
+  const [reducedMotion, setReducedMotion] = React.useState(() => {
+    if (typeof window === 'undefined') return false;
+    return prefersReducedMotion();
+  });
 
   React.useEffect(() => {
+    // Only run effect in browser
+    if (typeof window === 'undefined') return;
+
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const handleChange = (event: MediaQueryListEvent) => {
@@ -224,6 +230,3 @@ export function useReducedMotion(): boolean {
 
   return reducedMotion;
 }
-
-// Note: We need to import React for the hook
-import React from 'react';
