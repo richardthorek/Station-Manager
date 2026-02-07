@@ -33,7 +33,7 @@ import { DataTable, type Column } from '../../components/DataTable';
 import { ExportMenu } from '../../components/ExportMenu';
 import { HeatMapChart } from '../../components/HeatMapChart';
 import { api } from '../../services/api';
-import { exportAsPDF, exportAsExcel, exportAllChartsAsPNG } from '../../utils/exportUtils';
+import { exportAsPDF, exportAsExcel, exportAllChartsAsPNG } from '../../utils/exportUtils.lazy';
 import './ReportsPage.css';
 
 // RFS brand colors for charts
