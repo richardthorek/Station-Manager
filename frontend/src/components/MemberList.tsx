@@ -274,7 +274,6 @@ export function MemberList({
                   type="button"
                   className={`member-btn ${isCheckedIn ? 'checked-in' : ''}`}
                   onClick={() => handleMemberClick(member.id)}
-                  role="listitem"
                   aria-label={`${member.name}${isCheckedIn ? ' (checked in)' : ''}`}
                   aria-pressed={isCheckedIn}
                 >
