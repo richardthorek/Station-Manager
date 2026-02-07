@@ -272,6 +272,49 @@ jobs:
           echo "GIT_COMMIT_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)" >> backend/dist/.env
           echo "BUILD_TIMESTAMP=${BUILD_TIMESTAMP}" >> backend/dist/.env
 
+      - name: Analyze bundle size
+        run: |
+          echo "## Bundle Size Analysis 📦" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Get main bundle size (gzipped)
+          MAIN_BUNDLE=$(ls -lh frontend/dist/assets/index-*.js 2>/dev/null | awk '{print $5}' | head -1)
+          MAIN_BUNDLE_GZ=$(du -h frontend/dist/assets/index-*.js.gz 2>/dev/null | awk '{print $1}' | head -1)
+          
+          echo "### Main Bundle" >> $GITHUB_STEP_SUMMARY
+          echo "- Uncompressed: ${MAIN_BUNDLE:-N/A}" >> $GITHUB_STEP_SUMMARY
+          echo "- Gzipped: ${MAIN_BUNDLE_GZ:-N/A}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # List all vendor chunks
+          echo "### Vendor Chunks" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -lh frontend/dist/assets/vendor-*.js 2>/dev/null | awk '{print $9, "-", $5}' | sed 's|frontend/dist/assets/||' || echo "No vendor chunks found"
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Total dist size
+          TOTAL_SIZE=$(du -sh frontend/dist | awk '{print $1}')
+          echo "**Total dist size**: ${TOTAL_SIZE}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if bundle analyzer stats exist
+          if [ -f frontend/dist/stats.html ]; then
+            echo "✅ Bundle analyzer report generated at \`frontend/dist/stats.html\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Bundle analyzer report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload bundle stats
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: bundle-stats
+          path: |
+            frontend/dist/stats.html
+            frontend/dist/stats.html
+          retention-days: 30
+
       - name: Create deployment package
         run: |
           mkdir -p deploy/backend
