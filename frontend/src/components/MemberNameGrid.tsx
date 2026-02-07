@@ -31,9 +31,10 @@ export function MemberNameGrid({
 
   // Get participant IDs for the selected event
   const participantIds = useMemo(() => {
-    if (!selectedEvent) return new Set<string>();
-    return new Set(selectedEvent.participants.map(p => p.memberId));
-  }, [selectedEvent]);
+    const event = events.find(e => e.id === selectedEventId);
+    if (!event) return new Set<string>();
+    return new Set(event.participants.map(p => p.memberId));
+  }, [events, selectedEventId]);
 
   // Filter and sort members
   const displayedMembers = useMemo(() => {
