@@ -24,6 +24,13 @@ beforeAll(async () => {
   // Set up Express app with routes
   app = express();
   app.use(express.json());
+  
+  // Mock Socket.io for WebSocket events
+  app.set('io', {
+    emit: jest.fn(),
+    to: jest.fn().mockReturnThis(),
+  });
+  
   app.use('/api/truck-checks', truckChecksRouter);
 });
 
