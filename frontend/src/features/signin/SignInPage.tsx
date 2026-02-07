@@ -339,10 +339,10 @@ export function SignInPage() {
   }>) => {
     try {
       const result = await api.executeMemberImport(membersToImport);
-      
+
       // Reload members to include newly imported ones
       await loadMembers();
-      
+
       // Emit socket event for all successful imports
       result.successful.forEach(member => {
         emit('member-added', member);
@@ -353,6 +353,10 @@ export function SignInPage() {
       console.error('Error importing members:', err);
       throw err;
     }
+  };
+
+  const handleRefreshMembers = async () => {
+    await loadMembers();
   };
 
   const handleOpenBulkImport = () => {
@@ -455,6 +459,7 @@ export function SignInPage() {
               }))}
               onCheckIn={handleCheckIn}
               onAddMember={handleAddMember}
+              onRefresh={handleRefreshMembers}
             />
           </div>
         </div>
