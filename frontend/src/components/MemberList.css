@@ -21,6 +21,19 @@
   flex-shrink: 0;
 }
 
+/* Mobile: Sticky search bar */
+@media (max-width: 768px) {
+  .search-controls {
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    z-index: 10;
+    padding: 12px 0;
+    margin: -12px 0 12px 0;
+    border-bottom: 2px solid var(--border-color);
+  }
+}
+
 .btn-filter-sort {
   width: 48px;
   height: 48px;
@@ -151,6 +164,14 @@
   font-size: 1.1rem;
 }
 
+/* Mobile: Ensure minimum 16px font size to prevent iOS zoom */
+@media (max-width: 768px) {
+  .search-input {
+    font-size: 16px;
+    min-height: 48px;
+  }
+}
+
 .btn-add-member {
   width: 48px;
   height: 48px;
@@ -205,6 +226,36 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+}
+
+/* Pull-to-refresh indicator */
+.refresh-indicator {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  padding: 12px 24px;
+  border-radius: 24px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  animation: slideDown 0.3s ease-out;
+}
+
+.refresh-indicator span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.refresh-indicator .spinner {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
 }
 
 .members-grid {
@@ -342,6 +393,41 @@
   animation: scaleIn 0.3s ease-out;
 }
 
+/* Swipe hint overlay */
+.swipe-hint {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 4px 12px;
+  border-radius: 12px;
+  animation: fadeInScale 0.2s ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.member-btn.swipe-right {
+  background: linear-gradient(90deg, rgba(203, 219, 42, 0.3) 0%, var(--color-white) 100%);
+}
+
+.member-btn.swipe-left {
+  background: linear-gradient(90deg, var(--color-white) 0%, rgba(33, 94, 158, 0.3) 100%);
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
 @keyframes scaleIn {
   0% {
     transform: scale(0);
@@ -375,6 +461,14 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Mobile: Full-screen modal with slide-up animation */
+@media (max-width: 768px) {
+  .add-member-overlay {
+    align-items: flex-end;
+    background: rgba(0, 0, 0, 0.7);
+  }
+}
+
 .add-member-form {
   background: var(--color-white);
   padding: 24px;
@@ -386,6 +480,30 @@
   flex-direction: column;
   gap: 16px;
   animation: slideUp 0.3s ease-out;
+}
+
+/* Mobile: Full-width modal with rounded top corners */
+@media (max-width: 768px) {
+  .add-member-form {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 32px 24px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideUpMobile 0.3s ease-out;
+  }
+
+  @keyframes slideUpMobile {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 }
 
 .add-member-form h3 {
@@ -407,6 +525,14 @@
 
 .add-member-form input {
   width: 100%;
+}
+
+/* Mobile: Ensure 16px minimum font size to prevent iOS zoom */
+@media (max-width: 768px) {
+  .add-member-form input {
+    font-size: 16px;
+    min-height: 48px;
+  }
 }
 
 .form-actions {
@@ -441,19 +567,40 @@
   .members-grid {
     gap: 8px;
   }
-  
+
   .member-btn {
     flex: 0 1 100%;
     max-width: 100%;
   }
-  
+
   .letter-selector {
     width: 32px;
   }
-  
+
   .letter-btn {
     width: 26px;
     font-size: 0.65rem;
     padding: 3px 0;
+  }
+
+  /* FAB: Floating Action Button for Add Member */
+  .btn-add-member {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    min-width: 60px;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    font-size: 2.5rem;
+  }
+
+  .btn-add-member:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .btn-add-member:active {
+    transform: scale(0.95);
   }
 }

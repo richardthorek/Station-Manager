@@ -1,6 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Member, CheckInWithDetails } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
+import { useSwipeGesture } from '../hooks/useSwipeGesture';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { api } from '../services/api';
 import './MemberList.css';
 
@@ -9,6 +11,7 @@ interface MemberListProps {
   activeCheckIns: CheckInWithDetails[];
   onCheckIn: (memberId: string) => void;
   onAddMember: (name: string) => void;
+  onRefresh?: () => Promise<void> | void;
 }
 
 // Filter and sort options
@@ -21,17 +24,76 @@ const STORAGE_KEYS = {
   SORT: 'memberList.sort',
 };
 
+/**
+ * Individual member button with swipe gesture support
+ */
+interface MemberButtonProps {
+  member: Member;
+  isCheckedIn: boolean;
+  onCheckIn: (memberId: string) => void;
+}
+
+function MemberButton({ member, isCheckedIn, onCheckIn }: MemberButtonProps) {
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+
+  // Swipe gesture handlers
+  const swipeHandlers = useSwipeGesture({
+    onSwipeRight: () => {
+      setSwipeDirection('right');
+      setTimeout(() => {
+        onCheckIn(member.id);
+        setSwipeDirection(null);
+      }, 200);
+    },
+    onSwipeLeft: () => {
+      // Could navigate to profile page in the future
+      setSwipeDirection('left');
+      setTimeout(() => {
+        setSwipeDirection(null);
+      }, 200);
+    },
+    threshold: 50,
+    enableHaptic: true,
+  });
+
+  const handleClick = () => {
+    onCheckIn(member.id);
+  };
+
+  return (
+    <button
+      className={`member-btn ${isCheckedIn ? 'checked-in' : ''} ${swipeDirection ? `swipe-${swipeDirection}` : ''}`}
+      onClick={handleClick}
+      {...swipeHandlers}
+    >
+      <span className="member-name">{member.name}</span>
+      {isCheckedIn && (
+        <span className="check-icon">✓</span>
+      )}
+      {swipeDirection === 'right' && (
+        <span className="swipe-hint">✓ Check In</span>
+      )}
+      {swipeDirection === 'left' && (
+        <span className="swipe-hint">👤 Profile</span>
+      )}
+    </button>
+  );
+}
+
 export function MemberList({
   members: initialMembers,
   activeCheckIns,
   onCheckIn,
   onAddMember,
+  onRefresh,
 }: MemberListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [showFilterSort, setShowFilterSort] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const membersContainerRef = useRef<HTMLDivElement>(null);
   
   // Filter and sort state with localStorage persistence
   const [filter, setFilter] = useState<FilterOption>(() => {
@@ -162,6 +224,26 @@ export function MemberList({
     setSearchTerm(''); // Clear search when using letter filter
   };
 
+  // Handle pull-to-refresh
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh) return;
+
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 300);
+    }
+  }, [onRefresh]);
+
+  // Pull-to-refresh gesture handlers
+  const pullToRefreshHandlers = usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 80,
+    resistance: 2.5,
+    enableHaptic: true,
+  });
+
   // Generate A-Z letters
   const letters = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
   
@@ -253,22 +335,28 @@ export function MemberList({
         )}
       </div>
 
-      <div className="members-container">
+      <div
+        className="members-container"
+        ref={membersContainerRef}
+        {...pullToRefreshHandlers}
+      >
+        {isRefreshing && (
+          <div className="refresh-indicator">
+            <div className="spinner"></div>
+            <span>Refreshing...</span>
+          </div>
+        )}
         <div className="members-grid">
           {displayedMembers.length > 0 ? (
             displayedMembers.map(member => {
               const isCheckedIn = checkedInMemberIds.has(member.id);
               return (
-                <button
+                <MemberButton
                   key={member.id}
-                  className={`member-btn ${isCheckedIn ? 'checked-in' : ''}`}
-                  onClick={() => handleMemberClick(member.id)}
-                >
-                  <span className="member-name">{member.name}</span>
-                  {isCheckedIn && (
-                    <span className="check-icon">✓</span>
-                  )}
-                </button>
+                  member={member}
+                  isCheckedIn={isCheckedIn}
+                  onCheckIn={handleMemberClick}
+                />
               );
             })
           ) : (
