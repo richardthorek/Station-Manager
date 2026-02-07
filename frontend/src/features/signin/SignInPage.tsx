@@ -16,6 +16,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+
+// Constants
+const STATION_SWITCH_DELAY_MS = 300; // Match CSS animation duration
 import { Header } from '../../components/Header';
 import { EventLog } from '../../components/EventLog';
 import { CurrentEventParticipants } from '../../components/CurrentEventParticipants';
@@ -56,6 +59,7 @@ export function SignInPage() {
   const [isGridExpanded, setIsGridExpanded] = useState(true);
   const [isSwitchingStation, setIsSwitchingStation] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
   const { isConnected, emit, on, off } = useSocket();
   const { selectedStation } = useStation();
@@ -78,8 +82,13 @@ export function SignInPage() {
   // Listen for station changes and reload data
   useEffect(() => {
     // Skip initial load (handled by loadInitialData)
-    // Only react to changes after initial mount
-    if (!loading && selectedStation) {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Only reload when station actually changes
+    if (selectedStation) {
       const reloadDataForNewStation = async () => {
         setIsSwitchingStation(true);
         try {
@@ -94,7 +103,7 @@ export function SignInPage() {
           announce('Failed to reload data for new station');
         } finally {
           // Small delay to ensure smooth transition
-          setTimeout(() => setIsSwitchingStation(false), 300);
+          setTimeout(() => setIsSwitchingStation(false), STATION_SWITCH_DELAY_MS);
         }
       };
 
