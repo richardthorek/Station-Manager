@@ -1,0 +1,157 @@
+/* Heat Map Chart Styles */
+
+.heat-map {
+  width: 100%;
+  overflow-x: auto;
+  padding: 1rem 0;
+}
+
+.heat-map__chart {
+  min-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heat-map__hours {
+  display: grid;
+  grid-template-columns: 120px repeat(24, 1fr);
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.heat-map__corner {
+  grid-column: 1;
+}
+
+.heat-map__hour-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-align: center;
+  font-weight: 600;
+}
+
+.heat-map__row {
+  display: grid;
+  grid-template-columns: 120px repeat(24, 1fr);
+  gap: 2px;
+}
+
+.heat-map__day-label {
+  display: flex;
+  align-items: center;
+  padding-right: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.heat-map__cell {
+  aspect-ratio: 1;
+  min-width: 30px;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--rfs-white);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.heat-map__cell:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.heat-map__legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.heat-map__legend-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.heat-map__legend-scale {
+  display: flex;
+  gap: 2px;
+}
+
+.heat-map__legend-box {
+  width: 30px;
+  height: 15px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.heat-map__info {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .heat-map {
+    padding: 0.5rem 0;
+  }
+
+  .heat-map__chart {
+    min-width: 700px;
+  }
+
+  .heat-map__cell {
+    min-width: 25px;
+    min-height: 25px;
+    font-size: 0.65rem;
+  }
+
+  .heat-map__hour-label {
+    font-size: 0.65rem;
+  }
+
+  .heat-map__day-label {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .heat-map__chart {
+    min-width: 600px;
+  }
+
+  .heat-map__hours {
+    grid-template-columns: 100px repeat(24, 1fr);
+  }
+
+  .heat-map__row {
+    grid-template-columns: 100px repeat(24, 1fr);
+  }
+
+  .heat-map__cell {
+    min-width: 20px;
+    min-height: 20px;
+    font-size: 0.6rem;
+  }
+
+  .heat-map__hour-label {
+    font-size: 0.6rem;
+  }
+
+  .heat-map__day-label {
+    font-size: 0.75rem;
+  }
+}

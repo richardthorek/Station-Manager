@@ -1,0 +1,222 @@
+/* Export Menu Styles */
+
+.export-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.export-menu__button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  min-height: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid var(--rfs-lime);
+  background: var(--rfs-lime);
+  color: var(--rfs-black);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.export-menu__button:hover:not(:disabled) {
+  background: #a8b821;
+  border-color: #a8b821;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.export-menu__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.export-menu__icon {
+  font-size: 1.2rem;
+}
+
+.export-menu__arrow {
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.export-menu__dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 280px;
+  background: var(--card-bg);
+  border: 2px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.export-menu__option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.export-menu__option:last-child {
+  border-bottom: none;
+}
+
+.export-menu__option:hover:not(:disabled) {
+  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+}
+
+.export-menu__option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.export-menu__option-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.export-menu__option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.export-menu__option-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.export-menu__option-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.export-menu__loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--card-bg);
+  padding: 2rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  z-index: 10000;
+}
+
+.export-menu__spinner {
+  border: 4px solid var(--rfs-light-grey);
+  border-top: 4px solid var(--rfs-core-red);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.export-menu__loading span {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.export-menu__success {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--ui-green);
+  color: var(--rfs-white);
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  z-index: 10000;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.export-menu__success-icon {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .export-menu__button {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .export-menu__dropdown {
+    min-width: 240px;
+  }
+
+  .export-menu__success {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .export-menu__dropdown {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 2rem);
+    max-width: 320px;
+  }
+
+  .export-menu__option {
+    padding: 0.75rem;
+  }
+
+  .export-menu__option-icon {
+    font-size: 1.2rem;
+  }
+}

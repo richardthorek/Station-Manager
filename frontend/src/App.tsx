@@ -23,7 +23,7 @@ const CheckSummaryPage = lazy(() => import('./features/truckcheck/CheckSummaryPa
 const AdminDashboardPage = lazy(() => import('./features/truckcheck/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
 const TemplateSelectionPage = lazy(() => import('./features/truckcheck/TemplateSelectionPage').then(m => ({ default: m.TemplateSelectionPage })));
 const TemplateEditorPage = lazy(() => import('./features/truckcheck/TemplateEditorPage').then(m => ({ default: m.TemplateEditorPage })));
-const ReportsPage = lazy(() => import('./features/reports/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const ReportsPage = lazy(() => import('./features/reports/ReportsPageEnhanced').then(m => ({ default: m.ReportsPageEnhanced })));
 const CrossStationReportsPage = lazy(() => import('./features/reports/CrossStationReportsPage').then(m => ({ default: m.CrossStationReportsPage })));
 const StationManagementPage = lazy(() => import('./features/admin/stations/StationManagementPage').then(m => ({ default: m.StationManagementPage })));
 const BrigadeAccessPage = lazy(() => import('./features/admin/brigade-access/BrigadeAccessPage').then(m => ({ default: m.BrigadeAccessPage })));
