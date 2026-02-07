@@ -34,14 +34,44 @@ Station-Manager/
 
 ## Quick Start
 
-### 1. Clone the Repository
+### Method 1: Run Both Frontend & Backend Together (Recommended) 🚀
+
+This is the fastest way to get started!
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/richardthorek/Station-Manager.git
+cd Station-Manager
+
+# 2. Install all dependencies
+npm install
+
+# 3. Start both frontend and backend together
+npm run dev
+```
+
+That's it! The application is now running:
+- **Backend API**: `http://localhost:3000`
+- **Frontend UI**: `http://localhost:5173`
+
+Open your browser to `http://localhost:5173` to access the application.
+
+> **Note:** This uses `concurrently` to run both servers simultaneously in one terminal.
+
+---
+
+### Method 2: Run Frontend & Backend Separately
+
+If you prefer to run them in separate terminals for easier debugging:
+
+#### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/richardthorek/Station-Manager.git
 cd Station-Manager
 ```
 
-### 2. Set Up the Backend
+#### Step 2: Set Up the Backend
 
 ```bash
 # Navigate to backend directory
@@ -59,7 +89,7 @@ npm run dev
 
 The backend server will start on `http://localhost:3000`
 
-### 3. Set Up the Frontend
+#### Step 3: Set Up the Frontend
 
 Open a new terminal window:
 
@@ -79,7 +109,7 @@ npm run dev
 
 The frontend will start on `http://localhost:5173`
 
-### 4. Access the Application
+#### Step 4: Access the Application
 
 Open your browser and navigate to:
 ```
@@ -92,6 +122,27 @@ You should see the RFS Station Manager interface with:
 - Active check-ins display
 
 ## Development Workflow
+
+### Running the Application
+
+**Option A: Both Frontend & Backend Together (Recommended)**
+```bash
+# From project root
+npm run dev
+```
+
+This starts both servers simultaneously:
+- Backend with hot reload on `http://localhost:3000`
+- Frontend with hot reload on `http://localhost:5173`
+
+**Option B: Frontend & Backend Separately**
+```bash
+# Terminal 1
+cd backend && npm run dev
+
+# Terminal 2
+cd frontend && npm run dev
+```
 
 ### Backend Development
 

@@ -29,27 +29,45 @@ A modern, real-time digital sign-in system for Rural Fire Service (RFS) stations
 - Node.js 18+ and npm
 - Git
 
-### Installation
+### Installation & Running
+
+**Option 1: Run Both Frontend & Backend Together (Recommended)**
 
 ```bash
 # Clone the repository
 git clone https://github.com/richardthorek/Station-Manager.git
 cd Station-Manager
 
-# Install and run backend
+# Install all dependencies
+npm install
+
+# Start both frontend and backend together
+npm run dev
+```
+
+This single command starts:
+- 🔧 Backend API on `http://localhost:3000`
+- 🎨 Frontend UI on `http://localhost:5173`
+
+Visit `http://localhost:5173` to see the application!
+
+---
+
+**Option 2: Run Frontend & Backend Separately**
+
+```bash
+# Terminal 1 - Backend
 cd backend
 npm install
 cp .env.example .env
 npm run dev
 
-# In a new terminal, install and run frontend
+# Terminal 2 - Frontend
 cd frontend
 npm install
 cp .env.example .env
 npm run dev
 ```
-
-Visit `http://localhost:5173` to see the application landing page.
 
 **📖 For detailed setup instructions, see [Getting Started Guide](docs/GETTING_STARTED.md)**
 
@@ -223,7 +241,13 @@ The application follows a scalable feature-based routing pattern:
 
 ### Scripts
 
-**Development with Sample Data (In-Memory Database):**
+**Development - Run Both Together (Recommended):**
+```bash
+# From project root - runs both frontend and backend
+npm run dev
+```
+
+**Development - Run Separately:**
 ```bash
 # Terminal 1 - Backend
 cd backend
@@ -236,7 +260,7 @@ npm run dev
 
 **Development with Production Database:**
 ```bash
-# Terminal 1 - Backend
+# Terminal 1 - Backend with production database
 cd backend
 npm run dev:prod
 
@@ -245,7 +269,15 @@ cd frontend
 npm run dev
 ```
 
-**Backend:**
+**Root Project Scripts:**
+```bash
+npm install   # Install all dependencies (backend + frontend)
+npm run dev   # Run both frontend and backend together
+npm run build # Build both frontend and backend
+npm start     # Run production build
+```
+
+**Backend Scripts:**
 ```bash
 npm run dev       # Development with sample data (in-memory)
 npm run dev:prod  # Development with production database
@@ -253,7 +285,7 @@ npm run build     # Build TypeScript
 npm start         # Run production build
 ```
 
-**Frontend:**
+**Frontend Scripts:**
 ```bash
 npm run dev          # Development server
 npm run build        # Production build
