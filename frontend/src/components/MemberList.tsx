@@ -25,6 +25,60 @@ const STORAGE_KEYS = {
 };
 
 /**
+ * Generate a consistent color for a member based on their name
+ */
+function getAvatarColor(name: string): string {
+  const colors = [
+    '#e5281b', // RFS Red
+    '#215e9e', // UI Blue
+    '#008550', // UI Green
+    '#fbb034', // UI Amber
+    '#4d4d4f', // RFS Dark Grey
+    '#7c3aed', // Purple
+    '#dc2626', // Red
+    '#059669', // Emerald
+    '#d97706', // Orange
+    '#0891b2', // Cyan
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
+/**
+ * Get initials from member name (max 2 characters)
+ */
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+/**
+ * Format last sign in date for display
+ */
+function getLastActiveText(lastSignIn: string | null | undefined): string {
+  if (!lastSignIn) return 'New member';
+
+  const now = new Date();
+  const lastActive = new Date(lastSignIn);
+  const diffMs = now.getTime() - lastActive.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+  return `${Math.floor(diffDays / 365)}y ago`;
+}
+
+/**
  * Individual member button with swipe gesture support
  */
 interface MemberButtonProps {
@@ -60,6 +114,10 @@ function MemberButton({ member, isCheckedIn, onCheckIn }: MemberButtonProps) {
     onCheckIn(member.id);
   };
 
+  const avatarColor = getAvatarColor(member.name);
+  const initials = getInitials(member.name);
+  const lastActiveText = getLastActiveText(member.lastSignIn);
+
   return (
     <button
       type="button"
@@ -69,7 +127,16 @@ function MemberButton({ member, isCheckedIn, onCheckIn }: MemberButtonProps) {
       aria-pressed={isCheckedIn}
       {...swipeHandlers}
     >
-      <span className="member-name">{member.name}</span>
+      <div className="member-avatar" style={{ backgroundColor: avatarColor }}>
+        <span className="member-initials">{initials}</span>
+      </div>
+      <div className="member-info">
+        <span className="member-name">{member.name}</span>
+        <div className="member-meta">
+          {member.rank && <span className="member-rank">{member.rank}</span>}
+          <span className="member-last-active">{lastActiveText}</span>
+        </div>
+      </div>
       {isCheckedIn && (
         <span className="check-icon" aria-hidden="true">✓</span>
       )}
@@ -97,6 +164,7 @@ export function MemberList({
   const [showFilterSort, setShowFilterSort] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const membersContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Filter and sort state with localStorage persistence
   const [filter, setFilter] = useState<FilterOption>(() => {
@@ -247,6 +315,20 @@ export function MemberList({
     enableHaptic: true,
   });
 
+  // Keyboard shortcut: "/" to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Focus search on "/" key press (unless already typing in an input)
+      if (e.key === '/' && !showAddMember && document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAddMember]);
+
   // Generate A-Z letters
   const letters = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
   
@@ -263,6 +345,7 @@ export function MemberList({
           <label htmlFor="member-search" className="sr-only">Search members by name, rank, or member number</label>
           <input
             id="member-search"
+            ref={searchInputRef}
             type="text"
             placeholder="Search by name, rank, or member #..."
             value={searchTerm}
@@ -270,6 +353,11 @@ export function MemberList({
             className="search-input"
             aria-label="Search members"
           />
+          {!searchTerm && (
+            <span className="search-shortcut-hint" aria-hidden="true">
+              Press <kbd>/</kbd> to search
+            </span>
+          )}
           {searchTerm && (
             <button
               type="button"
