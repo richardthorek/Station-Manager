@@ -1428,7 +1428,10 @@ export class TableStorageDatabase {
 
       const logs: EventAuditLog[] = [];
       for await (const entity of entities) {
-        logs.push(this.entityToAuditLog(entity));
+        // Check that entity has required properties before converting
+        if (entity.partitionKey && entity.rowKey) {
+          logs.push(this.entityToAuditLog(entity as TableEntity));
+        }
       }
 
       // Sort chronologically
@@ -1455,7 +1458,10 @@ export class TableStorageDatabase {
 
       const logs: EventAuditLog[] = [];
       for await (const entity of entities) {
-        logs.push(this.entityToAuditLog(entity));
+        // Check that entity has required properties before converting
+        if (entity.partitionKey && entity.rowKey) {
+          logs.push(this.entityToAuditLog(entity as TableEntity));
+        }
       }
 
       // Sort in reverse chronological order
