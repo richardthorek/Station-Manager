@@ -1197,6 +1197,13 @@ Priority: **CRITICAL** - Must complete before new features
 **Target State**: Modern member cards with avatars/initials, enhanced search with suggestions, visually impressive active check-ins panel with activity indicators
 
 **Steps**:
+0. **Optimize Page Layout for Maximum Content Visibility** (Day 1)
+   - Reduce header height: minimize padding (from `padding: 12px 24px` to `padding: 8px 16px` in Header.css line 47)
+   - Reduce footer height: minimize padding (from `padding: 0.85rem 1rem` to `padding: 0.5rem 1rem` in LandingPage.css line 360)
+   - Overall principle: maximize content area, minimize chrome/UI elements taking screen real estate
+   - Test that all interactive elements remain at least 44px touch targets (accessibility requirement)
+   - Ensure header remains sticky and functional with reduced height
+
 1. **Redesign Member Cards** (Days 1-2)
    - Add member initials/avatar circles with RFS brand colors
    - Implement card hover effects with elevation and border highlights
@@ -1206,7 +1213,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Improve typography hierarchy (name prominent, details secondary)
    - Use design system tokens (--spacing-*, --radius-*, --shadow-*)
 
-2. **Enhanced Search Bar** (Day 3)
+2. **Enhanced Search Bar** (Days 2-3)
    - Redesign with glassmorphism effect
    - Add search icon and clear button with better visual feedback
    - Implement search suggestions/autocomplete dropdown
@@ -1245,6 +1252,8 @@ Priority: **CRITICAL** - Must complete before new features
    - Get user feedback and iterate
 
 **Success Criteria**:
+- [ ] Header and footer heights reduced to maximize content area without scrolling
+- [ ] All touch targets remain minimum 44px for accessibility
 - [ ] Member cards display with avatars/initials and attractive styling
 - [ ] Card hover effects work smoothly with proper transitions
 - [ ] Search bar has glassmorphism effect and sticky positioning
@@ -1292,6 +1301,13 @@ Priority: **CRITICAL** - Must complete before new features
 **Target State**: Visual step-by-step wizard with progress bar, color-coded item statuses, prominent issue highlighting, photo preview enhancements
 
 **Steps**:
+0. **Optimize Page Layout for Maximum Content Visibility** (Day 1)
+   - Apply consistent header/footer reduction across all truck check pages
+   - Minimize vertical space used by progress indicator (compact design)
+   - Use compact button groups and toolbars to reduce chrome
+   - Principle: maximize checklist item visibility, minimize scrolling needed
+   - Ensure touch targets remain 44px minimum for accessibility
+
 1. **Step Progress Indicator** (Days 1-2)
    - Design horizontal progress bar with step numbers and icons
    - Show completed steps (green checkmark), current step (highlighted), upcoming steps (grey)
@@ -1301,7 +1317,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Animate transitions between steps
    - Use RFS red and lime colors for active/complete states
 
-2. **Checklist Item Cards** (Days 3-4)
+2. **Checklist Item Cards** (Days 2-3)
    - Redesign checklist items as interactive cards
    - Add large, colorful status badges (✓ Done, ⚠ Issue, ⊘ Skipped)
    - Use color coding: green (done), amber (issue), grey (skipped), white (pending)
@@ -1311,7 +1327,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Show contributor avatars for multi-person checks
    - Smooth card flip/expand animations
 
-3. **Issue Highlighting** (Day 5)
+3. **Issue Highlighting** (Day 4)
    - Create prominent issue cards with amber/red borders
    - Add issue severity indicators (minor, moderate, critical)
    - Display issue photos in grid with lightbox preview
@@ -1319,7 +1335,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Quick issue summary panel showing all issues at once
    - Export issues as PDF report button
 
-4. **Visual Flow Improvements** (Day 6)
+4. **Visual Flow Improvements** (Day 5)
    - Add "Next" and "Previous" navigation buttons (large, clear)
    - Implement swipe gestures for mobile (swipe right = next, left = back)
    - Add confirmation dialog before marking check complete
@@ -1327,7 +1343,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Add celebration animation on check completion (Framer Motion)
    - Generate QR code for completed check report
 
-5. **Photo Capture Enhancements** (Day 7)
+5. **Photo Capture Enhancements** (Day 6)
    - Improve photo upload button styling (large, clear camera icon)
    - Add photo preview before upload
    - Show photo thumbnails in grid (max 4 per item)
@@ -1336,7 +1352,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Show upload progress indicator
    - Optimize image compression before upload
 
-6. **Testing & Polish** (Day 8)
+6. **Testing & Polish** (Days 7-8)
    - Test complete workflow on tablet and mobile
    - Verify step navigation and validation
    - Test with checks containing many issues
@@ -1345,6 +1361,8 @@ Priority: **CRITICAL** - Must complete before new features
    - Verify accessibility (keyboard, screen reader)
 
 **Success Criteria**:
+- [ ] Page layouts optimized with reduced header/footer, maximizing checklist visibility
+- [ ] Progress indicator compact yet clear, not taking excessive vertical space
 - [ ] Progress indicator shows current step and completion percentage
 - [ ] Steps are clickable with validation preventing forward jumps
 - [ ] Checklist items display as attractive cards with icons
@@ -1394,6 +1412,13 @@ Priority: **CRITICAL** - Must complete before new features
 **Target State**: Interactive charts with drill-down, visual KPI cards, enhanced export options (PDF, Excel, images)
 
 **Steps**:
+0. **Optimize Page Layout for Maximum Data Visibility** (Day 1)
+   - Apply consistent header/footer reduction to reports pages
+   - Minimize title/page header space to maximize chart and table visibility
+   - Use compact filter controls and date pickers (inline, not taking full row)
+   - Principle: maximize data/chart visibility, minimize scrolling to see insights
+   - Ensure all controls remain accessible with 44px minimum touch targets
+
 1. **KPI Dashboard Cards** (Days 1-2)
    - Design large KPI cards showing key metrics
    - Total check-ins this month (with % change vs last month)
@@ -1404,7 +1429,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Add sparkline trend graphs on each card
    - Animate number count-up on page load
 
-2. **Interactive Charts** (Days 3-5)
+2. **Interactive Charts** (Days 2-4)
    - Implement using Chart.js or Recharts library
    - **Bar Chart**: Check-ins by day (last 30 days) with hover tooltips
    - **Line Chart**: Activity trends over time (last 6 months)
@@ -1415,7 +1440,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Add zoom and pan for time-series charts
    - Use RFS brand colors for chart elements
 
-3. **Data Tables Enhancement** (Day 6)
+3. **Data Tables Enhancement** (Day 5)
    - Redesign tables with alternating row colors
    - Add sortable columns (click header to sort)
    - Implement column filtering (search within column)
@@ -1425,7 +1450,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Implement responsive table (stack on mobile)
    - Add row selection checkboxes for bulk actions
 
-4. **Export Functionality** (Day 7)
+4. **Export Functionality** (Day 6)
    - Add export dropdown menu with multiple options
    - Export as PDF with RFS branding (logo, colors)
    - Export as Excel with formatted cells
@@ -1435,7 +1460,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Show export progress indicator
    - Success toast on completion with download link
 
-5. **Date Range Picker** (Day 8)
+5. **Date Range Picker** (Day 7)
    - Implement attractive date range selector
    - Preset ranges (Today, Last 7 Days, Last Month, Last Quarter, Last Year)
    - Custom range with calendar popup
@@ -1444,7 +1469,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Update all charts/tables when range changes
    - Add loading skeleton during data fetch
 
-6. **Testing & Performance** (Day 9)
+6. **Testing & Performance** (Days 8-9)
    - Test with large datasets (1000+ check-ins, 100+ members)
    - Verify chart rendering performance
    - Test export functionality for all formats
@@ -1453,6 +1478,8 @@ Priority: **CRITICAL** - Must complete before new features
    - Test in both light and dark modes
 
 **Success Criteria**:
+- [ ] Page layout optimized with compact headers, maximizing chart/table visibility
+- [ ] Filter controls compact and inline, not wasting vertical space
 - [ ] KPI cards display with gradient backgrounds and sparklines
 - [ ] Number count-up animation works on page load
 - [ ] Bar chart shows check-ins by day with hover tooltips
@@ -1505,6 +1532,13 @@ Priority: **CRITICAL** - Must complete before new features
 **Target State**: Modern admin dashboard with cards, improved forms, better data tables, and visual station status indicators
 
 **Steps**:
+0. **Optimize Admin Page Layouts for Data Density** (Day 1)
+   - Apply consistent header/footer reduction to all admin pages
+   - Minimize page titles and section headers to maximize data table/card visibility
+   - Use compact toolbars and action buttons (grouped, not spread out)
+   - Principle: maximize data density for admin tasks, minimize wasted space
+   - Ensure all controls remain accessible with 44px minimum touch targets
+
 1. **Station Management Dashboard** (Days 1-2)
    - Create dashboard overview with station statistics cards
    - Total stations count (with active/inactive breakdown)
@@ -1515,7 +1549,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Use gradient cards and large numbers
    - Add refresh button with timestamp
 
-2. **Station Cards Grid** (Days 3-4)
+2. **Station Cards Grid** (Days 2-3)
    - Redesign station list as card grid (not table)
    - Each card shows station name, location, member count, status
    - Add station status indicator (active, inactive, archived)
@@ -1526,7 +1560,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Add sorting options (by name, member count, activity)
    - Use card hover effects and transitions
 
-3. **Station Details View** (Day 5)
+3. **Station Details View** (Day 4)
    - Create dedicated station detail page
    - Show all station information in organized sections
    - Recent activity timeline (last 20 check-ins)
@@ -1536,7 +1570,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Edit button to modify station details
    - Archive/Delete station with confirmation dialog
 
-4. **Create/Edit Station Modal** (Day 6)
+4. **Create/Edit Station Modal** (Day 5)
    - Redesign modal with modern styling
    - Multi-step form (Station Info → Location → Settings → Review)
    - Progress indicator showing current step
@@ -1546,7 +1580,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Preview panel showing how station card will look
    - Save button with loading state
 
-5. **Brigade Access Page Enhancement** (Days 7-8)
+5. **Brigade Access Page Enhancement** (Days 6-7)
    - Redesign token cards with better visual hierarchy
    - Show token status (active, expired, revoked)
    - Add token usage statistics (times accessed, last used)
@@ -1557,7 +1591,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Create token audit log table (who generated, when, status changes)
    - Add export tokens list as CSV
 
-6. **Testing & Polish** (Day 9)
+6. **Testing & Polish** (Days 8-9)
    - Test with multiple stations (1, 10, 50)
    - Verify search/filter/sort functionality
    - Test create/edit station workflow
@@ -1567,6 +1601,8 @@ Priority: **CRITICAL** - Must complete before new features
    - Test in both light and dark modes
 
 **Success Criteria**:
+- [ ] Admin page layouts optimized with compact headers/toolbars maximizing data visibility
+- [ ] Action buttons grouped efficiently, not wasting horizontal/vertical space
 - [ ] Dashboard displays with statistics cards and quick actions
 - [ ] Station cards grid shows with status indicators
 - [ ] Search/filter/sort works smoothly
@@ -1621,6 +1657,13 @@ Priority: **CRITICAL** - Must complete before new features
 **Target State**: Visually impressive profile with animated achievements, activity timeline, personal statistics dashboard, and share functionality
 
 **Steps**:
+0. **Optimize Profile Page Layout for Content Focus** (Day 1)
+   - Apply consistent header/footer reduction to profile pages
+   - Minimize page header space, focus on profile content
+   - Use compact section headers and spacing
+   - Principle: maximize profile content visibility (achievements, stats, timeline)
+   - Ensure all interactive elements remain accessible with 44px minimum touch targets
+
 1. **Profile Header Enhancement** (Days 1-2)
    - Large avatar/initials circle with gradient border
    - Member name in prominent typography
@@ -1632,7 +1675,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Add profile banner background (gradient or RFS pattern)
    - Implement hover effects and subtle animations
 
-2. **Achievement Showcase** (Days 3-4)
+2. **Achievement Showcase** (Days 2-3)
    - Redesign achievement cards with 3D card effect
    - Display achievements in grid layout (3 per row on desktop, 2 on tablet, 1 on mobile)
    - Show locked achievements as greyed-out with "locked" icon
@@ -1644,7 +1687,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Add filter/sort options (all, locked, unlocked, recent)
    - Use Framer Motion for card flip and unlock animations
 
-3. **Activity Timeline** (Days 5-6)
+3. **Activity Timeline** (Days 4-5)
    - Create visual timeline of recent activities
    - Show last 20 check-ins with timestamps
    - Display activity type icon and name
@@ -1655,7 +1698,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Highlight special events (first check-in, milestone hours, etc.)
    - Use alternating side layout for visual interest
 
-4. **Personal Statistics Dashboard** (Day 7)
+4. **Personal Statistics Dashboard** (Day 6)
    - Create statistics section with KPI cards
    - Total check-ins (with rank among all members)
    - Total hours contributed (with monthly breakdown chart)
@@ -1667,7 +1710,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Add sparkline charts showing trends
    - Use gradient cards and large numbers
 
-5. **Share Functionality** (Day 8)
+5. **Share Functionality** (Day 7)
    - Add "Share Profile" button
    - Generate shareable profile card image (PNG)
    - Include member name, avatar, achievements, hours
@@ -1676,7 +1719,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Add share buttons for social media (optional)
    - Show preview before sharing
 
-6. **Testing & Polish** (Day 9)
+6. **Testing & Polish** (Days 8-9)
    - Test with profiles having many achievements (15+)
    - Test with long activity histories (100+ check-ins)
    - Verify achievement unlock animations
@@ -1686,6 +1729,7 @@ Priority: **CRITICAL** - Must complete before new features
    - Test in both light and dark modes
 
 **Success Criteria**:
+- [ ] Profile page layout optimized with compact headers, maximizing content visibility
 - [ ] Profile header displays with gradient border and badges
 - [ ] Avatar/initials large and prominent
 - [ ] Membership duration and hours prominently displayed
@@ -1739,6 +1783,13 @@ Priority: **CRITICAL** - Must complete before new features
 **Target State**: WCAG 2.1 AA compliant with comprehensive ARIA labels, full keyboard navigation, screen reader announcements, and high contrast mode support
 
 **Steps**:
+0. **Space Optimization Considerations** (Throughout)
+   - Maintain reduced header/footer heights from previous issues
+   - Ensure all accessibility improvements (focus indicators, labels) don't add unnecessary vertical space
+   - Skip-to-content links should not take visible space when not focused
+   - Focus indicators should be outlines, not padding/margin that expands elements
+   - Keyboard shortcuts and accessibility features must work with compact layouts
+
 1. **ARIA Label Audit** (Days 1-2)
    - Audit all pages for missing ARIA labels
    - Identify all icon-only buttons and add aria-label
@@ -1875,6 +1926,14 @@ Priority: **CRITICAL** - Must complete before new features
 **Target State**: Full touch gesture support (swipe, pull-to-refresh), haptic feedback, floating action buttons, and optimized mobile workflows
 
 **Steps**:
+0. **Mobile Space Optimization** (Day 1)
+   - Maintain reduced header/footer from previous issues on mobile
+   - Use compact mobile toolbars and navigation
+   - FABs should be positioned to not cover content when page is scrolled to top
+   - Pull-to-refresh indicator compact, not taking permanent screen space
+   - Collapsible sections help maximize content visibility
+   - Principle: mobile screens are smaller, maximize every pixel of content
+
 1. **Swipe Gesture Library Integration** (Day 1)
    - Install react-swipeable or use-gesture library
    - Configure swipe thresholds (min distance, velocity)
@@ -1967,6 +2026,9 @@ Priority: **CRITICAL** - Must complete before new features
     - Adjust thresholds and sensitivities based on feedback
 
 **Success Criteria**:
+- [ ] Mobile layouts maintain compact headers/footers maximizing content area
+- [ ] FABs positioned to not block content unnecessarily
+- [ ] Collapsible sections reduce scrolling on mobile
 - [ ] Swipe right on member card checks in with feedback
 - [ ] Swipe left on member card opens profile
 - [ ] Visual feedback shows during swipe
@@ -2024,6 +2086,13 @@ Priority: **CRITICAL** - Must complete before new features
 **Target State**: Smooth fade/slide transitions between routes, entrance animations for components, exit animations, and delightful micro-interactions throughout
 
 **Steps**:
+0. **Animation Performance and Space** (Throughout)
+   - Animations must not add to element dimensions or layout shift
+   - Use transform/opacity for animations (no layout changes)
+   - Maintain compact layouts from previous issues - animations enhance, don't expand
+   - Ensure animations don't cause content jumping or space wastage
+   - All animations should feel fast and responsive (200-300ms max)
+
 1. **Framer Motion Setup & Route Transitions** (Days 1-2)
    - Install framer-motion (if not already installed)
    - Wrap React Router Routes with AnimatePresence
@@ -2175,6 +2244,13 @@ Priority: **CRITICAL** - Must complete before new features
 **Target State**: Skeleton screens matching actual content layout, smooth transitions from skeleton to real content, progressive loading indicators
 
 **Steps**:
+0. **Skeleton Screen Space Efficiency** (Throughout)
+   - Skeleton screens must match exact dimensions of real content (no layout shift)
+   - Use compact skeleton layouts matching the reduced headers/footers from previous issues
+   - Shimmer animation via CSS transform (no layout impact)
+   - Skeleton components should not add extra padding or spacing
+   - Progressive loading prevents wasted space (load and show immediately)
+
 1. **Skeleton Screen Design System** (Days 1-2)
    - Design skeleton components matching main UI patterns
    - Create skeleton variants for:
