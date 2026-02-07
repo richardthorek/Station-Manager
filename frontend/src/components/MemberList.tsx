@@ -191,8 +191,14 @@ export function MemberList({
       }
     };
 
+    // Skip the initial API call when nothing is filtered/sorted to avoid extra burst
+    const isDefaultQuery = !debouncedSearchTerm && filter === 'all' && sort === 'default';
+    if (isDefaultQuery && filteredMembers.length === initialMembers.length && filteredMembers.length > 0) {
+      return;
+    }
+
     fetchMembers();
-  }, [debouncedSearchTerm, filter, sort, initialMembers]);
+  }, [debouncedSearchTerm, filter, sort, initialMembers, filteredMembers.length]);
 
   // Apply letter filter locally (after API filtering)
   // Also apply partitioning: active members (within last year) at top, inactive at bottom

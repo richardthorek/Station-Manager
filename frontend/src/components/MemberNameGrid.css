@@ -311,17 +311,76 @@
 }
 
 .member-rank-badge {
-  display: inline-block;
-  padding: 3px 8px;
-  background: var(--color-gray-light);
-  border: 1px solid var(--color-gray-medium);
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   align-self: flex-start;
+  margin-left: 4px;
+}
+
+.member-rank-helmet {
+  width: 14px;
+  height: 14px;
+  border-radius: 50% 50% 0 0;
+  position: relative;
+  flex-shrink: 0;
+  border: 1.5px solid #ddd;
+  background: white;
+}
+
+/* Helmet color variants (mirrors current event view) */
+.helmet-white {
+  background: white;
+  border-color: #ddd;
+}
+
+.helmet-red {
+  background: #E2231A;
+  border-color: #a51912;
+}
+
+.helmet-red-white-stripes {
+  background: linear-gradient(
+    to bottom,
+    #E2231A 0%,
+    #E2231A 30%,
+    white 30%,
+    white 35%,
+    #E2231A 35%,
+    #E2231A 50%,
+    white 50%,
+    white 55%,
+    #E2231A 55%,
+    #E2231A 100%
+  );
+  border-color: #a51912;
+}
+
+.helmet-white-red-stripe {
+  background: linear-gradient(
+    to bottom,
+    white 0%,
+    white 42%,
+    #E2231A 42%,
+    #E2231A 58%,
+    white 58%,
+    white 100%
+  );
+  border-color: #ddd;
+}
+
+.helmet-orange {
+  background: #FF6B00;
+  border-color: #cc5500;
 }
 
 .member-name-btn:hover {
@@ -348,8 +407,16 @@
 }
 
 .member-name-btn.signed-in .member-rank-badge {
-  background: rgba(0, 0, 0, 0.1);
-  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #000000;
+}
+
+.member-name-btn.signed-in .member-rank-helmet {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.member-name-btn.signed-in .member-rank-label {
   color: #000000;
 }
 

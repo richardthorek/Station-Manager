@@ -8,6 +8,7 @@ interface MemberNameGridProps {
   selectedEventId: string | null;
   onSelectEvent: (eventId: string) => void;
   onCheckIn: (memberId: string) => void;
+  onCheckOut?: (memberId: string) => void;
   onStartNewEvent: () => void;
   onEndEvent: (eventId: string) => void;
   onCollapse: () => void;
@@ -19,6 +20,7 @@ export function MemberNameGrid({
   selectedEventId,
   onSelectEvent,
   onCheckIn,
+  onCheckOut,
   onStartNewEvent,
   onEndEvent,
   onCollapse,
@@ -37,6 +39,27 @@ export function MemberNameGrid({
     if (!event) return new Set<string>();
     return new Set(event.participants.map(p => p.memberId));
   }, [events, selectedEventId]);
+
+  const getRankHelmetClass = (rank: string | null | undefined) => {
+    if (!rank) return 'helmet-white';
+    const normalizedRank = rank.toLowerCase().trim();
+
+    if (normalizedRank === 'captain') return 'helmet-red';
+    if (normalizedRank === 'senior deputy captain') return 'helmet-red-white-stripes';
+    if (normalizedRank === 'deputy captain') return 'helmet-white-red-stripe';
+
+    if (
+      normalizedRank === 'group officer' ||
+      normalizedRank === 'deputy group officer' ||
+      normalizedRank === 'operational officer' ||
+      normalizedRank === 'inspector' ||
+      normalizedRank === 'superintendent'
+    ) {
+      return 'helmet-orange';
+    }
+
+    return 'helmet-white';
+  };
 
   // Filter and sort members
   const displayedMembers = useMemo(() => {
@@ -157,13 +180,21 @@ export function MemberNameGrid({
                   <button
                     key={member.id}
                     className={`member-name-btn ${isSignedIn ? 'signed-in' : ''}`}
-                    onClick={() => onCheckIn(member.id)}
+                    onClick={() => (isSignedIn && onCheckOut ? onCheckOut(member.id) : onCheckIn(member.id))}
                     aria-label={`${member.name}${isSignedIn ? ' (signed in)' : ''}`}
                     aria-pressed={isSignedIn}
                   >
                     <div className="member-card-content">
                       <span className="member-name-text">{member.name}</span>
-                      {member.rank && <span className="member-rank-badge">{member.rank}</span>}
+                      {member.rank && (
+                        <span className="member-rank-badge">
+                          <span
+                            className={`member-rank-helmet ${getRankHelmetClass(member.rank)}`}
+                            role="img"
+                            aria-label={member.rank}
+                          ></span>
+                        </span>
+                      )}
                     </div>
                     {isSignedIn && <span className="check-mark" aria-hidden="true">✓</span>}
                   </button>

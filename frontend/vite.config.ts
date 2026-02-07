@@ -66,6 +66,8 @@ export default defineConfig({
       workbox: {
         // Cache all static assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // Ensure dev builds with minimal assets don't warn by allowing the generated SW bundle
+        globIgnores: ['**/node_modules/**/*'],
         // Network-first strategy for API calls
         runtimeCaching: [
           {
