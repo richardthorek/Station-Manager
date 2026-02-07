@@ -910,9 +910,6 @@ class ApiService {
 
   async getCrossStationEventStatistics(stationIds: string[], startDate: string, endDate: string): Promise<{
     startDate: string;
-    const response = await fetch(`${API_BASE_URL}/reports/cross-station/event-statistics?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`, {
-      headers: this.getHeaders(),
-    });
     stationIds: string[];
     statistics: Record<string, {
       totalEvents: number;
@@ -924,7 +921,9 @@ class ApiService {
     }>;
   }> {
     const idsParam = stationIds.join(',');
-    const response = await fetch(`${API_BASE_URL}/reports/cross-station/event-statistics?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`);
+    const response = await fetch(`${API_BASE_URL}/reports/cross-station/event-statistics?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) throw new Error('Failed to fetch cross-station event statistics');
     return response.json();
   }
