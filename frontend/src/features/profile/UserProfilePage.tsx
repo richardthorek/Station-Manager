@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/Header';
 import { AchievementGrid } from '../../components/AchievementBadge';
+import { PageTransition } from '../../components/PageTransition';
 import { api } from '../../services/api';
 import { useSocket } from '../../hooks/useSocket';
 import type { Member, CheckIn, Activity } from '../../types';
@@ -286,7 +287,8 @@ export function UserProfilePage() {
   }
 
   return (
-    <div className="app profile-app">
+    <PageTransition variant="slideFromBottom">
+      <div className="app profile-app">
       <Header isConnected={isConnected} databaseStatus={databaseStatus} />
       
       <main className="main-content profile-main">
@@ -633,5 +635,6 @@ export function UserProfilePage() {
         </div>
       </main>
     </div>
+    </PageTransition>
   );
 }

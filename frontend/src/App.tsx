@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { StationProvider } from './contexts/StationContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { DemoLandingPrompt } from './components/DemoLandingPrompt';
@@ -26,6 +27,35 @@ const ReportsPage = lazy(() => import('./features/reports/ReportsPage').then(m =
 const CrossStationReportsPage = lazy(() => import('./features/reports/CrossStationReportsPage').then(m => ({ default: m.CrossStationReportsPage })));
 const StationManagementPage = lazy(() => import('./features/admin/stations/StationManagementPage').then(m => ({ default: m.StationManagementPage })));
 const BrigadeAccessPage = lazy(() => import('./features/admin/brigade-access/BrigadeAccessPage').then(m => ({ default: m.BrigadeAccessPage })));
+
+/**
+ * AnimatedRoutes component - handles route transitions
+ * Separated to allow useLocation hook inside Router context
+ */
+function AnimatedRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/sign-in" element={<SignInLinkPage />} />
+        <Route path="/profile/:memberId" element={<UserProfilePage />} />
+        <Route path="/truckcheck" element={<TruckCheckPage />} />
+        <Route path="/truckcheck/check/:applianceId" element={<CheckWorkflowPage />} />
+        <Route path="/truckcheck/summary/:runId" element={<CheckSummaryPage />} />
+        <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
+        <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
+        <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
+        <Route path="/admin/stations" element={<StationManagementPage />} />
+        <Route path="/admin/brigade-access" element={<BrigadeAccessPage />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
 
 function App() {
   const [showDemoPrompt, setShowDemoPrompt] = useState(false);
@@ -57,22 +87,7 @@ function App() {
             <DemoLandingPrompt onDismiss={() => setShowDemoPrompt(false)} />
           )}
           <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/signin" element={<SignInPage />} />
-              <Route path="/sign-in" element={<SignInLinkPage />} />
-              <Route path="/profile/:memberId" element={<UserProfilePage />} />
-              <Route path="/truckcheck" element={<TruckCheckPage />} />
-              <Route path="/truckcheck/check/:applianceId" element={<CheckWorkflowPage />} />
-              <Route path="/truckcheck/summary/:runId" element={<CheckSummaryPage />} />
-              <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
-              <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
-              <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
-              <Route path="/admin/stations" element={<StationManagementPage />} />
-              <Route path="/admin/brigade-access" element={<BrigadeAccessPage />} />
-            </Routes>
+            <AnimatedRoutes />
           </Suspense>
         </ToastProvider>
       </StationProvider>

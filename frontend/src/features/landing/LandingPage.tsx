@@ -11,16 +11,24 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useTheme } from '../../hooks/useTheme';
 import { OnboardingWizard } from '../../components/OnboardingWizard';
+import { PageTransition } from '../../components/PageTransition';
+import { staggerVariants, getVariants, getTransition, transitions } from '../../utils/animations';
 import './LandingPage.css';
 
 export function LandingPage() {
   const { theme, toggleTheme } = useTheme();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  const containerVariants = getVariants(staggerVariants.container);
+  const itemVariants = getVariants(staggerVariants.item);
+  const itemTransition = getTransition(transitions.standard);
+
   return (
-    <div className="landing-page">
+    <PageTransition variant="fade">
+      <div className="landing-page">
       <header className="landing-header">
         <div className="header-content">
           <div className="header-title-row">
@@ -63,8 +71,17 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="cards-grid">
-          <article className="feature-card">
+        <motion.section
+          className="cards-grid"
+          variants={containerVariants}
+          initial="initial"
+          animate="animate"
+        >
+          <motion.article
+            className="feature-card"
+            variants={itemVariants}
+            transition={itemTransition}
+          >
             <div className="feature-icon" aria-hidden="true">🔥</div>
             <h3>Station Sign-In</h3>
             <p>Quick and easy member check-in/out with activity tracking. Real-time updates across all devices.</p>
@@ -72,9 +89,13 @@ export function LandingPage() {
               Go to Sign-In
               <span className="arrow" aria-hidden="true">→</span>
             </Link>
-          </article>
+          </motion.article>
 
-          <article className="feature-card">
+          <motion.article
+            className="feature-card"
+            variants={itemVariants}
+            transition={itemTransition}
+          >
             <div className="feature-icon" aria-hidden="true">🚛</div>
             <h3>Truck Check</h3>
             <p>Vehicle maintenance tracking and inspection checklist system.</p>
@@ -82,9 +103,13 @@ export function LandingPage() {
               Go to Truck Checks
               <span className="arrow" aria-hidden="true">→</span>
             </Link>
-          </article>
+          </motion.article>
 
-          <article className="feature-card">
+          <motion.article
+            className="feature-card"
+            variants={itemVariants}
+            transition={itemTransition}
+          >
             <div className="feature-icon" aria-hidden="true">📊</div>
             <h3>Reports & Analytics</h3>
             <p>Historical reporting, analytics, and data export capabilities.</p>
@@ -92,9 +117,13 @@ export function LandingPage() {
               Go to Reports
               <span className="arrow" aria-hidden="true">→</span>
             </Link>
-          </article>
+          </motion.article>
 
-          <article className="feature-card">
+          <motion.article
+            className="feature-card"
+            variants={itemVariants}
+            transition={itemTransition}
+          >
             <div className="feature-icon" aria-hidden="true">⚙️</div>
             <h3>Station Management</h3>
             <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
@@ -108,21 +137,33 @@ export function LandingPage() {
                 <span className="arrow" aria-hidden="true">→</span>
               </Link>
             </div>
-          </article>
+          </motion.article>
 
-          <article className="info-card">
+          <motion.article
+            className="info-card"
+            variants={itemVariants}
+            transition={itemTransition}
+          >
             <h3>Multi-Device Support</h3>
             <p>Access from kiosks, mobile phones, tablets, or via QR codes</p>
-          </article>
-          <article className="info-card">
+          </motion.article>
+          <motion.article
+            className="info-card"
+            variants={itemVariants}
+            transition={itemTransition}
+          >
             <h3>Real-Time Sync</h3>
             <p>Changes appear instantly across all connected devices</p>
-          </article>
-          <article className="info-card">
+          </motion.article>
+          <motion.article
+            className="info-card"
+            variants={itemVariants}
+            transition={itemTransition}
+          >
             <h3>Professional Branding</h3>
             <p>Clean, modern design suitable for any fire service</p>
-          </article>
-        </section>
+          </motion.article>
+        </motion.section>
       </main>
 
       <footer className="landing-footer">
@@ -145,9 +186,10 @@ export function LandingPage() {
         </p>
       </footer>
 
-      {showOnboarding && (
-        <OnboardingWizard onClose={() => setShowOnboarding(false)} />
-      )}
-    </div>
+        {showOnboarding && (
+          <OnboardingWizard onClose={() => setShowOnboarding(false)} />
+        )}
+      </div>
+    </PageTransition>
   );
 }
