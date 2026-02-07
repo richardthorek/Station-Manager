@@ -110,8 +110,18 @@ export function ExportData() {
     <div className="export-data">
       <h3>📊 Export Data</h3>
       
-      {error && <div className="export-error">{error}</div>}
-      {success && <div className="export-success">{success}</div>}
+      {error && (
+        <div className="export-error" role="alert">
+          <span aria-hidden="true">❌ </span>
+          <span>Error: {error}</span>
+        </div>
+      )}
+      {success && (
+        <div className="export-success" role="status">
+          <span aria-hidden="true">✅ </span>
+          <span>Success: {success}</span>
+        </div>
+      )}
       
       <div className="export-section">
         <div className="export-group">
