@@ -12,6 +12,13 @@
 # - Separate handling of production and development dependencies
 # - Security-focused patch updates
 # - Version pinning strategies to minimize breaking changes
+# - ESLint ecosystem coordination to prevent incompatible updates
+#
+# ESLint Ecosystem Strategy:
+# The ESLint toolchain (eslint, @eslint/js, typescript-eslint, and plugins)
+# must be updated together to maintain compatibility. Major version updates
+# are blocked for automated updates and must be done manually after verifying
+# that all tools support the new version.
 
 version: 2
 
@@ -108,11 +115,38 @@ updates:
           - "react-router*"
           - "framer-motion"
           - "socket.io-client"
+      # ESLint ecosystem - these must be updated together to maintain compatibility
+      # Includes: eslint, @eslint/js, typescript-eslint, and eslint plugins
+      eslint-ecosystem:
+        dependency-type: "development"
+        patterns:
+          - "eslint"
+          - "@eslint/*"
+          - "typescript-eslint"
+          - "eslint-plugin-*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
       # Development dependency updates (build tools, testing, etc)
+      # Excludes ESLint ecosystem packages to prevent incompatible updates
       development:
         dependency-type: "development"
+        exclude-patterns:
+          - "eslint"
+          - "@eslint/*"
+          - "typescript-eslint"
+          - "eslint-plugin-*"
     # Versioning strategy: increase for apps (frontend is a React SPA)
     versioning-strategy: "increase"
+    # Ignore major version updates for ESLint packages that require ecosystem coordination
+    # Major updates (e.g., eslint v10) must be done manually to ensure all tools are compatible
+    ignore:
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript-eslint"
+        update-types: ["version-update:semver-major"]
 
   # ================================
   # Root workspace npm dependencies
