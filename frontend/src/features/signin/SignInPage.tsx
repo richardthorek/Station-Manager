@@ -15,7 +15,7 @@
  * Real-time synchronization ensures all connected devices see updates instantly.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from '../../components/Header';
 import { EventLog } from '../../components/EventLog';
 import { CurrentEventParticipants } from '../../components/CurrentEventParticipants';
@@ -24,7 +24,9 @@ import { UserManagement } from '../../components/UserManagement';
 import { BulkImportModal } from '../../components/BulkImportModal';
 import { NewEventModal } from '../../components/NewEventModal';
 import { ExportData } from '../../components/ExportData';
+import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { useSocket } from '../../hooks/useSocket';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { api } from '../../services/api';
 import { announce } from '../../utils/announcer';
 import type { Member, Activity, EventWithParticipants } from '../../types';
@@ -48,6 +50,8 @@ export function SignInPage() {
     databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
   } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   const { isConnected, emit, on, off } = useSocket();
 
@@ -372,6 +376,33 @@ export function SignInPage() {
   // Get participants signed into selected event to highlight in member list
   const activeParticipantIds = selectedEvent?.participants.map(p => p.memberId) || [];
 
+  // Handle pull-to-refresh on main content
+  const handlePullToRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        loadMembers(),
+        loadEvents(true),
+      ]);
+      announce('Content refreshed');
+    } catch (err) {
+      console.error('Error refreshing:', err);
+      announce('Failed to refresh content');
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  }, [isRefreshing]);
+
+  // Pull-to-refresh handlers
+  const pullToRefreshHandlers = usePullToRefresh({
+    onRefresh: handlePullToRefresh,
+    threshold: 80,
+    resistance: 2.5,
+    enableHaptic: true,
+  });
+
   if (loading) {
     return (
       <div className="app">
@@ -411,8 +442,19 @@ export function SignInPage() {
           if (name) handleCreateActivity(name);
         }}
       />
-      
-      <main className="main-content">
+
+      <main
+        ref={mainContentRef}
+        className="main-content"
+        {...pullToRefreshHandlers}
+      >
+        {isRefreshing && (
+          <div className="pull-to-refresh-indicator">
+            <div className="spinner"></div>
+            <span>Refreshing...</span>
+          </div>
+        )}
+
         {showExportData && (
           <div className="export-data-section">
             <ExportData />
@@ -489,6 +531,23 @@ export function SignInPage() {
         onClose={() => setShowNewEventModal(false)}
         onCreate={handleCreateEvent}
         onDeleteActivity={handleDeleteActivity}
+      />
+
+      {/* Floating Action Buttons */}
+      <FloatingActionButton
+        icon="+"
+        onClick={() => setShowUserManagement(true)}
+        ariaLabel="Add new member"
+        position="bottom-right"
+        scrollContainerRef={mainContentRef}
+      />
+
+      <FloatingActionButton
+        icon="📅"
+        onClick={() => setShowNewEventModal(true)}
+        ariaLabel="Create new event"
+        position="bottom-left"
+        scrollContainerRef={mainContentRef}
       />
     </div>
   );

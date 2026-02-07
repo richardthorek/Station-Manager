@@ -18,6 +18,48 @@
   width: 100%;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+}
+
+/* Pull-to-refresh indicator */
+.pull-to-refresh-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  animation: slideDownFade 0.3s ease-out;
+}
+
+.pull-to-refresh-indicator .spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+  border-top-color: var(--rfs-white);
+}
+
+.pull-to-refresh-indicator span {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* Export Data Section */

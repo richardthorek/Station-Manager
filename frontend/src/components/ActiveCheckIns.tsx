@@ -1,13 +1,16 @@
 import type { CheckInWithDetails } from '../types';
 import './ActiveCheckIns.css';
 import { ActivityTag } from './ActivityTag';
+import { CollapsibleSection } from './CollapsibleSection';
 
 interface ActiveCheckInsProps {
   checkIns: CheckInWithDetails[];
   onUndo: (memberId: string) => void;
+  /** Whether to wrap in collapsible section (default: false) */
+  collapsible?: boolean;
 }
 
-export function ActiveCheckIns({ checkIns, onUndo }: ActiveCheckInsProps) {
+export function ActiveCheckIns({ checkIns, onUndo, collapsible = false }: ActiveCheckInsProps) {
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', {
@@ -29,10 +32,8 @@ export function ActiveCheckIns({ checkIns, onUndo }: ActiveCheckInsProps) {
     }
   };
 
-  return (
-    <div className="active-checkins card">
-      <h2>Currently Signed In ({checkIns.length})</h2>
-      
+  const content = (
+    <>
       {checkIns.length === 0 ? (
         <div className="empty-state">
           <p>No one is currently signed in</p>
@@ -59,6 +60,7 @@ export function ActiveCheckIns({ checkIns, onUndo }: ActiveCheckInsProps) {
                   className="undo-btn"
                   onClick={() => onUndo(checkIn.memberId)}
                   title="Undo check-in"
+                  aria-label={`Undo check-in for ${checkIn.memberName}`}
                 >
                   ↩️
                 </button>
@@ -67,6 +69,28 @@ export function ActiveCheckIns({ checkIns, onUndo }: ActiveCheckInsProps) {
           ))}
         </div>
       )}
+    </>
+  );
+
+  if (collapsible) {
+    return (
+      <div className="active-checkins card">
+        <CollapsibleSection
+          title="Currently Signed In"
+          badgeCount={checkIns.length}
+          storageKey="activeCheckIns.expanded"
+          defaultExpanded={true}
+        >
+          {content}
+        </CollapsibleSection>
+      </div>
+    );
+  }
+
+  return (
+    <div className="active-checkins card">
+      <h2>Currently Signed In ({checkIns.length})</h2>
+      {content}
     </div>
   );
 }
