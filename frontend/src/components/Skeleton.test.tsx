@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Skeleton, SkeletonCard, SkeletonList, SkeletonTable } from './Skeleton';
+import {
+  Skeleton,
+  SkeletonCard,
+  SkeletonList,
+  SkeletonTable,
+  SkeletonMemberCard,
+  SkeletonEventCard,
+  SkeletonProfile,
+  SkeletonReportCard,
+} from './Skeleton';
 
 describe('Skeleton', () => {
   it('renders single skeleton with default variant', () => {
@@ -101,5 +110,59 @@ describe('SkeletonTable', () => {
     
     expect(rows).toHaveLength(3);
     expect(firstRowCells).toHaveLength(4);
+  });
+});
+
+describe('SkeletonMemberCard', () => {
+  it('renders member card skeleton with default count', () => {
+    const { container } = render(<SkeletonMemberCard />);
+    expect(container.querySelector('.skeleton-member-grid')).toBeInTheDocument();
+    const cards = container.querySelectorAll('.skeleton-member-card');
+    expect(cards).toHaveLength(6);
+  });
+
+  it('renders member card skeleton with custom count', () => {
+    const { container } = render(<SkeletonMemberCard count={4} />);
+    const cards = container.querySelectorAll('.skeleton-member-card');
+    expect(cards).toHaveLength(4);
+  });
+});
+
+describe('SkeletonEventCard', () => {
+  it('renders event card skeleton with default count', () => {
+    const { container } = render(<SkeletonEventCard />);
+    expect(container.querySelector('.skeleton-event-list')).toBeInTheDocument();
+    const cards = container.querySelectorAll('.skeleton-event-card');
+    expect(cards).toHaveLength(2);
+  });
+
+  it('renders event card skeleton with custom count', () => {
+    const { container } = render(<SkeletonEventCard count={3} />);
+    const cards = container.querySelectorAll('.skeleton-event-card');
+    expect(cards).toHaveLength(3);
+  });
+});
+
+describe('SkeletonProfile', () => {
+  it('renders profile skeleton with correct structure', () => {
+    const { container } = render(<SkeletonProfile />);
+    expect(container.querySelector('.skeleton-profile')).toBeInTheDocument();
+    expect(container.querySelector('.skeleton-profile-header')).toBeInTheDocument();
+    expect(container.querySelector('.skeleton-profile-stats')).toBeInTheDocument();
+  });
+});
+
+describe('SkeletonReportCard', () => {
+  it('renders report card skeleton with default count', () => {
+    const { container } = render(<SkeletonReportCard />);
+    expect(container.querySelector('.skeleton-reports-grid')).toBeInTheDocument();
+    const cards = container.querySelectorAll('.skeleton-report-card');
+    expect(cards).toHaveLength(4);
+  });
+
+  it('renders report card skeleton with custom count', () => {
+    const { container } = render(<SkeletonReportCard count={6} />);
+    const cards = container.querySelectorAll('.skeleton-report-card');
+    expect(cards).toHaveLength(6);
   });
 });

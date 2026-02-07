@@ -132,8 +132,10 @@ describe('ReportsPage', () => {
 
   it('should show loading state initially', () => {
     renderReportsPage();
-    
-    expect(screen.getByText('Loading reports...')).toBeInTheDocument();
+
+    // Check for skeleton loading indicators instead of text
+    expect(screen.getByLabelText('Loading statistics')).toBeInTheDocument();
+    expect(screen.getByLabelText('Loading charts')).toBeInTheDocument();
   });
 
   it('should fetch and display all reports', async () => {
