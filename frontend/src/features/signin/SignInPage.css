@@ -68,6 +68,12 @@
   flex-shrink: 0;
 }
 
+/* Member Name Grid takes full space when active events exist */
+.member-name-grid-container {
+  flex: 1;
+  min-height: 0;
+}
+
 .content-grid {
   display: grid;
   grid-template-columns: 400px 1fr 400px;
