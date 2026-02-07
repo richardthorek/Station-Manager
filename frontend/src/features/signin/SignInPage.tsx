@@ -31,6 +31,7 @@ import { ExportData } from '../../components/ExportData';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { PageTransition } from '../../components/PageTransition';
+import { SkeletonMemberCard, SkeletonEventCard } from '../../components/Skeleton';
 import { useSocket } from '../../hooks/useSocket';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { useToast } from '../../hooks/useToast';
@@ -484,10 +485,19 @@ export function SignInPage() {
     return (
       <div className="app">
         <Header isConnected={isConnected} databaseStatus={databaseStatus} />
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Loading Station Manager...</p>
-        </div>
+        <main className="main-content">
+          <div className="signin-page-skeleton">
+            {/* Events skeleton */}
+            <section className="events-section" aria-label="Events loading">
+              <SkeletonEventCard count={2} />
+            </section>
+
+            {/* Members skeleton */}
+            <section className="members-section" aria-label="Members loading">
+              <SkeletonMemberCard count={6} />
+            </section>
+          </div>
+        </main>
       </div>
     );
   }
