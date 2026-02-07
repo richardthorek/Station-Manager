@@ -14,6 +14,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
 import type { Member } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { announce } from '../utils/announcer';
 import './BulkImportModal.css';
 
 interface BulkImportModalProps {
@@ -206,6 +207,7 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
     
     if (validMembers.length === 0) {
       alert('No valid members to import');
+      announce('Error: No valid members to import', 'assertive');
       return;
     }
 
@@ -221,6 +223,15 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
       const result = await onImport(membersToImport);
       setImportResult(result);
       
+      // Announce import results to screen readers
+      if (result.successCount > 0 && result.failureCount === 0) {
+        announce(`Success: ${result.successCount} member${result.successCount !== 1 ? 's' : ''} imported successfully`, 'assertive');
+      } else if (result.successCount > 0 && result.failureCount > 0) {
+        announce(`Import complete: ${result.successCount} succeeded, ${result.failureCount} failed`, 'assertive');
+      } else {
+        announce(`Error: Import failed for all ${result.failureCount} members`, 'assertive');
+      }
+      
       if (result.failureCount === 0) {
         // All successful, close after a short delay
         setTimeout(() => {
@@ -229,7 +240,9 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
       }
     } catch (error) {
       console.error('Import failed:', error);
-      alert('Import failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      const errorMsg = 'Import failed: ' + (error instanceof Error ? error.message : 'Unknown error');
+      announce(`Error: ${errorMsg}`, 'assertive');
+      alert(errorMsg);
     } finally {
       setImporting(false);
     }

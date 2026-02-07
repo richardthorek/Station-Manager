@@ -75,7 +75,7 @@ export function CheckSummaryPage() {
           <Link to="/truckcheck" className="back-link">← Back</Link>
           <h1>Error</h1>
         </header>
-        <main className="summary-main">
+        <main className="summary-main" id="main-content" tabIndex={-1}>
           <div className="error">{error || 'Failed to load check run'}</div>
         </main>
       </div>
@@ -99,7 +99,7 @@ export function CheckSummaryPage() {
         <p className="subtitle">{checkRun.applianceName}</p>
       </header>
 
-      <main className="summary-main">
+      <main className="summary-main" id="main-content" tabIndex={-1}>
         <div className="summary-card">
           <div className="summary-stats">
             <div className="stat done">

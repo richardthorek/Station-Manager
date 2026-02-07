@@ -5,11 +5,14 @@
  * - Pre-populated form
  * - Validation
  * - Save/cancel actions
+ * - Focus trap for keyboard accessibility
+ * - Escape key to close
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
 import type { Station } from '../../../types';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import './EditStationModal.css';
 
 interface EditStationModalProps {
@@ -38,6 +41,21 @@ export function EditStationModal({ station, onClose, onUpdated }: EditStationMod
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalRef = useFocusTrap<HTMLDivElement>(true);
+
+  /**
+   * Handle Escape key to close modal
+   */
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isSubmitting, onClose]);
 
   /**
    * Handle field change
@@ -154,14 +172,22 @@ export function EditStationModal({ station, onClose, onUpdated }: EditStationMod
   };
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content edit-station-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={handleClose} role="presentation">
+      <div 
+        ref={modalRef}
+        className="modal-content edit-station-modal" 
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-station-title"
+      >
         <div className="modal-header">
-          <h2>Edit Station</h2>
+          <h2 id="edit-station-title">Edit Station</h2>
           <button
+            type="button"
             onClick={handleClose}
             className="close-button"
-            aria-label="Close"
+            aria-label="Close dialog"
             disabled={isSubmitting}
           >
             ✕

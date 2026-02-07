@@ -75,12 +75,12 @@ export function SignInLinkPage() {
     return (
       <div className="app">
         <Header isConnected={isConnected} databaseStatus={databaseStatus} />
-        <div className="signin-link-container">
+        <main className="signin-link-container" id="main-content" tabIndex={-1}>
           <div className="signin-link-content">
             <div className="spinner"></div>
             <h2>Processing Check-In...</h2>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export function SignInLinkPage() {
     <div className="app">
       <Header isConnected={isConnected} databaseStatus={databaseStatus} />
       
-      <div className="signin-link-container">
+      <main className="signin-link-container" id="main-content" tabIndex={-1}>
         <div className="signin-link-content">
           {status === 'success' && (
             <div className="status-icon success">✓</div>
@@ -123,7 +123,7 @@ export function SignInLinkPage() {
             </button>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

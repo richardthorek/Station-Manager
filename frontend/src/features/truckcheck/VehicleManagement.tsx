@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import type { Appliance, ChecklistTemplate, ChecklistItem } from '../../types';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import './VehicleManagement.css';
 
 interface VehicleManagementProps {
@@ -19,6 +20,23 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const modalRef = useFocusTrap<HTMLDivElement>(showVehicleModal);
+
+  /**
+   * Handle Escape key to close modal
+   */
+  useEffect(() => {
+    if (!showVehicleModal) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !uploading) {
+        setShowVehicleModal(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showVehicleModal, uploading]);
 
   function handleNewVehicle() {
     setSelectedVehicle(null);
@@ -222,9 +240,16 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
 
       {/* Vehicle Modal */}
       {showVehicleModal && (
-        <div className="modal-overlay" onClick={() => setShowVehicleModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{isEditMode ? 'Edit Vehicle' : 'Add New Vehicle'}</h2>
+        <div className="modal-overlay" onClick={() => setShowVehicleModal(false)} role="presentation">
+          <div 
+            ref={modalRef}
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="vehicle-modal-title"
+          >
+            <h2 id="vehicle-modal-title">{isEditMode ? 'Edit Vehicle' : 'Add New Vehicle'}</h2>
             
             <div className="form-group">
               <label>Name *</label>
@@ -267,10 +292,20 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
             </div>
 
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setShowVehicleModal(false)}>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={() => setShowVehicleModal(false)}
+                disabled={uploading}
+              >
                 Cancel
               </button>
-              <button className="btn-primary" onClick={handleSaveVehicle} disabled={uploading}>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                onClick={handleSaveVehicle} 
+                disabled={uploading}
+              >
                 {uploading ? 'Saving...' : isEditMode ? 'Update' : 'Create'}
               </button>
             </div>

@@ -186,7 +186,7 @@ export function TemplateEditorPage() {
         </div>
       )}
 
-      <main className="template-editor-main">
+      <main className="template-editor-main" id="main-content" tabIndex={-1}>
         <div className="items-list">
           {items.map((item, index) => (
             <div key={index} className="item-card">
