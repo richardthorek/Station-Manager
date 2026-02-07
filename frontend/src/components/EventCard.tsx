@@ -85,38 +85,37 @@ export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDele
       aria-disabled={!isActive}
     >
       <div className="event-card-header">
-        <div className="event-info">
+        <div className="event-title-row">
           <div className="event-title">
             <span className="activity-icon">📋</span>
             <h3>{event.activityName}</h3>
-            {isActive && <span className="active-badge">Active</span>}
           </div>
-          <div className="event-meta">
-            <span className="event-date">{formatDate(event.startTime)}</span>
-            <span className="event-time">
-              {formatTime(event.startTime)}
-              {event.endTime && ` - ${formatTime(event.endTime)}`}
-            </span>
-            <span className="event-duration">({getDuration()})</span>
+          <div className="event-header-actions">
+            {isActive && <span className="active-badge">Active</span>}
+            <div className="participant-count">
+              <span className="count-icon">👥</span>
+              <span className="count">{event.participantCount}</span>
+            </div>
+            <button
+              className="expand-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
+              aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              {isExpanded ? '▼' : '▶'}
+            </button>
           </div>
         </div>
-        
-        <div className="event-actions">
-          <div className="participant-count">
-            <span className="count-icon">👥</span>
-            <span className="count">{event.participantCount}</span>
-          </div>
-          
-          <button
-            className="expand-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
-            aria-label={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            {isExpanded ? '▼' : '▶'}
-          </button>
+
+        <div className="event-meta">
+          <span className="event-date">{formatDate(event.startTime)}</span>
+          <span className="event-time">
+            {formatTime(event.startTime)}
+            {event.endTime && ` - ${formatTime(event.endTime)}`}
+          </span>
+          <span className="event-duration">({getDuration()})</span>
         </div>
       </div>
 

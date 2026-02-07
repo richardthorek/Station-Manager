@@ -38,6 +38,33 @@ export function getCurrentStationId(): string {
 
 class ApiService {
   /**
+   * Fetch helper with limited retry/backoff for 429/503 to reduce bursty failures in dev
+   */
+  private async fetchWithRetry(url: string, init?: RequestInit, retries: number = 2): Promise<Response> {
+    let attempt = 0;
+    let backoffMs = 300;
+
+    while (true) {
+      const response = await fetch(url, init);
+
+      // If success or non-retriable status, return immediately
+      if (response.ok || ![429, 503].includes(response.status) || attempt >= retries) {
+        return response;
+      }
+
+      // Respect Retry-After header if provided
+      const retryAfterHeader = response.headers.get('Retry-After');
+      const retryAfterMs = retryAfterHeader ? Number(retryAfterHeader) * 1000 : 0;
+      const jitter = Math.random() * 150;
+      const delayMs = retryAfterMs || backoffMs + jitter;
+
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+
+      attempt += 1;
+      backoffMs *= 2;
+    }
+  }
+  /**
    * Create headers with X-Station-Id for multi-station support
    */
   private getHeaders(additionalHeaders?: HeadersInit): HeadersInit {
@@ -53,7 +80,7 @@ class ApiService {
   // ============================================
   
   async getStations(): Promise<Station[]> {
-    const response = await fetch(`${API_BASE_URL}/stations`, {
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/stations`, {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch stations');
@@ -192,7 +219,7 @@ class ApiService {
     usingInMemory: boolean;
     timestamp: string;
   }> {
-    const response = await fetch(`${API_BASE_URL}/status`, {
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/status`, {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch status');
@@ -209,7 +236,7 @@ class ApiService {
     const queryString = params.toString();
     const url = queryString ? `${API_BASE_URL}/members?${queryString}` : `${API_BASE_URL}/members`;
     
-    const response = await fetch(url, {
+    const response = await this.fetchWithRetry(url, {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch members');
@@ -314,7 +341,7 @@ class ApiService {
 
   // Activities
   async getActivities(): Promise<Activity[]> {
-    const response = await fetch(`${API_BASE_URL}/activities`);
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/activities`);
     if (!response.ok) throw new Error('Failed to fetch activities');
     return response.json();
   }
@@ -393,7 +420,7 @@ class ApiService {
   }
   // Events
   async getEvents(limit: number = 50, offset: number = 0): Promise<EventWithParticipants[]> {
-    const response = await fetch(`${API_BASE_URL}/events?limit=${limit}&offset=${offset}`);
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/events?limit=${limit}&offset=${offset}`);
     if (!response.ok) throw new Error('Failed to fetch events');
     return response.json();
   }

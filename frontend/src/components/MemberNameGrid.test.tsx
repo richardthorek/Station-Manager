@@ -141,6 +141,31 @@ describe('MemberNameGrid', () => {
     expect(onCheckIn).toHaveBeenCalledWith('2');
   });
 
+  it('should call onCheckOut when a signed-in member is clicked', () => {
+    const onCheckOut = vi.fn();
+    const onCheckIn = vi.fn();
+
+    render(
+      <MemberNameGrid
+        members={mockMembers}
+        events={mockEvents}
+        selectedEventId="event1"
+        onSelectEvent={vi.fn()}
+        onCheckIn={onCheckIn}
+        onCheckOut={onCheckOut}
+        onStartNewEvent={vi.fn()}
+        onEndEvent={vi.fn()}
+        onCollapse={vi.fn()}
+      />
+    );
+
+    const aliceButton = screen.getByRole('button', { name: /Alice Johnson \(signed in\)/i });
+    fireEvent.click(aliceButton);
+
+    expect(onCheckOut).toHaveBeenCalledWith('1');
+    expect(onCheckIn).not.toHaveBeenCalled();
+  });
+
   it('should call onStartNewEvent when new event button is clicked', () => {
     const onStartNewEvent = vi.fn();
 

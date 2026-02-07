@@ -67,6 +67,7 @@ export function SignInPage() {
   const [isSwitchingStation, setIsSwitchingStation] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
+  const hasLoadedInitialData = useRef(false);
 
   const { isConnected, emit, on, off } = useSocket();
   const { showSuccess, showError, showWarning } = useToast();
@@ -122,6 +123,8 @@ export function SignInPage() {
 
   // Initial data load
   useEffect(() => {
+    if (hasLoadedInitialData.current) return;
+    hasLoadedInitialData.current = true;
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -346,22 +349,25 @@ export function SignInPage() {
       return;
     }
 
+    const currentEvent = events.find(e => e.id === selectedEventId);
+    const participant = currentEvent?.participants.find(p => p.memberId === memberId);
+    if (!participant) {
+      showWarning('Participant not found for this event');
+      return;
+    }
+
     try {
-      // Use the same endpoint - it toggles, so it will remove if already checked in
-      const result = await api.addEventParticipant(selectedEventId, memberId, 'mobile');
-      
-      // Reload the specific event to get updated participants
+      await api.removeEventParticipant(selectedEventId, participant.id);
       const updatedEvent = await api.getEvent(selectedEventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
-      
-      // Announce check-out to screen readers and show success toast
+
       const member = members.find(m => m.id === memberId);
       if (member) {
         announce(`${member.name} checked out`, 'polite');
         showSuccess(`${member.name} checked out`);
       }
-      
-      emit('participant-change', { eventId: selectedEventId, ...result });
+
+      emit('participant-change', { eventId: selectedEventId, action: 'removed', participantId: participant.id, memberId });
     } catch (err) {
       console.error('Error removing participant:', err);
       const errorMessage = formatErrorMessage(err);
@@ -584,6 +590,7 @@ export function SignInPage() {
             selectedEventId={selectedEventId}
             onSelectEvent={handleSelectEvent}
             onCheckIn={handleCheckIn}
+            onCheckOut={handleRemoveParticipant}
             onStartNewEvent={() => setShowNewEventModal(true)}
             onEndEvent={handleEndEvent}
             onCollapse={() => setIsGridExpanded(false)}
@@ -671,14 +678,6 @@ export function SignInPage() {
         onClick={() => setShowUserManagement(true)}
         ariaLabel="Add new member"
         position="bottom-right"
-        scrollContainerRef={mainContentRef}
-      />
-
-      <FloatingActionButton
-        icon="📅"
-        onClick={() => setShowNewEventModal(true)}
-        ariaLabel="Create new event"
-        position="bottom-left"
         scrollContainerRef={mainContentRef}
       />
 

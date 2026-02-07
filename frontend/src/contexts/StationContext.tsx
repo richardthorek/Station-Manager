@@ -10,7 +10,7 @@
  * - Kiosk mode: Brigade-locked station selection for kiosk devices
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { api, setCurrentStationId } from '../services/api';
 import type { Station } from '../types';
 import { 
@@ -61,6 +61,7 @@ export function StationProvider({ children }: StationProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [kioskMode, setKioskMode] = useState(false);
+  const hasInitialized = useRef(false);
 
   /**
    * Load stations from API
@@ -154,11 +155,14 @@ export function StationProvider({ children }: StationProviderProps) {
    * Initialize: Load stations and persisted selection
    */
   useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     const initialize = async () => {
       const loadedStations = await loadStations();
       await loadPersistedSelection(loadedStations);
     };
-    
+
     initialize();
   }, [loadStations, loadPersistedSelection]);
 
