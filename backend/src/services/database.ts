@@ -117,8 +117,8 @@ class DatabaseService {
     };
     this.stations.set(defaultStation.id, defaultStation);
 
-    // Seed default station with DEFAULT_MEMBERS (105 real brigade members)
-    DEFAULT_MEMBERS.forEach(seedMember => {
+    // Seed default station with a small sample of 10 members
+    DEFAULT_MEMBERS.slice(0, 10).forEach(seedMember => {
       const member: Member = {
         id: uuidv4(),
         name: buildDisplayName(seedMember),

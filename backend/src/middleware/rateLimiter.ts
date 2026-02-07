@@ -5,7 +5,7 @@
  * Uses express-rate-limit with configurable limits via environment variables.
  * 
  * Rate Limits:
- * - API Routes: 100 requests per 15 minutes per IP (configurable via RATE_LIMIT_API_MAX)
+ * - API Routes: 1000 requests per 15 minutes per IP (configurable via RATE_LIMIT_API_MAX)
  * - Auth Routes: 5 requests per 15 minutes per IP (configurable via RATE_LIMIT_AUTH_MAX)
  * - Window: 15 minutes (configurable via RATE_LIMIT_WINDOW_MS)
  * 
@@ -21,7 +21,7 @@ import { logger } from '../services/logger';
 
 // Parse environment variables with defaults
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10); // 15 minutes
-const RATE_LIMIT_API_MAX = parseInt(process.env.RATE_LIMIT_API_MAX || '100', 10);
+const RATE_LIMIT_API_MAX = parseInt(process.env.RATE_LIMIT_API_MAX || '1000', 10);
 const RATE_LIMIT_AUTH_MAX = parseInt(process.env.RATE_LIMIT_AUTH_MAX || '5', 10);
 
 /**
