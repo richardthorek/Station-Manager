@@ -175,8 +175,60 @@
 
 .search-input {
   width: 100%;
-  padding-right: 40px;
-  font-size: 1.1rem;
+  padding: 14px 120px 14px 16px;
+  font-size: 1.05rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary-red);
+  box-shadow: 0 4px 16px rgba(229, 40, 27, 0.15);
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+/* Dark mode glassmorphism */
+[data-theme="dark"] .search-input {
+  background: rgba(37, 37, 37, 0.95);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .search-input:focus {
+  background: rgba(45, 45, 45, 1);
+  box-shadow: 0 4px 16px rgba(255, 85, 71, 0.2);
+}
+
+.search-shortcut-hint {
+  position: absolute;
+  right: 50px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.search-shortcut-hint kbd {
+  background: var(--color-gray-light);
+  border: 1px solid var(--color-gray-medium);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Mobile: Ensure minimum 16px font size to prevent iOS zoom */
@@ -338,26 +390,102 @@
 
 .member-btn {
   position: relative;
-  padding: 12px 16px;
+  padding: 14px;
   background: var(--color-white);
   border: 2px solid var(--color-gray-medium);
-  border-radius: 12px;
+  border-radius: 14px;
   font-size: 0.95rem;
   font-weight: 500;
   text-align: left;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  min-height: 48px;
+  gap: 12px;
+  min-height: 68px;
   flex: 0 1 calc(50% - 5px);
   max-width: calc(50% - 5px);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .member-btn:hover {
   border-color: var(--color-primary-red);
   background: var(--color-gray-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 40, 27, 0.12);
+}
+
+.member-btn:active {
+  transform: translateY(0);
+}
+
+/* Avatar */
+.member-avatar {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.member-btn:hover .member-avatar {
+  transform: scale(1.05);
+}
+
+.member-initials {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Member info */
+.member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.member-rank {
+  background: var(--ui-blue);
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.member-last-active {
+  font-size: 0.75rem;
+  opacity: 0.8;
 }
 
 .member-btn.checked-in {
@@ -366,6 +494,15 @@
   color: #000000;
   font-weight: 600;
   position: relative;
+  box-shadow: 0 4px 12px rgba(203, 219, 42, 0.3);
+}
+
+.member-btn.checked-in .member-name {
+  color: #000000;
+}
+
+.member-btn.checked-in .member-meta {
+  color: rgba(0, 0, 0, 0.7);
 }
 
 .member-btn.checked-in::after {
@@ -393,19 +530,19 @@
 .member-btn.checked-in:hover {
   background: linear-gradient(135deg, #B8C929 0%, #A8B921 100%);
   color: #000000;
+  border-color: #B8C929;
 }
 
-.member-name {
-  flex: 1;
-  line-height: 1.3;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+.member-btn.checked-in .member-avatar {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
 }
 
 .check-icon {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   flex-shrink: 0;
+  color: #000000;
   animation: scaleIn 0.3s ease-out;
+  margin-left: auto;
 }
 
 /* Swipe hint overlay */
@@ -457,9 +594,55 @@
 
 .no-results {
   text-align: center;
-  color: var(--color-gray-dark);
-  padding: 40px;
+  color: var(--text-secondary);
+  padding: 60px 40px;
   font-size: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+.no-results::before {
+  content: '🔍';
+  font-size: 4rem;
+  opacity: 0.3;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.no-results-text {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.no-results-hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.5;
+  }
 }
 
 .add-member-overlay {
@@ -586,6 +769,18 @@
   .member-btn {
     flex: 0 1 100%;
     max-width: 100%;
+    min-height: 72px;
+  }
+
+  .member-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    font-size: 1.05rem;
+  }
+
+  .member-name {
+    font-size: 1.05rem;
   }
 
   .letter-selector {
@@ -596,6 +791,11 @@
     width: 26px;
     font-size: 0.65rem;
     padding: 3px 0;
+  }
+
+  /* Hide search shortcut hint on mobile */
+  .search-shortcut-hint {
+    display: none;
   }
 
   /* FAB: Floating Action Button for Add Member */
@@ -617,5 +817,26 @@
 
   .btn-add-member:active {
     transform: scale(0.95);
+  }
+}
+
+/* iPad and tablet optimizations (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .member-btn {
+    min-height: 72px;
+  }
+
+  .member-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
+
+  .members-grid {
+    gap: 12px;
+  }
+
+  .search-input {
+    font-size: 1.05rem;
   }
 }

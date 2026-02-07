@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { EventWithParticipants } from '../types';
 import './CurrentEventParticipants.css';
 
@@ -7,12 +8,48 @@ interface CurrentEventParticipantsProps {
 }
 
 export function CurrentEventParticipants({ event, onRemoveParticipant }: CurrentEventParticipantsProps) {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every minute for duration calculations
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every 60 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const getDuration = (checkInTime: string): string => {
+    const start = new Date(checkInTime);
+    const diffMs = currentTime.getTime() - start.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m`;
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  };
+
+  const getEventDuration = (startTime: string): string => {
+    const start = new Date(startTime);
+    const diffMs = currentTime.getTime() - start.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+
+    if (diffMins < 1) return 'Just started';
+    if (diffMins < 60) return `${diffMins} minutes`;
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    if (hours === 1) return mins > 0 ? `1 hour ${mins} min` : '1 hour';
+    return mins > 0 ? `${hours} hours ${mins} min` : `${hours} hours`;
   };
 
   // Hidden for now - device icons not needed
@@ -83,7 +120,7 @@ export function CurrentEventParticipants({ event, onRemoveParticipant }: Current
             {event.isActive && <span className="active-indicator">● Active</span>}
           </div>
           <div className="event-time">
-            Started {formatTime(event.startTime)}
+            Started {formatTime(event.startTime)} • <span className="event-duration">{getEventDuration(event.startTime)}</span>
           </div>
         </div>
       </div>
@@ -99,8 +136,8 @@ export function CurrentEventParticipants({ event, onRemoveParticipant }: Current
         ) : (
           <div className="participants-grid">
             {event.participants.map((participant) => (
-              <div 
-                key={participant.id} 
+              <div
+                key={participant.id}
                 className={`participant-card ${onRemoveParticipant ? 'clickable' : ''}`}
                 onClick={() => onRemoveParticipant && onRemoveParticipant(participant.memberId)}
                 role={onRemoveParticipant ? 'button' : undefined}
@@ -119,6 +156,7 @@ export function CurrentEventParticipants({ event, onRemoveParticipant }: Current
                 </div>
                 <div className="participant-footer">
                   <span className="participant-time">{formatTime(participant.checkInTime)}</span>
+                  <span className="participant-duration">{getDuration(participant.checkInTime)}</span>
                   {participant.isOffsite && (
                     <span className="offsite-badge">📍 Offsite</span>
                   )}
