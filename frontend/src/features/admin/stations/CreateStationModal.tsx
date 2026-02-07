@@ -41,6 +41,8 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showLookup, setShowLookup] = useState(true);
   const [useCustomName, setUseCustomName] = useState(false);
+  const [existingStation, setExistingStation] = useState<Station | null>(null);
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
 
   /**
    * Auto-fill station name from brigade name (1:1 default)
@@ -50,6 +52,36 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
       setFormData(prev => ({ ...prev, name: prev.brigadeName }));
     }
   }, [formData.brigadeName, useCustomName]);
+
+  /**
+   * Check for duplicate brigade ID when it changes
+   */
+  useEffect(() => {
+    const checkDuplicate = async () => {
+      if (!formData.brigadeId || formData.brigadeId.trim() === '') {
+        setExistingStation(null);
+        return;
+      }
+
+      setCheckingDuplicate(true);
+      try {
+        const result = await api.checkBrigadeExists(formData.brigadeId);
+        if (result.exists && result.station) {
+          setExistingStation(result.station);
+        } else {
+          setExistingStation(null);
+        }
+      } catch (err) {
+        console.error('Error checking for duplicate brigade:', err);
+      } finally {
+        setCheckingDuplicate(false);
+      }
+    };
+
+    // Debounce the check to avoid too many API calls
+    const timeoutId = setTimeout(checkDuplicate, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.brigadeId]);
 
   /**
    * Handle field change
@@ -118,6 +150,11 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
 
     if (!formData.brigadeId.trim()) {
       newErrors.brigadeId = 'Brigade ID is required';
+    }
+
+    // Check if station already exists
+    if (existingStation) {
+      newErrors.brigadeId = `This brigade ID is already in use by "${existingStation.name}". Please choose a different brigade.`;
     }
 
     if (!formData.area.trim()) {
@@ -280,11 +317,26 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                     type="text"
                     value={formData.brigadeId}
                     onChange={(e) => handleChange('brigadeId', e.target.value)}
-                    className={errors.brigadeId ? 'error' : ''}
+                    className={errors.brigadeId || existingStation ? 'error' : ''}
                     placeholder="e.g., horsley-park-rural-fire-brigade"
                   />
-                  {errors.brigadeId && <span className="field-error">{errors.brigadeId}</span>}
-                  <span className="field-hint">Auto-generated from brigade name. Can be customized.</span>
+                  {checkingDuplicate && (
+                    <span className="field-hint">Checking availability...</span>
+                  )}
+                  {existingStation && !checkingDuplicate && (
+                    <span className="field-error">
+                      ⚠️ Station "{existingStation.name}" already exists with this brigade ID
+                    </span>
+                  )}
+                  {!existingStation && !checkingDuplicate && formData.brigadeId.trim() && !errors.brigadeId && (
+                    <span className="field-hint">✓ Brigade ID is available</span>
+                  )}
+                  {!existingStation && errors.brigadeId && (
+                    <span className="field-error">{errors.brigadeId}</span>
+                  )}
+                  {!errors.brigadeId && !existingStation && !checkingDuplicate && !formData.brigadeId.trim() && (
+                    <span className="field-hint">Auto-generated from brigade name. Can be customized.</span>
+                  )}
                 </div>
               </div>
 
@@ -463,7 +515,8 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                   <button
                     type="submit"
                     className="primary-button"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || existingStation !== null || checkingDuplicate}
+                    title={existingStation ? 'Cannot create: Station already exists' : ''}
                   >
                     {isSubmitting ? 'Creating...' : 'Create Station'}
                   </button>

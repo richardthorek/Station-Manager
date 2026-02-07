@@ -1,7 +1,7 @@
 # RFS Station Manager - Master Plan
 
 **Document Version:** 2.0  
-**Last Updated:** January 2026  
+**Last Updated:** February 2026  
 **Status:** Living Document  
 **Purpose:** Single source of truth for planning, roadmap, architecture guidance, and issue tracking
 
@@ -1156,6 +1156,76 @@ Priority: **HIGH** - Critical for production scale
 **Milestone**: v1.2 - Operational Excellence
 
 **UI Screenshot Requirement**: N/A (Backend only)
+
+---
+
+#### Issue #23: Fix Station Search Usability and Prevent Duplicate Station Creation ✅ COMPLETED
+**GitHub Issue**: Not tracked  
+**Status**: ✅ COMPLETED (2026-02-07)
+
+**Objective**: Improve station search UX and prevent duplicate station creation
+
+**User Story**: As a station administrator, I want to quickly find stations by typing without manually scrolling through location-based results, and I want to be prevented from creating duplicate stations so the system stays organized.
+
+**Current State**: 
+- Search typed into the field doesn't override location-based results
+- No duplicate checking when creating stations
+- Users must scroll through long lists to find stations
+
+**Target State**: 
+- Text search prioritizes over location when typing
+- Real-time duplicate detection with clear UI feedback
+- Backend validation prevents duplicate brigade IDs
+
+**Implementation Summary**:
+1. ✅ Modified backend `rfsFacilitiesParser.lookup()` to prioritize text search over location
+   - When query provided, returns search results first
+   - Location-based results only shown when no query
+   - Added distance to search results when location provided
+2. ✅ Added duplicate prevention API endpoint
+   - New endpoint: `GET /api/stations/check-brigade/:brigadeId`
+   - Returns existing station if brigade ID found (200)
+   - Returns 404 if brigade ID available
+3. ✅ Updated station creation endpoint with duplicate validation
+   - `POST /api/stations` returns 409 Conflict if brigade ID exists
+   - Includes existing station details in error response
+4. ✅ Implemented frontend duplicate checking
+   - Real-time validation with 500ms debounce
+   - Clear UI feedback: "Checking...", "✓ Available", or error message
+   - Create button disabled when duplicate detected
+5. ✅ Added search result feedback
+   - Shows "🔍 Showing search results for..." when typing
+   - Shows "📍 Showing closest 10 stations..." for location-based
+6. ✅ Added comprehensive tests
+   - 2 new backend tests for duplicate prevention
+   - 1 new backend test for check-brigade endpoint
+   - All 463 backend tests passing
+   - All 214 frontend tests passing
+7. ✅ Updated documentation
+   - Updated `api_register.json` with new endpoint
+   - Updated `AS_BUILT.md` with implementation details
+   - Added station management section to AS_BUILT
+
+**Success Criteria**:
+- [x] Text search prioritizes over location
+- [x] Duplicate checking works in real-time
+- [x] Backend prevents duplicate creation (409 response)
+- [x] Clear UI feedback for availability
+- [x] Create button disabled when duplicate found
+- [x] All tests passing
+- [x] Documentation updated
+
+**Dependencies**: None
+
+**Effort Estimate**: 1 day ✅
+
+**Priority**: P2 (Medium - UX improvement)
+
+**Labels**: `ux`, `validation`, `phase-2`, `complete`
+
+**Milestone**: v1.2 - Operational Excellence
+
+**UI Screenshot Requirement**: ✅ Required - Station creation modal showing duplicate detection feedback
 
 ---
 

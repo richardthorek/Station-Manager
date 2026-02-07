@@ -187,6 +187,94 @@ describe('Stations API', () => {
       expect(response.body.name).toBe('Test Station Normal');
       expect(response.body.brigadeName).toBe('Test Brigade Normal');
     });
+
+    it('should prevent duplicate station creation with same brigade ID', async () => {
+      // First create a station
+      const newStation = {
+        name: 'Duplicate Test Station',
+        brigadeId: 'duplicate-test-brigade',
+        brigadeName: 'Duplicate Test Brigade',
+        hierarchy: {
+          jurisdiction: 'NSW',
+          area: 'Test Area',
+          district: 'Test District',
+          brigade: 'Duplicate Test Brigade',
+          station: 'Duplicate Test Station',
+        },
+      };
+
+      await request(app)
+        .post('/api/stations')
+        .send(newStation)
+        .expect(201);
+
+      // Try to create another station with the same brigade ID
+      const duplicateStation = {
+        name: 'Another Station Name',
+        brigadeId: 'duplicate-test-brigade', // Same brigade ID
+        brigadeName: 'Different Brigade Name',
+        hierarchy: {
+          jurisdiction: 'NSW',
+          area: 'Different Area',
+          district: 'Different District',
+          brigade: 'Different Brigade Name',
+          station: 'Another Station Name',
+        },
+      };
+
+      const response = await request(app)
+        .post('/api/stations')
+        .send(duplicateStation)
+        .expect(409);
+
+      expect(response.body).toHaveProperty('error', 'Station already exists');
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('duplicate-test-brigade');
+      expect(response.body).toHaveProperty('existingStation');
+      expect(response.body.existingStation.name).toBe('Duplicate Test Station');
+    });
+  });
+
+  describe('GET /api/stations/check-brigade/:brigadeId', () => {
+    it('should return station if brigade ID exists', async () => {
+      // First create a station
+      const newStation = {
+        name: 'Check Test Station',
+        brigadeId: 'check-test-brigade',
+        brigadeName: 'Check Test Brigade',
+        hierarchy: {
+          jurisdiction: 'NSW',
+          area: 'Test Area',
+          district: 'Test District',
+          brigade: 'Check Test Brigade',
+          station: 'Check Test Station',
+        },
+      };
+
+      await request(app)
+        .post('/api/stations')
+        .send(newStation)
+        .expect(201);
+
+      // Check if brigade exists
+      const response = await request(app)
+        .get('/api/stations/check-brigade/check-test-brigade')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('exists', true);
+      expect(response.body).toHaveProperty('station');
+      expect(response.body.station.name).toBe('Check Test Station');
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 404 if brigade ID does not exist', async () => {
+      const response = await request(app)
+        .get('/api/stations/check-brigade/nonexistent-brigade-id')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('exists', false);
+      expect(response.body).toHaveProperty('message');
+    });
   });
 
   describe('GET /api/stations', () => {

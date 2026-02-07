@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "version": "1.2.0",
-  "lastUpdated": "2026-02-06",
+  "lastUpdated": "2026-02-07",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -2197,10 +2197,74 @@
           }
         }
       },
+      "GET /api/stations/check-brigade/:brigadeId": {
+        "method": "GET",
+        "path": "/api/stations/check-brigade/:brigadeId",
+        "description": "Check if a station with this brigade ID already exists. Used for duplicate prevention during station creation.",
+        "authentication": "none",
+        "parameters": {
+          "path": {
+            "brigadeId": {
+              "type": "string",
+              "required": true,
+              "description": "Brigade ID to check"
+            }
+          }
+        },
+        "requestBody": null,
+        "responses": {
+          "200": {
+            "description": "Station exists with this brigade ID",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "exists": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "station": {
+                  "$ref": "#/definitions/Station"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Station \"Horsley Park Rural Fire Brigade\" already exists with this brigade ID"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No active station found with this brigade ID",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "exists": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "No active station found with this brigade ID"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "implementation": "backend/src/routes/stations.ts:122",
+        "security": {
+          "rateLimiting": {
+            "enabled": true,
+            "maxRequests": 100,
+            "windowMs": 900000
+          }
+        }
+      },
       "POST /api/stations": {
         "method": "POST",
         "path": "/api/stations",
-        "description": "Create a new station",
+        "description": "Create a new station. Validates that brigade ID is unique to prevent duplicate station creation. Returns 409 if a station with the same brigade ID already exists.",
         "authentication": "none",
         "parameters": {},
         "requestBody": {
@@ -2306,6 +2370,25 @@
           },
           "400": {
             "description": "Validation error"
+          },
+          "409": {
+            "description": "Station already exists with this brigade ID",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Station already exists"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "A station with brigade ID \"horsley-park-rural-fire-brigade\" already exists: Horsley Park Rural Fire Brigade"
+                },
+                "existingStation": {
+                  "$ref": "#/definitions/Station"
+                }
+              }
+            }
           },
           "500": {
             "description": "Server error"
