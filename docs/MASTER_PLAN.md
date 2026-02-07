@@ -160,6 +160,58 @@ User Action → REST API → Database Update → Socket.io Broadcast → All Cli
 └────────────────────────┘  └────────────────────────┘
 ```
 
+#### 5. CI/CD Deployment Workflow
+
+**Pipeline Stages**:
+```
+┌─────────────────────────────────────────────────────────┐
+│ GitHub Actions CI/CD Pipeline                           │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  Phase 1: Quality Checks (Parallel)                    │
+│    ├─ Frontend Linting (ESLint)                        │
+│    ├─ Backend Type Checking (TypeScript)               │
+│    └─ Frontend Type Checking (TypeScript)              │
+│                                                         │
+│  Phase 2: Testing (Parallel)                           │
+│    ├─ Backend Tests (Jest) + Coverage                  │
+│    └─ Frontend Tests (Vitest) + Coverage               │
+│                                                         │
+│  Phase 3: Build                                        │
+│    ├─ Install dependencies (for build only)            │
+│    ├─ Compile TypeScript (backend + frontend)          │
+│    ├─ Bundle frontend (Vite)                           │
+│    └─ Create deployment package (no node_modules)      │
+│                                                         │
+│  Phase 4: Deploy to Azure                              │
+│    ├─ Upload ZIP artifact                              │
+│    └─ Azure deploys + runs npm install                 │
+│                                                         │
+│  Phase 5: Post-Deployment Tests                        │
+│    └─ Smoke tests against live deployment              │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key Optimizations**:
+- **Dependencies NOT installed in CI**: Only installed for build compilation
+- **Azure handles npm install**: Post-deploy using `SCM_DO_BUILD_DURING_DEPLOYMENT=true`
+- **Smaller artifacts**: Deployment package excludes node_modules
+- **Faster GitHub Actions**: Reduced time in CI pipeline
+- **Deterministic builds**: Uses package-lock.json on Azure side
+
+**Deployment Package Contents**:
+- `backend/dist/` - Compiled TypeScript
+- `frontend/dist/` - Bundled static assets
+- `backend/package.json` + `package-lock.json` - For Azure npm install
+- `startup.sh` - Startup script (fallback if needed)
+- `web.config` - IIS configuration
+
+**Azure Configuration**:
+- `SCM_DO_BUILD_DURING_DEPLOYMENT=true` - Enables post-deploy npm install
+- Oryx build system automatically detects Node.js app
+- Runs `npm ci --production` in backend directory after deployment
+
 ### Technology Stack
 
 | Layer | Technology | Version | Purpose |
@@ -293,6 +345,13 @@ features/
 - **Features**: 8 smoke tests, test data isolation (TABLE_STORAGE_TABLE_SUFFIX=Test), automatic validation
 - **Status**: Complete, integrated into CI/CD pipeline
 - **Documentation**: `docs/POST_DEPLOYMENT_TESTING.md`
+
+✅ **CI/CD Deployment Optimization** - Moved dependency install to Azure post-deploy
+- **Achievement**: Faster GitHub Actions execution by eliminating redundant npm install
+- **Changes**: Dependencies now installed by Azure after deployment (SCM_DO_BUILD_DURING_DEPLOYMENT=true)
+- **Benefits**: Smaller deployment artifacts, reduced CI time, Azure handles npm install
+- **Status**: Complete, integrated into CI/CD pipeline (Feb 2026)
+- **Documentation**: Updated `docs/MASTER_PLAN.md` and `.github/workflows/ci-cd.yml`
 
 ✅ **Phase 19: Multi-Station Support** - Multi-tenant architecture implementation
 - **Achievement**: Complete multi-station support with data isolation and backward compatibility

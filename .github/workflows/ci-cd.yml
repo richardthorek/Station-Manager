@@ -22,32 +22,32 @@
 #   - Post-deployment tests validate live application
 #
 # Deployment Strategy:
-#   OPTIMIZED FOR RELIABILITY:
+#   OPTIMIZED FOR SPEED:
 #
 #   Artifact Packaging:
 #     - Ships pre-built backend/dist (compiled TypeScript)
 #     - Ships pre-built frontend/dist (optimized static assets)
-#     - Ships backend/node_modules (production dependencies pre-installed)
-#     - Ships package.json and package-lock.json (for reference)
+#     - Ships package.json and package-lock.json (for Azure npm install)
 #     - Does NOT ship source code (.ts files)
+#     - Does NOT ship node_modules (installed by Azure post-deploy)
 #
 #   Azure App Service Deployment (Windows/IIS):
-#     - SCM_DO_BUILD_DURING_DEPLOYMENT=false (no redundant builds)
-#     - Dependencies pre-installed in CI/CD (deterministic, fast startup)
-#     - No server-side npm install needed (avoids network/timing issues)
+#     - SCM_DO_BUILD_DURING_DEPLOYMENT=true (enables post-deploy npm install)
+#     - Dependencies installed by Azure after code deployment
+#     - Faster GitHub Actions execution (no dependency installation in CI)
 #     - Ensures consistent environment with locked dependencies
 #
-#   Why Include node_modules:
-#     - Azure App Service on Windows/IIS doesn't execute startup.sh
-#     - With SCM_DO_BUILD_DURING_DEPLOYMENT=false, no npm install runs
-#     - Pre-installing deps in CI/CD ensures immediate availability
+#   Why Azure Installs Dependencies:
+#     - Significantly faster GitHub Actions execution
+#     - Smaller deployment artifacts (no node_modules transfer)
+#     - Azure handles npm install after code is pushed
 #     - Deterministic builds with exact versions from package-lock.json
 #
 #   Benefits:
-#     - Reliable deployments (no missing dependencies)
-#     - Fast startup time (no npm install delay)
-#     - Deterministic builds (exact versions every time)
-#     - No dependency resolution failures in production
+#     - Faster CI/CD pipeline (less time in GitHub Actions)
+#     - Smaller deployment packages
+#     - Deterministic builds (exact versions from package-lock.json)
+#     - No redundant dependency installation during CI
 #
 # Post-Deployment Testing Strategy:
 #   TWO-PHASE APPROACH FOR EFFICIENCY:
@@ -85,8 +85,8 @@
 #   - Concurrency control (cancels outdated PR runs)
 #   - Path filtering: Skip pipeline for documentation-only changes
 #     (docs/**, *.md files) to reduce deployment frequency
-#   - Optimized artifact packaging (no node_modules)
-#   - Disabled redundant Azure builds (SCM_DO_BUILD_DURING_DEPLOYMENT=false)
+#   - Optimized artifact packaging (no node_modules in deployment)
+#   - Azure post-deploy builds (SCM_DO_BUILD_DURING_DEPLOYMENT=true)
 #
 # Future Optimizations:
 #   - Conditional execution based on file changes (future enhancement)
@@ -392,12 +392,12 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
 
-      - name: Install backend dependencies
+      - name: Install backend dependencies (for build only)
         run: |
           cd backend
           npm ci
 
-      - name: Install frontend dependencies
+      - name: Install frontend dependencies (for build only)
         run: |
           cd frontend
           npm ci
@@ -426,11 +426,6 @@ jobs:
           echo "GIT_COMMIT_SHA=${{ github.sha }}" > backend/dist/.env
           echo "GIT_COMMIT_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)" >> backend/dist/.env
           echo "BUILD_TIMESTAMP=${BUILD_TIMESTAMP}" >> backend/dist/.env
-
-      - name: Install production dependencies
-        run: |
-          cd backend
-          npm ci --production
       
       - name: Create deployment package
         run: |
@@ -438,7 +433,6 @@ jobs:
           mkdir -p deploy/frontend
           cp package.json deploy/
           cp -r backend/dist deploy/backend/
-          cp -r backend/node_modules deploy/backend/
           cp backend/package.json deploy/backend/
           cp backend/package-lock.json deploy/backend/
           cp -r frontend/dist deploy/frontend/
