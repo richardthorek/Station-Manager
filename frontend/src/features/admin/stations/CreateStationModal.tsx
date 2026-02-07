@@ -68,20 +68,8 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
         const result = await api.checkBrigadeExists(formData.brigadeId);
         if (result.exists && result.station) {
           setExistingStation(result.station);
-          setErrors(prev => ({
-            ...prev,
-            brigadeId: `This brigade ID is already in use by "${result.station.name}". Please choose a different brigade.`,
-          }));
         } else {
           setExistingStation(null);
-          // Clear brigade ID error if it was a duplicate error
-          if (errors.brigadeId?.includes('already in use')) {
-            setErrors(prev => {
-              const newErrors = { ...prev };
-              delete newErrors.brigadeId;
-              return newErrors;
-            });
-          }
         }
       } catch (err) {
         console.error('Error checking for duplicate brigade:', err);
@@ -329,7 +317,7 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                     type="text"
                     value={formData.brigadeId}
                     onChange={(e) => handleChange('brigadeId', e.target.value)}
-                    className={errors.brigadeId ? 'error' : ''}
+                    className={errors.brigadeId || existingStation ? 'error' : ''}
                     placeholder="e.g., horsley-park-rural-fire-brigade"
                   />
                   {checkingDuplicate && (
@@ -340,11 +328,13 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                       ⚠️ Station "{existingStation.name}" already exists with this brigade ID
                     </span>
                   )}
-                  {!existingStation && !checkingDuplicate && formData.brigadeId && (
+                  {!existingStation && !checkingDuplicate && formData.brigadeId && !errors.brigadeId && (
                     <span className="field-hint">✓ Brigade ID is available</span>
                   )}
-                  {errors.brigadeId && <span className="field-error">{errors.brigadeId}</span>}
-                  {!errors.brigadeId && !existingStation && (
+                  {!existingStation && errors.brigadeId && (
+                    <span className="field-error">{errors.brigadeId}</span>
+                  )}
+                  {!errors.brigadeId && !existingStation && !checkingDuplicate && (
                     <span className="field-hint">Auto-generated from brigade name. Can be customized.</span>
                   )}
                 </div>
