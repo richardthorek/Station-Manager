@@ -52,16 +52,18 @@ export function DataTable<T extends object>({
   const [searchTerm, setSearchTerm] = useState('');
   const [pageSizeOption, setPageSizeOption] = useState(pageSize);
 
+  const getValue = (row: T, key: Column<T>['key']) => row[key as keyof T];
+
   // Filter data based on search term
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
 
     return data.filter((row) => {
-      return columns.some((column) => {
-        const value = row[column.key];
-        if (value === null || value === undefined) return false;
-        return String(value).toLowerCase().includes(searchTerm.toLowerCase());
-      });
+        return columns.some((column) => {
+          const value = getValue(row, column.key);
+          if (value === null || value === undefined) return false;
+          return String(value).toLowerCase().includes(searchTerm.toLowerCase());
+        });
     });
   }, [data, searchTerm, columns]);
 
@@ -69,9 +71,9 @@ export function DataTable<T extends object>({
   const sortedData = useMemo(() => {
     if (!sortColumn || !sortDirection) return filteredData;
 
-    return [...filteredData].sort((a, b) => {
-      const aValue = a[sortColumn as keyof T] as unknown;
-      const bValue = b[sortColumn as keyof T] as unknown;
+      return [...filteredData].sort((a, b) => {
+        const aValue = getValue(a, sortColumn as Column<T>['key']) as unknown;
+        const bValue = getValue(b, sortColumn as Column<T>['key']) as unknown;
 
       if (aValue === bValue) return 0;
 
@@ -187,7 +189,7 @@ export function DataTable<T extends object>({
                 >
                   {columns.map((column) => (
                     <td key={String(column.key)}>
-                      {column.render ? column.render(row) : String(row[column.key] ?? '')}
+                      {column.render ? column.render(row) : String(getValue(row, column.key) ?? '')}
                     </td>
                   ))}
                 </tr>

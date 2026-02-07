@@ -8,7 +8,7 @@
  */
 
 import jsPDF from 'jspdf';
-import ExcelJS from 'exceljs';
+import ExcelJS, { type FillPattern, type Row } from 'exceljs';
 import html2canvas from 'html2canvas';
 
 // RFS brand colors
@@ -253,13 +253,14 @@ export async function exportAsExcel(
     });
 
     // Add alternating row colors
-    worksheet.eachRow((row, rowNumber) => {
+    worksheet.eachRow((row: Row, rowNumber: number) => {
       if (rowNumber > 1 && rowNumber % 2 === 0) {
-        row.fill = {
+        const fill: FillPattern = {
           type: 'pattern',
           pattern: 'solid',
           fgColor: { argb: 'FFF5F5F5' }, // Light gray
         };
+        row.fill = fill;
       }
     });
 
