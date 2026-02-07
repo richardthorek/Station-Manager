@@ -310,6 +310,9 @@ export class TableStorageDatabase {
       members.push(this.entityToMember(entity));
     }
 
+    // Exclude soft-deleted members
+    members = members.filter(m => m.isDeleted !== true && m.isActive !== false);
+
     // Calculate activity stats for filtering and sorting
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -421,7 +424,9 @@ export class TableStorageDatabase {
   async getMemberById(id: string): Promise<Member | null> {
     try {
       const entity = await this.membersTable.getEntity<TableEntity>('Member', id);
-      return this.entityToMember(entity);
+      const member = this.entityToMember(entity);
+      if (member.isDeleted || member.isActive === false) return null;
+      return member;
     } catch (error: any) {
       if (error.statusCode === 404) return null;
       throw error;
@@ -434,7 +439,9 @@ export class TableStorageDatabase {
     });
 
     for await (const entity of entities) {
-      return this.entityToMember(entity);
+      const member = this.entityToMember(entity);
+      if (member.isDeleted || member.isActive === false) return null;
+      return member;
     }
     
     return null;
@@ -458,6 +465,8 @@ export class TableStorageDatabase {
       lastName: details?.lastName || undefined,
       membershipStartDate: details?.membershipStartDate || null,
       stationId: details?.stationId || undefined,
+      isActive: true,
+      isDeleted: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -473,6 +482,8 @@ export class TableStorageDatabase {
       lastName: member.lastName || '',
       membershipStartDate: member.membershipStartDate ? member.membershipStartDate.toISOString() : '',
       stationId: member.stationId || '',
+      isActive: member.isActive ?? true,
+      isDeleted: member.isDeleted ?? false,
       createdAt: member.createdAt.toISOString(),
       updatedAt: member.updatedAt.toISOString(),
     };
@@ -501,6 +512,27 @@ export class TableStorageDatabase {
     }
   }
 
+  async deleteMember(id: string): Promise<Member | null> {
+    try {
+      const entity = await this.membersTable.getEntity<TableEntity>('Member', id);
+
+      entity.isDeleted = true;
+      entity.isActive = false;
+      entity.updatedAt = new Date().toISOString();
+
+      await this.membersTable.updateEntity(entity, 'Replace');
+
+      // Ensure any active check-ins are closed for this member
+      await this.deactivateCheckInByMember(id);
+
+      // Return the updated member representation
+      return this.entityToMember(entity);
+    } catch (error: any) {
+      if (error.statusCode === 404) return null;
+      throw error;
+    }
+  }
+
   private entityToMember(entity: TableEntity): Member {
     return {
       id: entity.rowKey as string,
@@ -512,6 +544,8 @@ export class TableStorageDatabase {
       lastName: (entity.lastName as string) || undefined,
       membershipStartDate: (entity.membershipStartDate as string) ? new Date(entity.membershipStartDate as string) : null,
       stationId: (entity.stationId as string) || undefined,
+      isActive: entity.isActive !== undefined ? Boolean(entity.isActive) : true,
+      isDeleted: entity.isDeleted !== undefined ? Boolean(entity.isDeleted) : false,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };

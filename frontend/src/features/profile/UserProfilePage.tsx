@@ -19,6 +19,7 @@ export function UserProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [editedRank, setEditedRank] = useState<string>('');
   const [databaseStatus, setDatabaseStatus] = useState<{
@@ -108,6 +109,24 @@ export function UserProfilePage() {
     setEditedName(member.name);
     setEditedRank(member.rank || 'Visitor');
     setIsEditing(false);
+  };
+
+  const handleDeleteMember = async () => {
+    if (!member || isDeleting) return;
+    const confirmed = window.confirm(`Delete ${member.name}? This hides them from the UI but keeps history.`);
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      await api.deleteMember(member.id);
+      alert('Member deleted');
+      navigate('/signin');
+    } catch (err) {
+      console.error('Error deleting member:', err);
+      alert('Failed to delete member');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const rankOptions = [
@@ -254,6 +273,13 @@ export function UserProfilePage() {
                     Edit Profile
                   </button>
                 )}
+                <button
+                  className="btn-danger"
+                  onClick={handleDeleteMember}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Member'}
+                </button>
               </div>
             </div>
 

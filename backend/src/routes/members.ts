@@ -409,4 +409,25 @@ router.post('/import/execute', async (req: Request, res: Response) => {
   }
 });
 
+// Soft delete member (marks inactive and hidden from UI)
+router.delete('/:id', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const deleted = await db.deleteMember(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    res.json({ success: true, member: deleted });
+  } catch (error) {
+    logger.error('Error deleting member', {
+      error,
+      memberId: req.params.id,
+      requestId: req.id,
+    });
+    res.status(500).json({ error: 'Failed to delete member' });
+  }
+});
+
 export default router;

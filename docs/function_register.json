@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "version": "1.3.0",
-  "lastUpdated": "2026-02-06",
+  "lastUpdated": "2026-02-07",
   "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager\n\nMulti-Station Support: Database methods now accept optional stationId parameter for filtering. All methods filter by stationId when provided, default to 'default-station' otherwise.",
   "services": {
     "database": {
@@ -10,14 +10,20 @@
       "type": "class",
       "methods": {
         "getAllMembers": {
-          "signature": "getAllMembers(stationId?: string): Member[]",
-          "line": 184,
-          "description": "Get all members sorted by activity level (check-ins in last 6 months), filtered by stationId if provided",
+          "signature": "getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Member[]",
+          "line": 236,
+          "description": "Get all members sorted by activity level (check-ins in last 6 months), filtered by stationId if provided and excluding soft-deleted or inactive members",
           "parameters": [
             {
               "name": "stationId",
               "type": "string | undefined",
               "description": "Optional station ID for filtering members by station",
+              "optional": true
+            },
+            {
+              "name": "options",
+              "type": "{ search?: string; filter?: string; sort?: string } | undefined",
+              "description": "Search, filter, and sort controls for member listings",
               "optional": true
             }
           ],
@@ -27,7 +33,7 @@
         },
         "getMemberById": {
           "signature": "getMemberById(id: string): Member | undefined",
-          "line": 211,
+          "line": 381,
           "parameters": [
             {
               "name": "id",
@@ -41,7 +47,7 @@
         },
         "getMemberByQRCode": {
           "signature": "getMemberByQRCode(qrCode: string): Member | undefined",
-          "line": 215,
+          "line": 387,
           "parameters": [
             {
               "name": "qrCode",
@@ -54,8 +60,8 @@
           "sideEffects": "none"
         },
         "createMember": {
-          "signature": "createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }): Member",
-          "line": 219,
+          "signature": "createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; membershipStartDate?: Date | null; stationId?: string }): Member",
+          "line": 392,
           "parameters": [
             {
               "name": "name",
@@ -72,6 +78,7 @@
                 "firstName": "string",
                 "lastName": "string",
                 "preferredName": "string",
+                "membershipStartDate": "Date | null",
                 "memberNumber": "string",
                 "stationId": "string - Station ID to assign"
               }
@@ -82,8 +89,8 @@
           "sideEffects": "Adds member to database, generates UUID and QR code, assigns stationId"
         },
         "updateMember": {
-          "signature": "updateMember(id: string, name: string, rank: string | null): Member | undefined",
-          "line": 230,
+          "signature": "updateMember(id: string, name: string, rank?: string | null, membershipStartDate?: Date | null): Member | undefined",
+          "line": 412,
           "parameters": [
             {
               "name": "id",
@@ -99,11 +106,31 @@
               "name": "rank",
               "type": "string | null",
               "description": "New rank or null"
+            },
+            {
+              "name": "membershipStartDate",
+              "type": "Date | null | undefined",
+              "description": "Membership start date (null to clear, undefined to leave unchanged)",
+              "optional": true
             }
           ],
           "returns": "Member | undefined",
           "complexity": "O(n)",
           "sideEffects": "Updates member in database"
+        },
+        "deleteMember": {
+          "signature": "deleteMember(id: string): Member | null",
+          "line": 426,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Member UUID"
+            }
+          ],
+          "returns": "Member | null",
+          "complexity": "O(1)",
+          "sideEffects": "Marks member inactive/deleted and deactivates any active check-ins"
         },
         "getCheckInsByMember": {
           "signature": "getCheckInsByMember(memberId: string): CheckIn[]",
@@ -715,14 +742,20 @@
       "note": "All methods are async and use @azure/data-tables SDK. Fixed Feb 2026: getAllMembers now properly filters by stationId.",
       "methods": {
         "getAllMembers": {
-          "signature": "getAllMembers(stationId?: string): Promise<Member[]>",
-          "line": 267,
-          "description": "Get all members filtered by stationId if provided. Fixed Feb 2026 to properly filter by station.",
+          "signature": "getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Promise<Member[]>",
+          "line": 275,
+          "description": "Get all members filtered by stationId if provided, excluding soft-deleted or inactive entries, with optional search/filter/sort.",
           "parameters": [
             {
               "name": "stationId",
               "type": "string | undefined",
               "description": "Optional station ID for filtering members by station. Validated to prevent injection attacks.",
+              "optional": true
+            },
+            {
+              "name": "options",
+              "type": "{ search?: string; filter?: string; sort?: string } | undefined",
+              "description": "Search, filter, and sort controls for member listings",
               "optional": true
             }
           ],
@@ -730,6 +763,107 @@
           "complexity": "O(n) with OData filter",
           "sideEffects": "Queries Azure Table Storage",
           "security": "Validates stationId format (alphanumeric, dash, underscore only)"
+        },
+        "getMemberById": {
+          "signature": "getMemberById(id: string): Promise<Member | null>",
+          "line": 414,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Member UUID"
+            }
+          ],
+          "returns": "Promise<Member | null>",
+          "complexity": "O(1)",
+          "sideEffects": "Returns null for soft-deleted or inactive members"
+        },
+        "getMemberByQRCode": {
+          "signature": "getMemberByQRCode(qrCode: string): Promise<Member | null>",
+          "line": 426,
+          "parameters": [
+            {
+              "name": "qrCode",
+              "type": "string",
+              "description": "Unique QR identifier"
+            }
+          ],
+          "returns": "Promise<Member | null>",
+          "complexity": "O(n)",
+          "sideEffects": "Returns null for soft-deleted or inactive members"
+        },
+        "createMember": {
+          "signature": "createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; membershipStartDate?: Date | null; stationId?: string }): Promise<Member>",
+          "line": 440,
+          "parameters": [
+            {
+              "name": "name",
+              "type": "string",
+              "description": "Member full name"
+            },
+            {
+              "name": "details",
+              "type": "object",
+              "description": "Optional member details including stationId",
+              "optional": true,
+              "properties": {
+                "rank": "string | null",
+                "firstName": "string",
+                "lastName": "string",
+                "preferredName": "string",
+                "membershipStartDate": "Date | null",
+                "memberNumber": "string",
+                "stationId": "string - Station ID to assign"
+              }
+            }
+          ],
+          "returns": "Promise<Member>",
+          "complexity": "O(1)",
+          "sideEffects": "Creates member entity in Azure Table Storage and seeds QR code"
+        },
+        "updateMember": {
+          "signature": "updateMember(id: string, name: string, rank?: string | null, membershipStartDate?: Date | null): Promise<Member | null>",
+          "line": 485,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Member UUID"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "description": "New name"
+            },
+            {
+              "name": "rank",
+              "type": "string | null",
+              "description": "New rank or null"
+            },
+            {
+              "name": "membershipStartDate",
+              "type": "Date | null | undefined",
+              "description": "Membership start date (null to clear, undefined to leave unchanged)",
+              "optional": true
+            }
+          ],
+          "returns": "Promise<Member | null>",
+          "complexity": "O(1)",
+          "sideEffects": "Replaces member entity in Table Storage"
+        },
+        "deleteMember": {
+          "signature": "deleteMember(id: string): Promise<Member | null>",
+          "line": 505,
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Member UUID"
+            }
+          ],
+          "returns": "Promise<Member | null>",
+          "complexity": "O(1)",
+          "sideEffects": "Soft deletes member, marks inactive, and deactivates any active check-ins"
         },
         "validateStationId": {
           "signature": "validateStationId(stationId: string | undefined): void",
