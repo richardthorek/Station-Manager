@@ -307,31 +307,28 @@ export function MemberList({
       <div className="search-controls">
         <div className="search-box">
           <label htmlFor="member-search" className="sr-only">Search members by name, rank, or member number</label>
-          <input
-            id="member-search"
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search by name, rank, or member #..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-            aria-label="Search members"
-          />
-          {!searchTerm && (
-            <span className="search-shortcut-hint" aria-hidden="true">
-              Press <kbd>/</kbd> to search
-            </span>
-          )}
-          {searchTerm && (
-            <button
-              type="button"
-              className="clear-btn"
-              onClick={() => setSearchTerm('')}
-              aria-label="Clear search"
-            >
-              ×
-            </button>
-          )}
+          <div className="search-input-wrapper">
+            <input
+              id="member-search"
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search by name, rank, or member #..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+              aria-label="Search members"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                className="clear-btn"
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
         <button 
           type="button"
