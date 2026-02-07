@@ -14,39 +14,45 @@
 .station-selector-button {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  gap: 0.875rem;
+  padding: 0.875rem 1.25rem;
   width: 100%;
-  background: var(--bg-card);
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  color: var(--rfs-white);
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 60px; /* Large touch target */
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
 }
 
 .station-selector-button:hover {
-  border-color: var(--rfs-core-red);
-  background: var(--bg-secondary);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .station-selector-button:focus {
-  outline: 3px solid var(--rfs-core-red);
+  outline: 3px solid var(--rfs-lime);
   outline-offset: 2px;
 }
 
 /* Demo station styling */
 .station-selector-button.demo {
   border-color: var(--ui-amber);
-  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(251, 176, 52, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(251, 176, 52, 0.15) 0%, rgba(251, 176, 52, 0.25) 100%);
+  box-shadow: 0 0 0 1px var(--ui-amber), var(--shadow-sm);
 }
 
 .station-selector-button.demo:hover {
   border-color: var(--ui-amber);
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(251, 176, 52, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(251, 176, 52, 0.2) 0%, rgba(251, 176, 52, 0.3) 100%);
+  box-shadow: 0 0 0 1px var(--ui-amber), var(--shadow-md);
 }
 
 .station-icon {
@@ -75,28 +81,29 @@
 /* Dropdown container */
 .station-dropdown {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  top: calc(100% + 0.75rem);
   left: 0;
   right: 0;
   background: var(--bg-card);
   border: 2px solid var(--rfs-core-red);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px var(--shadow-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
   z-index: 1000;
-  max-height: 400px;
+  max-height: 450px;
   display: flex;
   flex-direction: column;
-  animation: dropdownFadeIn 0.2s ease;
+  animation: dropdownFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
 @keyframes dropdownFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-15px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
