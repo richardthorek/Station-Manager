@@ -7,12 +7,15 @@
  * - Auto-populate from lookup results
  * - Manual entry option
  * - Default behavior: 1:1 brigade-to-station mapping
+ * - Focus trap for keyboard accessibility
+ * - Escape key to close
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
 import { api } from '../../../services/api';
 import type { Station, StationLookupResult } from '../../../types';
 import { StationLookup } from './StationLookup';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import './CreateStationModal.css';
 
 interface CreateStationModalProps {
@@ -43,6 +46,21 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
   const [useCustomName, setUseCustomName] = useState(false);
   const [existingStation, setExistingStation] = useState<Station | null>(null);
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const modalRef = useFocusTrap<HTMLDivElement>(true);
+
+  /**
+   * Handle Escape key to close modal
+   */
+  useEffect(() => {
+    const handleEscape = (event: Event) => {
+      if ((event as globalThis.KeyboardEvent).key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isSubmitting, onClose]);
 
   /**
    * Auto-fill station name from brigade name (1:1 default)
@@ -242,15 +260,43 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
     }
   };
 
+  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleClose();
+    }
+  };
+
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      handleClose();
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content create-station-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-overlay"
+      onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Close create station dialog"
+    >
+      <div 
+        ref={modalRef}
+        className="modal-content create-station-modal" 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-station-title"
+      >
         <div className="modal-header">
-          <h2>Create New Station</h2>
+          <h2 id="create-station-title">Create New Station</h2>
           <button
+            type="button"
             onClick={handleClose}
             className="close-button"
-            aria-label="Close"
+            aria-label="Close dialog"
             disabled={isSubmitting}
           >
             ✕

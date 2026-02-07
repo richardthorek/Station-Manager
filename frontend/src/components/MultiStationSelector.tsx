@@ -200,11 +200,14 @@ export function MultiStationSelector({
                     {brigadeStations.map(station => (
                       <label
                         key={station.id}
+                        htmlFor={`station-${station.id}`}
                         className={`station-option ${
                           selectedStationIds.includes(station.id) ? 'selected' : ''
                         }`}
+                        aria-label={`Select station ${station.name}`}
                       >
                         <input
+                          id={`station-${station.id}`}
                           type="checkbox"
                           checked={selectedStationIds.includes(station.id)}
                           onChange={() => toggleStation(station.id)}

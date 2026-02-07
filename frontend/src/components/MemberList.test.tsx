@@ -170,12 +170,19 @@ describe('MemberList', () => {
       />
     )
 
-    // Click on letter 'J'
-    const letterJ = screen.getByRole('button', { name: 'J' })
+    // Wait for members to load
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+    })
+
+    // Click on letter 'J' - Updated: button now has aria-label "Filter by letter J"
+    const letterJ = screen.getByRole('button', { name: /filter by letter j/i })
     await user.click(letterJ)
 
-    expect(screen.getByText('John Smith')).toBeInTheDocument()
-    expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    })
   })
 
   it('toggles letter filter off when clicked again', async () => {
@@ -196,8 +203,8 @@ describe('MemberList', () => {
       expect(screen.getByText('Jane Doe')).toBeInTheDocument()
     })
 
-    // Click on letter 'J' to filter (letter filter is applied locally after API fetch)
-    const letterJ = screen.getByRole('button', { name: 'J' })
+    // Click on letter 'J' to filter - Updated: button now has aria-label "Filter by letter J"
+    const letterJ = screen.getByRole('button', { name: /filter by letter j/i })
     await user.click(letterJ)
 
     // Only J names should be visible
@@ -228,13 +235,18 @@ describe('MemberList', () => {
       />
     )
 
+    // Wait for members to load
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+    })
+
     const memberButton = screen.getByRole('button', { name: /john smith/i })
     await user.click(memberButton)
 
     expect(mockOnCheckIn).toHaveBeenCalledWith('member-1')
   })
 
-  it('shows check mark for checked-in members', () => {
+  it('shows check mark for checked-in members', async () => {
     render(
       <MemberList
         members={mockMembers}
@@ -244,10 +256,17 @@ describe('MemberList', () => {
       />
     )
 
-    const johnButton = screen.getByRole('button', { name: /john smith/i })
+    // Wait for members to load
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+    })
+
+    // Updated: Now buttons have aria-label that includes "(checked in)" status
+    const johnButton = screen.getByRole('button', { name: /john smith.*checked in/i })
     expect(within(johnButton).getByText('✓')).toBeInTheDocument()
     expect(johnButton).toHaveClass('checked-in')
 
+    // Jane is not checked in
     const janeButton = screen.getByRole('button', { name: /jane doe/i })
     expect(within(janeButton).queryByText('✓')).not.toBeInTheDocument()
   })
@@ -291,8 +310,8 @@ describe('MemberList', () => {
     const input = screen.getByPlaceholderText('Member name...')
     await user.type(input, 'Bob Wilson')
 
-    // Submit the form
-    const submitButton = screen.getByRole('button', { name: /^add$/i })
+    // Submit the form - Updated: button now has aria-label "Add member"
+    const submitButton = screen.getByRole('button', { name: /add member/i })
     await user.click(submitButton)
 
     expect(mockOnAddMember).toHaveBeenCalledWith('Bob Wilson')
@@ -366,8 +385,8 @@ describe('MemberList', () => {
     const addButton = screen.getByTitle('Add New Member')
     await user.click(addButton)
 
-    // Try to submit without entering a name
-    const submitButton = screen.getByRole('button', { name: /^add$/i })
+    // Try to submit without entering a name - Updated: button now has aria-label "Add member"
+    const submitButton = screen.getByRole('button', { name: /add member/i })
     await user.click(submitButton)
 
     expect(mockOnAddMember).not.toHaveBeenCalled()
@@ -410,8 +429,8 @@ describe('MemberList', () => {
     await user.type(searchInput, 'John')
     expect(searchInput.value).toBe('John')
 
-    // Click letter filter
-    const letterJ = screen.getByRole('button', { name: 'J' })
+    // Click letter filter - Updated: button now has aria-label "Filter by letter J"
+    const letterJ = screen.getByRole('button', { name: /filter by letter j/i })
     await user.click(letterJ)
 
     // Search should be cleared
@@ -430,9 +449,18 @@ describe('MemberList', () => {
       />
     )
 
+    // Wait for members to load first
+    await waitFor(() => {
+      expect(screen.getByText('John Smith')).toBeInTheDocument()
+    })
+
     const searchInput = screen.getByPlaceholderText('Search by name, rank, or member #...') as HTMLInputElement
     await user.type(searchInput, 'John')
-    expect(searchInput.value).toBe('John')
+    
+    // Wait for search to complete
+    await waitFor(() => {
+      expect(searchInput.value).toBe('John')
+    })
 
     const memberButton = screen.getByRole('button', { name: /john smith/i })
     await user.click(memberButton)

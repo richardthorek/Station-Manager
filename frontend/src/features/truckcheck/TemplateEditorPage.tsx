@@ -186,7 +186,7 @@ export function TemplateEditorPage() {
         </div>
       )}
 
-      <main className="template-editor-main">
+      <main className="template-editor-main" id="main-content" tabIndex={-1}>
         <div className="items-list">
           {items.map((item, index) => (
             <div key={index} className="item-card">
@@ -245,7 +245,7 @@ export function TemplateEditorPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Reference Photo (Optional)</label>
+                  <p className="form-label">Reference Photo (Optional)</p>
                   {item.referencePhotoUrl ? (
                     <div className="photo-preview">
                       <img src={item.referencePhotoUrl} alt="Reference" />

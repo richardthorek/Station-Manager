@@ -94,7 +94,7 @@ export function AdminDashboardPage() {
           <Link to="/truckcheck" className="back-link">← Back</Link>
           <h1>Error</h1>
         </header>
-        <main className="dashboard-main">
+        <main className="dashboard-main" id="main-content" tabIndex={-1}>
           <div className="error">{error}</div>
         </main>
       </div>
@@ -127,7 +127,7 @@ export function AdminDashboardPage() {
         </div>
       </header>
 
-      <main className="dashboard-main">
+      <main className="dashboard-main" id="main-content" tabIndex={-1}>
         {activeTab === 'vehicles' ? (
           <VehicleManagement appliances={appliances} onUpdate={loadData} />
         ) : (
@@ -183,7 +183,20 @@ export function AdminDashboardPage() {
           ) : (
             checkRuns.map((run) => (
               <div key={run.id} className={`run-card ${run.hasIssues ? 'has-issues' : ''}`}>
-                <div className="run-header" onClick={() => toggleExpand(run.id)}>
+                <div
+                  className="run-header"
+                  onClick={() => toggleExpand(run.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      toggleExpand(run.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={expandedRun === run.id}
+                  aria-controls={`run-details-${run.id}`}
+                >
                   <div className="run-info">
                     <h3>{run.applianceName}</h3>
                     <p className="run-date">{formatDate(run.startTime)}</p>
@@ -204,7 +217,7 @@ export function AdminDashboardPage() {
                 </div>
 
                 {expandedRun === run.id && (
-                  <div className="run-details">
+                  <div className="run-details" id={`run-details-${run.id}`}>
                     <div className="results-grid">
                       {run.results.map((result) => (
                         <div key={result.id} className={`result-item ${result.status}`}>

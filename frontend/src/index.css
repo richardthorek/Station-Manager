@@ -61,7 +61,8 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Light Theme (Default) */
+/* Light Theme (Default) - WCAG AA Compliant */
+/* All color combinations tested and documented for accessibility */
 :root,
 [data-theme="light"] {
   --color-black: var(--rfs-black);
@@ -71,26 +72,33 @@
   --color-gray-dark: var(--rfs-dark-grey);
   --text-color-light: var(--rfs-white);
   --text-color-dark: var(--rfs-dark-grey);
-  
+
   --bg-primary: var(--rfs-white);
   --bg-secondary: var(--rfs-neutral-light);
   --bg-card: var(--rfs-white);
-  --text-primary: var(--rfs-black);
-  --text-secondary: var(--rfs-dark-grey);
+  --text-primary: var(--rfs-black);      /* 21.00:1 on white - Excellent */
+  --text-secondary: var(--rfs-dark-grey); /* 8.43:1 on white - Excellent */
   --border-color: var(--rfs-light-grey);
   --shadow-color: rgba(0, 0, 0, 0.1);
-  
+
   /* Surface variables for overlays and elevated components */
   --background-color: var(--rfs-white);
   --surface-elevated: var(--rfs-neutral-light);
   --surface-hover: var(--rfs-neutral-medium);
-  
+
+  /* Verified Contrast Ratios (WCAG AA ≥ 4.5:1 normal text, ≥ 3.0:1 large text) */
+  /* #000000 on #ffffff: 21.00:1 ✓ */
+  /* #4d4d4f on #ffffff: 8.43:1 ✓ */
+  /* #e5281B on #ffffff: 4.52:1 ✓ */
+  /* #4d4d4f on #f4f4f4: 7.67:1 ✓ */
+
   color-scheme: light;
   color: var(--text-primary);
   background-color: var(--bg-primary);
 }
 
-/* Dark Theme */
+/* Dark Theme - WCAG AA Compliant */
+/* All color combinations meet WCAG AA contrast requirements */
 [data-theme="dark"] {
   --color-black: #e0e0e0;
   --color-white: #1a1a1a;
@@ -100,24 +108,54 @@
   --text-color-light: #1a1a1a;
   --text-color-dark: #e8e8e8;  /* Improved contrast from #e0e0e0 */
 
-  --bg-primary: #0a0a0a;      /* Slightly lighter than pure black for depth */
+  --bg-primary: #0a0a0a;        /* Slightly lighter than pure black for depth */
   --bg-secondary: #1a1a1a;
-  --bg-card: #252525;          /* Improved contrast for cards */
-  --text-primary: #ffffff;
-  --text-secondary: #d0d0d0;   /* Improved contrast */
-  --border-color: #404040;     /* Improved visibility from #333333 */
+  --bg-card: #252525;            /* Improved contrast for cards */
+  --text-primary: #ffffff;       /* 19.80:1 on dark bg - Excellent */
+  --text-secondary: #d0d0d0;     /* 12.84:1 on dark bg - Excellent */
+  --border-color: #404040;       /* Improved visibility from #333333 */
   --shadow-color: rgba(0, 0, 0, 0.5);
 
   /* Surface variables for overlays and elevated components */
   --background-color: #1a1a1a;
-  --surface-elevated: #2d2d2d;
-  --surface-hover: #3a3a3a;
+  --surface-elevated: #2d2d2d;   /* 13.77:1 with white text ✓ */
+  --surface-hover: #3a3a3a;      /* 11.37:1 with white text ✓ */
 
   /* Override shadow levels for dark mode */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.6);
+
+  /* WCAG AA Compliant Red Strategy for Dark Mode */
+  /* Two different reds optimized for different use cases: */
+  /*   1. Button backgrounds: Keep original #e5281B (4.52:1 with white text) ✓ */
+  /*   2. Text on dark backgrounds: Use lighter #ff5547 (6.26:1 on dark) ✓ */
+  --rfs-core-red: #e5281B;       /* Button backgrounds - same as light mode */
+  --rfs-core-red-dark: #c21f17;  /* Button hover - same as light mode */
+  --rfs-core-red-light: #ff4538; /* Lighter variation */
+  --rfs-core-red-text: #ff5547;  /* Text-specific red for dark backgrounds */
+
+  /* For backward compatibility - text colors use lighter red */
+  --color-primary-red: #ff5547;  /* Used for text colors */
+  --color-error: #ff5547;        /* Used for error text */
+
+  /* Verified Dark Mode Contrast Ratios (WCAG AA ≥ 4.5:1 normal, ≥ 3.0:1 large) */
+  /* Text on backgrounds: */
+  /*   #ffffff on #0a0a0a: 19.80:1 ✓ */
+  /*   #d0d0d0 on #0a0a0a: 12.84:1 ✓ */
+  /*   #d0d0d0 on #252525: 9.94:1 ✓ */
+  /*   #ffffff on #252525: 15.33:1 ✓ */
+  /*   #ff5547 (text red) on #0a0a0a: 6.26:1 ✓ */
+  /*   #ff5547 (text red) on #252525: 4.85:1 ✓ */
+  /*   #cbdb2a (lime) on #0a0a0a: 12.92:1 ✓ */
+  /*   #cbdb2a (lime) on #252525: 10.00:1 ✓ */
+  /* Buttons with white text: */
+  /*   #ffffff on #e5281B (red button): 4.52:1 ✓ */
+  /*   #ffffff on #008550 (green button): 4.70:1 ✓ */
+  /*   #ffffff on #215e9e (blue button): 6.65:1 ✓ */
+  /*   #000000 on #cbdb2a (lime button): 13.71:1 ✓ */
+  /*   #000000 on #fbb034 (amber badge): 11.36:1 ✓ */
 
   color-scheme: dark;
   color: var(--text-primary);

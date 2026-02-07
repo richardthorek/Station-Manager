@@ -71,7 +71,7 @@ export function TruckCheckPage() {
           <Link to="/" className="back-link">← Back to Home</Link>
           <h1>Truck Checks</h1>
         </header>
-        <main className="truckcheck-main">
+        <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="loading">Loading appliances...</div>
         </main>
       </div>
@@ -85,7 +85,7 @@ export function TruckCheckPage() {
           <Link to="/" className="back-link">← Back to Home</Link>
           <h1>Truck Checks</h1>
         </header>
-        <main className="truckcheck-main">
+        <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="error">{error}</div>
         </main>
       </div>
@@ -110,7 +110,7 @@ export function TruckCheckPage() {
         <p className="subtitle">Weekly vehicle inspection system</p>
       </header>
 
-      <main className="truckcheck-main">
+      <main className="truckcheck-main" id="main-content" tabIndex={-1}>
         <div className="view-tabs">
           <Link to="/truckcheck/admin" className="tab-link">
             ⚙️ Admin Dashboard

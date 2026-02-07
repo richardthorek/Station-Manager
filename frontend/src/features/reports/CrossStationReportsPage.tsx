@@ -472,7 +472,7 @@ export function CrossStationReportsPage() {
       )}
 
       {!loading && !error && viewMode === 'brigade' && brigadeSummary && (
-        <main className="reports-main">
+        <main className="reports-main" id="main-content" tabIndex={-1}>
           <section className="brigade-summary-section">
             <h2>Brigade Summary: {brigades.find(b => b.id === selectedBrigadeId)?.name}</h2>
             
@@ -512,7 +512,7 @@ export function CrossStationReportsPage() {
       )}
 
       {!loading && !error && viewMode === 'stations' && selectedStationIds.length > 0 && (
-        <main className="reports-main">
+        <main className="reports-main" id="main-content" tabIndex={-1}>
           {/* Attendance Comparison Chart */}
           <section className="chart-section">
             <h2>Attendance Comparison</h2>

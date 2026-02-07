@@ -187,22 +187,23 @@ export function BrigadeAccessPage() {
         </p>
       </header>
 
-      {error && (
-        <div className="error-message">
-          <p>⚠️ {error}</p>
-          <button onClick={loadData} className="retry-button">Retry</button>
-        </div>
-      )}
+      <main id="main-content" tabIndex={-1}>
+        {error && (
+          <div className="error-message">
+            <p>⚠️ {error}</p>
+            <button onClick={loadData} className="retry-button">Retry</button>
+          </div>
+        )}
 
-      {loading ? (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading stations and tokens...</p>
-        </div>
-      ) : (
-        <>
-          {/* Statistics Cards */}
-          <section className="stats-section">
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Loading stations and tokens...</p>
+          </div>
+        ) : (
+          <>
+            {/* Statistics Cards */}
+            <section className="stats-section">
             <div className="stat-card">
               <div className="stat-icon">🏢</div>
               <div className="stat-content">
@@ -270,6 +271,7 @@ export function BrigadeAccessPage() {
           </section>
         </>
       )}
+      </main>
     </div>
   );
 }

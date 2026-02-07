@@ -65,6 +65,7 @@ export interface Member {
   rank?: string | null;
   firstName?: string;
   lastName?: string;
+  membershipStartDate?: Date | null;  // When member joined the brigade (can differ from createdAt)
   stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   lastSignIn?: Date | null;      // Last time member participated in an event
   createdAt: Date;

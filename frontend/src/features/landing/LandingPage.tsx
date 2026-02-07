@@ -29,18 +29,19 @@ export function LandingPage() {
               <p className="app-subtitle">Digital management tools for fire stations</p>
             </div>
             <button 
+              type="button"
               className="theme-toggle-btn"
               onClick={toggleTheme}
-              aria-label="Toggle theme"
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
-              {theme === 'light' ? '🌙' : '☀️'}
+              <span aria-hidden="true">{theme === 'light' ? '🌙' : '☀️'}</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main className="landing-main">
+      <main id="main-content" className="landing-main" tabIndex={-1}>
         <section className="welcome-section">
           <div className="welcome-content">
             <div>
@@ -63,64 +64,64 @@ export function LandingPage() {
         </section>
 
         <section className="cards-grid">
-          <div className="feature-card">
-            <div className="feature-icon">🔥</div>
+          <article className="feature-card">
+            <div className="feature-icon" aria-hidden="true">🔥</div>
             <h3>Station Sign-In</h3>
             <p>Quick and easy member check-in/out with activity tracking. Real-time updates across all devices.</p>
             <Link to="/signin" className="feature-link">
               Go to Sign-In
-              <span className="arrow">→</span>
+              <span className="arrow" aria-hidden="true">→</span>
             </Link>
-          </div>
+          </article>
 
-          <div className="feature-card">
-            <div className="feature-icon">🚛</div>
+          <article className="feature-card">
+            <div className="feature-icon" aria-hidden="true">🚛</div>
             <h3>Truck Check</h3>
             <p>Vehicle maintenance tracking and inspection checklist system.</p>
             <Link to="/truckcheck" className="feature-link">
               Go to Truck Checks
-              <span className="arrow">→</span>
+              <span className="arrow" aria-hidden="true">→</span>
             </Link>
-          </div>
+          </article>
 
-          <div className="feature-card">
-            <div className="feature-icon">📊</div>
+          <article className="feature-card">
+            <div className="feature-icon" aria-hidden="true">📊</div>
             <h3>Reports & Analytics</h3>
             <p>Historical reporting, analytics, and data export capabilities.</p>
             <Link to="/reports" className="feature-link">
               Go to Reports
-              <span className="arrow">→</span>
+              <span className="arrow" aria-hidden="true">→</span>
             </Link>
-          </div>
+          </article>
 
-          <div className="feature-card">
-            <div className="feature-icon">⚙️</div>
+          <article className="feature-card">
+            <div className="feature-icon" aria-hidden="true">⚙️</div>
             <h3>Station Management</h3>
             <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
             <div className="feature-links">
               <Link to="/admin/stations" className="feature-link">
                 Stations
-                <span className="arrow">→</span>
+                <span className="arrow" aria-hidden="true">→</span>
               </Link>
               <Link to="/admin/brigade-access" className="feature-link">
                 Brigade Access
-                <span className="arrow">→</span>
+                <span className="arrow" aria-hidden="true">→</span>
               </Link>
             </div>
-          </div>
+          </article>
 
-          <div className="info-card">
+          <article className="info-card">
             <h3>Multi-Device Support</h3>
             <p>Access from kiosks, mobile phones, tablets, or via QR codes</p>
-          </div>
-          <div className="info-card">
+          </article>
+          <article className="info-card">
             <h3>Real-Time Sync</h3>
             <p>Changes appear instantly across all connected devices</p>
-          </div>
-          <div className="info-card">
+          </article>
+          <article className="info-card">
             <h3>Professional Branding</h3>
             <p>Clean, modern design suitable for any fire service</p>
-          </div>
+          </article>
         </section>
       </main>
 

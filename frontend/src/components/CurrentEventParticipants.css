@@ -3,17 +3,35 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg-card);
+  background: linear-gradient(135deg, rgba(229, 40, 27, 0.03) 0%, rgba(203, 219, 42, 0.05) 100%);
   border-radius: 16px;
   padding: 1.5rem;
-  box-shadow: 0 4px 12px var(--shadow-color);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   border: 2px solid var(--border-color);
+  position: relative;
+}
+
+/* Dark mode gradient */
+[data-theme="dark"] .current-event-participants {
+  background: linear-gradient(135deg, rgba(255, 85, 71, 0.08) 0%, rgba(203, 219, 42, 0.08) 100%);
 }
 
 .current-event-header {
   border-bottom: 2px solid var(--border-color);
   padding-bottom: 1rem;
   margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.current-event-header::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--rfs-core-red) 0%, var(--rfs-lime) 100%);
+  border-radius: 2px;
 }
 
 .event-title-section h2 {
@@ -58,6 +76,15 @@
 .event-time {
   font-size: 0.9rem;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.event-duration {
+  font-weight: 600;
+  color: var(--rfs-core-red);
+  animation: fadeIn 0.5s ease;
 }
 
 .no-event-state {
@@ -116,13 +143,14 @@
 }
 
 .participant-card {
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 2px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem;
-  transition: all 0.2s;
-  animation: fadeIn 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideIn 0.3s ease;
   position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .participant-card.clickable {
@@ -131,12 +159,23 @@
 
 .participant-card.clickable:hover {
   border-color: var(--color-primary-red);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(226, 35, 26, 0.2);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(229, 40, 27, 0.15);
 }
 
 .participant-card.clickable:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .remove-hint {
@@ -251,11 +290,29 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .participant-time {
   font-size: 0.85rem;
   color: var(--text-secondary);
+}
+
+.participant-duration {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--rfs-core-red);
+  background: rgba(229, 40, 27, 0.08);
+  padding: 3px 8px;
+  border-radius: 6px;
+  animation: fadeIn 0.5s ease;
+}
+
+/* Dark mode duration */
+[data-theme="dark"] .participant-duration {
+  color: var(--rfs-core-red-text);
+  background: rgba(255, 85, 71, 0.15);
 }
 
 .offsite-badge {

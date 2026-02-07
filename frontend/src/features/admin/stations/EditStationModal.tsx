@@ -5,11 +5,14 @@
  * - Pre-populated form
  * - Validation
  * - Save/cancel actions
+ * - Focus trap for keyboard accessibility
+ * - Escape key to close
  */
 
-import { useState } from 'react';
+import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
 import { api } from '../../../services/api';
 import type { Station } from '../../../types';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import './EditStationModal.css';
 
 interface EditStationModalProps {
@@ -38,6 +41,21 @@ export function EditStationModal({ station, onClose, onUpdated }: EditStationMod
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalRef = useFocusTrap<HTMLDivElement>(true);
+
+  /**
+   * Handle Escape key to close modal
+   */
+  useEffect(() => {
+    const handleEscape = (event: Event) => {
+      if ((event as globalThis.KeyboardEvent).key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isSubmitting, onClose]);
 
   /**
    * Handle field change
@@ -153,15 +171,43 @@ export function EditStationModal({ station, onClose, onUpdated }: EditStationMod
     }
   };
 
+  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleClose();
+    }
+  };
+
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      handleClose();
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content edit-station-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-overlay"
+      onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Close edit station dialog"
+    >
+      <div 
+        ref={modalRef}
+        className="modal-content edit-station-modal" 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-station-title"
+      >
         <div className="modal-header">
-          <h2>Edit Station</h2>
+          <h2 id="edit-station-title">Edit Station</h2>
           <button
+            type="button"
             onClick={handleClose}
             className="close-button"
-            aria-label="Close"
+            aria-label="Close dialog"
             disabled={isSubmitting}
           >
             ✕

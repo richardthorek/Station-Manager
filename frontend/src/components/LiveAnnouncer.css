@@ -1,0 +1,30 @@
+/**
+ * Screen Reader Only Class
+ * 
+ * Hides content visually but keeps it accessible to screen readers.
+ * Uses clip method to avoid display:none or visibility:hidden.
+ */
+
+.live-announcer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

@@ -39,7 +39,7 @@ export function TemplateSelectionPage() {
           <Link to="/truckcheck" className="back-link">← Back to Truck Checks</Link>
           <h1>Manage Checklists</h1>
         </header>
-        <main className="truckcheck-main">
+        <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="loading">Loading appliances...</div>
         </main>
       </div>
@@ -53,7 +53,7 @@ export function TemplateSelectionPage() {
           <Link to="/truckcheck" className="back-link">← Back to Truck Checks</Link>
           <h1>Manage Checklists</h1>
         </header>
-        <main className="truckcheck-main">
+        <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="error">{error}</div>
         </main>
       </div>
@@ -68,7 +68,7 @@ export function TemplateSelectionPage() {
         <p className="subtitle">Select an appliance to edit its checklist template</p>
       </header>
 
-      <main className="truckcheck-main">
+      <main className="truckcheck-main" id="main-content" tabIndex={-1}>
         <div className="start-view">
           <div className="instructions">
             <h2>Select an Appliance</h2>

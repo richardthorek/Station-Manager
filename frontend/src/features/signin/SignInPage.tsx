@@ -15,7 +15,7 @@
  * Real-time synchronization ensures all connected devices see updates instantly.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from '../../components/Header';
 import { EventLog } from '../../components/EventLog';
 import { CurrentEventParticipants } from '../../components/CurrentEventParticipants';
@@ -24,8 +24,11 @@ import { UserManagement } from '../../components/UserManagement';
 import { BulkImportModal } from '../../components/BulkImportModal';
 import { NewEventModal } from '../../components/NewEventModal';
 import { ExportData } from '../../components/ExportData';
+import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { useSocket } from '../../hooks/useSocket';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { api } from '../../services/api';
+import { announce } from '../../utils/announcer';
 import type { Member, Activity, EventWithParticipants } from '../../types';
 import './SignInPage.css';
 
@@ -47,6 +50,8 @@ export function SignInPage() {
     databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
   } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
   const { isConnected, emit, on, off } = useSocket();
 
@@ -111,7 +116,7 @@ export function SignInPage() {
     }
   };
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       const data = await api.getMembers();
       // Defensive check: ensure data is an array
@@ -119,7 +124,7 @@ export function SignInPage() {
     } catch (err) {
       console.error('Error loading members:', err);
     }
-  };
+  }, []);
 
   const loadActivities = async () => {
     try {
@@ -131,7 +136,7 @@ export function SignInPage() {
     }
   };
 
-  const loadEvents = async (reset: boolean = false) => {
+  const loadEvents = useCallback(async (reset: boolean = false) => {
     try {
       const currentOffset = reset ? 0 : offset;
       const limit = 50;
@@ -166,7 +171,7 @@ export function SignInPage() {
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [loadingMore, offset, selectedEventId]);
 
   const handleCreateEvent = async (activityId: string) => {
     try {
@@ -235,9 +240,16 @@ export function SignInPage() {
       const updatedEvent = await api.getEvent(selectedEventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
       
+      // Announce check-in to screen readers
+      const member = members.find(m => m.id === memberId);
+      if (member) {
+        announce(`${member.name} checked in successfully`, 'polite');
+      }
+      
       emit('participant-change', { eventId: selectedEventId, ...result });
     } catch (err) {
       console.error('Error checking in:', err);
+      announce('Error: Failed to check in', 'assertive');
       alert('Failed to check in');
     }
   };
@@ -256,9 +268,16 @@ export function SignInPage() {
       const updatedEvent = await api.getEvent(selectedEventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
       
+      // Announce check-out to screen readers
+      const member = members.find(m => m.id === memberId);
+      if (member) {
+        announce(`${member.name} checked out`, 'polite');
+      }
+      
       emit('participant-change', { eventId: selectedEventId, ...result });
     } catch (err) {
       console.error('Error removing participant:', err);
+      announce('Error: Failed to remove participant', 'assertive');
       alert('Failed to remove participant');
     }
   };
@@ -267,9 +286,11 @@ export function SignInPage() {
     try {
       const member = await api.createMember(name);
       setMembers([...members, member]);
+      announce(`Success: ${name} added as new member`, 'polite');
       emit('member-added', member);
     } catch (err) {
       console.error('Error adding member:', err);
+      announce('Error: Failed to add member', 'assertive');
       alert('Failed to add member');
     }
   };
@@ -355,6 +376,33 @@ export function SignInPage() {
   // Get participants signed into selected event to highlight in member list
   const activeParticipantIds = selectedEvent?.participants.map(p => p.memberId) || [];
 
+  // Handle pull-to-refresh on main content
+  const handlePullToRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        loadMembers(),
+        loadEvents(true),
+      ]);
+      announce('Content refreshed');
+    } catch (err) {
+      console.error('Error refreshing:', err);
+      announce('Failed to refresh content');
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  }, [isRefreshing, loadEvents, loadMembers]);
+
+  // Pull-to-refresh handlers
+  const pullToRefreshHandlers = usePullToRefresh({
+    onRefresh: handlePullToRefresh,
+    threshold: 80,
+    resistance: 2.5,
+    enableHaptic: true,
+  });
+
   if (loading) {
     return (
       <div className="app">
@@ -394,8 +442,19 @@ export function SignInPage() {
           if (name) handleCreateActivity(name);
         }}
       />
-      
-      <main className="main-content">
+
+      <main
+        ref={mainContentRef}
+        className="main-content"
+        {...pullToRefreshHandlers}
+      >
+        {isRefreshing && (
+          <div className="pull-to-refresh-indicator">
+            <div className="spinner"></div>
+            <span>Refreshing...</span>
+          </div>
+        )}
+
         {showExportData && (
           <div className="export-data-section">
             <ExportData />
@@ -472,6 +531,23 @@ export function SignInPage() {
         onClose={() => setShowNewEventModal(false)}
         onCreate={handleCreateEvent}
         onDeleteActivity={handleDeleteActivity}
+      />
+
+      {/* Floating Action Buttons */}
+      <FloatingActionButton
+        icon="+"
+        onClick={() => setShowUserManagement(true)}
+        ariaLabel="Add new member"
+        position="bottom-right"
+        scrollContainerRef={mainContentRef}
+      />
+
+      <FloatingActionButton
+        icon="📅"
+        onClick={() => setShowNewEventModal(true)}
+        ariaLabel="Create new event"
+        position="bottom-left"
+        scrollContainerRef={mainContentRef}
       />
     </div>
   );

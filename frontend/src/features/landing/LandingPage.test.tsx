@@ -35,7 +35,8 @@ describe('LandingPage', () => {
   it('displays theme toggle button', () => {
     render(<LandingPage />)
 
-    const themeToggle = screen.getByLabelText('Toggle theme')
+    // Updated: aria-label now includes the current theme mode
+    const themeToggle = screen.getByRole('button', { name: /switch to (dark|light) mode/i })
     expect(themeToggle).toBeInTheDocument()
   })
 

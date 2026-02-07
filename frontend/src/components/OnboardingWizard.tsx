@@ -12,7 +12,7 @@
  * 4. You're Ready - "Explore at your own pace"
  */
 
-import { useState } from 'react';
+import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { markOnboardingComplete } from '../utils/onboardingUtils';
 import './OnboardingWizard.css';
@@ -144,14 +144,31 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
     }
   };
 
+  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleSkip();
+    }
+  };
+
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      handleSkip();
+    }
+  };
+
   return (
     <div
       className={`onboarding-overlay ${isClosing ? 'closing' : ''}`}
-      onClick={handleSkip}
+      onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Close onboarding overlay"
     >
       <div
         className={`onboarding-dialog ${isClosing ? 'closing' : ''}`}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Close/Skip Button */}
         <button

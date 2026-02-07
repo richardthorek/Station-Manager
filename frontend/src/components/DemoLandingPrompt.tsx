@@ -8,7 +8,7 @@
  * Stores user's preference in localStorage to avoid showing again.
  */
 
-import { useState } from 'react';
+import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStation } from '../contexts/StationContext';
 import { DEMO_STATION_ID } from '../contexts/StationContext';
@@ -62,14 +62,31 @@ export function DemoLandingPrompt({ onDismiss }: DemoLandingPromptProps) {
     }, 300);
   };
 
+  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleClose();
+    }
+  };
+
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      handleClose();
+    }
+  };
+
   return (
     <div 
       className={`demo-prompt-overlay ${isClosing ? 'closing' : ''}`}
-      onClick={handleClose}
+      onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Close demo prompt"
     >
       <div 
         className={`demo-prompt-dialog ${isClosing ? 'closing' : ''}`}
-        onClick={(e) => e.stopPropagation()}
       >
         <button 
           className="demo-prompt-close"

@@ -10,9 +10,11 @@
  * - Sample CSV template download
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
 import Papa from 'papaparse';
 import type { Member } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import { announce } from '../utils/announcer';
 import './BulkImportModal.css';
 
 interface BulkImportModalProps {
@@ -58,6 +60,19 @@ export function BulkImportModal({ existingMembers, onClose, onImportComplete, on
     failed: Array<{ name: string; error: string }>;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useFocusTrap<HTMLDivElement>(true);
+
+  // Handle Escape key
+  useEffect(() => {
+    const handleEscape = (event: Event) => {
+      if ((event as globalThis.KeyboardEvent).key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -192,6 +207,7 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
     
     if (validMembers.length === 0) {
       alert('No valid members to import');
+      announce('Error: No valid members to import', 'assertive');
       return;
     }
 
@@ -207,6 +223,15 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
       const result = await onImport(membersToImport);
       setImportResult(result);
       
+      // Announce import results to screen readers
+      if (result.successCount > 0 && result.failureCount === 0) {
+        announce(`Success: ${result.successCount} member${result.successCount !== 1 ? 's' : ''} imported successfully`, 'assertive');
+      } else if (result.successCount > 0 && result.failureCount > 0) {
+        announce(`Import complete: ${result.successCount} succeeded, ${result.failureCount} failed`, 'assertive');
+      } else {
+        announce(`Error: Import failed for all ${result.failureCount} members`, 'assertive');
+      }
+      
       if (result.failureCount === 0) {
         // All successful, close after a short delay
         setTimeout(() => {
@@ -215,7 +240,9 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
       }
     } catch (error) {
       console.error('Import failed:', error);
-      alert('Import failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      const errorMsg = 'Import failed: ' + (error instanceof Error ? error.message : 'Unknown error');
+      announce(`Error: ${errorMsg}`, 'assertive');
+      alert(errorMsg);
     } finally {
       setImporting(false);
     }
@@ -225,12 +252,46 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
   const invalidCount = parsedData.filter(m => !m.isValid).length;
   const duplicateCount = parsedData.filter(m => m.isDuplicate).length;
 
+  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClose();
+    }
+  };
+
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="bulk-import-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-overlay"
+      onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Close bulk import dialog"
+    >
+      <div 
+        ref={modalRef}
+        className="bulk-import-modal" 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bulk-import-title"
+      >
         <div className="modal-header">
-          <h2>Bulk Import Members</h2>
-          <button className="btn-close" onClick={onClose}>×</button>
+          <h2 id="bulk-import-title">Bulk Import Members</h2>
+          <button 
+            type="button"
+            className="btn-close" 
+            onClick={onClose}
+            aria-label="Close import dialog"
+          >
+            ×
+          </button>
         </div>
 
         <div className="modal-body">
@@ -238,8 +299,13 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
             <>
               <div className="import-instructions">
                 <p>Import multiple members from a CSV file exported from OneRFS Brigade Administration Report.</p>
-                <button className="btn-download-sample" onClick={downloadSampleCSV}>
-                  📥 Download Sample CSV
+                <button 
+                  type="button"
+                  className="btn-download-sample" 
+                  onClick={downloadSampleCSV}
+                  aria-label="Download sample CSV template"
+                >
+                  <span aria-hidden="true">📥</span> Download Sample CSV
                 </button>
               </div>
 
@@ -250,17 +316,27 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onClick={handleBrowseClick}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleBrowseClick();
+                  }
+                }}
+                aria-label="Upload CSV file: drag and drop or click to browse"
               >
-                <div className="upload-icon">📁</div>
+                <div className="upload-icon" aria-hidden="true">📁</div>
                 <p>Drag and drop a CSV file here</p>
                 <p className="upload-or">or</p>
-                <button className="btn-browse">Browse Files</button>
+                <button type="button" className="btn-browse">Browse Files</button>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept=".csv"
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
+                  aria-label="CSV file input"
                 />
               </div>
             </>
@@ -270,22 +346,28 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
             <>
               <div className="file-info">
                 <p><strong>File:</strong> {file.name}</p>
-                <p>
+                <p role="status">
                   <strong>Summary:</strong> {validCount} valid, {duplicateCount} duplicate{duplicateCount !== 1 ? 's' : ''}, {invalidCount} invalid
                 </p>
-                <button className="btn-change-file" onClick={() => { setFile(null); setParsedData([]); }}>
+                <button 
+                  type="button"
+                  className="btn-change-file" 
+                  onClick={() => { setFile(null); setParsedData([]); }}
+                  aria-label="Change selected file"
+                >
                   Change File
                 </button>
               </div>
 
               <div className="preview-table-container">
                 <table className="preview-table">
+                  <caption className="sr-only">Member import preview with validation status</caption>
                   <thead>
                     <tr>
-                      <th>Row</th>
-                      <th>Name</th>
-                      <th>Rank</th>
-                      <th>Status</th>
+                      <th scope="col">Row</th>
+                      <th scope="col">Name</th>
+                      <th scope="col">Rank</th>
+                      <th scope="col">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -306,11 +388,14 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
               </div>
 
               <div className="modal-actions">
-                <button className="btn-cancel" onClick={onClose}>Cancel</button>
+                <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
                 <button 
+                  type="button"
                   className="btn-import" 
                   onClick={handleImport}
                   disabled={validCount === 0 || importing}
+                  aria-disabled={validCount === 0 || importing}
+                  aria-label={`Import ${validCount} member${validCount !== 1 ? 's' : ''}`}
                 >
                   {importing ? 'Importing...' : `Import ${validCount} Member${validCount !== 1 ? 's' : ''}`}
                 </button>
@@ -319,7 +404,7 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
           )}
 
           {importResult && (
-            <div className="import-result">
+            <div className="import-result" role="status" aria-live="assertive" aria-atomic="true">
               <h3>Import Complete</h3>
               <p className="result-summary">
                 <strong>{importResult.successCount}</strong> member{importResult.successCount !== 1 ? 's' : ''} imported successfully
@@ -339,7 +424,14 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
                 </div>
               )}
 
-              <button className="btn-close-result" onClick={onImportComplete}>Close</button>
+              <button 
+                type="button"
+                className="btn-close-result" 
+                onClick={onImportComplete}
+                aria-label="Close import results"
+              >
+                Close
+              </button>
             </div>
           )}
         </div>

@@ -5,6 +5,8 @@ import { DemoLandingPrompt } from './components/DemoLandingPrompt';
 import { LoadingFallback } from './components/LoadingFallback';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InstallPrompt } from './components/InstallPrompt';
+import { SkipToContent } from './components/SkipToContent';
+import { LiveAnnouncer } from './components/LiveAnnouncer';
 import { hasSeenDemoPrompt } from './utils/demoPromptUtils';
 import { initDB } from './services/offlineStorage';
 
@@ -45,6 +47,8 @@ function App() {
   return (
     <BrowserRouter>
       <StationProvider>
+        <SkipToContent />
+        <LiveAnnouncer />
         <OfflineIndicator />
         <InstallPrompt />
         {showDemoPrompt && (

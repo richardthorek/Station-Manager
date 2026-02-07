@@ -9,7 +9,7 @@
  * - Statistics (members, events, check-ins)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
 import { api } from '../../../services/api';
 import type { Station } from '../../../types';
 import { DEMO_STATION_ID } from '../../../contexts/StationContext';
@@ -54,9 +54,30 @@ export function StationDetailsView({ station, onClose, onEdit }: StationDetailsV
     loadStatistics();
   }, []);
 
+  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClose();
+    }
+  };
+
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content station-details-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-overlay"
+      onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Close station details"
+    >
+      <div className="modal-content station-details-modal">
         <div className="modal-header">
           <div>
             <h2>Station Details</h2>

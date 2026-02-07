@@ -6,6 +6,7 @@
  * they're working with test data.
  */
 
+import type { KeyboardEvent, MouseEvent } from 'react';
 import './DemoModeWarning.css';
 
 interface DemoModeWarningProps {
@@ -15,9 +16,30 @@ interface DemoModeWarningProps {
 }
 
 export function DemoModeWarning({ action, onConfirm, onCancel }: DemoModeWarningProps) {
+  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onCancel();
+    }
+  };
+
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onCancel();
+    }
+  };
+
   return (
-    <div className="demo-warning-overlay" onClick={onCancel}>
-      <div className="demo-warning-dialog" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="demo-warning-overlay"
+      onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Close demo warning"
+    >
+      <div className="demo-warning-dialog">
         <div className="demo-warning-header">
           <div className="demo-warning-icon">🎭</div>
           <h2>Demo Mode Warning</h2>

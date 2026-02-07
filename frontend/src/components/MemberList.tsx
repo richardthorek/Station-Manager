@@ -25,6 +25,60 @@ const STORAGE_KEYS = {
 };
 
 /**
+ * Generate a consistent color for a member based on their name
+ */
+function getAvatarColor(name: string): string {
+  const colors = [
+    '#e5281b', // RFS Red
+    '#215e9e', // UI Blue
+    '#008550', // UI Green
+    '#fbb034', // UI Amber
+    '#4d4d4f', // RFS Dark Grey
+    '#7c3aed', // Purple
+    '#dc2626', // Red
+    '#059669', // Emerald
+    '#d97706', // Orange
+    '#0891b2', // Cyan
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
+/**
+ * Get initials from member name (max 2 characters)
+ */
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+/**
+ * Format last sign in date for display
+ */
+function getLastActiveText(lastSignIn: string | null | undefined): string {
+  if (!lastSignIn) return 'New member';
+
+  const now = new Date();
+  const lastActive = new Date(lastSignIn);
+  const diffMs = now.getTime() - lastActive.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+  return `${Math.floor(diffDays / 365)}y ago`;
+}
+
+/**
  * Individual member button with swipe gesture support
  */
 interface MemberButtonProps {
@@ -60,21 +114,37 @@ function MemberButton({ member, isCheckedIn, onCheckIn }: MemberButtonProps) {
     onCheckIn(member.id);
   };
 
+  const avatarColor = getAvatarColor(member.name);
+  const initials = getInitials(member.name);
+  const lastActiveText = getLastActiveText(member.lastSignIn);
+
   return (
     <button
+      type="button"
       className={`member-btn ${isCheckedIn ? 'checked-in' : ''} ${swipeDirection ? `swipe-${swipeDirection}` : ''}`}
       onClick={handleClick}
+      aria-label={`${member.name}${isCheckedIn ? ' (checked in)' : ''}`}
+      aria-pressed={isCheckedIn}
       {...swipeHandlers}
     >
-      <span className="member-name">{member.name}</span>
+      <div className="member-avatar" style={{ backgroundColor: avatarColor }}>
+        <span className="member-initials">{initials}</span>
+      </div>
+      <div className="member-info">
+        <span className="member-name">{member.name}</span>
+        <div className="member-meta">
+          {member.rank && <span className="member-rank">{member.rank}</span>}
+          <span className="member-last-active">{lastActiveText}</span>
+        </div>
+      </div>
       {isCheckedIn && (
-        <span className="check-icon">✓</span>
+        <span className="check-icon" aria-hidden="true">✓</span>
       )}
       {swipeDirection === 'right' && (
-        <span className="swipe-hint">✓ Check In</span>
+        <span className="swipe-hint" aria-hidden="true">✓ Check In</span>
       )}
       {swipeDirection === 'left' && (
-        <span className="swipe-hint">👤 Profile</span>
+        <span className="swipe-hint" aria-hidden="true">👤 Profile</span>
       )}
     </button>
   );
@@ -94,6 +164,8 @@ export function MemberList({
   const [showFilterSort, setShowFilterSort] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const membersContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const addMemberInputRef = useRef<HTMLInputElement>(null);
   
   // Filter and sort state with localStorage persistence
   const [filter, setFilter] = useState<FilterOption>(() => {
@@ -125,6 +197,12 @@ export function MemberList({
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SORT, sort);
   }, [sort]);
+
+  useEffect(() => {
+    if (showAddMember) {
+      addMemberInputRef.current?.focus();
+    }
+  }, [showAddMember]);
 
   // Fetch filtered members from API when search/filter/sort changes
   useEffect(() => {
@@ -243,7 +321,19 @@ export function MemberList({
     resistance: 2.5,
     enableHaptic: true,
   });
+  // Keyboard shortcut: "/" to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Focus search on "/" key press (unless already typing in an input)
+      if (e.key === '/' && !showAddMember && document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
 
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAddMember]);
   // Generate A-Z letters
   const letters = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
   
@@ -257,15 +347,25 @@ export function MemberList({
 
       <div className="search-controls">
         <div className="search-box">
+          <label htmlFor="member-search" className="sr-only">Search members by name, rank, or member number</label>
           <input
+            id="member-search"
+            ref={searchInputRef}
             type="text"
             placeholder="Search by name, rank, or member #..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
+            aria-label="Search members"
           />
+          {!searchTerm && (
+            <span className="search-shortcut-hint" aria-hidden="true">
+              Press <kbd>/</kbd> to search
+            </span>
+          )}
           {searchTerm && (
             <button
+              type="button"
               className="clear-btn"
               onClick={() => setSearchTerm('')}
               aria-label="Clear search"
@@ -275,25 +375,29 @@ export function MemberList({
           )}
         </div>
         <button 
+          type="button"
           className={`btn-filter-sort ${showFilterSort ? 'active' : ''}`}
           onClick={() => setShowFilterSort(!showFilterSort)}
           title="Filter and Sort Options"
           aria-label="Toggle filter and sort options"
           aria-expanded={showFilterSort}
+          aria-controls="filter-sort-panel"
         >
-          🔍
+          <span aria-hidden="true">🔍</span>
         </button>
         <button 
+          type="button"
           className="btn-add-member"
           onClick={() => setShowAddMember(true)}
           title="Add New Member"
+          aria-label="Add new member"
         >
           +
         </button>
       </div>
 
       {showFilterSort && (
-        <div className="filter-sort-panel">
+        <div id="filter-sort-panel" className="filter-sort-panel" role="region" aria-label="Filter and sort controls">
           <div className="control-group">
             <label htmlFor="filter-select">Filter:</label>
             <select
@@ -301,6 +405,7 @@ export function MemberList({
               value={filter}
               onChange={(e) => setFilter(e.target.value as FilterOption)}
               className="filter-select"
+              aria-label="Filter members"
             >
               <option value="all">All Members</option>
               <option value="checked-in">Checked In</option>
@@ -316,6 +421,7 @@ export function MemberList({
               value={sort}
               onChange={(e) => setSort(e.target.value as SortOption)}
               className="sort-select"
+              aria-label="Sort members"
             >
               <option value="default">Default</option>
               <option value="name-asc">Name (A-Z)</option>
@@ -327,7 +433,7 @@ export function MemberList({
         </div>
       )}
 
-      <div className="result-count">
+      <div className="result-count" role="status" aria-live="polite" aria-atomic="true">
         {loading ? (
           <span>Loading...</span>
         ) : (
@@ -346,7 +452,7 @@ export function MemberList({
             <span>Refreshing...</span>
           </div>
         )}
-        <div className="members-grid">
+        <div className="members-grid" role="list" aria-label="Member list">
           {displayedMembers.length > 0 ? (
             displayedMembers.map(member => {
               const isCheckedIn = checkedInMemberIds.has(member.id);
@@ -360,44 +466,70 @@ export function MemberList({
               );
             })
           ) : (
-            <p className="no-results">No members found</p>
+            <div className="no-results" role="status">
+              <p className="no-results-text">No members found</p>
+              <p className="no-results-hint">
+                {searchTerm ? 'Try a different search term' : 'Add your first member to get started'}
+              </p>
+            </div>
           )}
         </div>
 
-        <div className="letter-selector">
+        <nav className="letter-selector" aria-label="Filter members alphabetically">
           {letters.map(letter => (
             <button
               key={letter}
+              type="button"
               className={`letter-btn ${selectedLetter === letter ? 'active' : ''}`}
               onClick={() => handleLetterClick(letter)}
               title={`Filter by ${letter}`}
+              aria-label={`Filter by letter ${letter}`}
+              aria-pressed={selectedLetter === letter}
             >
               {letter}
             </button>
           ))}
-        </div>
+        </nav>
       </div>
 
       {showAddMember && (
-        <div className="add-member-overlay">
-          <div className="add-member-form">
-            <h3>Add New Member</h3>
+        <div className="add-member-overlay" role="presentation">
+          <div 
+            className="add-member-form" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="add-member-title"
+          >
+            <h3 id="add-member-title">Add New Member</h3>
+            <label htmlFor="new-member-name" className="sr-only">Member name</label>
             <input
+              id="new-member-name"
               type="text"
               placeholder="Member name..."
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddMember()}
-              autoFocus
+              ref={addMemberInputRef}
+              aria-label="Member name"
             />
             <div className="form-actions">
-              <button className="btn-success" onClick={handleAddMember}>
+              <button 
+                type="button"
+                className="btn-success" 
+                onClick={handleAddMember}
+                aria-label="Add member"
+              >
                 Add
               </button>
-              <button className="btn-secondary" onClick={() => {
-                setShowAddMember(false);
-                setNewMemberName('');
-              }}>
+              <button 
+                type="button"
+                className="btn-secondary" 
+                onClick={() => {
+                  setShowAddMember(false);
+                  setNewMemberName('');
+                }}
+                aria-label="Cancel adding member"
+              >
                 Cancel
               </button>
             </div>
