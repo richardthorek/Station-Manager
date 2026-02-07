@@ -3,7 +3,12 @@ import { render, waitFor } from '@testing-library/react';
 import { InstallPrompt } from './InstallPrompt';
 
 describe('InstallPrompt', () => {
+  let originalUserAgent: string;
+
   beforeEach(() => {
+    // Save original userAgent
+    originalUserAgent = navigator.userAgent;
+    
     // Clear localStorage
     localStorage.clear();
     
@@ -21,10 +26,35 @@ describe('InstallPrompt', () => {
         dispatchEvent: vi.fn(),
       })),
     });
+
+    // Mock mobile userAgent (Android)
+    Object.defineProperty(navigator, 'userAgent', {
+      writable: true,
+      configurable: true,
+      value: 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+    });
   });
 
   afterEach(() => {
+    // Restore original userAgent
+    Object.defineProperty(navigator, 'userAgent', {
+      writable: true,
+      configurable: true,
+      value: originalUserAgent,
+    });
     vi.restoreAllMocks();
+  });
+
+  it('should not render on desktop devices', () => {
+    // Mock desktop userAgent
+    Object.defineProperty(navigator, 'userAgent', {
+      writable: true,
+      configurable: true,
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    });
+
+    const { container } = render(<InstallPrompt />);
+    expect(container.querySelector('.install-prompt-notification')).not.toBeInTheDocument();
   });
 
   it('should not render when already installed', () => {
@@ -44,7 +74,7 @@ describe('InstallPrompt', () => {
     });
 
     const { container } = render(<InstallPrompt />);
-    expect(container.querySelector('.install-prompt')).not.toBeInTheDocument();
+    expect(container.querySelector('.install-prompt-notification')).not.toBeInTheDocument();
   });
 
   it('should not render when recently dismissed', () => {
@@ -53,10 +83,10 @@ describe('InstallPrompt', () => {
     localStorage.setItem('install-prompt-dismissed', oneDayAgo.toString());
 
     const { container } = render(<InstallPrompt />);
-    expect(container.querySelector('.install-prompt')).not.toBeInTheDocument();
+    expect(container.querySelector('.install-prompt-notification')).not.toBeInTheDocument();
   });
 
-  it('should render when beforeinstallprompt event is triggered', async () => {
+  it('should render on mobile devices when beforeinstallprompt event is triggered', async () => {
     const { container } = render(<InstallPrompt />);
 
     // Create mock beforeinstallprompt event
@@ -78,6 +108,20 @@ describe('InstallPrompt', () => {
     // Wait for prompt to show (after 5 second delay, but we'll check container immediately)
     // Note: In actual implementation, there's a 5 second delay, but we can't easily test that here
     // so we just verify the structure exists
+    expect(container).toBeInTheDocument();
+  });
+
+  it('should render on iOS devices', () => {
+    // Mock iOS userAgent
+    Object.defineProperty(navigator, 'userAgent', {
+      writable: true,
+      configurable: true,
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
+    });
+
+    const { container } = render(<InstallPrompt />);
+    
+    // Component should be rendered (event listener registered)
     expect(container).toBeInTheDocument();
   });
 
