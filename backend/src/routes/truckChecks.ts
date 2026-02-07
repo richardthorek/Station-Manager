@@ -235,11 +235,16 @@ router.post('/runs', validateCreateCheckRun, handleValidationErrors, async (req:
       // Join existing check run
       checkRun = await db.addContributorToCheckRun(checkRun.id, completedByName || completedBy);
       
+      // Ensure checkRun is not undefined after addContributorToCheckRun
+      if (!checkRun) {
+        return res.status(500).json({ error: 'Failed to add contributor to check run' });
+      }
+      
       // Emit real-time update that someone joined - station-scoped
       if (checkRun.stationId) {
         io.to(`station-${checkRun.stationId}`).emit('truck-check-update', {
           type: 'contributor-joined',
-          runId: checkRun!.id,
+          runId: checkRun.id,
           contributorName: completedByName || completedBy,
           checkRun,
           timestamp: new Date()

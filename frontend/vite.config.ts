@@ -145,6 +145,32 @@ export default defineConfig({
       nodeEnv: process.env.NODE_ENV || 'production',
     }),
   },
+  build: {
+    // Bundle size budgets and optimizations
+    chunkSizeWarningLimit: 500, // Warn for chunks > 500 KB
+    rollupOptions: {
+      output: {
+        // Manual chunk splitting for better caching and smaller initial bundle
+        manualChunks: {
+          // Vendor chunks
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-charts': ['recharts'],
+          'vendor-motion': ['framer-motion'],
+          'vendor-socket': ['socket.io-client'],
+          // Date utilities - split out date-fns for tree-shaking
+          'vendor-date': ['date-fns'],
+          // Export utilities (heavy)
+          'vendor-export': ['exceljs', 'jspdf', 'html2canvas', 'papaparse'],
+        },
+      },
+    },
+    // Enable source maps for production debugging (gzipped, minimal overhead)
+    sourcemap: true,
+    // Optimize asset size
+    assetsInlineLimit: 4096, // Inline assets < 4KB as base64
+    // Enable CSS code splitting
+    cssCodeSplit: true,
+  },
   test: {
     globals: true,
     environment: 'jsdom',
