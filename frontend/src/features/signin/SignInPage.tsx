@@ -66,6 +66,7 @@ export function SignInPage() {
   const [isSwitchingStation, setIsSwitchingStation] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
+  const hasLoadedInitialData = useRef(false);
 
   const { isConnected, emit, on, off } = useSocket();
   const { showSuccess, showError, showWarning } = useToast();
@@ -121,6 +122,8 @@ export function SignInPage() {
 
   // Initial data load
   useEffect(() => {
+    if (hasLoadedInitialData.current) return;
+    hasLoadedInitialData.current = true;
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
