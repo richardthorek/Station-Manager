@@ -24,6 +24,8 @@ import './StationManagementPage.css';
 type SortField = 'name' | 'brigade' | 'district' | 'area';
 type SortDirection = 'asc' | 'desc';
 
+type ViewMode = 'dashboard' | 'grid' | 'table';
+
 export function StationManagementPage() {
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,8 +38,10 @@ export function StationManagementPage() {
   const [editingStation, setEditingStation] = useState<Station | null>(null);
   const [viewingStation, setViewingStation] = useState<Station | null>(null);
   const [deletingStation, setDeletingStation] = useState<Station | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   
-  const itemsPerPage = 10;
+  const itemsPerPage = 12; // Increased for card grid
   const socket = useSocket();
   const { refreshStations } = useStation();
 
@@ -50,6 +54,7 @@ export function StationManagementPage() {
       setError(null);
       const data = await api.getStations();
       setStations(data);
+      setLastRefresh(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load stations');
       console.error('Error loading stations:', err);
@@ -157,6 +162,28 @@ export function StationManagementPage() {
   const totalPages = Math.ceil(filteredAndSortedStations.length / itemsPerPage);
 
   /**
+   * Calculate dashboard statistics
+   */
+  const stats = useMemo(() => {
+    const activeStations = stations.filter(s => s.isActive).length;
+    const inactiveStations = stations.filter(s => !s.isActive).length;
+    
+    return {
+      total: stations.length,
+      active: activeStations,
+      inactive: inactiveStations,
+      filtered: filteredAndSortedStations.length,
+    };
+  }, [stations, filteredAndSortedStations]);
+
+  /**
+   * Refresh data manually
+   */
+  const handleRefresh = () => {
+    loadStations();
+  };
+
+  /**
    * Handle sort column click
    */
   const handleSort = (field: SortField) => {
@@ -203,19 +230,32 @@ export function StationManagementPage() {
   if (loading) {
     return (
       <div className="station-management-page">
-        <header className="page-header">
-          <Link to="/" className="back-link">← Back to Home</Link>
+        <header className="page-header-compact">
+          <Link to="/" className="back-link">← Home</Link>
           <h1>Station Management</h1>
         </header>
-        <div className="loading-message">Loading stations...</div>
+        <div className="loading-message">
+          <div className="spinner"></div>
+          <p>Loading stations...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="station-management-page">
-      <header className="page-header">
-        <Link to="/" className="back-link">← Back to Home</Link>
+      <header className="page-header-compact">
+        <div className="header-top">
+          <Link to="/" className="back-link">← Home</Link>
+          <div className="header-actions">
+            <button onClick={handleRefresh} className="icon-button" title="Refresh">
+              🔄
+            </button>
+            <span className="last-refresh">
+              Updated {lastRefresh.toLocaleTimeString()}
+            </span>
+          </div>
+        </div>
         <h1>Station Management</h1>
       </header>
 
@@ -227,8 +267,43 @@ export function StationManagementPage() {
       )}
 
       <div className="page-content" id="main-content" tabIndex={-1}>
+        {/* Dashboard Statistics */}
+        <div className="dashboard-stats">
+          <div className="stat-card gradient-red">
+            <div className="stat-icon">🏢</div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.total}</div>
+              <div className="stat-label">Total Stations</div>
+            </div>
+          </div>
+          
+          <div className="stat-card gradient-green">
+            <div className="stat-icon">✓</div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.active}</div>
+              <div className="stat-label">Active</div>
+            </div>
+          </div>
+          
+          <div className="stat-card gradient-grey">
+            <div className="stat-icon">⊗</div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.inactive}</div>
+              <div className="stat-label">Inactive</div>
+            </div>
+          </div>
+          
+          <div className="stat-card gradient-blue">
+            <div className="stat-icon">🔍</div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.filtered}</div>
+              <div className="stat-label">Filtered Results</div>
+            </div>
+          </div>
+        </div>
+
         {/* Toolbar */}
-        <div className="toolbar">
+        <div className="toolbar-compact">
           <div className="search-box">
             <input
               type="text"
@@ -243,27 +318,130 @@ export function StationManagementPage() {
             />
           </div>
           <div className="toolbar-actions">
-            <Link to="/admin/brigade-access" className="secondary-button">
+            <div className="view-switcher">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`view-button ${viewMode === 'grid' ? 'active' : ''}`}
+                title="Card Grid View"
+              >
+                ⊞
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`view-button ${viewMode === 'table' ? 'active' : ''}`}
+                title="Table View"
+              >
+                ☰
+              </button>
+            </div>
+            <Link to="/admin/brigade-access" className="secondary-button-compact">
               🔑 Brigade Access
             </Link>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="primary-button"
+              className="primary-button-compact"
               aria-label="Create new station"
             >
-              + Create Station
+              + New Station
             </button>
           </div>
         </div>
 
-        {/* Station List */}
+        {/* Station List - Grid or Table View */}
         {filteredAndSortedStations.length === 0 ? (
           <div className="empty-state">
             <p>No stations found</p>
             {searchQuery && <p className="hint">Try a different search term</p>}
           </div>
+        ) : viewMode === 'grid' ? (
+          <>
+            {/* Card Grid View */}
+            <div className="station-cards-grid">
+              {paginatedStations.map((station) => (
+                <div key={station.id} className={`station-card ${!station.isActive ? 'inactive' : ''}`}>
+                  <div className="station-card-header">
+                    <h3 className="station-card-title">
+                      {station.name}
+                      {isDemoStation(station) && (
+                        <span className="demo-badge-small" title="Demo Station">DEMO</span>
+                      )}
+                    </h3>
+                    <span className={`status-badge-small ${station.isActive ? 'active' : 'inactive'}`}>
+                      {station.isActive ? '●' : '○'}
+                    </span>
+                  </div>
+                  
+                  <div className="station-card-body">
+                    <div className="station-card-detail">
+                      <span className="detail-icon">🔥</span>
+                      <span className="detail-text">{station.brigadeName}</span>
+                    </div>
+                    <div className="station-card-detail">
+                      <span className="detail-icon">📍</span>
+                      <span className="detail-text">{station.hierarchy.district}</span>
+                    </div>
+                    <div className="station-card-detail">
+                      <span className="detail-icon">🗺️</span>
+                      <span className="detail-text">{station.hierarchy.area}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="station-card-footer">
+                    <button
+                      onClick={() => setViewingStation(station)}
+                      className="card-action-button"
+                      title="View Details"
+                    >
+                      👁️
+                    </button>
+                    <button
+                      onClick={() => setEditingStation(station)}
+                      className="card-action-button"
+                      title="Edit Station"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => setDeletingStation(station)}
+                      className="card-action-button"
+                      title="Delete Station"
+                      disabled={!station.isActive}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="pagination-button"
+                  aria-label="Previous page"
+                >
+                  ← Previous
+                </button>
+                <span className="pagination-info">
+                  Page {currentPage} of {totalPages} ({filteredAndSortedStations.length} stations)
+                </span>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="pagination-button"
+                  aria-label="Next page"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <>
+            {/* Table View */}
             <div className="station-table-container">
               <table className="station-table">
                 <thead>
