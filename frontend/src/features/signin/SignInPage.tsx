@@ -28,6 +28,7 @@ import { ExportData } from '../../components/ExportData';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { useSocket } from '../../hooks/useSocket';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
+import { useStation } from '../../contexts/StationContext';
 import { api } from '../../services/api';
 import { announce } from '../../utils/announcer';
 import type { Member, Activity, EventWithParticipants } from '../../types';
@@ -53,9 +54,11 @@ export function SignInPage() {
   } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isGridExpanded, setIsGridExpanded] = useState(true);
+  const [isSwitchingStation, setIsSwitchingStation] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   const { isConnected, emit, on, off } = useSocket();
+  const { selectedStation } = useStation();
 
   // Get selected event
   const selectedEvent = selectedEventId
@@ -71,6 +74,34 @@ export function SignInPage() {
       setIsGridExpanded(true);
     }
   }, [hasActiveEvents]);
+
+  // Listen for station changes and reload data
+  useEffect(() => {
+    // Skip initial load (handled by loadInitialData)
+    // Only react to changes after initial mount
+    if (!loading && selectedStation) {
+      const reloadDataForNewStation = async () => {
+        setIsSwitchingStation(true);
+        try {
+          await Promise.all([
+            loadMembers(),
+            loadActivities(),
+            loadEvents(true),
+          ]);
+          announce(`Switched to ${selectedStation.brigadeName} - ${selectedStation.name}`);
+        } catch (err) {
+          console.error('Error reloading data for new station:', err);
+          announce('Failed to reload data for new station');
+        } finally {
+          // Small delay to ensure smooth transition
+          setTimeout(() => setIsSwitchingStation(false), 300);
+        }
+      };
+
+      reloadDataForNewStation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStation?.id]);
 
   // Initial data load
   useEffect(() => {
@@ -464,6 +495,19 @@ export function SignInPage() {
           <div className="pull-to-refresh-indicator">
             <div className="spinner"></div>
             <span>Refreshing...</span>
+          </div>
+        )}
+
+        {/* Station switching overlay */}
+        {isSwitchingStation && (
+          <div className="station-switching-overlay">
+            <div className="station-switching-content">
+              <div className="spinner"></div>
+              <span>Switching Brigade...</span>
+              {selectedStation && (
+                <span className="station-name-small">{selectedStation.brigadeName}</span>
+              )}
+            </div>
           </div>
         )}
 
