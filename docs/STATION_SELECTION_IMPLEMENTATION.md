@@ -262,9 +262,62 @@ Implemented comprehensive frontend station selection feature enabling users to s
 - Blocks taking UI screenshots
 
 ### Minor UX Improvements
-- Could add loading skeleton for selector button
-- Could add transition animation for dropdown
+- ~~Could add loading skeleton for selector button~~ ✅ **Implemented** - Added full-screen loading overlay (Feb 2026)
+- ~~Could add transition animation for dropdown~~ ✅ **Implemented** - Added smooth fade/scale animations (Feb 2026)
 - Could add "no results" illustration
+
+## Visual Feedback for Brigade Switching (Added Feb 2026)
+
+### Problem
+When users switched brigades, there was no visual feedback indicating:
+- That data was being reloaded
+- Which brigade's data was currently displayed
+- Whether the switch was in progress or complete
+
+### Solution
+Added comprehensive visual feedback system for station/brigade switching in SignInPage:
+
+#### Implementation Details (`SignInPage.tsx`)
+1. **Station Change Detection**:
+   - Added `useStation` hook integration to track selected station
+   - Added effect that listens for `selectedStation?.id` changes
+   - Uses `isInitialMount` ref to skip initial load and only react to actual switches
+
+2. **Loading Overlay**:
+   - Full-screen modal overlay with semi-transparent backdrop (70% opacity + blur)
+   - White content card with spinner, "Switching Brigade..." text, and brigade name
+   - Smooth fade-in and scale-in animations (200-300ms)
+   - Auto-dismisses after data reload completes
+
+3. **Data Reload**:
+   - Automatically reloads members, activities, and events for new station
+   - Uses `Promise.all` for parallel loading
+   - Announces switch to screen readers for accessibility
+   - Error handling with user-friendly messages
+
+#### CSS Styling (`SignInPage.css`)
+- `.station-switching-overlay`: Fixed positioning, dark backdrop with blur effect
+- `.station-switching-content`: White card with shadow, centered content
+- Animations: `fadeIn` for overlay, `scaleIn` for content card
+- Responsive 40px spinner with RFS brand red color
+- `STATION_SWITCH_DELAY_MS` constant (300ms) matches CSS animation duration
+
+#### User Experience
+- ✅ Immediate visual feedback when switching brigades
+- ✅ Clear indication of which brigade is loading
+- ✅ Professional, polished animation
+- ✅ Works on all screen sizes (desktop, tablet portrait/landscape)
+- ✅ Accessible (screen reader announcements)
+- ✅ Brigade name in dropdown always matches displayed data
+
+#### Testing
+- Manual testing on desktop (1280x800), iPad portrait (768x1024), and iPad landscape (1024x768)
+- All 250 frontend tests continue to pass
+- No security alerts from CodeQL
+- Build succeeds without errors
+
+### Related Issue
+Resolves issue about lack of visual indicator during brigade switching and ensures correct brigade data loads.
 
 ## Conclusion
 
