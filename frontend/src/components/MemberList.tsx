@@ -25,41 +25,6 @@ const STORAGE_KEYS = {
 };
 
 /**
- * Generate a consistent color for a member based on their name
- */
-function getAvatarColor(name: string): string {
-  const colors = [
-    '#e5281b', // RFS Red
-    '#215e9e', // UI Blue
-    '#008550', // UI Green
-    '#fbb034', // UI Amber
-    '#4d4d4f', // RFS Dark Grey
-    '#7c3aed', // Purple
-    '#dc2626', // Red
-    '#059669', // Emerald
-    '#d97706', // Orange
-    '#0891b2', // Cyan
-  ];
-
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-}
-
-/**
- * Get initials from member name (max 2 characters)
- */
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
-
-/**
  * Format last sign in date for display
  */
 function getLastActiveText(lastSignIn: string | null | undefined): string {
@@ -113,9 +78,6 @@ function MemberButton({ member, isCheckedIn, onCheckIn }: MemberButtonProps) {
   const handleClick = () => {
     onCheckIn(member.id);
   };
-
-  const avatarColor = getAvatarColor(member.name);
-  const initials = getInitials(member.name);
   const lastActiveText = getLastActiveText(member.lastSignIn);
 
   return (
@@ -127,9 +89,6 @@ function MemberButton({ member, isCheckedIn, onCheckIn }: MemberButtonProps) {
       aria-pressed={isCheckedIn}
       {...swipeHandlers}
     >
-      <div className="member-avatar" style={{ backgroundColor: avatarColor }}>
-        <span className="member-initials">{initials}</span>
-      </div>
       <div className="member-info">
         <span className="member-name">{member.name}</span>
         <div className="member-meta">
