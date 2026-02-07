@@ -95,6 +95,7 @@
 .event-log-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1rem;
 }
 
@@ -164,7 +165,7 @@
 
 .end-of-log {
   text-align: center;
-  padding: 2rem;
+  padding: 1rem 0 0.5rem 0;
   color: #666;
   font-size: 0.9rem;
 }
