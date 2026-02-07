@@ -68,6 +68,11 @@
   flex-shrink: 0;
 }
 
+/* Member Name Grid section - full width at top when events are active */
+.member-name-grid-container {
+  flex-shrink: 0;
+}
+
 .content-grid {
   display: grid;
   grid-template-columns: 400px 1fr 400px;

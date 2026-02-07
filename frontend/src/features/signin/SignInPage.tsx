@@ -20,6 +20,7 @@ import { Header } from '../../components/Header';
 import { EventLog } from '../../components/EventLog';
 import { CurrentEventParticipants } from '../../components/CurrentEventParticipants';
 import { MemberList } from '../../components/MemberList';
+import { MemberNameGrid } from '../../components/MemberNameGrid';
 import { UserManagement } from '../../components/UserManagement';
 import { BulkImportModal } from '../../components/BulkImportModal';
 import { NewEventModal } from '../../components/NewEventModal';
@@ -51,6 +52,7 @@ export function SignInPage() {
     usingInMemory: boolean;
   } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isGridExpanded, setIsGridExpanded] = useState(true);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   const { isConnected, emit, on, off } = useSocket();
@@ -460,6 +462,17 @@ export function SignInPage() {
             <ExportData />
           </div>
         )}
+
+        {/* Full-width Member Name Grid - shown when events are active */}
+        <MemberNameGrid
+          members={members}
+          events={events}
+          selectedEventId={selectedEventId}
+          onSelectEvent={handleSelectEvent}
+          onCheckIn={handleCheckIn}
+          isExpanded={isGridExpanded}
+          onToggleExpanded={() => setIsGridExpanded(!isGridExpanded)}
+        />
 
         <div className="content-grid">
           <div className="left-column">
