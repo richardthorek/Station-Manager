@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type KeyboardEvent } from 'react';
 import type { EventWithParticipants } from '../types';
 import './CurrentEventParticipants.css';
 
@@ -139,16 +139,20 @@ export function CurrentEventParticipants({ event, onRemoveParticipant }: Current
               <div
                 key={participant.id}
                 className={`participant-card ${onRemoveParticipant ? 'clickable' : ''}`}
-                onClick={() => onRemoveParticipant && onRemoveParticipant(participant.memberId)}
-                role={onRemoveParticipant ? 'button' : undefined}
-                tabIndex={onRemoveParticipant ? 0 : undefined}
-                onKeyDown={(e) => {
-                  if (onRemoveParticipant && (e.key === 'Enter' || e.key === ' ')) {
-                    e.preventDefault();
-                    onRemoveParticipant(participant.memberId);
-                  }
-                }}
-                title={onRemoveParticipant ? 'Click to remove participant' : undefined}
+                {...(onRemoveParticipant
+                  ? {
+                      role: 'button' as const,
+                      tabIndex: 0,
+                      onClick: () => onRemoveParticipant(participant.memberId),
+                      onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onRemoveParticipant(participant.memberId);
+                        }
+                      },
+                      title: 'Click to remove participant',
+                    }
+                  : {})}
               >
                 <div className="participant-header">
                   <div className={`rank-helmet ${getRankHelmetClass(participant.memberRank)}`}></div>

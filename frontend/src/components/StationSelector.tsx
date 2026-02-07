@@ -30,6 +30,7 @@ export function StationSelector() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const listboxId = 'station-selector-listbox';
 
   /**
    * Filter stations based on search query
@@ -191,7 +192,16 @@ export function StationSelector() {
   }
 
   return (
-    <div className="station-selector" ref={dropdownRef} onKeyDown={handleKeyDown}>
+    <div
+      className="station-selector"
+      ref={dropdownRef}
+      onKeyDown={handleKeyDown}
+      role="combobox"
+      aria-expanded={isOpen}
+      aria-haspopup="listbox"
+      aria-controls={listboxId}
+      tabIndex={0}
+    >
       <button
         className={`station-selector-button ${isDemoStation() ? 'demo' : ''}`}
         onClick={toggleDropdown}
@@ -218,7 +228,7 @@ export function StationSelector() {
             />
           </div>
 
-          <div className="station-list" ref={listRef}>
+          <div className="station-list" ref={listRef} id={listboxId}>
             {filteredStations.length === 0 ? (
               <div className="station-list-empty">No stations found</div>
             ) : (
@@ -228,13 +238,21 @@ export function StationSelector() {
                 const isHighlighted = index === highlightedIndex;
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={station.id}
                     className={`station-list-item ${isSelected ? 'selected' : ''} ${isDemo ? 'demo' : ''} ${isHighlighted ? 'highlighted' : ''}`}
                     onClick={() => handleSelectStation(station.id)}
                     role="option"
                     aria-selected={isSelected}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectStation(station.id);
+                      }
+                    }}
                     onMouseEnter={() => setHighlightedIndex(index)}
+                    onFocus={() => setHighlightedIndex(index)}
                   >
                     <div className="station-item-main">
                       <span className="station-item-name">
@@ -246,7 +264,7 @@ export function StationSelector() {
                     <div className="station-item-hierarchy">
                       {station.hierarchy.area} › {station.hierarchy.district}
                     </div>
-                  </div>
+                  </button>
                 );
               })
             )}

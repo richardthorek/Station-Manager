@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Member } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -17,6 +17,7 @@ export function UserManagement({ members, onClose, onUpdateMember, onBulkImport 
   const [editName, setEditName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const modalRef = useFocusTrap<HTMLDivElement>(true);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   const handleCancel = () => {
     setEditingId(null);
@@ -38,6 +39,12 @@ export function UserManagement({ members, onClose, onUpdateMember, onBulkImport 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [editingId, onClose]);
+
+  useEffect(() => {
+    if (editingId) {
+      editInputRef.current?.focus();
+    }
+  }, [editingId]);
 
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -93,11 +100,27 @@ export function UserManagement({ members, onClose, onUpdateMember, onBulkImport 
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} role="presentation">
+    <div
+      className="modal-overlay"
+      onClick={(event: MouseEvent<HTMLDivElement>) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClose();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close user management dialog"
+    >
       <div 
         ref={modalRef}
         className="modal-content" 
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="user-mgmt-title"
@@ -164,7 +187,7 @@ export function UserManagement({ members, onClose, onUpdateMember, onBulkImport 
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSave()}
-                        autoFocus
+                        ref={editInputRef}
                         aria-label="Member name"
                       />
                       <button 

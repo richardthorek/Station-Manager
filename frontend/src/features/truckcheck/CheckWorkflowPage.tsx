@@ -25,6 +25,7 @@ export function CheckWorkflowPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-collapse sidebar on mobile devices
   useEffect(() => {
@@ -48,6 +49,12 @@ export function CheckWorkflowPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applianceId]);
+
+  useEffect(() => {
+    if (showNamePrompt) {
+      nameInputRef.current?.focus();
+    }
+  }, [showNamePrompt]);
 
   // Listen for real-time updates from other contributors
   useEffect(() => {
@@ -284,7 +291,7 @@ export function CheckWorkflowPage() {
               onChange={(e) => setCompletedBy(e.target.value)}
               placeholder="Your name"
               className="name-input"
-              autoFocus
+              ref={nameInputRef}
             />
             <button 
               className="btn-primary" 
@@ -433,10 +440,18 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [storageEnabled, setStorageEnabled] = useState(false);
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const uploadInputId = `issue-photo-${item.id}`;
 
   useEffect(() => {
     checkStorageStatus();
   }, []);
+
+  useEffect(() => {
+    if (showComment && isActive) {
+      commentInputRef.current?.focus();
+    }
+  }, [showComment, isActive]);
 
   async function checkStorageStatus() {
     try {
@@ -565,13 +580,13 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Describe the issue..."
                   className="comment-input"
-                  autoFocus
+                  ref={commentInputRef}
                 />
                 
                 {/* Photo upload for issue documentation */}
                 {storageEnabled && (
                   <div className="photo-upload-section">
-                    <label className="upload-label-text">
+                    <label className="upload-label-text" htmlFor={uploadInputId}>
                       Add Photo (Optional)
                     </label>
                     {uploadedPhotoUrl ? (
@@ -584,21 +599,21 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
                           Remove Photo
                         </button>
                       </div>
-                    ) : (
-                      <div className="photo-upload-control">
-                        <input
-                          type="file"
-                          id="photo-upload"
-                          accept="image/*"
-                          onChange={handlePhotoUpload}
-                          disabled={uploading}
-                          style={{ display: 'none' }}
-                        />
-                        <label htmlFor="photo-upload" className="upload-button">
-                          {uploading ? '📤 Uploading...' : '📸 Add Photo'}
-                        </label>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="photo-upload-control">
+                          <input
+                            type="file"
+                            id={uploadInputId}
+                            accept="image/*"
+                            onChange={handlePhotoUpload}
+                            disabled={uploading}
+                            style={{ display: 'none' }}
+                          />
+                          <label htmlFor={uploadInputId} className="upload-button">
+                            {uploading ? '📤 Uploading...' : '📸 Add Photo'}
+                          </label>
+                        </div>
+                      )}
                   </div>
                 )}
                 

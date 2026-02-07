@@ -183,7 +183,20 @@ export function AdminDashboardPage() {
           ) : (
             checkRuns.map((run) => (
               <div key={run.id} className={`run-card ${run.hasIssues ? 'has-issues' : ''}`}>
-                <div className="run-header" onClick={() => toggleExpand(run.id)}>
+                <div
+                  className="run-header"
+                  onClick={() => toggleExpand(run.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      toggleExpand(run.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={expandedRun === run.id}
+                  aria-controls={`run-details-${run.id}`}
+                >
                   <div className="run-info">
                     <h3>{run.applianceName}</h3>
                     <p className="run-date">{formatDate(run.startTime)}</p>
@@ -204,7 +217,7 @@ export function AdminDashboardPage() {
                 </div>
 
                 {expandedRun === run.id && (
-                  <div className="run-details">
+                  <div className="run-details" id={`run-details-${run.id}`}>
                     <div className="results-grid">
                       {run.results.map((result) => (
                         <div key={result.id} className={`result-item ${result.status}`}>

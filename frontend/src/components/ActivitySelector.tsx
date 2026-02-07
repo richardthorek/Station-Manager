@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Activity, ActiveActivity } from '../types';
 import './ActivitySelector.css';
 
@@ -17,6 +17,13 @@ export function ActivitySelector({
 }: ActivitySelectorProps) {
   const [showNewActivity, setShowNewActivity] = useState(false);
   const [newActivityName, setNewActivityName] = useState('');
+  const newActivityInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (showNewActivity) {
+      newActivityInputRef.current?.focus();
+    }
+  }, [showNewActivity]);
 
   const handleCreateActivity = () => {
     if (newActivityName.trim()) {
@@ -68,7 +75,7 @@ export function ActivitySelector({
               value={newActivityName}
               onChange={(e) => setNewActivityName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleCreateActivity()}
-              autoFocus
+              ref={newActivityInputRef}
             />
             <div className="form-actions">
               <button className="btn-success" onClick={handleCreateActivity}>

@@ -26,6 +26,9 @@ export function UserProfilePage() {
   } | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const nameInputId = 'profile-name';
+  const rankSelectId = 'profile-rank';
 
   const { isConnected } = useSocket();
 
@@ -36,6 +39,12 @@ export function UserProfilePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memberId]);
+
+  useEffect(() => {
+    if (isEditing) {
+      nameInputRef.current?.focus();
+    }
+  }, [isEditing]);
 
   const loadDatabaseStatus = async () => {
     try {
@@ -422,7 +431,7 @@ export function UserProfilePage() {
                 
                 <div className="profile-info">
                   <div className="profile-field">
-                    <label>Name:</label>
+                    <label htmlFor={nameInputId}>Name:</label>
                     {!isEditing ? (
                       <div className="profile-value">
                         <span>{member.name}</span>
@@ -433,10 +442,11 @@ export function UserProfilePage() {
                     ) : (
                       <div className="profile-edit">
                         <input
+                          id={nameInputId}
                           type="text"
                           value={editedName}
                           onChange={(e) => setEditedName(e.target.value)}
-                          autoFocus
+                          ref={nameInputRef}
                         />
                         <button className="btn-success" onClick={handleSaveName}>
                           Save
@@ -453,7 +463,7 @@ export function UserProfilePage() {
                   </div>
 
                   <div className="profile-field">
-                    <label>Rank:</label>
+                    <label htmlFor={rankSelectId}>Rank:</label>
                     {!isEditing ? (
                       <div className="profile-value">
                         <span>{member.rank || 'Visitor'}</span>
@@ -461,13 +471,14 @@ export function UserProfilePage() {
                           Edit
                         </button>
                       </div>
-                    ) : (
-                      <div className="profile-edit">
-                        <select
-                          value={editedRank}
-                          onChange={(e) => setEditedRank(e.target.value)}
-                          className="rank-dropdown"
-                        >
+                      ) : (
+                        <div className="profile-edit">
+                          <select
+                            id={rankSelectId}
+                            value={editedRank}
+                            onChange={(e) => setEditedRank(e.target.value)}
+                            className="rank-dropdown"
+                          >
                           {rankOptions.map(option => (
                             <option key={option.value} value={option.value}>
                               {option.label}
@@ -479,17 +490,17 @@ export function UserProfilePage() {
                   </div>
 
                   <div className="profile-field">
-                    <label>Member ID:</label>
+                    <p className="profile-field-label">Member ID:</p>
                     <span className="profile-value">{member.id}</span>
                   </div>
 
                   <div className="profile-field">
-                    <label>Member Since:</label>
+                    <p className="profile-field-label">Member Since:</p>
                     <span className="profile-value">{formatDate(member.createdAt)}</span>
                   </div>
 
                   <div className="profile-field">
-                    <label>Last Updated:</label>
+                    <p className="profile-field-label">Last Updated:</p>
                     <span className="profile-value">{formatDate(member.updatedAt)}</span>
                   </div>
                 </div>

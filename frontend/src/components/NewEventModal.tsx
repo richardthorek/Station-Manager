@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
 import type { Activity } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import './NewEventModal.css';
@@ -14,11 +14,24 @@ interface NewEventModalProps {
 export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteActivity }: NewEventModalProps) {
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
   const modalRef = useFocusTrap<HTMLDivElement>(isOpen);
-
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
     setSelectedActivityId('');
     onClose();
-  }, [onClose]);
+  };
+
+  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleClose();
+    }
+  };
+
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      handleClose();
+    }
+  };
 
   const handleCreate = () => {
     if (selectedActivityId) {
@@ -34,22 +47,29 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        handleClose();
+        setSelectedActivityId('');
+        onClose();
       }
     };
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, handleClose]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleClose} role="presentation">
+    <div
+      className="modal-overlay"
+      onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Close new event dialog"
+    >
       <div 
         ref={modalRef}
         className="modal-content" 
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="event-modal-title"

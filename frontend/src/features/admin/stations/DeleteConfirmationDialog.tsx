@@ -9,7 +9,7 @@
  * - Escape key to close
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
 import { api } from '../../../services/api';
 import type { Station } from '../../../types';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
@@ -107,12 +107,32 @@ export function DeleteConfirmationDialog({ station, onClose, onDeleted }: Delete
     }
   };
 
+  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleClose();
+    }
+  };
+
+  const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      handleClose();
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={handleClose} role="presentation">
+    <div
+      className="modal-overlay"
+      onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Close delete station dialog"
+    >
       <div 
         ref={modalRef}
         className="modal-content delete-dialog" 
-        onClick={(e) => e.stopPropagation()}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="delete-dialog-title"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
 import { api } from '../../services/api';
 import type { Appliance, ChecklistTemplate, ChecklistItem } from '../../types';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
@@ -21,6 +21,35 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   const [uploading, setUploading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const modalRef = useFocusTrap<HTMLDivElement>(showVehicleModal);
+  const modalIdSuffix = selectedVehicle?.id ?? 'new';
+
+  const handleVehicleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setShowVehicleModal(false);
+    }
+  };
+
+  const handleVehicleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      setShowVehicleModal(false);
+    }
+  };
+
+  const handleTemplateOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setShowTemplateEditor(false);
+    }
+  };
+
+  const handleTemplateOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      setShowTemplateEditor(false);
+    }
+  };
 
   /**
    * Handle Escape key to close modal
@@ -240,11 +269,17 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
 
       {/* Vehicle Modal */}
       {showVehicleModal && (
-        <div className="modal-overlay" onClick={() => setShowVehicleModal(false)} role="presentation">
+        <div
+          className="modal-overlay"
+          onClick={handleVehicleOverlayClick}
+          onKeyDown={handleVehicleOverlayKeyDown}
+          role="button"
+          tabIndex={0}
+          aria-label="Close vehicle modal"
+        >
           <div 
             ref={modalRef}
             className="modal-content" 
-            onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="vehicle-modal-title"
@@ -252,8 +287,9 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
             <h2 id="vehicle-modal-title">{isEditMode ? 'Edit Vehicle' : 'Add New Vehicle'}</h2>
             
             <div className="form-group">
-              <label>Name *</label>
+              <label htmlFor={`vehicle-name-${modalIdSuffix}`}>Name *</label>
               <input
+                id={`vehicle-name-${modalIdSuffix}`}
                 type="text"
                 value={vehicleName}
                 onChange={(e) => setVehicleName(e.target.value)}
@@ -262,8 +298,9 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
             </div>
 
             <div className="form-group">
-              <label>Description</label>
+              <label htmlFor={`vehicle-description-${modalIdSuffix}`}>Description</label>
               <textarea
+                id={`vehicle-description-${modalIdSuffix}`}
                 value={vehicleDescription}
                 onChange={(e) => setVehicleDescription(e.target.value)}
                 placeholder="Optional description..."
@@ -272,7 +309,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
             </div>
 
             <div className="form-group">
-              <label>Vehicle Photo</label>
+              <label htmlFor={`vehicle-photo-${modalIdSuffix}`}>Vehicle Photo</label>
               {(vehiclePhotoUrl || photoFile) && (
                 <div className="photo-preview">
                   {photoFile ? (
@@ -283,6 +320,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
                 </div>
               )}
               <input
+                id={`vehicle-photo-${modalIdSuffix}`}
                 type="file"
                 accept="image/*"
                 onChange={handlePhotoUpload}
@@ -315,8 +353,15 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
 
       {/* Template Editor Modal */}
       {showTemplateEditor && template && (
-        <div className="modal-overlay" onClick={() => setShowTemplateEditor(false)}>
-          <div className="modal-content template-editor" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={handleTemplateOverlayClick}
+          onKeyDown={handleTemplateOverlayKeyDown}
+          role="button"
+          tabIndex={0}
+          aria-label="Close template editor"
+        >
+          <div className="modal-content template-editor">
             <h2>Edit Checklist Template: {template.applianceName}</h2>
             
             <div className="template-items">

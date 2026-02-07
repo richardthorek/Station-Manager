@@ -7,7 +7,7 @@
  * Only visible when viewing demo station.
  */
 
-import { useState } from 'react';
+import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { api } from '../../../services/api';
 import './DemoResetButton.css';
 
@@ -84,8 +84,25 @@ export function DemoResetButton({ onResetComplete }: DemoResetButtonProps) {
       )}
 
       {isConfirmOpen && (
-        <div className="reset-confirm-overlay" onClick={() => !isResetting && setIsConfirmOpen(false)}>
-          <div className="reset-confirm-dialog" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="reset-confirm-overlay"
+          onClick={(event: MouseEvent<HTMLDivElement>) => {
+            if (event.target === event.currentTarget && !isResetting) {
+              setIsConfirmOpen(false);
+            }
+          }}
+          onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+            if (event.target !== event.currentTarget) return;
+            if ((event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') && !isResetting) {
+              event.preventDefault();
+              setIsConfirmOpen(false);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close reset confirmation"
+        >
+          <div className="reset-confirm-dialog">
             <div className="reset-confirm-header">
               <div className="reset-confirm-icon">🔄</div>
               <h2>Reset Demo Station?</h2>

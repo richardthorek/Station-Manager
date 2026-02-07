@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import type { EventWithParticipants } from '../types';
 import './EventCard.css';
 
@@ -13,6 +13,12 @@ interface EventCardProps {
 
 export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDelete }: EventCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const handleCardKeyDown = (eventKey: KeyboardEvent<HTMLDivElement>) => {
+    if (isActive && (eventKey.key === 'Enter' || eventKey.key === ' ')) {
+      eventKey.preventDefault();
+      onSelect(event.id);
+    }
+  };
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -65,9 +71,15 @@ export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDele
   };
 
   return (
-    <div 
+    <div
       className={`event-card ${isActive ? 'active' : 'ended'} ${isSelected ? 'selected' : ''}`}
-      onClick={() => isActive && onSelect(event.id)}
+      onClick={isActive ? () => onSelect(event.id) : undefined}
+      onKeyDown={isActive ? handleCardKeyDown : undefined}
+      role="button"
+      tabIndex={isActive ? 0 : -1}
+      aria-pressed={isActive ? isSelected : undefined}
+      aria-label={`Event ${event.activityName}${isActive ? ' active' : ' ended'}`}
+      aria-disabled={!isActive}
     >
       <div className="event-card-header">
         <div className="event-info">

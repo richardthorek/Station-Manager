@@ -165,6 +165,7 @@ export function MemberList({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const membersContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const addMemberInputRef = useRef<HTMLInputElement>(null);
   
   // Filter and sort state with localStorage persistence
   const [filter, setFilter] = useState<FilterOption>(() => {
@@ -196,6 +197,12 @@ export function MemberList({
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SORT, sort);
   }, [sort]);
+
+  useEffect(() => {
+    if (showAddMember) {
+      addMemberInputRef.current?.focus();
+    }
+  }, [showAddMember]);
 
   // Fetch filtered members from API when search/filter/sort changes
   useEffect(() => {
@@ -502,7 +509,7 @@ export function MemberList({
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddMember()}
-              autoFocus
+              ref={addMemberInputRef}
               aria-label="Member name"
             />
             <div className="form-actions">

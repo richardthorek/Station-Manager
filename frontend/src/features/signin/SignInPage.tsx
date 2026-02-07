@@ -116,7 +116,7 @@ export function SignInPage() {
     }
   };
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       const data = await api.getMembers();
       // Defensive check: ensure data is an array
@@ -124,7 +124,7 @@ export function SignInPage() {
     } catch (err) {
       console.error('Error loading members:', err);
     }
-  };
+  }, []);
 
   const loadActivities = async () => {
     try {
@@ -136,7 +136,7 @@ export function SignInPage() {
     }
   };
 
-  const loadEvents = async (reset: boolean = false) => {
+  const loadEvents = useCallback(async (reset: boolean = false) => {
     try {
       const currentOffset = reset ? 0 : offset;
       const limit = 50;
@@ -171,7 +171,7 @@ export function SignInPage() {
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [loadingMore, offset, selectedEventId]);
 
   const handleCreateEvent = async (activityId: string) => {
     try {
@@ -393,7 +393,7 @@ export function SignInPage() {
     } finally {
       setTimeout(() => setIsRefreshing(false), 500);
     }
-  }, [isRefreshing]);
+  }, [isRefreshing, loadEvents, loadMembers]);
 
   // Pull-to-refresh handlers
   const pullToRefreshHandlers = usePullToRefresh({

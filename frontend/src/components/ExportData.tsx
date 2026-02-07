@@ -139,8 +139,9 @@ export function ExportData() {
           <h4>Date Range Filter</h4>
           <div className="date-range">
             <div className="date-input">
-              <label>Start Date:</label>
+              <label htmlFor="export-start-date">Start Date:</label>
               <input
+                id="export-start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -148,8 +149,9 @@ export function ExportData() {
               />
             </div>
             <div className="date-input">
-              <label>End Date:</label>
+              <label htmlFor="export-end-date">End Date:</label>
               <input
+                id="export-end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
