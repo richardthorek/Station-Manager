@@ -38,8 +38,8 @@ export function DeleteConfirmationDialog({ station, onClose, onDeleted }: Delete
    * Handle Escape key to close dialog
    */
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isDeleting) {
+    const handleEscape = (event: Event) => {
+      if ((event as globalThis.KeyboardEvent).key === 'Escape' && !isDeleting) {
         onClose();
       }
     };

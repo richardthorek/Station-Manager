@@ -64,8 +64,10 @@ export function triggerHaptic(
 
   try {
     // Convert readonly array to regular array for vibrate API
-    const vibratePattern = Array.isArray(pattern) ? [...pattern] : pattern;
-    return navigator.vibrate(vibratePattern);
+    if (Array.isArray(pattern)) {
+      return navigator.vibrate(Array.from(pattern) as number[]);
+    }
+    return navigator.vibrate(pattern as number);
   } catch (error) {
     console.warn('Haptic feedback failed:', error);
     return false;
