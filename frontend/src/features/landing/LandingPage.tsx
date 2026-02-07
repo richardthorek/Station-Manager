@@ -1,20 +1,23 @@
 /**
  * Landing Page Component
- * 
+ *
  * Central hub displaying all available features:
  * - Sign-In system
  * - Truck Checks (vehicle inspections)
  * - Future features
- * 
+ *
  * Provides easy navigation to different modules of the application.
  */
 
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
+import { OnboardingWizard } from '../../components/OnboardingWizard';
 import './LandingPage.css';
 
 export function LandingPage() {
   const { theme, toggleTheme } = useTheme();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   return (
     <div className="landing-page">
@@ -39,12 +42,24 @@ export function LandingPage() {
 
       <main className="landing-main">
         <section className="welcome-section">
-          <h2>Welcome to Station Manager</h2>
-          <p className="welcome-text">
-            A modern, real-time digital management system for fire stations. 
-            Track member presence, manage activities, and coordinate station operations 
-            across multiple devices with instant synchronization.
-          </p>
+          <div className="welcome-content">
+            <div>
+              <h2>Welcome to Station Manager</h2>
+              <p className="welcome-text">
+                A modern, real-time digital management system for fire stations.
+                Track member presence, manage activities, and coordinate station operations
+                across multiple devices with instant synchronization.
+              </p>
+            </div>
+            <button
+              className="getting-started-btn"
+              onClick={() => setShowOnboarding(true)}
+              aria-label="Start guided tour"
+            >
+              <span className="btn-icon">🎓</span>
+              <span className="btn-text">Getting Started</span>
+            </button>
+          </div>
         </section>
 
         <section className="cards-grid">
@@ -128,6 +143,10 @@ export function LandingPage() {
           </a>
         </p>
       </footer>
+
+      {showOnboarding && (
+        <OnboardingWizard onClose={() => setShowOnboarding(false)} />
+      )}
     </div>
   );
 }
