@@ -1185,6 +1185,1202 @@ Priority: **CRITICAL** - Must complete before new features
 
 ---
 
+#### Issue #33: Sign-In Page UI Enhancements
+**Status**: Ready to Start
+**Created**: February 2026 (from UI Overhaul Phase 1 completion)
+
+**Objective**: Modernize sign-in page with enhanced member cards, improved search experience, and visually stunning active check-ins display
+
+**User Story**: As a volunteer arriving at the station, I want an attractive and intuitive sign-in interface so that I can quickly find my name and check in without confusion.
+
+**Current State**: Functional sign-in page with basic member cards, simple search bar, and plain active check-ins list
+**Target State**: Modern member cards with avatars/initials, enhanced search with suggestions, visually impressive active check-ins panel with activity indicators
+
+**Steps**:
+0. **Optimize Page Layout for Maximum Content Visibility** (Day 1)
+   - Reduce header height: minimize padding (from `padding: 12px 24px` to `padding: 8px 16px` in Header.css line 47)
+   - Reduce footer height: minimize padding (from `padding: 0.85rem 1rem` to `padding: 0.5rem 1rem` in LandingPage.css line 360)
+   - Overall principle: maximize content area, minimize chrome/UI elements taking screen real estate
+   - Test that all interactive elements remain at least 44px touch targets (accessibility requirement)
+   - Ensure header remains sticky and functional with reduced height
+
+1. **Redesign Member Cards** (Days 1-2)
+   - Add member initials/avatar circles with RFS brand colors
+   - Implement card hover effects with elevation and border highlights
+   - Add subtle status indicators (online/offline pulse dots)
+   - Include last check-in timestamp on cards
+   - Add activity type badges with color coding
+   - Improve typography hierarchy (name prominent, details secondary)
+   - Use design system tokens (--spacing-*, --radius-*, --shadow-*)
+
+2. **Enhanced Search Bar** (Days 2-3)
+   - Redesign with glassmorphism effect
+   - Add search icon and clear button with better visual feedback
+   - Implement search suggestions/autocomplete dropdown
+   - Add keyboard shortcuts (/ to focus, Escape to clear)
+   - Sticky positioning on scroll for mobile
+   - Highlight matching text in results
+   - Add "No results" state with helpful message
+
+3. **Active Check-Ins Panel** (Days 4-5)
+   - Redesign with gradient background and elevated card
+   - Add animated activity indicators (pulsing dots for each activity type)
+   - Implement member grid/list view with avatars
+   - Add duration timers showing how long members have been checked in
+   - Group by activity type with collapsible sections
+   - Add quick actions menu (check out, switch activity)
+   - Smooth animations for check-ins/check-outs using Framer Motion
+
+4. **Empty States** (Day 6)
+   - Design attractive empty state for "No members" with call-to-action
+   - Create empty state for "No active check-ins" with station illustration
+   - Add quick start guide/tips for first-time users
+   - Use RFS-themed illustrations or icons
+
+5. **Performance Optimization** (Day 7)
+   - Implement virtual scrolling for large member lists (100+ members)
+   - Optimize search with debouncing (300ms delay)
+   - Add loading skeleton screens during data fetch
+   - Lazy load member avatars
+   - Memoize expensive calculations (React.memo, useMemo)
+
+6. **Testing & Refinement** (Day 8)
+   - Test with various member list sizes (10, 50, 100, 500 members)
+   - Verify search performance with large datasets
+   - Test on tablet in portrait and landscape modes
+   - Verify accessibility (keyboard navigation, screen reader)
+   - Get user feedback and iterate
+
+**Success Criteria**:
+- [ ] Header and footer heights reduced to maximize content area without scrolling
+- [ ] All touch targets remain minimum 44px for accessibility
+- [ ] Member cards display with avatars/initials and attractive styling
+- [ ] Card hover effects work smoothly with proper transitions
+- [ ] Search bar has glassmorphism effect and sticky positioning
+- [ ] Search autocomplete shows relevant suggestions
+- [ ] Keyboard shortcuts work (/ to focus, Escape to clear)
+- [ ] Active check-ins panel has gradient background and animations
+- [ ] Activity indicators pulse and show real-time status
+- [ ] Duration timers update every minute
+- [ ] Empty states display with helpful messages
+- [ ] Virtual scrolling works for 500+ members
+- [ ] Search has 300ms debounce and highlights matches
+- [ ] All animations smooth (60fps)
+- [ ] Tested on iPad portrait and landscape
+- [ ] WCAG AA contrast ratios maintained
+
+**Dependencies**: Design system tokens from UI Overhaul Phase 1
+
+**Effort Estimate**: 6-8 days
+
+**Priority**: P1 (High) - Most frequently used screen
+
+**Labels**: `ui`, `ux`, `signin`, `enhancement`, `phase-1`, `p1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED
+- Before/after screenshots on iPad (768×1024 portrait, 1024×768 landscape)
+- Member cards with hover states
+- Search bar with autocomplete dropdown
+- Active check-ins panel with animations
+- Empty states
+- Virtual scrolling with 100+ members
+
+---
+
+#### Issue #34: Truck Check Workflow Visual Enhancements
+**Status**: Ready to Start
+**Created**: February 2026 (from UI Overhaul Phase 1 completion)
+
+**Objective**: Enhance truck check workflow with visual step indicators, progress tracking, and improved issue highlighting
+
+**User Story**: As a volunteer performing a truck check, I want clear visual guidance through each step so that I don't miss any items and can easily report issues.
+
+**Current State**: Functional workflow with basic checklist, simple item display, plain issue reporting
+**Target State**: Visual step-by-step wizard with progress bar, color-coded item statuses, prominent issue highlighting, photo preview enhancements
+
+**Steps**:
+0. **Optimize Page Layout for Maximum Content Visibility** (Day 1)
+   - Apply consistent header/footer reduction across all truck check pages
+   - Minimize vertical space used by progress indicator (compact design)
+   - Use compact button groups and toolbars to reduce chrome
+   - Principle: maximize checklist item visibility, minimize scrolling needed
+   - Ensure touch targets remain 44px minimum for accessibility
+
+1. **Step Progress Indicator** (Days 1-2)
+   - Design horizontal progress bar with step numbers and icons
+   - Show completed steps (green checkmark), current step (highlighted), upcoming steps (grey)
+   - Add step labels (Vehicle Info → Pre-Check → Items → Issues → Summary)
+   - Make steps clickable to jump between sections (with validation)
+   - Add percentage complete indicator (e.g., "45% Complete")
+   - Animate transitions between steps
+   - Use RFS red and lime colors for active/complete states
+
+2. **Checklist Item Cards** (Days 2-3)
+   - Redesign checklist items as interactive cards
+   - Add large, colorful status badges (✓ Done, ⚠ Issue, ⊘ Skipped)
+   - Use color coding: green (done), amber (issue), grey (skipped), white (pending)
+   - Add item icons based on category (lights, tyres, equipment, etc.)
+   - Implement card expansion for item details/notes
+   - Add photo preview thumbnails on cards
+   - Show contributor avatars for multi-person checks
+   - Smooth card flip/expand animations
+
+3. **Issue Highlighting** (Day 4)
+   - Create prominent issue cards with amber/red borders
+   - Add issue severity indicators (minor, moderate, critical)
+   - Display issue photos in grid with lightbox preview
+   - Add issue count badge in header ("3 Issues Found")
+   - Quick issue summary panel showing all issues at once
+   - Export issues as PDF report button
+
+4. **Visual Flow Improvements** (Day 5)
+   - Add "Next" and "Previous" navigation buttons (large, clear)
+   - Implement swipe gestures for mobile (swipe right = next, left = back)
+   - Add confirmation dialog before marking check complete
+   - Show summary screen with all items and issues before completion
+   - Add celebration animation on check completion (Framer Motion)
+   - Generate QR code for completed check report
+
+5. **Photo Capture Enhancements** (Day 6)
+   - Improve photo upload button styling (large, clear camera icon)
+   - Add photo preview before upload
+   - Show photo thumbnails in grid (max 4 per item)
+   - Implement photo lightbox with swipe navigation
+   - Add delete button for photos (with confirmation)
+   - Show upload progress indicator
+   - Optimize image compression before upload
+
+6. **Testing & Polish** (Days 7-8)
+   - Test complete workflow on tablet and mobile
+   - Verify step navigation and validation
+   - Test with checks containing many issues
+   - Verify photo upload/preview/delete
+   - Test in both portrait and landscape
+   - Verify accessibility (keyboard, screen reader)
+
+**Success Criteria**:
+- [ ] Page layouts optimized with reduced header/footer, maximizing checklist visibility
+- [ ] Progress indicator compact yet clear, not taking excessive vertical space
+- [ ] Progress indicator shows current step and completion percentage
+- [ ] Steps are clickable with validation preventing forward jumps
+- [ ] Checklist items display as attractive cards with icons
+- [ ] Status badges are large and color-coded
+- [ ] Issue cards prominently display with amber/red borders
+- [ ] Issue severity indicators visible and clear
+- [ ] Photo thumbnails display in grid with lightbox
+- [ ] Next/Previous buttons large and easily tappable
+- [ ] Swipe gestures work on mobile (next/previous)
+- [ ] Summary screen shows all items before completion
+- [ ] Celebration animation plays on completion
+- [ ] QR code generates for completed check
+- [ ] All animations smooth (60fps)
+- [ ] Tested on iPad portrait and landscape
+- [ ] WCAG AA contrast maintained
+
+**Dependencies**: Design system tokens from UI Overhaul Phase 1, Framer Motion library
+
+**Effort Estimate**: 6-8 days
+
+**Priority**: P1 (High) - Critical safety workflow
+
+**Labels**: `ui`, `ux`, `truck-check`, `workflow`, `enhancement`, `phase-1`, `p1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED
+- Before/after on iPad (portrait and landscape)
+- Progress indicator with all steps
+- Checklist item cards with status badges
+- Issue highlighting examples
+- Photo grid and lightbox
+- Summary screen
+- Completion celebration
+
+---
+
+#### Issue #35: Reports Page Data Visualization Enhancements
+**Status**: Ready to Start
+**Created**: February 2026 (from UI Overhaul Phase 1 completion)
+
+**Objective**: Transform reports page with modern data visualizations, interactive charts, and improved export functionality
+
+**User Story**: As a station captain, I want visually appealing charts and graphs so that I can quickly understand trends and share insights with my team.
+
+**Current State**: Basic table displays with simple CSV export
+**Target State**: Interactive charts with drill-down, visual KPI cards, enhanced export options (PDF, Excel, images)
+
+**Steps**:
+0. **Optimize Page Layout for Maximum Data Visibility** (Day 1)
+   - Apply consistent header/footer reduction to reports pages
+   - Minimize title/page header space to maximize chart and table visibility
+   - Use compact filter controls and date pickers (inline, not taking full row)
+   - Principle: maximize data/chart visibility, minimize scrolling to see insights
+   - Ensure all controls remain accessible with 44px minimum touch targets
+
+1. **KPI Dashboard Cards** (Days 1-2)
+   - Design large KPI cards showing key metrics
+   - Total check-ins this month (with % change vs last month)
+   - Active members count (with trend indicator)
+   - Most active member (with avatar and hours)
+   - Most popular activity (with icon and count)
+   - Use gradient backgrounds and large numbers
+   - Add sparkline trend graphs on each card
+   - Animate number count-up on page load
+
+2. **Interactive Charts** (Days 2-4)
+   - Implement using Chart.js or Recharts library
+   - **Bar Chart**: Check-ins by day (last 30 days) with hover tooltips
+   - **Line Chart**: Activity trends over time (last 6 months)
+   - **Pie Chart**: Activity type distribution with percentages
+   - **Heat Map**: Check-in patterns by day of week and hour
+   - Add chart controls (time range selector, activity filter)
+   - Implement click-to-drill-down (click bar to see detail)
+   - Add zoom and pan for time-series charts
+   - Use RFS brand colors for chart elements
+
+3. **Data Tables Enhancement** (Day 5)
+   - Redesign tables with alternating row colors
+   - Add sortable columns (click header to sort)
+   - Implement column filtering (search within column)
+   - Add pagination controls (10, 25, 50, 100 per page)
+   - Highlight rows on hover
+   - Add row actions menu (view detail, export row)
+   - Implement responsive table (stack on mobile)
+   - Add row selection checkboxes for bulk actions
+
+4. **Export Functionality** (Day 6)
+   - Add export dropdown menu with multiple options
+   - Export as PDF with RFS branding (logo, colors)
+   - Export as Excel with formatted cells
+   - Export charts as PNG images
+   - Export specific date range dialog
+   - Add "Email Report" button (pre-filled with station captain email)
+   - Show export progress indicator
+   - Success toast on completion with download link
+
+5. **Date Range Picker** (Day 7)
+   - Implement attractive date range selector
+   - Preset ranges (Today, Last 7 Days, Last Month, Last Quarter, Last Year)
+   - Custom range with calendar popup
+   - Show currently selected range prominently
+   - Add "Compare with previous period" toggle
+   - Update all charts/tables when range changes
+   - Add loading skeleton during data fetch
+
+6. **Testing & Performance** (Days 8-9)
+   - Test with large datasets (1000+ check-ins, 100+ members)
+   - Verify chart rendering performance
+   - Test export functionality for all formats
+   - Verify responsive layout on all screen sizes
+   - Test accessibility (keyboard navigation, screen reader)
+   - Test in both light and dark modes
+
+**Success Criteria**:
+- [ ] Page layout optimized with compact headers, maximizing chart/table visibility
+- [ ] Filter controls compact and inline, not wasting vertical space
+- [ ] KPI cards display with gradient backgrounds and sparklines
+- [ ] Number count-up animation works on page load
+- [ ] Bar chart shows check-ins by day with hover tooltips
+- [ ] Line chart shows trends with zoom and pan
+- [ ] Pie chart displays activity distribution with percentages
+- [ ] Heat map shows check-in patterns by time
+- [ ] Chart click-to-drill-down works
+- [ ] Data tables sortable and filterable
+- [ ] Pagination controls work smoothly
+- [ ] Export as PDF includes RFS branding
+- [ ] Export as Excel formats cells correctly
+- [ ] Charts export as PNG images
+- [ ] Date range picker has preset ranges and custom selection
+- [ ] Compare with previous period works
+- [ ] Loading skeletons display during fetch
+- [ ] Performance acceptable with 1000+ records
+- [ ] Tested on iPad portrait and landscape
+- [ ] WCAG AA contrast maintained
+
+**Dependencies**: Chart library (Chart.js or Recharts), PDF generation library (jsPDF or react-pdf)
+
+**Effort Estimate**: 8-9 days
+
+**Priority**: P1 (High) - Critical for station captains
+
+**Labels**: `ui`, `ux`, `reports`, `data-viz`, `charts`, `enhancement`, `phase-1`, `p1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED
+- Before/after on iPad (portrait and landscape)
+- KPI dashboard cards with sparklines
+- All chart types (bar, line, pie, heat map)
+- Data tables with sorting/filtering
+- Export dropdown menu
+- Date range picker
+- Light and dark mode examples
+
+---
+
+#### Issue #36: Admin Pages Modernization
+**Status**: Ready to Start
+**Created**: February 2026 (from UI Overhaul Phase 1 completion)
+
+**Objective**: Modernize station management and brigade access admin interfaces with improved layouts, better data presentation, and enhanced user experience
+
+**User Story**: As a system administrator, I want modern admin interfaces so that I can efficiently manage stations and brigade access without frustration.
+
+**Current State**: Functional admin pages with basic forms and tables
+**Target State**: Modern admin dashboard with cards, improved forms, better data tables, and visual station status indicators
+
+**Steps**:
+0. **Optimize Admin Page Layouts for Data Density** (Day 1)
+   - Apply consistent header/footer reduction to all admin pages
+   - Minimize page titles and section headers to maximize data table/card visibility
+   - Use compact toolbars and action buttons (grouped, not spread out)
+   - Principle: maximize data density for admin tasks, minimize wasted space
+   - Ensure all controls remain accessible with 44px minimum touch targets
+
+1. **Station Management Dashboard** (Days 1-2)
+   - Create dashboard overview with station statistics cards
+   - Total stations count (with active/inactive breakdown)
+   - Total members across all stations
+   - Total check-ins today across all stations
+   - Map view showing station locations (if coordinates available)
+   - Quick actions panel (Add Station, View All, Export Data)
+   - Use gradient cards and large numbers
+   - Add refresh button with timestamp
+
+2. **Station Cards Grid** (Days 2-3)
+   - Redesign station list as card grid (not table)
+   - Each card shows station name, location, member count, status
+   - Add station status indicator (active, inactive, archived)
+   - Display last activity timestamp
+   - Show member activity sparkline (last 7 days)
+   - Add quick action menu per station (Edit, View Details, Archive)
+   - Implement search/filter bar (by name, location, status)
+   - Add sorting options (by name, member count, activity)
+   - Use card hover effects and transitions
+
+3. **Station Details View** (Day 4)
+   - Create dedicated station detail page
+   - Show all station information in organized sections
+   - Recent activity timeline (last 20 check-ins)
+   - Member list with avatars
+   - Statistics section (total check-ins, active members, etc.)
+   - Activity breakdown chart (pie chart)
+   - Edit button to modify station details
+   - Archive/Delete station with confirmation dialog
+
+4. **Create/Edit Station Modal** (Day 5)
+   - Redesign modal with modern styling
+   - Multi-step form (Station Info → Location → Settings → Review)
+   - Progress indicator showing current step
+   - Form validation with inline error messages
+   - Station name autocomplete from RFS facilities database
+   - Location picker (map or coordinates entry)
+   - Preview panel showing how station card will look
+   - Save button with loading state
+
+5. **Brigade Access Page Enhancement** (Days 6-7)
+   - Redesign token cards with better visual hierarchy
+   - Show token status (active, expired, revoked)
+   - Add token usage statistics (times accessed, last used)
+   - QR code displayed prominently with copy button
+   - Add token expiration countdown timer
+   - Implement token revocation with confirmation
+   - Add bulk token generation for multiple stations
+   - Create token audit log table (who generated, when, status changes)
+   - Add export tokens list as CSV
+
+6. **Testing & Polish** (Days 8-9)
+   - Test with multiple stations (1, 10, 50)
+   - Verify search/filter/sort functionality
+   - Test create/edit station workflow
+   - Verify token management features
+   - Test on tablet and desktop
+   - Verify accessibility (keyboard, screen reader)
+   - Test in both light and dark modes
+
+**Success Criteria**:
+- [ ] Admin page layouts optimized with compact headers/toolbars maximizing data visibility
+- [ ] Action buttons grouped efficiently, not wasting horizontal/vertical space
+- [ ] Dashboard displays with statistics cards and quick actions
+- [ ] Station cards grid shows with status indicators
+- [ ] Search/filter/sort works smoothly
+- [ ] Card hover effects smooth and attractive
+- [ ] Station details view shows all information clearly
+- [ ] Recent activity timeline displays correctly
+- [ ] Create/edit modal has multi-step form with progress
+- [ ] Form validation works with inline errors
+- [ ] Station name autocomplete from facilities database
+- [ ] Location picker works (map or coordinates)
+- [ ] Preview panel shows station card appearance
+- [ ] Brigade access token cards enhanced
+- [ ] Token status indicators clear and accurate
+- [ ] QR code prominent with copy button
+- [ ] Token expiration countdown updates
+- [ ] Token revocation works with confirmation
+- [ ] Audit log displays token history
+- [ ] Export features work correctly
+- [ ] Tested on iPad and desktop
+- [ ] WCAG AA contrast maintained
+
+**Dependencies**: Design system tokens, RFS facilities database
+
+**Effort Estimate**: 8-9 days
+
+**Priority**: P2 (Medium) - Important for administrators
+
+**Labels**: `ui`, `ux`, `admin`, `station-management`, `enhancement`, `phase-1`, `p2`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED
+- Before/after on iPad (portrait and landscape) and desktop
+- Dashboard with statistics cards
+- Station cards grid with hover states
+- Station details view
+- Create/edit station modal (all steps)
+- Brigade access page with token cards
+- Audit log table
+
+---
+
+#### Issue #37: User Profile Page Visual Polish
+**Status**: Ready to Start
+**Created**: February 2026 (from UI Overhaul Phase 1 completion)
+
+**Objective**: Add visual polish to user profile pages with enhanced achievement displays, activity history visualization, and personal statistics
+
+**User Story**: As a volunteer, I want an attractive profile page that showcases my achievements and contributions so that I feel recognized and motivated.
+
+**Current State**: Basic profile page with simple statistics and plain achievement list
+**Target State**: Visually impressive profile with animated achievements, activity timeline, personal statistics dashboard, and share functionality
+
+**Steps**:
+0. **Optimize Profile Page Layout for Content Focus** (Day 1)
+   - Apply consistent header/footer reduction to profile pages
+   - Minimize page header space, focus on profile content
+   - Use compact section headers and spacing
+   - Principle: maximize profile content visibility (achievements, stats, timeline)
+   - Ensure all interactive elements remain accessible with 44px minimum touch targets
+
+1. **Profile Header Enhancement** (Days 1-2)
+   - Large avatar/initials circle with gradient border
+   - Member name in prominent typography
+   - Membership start date and duration badge
+   - Total hours contributed (large number with trend)
+   - Current streak badge (days checked in consecutively)
+   - Activity type badges showing user's preferred activities
+   - Edit profile button (for own profile only)
+   - Add profile banner background (gradient or RFS pattern)
+   - Implement hover effects and subtle animations
+
+2. **Achievement Showcase** (Days 2-3)
+   - Redesign achievement cards with 3D card effect
+   - Display achievements in grid layout (3 per row on desktop, 2 on tablet, 1 on mobile)
+   - Show locked achievements as greyed-out with "locked" icon
+   - Add achievement rarity indicator (common, uncommon, rare, legendary)
+   - Implement unlock animation when viewing newly earned achievement
+   - Show progress bars for partially complete achievements
+   - Add achievement details modal on click (description, unlock date, rarity)
+   - Show total achievements count (e.g., "8 of 15 unlocked")
+   - Add filter/sort options (all, locked, unlocked, recent)
+   - Use Framer Motion for card flip and unlock animations
+
+3. **Activity Timeline** (Days 4-5)
+   - Create visual timeline of recent activities
+   - Show last 20 check-ins with timestamps
+   - Display activity type icon and name
+   - Show duration for each check-in
+   - Add date separators (Today, Yesterday, Last Week, etc.)
+   - Implement infinite scroll or pagination
+   - Add activity type filter (show only training, meetings, etc.)
+   - Highlight special events (first check-in, milestone hours, etc.)
+   - Use alternating side layout for visual interest
+
+4. **Personal Statistics Dashboard** (Day 6)
+   - Create statistics section with KPI cards
+   - Total check-ins (with rank among all members)
+   - Total hours contributed (with monthly breakdown chart)
+   - Most frequent activity type (with percentage)
+   - Favorite day of week (most check-ins)
+   - Average session duration
+   - Current streak (consecutive days) with flame icon
+   - Longest streak achieved
+   - Add sparkline charts showing trends
+   - Use gradient cards and large numbers
+
+5. **Share Functionality** (Day 7)
+   - Add "Share Profile" button
+   - Generate shareable profile card image (PNG)
+   - Include member name, avatar, achievements, hours
+   - Add RFS branding to shared image
+   - Implement copy link to profile functionality
+   - Add share buttons for social media (optional)
+   - Show preview before sharing
+
+6. **Testing & Polish** (Days 8-9)
+   - Test with profiles having many achievements (15+)
+   - Test with long activity histories (100+ check-ins)
+   - Verify achievement unlock animations
+   - Test share functionality across devices
+   - Verify responsive layout (mobile, tablet, desktop)
+   - Test accessibility (keyboard navigation, screen reader)
+   - Test in both light and dark modes
+
+**Success Criteria**:
+- [ ] Profile page layout optimized with compact headers, maximizing content visibility
+- [ ] Profile header displays with gradient border and badges
+- [ ] Avatar/initials large and prominent
+- [ ] Membership duration and hours prominently displayed
+- [ ] Achievement cards have 3D effect and rarity indicators
+- [ ] Locked achievements display as greyed-out
+- [ ] Achievement unlock animation plays smoothly
+- [ ] Progress bars show for partial achievements
+- [ ] Achievement details modal works on click
+- [ ] Filter/sort options for achievements functional
+- [ ] Activity timeline displays with date separators
+- [ ] Timeline has activity type icons and durations
+- [ ] Infinite scroll or pagination works smoothly
+- [ ] Personal statistics dashboard shows KPI cards
+- [ ] Sparkline charts display trends
+- [ ] Share functionality generates profile card image
+- [ ] Copy link to profile works
+- [ ] All animations smooth (60fps)
+- [ ] Tested on mobile, tablet, and desktop
+- [ ] WCAG AA contrast maintained
+
+**Dependencies**: Framer Motion library, image generation library (html-to-image or similar)
+
+**Effort Estimate**: 8-9 days
+
+**Priority**: P2 (Medium) - Improves engagement
+
+**Labels**: `ui`, `ux`, `profile`, `achievements`, `gamification`, `enhancement`, `phase-1`, `p2`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED
+- Before/after on iPad (portrait and landscape) and mobile
+- Profile header with all badges
+- Achievement showcase grid (locked and unlocked)
+- Achievement unlock animation frames
+- Activity timeline
+- Personal statistics dashboard
+- Share profile card preview
+
+---
+
+#### Issue #38: Comprehensive ARIA Label Audit and Keyboard Navigation
+**Status**: Ready to Start
+**Created**: February 2026 (from UI Overhaul Phase 1 completion)
+
+**Objective**: Ensure full accessibility compliance by adding comprehensive ARIA labels, improving keyboard navigation, and implementing screen reader support across all pages
+
+**User Story**: As a user with visual impairment or mobility limitations, I need full accessibility support so that I can use Station Manager effectively with assistive technologies.
+
+**Current State**: Basic accessibility - some ARIA labels, partial keyboard navigation, focus states added in Phase 1
+**Target State**: WCAG 2.1 AA compliant with comprehensive ARIA labels, full keyboard navigation, screen reader announcements, and high contrast mode support
+
+**Steps**:
+0. **Space Optimization Considerations** (Throughout)
+   - Maintain reduced header/footer heights from previous issues
+   - Ensure all accessibility improvements (focus indicators, labels) don't add unnecessary vertical space
+   - Skip-to-content links should not take visible space when not focused
+   - Focus indicators should be outlines, not padding/margin that expands elements
+   - Keyboard shortcuts and accessibility features must work with compact layouts
+
+1. **ARIA Label Audit** (Days 1-2)
+   - Audit all pages for missing ARIA labels
+   - Identify all icon-only buttons and add aria-label
+   - Check all form inputs have associated labels
+   - Verify all images have alt text or aria-hidden="true"
+   - Audit all interactive elements for proper roles
+   - Create checklist of required fixes per page:
+     - Landing page, Sign-in page, Profile page
+     - Truck check pages, Reports page
+     - Admin pages, Modals, Dropdowns
+
+2. **Add ARIA Labels** (Days 3-4)
+   - Add aria-label to all icon-only buttons
+     - Example: `<button aria-label="Close modal">×</button>`
+   - Use aria-labelledby for complex components
+     - Modal headers, section headings
+   - Add aria-describedby for additional context
+     - Form field hints, error messages
+   - Mark decorative images as aria-hidden="true"
+   - Add role attributes where needed (dialog, alert, etc.)
+   - Add aria-live regions for dynamic content
+   - Add aria-expanded for collapsible sections
+
+3. **Keyboard Navigation Enhancement** (Days 5-7)
+   - Audit tab order on all pages
+   - Ensure all interactive elements are keyboard accessible
+   - Implement focus trap in modals (Tab cycles within modal)
+   - Add skip-to-content link (hidden until focused)
+   - Add keyboard shortcuts documentation
+   - Implement arrow key navigation in lists/grids
+   - Add Enter/Space activation for custom controls
+   - Ensure Escape key closes modals/dropdowns
+   - Test tab order is logical and intuitive
+   - Add visible focus indicators (already done in Phase 1)
+
+4. **Live Regions for Dynamic Content** (Days 8-9)
+   - Add aria-live="polite" for non-urgent updates
+     - New check-ins, data refreshes
+   - Add aria-live="assertive" for urgent alerts
+     - Errors, critical notifications
+   - Announce check-in/check-out to screen reader users
+   - Announce form validation errors
+   - Announce success messages
+   - Provide feedback for loading states
+   - Test announcements with NVDA and VoiceOver
+
+5. **Text Alternatives to Color Coding** (Day 10)
+   - Add text/icons in addition to color coding
+   - Connection status: Add "Connected" text, not just green dot
+   - Activity tags: Add icons in addition to colors
+   - Error states: Add "Error:" prefix to messages
+   - Success states: Add "Success:" prefix or checkmark icon
+   - Chart legend: Add patterns in addition to colors
+   - Form validation: Show error icon + text
+
+6. **Screen Reader Testing** (Days 11-12)
+   - Test with NVDA (Windows) - most common free screen reader
+   - Test with JAWS (Windows) - most common professional screen reader
+   - Test with VoiceOver (macOS/iOS) - built-in Mac screen reader
+   - Test with TalkBack (Android) - built-in Android screen reader
+   - Document findings and fix issues
+   - Create screen reader testing checklist
+   - Record example screen reader usage videos for documentation
+
+7. **Automated Accessibility Testing** (Day 13)
+   - Install and run axe DevTools on all pages
+   - Fix all critical and serious issues
+   - Document moderate and minor issues for future fixes
+   - Add axe-core to test suite for CI/CD
+   - Set up accessibility linting (eslint-plugin-jsx-a11y)
+   - Add accessibility tests to component tests
+
+8. **Documentation & Training** (Day 14)
+   - Create accessibility documentation
+   - Document all keyboard shortcuts
+   - Create screen reader user guide
+   - Add accessibility section to README
+   - Create developer accessibility checklist
+   - Train team on accessibility best practices
+
+**Success Criteria**:
+- [ ] All interactive elements have proper ARIA labels
+- [ ] All form fields have associated labels
+- [ ] All images have alt text or aria-hidden="true"
+- [ ] Keyboard navigation works on all pages
+- [ ] Tab order is logical on all pages
+- [ ] Focus trap implemented in all modals
+- [ ] Skip-to-content link added to header
+- [ ] Escape key closes all modals and dropdowns
+- [ ] Arrow key navigation works in lists
+- [ ] Live regions announce dynamic content changes
+- [ ] Check-in/check-out announced to screen readers
+- [ ] Form errors announced to screen readers
+- [ ] Color-only information supplemented with text/icons
+- [ ] Connection status has text label
+- [ ] Activity tags have icons
+- [ ] Error/success messages have prefixes/icons
+- [ ] Tested with NVDA (Windows)
+- [ ] Tested with JAWS (Windows)
+- [ ] Tested with VoiceOver (macOS/iOS)
+- [ ] Tested with TalkBack (Android)
+- [ ] Zero critical issues in axe DevTools scan
+- [ ] axe-core integrated into test suite
+- [ ] Accessibility documentation complete
+
+**Dependencies**: None - can start immediately
+
+**Effort Estimate**: 12-14 days
+
+**Priority**: P0 (Critical) - Legal requirement (ADA, Section 508, Australian DDA)
+
+**Labels**: `accessibility`, `a11y`, `wcag`, `aria`, `keyboard`, `screen-reader`, `phase-1`, `p0`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ⚠️ LIMITED
+- Focus indicators on interactive elements
+- Skip-to-content link (when focused)
+- Screen reader testing documentation (videos/screenshots)
+- High contrast mode examples
+- Keyboard shortcut documentation
+
+---
+
+#### Issue #39: Mobile Touch Optimization with Gestures
+**Status**: Ready to Start
+**Created**: February 2026 (from UI Overhaul Phase 1 completion)
+
+**Objective**: Implement advanced mobile touch interactions including swipe gestures, pull-to-refresh, floating action buttons, and haptic feedback for native-like mobile experience
+
+**User Story**: As a volunteer using Station Manager on a mobile device, I want intuitive touch gestures and native-like interactions so that the app feels as responsive as a native mobile app.
+
+**Current State**: Responsive mobile design with tap interactions only
+**Target State**: Full touch gesture support (swipe, pull-to-refresh), haptic feedback, floating action buttons, and optimized mobile workflows
+
+**Steps**:
+0. **Mobile Space Optimization** (Day 1)
+   - Maintain reduced header/footer from previous issues on mobile
+   - Use compact mobile toolbars and navigation
+   - FABs should be positioned to not cover content when page is scrolled to top
+   - Pull-to-refresh indicator compact, not taking permanent screen space
+   - Collapsible sections help maximize content visibility
+   - Principle: mobile screens are smaller, maximize every pixel of content
+
+1. **Swipe Gesture Library Integration** (Day 1)
+   - Install react-swipeable or use-gesture library
+   - Configure swipe thresholds (min distance, velocity)
+   - Test swipe detection on various devices
+   - Implement cancel mechanism (swipe back to original position)
+
+2. **Member List Swipe Actions** (Days 2-3)
+   - Implement swipe right on member card to check in
+   - Implement swipe left on member card to view profile
+   - Add visual feedback during swipe (card slides, reveals action icon)
+   - Show action confirmation (checkmark animation for check-in)
+   - Add haptic feedback on action completion (vibrate API)
+   - Implement undo toast notification ("Checked in [Name]" with Undo button)
+   - Add swipe tutorial overlay on first visit (dismissible)
+
+3. **Floating Action Buttons (FAB)** (Day 4)
+   - Add FAB for "New Member" on sign-in page (bottom right)
+   - Add FAB for "New Event" on events page
+   - Add FAB for "New Check" on truck check page
+   - Position: fixed bottom-right, 16px margin
+   - Size: 60px diameter (large touch target)
+   - Color: RFS red gradient with white icon
+   - Add drop shadow for elevation
+   - Implement FAB hide on scroll down, show on scroll up
+   - Add ripple effect on tap
+   - Ensure FAB doesn't block content (Z-index management)
+
+4. **Pull-to-Refresh** (Days 5-6)
+   - Implement pull-to-refresh on sign-in page (refresh member list and events)
+   - Implement pull-to-refresh on reports page (refresh data)
+   - Add pull indicator (arrow icon that rotates)
+   - Show loading spinner during refresh
+   - Add success feedback (brief checkmark or fade animation)
+   - Set pull threshold (80px minimum pull)
+   - Add bounce-back animation when released
+   - Haptic feedback on refresh trigger
+
+5. **Haptic Feedback** (Day 7)
+   - Add vibration on check-in (short vibration: 50ms)
+   - Add vibration on successful action (success pattern: 20ms, 50ms, 20ms)
+   - Add vibration on error (error pattern: 100ms, 50ms, 100ms)
+   - Add vibration on swipe action confirmation
+   - Implement fallback for devices without vibration support
+   - Add user preference toggle for haptic feedback (Settings)
+   - Test on iOS and Android devices
+
+6. **Collapsible Sections** (Day 8)
+   - Make "Active Check-Ins" section collapsible (tap header to toggle)
+   - Make "Recent Events" section collapsible
+   - Save collapsed state in localStorage
+   - Add collapse/expand animation using Framer Motion
+   - Add chevron icon indicator (up when expanded, down when collapsed)
+   - Implement smooth height transition
+   - Add aria-expanded attribute for accessibility
+
+7. **Mobile Modal Improvements** (Days 9-10)
+   - Make modals full-screen on mobile (width < 600px)
+   - Slide-up animation from bottom (iOS-style)
+   - Add large close button at top (60px touch target)
+   - Swipe down on modal header to dismiss
+   - Ensure all form inputs use font-size: 16px minimum (prevents zoom on iOS)
+   - Add "Done" button at bottom of modal for easy dismissal
+   - Implement modal backdrop dismiss (tap outside to close)
+   - Add bounce animation when modal opens
+
+8. **Touch Target Optimization** (Day 11)
+   - Audit all buttons and interactive elements
+   - Ensure minimum 44px × 44px touch targets (iOS guideline)
+   - Prefer 48px × 48px or larger where possible
+   - Add padding to small touch targets
+   - Increase spacing between adjacent touch targets (min 8px gap)
+   - Test with finger touch on physical device
+
+9. **Thumb-Friendly Layouts** (Day 12)
+   - Move primary actions to bottom of screen (thumb zone)
+   - Position navigation elements within easy reach
+   - Add bottom navigation bar for main sections (optional)
+   - Ensure important actions don't require reaching to top
+   - Test one-handed usability on phones
+
+10. **Testing & Refinement** (Days 13-14)
+    - Test on physical iPhone (iOS latest)
+    - Test on physical Android phone (latest)
+    - Test on iPad in both orientations
+    - Verify all gestures work smoothly
+    - Test haptic feedback on supported devices
+    - Verify FAB positioning and scroll behavior
+    - Test pull-to-refresh sensitivity
+    - Get user feedback from volunteers
+    - Adjust thresholds and sensitivities based on feedback
+
+**Success Criteria**:
+- [ ] Mobile layouts maintain compact headers/footers maximizing content area
+- [ ] FABs positioned to not block content unnecessarily
+- [ ] Collapsible sections reduce scrolling on mobile
+- [ ] Swipe right on member card checks in with feedback
+- [ ] Swipe left on member card opens profile
+- [ ] Visual feedback shows during swipe
+- [ ] Haptic feedback on swipe action completion
+- [ ] Undo toast notification displays with Undo button
+- [ ] FABs positioned bottom-right on all relevant pages
+- [ ] FABs hide on scroll down, show on scroll up
+- [ ] FAB ripple effect works on tap
+- [ ] Pull-to-refresh works on sign-in and reports pages
+- [ ] Pull indicator animates correctly
+- [ ] Haptic feedback works on iOS and Android
+- [ ] User preference toggle for haptic feedback functional
+- [ ] Collapsible sections save state in localStorage
+- [ ] Collapse/expand animations smooth
+- [ ] Modals full-screen on mobile with slide-up animation
+- [ ] Swipe down on modal header dismisses modal
+- [ ] All form inputs 16px+ font size
+- [ ] All touch targets minimum 44px × 44px
+- [ ] Touch targets spaced at least 8px apart
+- [ ] Primary actions in thumb zone
+- [ ] Tested on physical iPhone and Android devices
+- [ ] Tested on iPad in portrait and landscape
+- [ ] User feedback collected and incorporated
+
+**Dependencies**: react-swipeable or use-gesture library, Framer Motion
+
+**Effort Estimate**: 12-14 days
+
+**Priority**: P1 (High) - 60%+ of users on mobile devices
+
+**Labels**: `mobile`, `touch`, `gestures`, `ux`, `haptic`, `fab`, `phase-1`, `p1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED
+- Swipe gesture in action (left and right)
+- FAB examples on all pages
+- Pull-to-refresh indicator
+- Collapsible sections (expanded and collapsed)
+- Full-screen mobile modal with swipe-to-dismiss
+- Touch target sizing examples
+- Before/after on iPhone and iPad
+
+---
+
+#### Issue #40: Page Transitions with Framer Motion
+**Status**: Ready to Start
+**Created**: February 2026 (from UI Overhaul Phase 1 completion)
+
+**Objective**: Implement smooth, delightful page transitions and micro-interactions using Framer Motion to create a premium, app-like experience
+
+**User Story**: As a user navigating between pages, I want smooth transitions and animations so that the app feels polished, responsive, and enjoyable to use.
+
+**Current State**: No page transitions, instant page changes feel abrupt
+**Target State**: Smooth fade/slide transitions between routes, entrance animations for components, exit animations, and delightful micro-interactions throughout
+
+**Steps**:
+0. **Animation Performance and Space** (Throughout)
+   - Animations must not add to element dimensions or layout shift
+   - Use transform/opacity for animations (no layout changes)
+   - Maintain compact layouts from previous issues - animations enhance, don't expand
+   - Ensure animations don't cause content jumping or space wastage
+   - All animations should feel fast and responsive (200-300ms max)
+
+1. **Framer Motion Setup & Route Transitions** (Days 1-2)
+   - Install framer-motion (if not already installed)
+   - Wrap React Router Routes with AnimatePresence
+   - Configure route-based animations (fade, slide, scale)
+   - Set up page transition variants:
+     - Fade in/out for most pages
+     - Slide in from right for detail pages
+     - Slide in from bottom for modals
+   - Add transition duration (300ms standard, 200ms fast)
+   - Implement exit animations before route change
+   - Ensure transitions work with browser back/forward buttons
+
+2. **Landing Page Animations** (Day 3)
+   - Animate feature cards on page load (staggered entrance)
+   - Header fade-in with slide down
+   - Welcome section fade-in with slight slide up
+   - Cards appear sequentially with 50ms stagger
+   - Theme toggle button rotate animation
+   - Hover animations for cards (already in Phase 1, verify motion)
+
+3. **Sign-In Page Animations** (Days 4-5)
+   - Member cards entrance animation (fade-in with stagger)
+   - Search bar slide-in from top
+   - Active check-ins panel fade-in with scale
+   - New check-in appear with scale + fade animation
+   - Check-out disappear with scale down + fade
+   - Activity change: smooth color transition
+   - Member list filter/search: smooth fade and reorder
+
+4. **Profile Page Animations** (Day 6)
+   - Profile header entrance (fade + slide up)
+   - Achievement cards appear with flip animation
+   - Achievement unlock animation (scale + glow + confetti)
+   - Activity timeline items fade in sequentially
+   - Statistics cards count-up animation
+   - Sparkline charts draw-in animation
+
+5. **Truck Check Page Animations** (Day 7)
+   - Step transition: slide in from right
+   - Checklist items appear with stagger
+   - Item status change: color morph animation
+   - Issue badge: attention pulse animation
+   - Photo upload: scale + fade in
+   - Completion celebration: confetti burst + scale
+
+6. **Reports Page Animations** (Day 8)
+   - KPI cards fade-in with stagger
+   - Chart data animate-in (bars grow, lines draw)
+   - Table rows fade-in sequentially
+   - Export button: ripple effect on click
+   - Date range picker: smooth expand/collapse
+
+7. **Admin Pages Animations** (Day 9)
+   - Station cards grid: staggered entrance
+   - Card hover: elevation change + subtle scale
+   - Modal open/close: scale + fade from center
+   - Form step transitions: slide left/right
+   - Success/error messages: slide-in from top
+
+8. **Micro-Interactions** (Days 10-11)
+   - Button press: scale down (0.95) on active
+   - Button hover: slight lift (translateY -2px)
+   - Toggle switches: smooth thumb slide
+   - Checkboxes: checkmark draw-in animation
+   - Radio buttons: ripple effect on select
+   - Input focus: border color morph + subtle scale
+   - Dropdown open: scale + fade with origin at trigger
+   - Toast notifications: slide-in from top-right
+   - Badge appear: bounce-in animation
+   - Loading spinners: smooth rotation
+   - Skeleton screens: shimmer animation
+
+9. **Performance Optimization** (Day 12)
+   - Use transform and opacity for animations (GPU accelerated)
+   - Avoid animating width/height (use scale instead)
+   - Implement will-change CSS for animations
+   - Add reduced-motion media query support
+   - Disable animations for users with motion sensitivity preference
+   - Test animation performance on lower-end devices
+   - Ensure 60fps frame rate for all animations
+
+10. **Testing & Refinement** (Days 13-14)
+    - Test all page transitions on desktop
+    - Test all animations on mobile devices
+    - Verify animations work in both light and dark modes
+    - Test reduced-motion media query support
+    - Check animation timing feels natural
+    - Ensure no animation jank or stuttering
+    - Verify browser back/forward with transitions
+    - Get user feedback on animation feel
+    - Adjust timing and easing based on feedback
+
+**Success Criteria**:
+- [ ] Page transitions work smoothly between all routes
+- [ ] Exit animations complete before route changes
+- [ ] Landing page cards stagger in on load
+- [ ] Sign-in page member cards fade in with stagger
+- [ ] Check-in/check-out animations smooth
+- [ ] Profile achievement unlock animation impressive
+- [ ] Truck check step transitions slide smoothly
+- [ ] Completion celebration plays confetti
+- [ ] Reports page charts animate data-in
+- [ ] Admin modals scale and fade from center
+- [ ] All buttons have press/hover animations
+- [ ] Toggle switches slide smoothly
+- [ ] Checkboxes draw checkmark
+- [ ] Input focus has border color morph
+- [ ] Dropdowns scale and fade from trigger
+- [ ] Toast notifications slide in from top-right
+- [ ] Loading spinners rotate smoothly
+- [ ] Skeleton screens shimmer
+- [ ] All animations use transform/opacity (GPU accelerated)
+- [ ] Reduced-motion media query support working
+- [ ] All animations 60fps on target devices
+- [ ] Tested on desktop, tablet, and mobile
+- [ ] User feedback positive
+
+**Dependencies**: Framer Motion library (already used in project)
+
+**Effort Estimate**: 12-14 days
+
+**Priority**: P2 (Medium) - Polish and delight
+
+**Labels**: `ui`, `ux`, `animations`, `framer-motion`, `micro-interactions`, `polish`, `phase-1`, `p2`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED (Video/GIF preferred)
+- Page transition examples (video clips)
+- Card entrance animations (GIF)
+- Achievement unlock animation (video)
+- Check-in/check-out animation (GIF)
+- Completion celebration (video)
+- Chart data-in animation (video)
+- Micro-interactions compilation (GIF)
+- Before/after comparison showing animations
+
+---
+
+#### Issue #41: Loading States and Skeleton Screens
+**Status**: Ready to Start
+**Created**: February 2026 (from UI Overhaul Phase 1 completion)
+
+**Objective**: Implement comprehensive loading states with skeleton screens throughout the application to improve perceived performance and provide visual feedback during data fetching
+
+**User Story**: As a user waiting for data to load, I want to see skeleton screens that show the structure of upcoming content so that I understand the app is working and know what to expect.
+
+**Current State**: Basic loading spinners, blank screens during data fetch
+**Target State**: Skeleton screens matching actual content layout, smooth transitions from skeleton to real content, progressive loading indicators
+
+**Steps**:
+0. **Skeleton Screen Space Efficiency** (Throughout)
+   - Skeleton screens must match exact dimensions of real content (no layout shift)
+   - Use compact skeleton layouts matching the reduced headers/footers from previous issues
+   - Shimmer animation via CSS transform (no layout impact)
+   - Skeleton components should not add extra padding or spacing
+   - Progressive loading prevents wasted space (load and show immediately)
+
+1. **Skeleton Screen Design System** (Days 1-2)
+   - Design skeleton components matching main UI patterns
+   - Create skeleton variants for:
+     - Member cards (avatar circle + text lines)
+     - Table rows (cells with varying widths)
+     - Statistics cards (large number + label)
+     - Chart placeholders (bars, lines, pie)
+     - Profile header (avatar + text)
+     - Achievement cards (icon + text)
+   - Implement shimmer/pulse animation
+   - Use neutral grey colors from design system
+   - Create reusable Skeleton component library
+
+2. **Sign-In Page Skeletons** (Days 3-4)
+   - Member list skeleton (6-8 skeleton cards)
+   - Search bar skeleton (grey input box)
+   - Active check-ins panel skeleton (2-3 skeleton entries)
+   - Event selector skeleton (skeleton buttons)
+   - Implement fade-in transition from skeleton to real content
+   - Progressive loading: show search first, then members
+   - Add skeleton for lazy-loaded images (member avatars)
+
+3. **Profile Page Skeletons** (Day 5)
+   - Profile header skeleton (large avatar circle + text lines)
+   - Achievement cards skeleton (6 skeleton achievement cards)
+   - Activity timeline skeleton (5-6 skeleton timeline items)
+   - Statistics cards skeleton (4 skeleton stat cards)
+   - Implement sequential reveal (header → achievements → timeline → stats)
+
+4. **Truck Check Page Skeletons** (Day 6)
+   - Appliance list skeleton (3-4 skeleton cards)
+   - Checklist items skeleton (8-10 skeleton items)
+   - Step indicator skeleton (progress bar + steps)
+   - Photo grid skeleton (skeleton thumbnails)
+   - Summary screen skeleton (grouped sections)
+
+5. **Reports Page Skeletons** (Day 7)
+   - KPI cards skeleton (4 large skeleton cards with numbers)
+   - Chart skeletons (bar chart, line chart, pie chart placeholders)
+   - Data table skeleton (header row + 10 data rows)
+   - Date range picker skeleton (skeleton input boxes)
+   - Implement progressive chart loading (KPIs → charts → table)
+
+6. **Admin Pages Skeletons** (Day 8)
+   - Station cards grid skeleton (6 skeleton cards)
+   - Station details skeleton (sections with skeleton content)
+   - Token cards skeleton (2-3 skeleton token cards)
+   - Modal content skeleton (form fields)
+   - Implement grid-to-detail skeleton transition
+
+7. **Progressive Loading Implementation** (Days 9-10)
+   - Implement content streaming where possible
+   - Load critical data first, defer non-critical
+   - Show skeleton for sections still loading
+   - Smoothly replace skeleton with real content (fade transition)
+   - Avoid layout shift (skeleton matches real content dimensions)
+   - Examples:
+     - Sign-in: Load member count first, then names, then avatars
+     - Reports: Load KPI numbers first, then charts
+     - Profile: Load basic info first, then achievements, then timeline
+
+8. **Shimmer Animation** (Day 11)
+   - Implement shimmer effect on skeleton elements
+   - Gradient moves left-to-right (subtle wave)
+   - Animation duration: 1.5-2s loop
+   - Use CSS animations for performance
+   - Add reduced-motion support (disable shimmer)
+   - Ensure shimmer works in dark mode
+
+9. **Loading State Transitions** (Day 12)
+   - Smooth fade-in when content replaces skeleton (300ms)
+   - Stagger content appearance (sequential, 50ms delay)
+   - Avoid pop-in effect (use opacity transition)
+   - Implement error state transition from skeleton
+   - Add retry button in error state
+   - Show partial content if some data loads
+
+10. **Performance & Testing** (Days 13-14)
+    - Test skeleton screens on slow connections (throttle to 3G)
+    - Verify no layout shift when skeleton replaced
+    - Test progressive loading on all pages
+    - Verify shimmer animation smooth (60fps)
+    - Test in light and dark modes
+    - Test reduced-motion media query support
+    - Verify error states display correctly
+    - Get user feedback on perceived performance
+    - Measure actual vs perceived load time improvement
+
+**Success Criteria**:
+- [ ] Skeleton components library created
+- [ ] Skeleton screens match actual content layout
+- [ ] Shimmer animation smooth and subtle
+- [ ] Sign-in page skeleton displays with member cards
+- [ ] Profile page skeleton shows header and achievements
+- [ ] Truck check page skeleton displays checklist items
+- [ ] Reports page skeleton shows KPI cards and charts
+- [ ] Admin pages skeleton displays station cards
+- [ ] Smooth fade-in transition from skeleton to content (300ms)
+- [ ] Sequential content appearance with 50ms stagger
+- [ ] No layout shift when skeleton replaced
+- [ ] Progressive loading implemented where applicable
+- [ ] Error state transitions from skeleton correctly
+- [ ] Retry button works in error state
+- [ ] Shimmer works in both light and dark modes
+- [ ] Reduced-motion support disables shimmer
+- [ ] Tested on slow connections (3G throttle)
+- [ ] Perceived performance improved (user feedback)
+- [ ] Actual load time vs perceived time measured
+
+**Dependencies**: None - can use CSS animations or Framer Motion
+
+**Effort Estimate**: 12-14 days
+
+**Priority**: P1 (High) - Significantly improves UX
+
+**Labels**: `ui`, `ux`, `loading`, `skeleton`, `performance`, `perceived-performance`, `phase-1`, `p1`
+
+**Milestone**: v1.1 - Quality & Testing
+
+**UI Screenshot Requirement**: ✅ REQUIRED
+- Before/after showing spinner vs skeleton
+- Skeleton screens for all major pages
+- Shimmer animation (GIF or video)
+- Progressive loading sequence (video)
+- Skeleton-to-content transition (video)
+- Light and dark mode skeletons
+- Error state from skeleton
+
+---
+
 
 ### PHASE 2: OPERATIONAL EXCELLENCE (Q1-Q2 2026) - v1.2
 

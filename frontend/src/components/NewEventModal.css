@@ -4,34 +4,45 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  animation: overlayFadeIn 0.2s ease;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   border: 2px solid var(--border-color);
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  animation: modalSlideIn 0.3s ease;
+  box-shadow: var(--shadow-xl), 0 0 0 1px rgba(229, 40, 27, 0.1);
+  animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -39,35 +50,38 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
+  padding: 1.75rem 2rem;
   border-bottom: 2px solid var(--border-color);
-  background: var(--bg-secondary);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.65rem;
+  font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 .modal-close {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   cursor: pointer;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .modal-close:hover {
-  background: #333;
-  color: var(--text-primary);
+  background: var(--surface-hover);
+  color: var(--rfs-core-red);
+  transform: rotate(90deg);
 }
 
 .modal-body {
@@ -95,38 +109,69 @@
 .activity-option {
   background: var(--bg-secondary);
   border: 2px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1.5rem 1rem;
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
+  gap: 0.75rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--text-primary);
   text-align: center;
   width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--rfs-core-red) 0%, var(--rfs-lime) 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
 }
 
 .activity-option:hover {
-  border-color: #C6D931;
-  background: #2a2a2a;
-  transform: translateY(-2px);
+  border-color: var(--rfs-lime);
+  background: var(--surface-hover);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.activity-option:hover::before {
+  transform: scaleX(1);
 }
 
 .activity-option.selected {
-  border-color: #C6D931;
-  background: #2a2a2a;
-  box-shadow: 0 0 0 2px rgba(198, 217, 49, 0.2);
+  border-color: var(--rfs-lime);
+  background: linear-gradient(135deg, var(--surface-hover) 0%, var(--bg-secondary) 100%);
+  box-shadow: 0 0 0 3px rgba(203, 219, 42, 0.2), var(--shadow-md);
+}
+
+.activity-option.selected::before {
+  transform: scaleX(1);
 }
 
 .activity-option .activity-icon {
-  font-size: 2rem;
+  font-size: 2.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease;
+}
+
+.activity-option:hover .activity-icon {
+  transform: scale(1.15);
 }
 
 .activity-option .activity-name {
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.2px;
 }
 
 .activity-option .custom-badge {
