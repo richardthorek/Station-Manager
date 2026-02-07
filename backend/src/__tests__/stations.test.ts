@@ -25,6 +25,7 @@ beforeAll(() => {
   // Mock Socket.io for WebSocket events
   const mockIo = {
     emit: jest.fn(),
+    to: jest.fn().mockReturnThis(),
   };
   app.set('io', mockIo);
   

@@ -24,6 +24,7 @@ beforeAll(() => {
   // Mock Socket.io
   app.set('io', {
     emit: jest.fn(),
+    to: jest.fn().mockReturnThis(),
   });
 });
 
@@ -52,6 +53,10 @@ describe('Demo Station Functionality', () => {
         .post('/api/stations/demo/reset')
         .expect(200);
 
+      // Verify io.to() was called with the correct room
+      expect(io.to).toHaveBeenCalledWith(`station-${DEMO_STATION_ID}`);
+      
+      // Verify emit was called with the correct event and data
       expect(io.emit).toHaveBeenCalledWith(
         'demo-station-reset',
         expect.objectContaining({
