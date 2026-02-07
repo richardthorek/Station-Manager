@@ -67,7 +67,8 @@ export function TruckCheckPage() {
 
   if (loading) {
     return (
-      <div className="truckcheck-page">
+      <PageTransition variant="fade">
+        <div className="truckcheck-page">
         <header className="truckcheck-header">
           <Link to="/" className="back-link">← Back to Home</Link>
           <h1>Truck Checks</h1>

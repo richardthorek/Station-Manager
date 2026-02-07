@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
 import { useStation, DEMO_STATION_ID } from '../../../contexts/StationContext';
+import { PageTransition } from '../../../components/PageTransition';
 import type { Station } from '../../../types';
 import { CreateStationModal } from './CreateStationModal';
 import { EditStationModal } from './EditStationModal';
@@ -243,7 +244,8 @@ export function StationManagementPage() {
   }
 
   return (
-    <div className="station-management-page">
+    <PageTransition variant="slideFromBottom">
+      <div className="station-management-page">
       <header className="page-header-compact">
         <div className="header-top">
           <Link to="/" className="back-link">← Home</Link>
@@ -591,5 +593,6 @@ export function StationManagementPage() {
         />
       )}
     </div>
+    </PageTransition>
   );
 }
