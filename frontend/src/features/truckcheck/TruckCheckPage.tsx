@@ -17,6 +17,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
+import { PageTransition } from '../../components/PageTransition';
 import { api } from '../../services/api';
 import type { Appliance, CheckRun } from '../../types';
 import './TruckCheckPage.css';
@@ -66,7 +67,8 @@ export function TruckCheckPage() {
 
   if (loading) {
     return (
-      <div className="truckcheck-page">
+      <PageTransition variant="fade">
+        <div className="truckcheck-page">
         <header className="truckcheck-header">
           <Link to="/" className="back-link">← Back to Home</Link>
           <h1>Truck Checks</h1>
@@ -75,12 +77,14 @@ export function TruckCheckPage() {
           <div className="loading">Loading appliances...</div>
         </main>
       </div>
+      </PageTransition>
     );
   }
 
   if (error) {
     return (
-      <div className="truckcheck-page">
+      <PageTransition variant="fade">
+        <div className="truckcheck-page">
         <header className="truckcheck-header">
           <Link to="/" className="back-link">← Back to Home</Link>
           <h1>Truck Checks</h1>
@@ -89,11 +93,13 @@ export function TruckCheckPage() {
           <div className="error">{error}</div>
         </main>
       </div>
+      </PageTransition>
     );
   }
 
   return (
-    <div className="truckcheck-page">
+    <PageTransition variant="slideFromBottom">
+      <div className="truckcheck-page">
       <header className="truckcheck-header">
         <div className="header-top">
           <Link to="/" className="back-link">← Back to Home</Link>
@@ -158,5 +164,6 @@ export function TruckCheckPage() {
         </div>
       </main>
     </div>
+    </PageTransition>
   );
 }

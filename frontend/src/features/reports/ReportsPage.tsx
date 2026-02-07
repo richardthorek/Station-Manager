@@ -18,6 +18,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, subDays, subMonths } from 'date-fns';
+import { PageTransition } from '../../components/PageTransition';
 import { api } from '../../services/api';
 import './ReportsPage.css';
 
@@ -185,7 +186,8 @@ export function ReportsPage() {
   }));
 
   return (
-    <div className="reports-page">
+    <PageTransition variant="slideFromBottom">
+      <div className="reports-page">
       <header className="reports-header">
         <Link to="/" className="back-link">← Back to Home</Link>
         <h1>Reports & Analytics</h1>
@@ -447,5 +449,6 @@ export function ReportsPage() {
         </main>
       )}
     </div>
+    </PageTransition>
   );
 }

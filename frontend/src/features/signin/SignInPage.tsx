@@ -30,6 +30,7 @@ import { NewEventModal } from '../../components/NewEventModal';
 import { ExportData } from '../../components/ExportData';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { ConfirmationDialog } from '../../components/ConfirmationDialog';
+import { PageTransition } from '../../components/PageTransition';
 import { useSocket } from '../../hooks/useSocket';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { useToast } from '../../hooks/useToast';
@@ -507,7 +508,8 @@ export function SignInPage() {
   }
 
   return (
-    <div className="app">
+    <PageTransition variant="slideFromBottom">
+      <div className="app">
       <Header 
         isConnected={isConnected} 
         databaseStatus={databaseStatus}
@@ -681,5 +683,6 @@ export function SignInPage() {
         />
       )}
     </div>
+    </PageTransition>
   );
 }

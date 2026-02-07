@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
+import { PageTransition } from '../../../components/PageTransition';
 import type { Station } from '../../../types';
 import { StationTokenCard } from './StationTokenCard';
 import './BrigadeAccessPage.css';
@@ -176,7 +177,8 @@ export function BrigadeAccessPage() {
   };
 
   return (
-    <div className="brigade-access-page">
+    <PageTransition variant="slideFromBottom">
+      <div className="brigade-access-page">
       <header className="page-header-compact">
         <div className="header-top">
           <div className="header-nav">
@@ -282,5 +284,6 @@ export function BrigadeAccessPage() {
         )}
       </main>
     </div>
+    </PageTransition>
   );
 }
