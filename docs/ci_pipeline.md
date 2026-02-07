@@ -27,7 +27,7 @@ The RFS Station Manager CI/CD pipeline is a comprehensive automated testing and 
 
 ### Key Features
 
-✅ **Parallel Execution**: Independent jobs run simultaneously for faster feedback  
+✅ **Single-Runner Fail-Fast**: One runner installs dependencies once; steps run sequentially and stop on first failure  
 ✅ **Quality Gates**: Deployment blocked unless all checks pass  
 ✅ **Comprehensive Testing**: 45+ backend tests with 70% coverage threshold  
 ✅ **Automated Issue Creation**: Failures automatically create GitHub issues with detailed logs  
@@ -38,8 +38,8 @@ The RFS Station Manager CI/CD pipeline is a comprehensive automated testing and 
 ### Success Metrics
 
 - **Zero False Positives**: All checks must pass for deployment
-- **Fast Feedback**: Parallel execution reduces total pipeline time
-- **Cost Efficient**: Optimized caching reduces GitHub Actions minutes
+- **Fast Feedback**: Shared environment avoids repeated setup and exits early on failure
+- **Cost Efficient**: Single runner + caching reduces GitHub Actions minutes
 - **Developer Friendly**: Clear error messages and automated issue creation
 
 ---
@@ -52,62 +52,37 @@ The RFS Station Manager CI/CD pipeline is a comprehensive automated testing and 
 └──────────────────────┬──────────────────────────────────────────┘
                        │
                        ▼
-        ┌──────────────────────────────────────┐
-        │  PHASE 1: QUALITY CHECKS (Parallel)  │
-        └──────────────────────────────────────┘
-                       │
-        ┌──────────────┼──────────────┬──────────────────┐
-        │              │               │                  │
-        ▼              ▼               ▼                  ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│ Lint Frontend│ │ Typecheck    │ │ Typecheck    │ │ Test Backend │
-│              │ │ Backend      │ │ Frontend     │ │              │
-└──────┬───────┘ └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
-       │                │                │                │
-       └────────────────┴────────────────┴────────────────┘
-                                │
-                       ❌ Any Fail? ──► Stop & Create Issue
-                                │
-                       ✅ All Pass
-                                │
-                                ▼
-                    ┌────────────────────┐
-                    │  PHASE 2: BUILD    │
-                    └────────────────────┘
-                                │
-                                ▼
-                    ┌────────────────────┐
-                    │ Build Backend      │
-                    │ Build Frontend     │
-                    │ Create Artifact    │
-                    └────────┬───────────┘
-                             │
-                    ❌ Fail? ──► Stop & Create Issue
-                             │
-                    ✅ Pass
-                             │
-                             ▼
-                ┌────────────────────────┐
-                │ PHASE 3: DEPLOY        │
-                │ (main branch only)     │
-                └────────────────────────┘
-                             │
-                             ▼
-                    ┌────────────────────┐
-                    │ Deploy to Azure    │
-                    │ App Service        │
-                    └────────────────────┘
+            ┌─────────────────────────────┐
+            │ Checkout + Install deps once │
+            └──────────────┬──────────────┘
+                           ▼
+            ┌─────────────────────────────┐
+            │ Lint + Type Checks          │
+            └──────────────┬──────────────┘
+                           ▼
+            ┌─────────────────────────────┐
+            │ Backend Tests + Coverage    │
+            │ Frontend Tests + Coverage   │
+            └──────────────┬──────────────┘
+                           ▼
+            ┌─────────────────────────────┐
+            │ Build + Package Artifacts   │
+            └──────────────┬──────────────┘
+                           ▼
+            ┌─────────────────────────────┐
+            │ Deploy + Post-Deploy Tests  │ (main only)
+            └─────────────────────────────┘
 ```
 
 ---
 
 ## Pipeline Stages
 
-### Phase 1: Quality Checks (Parallel)
+### Phase 1: Quality Checks (Sequential)
 
-These jobs run in parallel to provide fast feedback on code quality issues.
+These steps run in a single pipeline job to reuse the one-time dependency install and fail fast on the first error.
 
-#### 1.1 Frontend Linting (`lint-frontend`)
+#### 1.1 Frontend Linting (pipeline step)
 
 - **Purpose**: Enforce code quality and style consistency
 - **Tool**: ESLint with TypeScript parser and React hooks plugin
@@ -121,7 +96,7 @@ These jobs run in parallel to provide fast feedback on code quality issues.
 - Code style and formatting
 - Common JavaScript/TypeScript mistakes
 
-#### 1.2 Backend Type Checking (`typecheck-backend`)
+#### 1.2 Backend Type Checking (pipeline step)
 
 - **Purpose**: Validate TypeScript types in backend code
 - **Tool**: TypeScript Compiler (tsc)
@@ -135,7 +110,7 @@ These jobs run in parallel to provide fast feedback on code quality issues.
 - Type incompatibilities
 - Strict mode compliance
 
-#### 1.3 Frontend Type Checking (`typecheck-frontend`)
+#### 1.3 Frontend Type Checking (pipeline step)
 
 - **Purpose**: Validate TypeScript types in frontend code
 - **Tool**: TypeScript Compiler (tsc)
@@ -149,7 +124,7 @@ These jobs run in parallel to provide fast feedback on code quality issues.
 - Type safety in hooks and utilities
 - Strict mode compliance
 
-#### 1.4 Backend Testing (`test-backend`)
+#### 1.4 Backend Testing (pipeline step)
 
 - **Purpose**: Run comprehensive backend test suite
 - **Tool**: Jest with ts-jest preset
@@ -171,6 +146,20 @@ These jobs run in parallel to provide fast feedback on code quality issues.
 - Test data auto-initialized via `setupFilesAfterEnv`
 - Tests isolated from development and production data
 
+#### 1.5 Frontend Testing (pipeline step)
+
+- **Purpose**: Validate core React components, hooks, and pages
+- **Tool**: Vitest with React Testing Library
+- **Configuration**: `frontend/vitest.config.ts`
+- **Command**: `cd frontend && npm run test:coverage`
+- **Success Criteria**: All tests pass and coverage summary generated
+
+**What it tests:**
+- Component rendering and accessibility states
+- Hooks and socket interactions (mocked)
+- Reports and station context flows
+- Offline storage queue behaviors
+
 ### Phase 2: Build
 
 Runs only if **all** Phase 1 jobs pass.
@@ -179,8 +168,7 @@ Runs only if **all** Phase 1 jobs pass.
 
 - **Purpose**: Create production-ready build artifacts
 - **Commands**:
-  - `npm ci` - Install dependencies (for build compilation only)
-  - `npm run build` - Build backend (tsc) and frontend (vite)
+  - `npm run build` - Build backend (tsc) and frontend (vite) using the already installed dependencies
   - Create deployment ZIP artifact (excludes node_modules)
 
 **Build Output:**
@@ -330,13 +318,7 @@ The following conditions will **prevent deployment**:
 - Manual workflow dispatch
 
 **Jobs:**
-- `lint-frontend` - Frontend linting
-- `typecheck-backend` - Backend type checking
-- `typecheck-frontend` - Frontend type checking
-- `test-backend` - Backend testing
-- `build` - Build application (needs all above)
-- `deploy` - Deploy to Azure (needs build, main branch only)
-- `post-deployment-tests` - Smoke tests on live deployment (needs deploy, main branch only)
+- `pipeline` - Single-runner job that checks out code, installs dependencies once, runs linting, type checks, backend and frontend tests with coverage, builds artifacts, and (on `main`) deploys plus runs post-deployment smoke tests.
 
 **Concurrency:** 
 - Cancels in-progress runs for the same PR/branch
@@ -602,7 +584,7 @@ npm run build
 ### Current Optimizations
 
 ✅ **npm Caching**: Dependencies cached per package-lock.json hash  
-✅ **Parallel Execution**: Independent jobs run simultaneously  
+✅ **Single-Runner Flow**: One job reuses installed dependencies and stops on first failure  
 ✅ **Concurrency Control**: Cancels outdated runs for same PR  
 ✅ **Artifact Retention**: 7 days (balance between storage and debugging)  
 ✅ **Azure Post-Deploy Build**: Dependencies installed by Azure, not in CI (faster GitHub Actions)  
@@ -611,10 +593,10 @@ npm run build
 ### Pipeline Execution Time
 
 **Typical Run Times:**
-- Quality Checks (parallel): ~2-3 minutes
+- Quality + Tests (sequential): ~6-8 minutes (shared environment, no repeated setup)
 - Build: ~1-2 minutes (reduced: no production npm install)
 - Deploy: ~3-4 minutes (includes Azure npm install)
-- **Total (successful run)**: ~6-9 minutes (1-2 minutes faster than before)
+- **Total (successful run)**: ~10-13 minutes (single runner, fail-fast to cut wasted minutes)
 
 **Optimization Opportunities:**
 

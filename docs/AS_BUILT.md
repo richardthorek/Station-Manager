@@ -1412,17 +1412,17 @@ Potential improvements (not in current scope):
 
 **Pipeline Stages:**
 
-1. **Quality Checks (Parallel Execution)**
+1. **Quality & Tests (Single-Runner, Sequential)**
+   - Checkout + install backend/frontend dependencies once with npm caching
    - Frontend linting (ESLint) - Zero errors/warnings required
    - Backend type checking (TypeScript strict mode)
    - Frontend type checking (TypeScript strict mode)
    - Backend testing (Jest) - 45+ tests, 15%+ baseline coverage threshold
+   - Frontend testing (Vitest) - Coverage summary uploaded
 
-2. **Build (Runs if all quality checks pass)**
-   - Install dependencies with npm caching
+2. **Build (Runs if all quality gates pass)**
    - Build backend (TypeScript → JavaScript)
    - Build frontend (Vite production bundle)
-   - Prune dev dependencies
    - Create deployment package (ZIP artifact)
 
 3. **Deploy (Runs only on main branch after successful build)**
@@ -1449,7 +1449,7 @@ Potential improvements (not in current scope):
 - ✅ Post-deployment smoke tests must pass (NEW)
 
 **Optimizations:**
-- Parallel job execution for independent tasks
+- Single-runner sequential flow (one dependency install, fail-fast)
 - npm dependency caching (saves ~30-60 seconds per run)
 - Concurrency control (cancels outdated PR runs)
 - In-memory database for tests (no Azure dependencies)
@@ -1463,10 +1463,10 @@ Potential improvements (not in current scope):
 - Troubleshooting steps and resources provided
 
 **Typical Execution Time:**
-- Quality checks: ~2-3 minutes (parallel)
-- Build: ~2-3 minutes
-- Deploy: ~3-5 minutes
-- **Total:** ~7-11 minutes (successful run)
+- Quality + tests: ~6-8 minutes (sequential on one runner)
+- Build: ~1-2 minutes
+- Deploy: ~3-4 minutes
+- **Total:** ~10-13 minutes (successful run)
 
 **Trigger:** Push to `main` branch, pull requests to `main`, or manual dispatch
 
