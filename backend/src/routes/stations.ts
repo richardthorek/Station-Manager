@@ -277,10 +277,10 @@ router.post('/', validateCreateStation, handleValidationErrors, async (req: Requ
       isActive: true,
     });
     
-    // Emit WebSocket event
+    // Emit WebSocket event - brigade-scoped
     const io = req.app.get('io');
-    if (io) {
-      io.emit('station-created', newStation);
+    if (io && newStation.brigadeId) {
+      io.to(`brigade-${newStation.brigadeId}`).emit('station-created', newStation);
     }
     
     res.status(201).json(newStation);
@@ -320,10 +320,10 @@ router.put('/:id', validateStationId, validateUpdateStation, handleValidationErr
       return res.status(404).json({ error: 'Station not found' });
     }
     
-    // Emit WebSocket event
+    // Emit WebSocket event - brigade-scoped
     const io = req.app.get('io');
-    if (io) {
-      io.emit('station-updated', updatedStation);
+    if (io && updatedStation.brigadeId) {
+      io.to(`brigade-${updatedStation.brigadeId}`).emit('station-updated', updatedStation);
     }
     
     res.json(updatedStation);
@@ -444,10 +444,10 @@ router.post('/demo/reset', async (req: Request, res: Response) => {
     
     logger.info('Demo station reset complete');
     
-    // Emit WebSocket event to notify clients
+    // Emit WebSocket event to notify clients - station-scoped for demo
     const io = req.app.get('io');
     if (io) {
-      io.emit('demo-station-reset', { 
+      io.to(`station-${DEMO_STATION_ID}`).emit('demo-station-reset', { 
         stationId: DEMO_STATION_ID,
         resetAt: new Date(),
       });

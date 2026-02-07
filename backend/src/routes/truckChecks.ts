@@ -235,27 +235,31 @@ router.post('/runs', validateCreateCheckRun, handleValidationErrors, async (req:
       // Join existing check run
       checkRun = await db.addContributorToCheckRun(checkRun.id, completedByName || completedBy);
       
-      // Emit real-time update that someone joined
-      io.emit('truck-check-update', {
-        type: 'contributor-joined',
-        runId: checkRun!.id,
-        contributorName: completedByName || completedBy,
-        checkRun,
-        timestamp: new Date()
-      });
+      // Emit real-time update that someone joined - station-scoped
+      if (checkRun.stationId) {
+        io.to(`station-${checkRun.stationId}`).emit('truck-check-update', {
+          type: 'contributor-joined',
+          runId: checkRun!.id,
+          contributorName: completedByName || completedBy,
+          checkRun,
+          timestamp: new Date()
+        });
+      }
       
       res.json({ ...checkRun, joined: true });
     } else {
       // Create new check run
       checkRun = await db.createCheckRun(applianceId, completedBy, completedByName, stationId);
       
-      // Emit real-time update that check run started
-      io.emit('truck-check-update', {
-        type: 'check-started',
-        runId: checkRun.id,
-        checkRun,
-        timestamp: new Date()
-      });
+      // Emit real-time update that check run started - station-scoped
+      if (checkRun.stationId) {
+        io.to(`station-${checkRun.stationId}`).emit('truck-check-update', {
+          type: 'check-started',
+          runId: checkRun.id,
+          checkRun,
+          timestamp: new Date()
+        });
+      }
       
       res.status(201).json({ ...checkRun, joined: false });
     }
@@ -338,13 +342,15 @@ router.put('/runs/:id/complete', validateCompleteCheckRun, handleValidationError
       return res.status(404).json({ error: 'Check run not found' });
     }
     
-    // Emit real-time update that check run completed
-    io.emit('truck-check-update', {
-      type: 'check-completed',
-      runId: checkRun.id,
-      checkRun,
-      timestamp: new Date()
-    });
+    // Emit real-time update that check run completed - station-scoped
+    if (checkRun.stationId) {
+      io.to(`station-${checkRun.stationId}`).emit('truck-check-update', {
+        type: 'check-completed',
+        runId: checkRun.id,
+        checkRun,
+        timestamp: new Date()
+      });
+    }
     
     res.json(checkRun);
   } catch (error) {
@@ -389,13 +395,15 @@ router.post('/results', validateCreateCheckResult, handleValidationErrors, async
       stationId
     );
     
-    // Emit real-time update for collaborative checking
-    io.emit('truck-check-update', {
-      type: 'result-created',
-      runId,
-      result,
-      timestamp: new Date()
-    });
+    // Emit real-time update for collaborative checking - station-scoped
+    if (stationId) {
+      io.to(`station-${stationId}`).emit('truck-check-update', {
+        type: 'result-created',
+        runId,
+        result,
+        timestamp: new Date()
+      });
+    }
     
     res.status(201).json(result);
   } catch (error) {
