@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useState, type KeyboardEvent } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import type { EventWithParticipants } from '../types';
 import './EventCard.css';
 
@@ -14,16 +14,13 @@ interface EventCardProps {
 
 export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDelete, onReactivate }: EventCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const DAY_MS = 24 * 60 * 60 * 1000;
 
-  const now = useSyncExternalStore(
-    (onStoreChange) => {
-      const id = window.setInterval(onStoreChange, 60_000);
-      return () => window.clearInterval(id);
-    },
-    () => Date.now(),
-    () => Date.now()
-  );
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const canReactivate = !isActive && event.endTime
     ? now - new Date(event.endTime).getTime() <= DAY_MS
