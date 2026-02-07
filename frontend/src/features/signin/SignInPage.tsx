@@ -29,11 +29,14 @@ import { BulkImportModal } from '../../components/BulkImportModal';
 import { NewEventModal } from '../../components/NewEventModal';
 import { ExportData } from '../../components/ExportData';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
+import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { useSocket } from '../../hooks/useSocket';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
+import { useToast } from '../../hooks/useToast';
 import { useStation } from '../../contexts/StationContext';
 import { api } from '../../services/api';
 import { announce } from '../../utils/announcer';
+import { formatErrorMessage } from '../../utils/errorHandler';
 import type { Member, Activity, EventWithParticipants } from '../../types';
 import './SignInPage.css';
 
@@ -51,6 +54,8 @@ export function SignInPage() {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showNewEventModal, setShowNewEventModal] = useState(false);
   const [showExportData, setShowExportData] = useState(false);
+  const [confirmEndEvent, setConfirmEndEvent] = useState<string | null>(null);
+  const [confirmDeleteEvent, setConfirmDeleteEvent] = useState<string | null>(null);
   const [databaseStatus, setDatabaseStatus] = useState<{
     databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
@@ -62,6 +67,7 @@ export function SignInPage() {
   const isInitialMount = useRef(true);
 
   const { isConnected, emit, on, off } = useSocket();
+  const { showSuccess, showError, showWarning } = useToast();
   const { selectedStation } = useStation();
 
   // Get selected event
@@ -148,7 +154,9 @@ export function SignInPage() {
         loadDatabaseStatus(),
       ]);
     } catch (err) {
-      setError('Failed to load initial data');
+      const errorMessage = formatErrorMessage(err);
+      setError(errorMessage);
+      showError(errorMessage);
       console.error('Error loading initial data:', err);
     } finally {
       setLoading(false);
@@ -231,13 +239,18 @@ export function SignInPage() {
       setEvents([event, ...events]);
       setSelectedEventId(event.id);
       emit('event-created', event);
+      
+      // Show success toast
+      const activity = activities.find(a => a.id === activityId);
+      showSuccess(`Event started: ${activity?.name || 'New event'}`);
     } catch (err) {
       console.error('Error creating event:', err);
-      alert('Failed to create event');
+      showError(formatErrorMessage(err));
     }
   };
 
   const handleEndEvent = async (eventId: string) => {
+    setConfirmEndEvent(null);
     try {
       const updatedEvent = await api.endEvent(eventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? updatedEvent : e));
@@ -249,13 +262,15 @@ export function SignInPage() {
       }
       
       emit('event-ended', updatedEvent);
+      showSuccess('Event ended successfully');
     } catch (err) {
       console.error('Error ending event:', err);
-      alert('Failed to end event');
+      showError(formatErrorMessage(err));
     }
   };
 
   const handleDeleteEvent = async (eventId: string) => {
+    setConfirmDeleteEvent(null);
     try {
       await api.deleteEvent(eventId);
       
@@ -269,9 +284,10 @@ export function SignInPage() {
       }
       
       emit('event-deleted', { eventId });
+      showSuccess('Event deleted');
     } catch (err) {
       console.error('Error deleting event:', err);
-      alert('Failed to delete event');
+      showError(formatErrorMessage(err));
     }
   };
 
@@ -281,7 +297,7 @@ export function SignInPage() {
 
   const handleCheckIn = async (memberId: string) => {
     if (!selectedEventId) {
-      alert('Please select or start an event first');
+      showWarning('Please select or start an event first');
       return;
     }
 
@@ -292,23 +308,25 @@ export function SignInPage() {
       const updatedEvent = await api.getEvent(selectedEventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
       
-      // Announce check-in to screen readers
+      // Announce check-in to screen readers and show success toast
       const member = members.find(m => m.id === memberId);
       if (member) {
         announce(`${member.name} checked in successfully`, 'polite');
+        showSuccess(`${member.name} checked in`);
       }
       
       emit('participant-change', { eventId: selectedEventId, ...result });
     } catch (err) {
       console.error('Error checking in:', err);
-      announce('Error: Failed to check in', 'assertive');
-      alert('Failed to check in');
+      const errorMessage = formatErrorMessage(err);
+      announce(`Error: ${errorMessage}`, 'assertive');
+      showError(errorMessage);
     }
   };
 
   const handleRemoveParticipant = async (memberId: string) => {
     if (!selectedEventId) {
-      alert('Please select an event first');
+      showWarning('Please select an event first');
       return;
     }
 
@@ -320,17 +338,19 @@ export function SignInPage() {
       const updatedEvent = await api.getEvent(selectedEventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
       
-      // Announce check-out to screen readers
+      // Announce check-out to screen readers and show success toast
       const member = members.find(m => m.id === memberId);
       if (member) {
         announce(`${member.name} checked out`, 'polite');
+        showSuccess(`${member.name} checked out`);
       }
       
       emit('participant-change', { eventId: selectedEventId, ...result });
     } catch (err) {
       console.error('Error removing participant:', err);
-      announce('Error: Failed to remove participant', 'assertive');
-      alert('Failed to remove participant');
+      const errorMessage = formatErrorMessage(err);
+      announce(`Error: ${errorMessage}`, 'assertive');
+      showError(errorMessage);
     }
   };
 
@@ -339,11 +359,13 @@ export function SignInPage() {
       const member = await api.createMember(name);
       setMembers([...members, member]);
       announce(`Success: ${name} added as new member`, 'polite');
+      showSuccess(`${name} added as new member`);
       emit('member-added', member);
     } catch (err) {
       console.error('Error adding member:', err);
-      announce('Error: Failed to add member', 'assertive');
-      alert('Failed to add member');
+      const errorMessage = formatErrorMessage(err);
+      announce(`Error: ${errorMessage}`, 'assertive');
+      showError(errorMessage);
     }
   };
 
@@ -356,9 +378,10 @@ export function SignInPage() {
     try {
       const activity = await api.createActivity(name);
       setActivities([...activities, activity]);
+      showSuccess(`Activity "${name}" created`);
     } catch (err) {
       console.error('Error creating activity:', err);
-      alert('Failed to create activity');
+      showError(formatErrorMessage(err));
     }
   };
 
@@ -370,9 +393,10 @@ export function SignInPage() {
       setActivities(activities.filter(a => a.id !== activityId));
       
       emit('activity-deleted', { activityId });
+      showSuccess('Activity deleted');
     } catch (err) {
       console.error('Error deleting activity:', err);
-      alert('Failed to delete activity');
+      showError(formatErrorMessage(err));
     }
   };
 
@@ -546,8 +570,8 @@ export function SignInPage() {
               events={events}
               selectedEventId={selectedEventId}
               onSelectEvent={handleSelectEvent}
-              onEndEvent={handleEndEvent}
-              onDeleteEvent={handleDeleteEvent}
+              onEndEvent={(eventId) => setConfirmEndEvent(eventId)}
+              onDeleteEvent={(eventId) => setConfirmDeleteEvent(eventId)}
               onLoadMore={handleLoadMoreEvents}
               hasMore={hasMore}
               isLoading={loadingMore}
@@ -630,6 +654,32 @@ export function SignInPage() {
         position="bottom-left"
         scrollContainerRef={mainContentRef}
       />
+
+      {/* Confirmation Dialogs */}
+      {confirmEndEvent && (
+        <ConfirmationDialog
+          title="End Event"
+          message={`Are you sure you want to end this event? All participants will be checked out.`}
+          confirmLabel="End Event"
+          cancelLabel="Cancel"
+          isDangerous={true}
+          onConfirm={() => handleEndEvent(confirmEndEvent)}
+          onCancel={() => setConfirmEndEvent(null)}
+        />
+      )}
+
+      {confirmDeleteEvent && (
+        <ConfirmationDialog
+          title="Delete Event"
+          message="Are you sure you want to delete this event? This action cannot be undone."
+          description="All event data and participant records will be permanently removed."
+          confirmLabel="Delete Event"
+          cancelLabel="Cancel"
+          isDangerous={true}
+          onConfirm={() => handleDeleteEvent(confirmDeleteEvent)}
+          onCancel={() => setConfirmDeleteEvent(null)}
+        />
+      )}
     </div>
   );
 }
