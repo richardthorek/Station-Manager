@@ -1413,11 +1413,11 @@ Potential improvements (not in current scope):
 **Pipeline Stages:**
 
 1. **Quality & Tests (Single-Runner, Sequential)**
-   - Checkout + install backend/frontend dependencies once with npm caching
+   - Checkout + install backend dependencies (npm caching)
+   - Backend type checking (TypeScript strict mode) then backend testing (Jest, 45+ tests, 15%+ baseline coverage)
+   - Install frontend dependencies
    - Frontend linting (ESLint) - Zero errors/warnings required
-   - Backend type checking (TypeScript strict mode)
    - Frontend type checking (TypeScript strict mode)
-   - Backend testing (Jest) - 45+ tests, 15%+ baseline coverage threshold
    - Frontend testing (Vitest) - Coverage summary uploaded
 
 2. **Build (Runs if all quality gates pass)**

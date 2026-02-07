@@ -161,23 +161,10 @@ jobs:
       - name: Install backend dependencies
         run: npm ci --prefix backend
 
-      - name: Install frontend dependencies
-        run: npm ci --prefix frontend
-
-      - name: Run ESLint (frontend)
-        run: |
-          cd frontend
-          npm run lint
-
       - name: Type check backend
         run: |
           cd backend
           npx tsc --noEmit
-
-      - name: Type check frontend
-        run: |
-          cd frontend
-          npx tsc -b --noEmit
 
       - name: Run backend tests with coverage
         run: |
@@ -212,6 +199,19 @@ jobs:
           else
             echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Run ESLint (frontend)
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Type check frontend
+        run: |
+          cd frontend
+          npx tsc -b --noEmit
 
       - name: Run frontend tests with coverage
         run: |

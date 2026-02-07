@@ -53,16 +53,20 @@ The RFS Station Manager CI/CD pipeline is a comprehensive automated testing and 
                        │
                        ▼
             ┌─────────────────────────────┐
-            │ Checkout + Install deps once │
+            │ Checkout + backend deps     │
             └──────────────┬──────────────┘
                            ▼
             ┌─────────────────────────────┐
-            │ Lint + Type Checks          │
+            │ Backend typecheck + tests   │
             └──────────────┬──────────────┘
                            ▼
             ┌─────────────────────────────┐
-            │ Backend Tests + Coverage    │
-            │ Frontend Tests + Coverage   │
+            │ Install frontend deps       │
+            └──────────────┬──────────────┘
+                           ▼
+            ┌─────────────────────────────┐
+            │ Frontend lint + typecheck   │
+            │ Frontend tests + coverage   │
             └──────────────┬──────────────┘
                            ▼
             ┌─────────────────────────────┐
@@ -80,7 +84,7 @@ The RFS Station Manager CI/CD pipeline is a comprehensive automated testing and 
 
 ### Phase 1: Quality Checks (Sequential)
 
-These steps run in a single pipeline job to reuse the one-time dependency install and fail fast on the first error.
+These steps run in a single pipeline job to reuse installs and fail fast: backend deps → backend checks/tests → frontend deps → frontend checks/tests.
 
 #### 1.1 Frontend Linting (pipeline step)
 
