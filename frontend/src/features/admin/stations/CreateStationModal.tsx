@@ -328,13 +328,13 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                       ⚠️ Station "{existingStation.name}" already exists with this brigade ID
                     </span>
                   )}
-                  {!existingStation && !checkingDuplicate && formData.brigadeId && !errors.brigadeId && (
+                  {!existingStation && !checkingDuplicate && formData.brigadeId.trim() && !errors.brigadeId && (
                     <span className="field-hint">✓ Brigade ID is available</span>
                   )}
                   {!existingStation && errors.brigadeId && (
                     <span className="field-error">{errors.brigadeId}</span>
                   )}
-                  {!errors.brigadeId && !existingStation && !checkingDuplicate && (
+                  {!errors.brigadeId && !existingStation && !checkingDuplicate && !formData.brigadeId.trim() && (
                     <span className="field-hint">Auto-generated from brigade name. Can be customized.</span>
                   )}
                 </div>
