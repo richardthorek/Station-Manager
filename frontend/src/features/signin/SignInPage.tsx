@@ -271,6 +271,20 @@ export function SignInPage() {
     }
   };
 
+  const handleReactivateEvent = async (eventId: string) => {
+    try {
+      const updatedEvent = await api.reactivateEvent(eventId);
+      setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? updatedEvent : e));
+      setSelectedEventId(updatedEvent.id);
+      setIsGridExpanded(true);
+      emit('event-update', updatedEvent);
+      showSuccess('Event reopened — you can continue updating participants');
+    } catch (err) {
+      console.error('Error reactivating event:', err);
+      showError(formatErrorMessage(err));
+    }
+  };
+
   const handleDeleteEvent = async (eventId: string) => {
     setConfirmDeleteEvent(null);
     try {
@@ -589,6 +603,7 @@ export function SignInPage() {
               isLoading={loadingMore}
               onStartNewEvent={() => setShowNewEventModal(true)}
               onExpandGrid={hasActiveEvents ? () => setIsGridExpanded(true) : undefined}
+              onReactivateEvent={handleReactivateEvent}
             />
           </div>
 
