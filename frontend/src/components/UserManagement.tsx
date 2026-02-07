@@ -18,6 +18,11 @@ export function UserManagement({ members, onClose, onUpdateMember, onBulkImport 
   const [searchTerm, setSearchTerm] = useState('');
   const modalRef = useFocusTrap<HTMLDivElement>(true);
 
+  const handleCancel = () => {
+    setEditingId(null);
+    setEditName('');
+  };
+
   // Handle Escape key
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -32,7 +37,7 @@ export function UserManagement({ members, onClose, onUpdateMember, onBulkImport 
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [editingId]);
+  }, [editingId, onClose]);
 
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -54,11 +59,6 @@ export function UserManagement({ members, onClose, onUpdateMember, onBulkImport 
         alert('Failed to update member name');
       }
     }
-  };
-
-  const handleCancel = () => {
-    setEditingId(null);
-    setEditName('');
   };
 
   const handleViewProfile = (memberId: string) => {

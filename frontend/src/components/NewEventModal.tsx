@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Activity } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import './NewEventModal.css';
@@ -15,6 +15,19 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
   const modalRef = useFocusTrap<HTMLDivElement>(isOpen);
 
+  const handleClose = useCallback(() => {
+    setSelectedActivityId('');
+    onClose();
+  }, [onClose]);
+
+  const handleCreate = () => {
+    if (selectedActivityId) {
+      onCreate(selectedActivityId);
+      setSelectedActivityId('');
+      onClose();
+    }
+  };
+
   // Handle Escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -27,22 +40,9 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
-
-  const handleCreate = () => {
-    if (selectedActivityId) {
-      onCreate(selectedActivityId);
-      setSelectedActivityId('');
-      onClose();
-    }
-  };
-
-  const handleClose = () => {
-    setSelectedActivityId('');
-    onClose();
-  };
 
   return (
     <div className="modal-overlay" onClick={handleClose} role="presentation">

@@ -71,7 +71,7 @@ export function BulkImportModal({ existingMembers, onClose, onImportComplete, on
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
+  }, [onClose]);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();

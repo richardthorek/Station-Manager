@@ -7,7 +7,7 @@
  * 
  * Usage:
  * ```tsx
- * import { announce } from './components/LiveAnnouncer';
+ * import { announce } from '../utils/announcer';
  * 
  * announce('Member checked in successfully', 'polite');
  * announce('Error: Failed to save', 'assertive');
@@ -15,48 +15,18 @@
  */
 
 import { useEffect, useState } from 'react';
+import { subscribeToAnnouncements, type Announcement } from '../utils/announcer';
 import './LiveAnnouncer.css';
-
-interface Announcement {
-  message: string;
-  politeness: 'polite' | 'assertive';
-  id: number;
-}
-
-let announcements: Announcement[] = [];
-let listeners: Array<(announcements: Announcement[]) => void> = [];
-let nextId = 0;
-
-export function announce(message: string, politeness: 'polite' | 'assertive' = 'polite') {
-  const announcement: Announcement = {
-    message,
-    politeness,
-    id: nextId++
-  };
-  
-  announcements = [...announcements, announcement];
-  listeners.forEach(listener => listener(announcements));
-
-  // Clear announcement after it's been read (3 seconds)
-  setTimeout(() => {
-    announcements = announcements.filter(a => a.id !== announcement.id);
-    listeners.forEach(listener => listener(announcements));
-  }, 3000);
-}
 
 export function LiveAnnouncer() {
   const [currentAnnouncements, setCurrentAnnouncements] = useState<Announcement[]>([]);
 
   useEffect(() => {
-    const listener = (newAnnouncements: Announcement[]) => {
+    const unsubscribe = subscribeToAnnouncements((newAnnouncements) => {
       setCurrentAnnouncements(newAnnouncements);
-    };
+    });
     
-    listeners.push(listener);
-    
-    return () => {
-      listeners = listeners.filter(l => l !== listener);
-    };
+    return unsubscribe;
   }, []);
 
   return (
