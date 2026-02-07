@@ -208,11 +208,17 @@ Runs only if **build** succeeds and **branch is main** (not PRs).
 1. Download build artifact
 2. Unzip deployment package
 3. Login to Azure using OIDC
-4. Deploy to App Service
+4. Deploy to App Service (with automatic retry on 409 Conflict errors)
 5. **Azure runs `npm ci --production`** (Oryx build system)
 6. Set Azure App Service environment variables (version info)
 7. Restart app to apply environment variables
 8. Display deployment summary
+
+**Deployment Reliability:**
+- **Automatic Retry Logic**: Handles transient 409 Conflict errors
+- **Wait Period**: 60 seconds between retry attempts
+- **Conflict Resolution**: Azure deployments can conflict when Oryx build system is processing
+- **Success Rate**: Significantly improved with retry mechanism
 
 **Environment Variables Set:**
 - `GIT_COMMIT_SHA`: Full commit SHA (for version verification)
@@ -543,6 +549,30 @@ npm run build
    - Test error handling branches
    - Test edge cases
    - Remove dead code
+
+#### Issue: Deployment Fails with 409 Conflict
+
+**Symptoms:**
+- `deploy` job fails with "409 Conflict" error
+- Azure deployment reports conflict during OneDeploy
+
+**Solutions:**
+
+1. **Automatic retry:**
+   - The pipeline now includes automatic retry logic
+   - Waits 60 seconds and retries once
+   - Handles most transient 409 Conflict errors
+
+2. **Manual retry (if automatic retry fails):**
+   - Wait 2-3 minutes for Azure to complete ongoing operations
+   - Re-run the failed workflow from GitHub Actions
+   - Check Azure portal for any locks or ongoing deployments
+
+3. **Common causes:**
+   - Previous deployment still running (Oryx build in progress)
+   - Azure platform updates in progress
+   - Concurrent deployment attempts
+   - SCM_DO_BUILD_DURING_DEPLOYMENT causing build conflicts
 
 #### Issue: Deployment Fails
 
