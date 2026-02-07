@@ -10,7 +10,7 @@ interface MemberListProps {
   members: Member[];
   activeCheckIns: CheckInWithDetails[];
   onCheckIn: (memberId: string) => void;
-  onAddMember: (name: string) => void;
+  onAddMember: (name: string, rank?: string | null) => void;
   onRefresh?: () => Promise<void> | void;
 }
 

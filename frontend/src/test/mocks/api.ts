@@ -137,10 +137,11 @@ export const createMockApi = () => ({
     return Promise.resolve(filtered);
   }),
   getMember: vi.fn((id: string) => Promise.resolve(mockMembers.find(m => m.id === id))),
-  createMember: vi.fn((name: string) => 
+  createMember: vi.fn((name: string, rank?: string | null) => 
     Promise.resolve({
       id: `member-${Date.now()}`,
       name,
+      rank: rank ?? null,
       qrCode: `qr-${Date.now()}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

@@ -251,11 +251,11 @@ class ApiService {
     return response.json();
   }
 
-  async createMember(name: string): Promise<Member> {
+  async createMember(name: string, rank?: string | null): Promise<Member> {
     const response = await fetch(`${API_BASE_URL}/members`, {
       method: 'POST',
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, rank }),
     });
     if (!response.ok) throw new Error('Failed to create member');
     return response.json();

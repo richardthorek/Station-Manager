@@ -8,16 +8,35 @@ interface UserManagementProps {
   members: Member[];
   onClose: () => void;
   onUpdateMember: (id: string, name: string) => Promise<void>;
+  onAddMember: (name: string, rank?: string | null) => Promise<void>;
   onBulkImport?: () => void;
 }
 
-export function UserManagement({ members, onClose, onUpdateMember, onBulkImport }: UserManagementProps) {
+export function UserManagement({ members, onClose, onUpdateMember, onAddMember, onBulkImport }: UserManagementProps) {
   const navigate = useNavigate();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberRank, setNewMemberRank] = useState('Firefighter');
+  const [isAdding, setIsAdding] = useState(false);
   const modalRef = useFocusTrap<HTMLDivElement>(true);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  const rankOptions = [
+    'Visitor',
+    'Trainee',
+    'Firefighter',
+    'Deputy Captain',
+    'Senior Deputy Captain',
+    'Captain',
+    'Group Officer',
+    'Deputy Group Officer',
+    'Operational Officer',
+    'Inspector',
+    'Superintendent',
+  ];
 
   const handleCancel = () => {
     setEditingId(null);
@@ -65,6 +84,24 @@ export function UserManagement({ members, onClose, onUpdateMember, onBulkImport 
         console.error('Failed to update member:', err);
         alert('Failed to update member name');
       }
+    }
+  };
+
+  const handleAdd = async () => {
+    const trimmed = newMemberName.trim();
+    if (!trimmed || isAdding) return;
+
+    try {
+      setIsAdding(true);
+      await onAddMember(trimmed, newMemberRank || null);
+      setNewMemberName('');
+      setNewMemberRank('Firefighter');
+      addInputRef.current?.focus();
+    } catch (err) {
+      console.error('Failed to add member:', err);
+      alert('Failed to add member');
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -125,39 +162,73 @@ export function UserManagement({ members, onClose, onUpdateMember, onBulkImport 
         aria-modal="true"
         aria-labelledby="user-mgmt-title"
       >
-        <div className="modal-header">
-          <h2 id="user-mgmt-title">Manage Users</h2>
-          <div className="header-actions">
-            {onBulkImport && (
+          <div className="modal-header">
+            <h2 id="user-mgmt-title">Manage Users</h2>
+            <div className="header-actions">
+              {onBulkImport && (
+                <button 
+                  type="button"
+                  className="btn-import" 
+                  onClick={onBulkImport}
+                  aria-label="Bulk import members from CSV"
+                >
+                  <span aria-hidden="true">📂</span> Bulk Import
+                </button>
+              )}
               <button 
                 type="button"
-                className="btn-import" 
-                onClick={onBulkImport}
-                aria-label="Bulk import members from CSV"
+                className="btn-export" 
+                onClick={handleExportUrls}
+                aria-label="Export sign-in URLs to CSV"
               >
-                <span aria-hidden="true">📂</span> Bulk Import
+                <span aria-hidden="true">📋</span> Export Sign-In URLs
               </button>
-            )}
-            <button 
-              type="button"
-              className="btn-export" 
-              onClick={handleExportUrls}
-              aria-label="Export sign-in URLs to CSV"
-            >
-              <span aria-hidden="true">📋</span> Export Sign-In URLs
-            </button>
-            <button 
-              type="button"
-              className="btn-close" 
-              onClick={onClose}
-              aria-label="Close dialog"
-            >
-              ×
-            </button>
+            </div>
           </div>
-        </div>
 
         <div className="modal-body">
+          <div className="add-member-row">
+            <div className="add-member-label">
+              <span className="label-title">Add member</span>
+              <span className="label-help">Create a single member without CSV import</span>
+            </div>
+            <div className="add-member-controls">
+              <div className="add-member-fields">
+                <label htmlFor="new-member-name" className="sr-only">New member name</label>
+                <input
+                  id="new-member-name"
+                  ref={addInputRef}
+                  type="text"
+                  placeholder="e.g. Alex Taylor"
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                  aria-label="New member name"
+                />
+                <label htmlFor="new-member-rank" className="sr-only">Select rank</label>
+                <select
+                  id="new-member-rank"
+                  value={newMemberRank}
+                  onChange={(e) => setNewMemberRank(e.target.value)}
+                  aria-label="New member rank"
+                  className="rank-select"
+                >
+                  {rankOptions.map((rank) => (
+                    <option key={rank} value={rank}>{rank}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleAdd}
+                disabled={!newMemberName.trim() || isAdding}
+              >
+                {isAdding ? 'Adding…' : 'Add Member'}
+              </button>
+            </div>
+          </div>
+
           <div className="search-box">
             <label htmlFor="user-search" className="sr-only">Search members</label>
             <input

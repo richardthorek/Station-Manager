@@ -376,9 +376,9 @@ export function SignInPage() {
     }
   };
 
-  const handleAddMember = async (name: string) => {
+  const handleAddMember = async (name: string, rank?: string | null) => {
     try {
-      const member = await api.createMember(name);
+      const member = await api.createMember(name, rank);
       setMembers([...members, member]);
       announce(`Success: ${name} added as new member`, 'polite');
       showSuccess(`${name} added as new member`);
@@ -651,6 +651,7 @@ export function SignInPage() {
           members={members}
           onClose={() => setShowUserManagement(false)}
           onUpdateMember={handleUpdateMember}
+          onAddMember={handleAddMember}
           onBulkImport={handleOpenBulkImport}
         />
       )}
