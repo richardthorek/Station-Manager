@@ -168,36 +168,22 @@ User Action → REST API → Database Update → Socket.io Broadcast → All Cli
 │ GitHub Actions CI/CD Pipeline                           │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
-│  Phase 1: Quality Checks (Parallel)                    │
-│    ├─ Frontend Linting (ESLint)                        │
-│    ├─ Backend Type Checking (TypeScript)               │
-│    └─ Frontend Type Checking (TypeScript)              │
+│  Step 1: Checkout + install backend/frontend deps once │
+│  Step 2: Frontend lint + backend/frontend type checks  │
+│  Step 3: Backend tests (Jest) + Frontend tests (Vitest)│
 │                                                         │
-│  Phase 2: Testing (Parallel)                           │
-│    ├─ Backend Tests (Jest) + Coverage                  │
-│    └─ Frontend Tests (Vitest) + Coverage               │
+│  Step 4: Build backend + frontend, package artifact    │
 │                                                         │
-│  Phase 3: Build                                        │
-│    ├─ Install dependencies (for build only)            │
-│    ├─ Compile TypeScript (backend + frontend)          │
-│    ├─ Bundle frontend (Vite)                           │
-│    └─ Create deployment package (no node_modules)      │
-│                                                         │
-│  Phase 4: Deploy to Azure                              │
-│    ├─ Upload ZIP artifact                              │
-│    └─ Azure deploys + runs npm install                 │
-│                                                         │
-│  Phase 5: Post-Deployment Tests                        │
-│    └─ Smoke tests against live deployment              │
+│  Step 5: Deploy to Azure + post-deployment smoke tests │ (main only)
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
 
 **Key Optimizations**:
-- **Dependencies NOT installed in CI**: Only installed for build compilation
+- **Single-runner, fail-fast flow**: One dependency install, sequential gates stop early on failure
 - **Azure handles npm install**: Post-deploy using `SCM_DO_BUILD_DURING_DEPLOYMENT=true`
 - **Smaller artifacts**: Deployment package excludes node_modules
-- **Faster GitHub Actions**: Reduced time in CI pipeline
+- **Reduced waste**: Shared environment avoids repeated setup across jobs
 - **Deterministic builds**: Uses package-lock.json on Azure side
 
 **Deployment Package Contents**:
@@ -329,7 +315,7 @@ features/
 - **Documentation**: `docs/TABLE_STORAGE_MIGRATION_PLAN.md`
 
 ✅ **CI/CD Pipeline Enhancement** - Comprehensive quality gates
-- **Features**: Parallel checks, backend testing, coverage reporting, automated failure issues
+- **Features**: Single-runner fail-fast flow, backend/frontend checks, coverage reporting, automated failure issues
 - **Status**: Complete, enforced on all branches
 - **Documentation**: `docs/ci_pipeline.md`
 
