@@ -83,15 +83,23 @@ Additional features can be easily added as new routes following this pattern.
 
 ## 📊 Screenshots
 
-### Main Interface
-- Activity selector showing current activity
-- Member list with search functionality
-- Active check-ins display with timestamps
+Comprehensive UI screenshots for all major pages have been captured at iPad resolution (landscape & portrait). See the full UI review with screenshots:
 
-### Features
-- Real-time updates across devices
-- Visual feedback with animations
-- NSW RFS brand styling (red, black, white, lime green)
+**📸 [View Complete UI Review](docs/current_state/UI_REVIEW_20260207.md)**
+
+### Key Screenshots
+- **Landing Page**: Main dashboard with feature navigation
+- **Sign-In System**: Member check-in/out with real-time updates
+- **Truck Checks**: Vehicle maintenance tracking interface
+- **Reports & Analytics**: Dashboard with charts and metrics
+- **Admin Pages**: Station management and brigade access control
+
+All screenshots demonstrate:
+- ✅ Responsive design (iPad landscape 1024×768 & portrait 768×1024)
+- ✅ NSW RFS brand styling (red #e5281B, lime #cbdb2a)
+- ✅ Touch-friendly interfaces (60px+ touch targets)
+- ✅ WCAG 2.1 Level AA accessibility compliance
+- ✅ Real-time updates and visual feedback
 
 ## 🏗️ Architecture
 

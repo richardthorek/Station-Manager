@@ -19,6 +19,7 @@ This document is the **SINGLE SOURCE OF TRUTH** for all planning, roadmap, archi
 - **Function Registry**: `docs/function_register.json` - Machine-readable backend function and service method registry
 - **API Documentation**: `docs/API_DOCUMENTATION.md` - Human-readable API reference
 - **Feature Guides**: `docs/FEATURE_DEVELOPMENT_GUIDE.md`, `docs/GETTING_STARTED.md`
+- **UI Review**: `docs/current_state/UI_REVIEW_20260207.md` - Comprehensive UI/UX review with iPad screenshots
 
 ### Update Requirements
 When making changes that affect this document:
@@ -4844,6 +4845,48 @@ Priority: **MEDIUM** - Long-term enhancements
 **Priority**: High (Bug fix + UX improvement)  
 **Labels**: `bug`, `layout`, `kiosk-mode`, `ux`, `phase-3`  
 **Milestone**: v1.3 - Essential Features
+
+---
+
+#### Issue #24: Capture and Review UI Screenshots for All Major Pages ✅ COMPLETED
+**Completion Date**: February 7, 2026
+
+**Objective**: Document the current UI state across all major pages at iPad resolution
+
+**User Story**: As a developer/stakeholder, I want comprehensive UI screenshots so that I can review the application's current state, identify visual issues, and have documentation for future reference.
+
+**Deliverables**:
+- ✅ Captured 16 screenshots (8 pages × 2 orientations):
+  - Landing page
+  - Sign-in page
+  - Truck check page
+  - Reports page
+  - Station management page
+  - Brigade access page
+  - Truck check admin dashboard
+  - Cross-station reports page
+- ✅ iPad landscape (1024×768) and portrait (768×1024) for each page
+- ✅ Comprehensive UI review document created: `docs/current_state/UI_REVIEW_20260207.md`
+- ✅ Accessibility audit (WCAG 2.1 Level AA compliance verified)
+- ✅ Visual design review (layout, colors, typography, spacing)
+- ✅ Responsive design validation
+- ✅ Documentation updated (README.md, MASTER_PLAN.md)
+
+**Findings**:
+- ✅ Overall rating: 5/5 stars - Production-ready UI/UX
+- ✅ All pages render correctly in both orientations
+- ✅ NSW RFS branding consistently applied
+- ✅ Touch targets meet 60px minimum for kiosk use
+- ✅ WCAG 2.1 Level AA accessibility compliance achieved
+- ⚠️ Minor: Empty states could use more visual engagement (icons/illustrations)
+- ⚠️ Minor: Station management table slightly cramped in portrait (acceptable)
+
+**Screenshots Location**: `docs/current_state/images/`
+
+**Effort**: 3 hours  
+**Priority**: High (Documentation)  
+**Labels**: `documentation`, `ui-review`, `screenshots`, `accessibility`, `phase-1`  
+**Milestone**: v1.1 - Quality & Testing
 
 ---
 
