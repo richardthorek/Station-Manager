@@ -46,6 +46,7 @@
   margin: 0 auto;
   padding: 12px 24px;
   display: flex;
+  flex-wrap: nowrap;
   justify-content: space-between;
   align-items: center;
   gap: 1.5rem;
@@ -73,11 +74,11 @@
 }
 
 .header-center {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   justify-content: center;
   max-width: 400px;
-  margin: 0 auto;
+  min-width: 0;
 }
 
 .header-status {
@@ -266,43 +267,117 @@
   flex: 1;
 }
 
-/* Tablet (iPad) portrait and landscape */
+/* Tablet (iPad) portrait and landscape - Keep single row layout */
 @media (max-width: 1024px) {
   .header-content {
-    flex-wrap: wrap;
     gap: 0.75rem;
+    flex-wrap: nowrap;
   }
   
   .header-logo {
-    order: 1;
+    gap: 12px;
   }
   
-  .header-status {
-    order: 2;
+  .logo-icon {
+    font-size: 1.8rem;
   }
   
+  .header-logo h1 {
+    font-size: 1.3rem;
+  }
+  
+  /* Make station selector more compact */
   .header-center {
-    order: 3;
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
+    flex: 1 1 auto;
+    max-width: 300px;
+    min-width: 0;
+  }
+  
+  /* Make status indicators more compact */
+  .status-indicator {
+    padding: 8px 14px;
   }
 }
 
+/* Mobile and small tablets - More aggressive compacting */
 @media (max-width: 768px) {
-  .header-logo h1 {
-    font-size: 1.2rem;
-  }
-  
   .header-content {
-    padding: 12px 16px;
+    padding: 10px 12px;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
   }
   
+  .header-logo {
+    gap: 8px;
+  }
+  
+  .logo-icon {
+    font-size: 1.5rem;
+  }
+  
+  .header-logo h1 {
+    font-size: 1.1rem;
+  }
+  
+  /* Hide status text on smaller screens, keep icons */
   .status-text {
     display: none;
   }
   
+  /* Adjust button sizes */
+  .theme-toggle-btn,
+  .admin-menu-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+  
+  .status-indicator {
+    padding: 6px 10px;
+  }
+  
+  /* Make station selector take available space */
   .header-center {
-    max-width: 100%;
+    flex: 1 1 auto;
+    max-width: 250px;
+    min-width: 0;
+  }
+  
+  /* Hide demo badge on very small screens */
+  .demo-badge {
+    display: none;
+  }
+}
+
+/* Extra small screens (mobile portrait) */
+@media (max-width: 480px) {
+  .header-content {
+    padding: 8px 10px;
+    flex-wrap: nowrap;
+  }
+  
+  .header-logo h1 {
+    font-size: 1rem;
+  }
+  
+  .logo-icon {
+    font-size: 1.3rem;
+  }
+  
+  .header-center {
+    flex: 1 1 auto;
+    max-width: 180px;
+    min-width: 0;
+  }
+  
+  .theme-toggle-btn,
+  .admin-menu-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  
+  .status-indicator {
+    padding: 4px 8px;
   }
 }

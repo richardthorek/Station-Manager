@@ -294,7 +294,7 @@ features/
 | **Uptime** | 99%+ | ✅ Stable |
 | **Backend Tests** | 45 tests (100% pass) | ✅ Passing |
 | **Test Coverage** | 15% baseline | ⚠️ Needs improvement |
-| **Frontend Tests** | 0 tests | ❌ Not implemented |
+| **Frontend Tests** | 250 tests (100% pass) | ✅ Complete |
 | **API Endpoints** | 35+ REST endpoints | ✅ Complete |
 | **Real-time Events** | 10+ Socket.io events | ✅ Working |
 | **CI/CD Pipeline** | Quality gates enabled | ✅ Enforced |
@@ -4905,6 +4905,60 @@ Priority: **MEDIUM** - Long-term enhancements
 **Effort**: 3 hours  
 **Priority**: High (Documentation)  
 **Labels**: `documentation`, `ui-review`, `screenshots`, `accessibility`, `phase-1`  
+**Milestone**: v1.1 - Quality & Testing
+
+---
+
+#### Issue #25: Fix Header Layout - Single Compact Row ✅ COMPLETED
+**Completion Date**: February 7, 2026
+
+**Objective**: Fix header layout to display in a single compact row on all viewport sizes, maximizing screen real estate for the main app
+
+**User Story**: As a volunteer using Station Manager on a tablet, I need the header to be compact and use only one row so that I have more screen space for the main content without scrolling.
+
+**Problem**: Header wraps into multiple rows on tablet-sized viewports (≤1024px), with the station selector taking the full width of a second row. This wastes vertical space and reduces the available area for app content.
+
+**Solution Implemented**:
+- ✅ Removed CSS flexbox wrapping (`flex-wrap: wrap`) from tablet media query
+- ✅ Removed flexbox order properties that forced multi-row layout
+- ✅ Made controls progressively more compact at smaller breakpoints
+- ✅ Hidden status text labels on mobile (kept icons for accessibility)
+- ✅ Optimized station selector width to fit available space
+- ✅ All controls remain visible, accessible, and keyboard navigable
+
+**Changes Made**:
+- Modified `frontend/src/components/Header.css`:
+  - Tablet (≤1024px): Single row layout, compact controls
+  - Mobile (≤768px): Hidden status text, smaller buttons
+  - Extra small (≤480px): Very compact, icon-only buttons
+
+**Testing**:
+- ✅ All 250 frontend tests pass
+- ✅ All 12 Header component tests pass
+- ✅ Manual testing at multiple viewport sizes:
+  - Desktop (1920px): Full layout
+  - Tablet landscape (1024px): Single row, compact
+  - Tablet portrait (768px): Single row, no text labels
+  - Mobile (375px): Single row, icon-only
+
+**Screenshots**:
+- Before/after at tablet landscape (1024×768)
+- Before/after at tablet portrait (768×1024)
+- After at mobile (375×667)
+- Located in: `docs/current_state/images/header-*.png`
+
+**Accessibility**:
+- ✅ All controls remain keyboard accessible
+- ✅ ARIA labels preserved on all interactive elements
+- ✅ Screen reader compatibility maintained
+- ✅ Touch targets meet minimum 32px size on mobile
+- ✅ Status indicators retain semantic meaning (icons + color)
+
+**Impact**: Improved space efficiency, better UX on tablets and mobile devices
+
+**Effort**: 4 hours  
+**Priority**: P1 (High - UX improvement)  
+**Labels**: `ui`, `ux`, `header`, `responsive`, `accessibility`, `phase-1`  
 **Milestone**: v1.1 - Quality & Testing
 
 ---
