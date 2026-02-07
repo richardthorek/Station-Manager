@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import type { EventWithParticipants } from '../types';
 import './EventCard.css';
 
@@ -14,12 +14,25 @@ interface EventCardProps {
 
 export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDelete, onReactivate }: EventCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [canReactivate, setCanReactivate] = useState(false);
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
   const handleCardKeyDown = (eventKey: KeyboardEvent<HTMLDivElement>) => {
     if (isActive && (eventKey.key === 'Enter' || eventKey.key === ' ')) {
       eventKey.preventDefault();
       onSelect(event.id);
     }
   };
+
+  useEffect(() => {
+    if (!isActive && event.endTime) {
+      const endTimeMs = new Date(event.endTime).getTime();
+      setCanReactivate(Date.now() - endTimeMs <= DAY_MS);
+      return;
+    }
+
+    setCanReactivate(false);
+  }, [DAY_MS, event.endTime, isActive]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -70,8 +83,6 @@ export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDele
         return '✓';
     }
   };
-
-  const canReactivate = !isActive && event.endTime && (Date.now() - new Date(event.endTime).getTime()) <= 24 * 60 * 60 * 1000;
 
   return (
     <div
