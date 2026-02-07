@@ -16,9 +16,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, subDays, subMonths } from 'date-fns';
 import { PageTransition } from '../../components/PageTransition';
+import { SkeletonReportCard, Skeleton } from '../../components/Skeleton';
+import { contentFadeIn } from '../../utils/animations';
 import { api } from '../../services/api';
 import './ReportsPage.css';
 
@@ -250,10 +253,24 @@ export function ReportsPage() {
       </div>
 
       {loading && (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading reports...</p>
-        </div>
+        <motion.div
+          className="loading-state"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <section className="statistics-cards-skeleton" aria-label="Loading statistics">
+            <SkeletonReportCard count={5} />
+          </section>
+
+          <section className="chart-skeleton" aria-label="Loading charts">
+            <Skeleton variant="rectangle" height={300} />
+            <div className="charts-row-skeleton">
+              <Skeleton variant="rectangle" height={300} />
+              <Skeleton variant="rectangle" height={300} />
+            </div>
+          </section>
+        </motion.div>
       )}
 
       {error && (
@@ -264,7 +281,12 @@ export function ReportsPage() {
       )}
 
       {!loading && !error && (
-        <main className="reports-main" id="main-content" tabIndex={-1}>
+        <motion.main
+          className="reports-main"
+          id="main-content"
+          tabIndex={-1}
+          {...contentFadeIn.fromSkeleton}
+        >
           {/* Event Statistics Cards */}
           {eventStatistics && (
             <section className="statistics-cards">
@@ -446,7 +468,7 @@ export function ReportsPage() {
               </div>
             </section>
           )}
-        </main>
+        </motion.main>
       )}
     </div>
     </PageTransition>

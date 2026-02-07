@@ -135,3 +135,98 @@ export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; column
     </div>
   );
 }
+
+/**
+ * Skeleton MemberCard - Matches actual member card layout from sign-in page
+ */
+export function SkeletonMemberCard({ count = 6 }: { count?: number }) {
+  return (
+    <div className="skeleton-member-grid">
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={index} className="skeleton-member-card">
+          <div className="skeleton-member-info">
+            <Skeleton variant="text" width="70%" height={20} />
+            <Skeleton variant="text" width="40%" height={14} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Skeleton EventCard - Matches actual event card layout
+ */
+export function SkeletonEventCard({ count = 2 }: { count?: number }) {
+  return (
+    <div className="skeleton-event-list">
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={index} className="skeleton-event-card">
+          <div className="skeleton-event-header">
+            <Skeleton variant="text" width="60%" height={24} />
+            <Skeleton variant="rectangle" width={80} height={32} />
+          </div>
+          <Skeleton variant="text" width="40%" height={16} />
+          <Skeleton variant="text" width="30%" height={16} />
+          <div className="skeleton-event-participants">
+            <Skeleton variant="circle" width={32} height={32} />
+            <Skeleton variant="circle" width={32} height={32} />
+            <Skeleton variant="circle" width={32} height={32} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Skeleton Profile - Matches profile page layout
+ */
+export function SkeletonProfile() {
+  return (
+    <div className="skeleton-profile">
+      <div className="skeleton-profile-header">
+        <Skeleton variant="circle" width={120} height={120} />
+        <div className="skeleton-profile-info">
+          <Skeleton variant="text" width={200} height={32} />
+          <Skeleton variant="text" width={150} height={20} />
+        </div>
+      </div>
+      <div className="skeleton-profile-stats">
+        <div className="skeleton-stat-card">
+          <Skeleton variant="text" width={60} height={40} />
+          <Skeleton variant="text" width={100} height={16} />
+        </div>
+        <div className="skeleton-stat-card">
+          <Skeleton variant="text" width={60} height={40} />
+          <Skeleton variant="text" width={100} height={16} />
+        </div>
+        <div className="skeleton-stat-card">
+          <Skeleton variant="text" width={60} height={40} />
+          <Skeleton variant="text" width={100} height={16} />
+        </div>
+      </div>
+      <div className="skeleton-profile-section">
+        <Skeleton variant="text" width={150} height={24} />
+        <SkeletonList count={3} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Skeleton ReportCard - Matches report cards layout
+ */
+export function SkeletonReportCard({ count = 4 }: { count?: number }) {
+  return (
+    <div className="skeleton-reports-grid">
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={index} className="skeleton-report-card">
+          <Skeleton variant="text" width="60%" height={20} />
+          <Skeleton variant="text" width="40%" height={40} />
+          <Skeleton variant="text" width="80%" height={14} />
+        </div>
+      ))}
+    </div>
+  );
+}

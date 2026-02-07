@@ -180,6 +180,28 @@
   padding: 2rem;
 }
 
+.loading-state {
+  max-width: 100%;
+  padding: var(--spacing-xl);
+}
+
+.statistics-cards-skeleton {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.chart-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+  margin-top: var(--spacing-xl);
+}
+
+.charts-row-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+}
+
 .spinner {
   border: 4px solid var(--rfs-light-grey);
   border-top: 4px solid var(--rfs-core-red);

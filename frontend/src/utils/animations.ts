@@ -163,6 +163,41 @@ export const achievementVariants = {
 } as const;
 
 /**
+ * Content fade-in animation - for transitioning from skeleton to real content
+ * Uses 300ms fade-in as per design spec, with slight upward movement
+ */
+export const contentFadeIn = {
+  /** Fade in from skeleton */
+  fromSkeleton: {
+    initial: { opacity: 0, y: 5 },
+    animate: {
+      opacity: 1,
+      y: 0,
+      transition: transitions.standard, // 300ms
+    },
+  } as Variants,
+
+  /** Staggered content loading (50ms delay between items) */
+  staggeredContainer: {
+    animate: {
+      transition: {
+        staggerChildren: 0.05, // 50ms as per design spec
+        delayChildren: 0,
+      },
+    },
+  } as Variants,
+
+  staggeredItem: {
+    initial: { opacity: 0, y: 5 },
+    animate: {
+      opacity: 1,
+      y: 0,
+      transition: transitions.standard,
+    },
+  } as Variants,
+} as const;
+
+/**
  * Check if user prefers reduced motion
  */
 export function prefersReducedMotion(): boolean {

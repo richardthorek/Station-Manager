@@ -1,7 +1,8 @@
 /**
  * Skeleton Loading Styles
- * 
+ *
  * Smooth shimmer animation for skeleton screens.
+ * Shimmer duration: 1.5-2s loop as per design spec
  */
 
 .skeleton {
@@ -10,6 +11,8 @@
   background-color: var(--rfs-light-grey);
   border-radius: var(--radius-sm);
   opacity: 0.7;
+  /* Smooth fade-in when skeleton appears */
+  animation: skeletonFadeIn 300ms ease-out;
 }
 
 .skeleton::before {
@@ -22,10 +25,11 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.5),
     transparent
   );
-  animation: shimmer 1.5s infinite;
+  /* Updated shimmer duration to 1.8s (between 1.5-2s range) */
+  animation: shimmer 1.8s ease-in-out infinite;
 }
 
 @keyframes shimmer {
@@ -34,6 +38,15 @@
   }
   100% {
     left: 100%;
+  }
+}
+
+@keyframes skeletonFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.7;
   }
 }
 
@@ -119,15 +132,179 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.15),
       transparent
     );
   }
+}
+
+/* Dark theme support with explicit data attribute */
+[data-theme="dark"] .skeleton {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .skeleton::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
 }
 
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   .skeleton::before {
     animation: none;
+  }
+  .skeleton {
+    /* Keep fade-in but make it instant */
+    animation: skeletonFadeIn 0ms;
+  }
+}
+
+/* Specialized Skeleton Layouts */
+
+/* Member Card Grid */
+.skeleton-member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+}
+
+.skeleton-member-card {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-md);
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.skeleton-member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* Event Card List */
+.skeleton-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.skeleton-event-card {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.skeleton-event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.skeleton-event-participants {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+}
+
+/* Profile Layout */
+.skeleton-profile {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.skeleton-profile-header {
+  display: flex;
+  gap: var(--spacing-xl);
+  align-items: center;
+  margin-bottom: var(--spacing-2xl);
+  padding: var(--spacing-xl);
+  background-color: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.skeleton-profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.skeleton-profile-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.skeleton-stat-card {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  align-items: center;
+  text-align: center;
+}
+
+.skeleton-profile-section {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-xl);
+}
+
+/* Reports Grid */
+.skeleton-reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+}
+
+.skeleton-report-card {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .skeleton-member-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .skeleton-profile-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-reports-grid {
+    grid-template-columns: 1fr;
   }
 }
