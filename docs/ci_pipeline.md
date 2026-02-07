@@ -179,17 +179,18 @@ Runs only if **all** Phase 1 jobs pass.
 
 - **Purpose**: Create production-ready build artifacts
 - **Commands**:
-  - `npm install` - Install all dependencies
+  - `npm ci` - Install dependencies (for build compilation only)
   - `npm run build` - Build backend (tsc) and frontend (vite)
-  - `npm prune --production` - Remove dev dependencies
-  - Create deployment ZIP artifact
+  - Create deployment ZIP artifact (excludes node_modules)
 
 **Build Output:**
 - `backend/dist/` - Compiled JavaScript from TypeScript
 - `frontend/dist/` - Optimized production bundle (HTML, CSS, JS)
-- `release.zip` - Deployment package with production dependencies
+- `release.zip` - Deployment package (WITHOUT node_modules, Azure installs post-deploy)
 
 **Artifact Retention:** 7 days
+
+**Key Optimization**: Dependencies are NOT included in deployment artifact. Azure App Service installs them post-deploy using Oryx build system.
 
 ### Phase 3: Deployment
 
@@ -201,14 +202,17 @@ Runs only if **build** succeeds and **branch is main** (not PRs).
 - **Target**: `bungrfsstation` (Production slot)
 - **Authentication**: Azure federated credentials (OIDC)
 - **Deployment Method**: Azure Web Apps Deploy action
+- **Azure Build**: Enabled (`SCM_DO_BUILD_DURING_DEPLOYMENT=true`)
 
 **Deployment Steps:**
 1. Download build artifact
 2. Unzip deployment package
 3. Login to Azure using OIDC
 4. Deploy to App Service
-5. Set Azure App Service environment variables (version info)
-6. Display deployment summary
+5. **Azure runs `npm ci --production`** (Oryx build system)
+6. Set Azure App Service environment variables (version info)
+7. Restart app to apply environment variables
+8. Display deployment summary
 
 **Environment Variables Set:**
 - `GIT_COMMIT_SHA`: Full commit SHA (for version verification)
@@ -571,15 +575,16 @@ npm run build
 ✅ **Parallel Execution**: Independent jobs run simultaneously  
 ✅ **Concurrency Control**: Cancels outdated runs for same PR  
 ✅ **Artifact Retention**: 7 days (balance between storage and debugging)  
-✅ **Production Dependencies**: Dev dependencies pruned before deployment
+✅ **Azure Post-Deploy Build**: Dependencies installed by Azure, not in CI (faster GitHub Actions)  
+✅ **Smaller Artifacts**: Deployment package excludes node_modules (~50-100MB smaller)
 
 ### Pipeline Execution Time
 
 **Typical Run Times:**
 - Quality Checks (parallel): ~2-3 minutes
-- Build: ~2-3 minutes
-- Deploy: ~3-5 minutes
-- **Total (successful run)**: ~7-11 minutes
+- Build: ~1-2 minutes (reduced: no production npm install)
+- Deploy: ~3-4 minutes (includes Azure npm install)
+- **Total (successful run)**: ~6-9 minutes (1-2 minutes faster than before)
 
 **Optimization Opportunities:**
 
