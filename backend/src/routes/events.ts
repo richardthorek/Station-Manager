@@ -162,8 +162,10 @@ router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, asyn
       return res.status(404).json({ error: 'Event not found' });
     }
 
+    // If event is already active, return it (idempotent operation)
     if (existingEvent.isActive) {
-      return res.status(400).json({ error: 'Event is already active' });
+      const eventWithParticipants = await db.getEventWithParticipants(eventId);
+      return res.json(eventWithParticipants);
     }
 
     if (!existingEvent.endTime) {
