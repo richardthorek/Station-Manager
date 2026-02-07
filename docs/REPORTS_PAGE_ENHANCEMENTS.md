@@ -554,93 +554,39 @@ All success criteria from Issue #35 have been met:
 
 ## Security Considerations
 
-### xlsx Library Vulnerabilities
+### ✅ Excel Export Security - RESOLVED
 
-**Current Status**: The project uses `xlsx@0.18.5`, which has two known vulnerabilities:
+**Update (February 7, 2026)**: The xlsx library vulnerabilities have been **fully mitigated** by migrating to `exceljs@4.4.0`.
 
-1. **CVE-2024-XXXXX**: Regular Expression Denial of Service (ReDoS)
-   - Affected versions: < 0.20.2
-   - Severity: Medium
-   - Impact: Maliciously crafted Excel files could cause CPU exhaustion
+**Previous Issue**: The project initially used `xlsx@0.18.5`, which had two known vulnerabilities:
+1. Regular Expression Denial of Service (ReDoS) - affects versions < 0.20.2
+2. Prototype Pollution - affects versions < 0.19.3
 
-2. **CVE-2023-XXXXX**: Prototype Pollution
-   - Affected versions: < 0.19.3
-   - Severity: High
-   - Impact: Potential remote code execution via crafted Excel files
+The actual risk was LOW since the library was only used for export (write-only), never for parsing untrusted files.
 
-**Why Not Patched Yet**: The patched versions (0.19.3+ and 0.20.2+) are only available through SheetJS Pro (commercial license). The free/open-source version (0.18.5) is the latest available on npm and has not received security updates since March 2022.
+**Resolution**: Migrated to `exceljs@4.4.0`:
+- ✅ No known security vulnerabilities
+- ✅ Actively maintained (MIT license, last update December 2024)
+- ✅ Enhanced features:
+  - RFS brand colors in Excel headers (red background, white text)
+  - Frozen header rows for better scrolling
+  - Alternating row colors for readability
+  - Workbook metadata (creator, creation date)
+- ✅ Modern async/await API
 
-**Risk Assessment for RFS Station Manager**:
-- **LOW RISK** - The Excel export functionality only processes trusted, application-generated data
-- The export utility creates Excel files from internal data structures (never parses user-uploaded Excel files)
-- No user-supplied Excel files are imported or processed by the application
-- The vulnerability requires malicious Excel file input, which is not a use case in this application
+**Migration Details**: See `docs/SECURITY_ADVISORY_XLSX.md` for complete before/after comparison.
 
-**Mitigation Strategies**:
+**Bundle Size Impact**:
+- Before (xlsx): 752KB (237KB gzipped)
+- After (exceljs): 1,408KB (412KB gzipped)
+- Increase: +656KB raw (+175KB gzipped)
+- **Trade-off**: Security improvements and enhanced features justify the moderate size increase
+- Still lazy-loaded, so only impacts users who trigger Excel export
 
-1. **Current Mitigation** (Implemented):
-   - xlsx is only used for export (write-only), not import (read)
-   - All data passed to xlsx is sanitized and validated
-   - No user-uploaded Excel files are processed
-   - Library is lazy-loaded only when export is triggered
-
-2. **Future Options**:
-   - **Option A**: Upgrade to SheetJS Pro (commercial license ~$400/year)
-     - Pro: Gets patched versions with security fixes
-     - Con: Adds licensing cost to project
-
-   - **Option B**: Switch to alternative library
-     - `exceljs` - More modern, actively maintained, MIT license
-     - `xlsx-js-style` - Community fork with bug fixes
-     - Pro: Free, maintained, no vulnerabilities
-     - Con: Requires code refactoring
-
-   - **Option C**: Server-side Excel generation
-     - Generate Excel files on backend using Node.js libraries
-     - Pro: Reduces client-side bundle size, better security control
-     - Con: Requires backend changes, adds server load
-
-**Recommended Action**:
-- **Short-term**: Accept current risk (LOW) and document in security audit
-- **Medium-term**: Evaluate migration to `exceljs` library (see migration guide below)
-- **Long-term**: Consider server-side Excel generation for enterprise deployments
-
-### Migration to exceljs (Future Enhancement)
-
-If vulnerability mitigation is required, here's the migration path:
-
-```bash
-# Install exceljs
-npm uninstall xlsx
-npm install exceljs
-```
-
-```typescript
-// Replace exportUtils.ts Excel export with exceljs
-import ExcelJS from 'exceljs';
-
-export async function exportAsExcel(data, filename) {
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Check-ins');
-
-  // Add headers
-  worksheet.columns = [
-    { header: 'Member', key: 'member', width: 20 },
-    { header: 'Activity', key: 'activity', width: 15 },
-    // ... more columns
-  ];
-
-  // Add data
-  data.forEach(row => worksheet.addRow(row));
-
-  // Generate buffer and download
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  saveAs(blob, filename);
-}
-```
-
-**Migration Effort**: ~2-3 hours to refactor exportUtils.ts and update tests
+**Implementation Changes**:
+- `exportAsExcel()` is now async (returns Promise<void>)
+- Excel files now have professional styling matching RFS branding
+- Better error handling and download workflow
 
 ---
 

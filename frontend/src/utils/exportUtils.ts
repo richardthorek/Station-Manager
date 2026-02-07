@@ -8,7 +8,7 @@
  */
 
 import jsPDF from 'jspdf';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 
 // RFS brand colors
@@ -209,27 +209,78 @@ export async function exportAsPDF(
 /**
  * Export data as Excel spreadsheet
  */
-export function exportAsExcel(
+export async function exportAsExcel(
   filename: string,
   sheets: Array<{
     name: string;
     data: Array<Record<string, any>>;
   }>
-): void {
-  const workbook = XLSX.utils.book_new();
+): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+
+  // Set workbook properties
+  workbook.creator = 'RFS Station Manager';
+  workbook.created = new Date();
 
   sheets.forEach((sheet) => {
-    const worksheet = XLSX.utils.json_to_sheet(sheet.data);
+    const worksheet = workbook.addWorksheet(sheet.name);
 
-    // Set column widths
-    const cols = Object.keys(sheet.data[0] || {}).map(() => ({ wch: 20 }));
-    worksheet['!cols'] = cols;
+    if (sheet.data.length === 0) return;
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name);
+    // Get column headers from first row
+    const headers = Object.keys(sheet.data[0]);
+
+    // Set up columns with headers and width
+    worksheet.columns = headers.map((header) => ({
+      header: header,
+      key: header,
+      width: 20,
+    }));
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE5281B' }, // RFS red
+    };
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }; // White text
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'left' };
+
+    // Add data rows
+    sheet.data.forEach((row) => {
+      worksheet.addRow(row);
+    });
+
+    // Add alternating row colors
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber > 1 && rowNumber % 2 === 0) {
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF5F5F5' }, // Light gray
+        };
+      }
+    });
+
+    // Freeze header row
+    worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
   });
 
-  const excelFilename = `${filename}_${Date.now()}.xlsx`;
-  XLSX.writeFile(workbook, excelFilename);
+  // Generate Excel file and trigger download
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filename}_${Date.now()}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 /**
