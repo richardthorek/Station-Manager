@@ -164,12 +164,13 @@ router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, asyn
 
     // If event is already active, return it (idempotent operation)
     if (existingEvent.isActive) {
-      const eventWithParticipants = await db.getEventWithParticipants(eventId);
-      return res.json(eventWithParticipants);
+      const eventWithParticipants = await db.getEventWithParticipants(existingEvent.id);
+      return res.json(eventWithParticipants || existingEvent);
     }
 
     if (!existingEvent.endTime) {
-      return res.status(400).json({ error: 'Cannot reactivate event without an end time' });
+      const withoutEndTime = await db.getEventWithParticipants(existingEvent.id);
+      return res.json(withoutEndTime || existingEvent);
     }
 
     const now = Date.now();
