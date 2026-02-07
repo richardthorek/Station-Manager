@@ -461,7 +461,12 @@ export function MemberList({
               );
             })
           ) : (
-            <p className="no-results" role="status">No members found</p>
+            <div className="no-results" role="status">
+              <p className="no-results-text">No members found</p>
+              <p className="no-results-hint">
+                {searchTerm ? 'Try a different search term' : 'Add your first member to get started'}
+              </p>
+            </div>
           )}
         </div>
 

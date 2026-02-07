@@ -594,9 +594,55 @@
 
 .no-results {
   text-align: center;
-  color: var(--color-gray-dark);
-  padding: 40px;
+  color: var(--text-secondary);
+  padding: 60px 40px;
   font-size: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+.no-results::before {
+  content: '🔍';
+  font-size: 4rem;
+  opacity: 0.3;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.no-results-text {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.no-results-hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.5;
+  }
 }
 
 .add-member-overlay {
@@ -723,6 +769,18 @@
   .member-btn {
     flex: 0 1 100%;
     max-width: 100%;
+    min-height: 72px;
+  }
+
+  .member-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    font-size: 1.05rem;
+  }
+
+  .member-name {
+    font-size: 1.05rem;
   }
 
   .letter-selector {
@@ -733,6 +791,11 @@
     width: 26px;
     font-size: 0.65rem;
     padding: 3px 0;
+  }
+
+  /* Hide search shortcut hint on mobile */
+  .search-shortcut-hint {
+    display: none;
   }
 
   /* FAB: Floating Action Button for Add Member */
@@ -754,5 +817,26 @@
 
   .btn-add-member:active {
     transform: scale(0.95);
+  }
+}
+
+/* iPad and tablet optimizations (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .member-btn {
+    min-height: 72px;
+  }
+
+  .member-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
+
+  .members-grid {
+    gap: 12px;
+  }
+
+  .search-input {
+    font-size: 1.05rem;
   }
 }
