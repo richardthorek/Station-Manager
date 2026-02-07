@@ -82,21 +82,38 @@ function detectDeviceType(userAgent: string): string {
 /**
  * Extract device model from user agent string
  * This is a best-effort extraction and may not be accurate for all devices
+ * Uses safe string operations to avoid ReDoS vulnerabilities
  */
 function extractDeviceModel(userAgent: string): string | undefined {
-  // Try to extract iOS device model
-  const iosMatch = userAgent.match(/\(([^)]+)\)/);
-  if (iosMatch && iosMatch[1].includes('iPhone')) {
-    return iosMatch[1].split(';')[0].trim();
+  // Limit user agent length to prevent ReDoS attacks
+  const maxLength = 500;
+  const safeUserAgent = userAgent.slice(0, maxLength);
+  
+  // Find the first parenthesized section using indexOf (safer than regex)
+  const openParen = safeUserAgent.indexOf('(');
+  const closeParen = safeUserAgent.indexOf(')', openParen);
+  
+  if (openParen === -1 || closeParen === -1 || closeParen <= openParen) {
+    return undefined;
   }
-  if (iosMatch && iosMatch[1].includes('iPad')) {
-    return iosMatch[1].split(';')[0].trim();
+  
+  // Extract content between parentheses
+  const content = safeUserAgent.substring(openParen + 1, closeParen);
+  
+  // Try to extract iOS device model
+  if (content.includes('iPhone')) {
+    const firstPart = content.split(';')[0];
+    return firstPart ? firstPart.trim() : undefined;
+  }
+  
+  if (content.includes('iPad')) {
+    const firstPart = content.split(';')[0];
+    return firstPart ? firstPart.trim() : undefined;
   }
   
   // Try to extract Android device model
-  const androidMatch = userAgent.match(/\(([^)]+)\)/);
-  if (androidMatch && androidMatch[1].includes('Android')) {
-    const parts = androidMatch[1].split(';');
+  if (content.includes('Android')) {
+    const parts = content.split(';');
     if (parts.length >= 2) {
       return parts[1].trim();
     }
