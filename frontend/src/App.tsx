@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { StationProvider } from './contexts/StationContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { DemoLandingPrompt } from './components/DemoLandingPrompt';
 import { LoadingFallback } from './components/LoadingFallback';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -47,31 +48,33 @@ function App() {
   return (
     <BrowserRouter>
       <StationProvider>
-        <SkipToContent />
-        <LiveAnnouncer />
-        <OfflineIndicator />
-        <InstallPrompt />
-        {showDemoPrompt && (
-          <DemoLandingPrompt onDismiss={() => setShowDemoPrompt(false)} />
-        )}
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/sign-in" element={<SignInLinkPage />} />
-            <Route path="/profile/:memberId" element={<UserProfilePage />} />
-            <Route path="/truckcheck" element={<TruckCheckPage />} />
-            <Route path="/truckcheck/check/:applianceId" element={<CheckWorkflowPage />} />
-            <Route path="/truckcheck/summary/:runId" element={<CheckSummaryPage />} />
-            <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
-            <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
-            <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
-            <Route path="/admin/stations" element={<StationManagementPage />} />
-            <Route path="/admin/brigade-access" element={<BrigadeAccessPage />} />
-          </Routes>
-        </Suspense>
+        <ToastProvider>
+          <SkipToContent />
+          <LiveAnnouncer />
+          <OfflineIndicator />
+          <InstallPrompt />
+          {showDemoPrompt && (
+            <DemoLandingPrompt onDismiss={() => setShowDemoPrompt(false)} />
+          )}
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/signin" element={<SignInPage />} />
+              <Route path="/sign-in" element={<SignInLinkPage />} />
+              <Route path="/profile/:memberId" element={<UserProfilePage />} />
+              <Route path="/truckcheck" element={<TruckCheckPage />} />
+              <Route path="/truckcheck/check/:applianceId" element={<CheckWorkflowPage />} />
+              <Route path="/truckcheck/summary/:runId" element={<CheckSummaryPage />} />
+              <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
+              <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
+              <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
+              <Route path="/admin/stations" element={<StationManagementPage />} />
+              <Route path="/admin/brigade-access" element={<BrigadeAccessPage />} />
+            </Routes>
+          </Suspense>
+        </ToastProvider>
       </StationProvider>
     </BrowserRouter>
   );

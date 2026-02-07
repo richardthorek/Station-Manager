@@ -1,0 +1,133 @@
+/**
+ * Skeleton Loading Styles
+ * 
+ * Smooth shimmer animation for skeleton screens.
+ */
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--rfs-light-grey);
+  border-radius: var(--radius-sm);
+  opacity: 0.7;
+}
+
+.skeleton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Variants */
+.skeleton-text {
+  height: 1em;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.skeleton-circle {
+  border-radius: var(--radius-full);
+  width: 48px;
+  height: 48px;
+}
+
+.skeleton-rectangle {
+  border-radius: var(--radius-md);
+  min-height: 100px;
+}
+
+/* Card Layout */
+.skeleton-card {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: var(--spacing-md);
+}
+
+/* List Layout */
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.skeleton-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.skeleton-list-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* Table Layout */
+.skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.skeleton-table-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+}
+
+.skeleton-table-cell {
+  display: flex;
+  align-items: center;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .skeleton {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  :root:not([data-theme="light"]) .skeleton::before {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::before {
+    animation: none;
+  }
+}
