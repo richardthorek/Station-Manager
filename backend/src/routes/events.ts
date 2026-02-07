@@ -299,49 +299,49 @@ router.delete('/:eventId/participants/:participantId', validateRemoveParticipant
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { eventId, participantId } = req.params;
-    const { performedBy, notes } = req.body;
+    const { performedBy, notes } = req.body || {}; // Handle empty body for DELETE
     const stationId = getStationIdFromRequest(req);
     
-    // Get participant details before removal for audit log
+    // Try to get participant details before removal for audit log
+    // Note: participant might be in the event or might not exist
     const participants = await db.getEventParticipants(eventId);
     const participant = participants.find(p => p.id === participantId);
     
-    if (!participant) {
-      return res.status(404).json({ error: 'Participant not found' });
-    }
-    
-    // Extract device and location information for audit trail
-    const deviceInfo = extractDeviceInfo(req);
-    const locationInfo = extractLocationInfo(req);
-    const sanitizedNotes = sanitizeNotes(notes);
-    
-    // Remove participant
+    // Remove participant (this will return false if not found)
     const success = await db.removeEventParticipant(participantId);
     
     if (!success) {
       return res.status(404).json({ error: 'Participant not found' });
     }
     
-    // Create audit log for removal
-    await db.createEventAuditLog(
-      eventId,
-      'participant-removed',
-      participantId,
-      participant.memberId,
-      participant.memberName,
-      participant.memberRank,
-      participant.checkInMethod,
-      performedBy,
-      deviceInfo,
-      locationInfo,
-      stationId,
-      req.id,
-      sanitizedNotes
-    );
+    // Create audit log only if we successfully removed the participant
+    // and we have the participant details
+    if (participant) {
+      // Extract device and location information for audit trail
+      const deviceInfo = extractDeviceInfo(req);
+      const locationInfo = extractLocationInfo(req);
+      const sanitizedNotes = sanitizeNotes(notes);
+      
+      await db.createEventAuditLog(
+        eventId,
+        'participant-removed',
+        participantId,
+        participant.memberId,
+        participant.memberName,
+        participant.memberRank,
+        participant.checkInMethod,
+        performedBy,
+        deviceInfo,
+        locationInfo,
+        stationId,
+        req.id,
+        sanitizedNotes
+      );
+    }
     
     res.json({ message: 'Participant removed successfully' });
   } catch (error) {
-    logger.error('Error removing participant', { error, eventId: req.params.id, requestId: req.id });
+    logger.error('Error removing participant', { error, eventId: req.params.eventId, participantId: req.params.participantId, requestId: req.id });
     res.status(500).json({ error: 'Failed to remove participant' });
   }
 });

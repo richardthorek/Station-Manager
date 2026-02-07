@@ -37,7 +37,7 @@ export function extractDeviceInfo(req: Request): DeviceInfo {
  * - IP-based geolocation (future enhancement)
  */
 export function extractLocationInfo(req: Request): LocationInfo | undefined {
-  const { latitude, longitude, accuracy, address } = req.body;
+  const { latitude, longitude, accuracy, address } = req.body || {};
   
   // If no location data provided, return undefined
   if (!latitude && !longitude && !address) {
