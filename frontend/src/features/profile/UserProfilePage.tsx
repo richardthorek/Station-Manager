@@ -113,9 +113,65 @@ export function UserProfilePage() {
     return activity?.name || 'Unknown Activity';
   };
 
+  const getActivityIcon = (activityId: string) => {
+    const activityName = getActivityName(activityId).toLowerCase();
+    if (activityName.includes('training')) return '📚';
+    if (activityName.includes('maintenance')) return '🔧';
+    if (activityName.includes('meeting')) return '💬';
+    if (activityName.includes('incident')) return '🚒';
+    return '📋';
+  };
+
+  const groupCheckInsByDate = () => {
+    const grouped: { [key: string]: CheckIn[] } = {};
+    checkInHistory.forEach(checkIn => {
+      const date = new Date(checkIn.checkInTime).toLocaleDateString();
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+      grouped[date].push(checkIn);
+    });
+    return grouped;
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
+  const calculateMembershipDuration = () => {
+    if (!member) return '';
+    const createdAt = new Date(member.createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - createdAt.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 30) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months !== 1 ? 's' : ''}`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      const months = Math.floor((diffDays % 365) / 30);
+      return months > 0 ? `${years} year${years !== 1 ? 's' : ''} ${months} month${months !== 1 ? 's' : ''}` : `${years} year${years !== 1 ? 's' : ''}`;
+    }
+  };
+
+  const getActiveStreak = () => {
+    if (!achievements?.activeStreaks) return 0;
+    return achievements.activeStreaks.length;
+  };
+
+  const getTotalCheckIns = () => {
+    return checkInHistory.length;
+  };
+
+  const calculateTotalHours = () => {
+    // For now, estimate 2 hours per check-in as we don't have checkOutTime in the CheckIn interface
+    // This is a simplified calculation - actual time tracking would require event participants data
+    const averageHoursPerCheckIn = 2;
+    return checkInHistory.length * averageHoursPerCheckIn;
   };
 
   const generateSignInUrl = () => {
@@ -170,10 +226,73 @@ export function UserProfilePage() {
             </button>
           </div>
 
+          {/* Enhanced Profile Hero Section */}
+          <div className="profile-hero">
+            <div className="profile-avatar-container">
+              <div className="profile-avatar-wrapper">
+                <div className="profile-avatar">
+                  {member.name.charAt(0).toUpperCase()}
+                </div>
+              </div>
+            </div>
+            <div className="profile-hero-info">
+              <h1 className="profile-hero-name">{member.name}</h1>
+              <div className="profile-hero-rank">{member.rank || 'Visitor'}</div>
+              <div className="profile-hero-badges">
+                <div className="hero-badge">
+                  <span className="badge-icon">📅</span>
+                  <span className="badge-text">{calculateMembershipDuration()}</span>
+                </div>
+                {getActiveStreak() > 0 && (
+                  <div className="hero-badge streak-badge">
+                    <span className="badge-icon">🔥</span>
+                    <span className="badge-text">{getActiveStreak()} streak{getActiveStreak() !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                <div className="hero-badge">
+                  <span className="badge-icon">✓</span>
+                  <span className="badge-text">{getTotalCheckIns()} check-ins</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Personal Statistics Dashboard */}
+          <div className="stats-dashboard">
+            <div className="stat-card">
+              <div className="stat-icon">📊</div>
+              <div className="stat-content">
+                <div className="stat-value">{getTotalCheckIns()}</div>
+                <div className="stat-label">Total Check-ins</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">⏱️</div>
+              <div className="stat-content">
+                <div className="stat-value">{calculateTotalHours()}</div>
+                <div className="stat-label">Total Hours</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">🔥</div>
+              <div className="stat-content">
+                <div className="stat-value">{getActiveStreak()}</div>
+                <div className="stat-label">Active Streaks</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">🏆</div>
+              <div className="stat-content">
+                <div className="stat-value">{achievements?.totalAchievements || 0}</div>
+                <div className="stat-label">Achievements</div>
+              </div>
+            </div>
+          </div>
+
           <div className="profile-layout">
             <div className="profile-left">
               <div className="profile-card card">
-                <h2>User Profile</h2>
+                <h2>Profile Details</h2>
                 
                 <div className="profile-info">
                   <div className="profile-field">
@@ -331,32 +450,42 @@ export function UserProfilePage() {
 
             <div className="profile-right">
               <div className="history-card card">
-                <h2>Check-In History</h2>
-                
+                <h2>Activity Timeline</h2>
+
                 {checkInHistory.length === 0 ? (
                   <p className="no-history">No check-in history yet.</p>
                 ) : (
-                  <div className="history-list">
-                    <div className="history-header">
-                      <span>Date & Time</span>
-                      <span>Activity</span>
-                      <span>Method</span>
-                      <span>Status</span>
-                    </div>
-                    {checkInHistory.map((checkIn) => (
-                      <div key={checkIn.id} className="history-item">
-                        <span className="history-date">
-                          {formatDate(checkIn.checkInTime)}
-                        </span>
-                        <span className="history-activity">
-                          {getActivityName(checkIn.activityId)}
-                        </span>
-                        <span className="history-method">
-                          {checkIn.checkInMethod}
-                        </span>
-                        <span className={`history-status ${checkIn.isActive ? 'active' : 'completed'}`}>
-                          {checkIn.isActive ? 'Active' : 'Completed'}
-                        </span>
+                  <div className="activity-timeline">
+                    {Object.entries(groupCheckInsByDate()).map(([date, checkIns]) => (
+                      <div key={date} className="timeline-group">
+                        <div className="timeline-date-separator">
+                          <span className="timeline-date">{date}</span>
+                        </div>
+                        {checkIns.map((checkIn) => (
+                          <div key={checkIn.id} className="timeline-item">
+                            <div className="timeline-marker">
+                              <span className="timeline-icon">{getActivityIcon(checkIn.activityId)}</span>
+                            </div>
+                            <div className="timeline-content">
+                              <div className="timeline-header">
+                                <span className="timeline-activity">
+                                  {getActivityName(checkIn.activityId)}
+                                </span>
+                                <span className={`timeline-status ${checkIn.isActive ? 'active' : 'completed'}`}>
+                                  {checkIn.isActive ? 'Active' : 'Completed'}
+                                </span>
+                              </div>
+                              <div className="timeline-details">
+                                <span className="timeline-time">
+                                  {new Date(checkIn.checkInTime).toLocaleTimeString()}
+                                </span>
+                                <span className="timeline-method">
+                                  via {checkIn.checkInMethod}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>
