@@ -314,7 +314,6 @@ export function MemberList({
     resistance: 2.5,
     enableHaptic: true,
   });
-
   // Keyboard shortcut: "/" to focus search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -328,7 +327,6 @@ export function MemberList({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showAddMember]);
-
   // Generate A-Z letters
   const letters = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
   

@@ -239,6 +239,14 @@
   }
 }
 
+/* Mobile: Ensure minimum 16px font size to prevent iOS zoom */
+@media (max-width: 768px) {
+  .search-input {
+    font-size: 16px;
+    min-height: 48px;
+  }
+}
+
 .btn-add-member {
   width: 48px;
   height: 48px;
@@ -589,6 +597,41 @@
   }
 }
 
+/* Swipe hint overlay */
+.swipe-hint {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 4px 12px;
+  border-radius: 12px;
+  animation: fadeInScale 0.2s ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.member-btn.swipe-right {
+  background: linear-gradient(90deg, rgba(203, 219, 42, 0.3) 0%, var(--color-white) 100%);
+}
+
+.member-btn.swipe-left {
+  background: linear-gradient(90deg, var(--color-white) 0%, rgba(33, 94, 158, 0.3) 100%);
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
 @keyframes scaleIn {
   0% {
     transform: scale(0);
@@ -780,7 +823,6 @@
     max-width: 100%;
     min-height: 72px;
   }
-
   .member-avatar {
     width: 48px;
     height: 48px;
@@ -791,7 +833,6 @@
   .member-name {
     font-size: 1.05rem;
   }
-
   .letter-selector {
     width: 32px;
   }
@@ -801,12 +842,10 @@
     font-size: 0.65rem;
     padding: 3px 0;
   }
-
   /* Hide search shortcut hint on mobile */
   .search-shortcut-hint {
     display: none;
   }
-
   /* FAB: Floating Action Button for Add Member */
   .btn-add-member {
     position: fixed;
