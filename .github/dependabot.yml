@@ -117,6 +117,7 @@ updates:
           - "socket.io-client"
       # ESLint ecosystem - these must be updated together to maintain compatibility
       # Includes: eslint, @eslint/js, typescript-eslint, and eslint plugins
+      # Note: Major version updates are blocked via ignore rules (see below)
       eslint-ecosystem:
         dependency-type: "development"
         patterns:
@@ -124,11 +125,9 @@ updates:
           - "@eslint/*"
           - "typescript-eslint"
           - "eslint-plugin-*"
-        update-types:
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
       # Development dependency updates (build tools, testing, etc)
-      # Excludes ESLint ecosystem packages to prevent incompatible updates
+      # Excludes ESLint ecosystem packages (see eslint-ecosystem group above)
+      # to prevent incompatible updates
       development:
         dependency-type: "development"
         exclude-patterns:
