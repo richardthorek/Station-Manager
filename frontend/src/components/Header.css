@@ -46,6 +46,7 @@
   margin: 0 auto;
   padding: 12px 24px;
   display: flex;
+  flex-wrap: nowrap;
   justify-content: space-between;
   align-items: center;
   gap: 1.5rem;
@@ -73,11 +74,11 @@
 }
 
 .header-center {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   justify-content: center;
   max-width: 400px;
-  margin: 0 auto;
+  min-width: 0;
 }
 
 .header-status {
@@ -270,6 +271,7 @@
 @media (max-width: 1024px) {
   .header-content {
     gap: 0.75rem;
+    flex-wrap: nowrap;
   }
   
   .header-logo {
@@ -286,8 +288,9 @@
   
   /* Make station selector more compact */
   .header-center {
-    flex: 1;
-    max-width: 350px;
+    flex: 1 1 auto;
+    max-width: 300px;
+    min-width: 0;
   }
   
   /* Make status indicators more compact */
@@ -301,6 +304,7 @@
   .header-content {
     padding: 10px 12px;
     gap: 0.5rem;
+    flex-wrap: nowrap;
   }
   
   .header-logo {
@@ -334,8 +338,8 @@
   
   /* Make station selector take available space */
   .header-center {
-    flex: 1;
-    max-width: 280px;
+    flex: 1 1 auto;
+    max-width: 250px;
     min-width: 0;
   }
   
@@ -349,6 +353,7 @@
 @media (max-width: 480px) {
   .header-content {
     padding: 8px 10px;
+    flex-wrap: nowrap;
   }
   
   .header-logo h1 {
@@ -360,7 +365,9 @@
   }
   
   .header-center {
-    max-width: 200px;
+    flex: 1 1 auto;
+    max-width: 180px;
+    min-width: 0;
   }
   
   .theme-toggle-btn,
