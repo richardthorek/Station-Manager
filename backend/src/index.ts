@@ -39,7 +39,7 @@ initializeAppInsights();
 
 import express from 'express';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -232,50 +232,143 @@ app.use('/api/export', apiRateLimiter, exportRouter);
 // Achievement routes (now handles database selection per-request based on demo mode)
 app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());
 
-// Socket.io connection handling
-io.on('connection', (socket) => {
+// Extend Socket interface to include station context
+interface SocketWithStation extends Socket {
+  stationId?: string;
+  brigadeId?: string;
+}
+
+// Socket.io connection handling with room-based isolation
+io.on('connection', (socket: SocketWithStation) => {
   logger.info('WebSocket client connected', { socketId: socket.id });
 
+  // Handle station room joining
+  socket.on('join-station', async (data: { stationId: string; brigadeId?: string }) => {
+    const { stationId, brigadeId } = data;
+    
+    // Validate stationId is provided
+    if (!stationId) {
+      logger.warn('Client attempted to join without stationId', { socketId: socket.id });
+      socket.emit('join-error', { message: 'stationId is required' });
+      return;
+    }
+    
+    // Leave previous station rooms if any
+    if (socket.stationId) {
+      socket.leave(`station-${socket.stationId}`);
+      if (socket.brigadeId) {
+        socket.leave(`brigade-${socket.brigadeId}`);
+      }
+    }
+    
+    // Store station context on socket instance
+    socket.stationId = stationId;
+    socket.brigadeId = brigadeId;
+    
+    // Join station-specific room
+    socket.join(`station-${stationId}`);
+    
+    // Join brigade-specific room if provided
+    if (brigadeId) {
+      socket.join(`brigade-${brigadeId}`);
+    }
+    
+    logger.info('Client joined station room', { 
+      socketId: socket.id, 
+      stationId, 
+      brigadeId,
+      rooms: Array.from(socket.rooms)
+    });
+    
+    // Acknowledge successful join
+    socket.emit('joined-station', { stationId, brigadeId });
+  });
+
   socket.on('disconnect', () => {
-    logger.info('WebSocket client disconnected', { socketId: socket.id });
+    logger.info('WebSocket client disconnected', { 
+      socketId: socket.id,
+      stationId: socket.stationId,
+      brigadeId: socket.brigadeId
+    });
   });
 
-  // Handle check-in events
+  // Handle check-in events - now station-scoped
   socket.on('checkin', (data) => {
-    logger.debug('WebSocket event: checkin', { data });
-    // Broadcast to all other clients
-    socket.broadcast.emit('checkin-update', data);
+    logger.debug('WebSocket event: checkin', { data, stationId: socket.stationId });
+    
+    // Validate socket has joined a station
+    if (!socket.stationId) {
+      logger.warn('Socket attempted checkin without joining station', { socketId: socket.id });
+      return;
+    }
+    
+    // Broadcast only to same station
+    io.to(`station-${socket.stationId}`).emit('checkin-update', data);
   });
 
-  // Handle activity change events
+  // Handle activity change events - now station-scoped
   socket.on('activity-change', (data) => {
-    logger.debug('WebSocket event: activity-change', { data });
-    // Broadcast to all clients including sender
-    io.emit('activity-update', data);
+    logger.debug('WebSocket event: activity-change', { data, stationId: socket.stationId });
+    
+    if (!socket.stationId) {
+      logger.warn('Socket attempted activity-change without joining station', { socketId: socket.id });
+      return;
+    }
+    
+    // Broadcast only to same station
+    io.to(`station-${socket.stationId}`).emit('activity-update', data);
   });
 
-  // Handle member addition
+  // Handle member addition - now station-scoped
   socket.on('member-added', (data) => {
-    logger.debug('WebSocket event: member-added', { data });
-    socket.broadcast.emit('member-update', data);
+    logger.debug('WebSocket event: member-added', { data, stationId: socket.stationId });
+    
+    if (!socket.stationId) {
+      logger.warn('Socket attempted member-added without joining station', { socketId: socket.id });
+      return;
+    }
+    
+    // Broadcast only to same station
+    io.to(`station-${socket.stationId}`).emit('member-update', data);
   });
 
-  // Handle event creation
+  // Handle event creation - now station-scoped
   socket.on('event-created', (data) => {
-    logger.debug('WebSocket event: event-created', { data });
-    io.emit('event-update', data);
+    logger.debug('WebSocket event: event-created', { data, stationId: socket.stationId });
+    
+    if (!socket.stationId) {
+      logger.warn('Socket attempted event-created without joining station', { socketId: socket.id });
+      return;
+    }
+    
+    // Broadcast only to same station
+    io.to(`station-${socket.stationId}`).emit('event-update', data);
   });
 
-  // Handle event end
+  // Handle event end - now station-scoped
   socket.on('event-ended', (data) => {
-    logger.debug('WebSocket event: event-ended', { data });
-    io.emit('event-update', data);
+    logger.debug('WebSocket event: event-ended', { data, stationId: socket.stationId });
+    
+    if (!socket.stationId) {
+      logger.warn('Socket attempted event-ended without joining station', { socketId: socket.id });
+      return;
+    }
+    
+    // Broadcast only to same station
+    io.to(`station-${socket.stationId}`).emit('event-update', data);
   });
 
-  // Handle participant added/removed
+  // Handle participant added/removed - now station-scoped
   socket.on('participant-change', (data) => {
-    logger.debug('WebSocket event: participant-change', { data });
-    io.emit('event-update', data);
+    logger.debug('WebSocket event: participant-change', { data, stationId: socket.stationId });
+    
+    if (!socket.stationId) {
+      logger.warn('Socket attempted participant-change without joining station', { socketId: socket.id });
+      return;
+    }
+    
+    // Broadcast only to same station
+    io.to(`station-${socket.stationId}`).emit('event-update', data);
   });
 });
 

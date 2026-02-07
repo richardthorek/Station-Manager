@@ -1,5 +1,6 @@
 import type { DBSchema, IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
+import { getCurrentStationId } from './api';
 
 // Define the database schema
 interface StationManagerDB extends DBSchema {
@@ -25,6 +26,7 @@ export interface QueuedAction {
   retryCount: number;
   status: 'pending' | 'syncing' | 'failed' | 'synced';
   error?: string;
+  stationId: string; // Station context for validation
 }
 
 export interface CachedData {
@@ -67,11 +69,16 @@ export async function initDB(): Promise<IDBPDatabase<StationManagerDB>> {
 }
 
 /**
- * Add an action to the offline queue
+ * Add an action to the offline queue with station context
  */
-export async function addToQueue(action: Omit<QueuedAction, 'id' | 'timestamp' | 'retryCount' | 'status'>): Promise<string> {
+export async function addToQueue(action: Omit<QueuedAction, 'id' | 'timestamp' | 'retryCount' | 'status' | 'stationId'>): Promise<string> {
   const database = await initDB();
   const id = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  const stationId = getCurrentStationId();
+  
+  if (!stationId) {
+    throw new Error('[OfflineQueue] Cannot queue action without station context');
+  }
   
   const queuedAction: QueuedAction = {
     ...action,
@@ -79,10 +86,15 @@ export async function addToQueue(action: Omit<QueuedAction, 'id' | 'timestamp' |
     timestamp: Date.now(),
     retryCount: 0,
     status: 'pending',
+    stationId, // Preserve station context
   };
 
   await database.add('offline-queue', queuedAction);
-  console.log('[OfflineQueue] Added to queue:', queuedAction);
+  console.log('[OfflineQueue] Added to queue with station context:', { 
+    id, 
+    stationId, 
+    type: queuedAction.type 
+  });
   
   return id;
 }
@@ -140,39 +152,77 @@ export async function clearSyncedActions(): Promise<void> {
 }
 
 /**
- * Cache data for offline access
+ * Cache data with station context
+ * Cache keys are automatically scoped to the current station
  */
 export async function cacheData(key: string, data: unknown, expiresInMs?: number): Promise<void> {
   const database = await initDB();
+  const stationId = getCurrentStationId();
+  
+  // Prefix key with station context for isolation
+  const scopedKey = stationId ? `station-${stationId}:${key}` : key;
   
   const cachedData: CachedData = {
-    key,
+    key: scopedKey,
     data,
     timestamp: Date.now(),
     expiresAt: expiresInMs ? Date.now() + expiresInMs : undefined,
   };
 
   await database.put('cached-data', cachedData);
+  console.log('[OfflineStorage] Cached data with station context:', { 
+    originalKey: key,
+    scopedKey, 
+    stationId 
+  });
 }
 
 /**
- * Get cached data
+ * Get cached data for current station
  */
 export async function getCachedData<T = unknown>(key: string): Promise<T | null> {
   const database = await initDB();
-  const cached = await database.get('cached-data', key);
+  const stationId = getCurrentStationId();
+  
+  // Use scoped key for lookup
+  const scopedKey = stationId ? `station-${stationId}:${key}` : key;
+  const cached = await database.get('cached-data', scopedKey);
   
   if (!cached) {
+    console.log('[OfflineStorage] No cached data found:', { scopedKey, stationId });
     return null;
   }
 
   // Check if expired
   if (cached.expiresAt && cached.expiresAt < Date.now()) {
-    await database.delete('cached-data', key);
+    await database.delete('cached-data', scopedKey);
+    console.log('[OfflineStorage] Cached data expired:', { scopedKey });
     return null;
   }
 
+  console.log('[OfflineStorage] Retrieved cached data:', { scopedKey, stationId });
   return cached.data as T;
+}
+
+/**
+ * Clear all cached data for a specific station
+ * Useful when switching stations or logging out
+ */
+export async function clearCacheForStation(stationId: string): Promise<void> {
+  const database = await initDB();
+  const allCached = await database.getAll('cached-data');
+  
+  const stationPrefix = `station-${stationId}:`;
+  let clearedCount = 0;
+  
+  for (const item of allCached) {
+    if (item.key.startsWith(stationPrefix)) {
+      await database.delete('cached-data', item.key);
+      clearedCount++;
+    }
+  }
+  
+  console.log('[OfflineStorage] Cleared cache for station:', { stationId, clearedCount });
 }
 
 /**
