@@ -57,8 +57,8 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   useEffect(() => {
     if (!showVehicleModal) return;
 
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !uploading) {
+    const handleEscape = (event: Event) => {
+      if ((event as globalThis.KeyboardEvent).key === 'Escape' && !uploading) {
         setShowVehicleModal(false);
       }
     };

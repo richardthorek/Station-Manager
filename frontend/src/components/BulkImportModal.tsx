@@ -64,8 +64,8 @@ export function BulkImportModal({ existingMembers, onClose, onImportComplete, on
 
   // Handle Escape key
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+    const handleEscape = (event: Event) => {
+      if ((event as globalThis.KeyboardEvent).key === 'Escape') {
         onClose();
       }
     };

@@ -52,8 +52,8 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
    * Handle Escape key to close modal
    */
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isSubmitting) {
+    const handleEscape = (event: Event) => {
+      if ((event as globalThis.KeyboardEvent).key === 'Escape' && !isSubmitting) {
         onClose();
       }
     };

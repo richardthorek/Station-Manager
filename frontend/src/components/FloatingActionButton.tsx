@@ -12,7 +12,7 @@ interface FloatingActionButtonProps {
   /** Whether to hide FAB on scroll down (default: true) */
   hideOnScroll?: boolean;
   /** Scroll container ref (optional, defaults to window) */
-  scrollContainerRef?: React.RefObject<HTMLElement>;
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
   /** Position (default: 'bottom-right') */
   position?: 'bottom-right' | 'bottom-left' | 'bottom-center';
   /** Enable haptic feedback on tap (default: true) */

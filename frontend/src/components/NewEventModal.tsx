@@ -45,8 +45,8 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+    const handleEscape = (event: Event) => {
+      if ((event as globalThis.KeyboardEvent).key === 'Escape') {
         setSelectedActivityId('');
         onClose();
       }
