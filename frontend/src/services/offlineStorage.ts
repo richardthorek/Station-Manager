@@ -1,5 +1,6 @@
 import type { DBSchema, IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
+import { getCurrentStationId } from './api';
 
 // Define the database schema
 interface StationManagerDB extends DBSchema {
@@ -147,20 +148,6 @@ export async function clearSyncedActions(): Promise<void> {
     if (action.status === 'synced') {
       await database.delete('offline-queue', action.id);
     }
-  }
-}
-
-/**
- * Get current station ID from localStorage
- * This is where StationContext persists the selected station
- */
-function getCurrentStationId(): string | null {
-  try {
-    const savedStationId = localStorage.getItem('selectedStationId');
-    return savedStationId;
-  } catch (error) {
-    console.error('[OfflineStorage] Failed to get current station ID:', error);
-    return null;
   }
 }
 
