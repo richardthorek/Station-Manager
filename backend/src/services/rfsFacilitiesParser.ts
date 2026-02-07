@@ -380,6 +380,9 @@ class RFSFacilitiesParser {
    * @param longitude Optional user longitude
    * @param limit Maximum number of results per category (default 10)
    * @returns Combined and deduplicated results
+   * 
+   * When query is provided, prioritizes search results over location-based results.
+   * This ensures typing in the search field overrides location centering.
    */
   lookup(
     query?: string,
@@ -394,25 +397,26 @@ class RFSFacilitiesParser {
     const results: StationSearchResult[] = [];
     const seenIds = new Set<string>();
 
-    // Get closest stations if location provided
-    if (latitude !== undefined && longitude !== undefined && !isNaN(latitude) && !isNaN(longitude)) {
+    // Prioritize search results if query provided
+    // This allows users to filter results by typing, overriding location centering
+    if (query && query.trim() !== '') {
+      const searchResults = this.searchStations(query);
+      
+      // Add search results first
+      for (const station of searchResults.slice(0, limit)) {
+        // Add distance if location provided
+        if (latitude !== undefined && longitude !== undefined && !isNaN(latitude) && !isNaN(longitude)) {
+          station.distance = this.calculateDistance(latitude, longitude, station.latitude, station.longitude);
+        }
+        results.push(station);
+        seenIds.add(station.id);
+      }
+    } else if (latitude !== undefined && longitude !== undefined && !isNaN(latitude) && !isNaN(longitude)) {
+      // Only use location-based results if no query provided
       const closest = this.getClosestStations(latitude, longitude, limit);
       for (const station of closest) {
         results.push(station);
         seenIds.add(station.id);
-      }
-    }
-
-    // Get search results if query provided
-    if (query && query.trim() !== '') {
-      const searchResults = this.searchStations(query);
-      
-      // Add search results, skipping duplicates
-      for (const station of searchResults.slice(0, limit)) {
-        if (!seenIds.has(station.id)) {
-          results.push(station);
-          seenIds.add(station.id);
-        }
       }
     }
 

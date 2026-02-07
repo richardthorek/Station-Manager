@@ -116,6 +116,39 @@ router.get('/count', async (req, res) => {
 });
 
 /**
+ * GET /api/stations/check-brigade/:brigadeId
+ * Check if a station with this brigade ID already exists
+ * Returns the existing station if found, or a 404 if not found
+ */
+router.get('/check-brigade/:brigadeId', validateBrigadeId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stations = await db.getStationsByBrigade(req.params.brigadeId);
+    
+    // Only consider active stations
+    const activeStations = stations.filter(s => s.isActive);
+    
+    if (activeStations.length > 0) {
+      // Station exists
+      res.json({ 
+        exists: true, 
+        station: activeStations[0],
+        message: `Station "${activeStations[0].name}" already exists with this brigade ID`,
+      });
+    } else {
+      // Station doesn't exist
+      res.status(404).json({ 
+        exists: false,
+        message: 'No active station found with this brigade ID',
+      });
+    }
+  } catch (error) {
+    logger.error('Error checking brigade ID:', error);
+    res.status(500).json({ error: 'Failed to check brigade ID' });
+  }
+});
+
+/**
  * GET /api/stations/brigade/:brigadeId
  * Get all stations in a specific brigade
  */
@@ -208,6 +241,7 @@ router.get('/:id', validateStationId, handleValidationErrors, async (req: Reques
 /**
  * POST /api/stations
  * Create a new station
+ * Validates that brigade ID is unique to prevent duplicate station creation
  */
 router.post('/', validateCreateStation, handleValidationErrors, async (req: Request, res: Response) => {
   try {
@@ -220,6 +254,18 @@ router.post('/', validateCreateStation, handleValidationErrors, async (req: Requ
       location,
       contactInfo,
     } = req.body;
+    
+    // Check for duplicate brigade ID
+    const existingStations = await db.getStationsByBrigade(brigadeId);
+    const activeExistingStations = existingStations.filter(s => s.isActive);
+    
+    if (activeExistingStations.length > 0) {
+      return res.status(409).json({ 
+        error: 'Station already exists',
+        message: `A station with brigade ID "${brigadeId}" already exists: ${activeExistingStations[0].name}`,
+        existingStation: activeExistingStations[0],
+      });
+    }
     
     const newStation = await db.createStation({
       name,
