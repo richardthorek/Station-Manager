@@ -429,6 +429,25 @@ class ApiService {
     return response.json();
   }
 
+  async reactivateEvent(eventId: string): Promise<EventWithParticipants> {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/reactivate`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+    });
+
+    if (response.status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Event can only be reopened within 24 hours of closing');
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to reactivate event');
+    }
+
+    return response.json();
+  }
+
   async deleteEvent(eventId: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/events/${eventId}`, {
       method: 'DELETE',

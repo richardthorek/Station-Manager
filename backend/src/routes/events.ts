@@ -30,6 +30,7 @@ import { stationMiddleware, getStationIdFromRequest } from '../middleware/statio
 import { logger } from '../services/logger';
 
 const router = Router();
+const REACTIVATE_WINDOW_HOURS = 24;
 
 // Apply station middleware to all routes
 router.use(stationMiddleware);
@@ -155,12 +156,34 @@ router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, asyn
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
+    const existingEvent = await db.getEventById(eventId);
+
+    if (!existingEvent) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if (existingEvent.isActive) {
+      return res.status(400).json({ error: 'Event is already active' });
+    }
+
+    if (!existingEvent.endTime) {
+      return res.status(400).json({ error: 'Cannot reactivate event without an end time' });
+    }
+
+    const now = Date.now();
+    const endedAt = existingEvent.endTime.getTime();
+    const hoursSinceEnd = (now - endedAt) / (1000 * 60 * 60);
+
+    if (hoursSinceEnd > REACTIVATE_WINDOW_HOURS) {
+      return res.status(403).json({ error: 'Event can only be re-opened within 24 hours of closing' });
+    }
+
     const event = await db.reactivateEvent(eventId);
-    
+
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
-    
+
     const eventWithParticipants = await db.getEventWithParticipants(event.id);
     res.json(eventWithParticipants);
   } catch (error) {

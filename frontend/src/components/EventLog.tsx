@@ -14,6 +14,7 @@ interface EventLogProps {
   isLoading: boolean;
   onStartNewEvent?: () => void;
   onExpandGrid?: () => void;
+  onReactivateEvent?: (eventId: string) => void;
 }
 
 export function EventLog({
@@ -27,6 +28,7 @@ export function EventLog({
   isLoading,
   onStartNewEvent,
   onExpandGrid,
+  onReactivateEvent,
 }: EventLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(false);
@@ -109,6 +111,7 @@ export function EventLog({
                     onSelect={onSelectEvent}
                     onEnd={onEndEvent}
                     onDelete={onDeleteEvent}
+                    onReactivate={onReactivateEvent}
                   />
                 ))}
               </div>
@@ -126,6 +129,7 @@ export function EventLog({
                     onSelect={() => {}}
                     onEnd={() => {}}
                     onDelete={onDeleteEvent}
+                    onReactivate={onReactivateEvent}
                   />
                 ))}
               </div>

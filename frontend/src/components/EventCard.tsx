@@ -9,9 +9,10 @@ interface EventCardProps {
   onSelect: (eventId: string) => void;
   onEnd: (eventId: string) => void;
   onDelete: (eventId: string) => void;
+  onReactivate?: (eventId: string) => void;
 }
 
-export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDelete }: EventCardProps) {
+export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDelete, onReactivate }: EventCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const handleCardKeyDown = (eventKey: KeyboardEvent<HTMLDivElement>) => {
     if (isActive && (eventKey.key === 'Enter' || eventKey.key === ' ')) {
@@ -69,6 +70,8 @@ export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDele
         return '✓';
     }
   };
+
+  const canReactivate = !isActive && event.endTime && (Date.now() - new Date(event.endTime).getTime()) <= 24 * 60 * 60 * 1000;
 
   return (
     <div
@@ -149,6 +152,18 @@ export function EventCard({ event, isActive, isSelected, onSelect, onEnd, onDele
             >
               {isActive ? 'End Event' : 'Event Ended'}
             </button>
+
+            {canReactivate && onReactivate && (
+              <button
+                className="btn-reactivate-event"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReactivate(event.id);
+                }}
+              >
+                Reopen (24h)
+              </button>
+            )}
             
             <button
               className="btn-delete-event"
