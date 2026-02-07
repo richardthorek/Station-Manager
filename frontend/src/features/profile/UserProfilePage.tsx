@@ -25,8 +25,6 @@ export function UserProfilePage() {
     databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
   } | null>(null);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const shareCardRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const nameInputId = 'profile-name';
   const rankSelectId = 'profile-rank';
@@ -63,7 +61,7 @@ export function UserProfilePage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       if (!memberId) {
         setError('Member ID is required');
         return;
@@ -73,11 +71,10 @@ export function UserProfilePage() {
         api.getMember(memberId),
         api.getMemberHistory(memberId),
         api.getActivities(),
-        api.getMemberAchievements(memberId).catch(() => null), // Don't fail if achievements fail
+        api.getMemberAchievements(memberId).catch(() => null),
       ]);
-      
+
       setMember(memberData);
-      // Defensive checks: ensure data is an array
       setCheckInHistory(Array.isArray(historyData) ? historyData : []);
       setActivities(Array.isArray(activitiesData) ? activitiesData : []);
       setAchievements(achievementsData);
@@ -104,6 +101,13 @@ export function UserProfilePage() {
       console.error('Error updating member:', err);
       alert('Failed to update member');
     }
+  };
+
+  const handleCancelEdit = () => {
+    if (!member) return;
+    setEditedName(member.name);
+    setEditedRank(member.rank || 'Visitor');
+    setIsEditing(false);
   };
 
   const rankOptions = [
@@ -153,7 +157,6 @@ export function UserProfilePage() {
 
   const calculateMembershipDuration = () => {
     if (!member) return '';
-    // Use membershipStartDate if available, otherwise fall back to createdAt
     const startDate = new Date(member.membershipStartDate || member.createdAt);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - startDate.getTime());
@@ -181,8 +184,6 @@ export function UserProfilePage() {
   };
 
   const calculateTotalHours = () => {
-    // For now, estimate 2 hours per check-in as we don't have checkOutTime in the CheckIn interface
-    // This is a simplified calculation - actual time tracking would require event participants data
     const averageHoursPerCheckIn = 2;
     return checkInHistory.length * averageHoursPerCheckIn;
   };
@@ -198,65 +199,6 @@ export function UserProfilePage() {
     const url = generateSignInUrl();
     navigator.clipboard.writeText(url);
     alert('Sign-in URL copied to clipboard!');
-  };
-
-  const generateShareableText = () => {
-    if (!member) return '';
-
-    const text = `🔥 ${member.name}'s RFS Profile\n` +
-                 `${member.rank || 'Volunteer'} | ${calculateMembershipDuration()}\n\n` +
-                 `📊 ${getTotalCheckIns()} Check-ins | ⏱️ ${calculateTotalHours()} Hours\n` +
-                 `🏆 ${achievements?.totalAchievements || 0} Achievements | 🔥 ${getActiveStreak()} Active Streaks\n\n` +
-                 `#NSWRFSVolunteer #CommunityService`;
-
-    return text;
-  };
-
-  const handleShareProfile = async () => {
-    const shareText = generateShareableText();
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${member?.name}'s RFS Profile`,
-          text: shareText,
-        });
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.error('Error sharing:', err);
-          fallbackCopyToClipboard(shareText);
-        }
-      }
-    } else {
-      fallbackCopyToClipboard(shareText);
-    }
-  };
-
-  const fallbackCopyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setShowShareModal(true);
-    setTimeout(() => setShowShareModal(false), 3000);
-  };
-
-  const downloadProfileCard = async () => {
-    if (!shareCardRef.current || !member) return;
-
-    try {
-      // Use html2canvas if available, otherwise show modal with instructions
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(shareCardRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-      });
-
-      const link = document.createElement('a');
-      link.download = `${member.name.replace(/\s+/g, '_')}_RFS_Profile.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } catch (err) {
-      console.error('Error generating image:', err);
-      alert('Please take a screenshot of the profile card to share!');
-    }
   };
 
   if (loading) {
@@ -289,148 +231,77 @@ export function UserProfilePage() {
   return (
     <PageTransition variant="slideFromBottom">
       <div className="app profile-app">
-      <Header isConnected={isConnected} databaseStatus={databaseStatus} />
-      
-      <main className="main-content profile-main">
-        <div className="profile-container">
-          <div className="profile-header">
-            <button className="btn-back" onClick={() => navigate('/signin')}>
-              ← Back to Sign In
-            </button>
-          </div>
+        <Header isConnected={isConnected} databaseStatus={databaseStatus} />
 
-          {/* Enhanced Profile Hero Section */}
-          <div className="profile-hero">
-            <div className="profile-avatar-container">
-              <div className="profile-avatar-wrapper">
-                <div className="profile-avatar">
-                  {member.name.charAt(0).toUpperCase()}
-                </div>
-              </div>
-            </div>
-            <div className="profile-hero-info">
-              <h1 className="profile-hero-name">{member.name}</h1>
-              <div className="profile-hero-rank">{member.rank || 'Visitor'}</div>
-              <div className="profile-hero-badges">
-                <div className="hero-badge">
-                  <span className="badge-icon">📅</span>
-                  <span className="badge-text">{calculateMembershipDuration()}</span>
-                </div>
-                {getActiveStreak() > 0 && (
-                  <div className="hero-badge streak-badge">
-                    <span className="badge-icon">🔥</span>
-                    <span className="badge-text">{getActiveStreak()} streak{getActiveStreak() !== 1 ? 's' : ''}</span>
+        <main className="main-content profile-main">
+          <div className="profile-container">
+            <div className="profile-header">
+              <button className="btn-back" onClick={() => navigate('/signin')}>
+                ← Back to Sign In
+              </button>
+              <div className="profile-header-actions">
+                {isEditing ? (
+                  <div className="edit-actions">
+                    <button className="btn-success" onClick={handleSaveName}>
+                      Save Changes
+                    </button>
+                    <button className="btn-secondary" onClick={handleCancelEdit}>
+                      Cancel
+                    </button>
                   </div>
+                ) : (
+                  <button className="btn-secondary" onClick={() => setIsEditing(true)}>
+                    Edit Profile
+                  </button>
                 )}
-                <div className="hero-badge">
-                  <span className="badge-icon">✓</span>
-                  <span className="badge-text">{getTotalCheckIns()} check-ins</span>
-                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Personal Statistics Dashboard */}
-          <div className="stats-dashboard">
-            <div className="stat-card">
-              <div className="stat-icon">📊</div>
-              <div className="stat-content">
-                <div className="stat-value">{getTotalCheckIns()}</div>
-                <div className="stat-label">Total Check-ins</div>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">⏱️</div>
-              <div className="stat-content">
-                <div className="stat-value">{calculateTotalHours()}</div>
-                <div className="stat-label">Total Hours</div>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">🔥</div>
-              <div className="stat-content">
-                <div className="stat-value">{getActiveStreak()}</div>
-                <div className="stat-label">Active Streaks</div>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">🏆</div>
-              <div className="stat-content">
-                <div className="stat-value">{achievements?.totalAchievements || 0}</div>
-                <div className="stat-label">Achievements</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Share Profile Section */}
-          <div className="share-section card">
-            <h2>Share Profile</h2>
-            <p className="share-description">
-              Share your volunteer achievements and contributions with the community!
-            </p>
-            <div className="share-buttons">
-              <button className="btn-share btn-primary" onClick={handleShareProfile}>
-                <span>📤</span> Share Profile
-              </button>
-              <button className="btn-share btn-secondary" onClick={downloadProfileCard}>
-                <span>💾</span> Download Card
-              </button>
             </div>
 
-            {/* Hidden share card for screenshot/download */}
-            <div ref={shareCardRef} className="share-card-preview" style={{ position: 'absolute', left: '-9999px', width: '800px' }}>
-              <div className="share-card-content">
-                <div className="share-card-header">
-                  <div className="share-card-avatar">
+            <div className="profile-hero">
+              <div className="profile-avatar-container">
+                <div className="profile-avatar-wrapper">
+                  <div className="profile-avatar">
                     {member.name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="share-card-info">
-                    <h2>{member.name}</h2>
-                    <p>{member.rank || 'Volunteer'}</p>
-                    <p className="share-card-duration">{calculateMembershipDuration()} of service</p>
+                </div>
+              </div>
+              <div className="profile-hero-body">
+                <div className="profile-hero-header">
+                  <div>
+                    <h1 className="profile-hero-name">{member.name}</h1>
+                    <div className="profile-hero-rank">{member.rank || 'Visitor'}</div>
+                  </div>
+                  <div className="profile-hero-meta">
+                    <span className="hero-chip">📅 {calculateMembershipDuration()}</span>
+                    <span className="hero-chip">🆔 {member.id}</span>
                   </div>
                 </div>
-                <div className="share-card-stats">
-                  <div className="share-stat">
-                    <div className="share-stat-value">{getTotalCheckIns()}</div>
-                    <div className="share-stat-label">Check-ins</div>
+
+                <div className="profile-hero-stats">
+                  <div className="hero-stat-card">
+                    <div className="hero-stat-label">Check-ins</div>
+                    <div className="hero-stat-value">{getTotalCheckIns()}</div>
                   </div>
-                  <div className="share-stat">
-                    <div className="share-stat-value">{calculateTotalHours()}</div>
-                    <div className="share-stat-label">Hours</div>
+                  <div className="hero-stat-card">
+                    <div className="hero-stat-label">Hours</div>
+                    <div className="hero-stat-value">{calculateTotalHours()}</div>
                   </div>
-                  <div className="share-stat">
-                    <div className="share-stat-value">{achievements?.totalAchievements || 0}</div>
-                    <div className="share-stat-label">Achievements</div>
+                  <div className="hero-stat-card">
+                    <div className="hero-stat-label">Streaks</div>
+                    <div className="hero-stat-value">{getActiveStreak()}</div>
                   </div>
-                  <div className="share-stat">
-                    <div className="share-stat-value">{getActiveStreak()}</div>
-                    <div className="share-stat-label">Streaks</div>
+                  <div className="hero-stat-card">
+                    <div className="hero-stat-label">Achievements</div>
+                    <div className="hero-stat-value">{achievements?.totalAchievements || 0}</div>
                   </div>
-                </div>
-                <div className="share-card-footer">
-                  <div className="share-card-logo">NSW RFS Volunteer</div>
-                  <div className="share-card-hashtags">#CommunityService #NSWRFSVolunteer</div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Share confirmation modal */}
-          {showShareModal && (
-            <div className="share-modal">
-              <div className="share-modal-content">
-                <span className="share-modal-icon">✓</span>
-                <p>Profile text copied to clipboard!</p>
-              </div>
-            </div>
-          )}
-
-          <div className="profile-layout">
-            <div className="profile-left">
-              <div className="profile-card card">
+            <div className="profile-panels">
+              <div className="profile-card card profile-details-card">
                 <h2>Profile Details</h2>
-                
+
                 <div className="profile-info">
                   <div className="profile-field">
                     <label htmlFor={nameInputId}>Name:</label>
@@ -453,11 +324,7 @@ export function UserProfilePage() {
                         <button className="btn-success" onClick={handleSaveName}>
                           Save
                         </button>
-                        <button className="btn-secondary" onClick={() => {
-                          setEditedName(member.name);
-                          setEditedRank(member.rank || 'Visitor');
-                          setIsEditing(false);
-                        }}>
+                        <button className="btn-secondary" onClick={handleCancelEdit}>
                           Cancel
                         </button>
                       </div>
@@ -526,115 +393,113 @@ export function UserProfilePage() {
                 </div>
               </div>
 
-              {/* Achievements Section */}
-              {achievements && (
-                <div className="achievements-card card">
-                  <h2>🏆 Achievements</h2>
-                  <div className="achievements-stats">
-                    <div className="achievement-stat">
-                      <span className="stat-number">{achievements.totalAchievements}</span>
-                      <span className="stat-label">Total Achievements</span>
-                    </div>
-                    <div className="achievement-stat">
-                      <span className="stat-number">{achievements.activeStreaks.length}</span>
-                      <span className="stat-label">Active Streaks</span>
-                    </div>
-                    <div className="achievement-stat">
-                      <span className="stat-number">{achievements.recentlyEarned.length}</span>
-                      <span className="stat-label">Recently Earned</span>
-                    </div>
-                  </div>
-                  
-                  {achievements.totalAchievements === 0 && achievements.progress.length === 0 ? (
-                    <p className="no-achievements">
-                      Start checking in to events to earn achievements! 🎯
-                    </p>
+              <div className="profile-right">
+                <div className="history-card card">
+                  <h2>Activity Timeline</h2>
+
+                  {checkInHistory.length === 0 ? (
+                    <p className="no-history">No check-in history yet.</p>
                   ) : (
-                    <>
-                      {achievements.recentlyEarned.length > 0 && (
-                        <div className="achievements-section">
-                          <h3>Recently Earned</h3>
-                          <AchievementGrid
-                            achievements={achievements.recentlyEarned}
-                            variant="compact"
-                            showRecent={true}
-                          />
+                    <div className="activity-timeline">
+                      {Object.entries(groupCheckInsByDate()).map(([date, checkIns]) => (
+                        <div key={date} className="timeline-group">
+                          <div className="timeline-date-separator">
+                            <span className="timeline-date">{date}</span>
+                          </div>
+                          {checkIns.map((checkIn) => (
+                            <div key={checkIn.id} className="timeline-item">
+                              <div className="timeline-marker">
+                                <span className="timeline-icon">{getActivityIcon(checkIn.activityId)}</span>
+                              </div>
+                              <div className="timeline-content">
+                                <div className="timeline-header">
+                                  <span className="timeline-activity">
+                                    {getActivityName(checkIn.activityId)}
+                                  </span>
+                                  <span className={`timeline-status ${checkIn.isActive ? 'active' : 'completed'}`}>
+                                    {checkIn.isActive ? 'Active' : 'Completed'}
+                                  </span>
+                                </div>
+                                <div className="timeline-details">
+                                  <span className="timeline-time">
+                                    {new Date(checkIn.checkInTime).toLocaleTimeString()}
+                                  </span>
+                                  <span className="timeline-method">
+                                    via {checkIn.checkInMethod}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      )}
-                      
-                      {achievements.achievements.length > 0 && (
-                        <div className="achievements-section">
-                          <h3>All Achievements</h3>
-                          <AchievementGrid
-                            achievements={achievements.achievements}
-                            variant="compact"
-                          />
-                        </div>
-                      )}
-                      
-                      {achievements.progress.length > 0 && (
-                        <div className="achievements-section">
-                          <h3>In Progress</h3>
-                          <AchievementGrid
-                            progress={achievements.progress.slice(0, 6)}
-                            variant="full"
-                          />
-                        </div>
-                      )}
-                    </>
+                      ))}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-
-            <div className="profile-right">
-              <div className="history-card card">
-                <h2>Activity Timeline</h2>
-
-                {checkInHistory.length === 0 ? (
-                  <p className="no-history">No check-in history yet.</p>
-                ) : (
-                  <div className="activity-timeline">
-                    {Object.entries(groupCheckInsByDate()).map(([date, checkIns]) => (
-                      <div key={date} className="timeline-group">
-                        <div className="timeline-date-separator">
-                          <span className="timeline-date">{date}</span>
-                        </div>
-                        {checkIns.map((checkIn) => (
-                          <div key={checkIn.id} className="timeline-item">
-                            <div className="timeline-marker">
-                              <span className="timeline-icon">{getActivityIcon(checkIn.activityId)}</span>
-                            </div>
-                            <div className="timeline-content">
-                              <div className="timeline-header">
-                                <span className="timeline-activity">
-                                  {getActivityName(checkIn.activityId)}
-                                </span>
-                                <span className={`timeline-status ${checkIn.isActive ? 'active' : 'completed'}`}>
-                                  {checkIn.isActive ? 'Active' : 'Completed'}
-                                </span>
-                              </div>
-                              <div className="timeline-details">
-                                <span className="timeline-time">
-                                  {new Date(checkIn.checkInTime).toLocaleTimeString()}
-                                </span>
-                                <span className="timeline-method">
-                                  via {checkIn.checkInMethod}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
+
+            {achievements && (
+              <div className="achievements-card card">
+                <h2>🏆 Achievements</h2>
+                <div className="achievements-stats">
+                  <div className="achievement-stat">
+                    <span className="stat-number">{achievements.totalAchievements}</span>
+                    <span className="stat-label">Total Achievements</span>
+                  </div>
+                  <div className="achievement-stat">
+                    <span className="stat-number">{achievements.activeStreaks.length}</span>
+                    <span className="stat-label">Active Streaks</span>
+                  </div>
+                  <div className="achievement-stat">
+                    <span className="stat-number">{achievements.recentlyEarned.length}</span>
+                    <span className="stat-label">Recently Earned</span>
+                  </div>
+                </div>
+
+                {achievements.totalAchievements === 0 && achievements.progress.length === 0 ? (
+                  <p className="no-achievements">
+                    Start checking in to events to earn achievements! 🎯
+                  </p>
+                ) : (
+                  <>
+                    {achievements.recentlyEarned.length > 0 && (
+                      <div className="achievements-section">
+                        <h3>Recently Earned</h3>
+                        <AchievementGrid
+                          achievements={achievements.recentlyEarned}
+                          variant="compact"
+                          showRecent={true}
+                        />
+                      </div>
+                    )}
+
+                    {achievements.achievements.length > 0 && (
+                      <div className="achievements-section">
+                        <h3>All Achievements</h3>
+                        <AchievementGrid
+                          achievements={achievements.achievements}
+                          variant="compact"
+                        />
+                      </div>
+                    )}
+
+                    {achievements.progress.length > 0 && (
+                      <div className="achievements-section">
+                        <h3>In Progress</h3>
+                        <AchievementGrid
+                          progress={achievements.progress.slice(0, 6)}
+                          variant="full"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
     </PageTransition>
   );
 }
