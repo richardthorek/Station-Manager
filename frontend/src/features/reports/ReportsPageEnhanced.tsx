@@ -143,7 +143,7 @@ export function ReportsPageEnhanced() {
         prevStartDate = subMonths(startDate, 12);
         prevEndDate = startDate;
         break;
-      case 'custom':
+      case 'custom': {
         startDate = customStartDate ? new Date(customStartDate) : subDays(endDate, 30);
         const customEnd = customEndDate ? new Date(customEndDate) : endDate;
         const rangeDays = Math.round((customEnd.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -151,6 +151,7 @@ export function ReportsPageEnhanced() {
         prevEndDate = startDate;
         endDate.setTime(customEnd.getTime());
         break;
+      }
       default:
         startDate = subDays(endDate, 30);
         prevStartDate = subDays(startDate, 30);

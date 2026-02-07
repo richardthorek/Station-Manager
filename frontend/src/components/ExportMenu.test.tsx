@@ -52,7 +52,7 @@ describe('ExportMenu', () => {
   });
 
   it('closes dropdown when clicking outside', async () => {
-    const { container } = render(
+    render(
       <ExportMenu
         onExportPDF={mockExportPDF}
         onExportExcel={mockExportExcel}

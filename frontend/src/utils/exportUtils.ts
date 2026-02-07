@@ -213,7 +213,7 @@ export async function exportAsExcel(
   filename: string,
   sheets: Array<{
     name: string;
-    data: Array<Record<string, any>>;
+    data: Array<Record<string, string | number | boolean | null | undefined>>;
   }>
 ): Promise<void> {
   const workbook = new ExcelJS.Workbook();

@@ -17,7 +17,7 @@
  * - onRowClick: Optional row click handler
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
 import './DataTable.css';
 
 export interface Column<T> {
@@ -25,7 +25,7 @@ export interface Column<T> {
   header: string;
   sortable?: boolean;
   filterable?: boolean;
-  render?: (row: T) => React.ReactNode;
+  render?: (row: T) => ReactNode;
   width?: string;
 }
 
@@ -39,7 +39,7 @@ interface DataTableProps<T> {
 
 type SortDirection = 'asc' | 'desc' | null;
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends Record<string, unknown>>({
   data,
   columns,
   pageSize = 10,
@@ -70,8 +70,8 @@ export function DataTable<T extends Record<string, any>>({
     if (!sortColumn || !sortDirection) return filteredData;
 
     return [...filteredData].sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
+      const aValue = a[sortColumn as keyof T] as unknown;
+      const bValue = b[sortColumn as keyof T] as unknown;
 
       if (aValue === bValue) return 0;
 
