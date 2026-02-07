@@ -590,6 +590,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #27: Comprehensive Accessibility Improvements (ARIA Labels & Keyboard Navigation)
+**GitHub Issue**: #344
 **Status**: Ready to Start
 **Created**: February 2026 (from Project Review)
 
@@ -669,6 +670,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #28: Interactive Onboarding Wizard for New Users
+**GitHub Issue**: #345
 **Status**: Ready to Start
 **Created**: February 2026 (from Project Review)
 
@@ -742,6 +744,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #29: Mobile Sign-In Page Optimization
+**GitHub Issue**: #346
 **Status**: Ready to Start
 **Created**: February 2026 (from Project Review)
 
@@ -820,6 +823,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #30: User-Friendly Error Messages & Confirmation Dialogs
+**GitHub Issue**: #347
 **Status**: Ready to Start
 **Created**: February 2026 (from Project Review)
 
@@ -895,6 +899,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #31: Color Contrast Audit & Dark Mode Fixes (WCAG AA Compliance)
+**GitHub Issue**: #348
 **Status**: Ready to Start
 **Created**: February 2026 (from Project Review)
 
@@ -953,6 +958,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #32: Bundle Size Analysis & Optimization
+**GitHub Issue**: #349
 **Status**: Ready to Start
 **Created**: February 2026 (from Project Review)
 
@@ -1187,6 +1193,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #33: Sign-In Page UI Enhancements
+**GitHub Issue**: #350
 **Status**: Ready to Start
 **Created**: February 2026 (from UI Overhaul Phase 1 completion)
 
@@ -1291,6 +1298,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #34: Truck Check Workflow Visual Enhancements
+**GitHub Issue**: #351
 **Status**: Ready to Start
 **Created**: February 2026 (from UI Overhaul Phase 1 completion)
 
@@ -1402,6 +1410,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #35: Reports Page Data Visualization Enhancements
+**GitHub Issue**: #352
 **Status**: Ready to Start
 **Created**: February 2026 (from UI Overhaul Phase 1 completion)
 
@@ -1522,6 +1531,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #36: Admin Pages Modernization
+**GitHub Issue**: #353
 **Status**: Ready to Start
 **Created**: February 2026 (from UI Overhaul Phase 1 completion)
 
@@ -1647,6 +1657,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #37: User Profile Page Visual Polish
+**GitHub Issue**: #354
 **Status**: Ready to Start
 **Created**: February 2026 (from UI Overhaul Phase 1 completion)
 
@@ -1773,6 +1784,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #38: Comprehensive ARIA Label Audit and Keyboard Navigation
+**GitHub Issue**: #344 (originally marked duplicate of Issue #27)
 **Status**: ✅ COMPLETE (95% - Core Implementation Done, Testing Remaining)
 **Created**: February 2026 (from UI Overhaul Phase 1 completion)
 **Last Updated**: February 7, 2026
@@ -2062,6 +2074,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #39: Mobile Touch Optimization with Gestures
+**GitHub Issue**: #355
 **Status**: Ready to Start
 **Created**: February 2026 (from UI Overhaul Phase 1 completion)
 
@@ -2222,6 +2235,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #40: Page Transitions with Framer Motion
+**GitHub Issue**: #356
 **Status**: Ready to Start
 **Created**: February 2026 (from UI Overhaul Phase 1 completion)
 
@@ -2380,6 +2394,7 @@ Priority: **CRITICAL** - Must complete before new features
 ---
 
 #### Issue #41: Loading States and Skeleton Screens
+**GitHub Issue**: #357
 **Status**: Ready to Start
 **Created**: February 2026 (from UI Overhaul Phase 1 completion)
 
