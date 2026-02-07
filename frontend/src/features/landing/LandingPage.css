@@ -141,6 +141,14 @@
   padding: var(--spacing-lg) 0;
 }
 
+.welcome-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
 .welcome-section h2 {
   font-size: 2rem;
   font-weight: 700;
@@ -159,6 +167,49 @@
   max-width: 800px;
   margin: 0;
   font-weight: 400;
+}
+
+.getting-started-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, var(--ui-blue) 0%, #1a4d7e 100%);
+  color: var(--rfs-white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-md);
+  align-self: flex-start;
+  white-space: nowrap;
+  min-height: 60px;
+  letter-spacing: 0.3px;
+}
+
+.getting-started-btn:hover {
+  background: linear-gradient(135deg, #1a4d7e 0%, #0f3c60 100%);
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-3px);
+}
+
+.getting-started-btn:active {
+  transform: translateY(-1px);
+}
+
+.getting-started-btn .btn-icon {
+  font-size: 1.5rem;
+  transition: transform 0.3s ease;
+}
+
+.getting-started-btn:hover .btn-icon {
+  transform: scale(1.15) rotate(5deg);
+}
+
+.getting-started-btn .btn-text {
+  font-size: 1.125rem;
 }
 
 .cards-grid {
@@ -404,11 +455,27 @@
     margin-bottom: 2rem;
   }
 
+  .welcome-content {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
   .welcome-section h2 {
     font-size: 1.5rem;
   }
 
   .welcome-text {
+    font-size: 1rem;
+  }
+
+  .getting-started-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  .getting-started-btn .btn-text {
     font-size: 1rem;
   }
 
