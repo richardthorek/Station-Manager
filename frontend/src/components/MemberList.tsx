@@ -175,15 +175,19 @@ export function MemberList({
 
       <div className="search-controls">
         <div className="search-box">
+          <label htmlFor="member-search" className="sr-only">Search members by name, rank, or member number</label>
           <input
+            id="member-search"
             type="text"
             placeholder="Search by name, rank, or member #..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
+            aria-label="Search members"
           />
           {searchTerm && (
             <button
+              type="button"
               className="clear-btn"
               onClick={() => setSearchTerm('')}
               aria-label="Clear search"
@@ -193,25 +197,29 @@ export function MemberList({
           )}
         </div>
         <button 
+          type="button"
           className={`btn-filter-sort ${showFilterSort ? 'active' : ''}`}
           onClick={() => setShowFilterSort(!showFilterSort)}
           title="Filter and Sort Options"
           aria-label="Toggle filter and sort options"
           aria-expanded={showFilterSort}
+          aria-controls="filter-sort-panel"
         >
-          🔍
+          <span aria-hidden="true">🔍</span>
         </button>
         <button 
+          type="button"
           className="btn-add-member"
           onClick={() => setShowAddMember(true)}
           title="Add New Member"
+          aria-label="Add new member"
         >
           +
         </button>
       </div>
 
       {showFilterSort && (
-        <div className="filter-sort-panel">
+        <div id="filter-sort-panel" className="filter-sort-panel" role="region" aria-label="Filter and sort controls">
           <div className="control-group">
             <label htmlFor="filter-select">Filter:</label>
             <select
@@ -219,6 +227,7 @@ export function MemberList({
               value={filter}
               onChange={(e) => setFilter(e.target.value as FilterOption)}
               className="filter-select"
+              aria-label="Filter members"
             >
               <option value="all">All Members</option>
               <option value="checked-in">Checked In</option>
@@ -234,6 +243,7 @@ export function MemberList({
               value={sort}
               onChange={(e) => setSort(e.target.value as SortOption)}
               className="sort-select"
+              aria-label="Sort members"
             >
               <option value="default">Default</option>
               <option value="name-asc">Name (A-Z)</option>
@@ -245,7 +255,7 @@ export function MemberList({
         </div>
       )}
 
-      <div className="result-count">
+      <div className="result-count" role="status" aria-live="polite" aria-atomic="true">
         {loading ? (
           <span>Loading...</span>
         ) : (
@@ -254,62 +264,87 @@ export function MemberList({
       </div>
 
       <div className="members-container">
-        <div className="members-grid">
+        <div className="members-grid" role="list" aria-label="Member list">
           {displayedMembers.length > 0 ? (
             displayedMembers.map(member => {
               const isCheckedIn = checkedInMemberIds.has(member.id);
               return (
                 <button
                   key={member.id}
+                  type="button"
                   className={`member-btn ${isCheckedIn ? 'checked-in' : ''}`}
                   onClick={() => handleMemberClick(member.id)}
+                  role="listitem"
+                  aria-label={`${member.name}${isCheckedIn ? ' (checked in)' : ''}`}
+                  aria-pressed={isCheckedIn}
                 >
                   <span className="member-name">{member.name}</span>
                   {isCheckedIn && (
-                    <span className="check-icon">✓</span>
+                    <span className="check-icon" aria-hidden="true">✓</span>
                   )}
                 </button>
               );
             })
           ) : (
-            <p className="no-results">No members found</p>
+            <p className="no-results" role="status">No members found</p>
           )}
         </div>
 
-        <div className="letter-selector">
+        <nav className="letter-selector" aria-label="Filter members alphabetically">
           {letters.map(letter => (
             <button
               key={letter}
+              type="button"
               className={`letter-btn ${selectedLetter === letter ? 'active' : ''}`}
               onClick={() => handleLetterClick(letter)}
               title={`Filter by ${letter}`}
+              aria-label={`Filter by letter ${letter}`}
+              aria-pressed={selectedLetter === letter}
             >
               {letter}
             </button>
           ))}
-        </div>
+        </nav>
       </div>
 
       {showAddMember && (
-        <div className="add-member-overlay">
-          <div className="add-member-form">
-            <h3>Add New Member</h3>
+        <div className="add-member-overlay" role="presentation">
+          <div 
+            className="add-member-form" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="add-member-title"
+          >
+            <h3 id="add-member-title">Add New Member</h3>
+            <label htmlFor="new-member-name" className="sr-only">Member name</label>
             <input
+              id="new-member-name"
               type="text"
               placeholder="Member name..."
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddMember()}
               autoFocus
+              aria-label="Member name"
             />
             <div className="form-actions">
-              <button className="btn-success" onClick={handleAddMember}>
+              <button 
+                type="button"
+                className="btn-success" 
+                onClick={handleAddMember}
+                aria-label="Add member"
+              >
                 Add
               </button>
-              <button className="btn-secondary" onClick={() => {
-                setShowAddMember(false);
-                setNewMemberName('');
-              }}>
+              <button 
+                type="button"
+                className="btn-secondary" 
+                onClick={() => {
+                  setShowAddMember(false);
+                  setNewMemberName('');
+                }}
+                aria-label="Cancel adding member"
+              >
                 Cancel
               </button>
             </div>
