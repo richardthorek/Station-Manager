@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/Header';
 import { AchievementGrid } from '../../components/AchievementBadge';
@@ -24,7 +24,9 @@ export function UserProfilePage() {
     databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
   } | null>(null);
-  
+  const [showShareModal, setShowShareModal] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
+
   const { isConnected } = useSocket();
 
   useEffect(() => {
@@ -113,9 +115,66 @@ export function UserProfilePage() {
     return activity?.name || 'Unknown Activity';
   };
 
+  const getActivityIcon = (activityId: string) => {
+    const activityName = getActivityName(activityId).toLowerCase();
+    if (activityName.includes('training')) return '📚';
+    if (activityName.includes('maintenance')) return '🔧';
+    if (activityName.includes('meeting')) return '💬';
+    if (activityName.includes('incident')) return '🚒';
+    return '📋';
+  };
+
+  const groupCheckInsByDate = () => {
+    const grouped: { [key: string]: CheckIn[] } = {};
+    checkInHistory.forEach(checkIn => {
+      const date = new Date(checkIn.checkInTime).toLocaleDateString();
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+      grouped[date].push(checkIn);
+    });
+    return grouped;
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
+  const calculateMembershipDuration = () => {
+    if (!member) return '';
+    // Use membershipStartDate if available, otherwise fall back to createdAt
+    const startDate = new Date(member.membershipStartDate || member.createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - startDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 30) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months !== 1 ? 's' : ''}`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      const months = Math.floor((diffDays % 365) / 30);
+      return months > 0 ? `${years} year${years !== 1 ? 's' : ''} ${months} month${months !== 1 ? 's' : ''}` : `${years} year${years !== 1 ? 's' : ''}`;
+    }
+  };
+
+  const getActiveStreak = () => {
+    if (!achievements?.activeStreaks) return 0;
+    return achievements.activeStreaks.length;
+  };
+
+  const getTotalCheckIns = () => {
+    return checkInHistory.length;
+  };
+
+  const calculateTotalHours = () => {
+    // For now, estimate 2 hours per check-in as we don't have checkOutTime in the CheckIn interface
+    // This is a simplified calculation - actual time tracking would require event participants data
+    const averageHoursPerCheckIn = 2;
+    return checkInHistory.length * averageHoursPerCheckIn;
   };
 
   const generateSignInUrl = () => {
@@ -129,6 +188,65 @@ export function UserProfilePage() {
     const url = generateSignInUrl();
     navigator.clipboard.writeText(url);
     alert('Sign-in URL copied to clipboard!');
+  };
+
+  const generateShareableText = () => {
+    if (!member) return '';
+
+    const text = `🔥 ${member.name}'s RFS Profile\n` +
+                 `${member.rank || 'Volunteer'} | ${calculateMembershipDuration()}\n\n` +
+                 `📊 ${getTotalCheckIns()} Check-ins | ⏱️ ${calculateTotalHours()} Hours\n` +
+                 `🏆 ${achievements?.totalAchievements || 0} Achievements | 🔥 ${getActiveStreak()} Active Streaks\n\n` +
+                 `#NSWRFSVolunteer #CommunityService`;
+
+    return text;
+  };
+
+  const handleShareProfile = async () => {
+    const shareText = generateShareableText();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${member?.name}'s RFS Profile`,
+          text: shareText,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Error sharing:', err);
+          fallbackCopyToClipboard(shareText);
+        }
+      }
+    } else {
+      fallbackCopyToClipboard(shareText);
+    }
+  };
+
+  const fallbackCopyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setShowShareModal(true);
+    setTimeout(() => setShowShareModal(false), 3000);
+  };
+
+  const downloadProfileCard = async () => {
+    if (!shareCardRef.current || !member) return;
+
+    try {
+      // Use html2canvas if available, otherwise show modal with instructions
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(shareCardRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+      });
+
+      const link = document.createElement('a');
+      link.download = `${member.name.replace(/\s+/g, '_')}_RFS_Profile.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('Error generating image:', err);
+      alert('Please take a screenshot of the profile card to share!');
+    }
   };
 
   if (loading) {
@@ -170,10 +288,137 @@ export function UserProfilePage() {
             </button>
           </div>
 
+          {/* Enhanced Profile Hero Section */}
+          <div className="profile-hero">
+            <div className="profile-avatar-container">
+              <div className="profile-avatar-wrapper">
+                <div className="profile-avatar">
+                  {member.name.charAt(0).toUpperCase()}
+                </div>
+              </div>
+            </div>
+            <div className="profile-hero-info">
+              <h1 className="profile-hero-name">{member.name}</h1>
+              <div className="profile-hero-rank">{member.rank || 'Visitor'}</div>
+              <div className="profile-hero-badges">
+                <div className="hero-badge">
+                  <span className="badge-icon">📅</span>
+                  <span className="badge-text">{calculateMembershipDuration()}</span>
+                </div>
+                {getActiveStreak() > 0 && (
+                  <div className="hero-badge streak-badge">
+                    <span className="badge-icon">🔥</span>
+                    <span className="badge-text">{getActiveStreak()} streak{getActiveStreak() !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                <div className="hero-badge">
+                  <span className="badge-icon">✓</span>
+                  <span className="badge-text">{getTotalCheckIns()} check-ins</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Personal Statistics Dashboard */}
+          <div className="stats-dashboard">
+            <div className="stat-card">
+              <div className="stat-icon">📊</div>
+              <div className="stat-content">
+                <div className="stat-value">{getTotalCheckIns()}</div>
+                <div className="stat-label">Total Check-ins</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">⏱️</div>
+              <div className="stat-content">
+                <div className="stat-value">{calculateTotalHours()}</div>
+                <div className="stat-label">Total Hours</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">🔥</div>
+              <div className="stat-content">
+                <div className="stat-value">{getActiveStreak()}</div>
+                <div className="stat-label">Active Streaks</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">🏆</div>
+              <div className="stat-content">
+                <div className="stat-value">{achievements?.totalAchievements || 0}</div>
+                <div className="stat-label">Achievements</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Share Profile Section */}
+          <div className="share-section card">
+            <h2>Share Profile</h2>
+            <p className="share-description">
+              Share your volunteer achievements and contributions with the community!
+            </p>
+            <div className="share-buttons">
+              <button className="btn-share btn-primary" onClick={handleShareProfile}>
+                <span>📤</span> Share Profile
+              </button>
+              <button className="btn-share btn-secondary" onClick={downloadProfileCard}>
+                <span>💾</span> Download Card
+              </button>
+            </div>
+
+            {/* Hidden share card for screenshot/download */}
+            <div ref={shareCardRef} className="share-card-preview" style={{ position: 'absolute', left: '-9999px', width: '800px' }}>
+              <div className="share-card-content">
+                <div className="share-card-header">
+                  <div className="share-card-avatar">
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="share-card-info">
+                    <h2>{member.name}</h2>
+                    <p>{member.rank || 'Volunteer'}</p>
+                    <p className="share-card-duration">{calculateMembershipDuration()} of service</p>
+                  </div>
+                </div>
+                <div className="share-card-stats">
+                  <div className="share-stat">
+                    <div className="share-stat-value">{getTotalCheckIns()}</div>
+                    <div className="share-stat-label">Check-ins</div>
+                  </div>
+                  <div className="share-stat">
+                    <div className="share-stat-value">{calculateTotalHours()}</div>
+                    <div className="share-stat-label">Hours</div>
+                  </div>
+                  <div className="share-stat">
+                    <div className="share-stat-value">{achievements?.totalAchievements || 0}</div>
+                    <div className="share-stat-label">Achievements</div>
+                  </div>
+                  <div className="share-stat">
+                    <div className="share-stat-value">{getActiveStreak()}</div>
+                    <div className="share-stat-label">Streaks</div>
+                  </div>
+                </div>
+                <div className="share-card-footer">
+                  <div className="share-card-logo">NSW RFS Volunteer</div>
+                  <div className="share-card-hashtags">#CommunityService #NSWRFSVolunteer</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Share confirmation modal */}
+          {showShareModal && (
+            <div className="share-modal">
+              <div className="share-modal-content">
+                <span className="share-modal-icon">✓</span>
+                <p>Profile text copied to clipboard!</p>
+              </div>
+            </div>
+          )}
+
           <div className="profile-layout">
             <div className="profile-left">
               <div className="profile-card card">
-                <h2>User Profile</h2>
+                <h2>Profile Details</h2>
                 
                 <div className="profile-info">
                   <div className="profile-field">
@@ -331,32 +576,42 @@ export function UserProfilePage() {
 
             <div className="profile-right">
               <div className="history-card card">
-                <h2>Check-In History</h2>
-                
+                <h2>Activity Timeline</h2>
+
                 {checkInHistory.length === 0 ? (
                   <p className="no-history">No check-in history yet.</p>
                 ) : (
-                  <div className="history-list">
-                    <div className="history-header">
-                      <span>Date & Time</span>
-                      <span>Activity</span>
-                      <span>Method</span>
-                      <span>Status</span>
-                    </div>
-                    {checkInHistory.map((checkIn) => (
-                      <div key={checkIn.id} className="history-item">
-                        <span className="history-date">
-                          {formatDate(checkIn.checkInTime)}
-                        </span>
-                        <span className="history-activity">
-                          {getActivityName(checkIn.activityId)}
-                        </span>
-                        <span className="history-method">
-                          {checkIn.checkInMethod}
-                        </span>
-                        <span className={`history-status ${checkIn.isActive ? 'active' : 'completed'}`}>
-                          {checkIn.isActive ? 'Active' : 'Completed'}
-                        </span>
+                  <div className="activity-timeline">
+                    {Object.entries(groupCheckInsByDate()).map(([date, checkIns]) => (
+                      <div key={date} className="timeline-group">
+                        <div className="timeline-date-separator">
+                          <span className="timeline-date">{date}</span>
+                        </div>
+                        {checkIns.map((checkIn) => (
+                          <div key={checkIn.id} className="timeline-item">
+                            <div className="timeline-marker">
+                              <span className="timeline-icon">{getActivityIcon(checkIn.activityId)}</span>
+                            </div>
+                            <div className="timeline-content">
+                              <div className="timeline-header">
+                                <span className="timeline-activity">
+                                  {getActivityName(checkIn.activityId)}
+                                </span>
+                                <span className={`timeline-status ${checkIn.isActive ? 'active' : 'completed'}`}>
+                                  {checkIn.isActive ? 'Active' : 'Completed'}
+                                </span>
+                              </div>
+                              <div className="timeline-details">
+                                <span className="timeline-time">
+                                  {new Date(checkIn.checkInTime).toLocaleTimeString()}
+                                </span>
+                                <span className="timeline-method">
+                                  via {checkIn.checkInMethod}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>

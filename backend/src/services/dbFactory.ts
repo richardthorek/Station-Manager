@@ -36,8 +36,8 @@ export interface IDatabase {
   getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Promise<Member[]> | Member[];
   getMemberById(id: string): Promise<Member | null | undefined> | Member | null | undefined;
   getMemberByQRCode(qrCode: string): Promise<Member | null | undefined> | Member | null | undefined;
-  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; stationId?: string }): Promise<Member> | Member;
-  updateMember(id: string, name: string, rank?: string | null): Promise<Member | null | undefined> | Member | null | undefined;
+  createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; membershipStartDate?: Date | null; stationId?: string }): Promise<Member> | Member;
+  updateMember(id: string, name: string, rank?: string | null, membershipStartDate?: Date | null): Promise<Member | null | undefined> | Member | null | undefined;
   
   // Activities
   getAllActivities(stationId?: string): Promise<Activity[]> | Activity[];

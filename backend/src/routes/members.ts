@@ -113,7 +113,7 @@ router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Re
 router.post('/', validateCreateMember, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { name, firstName, lastName, preferredName, rank } = req.body || {};
+    const { name, firstName, lastName, preferredName, rank, membershipStartDate } = req.body || {};
     const stationId = getStationIdFromRequest(req);
 
     const clean = (val: unknown): string => (typeof val === 'string' ? val.trim() : '');
@@ -129,17 +129,27 @@ router.post('/', validateCreateMember, handleValidationErrors, async (req: Reque
       return res.status(400).json({ error: 'Valid name is required' });
     }
 
+    // Parse membershipStartDate if provided
+    let parsedMembershipStartDate: Date | null = null;
+    if (membershipStartDate) {
+      const parsed = new Date(membershipStartDate);
+      if (!isNaN(parsed.getTime())) {
+        parsedMembershipStartDate = parsed;
+      }
+    }
+
     const member = await db.createMember(displayName, {
       rank: clean(rank) || undefined,
       firstName: fn || undefined,
       lastName: ln || undefined,
       preferredName: pn || undefined,
+      membershipStartDate: parsedMembershipStartDate,
       stationId,
     });
     res.status(201).json(member);
   } catch (error) {
-    logger.error('Error creating member', { 
-      error, 
+    logger.error('Error creating member', {
+      error,
       requestId: req.id,
       stationId: getStationIdFromRequest(req),
     });
@@ -151,18 +161,32 @@ router.post('/', validateCreateMember, handleValidationErrors, async (req: Reque
 router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { name, rank } = req.body;
+    const { name, rank, membershipStartDate } = req.body;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Valid name is required' });
     }
-    const member = await db.updateMember(req.params.id, name.trim(), rank || null);
+
+    // Parse membershipStartDate if provided
+    let parsedMembershipStartDate: Date | null | undefined = undefined;
+    if (membershipStartDate !== undefined) {
+      if (membershipStartDate === null) {
+        parsedMembershipStartDate = null;
+      } else {
+        const parsed = new Date(membershipStartDate);
+        if (!isNaN(parsed.getTime())) {
+          parsedMembershipStartDate = parsed;
+        }
+      }
+    }
+
+    const member = await db.updateMember(req.params.id, name.trim(), rank || null, parsedMembershipStartDate);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
     res.json(member);
   } catch (error) {
-    logger.error('Error updating member', { 
-      error, 
+    logger.error('Error updating member', {
+      error,
       memberId: req.params.id,
       requestId: req.id,
     });
@@ -227,6 +251,7 @@ router.post('/import', upload.single('file'), async (req: Request, res: Response
         name: string;
         rank?: string;
         roles?: string;
+        membershipStartDate?: string;
       };
       isValid: boolean;
       isDuplicate: boolean;
@@ -236,13 +261,14 @@ router.post('/import', upload.single('file'), async (req: Request, res: Response
     const validationResults: ValidationResult[] = parseResult.data.map((row, index) => {
       const errors: string[] = [];
       const clean = (val: unknown): string => (typeof val === 'string' ? val.trim() : '');
-      
+
       // Handle both "First Name"/"Last Name" and "name" columns
       const firstName = clean(row['First Name'] || row['firstName'] || '');
       const lastName = clean(row['Last Name'] || row['lastName'] || '');
       const directName = clean(row['name'] || row['Name'] || '');
       const rank = clean(row['Rank'] || row['rank'] || '');
       const roles = clean(row['Roles'] || row['roles'] || '');
+      const membershipStartDate = clean(row['Membership Start Date'] || row['membershipStartDate'] || row['MembershipStartDate'] || '');
 
       // Construct the full name
       let name = '';
@@ -257,6 +283,14 @@ router.post('/import', upload.single('file'), async (req: Request, res: Response
         errors.push('Name is required (either First Name + Last Name or Name column)');
       }
 
+      // Validate membershipStartDate format if provided
+      if (membershipStartDate) {
+        const parsed = new Date(membershipStartDate);
+        if (isNaN(parsed.getTime())) {
+          errors.push('Invalid membership start date format (use ISO 8601 format like YYYY-MM-DD)');
+        }
+      }
+
       const isDuplicate = name ? existingNames.has(name.toLowerCase()) : false;
 
       return {
@@ -267,6 +301,7 @@ router.post('/import', upload.single('file'), async (req: Request, res: Response
           name,
           rank: rank || undefined,
           roles: roles || undefined,
+          membershipStartDate: membershipStartDate || undefined,
         },
         isValid: errors.length === 0,
         isDuplicate,
@@ -316,8 +351,8 @@ router.post('/import/execute', async (req: Request, res: Response) => {
     // Import members one by one
     for (const memberData of members) {
       try {
-        const { firstName, lastName, name, rank } = memberData;
-        
+        const { firstName, lastName, name, rank, membershipStartDate } = memberData;
+
         // Validate name is not empty
         if (!name || typeof name !== 'string' || name.trim().length === 0) {
           results.failed.push({
@@ -327,10 +362,20 @@ router.post('/import/execute', async (req: Request, res: Response) => {
           continue;
         }
 
+        // Parse membershipStartDate if provided
+        let parsedMembershipStartDate: Date | null = null;
+        if (membershipStartDate) {
+          const parsed = new Date(membershipStartDate);
+          if (!isNaN(parsed.getTime())) {
+            parsedMembershipStartDate = parsed;
+          }
+        }
+
         const member = await db.createMember(name, {
           rank: rank || undefined,
           firstName: firstName || undefined,
           lastName: lastName || undefined,
+          membershipStartDate: parsedMembershipStartDate,
           stationId,
         });
 
