@@ -22,6 +22,7 @@ import {
 } from '../middleware/activityValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { flexibleAuth } from '../middleware/flexibleAuth';
 import { logger } from '../services/logger';
 
 const router = Router();
@@ -30,7 +31,8 @@ const router = Router();
 router.use(stationMiddleware);
 
 // Get all activities (filtered by station)
-router.get('/', async (req, res) => {
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.get('/', flexibleAuth({ scope: 'station' }), async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
