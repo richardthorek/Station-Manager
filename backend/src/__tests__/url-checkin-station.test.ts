@@ -34,8 +34,8 @@ describe('POST /api/checkins/url-checkin - Brigade/Station-Specific Check-In', (
     const member2 = await db.createMember('Station2 Member', { stationId: testStationId2 });
     testMemberId = member1.id;
 
-    // Create test activity
-    const activity = await db.createActivity('Training', false);
+    // Create test activity (parameters: name, createdBy, stationId)
+    const activity = await db.createActivity('Training', 'test-user', testStationId);
     testActivityId = activity.id;
 
     // Set active activity for both stations
@@ -43,18 +43,12 @@ describe('POST /api/checkins/url-checkin - Brigade/Station-Specific Check-In', (
     await db.setActiveActivity(testActivityId, testStationId2, 'test-user');
   });
 
-  afterAll(async () => {
-    const db = await ensureDatabase();
-    await db.clearAllData();
-  });
-
   beforeEach(async () => {
-    const db = await ensureDatabase();
-    // Clear check-ins before each test
-    const checkIns = await db.getAllCheckIns();
-    for (const checkIn of checkIns) {
+    // Clear check-ins before each test using DELETE endpoint
+    const checkIns = await request(app).get('/api/checkins/active');
+    for (const checkIn of checkIns.body) {
       if (checkIn.isActive) {
-        await db.endCheckIn(checkIn.memberId);
+        await request(app).delete(`/api/checkins/${checkIn.memberId}`);
       }
     }
   });
