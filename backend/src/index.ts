@@ -94,6 +94,7 @@ app.use(helmet({
       scriptSrc: [
         "'self'",
         "https://www.clarity.ms", // Microsoft Clarity analytics (dynamically loads script)
+        "https://scripts.clarity.ms", // Microsoft Clarity script files
       ],
       // Allow inline styles for React and Google Fonts stylesheet
       styleSrc: [
@@ -106,6 +107,7 @@ app.use(helmet({
         "'self'",
         "ws:", "wss:", // WebSocket connections for Socket.io
         "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
+        "https://fonts.googleapis.com", // Google Fonts CSS (Fetch API)
       ],
       // Allow self-hosted fonts, data URIs, and Google Fonts
       fontSrc: [
