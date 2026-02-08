@@ -16,6 +16,7 @@ import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { getAdminUserDatabase } from '../services/adminUserDatabase';
 import { logger } from '../services/logger';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
@@ -88,7 +89,7 @@ router.post('/logout', (req: Request, res: Response) => {
  * Get current authenticated user info
  * Requires authentication middleware
  */
-router.get('/me', async (req: Request, res: Response) => {
+router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
