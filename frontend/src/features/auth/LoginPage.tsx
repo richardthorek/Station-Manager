@@ -79,7 +79,6 @@ export function LoginPage() {
                     onChange={(e) => setUsername(e.target.value)}
                     required
                     autoComplete="username"
-                    autoFocus
                     disabled={isLoading}
                   />
                 </div>
