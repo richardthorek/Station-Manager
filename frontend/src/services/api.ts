@@ -942,6 +942,38 @@ class ApiService {
     return response.json();
   }
 
+  // ============================================
+  // Advanced Analytics
+  // ============================================
+
+  async getTrendAnalysis(startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    trends: {
+      attendanceTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+      eventsTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+      memberGrowth: { currentTotal: number; previousTotal: number; change: number; changePercent: number };
+    };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/advanced/trend-analysis?startDate=${startDate}&endDate=${endDate}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch trend analysis');
+    return response.json();
+  }
+
+  async getActivityHeatMap(startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    heatMap: Array<{ day: number; hour: number; count: number }>;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/advanced/heat-map?startDate=${startDate}&endDate=${endDate}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch activity heat map');
+    return response.json();
+  }
+
   async getBrigadeSummary(brigadeId: string, startDate: string, endDate: string): Promise<{
     startDate: string;
     endDate: string;

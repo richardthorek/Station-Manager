@@ -362,6 +362,9 @@ export function ReportsPageEnhanced() {
               onExportPNG={handleExportPNG}
               disabled={loading || !!error}
             />
+            <Link to="/reports/advanced" className="cross-station-link">
+              Advanced Analytics →
+            </Link>
             <Link to="/reports/cross-station" className="cross-station-link">
               Cross-Station →
             </Link>
