@@ -220,8 +220,8 @@ async function waitForStabilization(): Promise<number> {
 
     // Wait before next attempt, but check if we'll exceed timeout
     if (attempt < maxAttempts) {
-      const elapsedAfterSleep = Date.now() - startTime + STABILIZATION_INTERVAL;
-      if (elapsedAfterSleep < STABILIZATION_TIMEOUT) {
+      const elapsedAfterSleep = (Date.now() - startTime + STABILIZATION_INTERVAL) / 1000; // Convert to seconds
+      if (elapsedAfterSleep < STABILIZATION_TIMEOUT / 1000) {
         await sleep(STABILIZATION_INTERVAL);
       } else {
         // Would exceed timeout after sleep, exit now
