@@ -17,7 +17,7 @@
  * - onRowClick: Optional row click handler
  */
 
-import { useState, useMemo, type ReactNode } from 'react';
+import { useState, useMemo, useCallback, type ReactNode } from 'react';
 import './DataTable.css';
 
 export interface Column<T> {
@@ -52,7 +52,7 @@ export function DataTable<T extends object>({
   const [searchTerm, setSearchTerm] = useState('');
   const [pageSizeOption, setPageSizeOption] = useState(pageSize);
 
-  const getValue = (row: T, key: Column<T>['key']) => row[key as keyof T];
+  const getValue = useCallback((row: T, key: Column<T>['key']) => row[key as keyof T], []);
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
@@ -65,7 +65,7 @@ export function DataTable<T extends object>({
           return String(value).toLowerCase().includes(searchTerm.toLowerCase());
         });
     });
-  }, [data, searchTerm, columns]);
+  }, [data, searchTerm, columns, getValue]);
 
   // Sort data
   const sortedData = useMemo(() => {
@@ -86,7 +86,7 @@ export function DataTable<T extends object>({
 
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [filteredData, sortColumn, sortDirection]);
+  }, [filteredData, sortColumn, sortDirection, getValue]);
 
   // Paginate data
   const paginatedData = useMemo(() => {

@@ -53,6 +53,7 @@ export function useSocket() {
     return () => {
       socket.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-join when station changes
