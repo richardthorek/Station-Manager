@@ -5,24 +5,23 @@ set -e  # Exit on error
 
 echo "Starting Station Manager application..."
 
-# Check if backend/dist exists
+# Verify backend/dist exists
 if [ ! -d "backend/dist" ]; then
-  echo "Backend not built, building now..."
-  cd backend
-  npm install
-  npm run build
-  cd ..
+  echo "❌ Error: backend/dist directory not found!"
+  echo "   The application was not built correctly during CI/CD."
+  exit 1
 fi
 
-# Check if node_modules exists (in case of zip deploy without deps)
+# Verify node_modules exists
 if [ ! -d "backend/node_modules" ]; then
-  echo "Installing production dependencies..."
-  cd backend
-  npm ci --production
-  echo "Dependencies installed successfully"
-  cd ..
+  echo "❌ Error: backend/node_modules directory not found!"
+  echo "   Dependencies were not included in the deployment package."
+  exit 1
 fi
+
+echo "✅ Backend built files found"
+echo "✅ Node modules found"
 
 # Start the application
-echo "Starting backend server..."
+echo "🚀 Starting backend server..."
 cd backend && npm start

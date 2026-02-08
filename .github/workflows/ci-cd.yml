@@ -22,27 +22,29 @@
 #   - Post-deployment tests validate live application
 #
 # Deployment Strategy:
-#   OPTIMIZED FOR SPEED:
+#   OPTIMIZED FOR RELIABILITY:
 #
 #   Artifact Packaging:
 #     - Ships pre-built backend/dist (compiled TypeScript)
 #     - Ships pre-built frontend/dist (optimized static assets)
-#     - Ships package.json and package-lock.json (for Azure npm install)
+#     - Ships backend/node_modules (pre-installed production dependencies)
+#     - Ships package.json and package-lock.json (for reference)
 #     - Does NOT ship source code (.ts files)
-#     - Does NOT ship node_modules (installed by Azure post-deploy)
 #
 #   Azure App Service Deployment (Windows/IIS):
-#     - SCM_DO_BUILD_DURING_DEPLOYMENT=true (enables post-deploy npm install)
-#     - Dependencies installed by Azure after code deployment
-#     - Faster GitHub Actions execution (no dependency installation in CI)
-#     - Ensures consistent environment with locked dependencies
+#     - SCM_DO_BUILD_DURING_DEPLOYMENT=false (all dependencies pre-installed)
+#     - No post-deploy npm install (dependencies included in package)
+#     - Faster deployment (no dependency installation or native module compilation)
+#     - Ensures consistent environment with exact versions
+#     - Avoids native module compilation issues (bcrypt, etc.)
 #     - Retry logic handles transient 409 Conflict errors
 #
-#   Why Azure Installs Dependencies:
-#     - Significantly faster GitHub Actions execution
-#     - Smaller deployment artifacts (no node_modules transfer)
-#     - Azure handles npm install after code is pushed
-#     - Deterministic builds with exact versions from package-lock.json
+#   Why Include node_modules:
+#     - Eliminates native module compilation issues (bcrypt requires node-gyp)
+#     - Faster Azure startup (no npm install = no 230s container timeout)
+#     - Deterministic deployments (exact same dependencies as CI build)
+#     - Works on Windows without C++ build tools
+#     - Larger package size (~100MB) but much more reliable
 #
 #   Deployment Reliability:
 #     - Automatic retry on 409 Conflict errors (common with Oryx builds)
@@ -51,7 +53,8 @@
 #
 #   Benefits:
 #     - Faster CI/CD pipeline (single runner, no redundant setup)
-#     - Smaller deployment packages
+#     - Faster Azure container startup (no npm install)
+#     - No native module compilation failures
 #     - Deterministic builds (exact versions from package-lock.json)
 #     - Resilient to transient Azure deployment conflicts
 #     - Fail-fast: subsequent steps stop on first failure
@@ -318,18 +321,33 @@ jobs:
             frontend/dist/stats.html
           retention-days: 30
 
+      - name: Install backend production dependencies
+        run: |
+          cd backend
+          npm ci --production --ignore-scripts
+          echo "✅ Production dependencies installed"
+          ls -lh node_modules | head -20
+
       - name: Create deployment package
         run: |
           mkdir -p deploy/backend
           mkdir -p deploy/frontend
           cp package.json deploy/
           cp -r backend/dist deploy/backend/
+          cp -r backend/node_modules deploy/backend/
           cp backend/package.json deploy/backend/
           cp backend/package-lock.json deploy/backend/
           cp -r frontend/dist deploy/frontend/
           cp startup.sh deploy/ 2>/dev/null || true
           cp web.config deploy/ 2>/dev/null || true
+          
+          echo "📦 Package contents:"
+          du -sh deploy/backend/node_modules
+          du -sh deploy/backend/dist
+          du -sh deploy/frontend/dist
+          
           cd deploy && zip -r ../release.zip .
+          cd .. && ls -lh release.zip
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v6
