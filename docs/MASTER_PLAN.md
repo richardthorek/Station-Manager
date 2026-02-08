@@ -10,6 +10,41 @@
 ### Single Source of Truth
 This document is the **SINGLE SOURCE OF TRUTH** for all planning, roadmap, architecture guidance, and future work tracking for the RFS Station Manager project. All planning must be consolidated here - no duplicate planning documents are permitted.
 
+### Documentation Organization Policy
+
+The `/docs/` directory follows a strict organization policy to maintain clarity and reduce noise:
+
+#### **Root `/docs/` Directory (Current/Live Documentation Only)**
+Only the following types of documents are allowed in the root `/docs/` directory:
+- **Master planning documents**: `MASTER_PLAN.md` (this file)
+- **Current implementation state**: `AS_BUILT.md`, `API_DOCUMENTATION.md`
+- **Machine-readable registries**: `api_register.json`, `function_register.json`, and their human-readable companions
+- **Active feature/development guides**: `GETTING_STARTED.md`, `FEATURE_DEVELOPMENT_GUIDE.md`, `ACHIEVEMENTS.md`
+- **Active deployment guides**: `AZURE_DEPLOYMENT.md`, `AZURE_DEPLOYMENT_OPTIMIZATION.md`, `AZURE_APP_INSIGHTS.md`
+- **Active user guides**: `KEYBOARD_SHORTCUTS.md`, `SCREEN_READER_GUIDE.md`
+- **Active development references**: `LOGGING.md`, `SECURITY_ADVISORY_XLSX.md`, `POST_DEPLOYMENT_TESTING.md`, `ci_pipeline.md`
+- **Active development checklists**: `DEVELOPER_ACCESSIBILITY_CHECKLIST.md`
+- **Recent audit/review reports**: Reports from the last 3 months remain in root for visibility
+
+#### **Subdirectories (Historical/Reference Material)**
+- **`/docs/archive/`**: Completed feature implementation summaries, historical deployment guides, superseded analysis documents, outdated migration plans
+- **`/docs/implementation-notes/`**: Detailed implementation notes, configuration guides, optimization references that support active development
+- **`/docs/current_state/`**: Point-in-time audit snapshots, validation reports, UI reviews from specific dates
+
+#### **Moving Documents**
+- **When a feature is completed**: Move its implementation summary from root to `/docs/archive/`
+- **When a guide is superseded**: Move the old version to `/docs/archive/` and update/create the new version in root
+- **When analysis is no longer relevant**: Move to `/docs/archive/` with a note about what superseded it
+- **Implementation details for ongoing work**: Keep in `/docs/implementation-notes/` for easy reference
+
+#### **Prohibited in Root**
+- Implementation summaries of completed features (unless < 1 week old)
+- Historical review reports older than 3 months
+- Superseded storage/deployment analysis documents
+- Completed migration plans
+- Duplicate documentation (use consistent naming, keep one authoritative version)
+- Point-in-time audit snapshots (use `/docs/current_state/` or `/docs/archive/`)
+
 ### Related Documentation
 - **AI Development Guidelines**: `.github/copilot-instructions.md` - Repository conventions, coding standards, and AI-assisted development rules
 - **Implementation Details**: `docs/AS_BUILT.md` - Current system architecture and implementation state
