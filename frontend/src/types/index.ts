@@ -63,6 +63,7 @@ export interface Member {
   firstName?: string;
   lastName?: string;
   membershipStartDate?: string | null;  // When member joined the brigade (ISO string, can differ from createdAt)
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   lastSignIn?: string | null;    // Last time member participated in an event (ISO string)
   isActive?: boolean;            // Whether member is active/visible
   isDeleted?: boolean;           // Soft delete flag to retain history
