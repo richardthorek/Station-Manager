@@ -225,7 +225,7 @@ async function waitForStabilization(): Promise<number> {
       // Recalculate elapsed time for accuracy
       const currentElapsed = Math.floor((Date.now() - startTime) / 1000);
       const elapsedAfterSleep = currentElapsed + intervalSeconds;
-      if (elapsedAfterSleep < timeoutSeconds) {
+      if (elapsedAfterSleep <= timeoutSeconds) {
         await sleep(STABILIZATION_INTERVAL);
       } else {
         // Would exceed timeout after sleep, exit now
