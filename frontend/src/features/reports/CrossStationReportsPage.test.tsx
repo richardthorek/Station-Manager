@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { CrossStationReportsPage } from './CrossStationReportsPage';
 import { StationProvider } from '../../contexts/StationContext';
@@ -154,16 +154,20 @@ describe('CrossStationReportsPage', () => {
     (api.getStations as ReturnType<typeof vi.fn>).mockResolvedValue(mockStations);
   });
 
-  const renderWithProviders = (component: React.ReactElement) => {
-    return render(
-      <BrowserRouter>
-        <StationProvider>{component}</StationProvider>
-      </BrowserRouter>
-    );
+  const renderWithProviders = async (component: React.ReactElement) => {
+    let rendered;
+    await act(async () => {
+      rendered = render(
+        <BrowserRouter>
+          <StationProvider>{component}</StationProvider>
+        </BrowserRouter>
+      );
+    });
+    return rendered;
   };
 
   it('renders page header and title', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Cross-Station Reports')).toBeInTheDocument();
@@ -172,7 +176,7 @@ describe('CrossStationReportsPage', () => {
   });
 
   it('renders view mode toggle buttons', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Station View')).toBeInTheDocument();
@@ -181,7 +185,7 @@ describe('CrossStationReportsPage', () => {
   });
 
   it('renders multi-station selector in station view', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Select Stations to Compare:')).toBeInTheDocument();
@@ -189,7 +193,7 @@ describe('CrossStationReportsPage', () => {
   });
 
   it('renders brigade selector in brigade view', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       const brigadeViewButton = screen.getByText('Brigade View');
@@ -202,7 +206,7 @@ describe('CrossStationReportsPage', () => {
   });
 
   it('renders date range selector', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Last 30 Days')).toBeInTheDocument();
@@ -213,7 +217,7 @@ describe('CrossStationReportsPage', () => {
   });
 
   it('displays empty state when no stations are selected', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Please select one or more stations to view cross-station reports.')).toBeInTheDocument();
@@ -221,7 +225,7 @@ describe('CrossStationReportsPage', () => {
   });
 
   it('displays empty state in brigade view when no brigade is selected', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       const brigadeViewButton = screen.getByText('Brigade View');
@@ -234,7 +238,7 @@ describe('CrossStationReportsPage', () => {
   });
 
   it('displays back link to reports page', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       const backLink = screen.getByText('← Back to Reports');
@@ -249,7 +253,7 @@ describe('CrossStationReportsPage', () => {
     (api.getCrossStationActivityBreakdown as ReturnType<typeof vi.fn>).mockResolvedValue(mockActivityBreakdown);
     (api.getCrossStationEventStatistics as ReturnType<typeof vi.fn>).mockResolvedValue(mockEventStatistics);
 
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       const selectorButton = screen.getByRole('button', { name: /select stations/i });
@@ -265,7 +269,7 @@ describe('CrossStationReportsPage', () => {
       () => new Promise(resolve => setTimeout(() => resolve(mockAttendanceSummary), 100))
     );
 
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     // Loading state would appear when stations are selected
     // This requires interaction testing which is more complex
@@ -274,14 +278,14 @@ describe('CrossStationReportsPage', () => {
   it('handles API errors gracefully', async () => {
     (api.getCrossStationAttendanceSummary as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('API Error'));
 
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     // Error state would appear after attempting to fetch with selected stations
     // This requires interaction testing
   });
 
   it('switches between station view and brigade view', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       const stationViewButton = screen.getByText('Station View');
@@ -297,7 +301,7 @@ describe('CrossStationReportsPage', () => {
   });
 
   it('switches between date ranges', async () => {
-    renderWithProviders(<CrossStationReportsPage />);
+    await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
       const last30Button = screen.getByText('Last 30 Days');

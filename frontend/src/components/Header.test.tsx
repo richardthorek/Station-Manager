@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { render } from '../test/utils/test-utils'
 import { Header } from './Header'
@@ -56,16 +56,20 @@ describe('Header', () => {
     vi.mocked(api.getStations).mockResolvedValue(mockStations)
   })
 
-  const renderWithProvider = (props: React.ComponentProps<typeof Header>) => {
-    return render(
-      <StationProvider>
-        <Header {...props} />
-      </StationProvider>
-    )
+  const renderWithProvider = async (props: React.ComponentProps<typeof Header>) => {
+    let rendered
+    await act(async () => {
+      rendered = render(
+        <StationProvider>
+          <Header {...props} />
+        </StationProvider>
+      )
+    })
+    return rendered
   }
 
   it('renders the header', async () => {
-    renderWithProvider({ isConnected: true })
+    await renderWithProvider({ isConnected: true })
 
     expect(screen.getByText('Station Manager')).toBeInTheDocument()
     expect(screen.getByText('🚒')).toBeInTheDocument()
@@ -77,19 +81,19 @@ describe('Header', () => {
   })
 
   it('shows connected status when connected', async () => {
-    renderWithProvider({ isConnected: true })
+    await renderWithProvider({ isConnected: true })
 
     expect(screen.getByText('Connected')).toBeInTheDocument()
   })
 
   it('shows disconnected status when not connected', async () => {
-    renderWithProvider({ isConnected: false })
+    await renderWithProvider({ isConnected: false })
 
     expect(screen.getByText('Disconnected')).toBeInTheDocument()
   })
 
   it('shows database warning when using in-memory database', async () => {
-    renderWithProvider({
+    await renderWithProvider({
       isConnected: true,
       databaseStatus: {
         databaseType: 'in-memory',
@@ -101,7 +105,7 @@ describe('Header', () => {
   })
 
   it('does not show database warning when using persistent database', async () => {
-    renderWithProvider({
+    await renderWithProvider({
       isConnected: true,
       databaseStatus: {
         databaseType: 'table-storage',
@@ -113,13 +117,13 @@ describe('Header', () => {
   })
 
   it('renders theme toggle button', async () => {
-    renderWithProvider({ isConnected: true })
+    await renderWithProvider({ isConnected: true })
 
     expect(screen.getByLabelText('Toggle theme')).toBeInTheDocument()
   })
 
   it('does not render admin menu when no callbacks provided', async () => {
-    renderWithProvider({ isConnected: true })
+    await renderWithProvider({ isConnected: true })
 
     expect(screen.queryByLabelText('Admin menu')).not.toBeInTheDocument()
   })
@@ -129,7 +133,7 @@ describe('Header', () => {
     const onExportData = vi.fn()
     const onAddActivityType = vi.fn()
 
-    renderWithProvider({
+    await renderWithProvider({
       isConnected: true,
       onManageUsers,
       onExportData,
@@ -143,7 +147,7 @@ describe('Header', () => {
     const onManageUsers = vi.fn()
     const user = userEvent.setup()
     
-    renderWithProvider({
+    await renderWithProvider({
       isConnected: true,
       onManageUsers,
     })
@@ -172,7 +176,7 @@ describe('Header', () => {
     const onManageUsers = vi.fn()
     const user = userEvent.setup()
     
-    renderWithProvider({
+    await renderWithProvider({
       isConnected: true,
       onManageUsers,
     })
@@ -190,7 +194,7 @@ describe('Header', () => {
     const onManageUsers = vi.fn()
     const user = userEvent.setup()
     
-    renderWithProvider({
+    await renderWithProvider({
       isConnected: true,
       onManageUsers,
     })
@@ -212,7 +216,7 @@ describe('Header', () => {
     const onManageUsers = vi.fn()
     const user = userEvent.setup()
     
-    renderWithProvider({
+    await renderWithProvider({
       isConnected: true,
       onManageUsers,
     })

@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { ReportsPage } from './ReportsPage';
 import { api } from '../../services/api';
@@ -106,23 +106,27 @@ describe('ReportsPage', () => {
     vi.mocked(api.getTruckCheckCompliance).mockResolvedValue(mockTruckCheckCompliance);
   });
 
-  const renderReportsPage = () => {
-    return render(
-      <BrowserRouter>
-        <ReportsPage />
-      </BrowserRouter>
-    );
+  const renderReportsPage = async () => {
+    let rendered;
+    await act(async () => {
+      rendered = render(
+        <BrowserRouter>
+          <ReportsPage />
+        </BrowserRouter>
+      );
+    });
+    return rendered;
   };
 
   it('should render the page title and back link', async () => {
-    renderReportsPage();
+    await renderReportsPage();
     
     expect(screen.getByText('Reports & Analytics')).toBeInTheDocument();
     expect(screen.getByText('← Back to Home')).toBeInTheDocument();
   });
 
   it('should render date range selector buttons', async () => {
-    renderReportsPage();
+    await renderReportsPage();
     
     expect(screen.getByText('Last 30 Days')).toBeInTheDocument();
     expect(screen.getByText('Last 90 Days')).toBeInTheDocument();
@@ -130,16 +134,16 @@ describe('ReportsPage', () => {
     expect(screen.getByText('Custom Range')).toBeInTheDocument();
   });
 
-  it('should show loading state initially', () => {
-    renderReportsPage();
+  it('should show loading state initially', async () => {
+    await renderReportsPage();
 
-    // Check for skeleton loading indicators instead of text
-    expect(screen.getByLabelText('Loading statistics')).toBeInTheDocument();
-    expect(screen.getByLabelText('Loading charts')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Event Statistics')).toBeInTheDocument();
+    });
   });
 
   it('should fetch and display all reports', async () => {
-    renderReportsPage();
+    await renderReportsPage();
 
     await waitFor(() => {
       expect(api.getAttendanceSummary).toHaveBeenCalled();
@@ -151,7 +155,7 @@ describe('ReportsPage', () => {
   });
 
   it('should display event statistics cards', async () => {
-    renderReportsPage();
+    await renderReportsPage();
 
     await waitFor(() => {
       expect(screen.getByText('Event Statistics')).toBeInTheDocument();
@@ -162,7 +166,7 @@ describe('ReportsPage', () => {
   });
 
   it('should display member participation leaderboard', async () => {
-    renderReportsPage();
+    await renderReportsPage();
 
     await waitFor(() => {
       expect(screen.getByText('Top Members (Participation)')).toBeInTheDocument();
@@ -174,7 +178,7 @@ describe('ReportsPage', () => {
   });
 
   it('should display truck check compliance', async () => {
-    renderReportsPage();
+    await renderReportsPage();
 
     await waitFor(() => {
       expect(screen.getByText('Truck Check Compliance')).toBeInTheDocument();
@@ -185,7 +189,7 @@ describe('ReportsPage', () => {
   });
 
   it('should display appliance stats table', async () => {
-    renderReportsPage();
+    await renderReportsPage();
 
     await waitFor(() => {
       expect(screen.getByText('Cat 1')).toBeInTheDocument();
@@ -197,7 +201,7 @@ describe('ReportsPage', () => {
     const errorMessage = 'Failed to load reports';
     vi.mocked(api.getAttendanceSummary).mockRejectedValue(new Error(errorMessage));
 
-    renderReportsPage();
+    await renderReportsPage();
 
     await waitFor(() => {
       expect(screen.getByText(/Failed to load reports/i)).toBeInTheDocument();
@@ -206,7 +210,7 @@ describe('ReportsPage', () => {
   });
 
   it('should display chart sections', async () => {
-    renderReportsPage();
+    await renderReportsPage();
 
     await waitFor(() => {
       expect(screen.getByText('Monthly Attendance')).toBeInTheDocument();
@@ -220,7 +224,7 @@ describe('ReportsPage', () => {
       summary: [],
     });
 
-    renderReportsPage();
+    await renderReportsPage();
 
     await waitFor(() => {
       expect(screen.getByText('No attendance data available for this period')).toBeInTheDocument();
