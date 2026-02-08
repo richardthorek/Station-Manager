@@ -59,12 +59,12 @@
 # Post-Deployment Testing Strategy:
 #   TWO-PHASE APPROACH FOR EFFICIENCY:
 #
-#   Phase 1: Stabilization (up to 10 minutes)
-#     - Waits 2 minutes for Azure App Service restart to complete
+#   Phase 1: Stabilization (up to 20 minutes)
+#     - Waits 30 seconds for Azure App Service restart to begin
 #     - Polls health endpoint every 10 seconds
 #     - Validates site is responding AND correct version is deployed
 #     - Exits immediately when both conditions met (efficient!)
-#     - Maximum: 60 attempts × 10s = 600s (10 minutes)
+#     - Maximum: 1200s (20 minutes) from start of polling
 #     - Typical: 3-4 minutes (exits early when ready)
 #
 #   Phase 2: Functional Tests (minimal retries)
@@ -73,15 +73,16 @@
 #     - Tests fail fast since site is known to be up
 #     - Expected completion: 30-60 seconds for all 7 tests
 #
-#   Total Maximum Time: 2 min wait + 10 min stabilization + 2 min tests = 14 minutes
-#   Typical Time: 2 min wait + 2 min stabilization + 1 min tests = 5 minutes
+#   Total Maximum Time: 30s wait + 20 min stabilization + 2 min tests = 22.5 minutes
+#   Typical Time: 30s wait + 3 min stabilization + 1 min tests = 4.5 minutes
 #
 #   This is efficient because:
-#     - Initial wait ensures Azure restart completes
+#     - Minimal initial wait (30s) before starting health checks
 #     - Stabilization happens once, upfront
 #     - No duplicate health checks across tests
 #     - Functional tests run fast with minimal retries
 #     - Early exit when site is ready (no wasted time)
+#     - Increased timeout (20 min) accommodates Azure's npm install + startup
 #
 #   Environment Variables:
 #     - Uses TABLE_STORAGE_TABLE_SUFFIX=Test for isolated test data
@@ -419,10 +420,10 @@ jobs:
           # Wait for Azure to complete the restart before running smoke tests
           # Azure App Service restarts typically take 2-3 minutes
           echo ""
-          echo "⏳ Waiting 2 minutes for Azure App Service restart to complete..."
-          echo "   This ensures the new environment variables are loaded before smoke tests"
-          sleep 120
-          echo "✅ Wait complete, proceeding to smoke tests"
+          echo "⏳ Waiting 30 seconds for Azure App Service restart to begin..."
+          echo "   Stabilization polling will start immediately after"
+          sleep 30
+          echo "✅ Wait complete, proceeding to stabilization checks"
 
       - name: Deployment summary
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -439,7 +440,7 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
-          STABILIZATION_TIMEOUT: 600
+          STABILIZATION_TIMEOUT: 1200
           STABILIZATION_INTERVAL: 10
           FUNCTIONAL_TEST_TIMEOUT: 120
           FUNCTIONAL_TEST_RETRIES: 2
@@ -449,7 +450,7 @@ jobs:
           cd backend
           echo "🧪 Running two-phase post-deployment tests..."
           echo ""
-          echo "Phase 1: Stabilization (up to 10 minutes)"
+          echo "Phase 1: Stabilization (up to 20 minutes)"
           echo "  - Polls until site is up AND correct version"
           echo "  - Exits immediately when ready (efficient!)"
           echo ""
