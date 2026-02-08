@@ -12,12 +12,12 @@
  * 
  * Two-Phase Strategy:
  * 
- * PHASE 1: STABILIZATION (up to 30 minutes)
+ * PHASE 1: STABILIZATION (up to 20 minutes, configurable)
  *   - Polls health endpoint every 10 seconds
  *   - Validates site is responding AND correct version is deployed
  *   - Retries on network errors, 404/502/503, and version mismatches
  *   - Exits immediately once both conditions met (efficient)
- *   - Maximum: 180 attempts × 10s = 1800s (30 minutes)
+ *   - Maximum: 1200s (20 minutes) by default, configurable via STABILIZATION_TIMEOUT
  * 
  * PHASE 2: FUNCTIONAL TESTS (minimal retries)
  *   - Runs only after stabilization confirms site is ready
@@ -25,13 +25,13 @@
  *   - Tests fail fast since we know the site is up and correct version
  *   - Expected completion: 30-60 seconds for all 7 tests
  * 
- * Total Maximum Time: 30 minutes stabilization + 2 minutes tests = 32 minutes
+ * Total Maximum Time: 20 minutes stabilization + 2 minutes tests = 22 minutes
  * 
  * This approach is efficient because:
  *   - Stabilization happens once, upfront
  *   - No duplicate health checks across tests
  *   - Functional tests run fast with minimal retries
- *   - Early exit when site is ready (usually < 2 minutes)
+ *   - Early exit when site is ready (usually < 5 minutes)
  * 
  * Usage:
  *   APP_URL=https://bungrfsstation.azurewebsites.net npm run test:post-deploy
@@ -39,7 +39,7 @@
  * Environment Variables:
  *   APP_URL: The deployed application URL (required)
  *   TABLE_STORAGE_TABLE_SUFFIX: Set to "Test" to use test tables (default: Test)
- *   STABILIZATION_TIMEOUT: Max time for site stabilization in seconds (default: 1800 = 30 minutes)
+ *   STABILIZATION_TIMEOUT: Max time for site stabilization in seconds (default: 1200 = 20 minutes)
  *   FUNCTIONAL_TEST_TIMEOUT: Max time for functional tests in seconds (default: 120 = 2 minutes)
  *   STABILIZATION_INTERVAL: Seconds between stabilization checks (default: 10)
  *   FUNCTIONAL_TEST_RETRIES: Retries per functional test (default: 2)
@@ -54,7 +54,7 @@ import https from 'https';
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 
 // Phase 1: Stabilization (site up + correct version)
-const STABILIZATION_TIMEOUT = parseInt(process.env.STABILIZATION_TIMEOUT || '1800') * 1000; // 30 minutes in ms
+const STABILIZATION_TIMEOUT = parseInt(process.env.STABILIZATION_TIMEOUT || '1200') * 1000; // 20 minutes in ms
 const STABILIZATION_INTERVAL = parseInt(process.env.STABILIZATION_INTERVAL || '10') * 1000; // 10 seconds in ms
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT || '10000'); // 10 seconds for HTTP requests
 
@@ -156,9 +156,14 @@ async function waitForStabilization(): Promise<number> {
   console.log(`   Checking every: ${intervalSeconds}s`);
   console.log(`   Max attempts: ${maxAttempts}\n`);
 
-  while (attempt < maxAttempts) {
+  while (true) {
     attempt++;
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    
+    // Check if we've exceeded the wall clock timeout
+    if (elapsed >= STABILIZATION_TIMEOUT / 1000) {
+      throw new Error(`Stabilization timeout exceeded after ${elapsed}s (max: ${STABILIZATION_TIMEOUT / 1000}s)`);
+    }
 
     // Check if we've exceeded the timeout before making another request
     if (elapsed >= timeoutSeconds) {
@@ -166,7 +171,7 @@ async function waitForStabilization(): Promise<number> {
     }
 
     try {
-      console.log(`Attempt ${attempt}/${maxAttempts} (${elapsed}s elapsed): Checking health endpoint...`);
+      console.log(`Attempt ${attempt} (${elapsed}s elapsed, ${Math.floor(STABILIZATION_TIMEOUT / 1000 - elapsed)}s remaining): Checking health endpoint...`);
       
       const response = await makeRequest(`${APP_URL}/health`);
 

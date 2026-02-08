@@ -50,9 +50,10 @@ interface MemberButtonProps {
   member: Member;
   isCheckedIn: boolean;
   onCheckIn: (memberId: string) => void;
+  pendingOperation?: 'signing-in' | 'signing-out' | null;
 }
 
-function MemberButton({ member, isCheckedIn, onCheckIn }: MemberButtonProps) {
+function MemberButton({ member, isCheckedIn, onCheckIn, pendingOperation }: MemberButtonProps) {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
 
   // Swipe gesture handlers
@@ -83,10 +84,11 @@ function MemberButton({ member, isCheckedIn, onCheckIn }: MemberButtonProps) {
   return (
     <button
       type="button"
-      className={`member-btn ${isCheckedIn ? 'checked-in' : ''} ${swipeDirection ? `swipe-${swipeDirection}` : ''}`}
+      className={`member-btn ${isCheckedIn ? 'checked-in' : ''} ${swipeDirection ? `swipe-${swipeDirection}` : ''} ${pendingOperation ? `pending-${pendingOperation}` : ''}`}
       onClick={handleClick}
-      aria-label={`${member.name}${isCheckedIn ? ' (checked in)' : ''}`}
+      aria-label={`${member.name}${isCheckedIn ? ' (checked in)' : ''}${pendingOperation ? ' (in progress)' : ''}`}
       aria-pressed={isCheckedIn}
+      aria-busy={!!pendingOperation}
       {...swipeHandlers}
     >
       <div className="member-info">
@@ -122,6 +124,7 @@ export function MemberList({
   const [newMemberName, setNewMemberName] = useState('');
   const [showFilterSort, setShowFilterSort] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pendingOperations, setPendingOperations] = useState<Map<string, 'signing-in' | 'signing-out'>>(new Map());
   const membersContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const addMemberInputRef = useRef<HTMLInputElement>(null);
@@ -253,7 +256,25 @@ export function MemberList({
   };
 
   const handleMemberClick = (memberId: string) => {
+    // Immediately show visual feedback
+    const isCurrentlyCheckedIn = checkedInMemberIds.has(memberId);
+    const operation = isCurrentlyCheckedIn ? 'signing-out' : 'signing-in';
+    
+    setPendingOperations(prev => new Map(prev).set(memberId, operation));
+    
+    // Call the actual check-in/out function
     onCheckIn(memberId);
+    
+    // Remove pending state after a delay (backend should respond quickly)
+    // If backend fails, toast will show error
+    setTimeout(() => {
+      setPendingOperations(prev => {
+        const next = new Map(prev);
+        next.delete(memberId);
+        return next;
+      });
+    }, 1000);
+    
     setSearchTerm('');
   };
 
@@ -418,12 +439,14 @@ export function MemberList({
           {displayedMembers.length > 0 ? (
             displayedMembers.map(member => {
               const isCheckedIn = checkedInMemberIds.has(member.id);
+              const pendingOp = pendingOperations.get(member.id);
               return (
                 <MemberButton
                   key={member.id}
                   member={member}
                   isCheckedIn={isCheckedIn}
                   onCheckIn={handleMemberClick}
+                  pendingOperation={pendingOp}
                 />
               );
             })
