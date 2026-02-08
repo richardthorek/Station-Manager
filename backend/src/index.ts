@@ -407,7 +407,7 @@ async function startServer() {
     
     if (defaultAdminPassword) {
       await adminDb.initialize(defaultAdminUsername, defaultAdminPassword);
-      logger.info('Admin user database initialized', { username: defaultAdminUsername });
+      logger.info('Admin user database initialized with default credentials');
     } else {
       logger.warn('No default admin password configured. Set DEFAULT_ADMIN_PASSWORD to enable authentication.');
     }
