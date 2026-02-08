@@ -172,7 +172,37 @@ app.use(express.static(frontendPath));
 // Health check
 app.get('/health', async (req, res) => {
   try {
-    await ensureDatabase();
+    // Report initialization status
+    if (databaseInitializing) {
+      // Server is up but databases are still initializing
+      // Return 200 so Azure considers container healthy
+      const versionInfo = getVersionInfo();
+      res.status(200).json({
+        status: 'initializing',
+        message: 'Server is starting, databases initializing in background',
+        timestamp: new Date().toISOString(),
+        database: 'initializing',
+        environment: process.env.NODE_ENV || 'development',
+        version: versionInfo
+      });
+      return;
+    }
+    
+    // Check if database initialization failed
+    if (databaseError) {
+      res.status(503).json({
+        status: 'degraded',
+        message: 'Server is running but database initialization failed',
+        error: databaseError,
+        timestamp: new Date().toISOString(),
+        database: 'error',
+        environment: process.env.NODE_ENV || 'development',
+        version: getVersionInfo()
+      });
+      return;
+    }
+    
+    // Databases are initialized, report full status
     const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
     const dbType = storageConnectionString && !explicitlyDisabled ? 'table-storage' : 'in-memory';
@@ -188,7 +218,7 @@ app.get('/health', async (req, res) => {
     res.status(500).json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: 'Database connection failed'
+      error: 'Health check failed'
     });
   }
 });
@@ -196,8 +226,37 @@ app.get('/health', async (req, res) => {
 // Database status endpoint for frontend
 app.get('/api/status', apiRateLimiter, async (req, res) => {
   try {
-    await ensureDatabase();
-    await ensureTruckChecksDatabase();
+    // Report initialization status
+    if (databaseInitializing) {
+      const versionInfo = getVersionInfo();
+      res.json({
+        status: 'initializing',
+        message: 'Databases initializing in background',
+        databaseType: 'initializing',
+        isProduction: process.env.NODE_ENV === 'production',
+        usingInMemory: false,
+        timestamp: new Date().toISOString(),
+        version: versionInfo
+      });
+      return;
+    }
+    
+    // Check if database initialization failed
+    if (databaseError) {
+      res.status(503).json({
+        status: 'degraded',
+        message: 'Database initialization failed',
+        error: databaseError,
+        databaseType: 'error',
+        isProduction: process.env.NODE_ENV === 'production',
+        usingInMemory: false,
+        timestamp: new Date().toISOString(),
+        version: getVersionInfo()
+      });
+      return;
+    }
+    
+    // Databases are initialized
     const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
     const dbType = storageConnectionString && !explicitlyDisabled ? 'table-storage' : 'in-memory';
@@ -394,13 +453,56 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// Track database initialization status
+let databaseInitialized = false;
+let databaseInitializing = true;
+let databaseError: string | null = null;
+
 // Initialize database and start server
 async function startServer() {
   try {
-    // Initialize database connections
     logger.info('Starting server...');
+    
+    // Start HTTP server FIRST (before database initialization)
+    // This ensures Azure health checks pass immediately
+    httpServer.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
+      logger.info(`Health check: http://localhost:${PORT}/health`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info('Database initialization will continue in background...');
+    });
+    
+    // Initialize database connections in background (non-blocking)
+    // This allows the server to respond to health checks while databases connect
+    initializeDatabasesInBackground();
+    
+    // Load RFS facilities data in background (non-blocking)
+    // This allows the server to start immediately even if data loading is slow
+    const parser = getRFSFacilitiesParser();
+    parser.loadData().catch((error) => {
+      logger.error('Background RFS data loading failed', { error });
+    });
+  } catch (error) {
+    logger.error('Failed to start server', { error });
+    process.exit(1);
+  }
+}
+
+/**
+ * Initialize databases in background after server starts
+ * This prevents blocking the HTTP server startup
+ */
+async function initializeDatabasesInBackground() {
+  try {
+    logger.info('Initializing databases in background...');
+    
+    // Initialize main database
     await ensureDatabase();
+    logger.info('Main database initialized');
+    
+    // Initialize truck checks database
     await ensureTruckChecksDatabase();
+    logger.info('Truck checks database initialized');
     
     // Initialize admin user database with default credentials if configured
     const adminDb = getAdminUserDatabase();
@@ -422,33 +524,27 @@ async function startServer() {
       defaultAdminConfigured: !!defaultAdminPassword,
     });
     
-    // Start HTTP server first - don't block on RFS data loading
-    httpServer.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
-      logger.info(`Health check: http://localhost:${PORT}/health`);
-      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      logger.info(`Authentication: ${requireAuth ? 'ENABLED' : 'DISABLED'}`);
-      const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-      const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
-      const useTableStorage = storageConnectionString && !explicitlyDisabled;
-      if (useTableStorage) {
-        const suffix = process.env.TABLE_STORAGE_TABLE_SUFFIX ? ` (tables suffixed '${process.env.TABLE_STORAGE_TABLE_SUFFIX}')` : '';
-        const prefix = process.env.TABLE_STORAGE_TABLE_PREFIX ? ` (tables prefixed '${process.env.TABLE_STORAGE_TABLE_PREFIX}')` : '';
-        logger.info(`Database: Azure Table Storage${prefix || suffix ? ` ${prefix}${suffix}` : ''}`);
-      } else {
-        logger.info('Database: In-memory (data will be lost on restart)');
-      }
-    });
+    // Log database type
+    const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+    const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
+    const useTableStorage = storageConnectionString && !explicitlyDisabled;
+    if (useTableStorage) {
+      const suffix = process.env.TABLE_STORAGE_TABLE_SUFFIX ? ` (tables suffixed '${process.env.TABLE_STORAGE_TABLE_SUFFIX}')` : '';
+      const prefix = process.env.TABLE_STORAGE_TABLE_PREFIX ? ` (tables prefixed '${process.env.TABLE_STORAGE_TABLE_PREFIX}')` : '';
+      logger.info(`Database: Azure Table Storage${prefix || suffix ? ` ${prefix}${suffix}` : ''}`);
+    } else {
+      logger.info('Database: In-memory (data will be lost on restart)');
+    }
     
-    // Load RFS facilities data in background (non-blocking)
-    // This allows the server to start immediately even if data loading is slow
-    const parser = getRFSFacilitiesParser();
-    parser.loadData().catch((error) => {
-      logger.error('Background RFS data loading failed', { error });
-    });
+    // Mark as initialized
+    databaseInitialized = true;
+    databaseInitializing = false;
+    logger.info('✅ All databases initialized successfully');
   } catch (error) {
-    logger.error('Failed to start server', { error });
-    process.exit(1);
+    databaseInitializing = false;
+    databaseError = error instanceof Error ? error.message : String(error);
+    logger.error('Failed to initialize databases', { error });
+    logger.warn('Server is running but database operations may fail');
   }
 }
 

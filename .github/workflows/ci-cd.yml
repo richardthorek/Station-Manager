@@ -22,27 +22,29 @@
 #   - Post-deployment tests validate live application
 #
 # Deployment Strategy:
-#   OPTIMIZED FOR SPEED:
+#   OPTIMIZED FOR RELIABILITY:
 #
 #   Artifact Packaging:
 #     - Ships pre-built backend/dist (compiled TypeScript)
 #     - Ships pre-built frontend/dist (optimized static assets)
-#     - Ships package.json and package-lock.json (for Azure npm install)
+#     - Ships backend/node_modules (pre-installed production dependencies)
+#     - Ships package.json and package-lock.json (for reference)
 #     - Does NOT ship source code (.ts files)
-#     - Does NOT ship node_modules (installed by Azure post-deploy)
 #
 #   Azure App Service Deployment (Windows/IIS):
-#     - SCM_DO_BUILD_DURING_DEPLOYMENT=true (enables post-deploy npm install)
-#     - Dependencies installed by Azure after code deployment
-#     - Faster GitHub Actions execution (no dependency installation in CI)
-#     - Ensures consistent environment with locked dependencies
+#     - SCM_DO_BUILD_DURING_DEPLOYMENT=false (all dependencies pre-installed)
+#     - No post-deploy npm install (dependencies included in package)
+#     - Faster deployment (no dependency installation or native module compilation)
+#     - Ensures consistent environment with exact versions
+#     - Avoids native module compilation issues (bcrypt, etc.)
 #     - Retry logic handles transient 409 Conflict errors
 #
-#   Why Azure Installs Dependencies:
-#     - Significantly faster GitHub Actions execution
-#     - Smaller deployment artifacts (no node_modules transfer)
-#     - Azure handles npm install after code is pushed
-#     - Deterministic builds with exact versions from package-lock.json
+#   Why Include node_modules:
+#     - Eliminates native module compilation issues (bcrypt requires node-gyp)
+#     - Faster Azure startup (no npm install = no 230s container timeout)
+#     - Deterministic deployments (exact same dependencies as CI build)
+#     - Works on Windows without C++ build tools
+#     - Larger package size (~100MB) but much more reliable
 #
 #   Deployment Reliability:
 #     - Automatic retry on 409 Conflict errors (common with Oryx builds)
@@ -51,7 +53,8 @@
 #
 #   Benefits:
 #     - Faster CI/CD pipeline (single runner, no redundant setup)
-#     - Smaller deployment packages
+#     - Faster Azure container startup (no npm install)
+#     - No native module compilation failures
 #     - Deterministic builds (exact versions from package-lock.json)
 #     - Resilient to transient Azure deployment conflicts
 #     - Fail-fast: subsequent steps stop on first failure
@@ -59,12 +62,12 @@
 # Post-Deployment Testing Strategy:
 #   TWO-PHASE APPROACH FOR EFFICIENCY:
 #
-#   Phase 1: Stabilization (up to 10 minutes)
-#     - Waits 2 minutes for Azure App Service restart to complete
+#   Phase 1: Stabilization (up to 20 minutes)
+#     - Waits 30 seconds for Azure App Service restart to begin
 #     - Polls health endpoint every 10 seconds
 #     - Validates site is responding AND correct version is deployed
 #     - Exits immediately when both conditions met (efficient!)
-#     - Maximum: 60 attempts × 10s = 600s (10 minutes)
+#     - Maximum: 1200s (20 minutes) from start of polling
 #     - Typical: 3-4 minutes (exits early when ready)
 #
 #   Phase 2: Functional Tests (minimal retries)
@@ -73,15 +76,16 @@
 #     - Tests fail fast since site is known to be up
 #     - Expected completion: 30-60 seconds for all 7 tests
 #
-#   Total Maximum Time: 2 min wait + 10 min stabilization + 2 min tests = 14 minutes
-#   Typical Time: 2 min wait + 2 min stabilization + 1 min tests = 5 minutes
+#   Total Maximum Time: 30s wait + 20 min stabilization + 2 min tests = 22.5 minutes
+#   Typical Time: 30s wait + 3 min stabilization + 1 min tests = 4.5 minutes
 #
 #   This is efficient because:
-#     - Initial wait ensures Azure restart completes
+#     - Minimal initial wait (30s) before starting health checks
 #     - Stabilization happens once, upfront
 #     - No duplicate health checks across tests
 #     - Functional tests run fast with minimal retries
 #     - Early exit when site is ready (no wasted time)
+#     - Increased timeout (20 min) accommodates Azure's npm install + startup
 #
 #   Environment Variables:
 #     - Uses TABLE_STORAGE_TABLE_SUFFIX=Test for isolated test data
@@ -317,18 +321,33 @@ jobs:
             frontend/dist/stats.html
           retention-days: 30
 
+      - name: Install backend production dependencies
+        run: |
+          cd backend
+          npm ci --production --ignore-scripts
+          echo "✅ Production dependencies installed"
+          ls -lh node_modules | head -20
+
       - name: Create deployment package
         run: |
           mkdir -p deploy/backend
           mkdir -p deploy/frontend
           cp package.json deploy/
           cp -r backend/dist deploy/backend/
+          cp -r backend/node_modules deploy/backend/
           cp backend/package.json deploy/backend/
           cp backend/package-lock.json deploy/backend/
           cp -r frontend/dist deploy/frontend/
           cp startup.sh deploy/ 2>/dev/null || true
           cp web.config deploy/ 2>/dev/null || true
+          
+          echo "📦 Package contents:"
+          du -sh deploy/backend/node_modules
+          du -sh deploy/backend/dist
+          du -sh deploy/frontend/dist
+          
           cd deploy && zip -r ../release.zip .
+          cd .. && ls -lh release.zip
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v6
@@ -419,10 +438,10 @@ jobs:
           # Wait for Azure to complete the restart before running smoke tests
           # Azure App Service restarts typically take 2-3 minutes
           echo ""
-          echo "⏳ Waiting 2 minutes for Azure App Service restart to complete..."
-          echo "   This ensures the new environment variables are loaded before smoke tests"
-          sleep 120
-          echo "✅ Wait complete, proceeding to smoke tests"
+          echo "⏳ Waiting 30 seconds for Azure App Service restart to begin..."
+          echo "   Stabilization polling will start immediately after"
+          sleep 30
+          echo "✅ Wait complete, proceeding to stabilization checks"
 
       - name: Deployment summary
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -439,7 +458,7 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
-          STABILIZATION_TIMEOUT: 600
+          STABILIZATION_TIMEOUT: 1200
           STABILIZATION_INTERVAL: 10
           FUNCTIONAL_TEST_TIMEOUT: 120
           FUNCTIONAL_TEST_RETRIES: 2
@@ -449,7 +468,7 @@ jobs:
           cd backend
           echo "🧪 Running two-phase post-deployment tests..."
           echo ""
-          echo "Phase 1: Stabilization (up to 10 minutes)"
+          echo "Phase 1: Stabilization (up to 20 minutes)"
           echo "  - Polls until site is up AND correct version"
           echo "  - Exits immediately when ready (efficient!)"
           echo ""
