@@ -59,12 +59,13 @@
 # Post-Deployment Testing Strategy:
 #   TWO-PHASE APPROACH FOR EFFICIENCY:
 #
-#   Phase 1: Stabilization (up to 5 minutes)
+#   Phase 1: Stabilization (up to 10 minutes)
+#     - Waits 2 minutes for Azure App Service restart to complete
 #     - Polls health endpoint every 10 seconds
 #     - Validates site is responding AND correct version is deployed
 #     - Exits immediately when both conditions met (efficient!)
-#     - Maximum: 30 attempts × 10s = 300s (5 minutes)
-#     - Typical: 1-2 minutes (exits early when ready)
+#     - Maximum: 60 attempts × 10s = 600s (10 minutes)
+#     - Typical: 3-4 minutes (exits early when ready)
 #
 #   Phase 2: Functional Tests (minimal retries)
 #     - Runs only after stabilization confirms site is ready
@@ -72,10 +73,11 @@
 #     - Tests fail fast since site is known to be up
 #     - Expected completion: 30-60 seconds for all 7 tests
 #
-#   Total Maximum Time: 5 min stabilization + 2 min tests = 7 minutes
-#   Typical Time: 2 min stabilization + 1 min tests = 3 minutes
+#   Total Maximum Time: 2 min wait + 10 min stabilization + 2 min tests = 14 minutes
+#   Typical Time: 2 min wait + 2 min stabilization + 1 min tests = 5 minutes
 #
 #   This is efficient because:
+#     - Initial wait ensures Azure restart completes
 #     - Stabilization happens once, upfront
 #     - No duplicate health checks across tests
 #     - Functional tests run fast with minimal retries
@@ -413,6 +415,14 @@ jobs:
             --name bungrfsstation \
             --output none
           echo "✅ App restart initiated"
+          
+          # Wait for Azure to complete the restart before running smoke tests
+          # Azure App Service restarts typically take 2-3 minutes
+          echo ""
+          echo "⏳ Waiting 2 minutes for Azure App Service restart to complete..."
+          echo "   This ensures the new environment variables are loaded before smoke tests"
+          sleep 120
+          echo "✅ Wait complete, proceeding to smoke tests"
 
       - name: Deployment summary
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -429,7 +439,7 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
-          STABILIZATION_TIMEOUT: 300
+          STABILIZATION_TIMEOUT: 600
           STABILIZATION_INTERVAL: 10
           FUNCTIONAL_TEST_TIMEOUT: 120
           FUNCTIONAL_TEST_RETRIES: 2
@@ -439,7 +449,7 @@ jobs:
           cd backend
           echo "🧪 Running two-phase post-deployment tests..."
           echo ""
-          echo "Phase 1: Stabilization (up to 5 minutes)"
+          echo "Phase 1: Stabilization (up to 10 minutes)"
           echo "  - Polls until site is up AND correct version"
           echo "  - Exits immediately when ready (efficient!)"
           echo ""
