@@ -47,7 +47,8 @@ router.get('/', async (req, res) => {
 });
 
 // Get active activity (filtered by station)
-router.get('/active', async (req, res) => {
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.get('/active', flexibleAuth({ scope: 'station' }), async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);

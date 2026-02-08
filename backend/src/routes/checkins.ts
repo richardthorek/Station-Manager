@@ -23,6 +23,7 @@ import {
 } from '../middleware/checkinValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { flexibleAuth } from '../middleware/flexibleAuth';
 import { logger } from '../services/logger';
 
 const router = Router();
@@ -31,7 +32,8 @@ const router = Router();
 router.use(stationMiddleware);
 
 // Get all check-ins (both active and inactive, filtered by station)
-router.get('/', async (req, res) => {
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.get('/', flexibleAuth({ scope: 'station' }), async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
@@ -44,7 +46,8 @@ router.get('/', async (req, res) => {
 });
 
 // Get all active check-ins (filtered by station)
-router.get('/active', async (req, res) => {
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.get('/active', flexibleAuth({ scope: 'station' }), async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
