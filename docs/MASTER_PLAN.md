@@ -592,6 +592,61 @@ Priority: **HIGH** - Critical for production scale
 
 ---
 
+#### Issue #11b: Fix CSP Violations for External Fonts and Scripts ✅ COMPLETED
+**Status**: ✅ COMPLETED (2026-02-08)
+
+**Objective**: Resolve Content Security Policy violations preventing external fonts and analytics scripts from loading
+
+**User Story**: As a user, I want Google Fonts and Microsoft Clarity analytics to load without console errors so that the application displays properly with correct branding and behavior tracking works.
+
+**Current State**: ✅ Complete - Additional CSP domains whitelisted  
+**Target State**: ✅ Achieved - No CSP violations in console
+
+**Problem**:
+Console errors appeared due to CSP violations:
+1. **Font Fetch Error**: Connecting to `https://fonts.googleapis.com/css2?...` violated `connect-src 'self' ws: wss: https://www.clarity.ms` - Fetch API calls blocked
+2. **Script Load Error**: Loading script `https://scripts.clarity.ms/0.8.53/clarity.js` violated `script-src 'self' https://www.clarity.ms` - Script action blocked
+
+**Root Causes**:
+1. `fonts.googleapis.com` needed in `connect-src` for Fetch API calls to load font CSS
+2. `https://scripts.clarity.ms` needed in `script-src` (actual script domain different from www.clarity.ms)
+
+**Implementation Summary**:
+1. ✅ Updated CSP `script-src` directive
+   - Added `https://scripts.clarity.ms` to allow Microsoft Clarity script files
+   - Previous `https://www.clarity.ms` was for tag loader, but actual scripts served from `scripts.clarity.ms` subdomain
+2. ✅ Updated CSP `connect-src` directive
+   - Added `https://fonts.googleapis.com` to allow Fetch API calls for Google Fonts CSS
+   - Stylesheet `<link>` tags use Fetch API under the hood, requiring `connect-src` permission
+3. ✅ Added test coverage
+   - Added test for `scripts.clarity.ms` in `script-src`
+   - Added test for `fonts.googleapis.com` in `connect-src`
+   - Test suite increased from 31 to 33 tests (100% pass rate)
+4. ✅ Updated documentation
+   - Updated AS_BUILT.md CSP configuration and rationale
+   - Updated MASTER_PLAN.md with this issue entry
+
+**Success Criteria**:
+- [x] No console errors for CSP violations
+- [x] Google Fonts load successfully
+- [x] Microsoft Clarity scripts load successfully
+- [x] All security header tests pass (33/33)
+- [x] Documentation updated
+
+**Dependencies**: None (extends Issue #11)
+
+**Effort Estimate**: 2 hours ✅
+
+**Priority**: P2 (Medium - Bug Fix)
+
+**Labels**: `security`, `bug`, `phase-2`, `complete`
+
+**Milestone**: v1.2 - Operational Excellence
+
+**UI Screenshot Requirement**: N/A (Backend CSP configuration only)
+
+---
+
 #### Issue #32: Bundle Size Analysis & Optimization ✅ COMPLETED
 **GitHub Issue**: #32 (richardthorek/Station-Manager#32)
 **Status**: ✅ COMPLETED (2026-02-07)

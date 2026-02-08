@@ -30,6 +30,7 @@ beforeAll(() => {
         scriptSrc: [
           "'self'",
           "https://www.clarity.ms", // Microsoft Clarity analytics (dynamically loads script)
+          "https://scripts.clarity.ms", // Microsoft Clarity script files
         ],
         // Allow inline styles for React and Google Fonts stylesheet
         styleSrc: [
@@ -42,6 +43,7 @@ beforeAll(() => {
           "'self'",
           "ws:", "wss:", // WebSocket connections for Socket.io
           "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
+          "https://fonts.googleapis.com", // Google Fonts CSS (Fetch API)
         ],
         // Allow self-hosted fonts, data URIs, and Google Fonts
         fontSrc: [
@@ -117,6 +119,14 @@ describe('Security Headers - Helmet Middleware', () => {
       expect(csp).toMatch(/script-src[^;]*https:\/\/www\.clarity\.ms/);
     });
 
+    it('should allow Microsoft Clarity script files', async () => {
+      const response = await request(app)
+        .get('/api/test');
+
+      const csp = response.headers['content-security-policy'];
+      expect(csp).toMatch(/script-src[^;]*https:\/\/scripts\.clarity\.ms/);
+    });
+
     it('should allow inline styles for React', async () => {
       const response = await request(app)
         .get('/api/test');
@@ -155,6 +165,14 @@ describe('Security Headers - Helmet Middleware', () => {
 
       const csp = response.headers['content-security-policy'];
       expect(csp).toMatch(/connect-src[^;]*https:\/\/www\.clarity\.ms/);
+    });
+
+    it('should allow Google Fonts CSS fetch', async () => {
+      const response = await request(app)
+        .get('/api/test');
+
+      const csp = response.headers['content-security-policy'];
+      expect(csp).toMatch(/connect-src[^;]*https:\/\/fonts\.googleapis\.com/);
     });
 
     it('should allow data URIs and external images', async () => {
