@@ -62,6 +62,11 @@ export const validateUrlCheckIn = [
     .withMessage('User identifier is required')
     .isLength({ min: 1, max: 500 })
     .withMessage('Identifier must be between 1 and 500 characters'),
+  body('stationId')
+    .optional()
+    .trim()
+    .isString()
+    .withMessage('Station ID must be a string'),
 ];
 
 /**

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { Header } from '../../components/Header';
 import { AchievementGrid } from '../../components/AchievementBadge';
 import { PageTransition } from '../../components/PageTransition';
@@ -22,6 +23,7 @@ export function UserProfilePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [editedRank, setEditedRank] = useState<string>('');
+  const [showQRCode, setShowQRCode] = useState(false);
   const [databaseStatus, setDatabaseStatus] = useState<{
     databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
@@ -211,7 +213,9 @@ export function UserProfilePage() {
     if (!member) return '';
     const identifier = encodeURIComponent(member.name);
     const baseUrl = window.location.origin;
-    return `${baseUrl}/sign-in?user=${identifier}`;
+    // Include stationId for brigade/station-specific sign-in
+    const stationParam = member.stationId ? `&station=${encodeURIComponent(member.stationId)}` : '';
+    return `${baseUrl}/sign-in?user=${identifier}${stationParam}`;
   };
 
   const copySignInUrl = () => {
@@ -415,6 +419,31 @@ export function UserProfilePage() {
                     <button className="btn-primary" onClick={copySignInUrl}>
                       Copy Link
                     </button>
+                  </div>
+                  
+                  <div className="qr-code-section">
+                    <button 
+                      className="btn-secondary" 
+                      onClick={() => setShowQRCode(!showQRCode)}
+                    >
+                      {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
+                    </button>
+                    
+                    {showQRCode && (
+                      <div className="qr-code-container">
+                        <div className="qr-code-wrapper">
+                          <QRCodeSVG
+                            value={generateSignInUrl()}
+                            size={200}
+                            level="M"
+                            includeMargin={true}
+                          />
+                        </div>
+                        <p className="qr-code-hint">
+                          Scan this QR code with a mobile device to quickly check in
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
