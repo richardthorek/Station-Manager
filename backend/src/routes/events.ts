@@ -27,6 +27,7 @@ import {
 } from '../middleware/eventValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { flexibleAuth } from '../middleware/flexibleAuth';
 import { logger } from '../services/logger';
 import { extractDeviceInfo, extractLocationInfo, sanitizeNotes } from '../utils/auditUtils';
 
@@ -39,8 +40,9 @@ router.use(stationMiddleware);
 /**
  * Get events with pagination support (filtered by station)
  * Query params: limit (default 50), offset (default 0)
+ * Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
  */
-router.get('/', validateEventQuery, handleValidationErrors, async (req: Request, res: Response) => {
+router.get('/', flexibleAuth({ scope: 'station' }), validateEventQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
