@@ -1209,6 +1209,119 @@ export class TableStorageDatabase {
     };
   }
 
+  /**
+   * Get trend analysis - month-over-month and year-over-year growth trends
+   */
+  async getTrendAnalysis(startDate: Date, endDate: Date, stationId?: string): Promise<{
+    attendanceTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+    eventsTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+    memberGrowth: { currentTotal: number; previousTotal: number; change: number; changePercent: number };
+  }> {
+    // Get attendance summary (Note: stationId filtering not implemented in Table Storage yet)
+    const attendanceSummary = await this.getAttendanceSummary(startDate, endDate);
+
+    // Calculate month-over-month change for attendance
+    const attendanceTrend = attendanceSummary.map((current, index) => {
+      const previous = index > 0 ? attendanceSummary[index - 1] : null;
+      const change = previous ? current.count - previous.count : 0;
+      const changePercent = previous && previous.count > 0
+        ? Math.round(((current.count - previous.count) / previous.count) * 100)
+        : 0;
+
+      return {
+        month: current.month,
+        count: current.count,
+        change,
+        changePercent,
+      };
+    });
+
+    // Get events and calculate trend
+    const events = await this.getEventsByDateRange(startDate, endDate);
+
+    // Group events by month
+    const eventsByMonth = new Map<string, number>();
+    events.forEach(e => {
+      const monthKey = `${e.startTime.getFullYear()}-${String(e.startTime.getMonth() + 1).padStart(2, '0')}`;
+      eventsByMonth.set(monthKey, (eventsByMonth.get(monthKey) || 0) + 1);
+    });
+
+    const eventsSummary = Array.from(eventsByMonth.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    const eventsTrend = eventsSummary.map((current, index) => {
+      const previous = index > 0 ? eventsSummary[index - 1] : null;
+      const change = previous ? current.count - previous.count : 0;
+      const changePercent = previous && previous.count > 0
+        ? Math.round(((current.count - previous.count) / previous.count) * 100)
+        : 0;
+
+      return {
+        month: current.month,
+        count: current.count,
+        change,
+        changePercent,
+      };
+    });
+
+    // Calculate member growth (compare periods)
+    const midpoint = new Date((startDate.getTime() + endDate.getTime()) / 2);
+    const allMembers = await this.getAllMembers(stationId);
+
+    const currentMembers = allMembers.filter(m => !m.isDeleted && m.createdAt <= endDate);
+    const previousMembers = allMembers.filter(m => !m.isDeleted && m.createdAt <= midpoint);
+
+    const currentTotal = currentMembers.length;
+    const previousTotal = previousMembers.length;
+    const memberChange = currentTotal - previousTotal;
+    const memberChangePercent = previousTotal > 0
+      ? Math.round((memberChange / previousTotal) * 100)
+      : 0;
+
+    return {
+      attendanceTrend,
+      eventsTrend,
+      memberGrowth: {
+        currentTotal,
+        previousTotal,
+        change: memberChange,
+        changePercent: memberChangePercent,
+      },
+    };
+  }
+
+  /**
+   * Get activity heat map - shows activity patterns by day of week and hour of day
+   */
+  async getActivityHeatMap(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{ day: number; hour: number; count: number }>> {
+    const participants = await this.getAllEventParticipants(startDate, endDate);
+
+    // Group by day of week (0=Sunday, 6=Saturday) and hour (0-23)
+    const heatMapData = new Map<string, number>();
+
+    participants.forEach(p => {
+      const checkInDate = new Date(p.checkInTime);
+      const day = checkInDate.getDay(); // 0-6
+      const hour = checkInDate.getHours(); // 0-23
+      const key = `${day}-${hour}`;
+      heatMapData.set(key, (heatMapData.get(key) || 0) + 1);
+    });
+
+    // Convert to array format expected by frontend
+    const result: Array<{ day: number; hour: number; count: number }> = [];
+
+    for (let day = 0; day < 7; day++) {
+      for (let hour = 0; hour < 24; hour++) {
+        const key = `${day}-${hour}`;
+        const count = heatMapData.get(key) || 0;
+        result.push({ day, hour, count });
+      }
+    }
+
+    return result;
+  }
+
   // ===== STATION METHODS =====
 
   /**

@@ -83,7 +83,19 @@ export interface IDatabase {
   getMemberParticipation(startDate: Date, endDate: Date, limit: number, stationId?: string): Promise<Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>> | Array<{ memberId: string; memberName: string; participationCount: number; lastCheckIn: string }>;
   getActivityBreakdown(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{ category: string; count: number; percentage: number }>> | Array<{ category: string; count: number; percentage: number }>;
   getEventStatistics(startDate: Date, endDate: Date, stationId?: string): Promise<{ totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number }> | { totalEvents: number; activeEvents: number; completedEvents: number; totalParticipants: number; averageParticipantsPerEvent: number; averageDuration: number };
-  
+
+  // Advanced Analytics
+  getTrendAnalysis(startDate: Date, endDate: Date, stationId?: string): Promise<{
+    attendanceTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+    eventsTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+    memberGrowth: { currentTotal: number; previousTotal: number; change: number; changePercent: number };
+  }> | {
+    attendanceTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+    eventsTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+    memberGrowth: { currentTotal: number; previousTotal: number; change: number; changePercent: number };
+  };
+  getActivityHeatMap(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{ day: number; hour: number; count: number }>> | Array<{ day: number; hour: number; count: number }>;
+
   // Event Audit Logs
   createEventAuditLog(
     eventId: string,
