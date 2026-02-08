@@ -1003,7 +1003,7 @@
       "POST /api/checkins/url-checkin": {
         "method": "POST",
         "path": "/api/checkins/url-checkin",
-        "description": "Check in via URL parameter (QR code or name)",
+        "description": "Check in via URL parameter (QR code or name) - brigade/station-specific",
         "authentication": "none",
         "parameters": {},
         "requestBody": {
@@ -1017,6 +1017,11 @@
               "identifier": {
                 "type": "string",
                 "description": "Member name or QR code"
+              },
+              "stationId": {
+                "type": "string",
+                "required": false,
+                "description": "Station ID for brigade-specific check-in. Prioritized over X-Station-Id header."
               }
             }
           }
