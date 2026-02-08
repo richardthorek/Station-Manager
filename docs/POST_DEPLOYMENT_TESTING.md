@@ -2,7 +2,11 @@
 
 **Document Version:** 1.0  
 **Last Updated:** January 2026  
-**Status:** Implemented
+**Status:** ⚠️ **TEMPORARILY DISABLED** (February 2026)
+
+> **Note:** Post-deployment tests are currently disabled in the CI/CD pipeline due to a dependency issue.  
+> The tests require `ts-node` (a dev dependency), but the deployment environment only has production dependencies.  
+> See `.github/workflows/ci-cd.yml` for details and TODO items for re-enabling these tests.
 
 ---
 
