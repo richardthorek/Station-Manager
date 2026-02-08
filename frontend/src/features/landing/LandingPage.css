@@ -64,11 +64,28 @@
   gap: 1.25rem;
 }
 
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
 .brand-block {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   min-width: 0;
+}
+
+.brand-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  background: var(--bg-card);
+  padding: 6px;
+  object-fit: contain;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .eyebrow {
@@ -365,6 +382,15 @@
   .header-content {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .brand-row {
+    width: 100%;
+  }
+
+  .brand-mark {
+    width: 60px;
+    height: 60px;
   }
 
   .headline {

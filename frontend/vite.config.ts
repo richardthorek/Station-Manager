@@ -38,7 +38,19 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'robots.txt'],
+      includeAssets: [
+        'favicon.ico',
+        'favicon.svg',
+        'favicon-16x16.png',
+        'favicon-32x32.png',
+        'favicon-48x48.png',
+        'favicon-96x96.png',
+        'apple-touch-icon.png',
+        'android-chrome-192x192.png',
+        'android-chrome-512x512.png',
+        'ms-icon-144x144.png',
+        'robots.txt',
+      ],
       manifest: {
         name: 'Station Manager',
         short_name: 'Station Manager',

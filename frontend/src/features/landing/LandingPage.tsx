@@ -31,10 +31,21 @@ export function LandingPage() {
       <div className="landing-page">
       <header className="landing-header">
         <div className="header-content">
-          <div className="brand-block">
-            <p className="eyebrow">Station Manager</p>
-            <h1 className="headline">Digital tools for fire stations</h1>
-            <p className="subheadline">Real-time sign-ins, truck checks, and reporting across every device.</p>
+          <div className="brand-row">
+            <img
+              src="/apple-touch-icon.png"
+              alt="Station Manager logo"
+              className="brand-mark"
+              width={72}
+              height={72}
+              loading="eager"
+              decoding="async"
+            />
+            <div className="brand-block">
+              <p className="eyebrow">Station Manager</p>
+              <h1 className="headline">Digital tools for fire stations</h1>
+              <p className="subheadline">Real-time sign-ins, truck checks, and reporting across every device.</p>
+            </div>
           </div>
           <div className="header-actions">
             <button
