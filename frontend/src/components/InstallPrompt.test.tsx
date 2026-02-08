@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { InstallPrompt } from './InstallPrompt';
 
 describe('InstallPrompt', () => {
   let originalUserAgent: string;
+
+  const renderPrompt = async () => {
+    let utils: ReturnType<typeof render> | undefined
+    await act(async () => {
+      utils = render(<InstallPrompt />)
+    })
+    return utils as ReturnType<typeof render>
+  }
 
   beforeEach(() => {
     // Save original userAgent
@@ -45,7 +53,7 @@ describe('InstallPrompt', () => {
     vi.restoreAllMocks();
   });
 
-  it('should not render on desktop devices', () => {
+  it('should not render on desktop devices', async () => {
     // Mock desktop userAgent
     Object.defineProperty(navigator, 'userAgent', {
       writable: true,
@@ -53,11 +61,11 @@ describe('InstallPrompt', () => {
       value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
     });
 
-    const { container } = render(<InstallPrompt />);
+    const { container } = await renderPrompt();
     expect(container.querySelector('.install-prompt-notification')).not.toBeInTheDocument();
   });
 
-  it('should not render when already installed', () => {
+  it('should not render when already installed', async () => {
     // Mock app is installed (standalone mode)
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -73,21 +81,21 @@ describe('InstallPrompt', () => {
       })),
     });
 
-    const { container } = render(<InstallPrompt />);
+    const { container } = await renderPrompt();
     expect(container.querySelector('.install-prompt-notification')).not.toBeInTheDocument();
   });
 
-  it('should not render when recently dismissed', () => {
+  it('should not render when recently dismissed', async () => {
     // Set dismissed timestamp to 1 day ago
     const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
     localStorage.setItem('install-prompt-dismissed', oneDayAgo.toString());
 
-    const { container } = render(<InstallPrompt />);
+    const { container } = await renderPrompt();
     expect(container.querySelector('.install-prompt-notification')).not.toBeInTheDocument();
   });
 
   it('should render on mobile devices when beforeinstallprompt event is triggered', async () => {
-    const { container } = render(<InstallPrompt />);
+    const { container } = await renderPrompt();
 
     // Create mock beforeinstallprompt event
     const mockPrompt = vi.fn().mockResolvedValue(undefined);
@@ -103,7 +111,9 @@ describe('InstallPrompt', () => {
     });
 
     // Dispatch the event
-    window.dispatchEvent(mockEvent);
+    await act(async () => {
+      window.dispatchEvent(mockEvent);
+    });
 
     // Wait for prompt to show (after 5 second delay, but we'll check container immediately)
     // Note: In actual implementation, there's a 5 second delay, but we can't easily test that here
@@ -111,7 +121,7 @@ describe('InstallPrompt', () => {
     expect(container).toBeInTheDocument();
   });
 
-  it('should render on iOS devices', () => {
+  it('should render on iOS devices', async () => {
     // Mock iOS userAgent
     Object.defineProperty(navigator, 'userAgent', {
       writable: true,
@@ -119,14 +129,14 @@ describe('InstallPrompt', () => {
       value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
     });
 
-    const { container } = render(<InstallPrompt />);
+    const { container } = await renderPrompt();
     
     // Component should be rendered (event listener registered)
     expect(container).toBeInTheDocument();
   });
 
   it('should hide prompt when close button is clicked', async () => {
-    const { container } = render(<InstallPrompt />);
+    const { container } = await renderPrompt();
 
     // Create and dispatch mock event
     const mockPrompt = vi.fn().mockResolvedValue(undefined);
@@ -141,7 +151,9 @@ describe('InstallPrompt', () => {
       value: Promise.resolve({ outcome: 'dismissed' as const }),
     });
 
-    window.dispatchEvent(mockEvent);
+    await act(async () => {
+      window.dispatchEvent(mockEvent);
+    });
 
     // Wait for the prompt to potentially show
     await waitFor(() => {
@@ -150,8 +162,8 @@ describe('InstallPrompt', () => {
     }, { timeout: 100 });
   });
 
-  it('should store dismiss timestamp in localStorage when dismissed', () => {
-    render(<InstallPrompt />);
+  it('should store dismiss timestamp in localStorage when dismissed', async () => {
+    await renderPrompt();
 
     // The component should exist
     expect(localStorage.getItem('install-prompt-dismissed')).toBeNull();
