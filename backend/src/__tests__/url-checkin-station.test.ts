@@ -44,11 +44,18 @@ describe('POST /api/checkins/url-checkin - Brigade/Station-Specific Check-In', (
   });
 
   beforeEach(async () => {
-    // Clear check-ins before each test using DELETE endpoint
-    const checkIns = await request(app).get('/api/checkins/active');
-    for (const checkIn of checkIns.body) {
-      if (checkIn.isActive) {
-        await request(app).delete(`/api/checkins/${checkIn.memberId}`);
+    // Clear check-ins before each test for both test stations
+    const stations = [testStationId, testStationId2];
+    for (const station of stations) {
+      const checkIns = await request(app)
+        .get('/api/checkins/active')
+        .set('X-Station-Id', station);
+      for (const checkIn of checkIns.body) {
+        if (checkIn.isActive) {
+          await request(app)
+            .delete(`/api/checkins/${checkIn.memberId}`)
+            .set('X-Station-Id', station);
+        }
       }
     }
   });
