@@ -10,6 +10,41 @@
 ### Single Source of Truth
 This document is the **SINGLE SOURCE OF TRUTH** for all planning, roadmap, architecture guidance, and future work tracking for the RFS Station Manager project. All planning must be consolidated here - no duplicate planning documents are permitted.
 
+### Documentation Organization Policy
+
+The `/docs/` directory follows a strict organization policy to maintain clarity and reduce noise:
+
+#### **Root `/docs/` Directory (Current/Live Documentation Only)**
+Only the following types of documents are allowed in the root `/docs/` directory:
+- **Master planning documents**: `MASTER_PLAN.md` (this file)
+- **Current implementation state**: `AS_BUILT.md`, `API_DOCUMENTATION.md`
+- **Machine-readable registries**: `api_register.json`, `function_register.json`, and their human-readable companions
+- **Active feature/development guides**: `GETTING_STARTED.md`, `FEATURE_DEVELOPMENT_GUIDE.md`, `ACHIEVEMENTS.md`
+- **Active deployment guides**: `AZURE_DEPLOYMENT.md`, `AZURE_DEPLOYMENT_OPTIMIZATION.md`, `AZURE_APP_INSIGHTS.md`
+- **Active user guides**: `KEYBOARD_SHORTCUTS.md`, `SCREEN_READER_GUIDE.md`
+- **Active development references**: `LOGGING.md`, `SECURITY_ADVISORY_XLSX.md`, `POST_DEPLOYMENT_TESTING.md`, `ci_pipeline.md`
+- **Active development checklists**: `DEVELOPER_ACCESSIBILITY_CHECKLIST.md`
+- **Recent audit/review reports**: Reports from the last 3 months remain in root for visibility
+
+#### **Subdirectories (Historical/Reference Material)**
+- **`/docs/archive/`**: Completed feature implementation summaries, historical deployment guides, superseded analysis documents, outdated migration plans
+- **`/docs/implementation-notes/`**: Detailed implementation notes, configuration guides, optimization references that support active development
+- **`/docs/current_state/`**: Point-in-time audit snapshots, validation reports, UI reviews from specific dates
+
+#### **Moving Documents**
+- **When a feature is completed**: Move its implementation summary from root to `/docs/archive/`
+- **When a guide is superseded**: Move the old version to `/docs/archive/` and update/create the new version in root
+- **When analysis is no longer relevant**: Move to `/docs/archive/` with a note about what superseded it
+- **Implementation details for ongoing work**: Keep in `/docs/implementation-notes/` for easy reference
+
+#### **Prohibited in Root**
+- Implementation summaries of completed features (unless < 1 week old)
+- Historical review reports older than 3 months
+- Superseded storage/deployment analysis documents
+- Completed migration plans
+- Duplicate documentation (use consistent naming, keep one authoritative version)
+- Point-in-time audit snapshots (use `/docs/current_state/` or `/docs/archive/`)
+
 ### Related Documentation
 - **AI Development Guidelines**: `.github/copilot-instructions.md` - Repository conventions, coding standards, and AI-assisted development rules
 - **Implementation Details**: `docs/AS_BUILT.md` - Current system architecture and implementation state
@@ -96,8 +131,56 @@ Priority: **HIGH** - High-value user features
 ---
 
 #### Issue #44: Documentation Cleanup & Archive Strategy
-**Status**: Ready to Start
+**Status**: ✅ **COMPLETED** (February 8, 2026)  
+**GitHub Issue**: richardthorek/Station-Manager#44
+
 **Objective**: Reduce noise from aging implementation summaries by introducing a structured archive/implementation-history pattern.
+
+**Implementation Summary**:
+
+1. **✅ Documentation Strategy Updated**
+   - Updated `MASTER_PLAN.md` with comprehensive documentation organization policy
+   - Updated `.github/copilot-instructions.md` with explicit rules and enforcement guidelines
+   - Defined clear criteria for root `/docs/` vs subdirectories
+   - Added lifecycle rules for document management
+
+2. **✅ Directory Structure Reorganized**
+   - Created `/docs/implementation-notes/` for detailed technical references (10 documents)
+   - Moved 38 completed implementation summaries and historical docs to `/docs/archive/`
+   - Moved 5 root-level summaries to `/docs/archive/`
+   - Moved 9 implementation notes to `/docs/implementation-notes/`
+   - Consolidated `/docs/current_state/` audit reports into archive (kept recent UI review)
+   - Removed obsolete `VERSION_TRACKING.md`
+
+3. **✅ Documentation Created**
+   - Created comprehensive `/docs/implementation-notes/README.md` (purpose, contents, usage guidelines)
+   - Updated `/docs/archive/README.md` with complete index of 43 archived documents
+   - Documented archive policy and document lifecycle rules
+
+4. **✅ Final State**
+   - Root `/docs/`: 22 current/live documents only
+   - `/docs/archive/`: 43 historical documents with comprehensive index
+   - `/docs/implementation-notes/`: 10 technical references with README
+   - `/docs/current_state/`: Recent UI review and images only
+   - Clear policies in place for ongoing maintenance
+
+**Success Criteria**:
+- [x] Only current/live docs, API/function registries in root `/docs/`
+- [x] All historical docs properly indexed in `/docs/archive/`
+- [x] Implementation notes organized in `/docs/implementation-notes/`
+- [x] MASTER_PLAN.md and copilot-instructions.md clearly state policy
+- [x] README files guide document placement and archival
+
+**Files Affected**:
+- Documentation: 55+ files reorganized
+- Policy docs: `MASTER_PLAN.md`, `.github/copilot-instructions.md`
+- New READMEs: `implementation-notes/README.md`, updated `archive/README.md`
+
+**Effort**: 1 day  
+**Priority**: P2 (Documentation hygiene)  
+**Labels**: `documentation`, `maintenance`, `phase-3`
+
+---
 
 **User Story**: As a maintainer, I need concise current docs and a clear place for historical write-ups so I can find authoritative guidance quickly without losing past context.
 

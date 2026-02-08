@@ -55,6 +55,76 @@ This repository follows strict documentation discipline to ensure consistency, m
   - **Update triggers**: New endpoints, modified signatures, schema changes, new services
   - **Tools**: Use `jsonlint` or `ajv-cli` for validation
 
+### Documentation Organization Policy
+
+The `/docs/` directory structure enforces strict separation between current/live documentation and historical/reference material:
+
+#### **Allowed in Root `/docs/` Directory**
+Only current, actively-maintained documentation belongs in the root `/docs/` directory:
+- **Master planning**: `MASTER_PLAN.md` - Single source of truth for roadmap and planning
+- **Current implementation state**: `AS_BUILT.md`, `API_DOCUMENTATION.md` - Always up-to-date system documentation
+- **Machine-readable registries**: `api_register.json`, `function_register.json` + human-readable companions (`FUNCTION_REGISTER.md`, `MACHINE_READABLE_REGISTRIES.md`)
+- **Active guides**: 
+  - Development: `GETTING_STARTED.md`, `FEATURE_DEVELOPMENT_GUIDE.md`
+  - Deployment: `AZURE_DEPLOYMENT.md`, `AZURE_DEPLOYMENT_OPTIMIZATION.md`, `AZURE_APP_INSIGHTS.md`
+  - User/Accessibility: `KEYBOARD_SHORTCUTS.md`, `SCREEN_READER_GUIDE.md`, `DEVELOPER_ACCESSIBILITY_CHECKLIST.md`
+  - Operations: `LOGGING.md`, `SECURITY_ADVISORY_XLSX.md`, `POST_DEPLOYMENT_TESTING.md`, `ci_pipeline.md`
+- **Recent audits/reviews**: Reports from last 3 months (for visibility); older reports move to archive
+- **Active feature documentation**: Documentation for current, in-use features (e.g., `ACHIEVEMENTS.md`)
+
+#### **Required Subdirectories**
+- **`/docs/archive/`**: Historical documentation that is no longer current
+  - Completed feature implementation summaries (e.g., `PWA_IMPLEMENTATION_SUMMARY.md`)
+  - Superseded deployment/migration guides (e.g., `TABLE_STORAGE_MIGRATION_PLAN.md`)
+  - Outdated analysis documents (e.g., old `STORAGE_ANALYSIS*.md` files)
+  - Historical review reports (older than 3 months)
+  - Deprecated guides that have been superseded
+  - **Must contain**: README.md explaining archive contents and referencing current docs
+  
+- **`/docs/implementation-notes/`**: Detailed implementation references supporting active development
+  - Configuration guides (e.g., `KIOSK_MODE_SETUP.md`, `CSV_SETUP_AZURE.md`)
+  - Optimization references (e.g., `COSMOS_DB_OPTIMIZATION_GUIDE.md`)
+  - Accessibility standards (e.g., `ACCESSIBILITY.md`, `COLOR_CONTRAST_WCAG_AA.md`)
+  - Security guides (e.g., `AUDIT_LOGGING_SECURITY_PRIVACY.md`)
+  - Feature implementation details (e.g., `EVENT_MANAGEMENT.md`)
+  
+- **`/docs/current_state/`**: Point-in-time snapshots and validation reports
+  - Audit snapshots with specific dates (e.g., `audit-20260207.md`)
+  - Validation reports (e.g., `VALIDATION_REPORT.md`)
+  - UI reviews with specific dates (e.g., `UI_REVIEW_20260207.md`)
+  - Test result documentation (e.g., `REPRODUCTION_TESTS.md`)
+
+#### **Document Lifecycle Rules**
+
+**When creating new documentation:**
+1. Feature implementation notes → Start in `/docs/implementation-notes/` or root if actively referenced
+2. Guides for new features → Root `/docs/` while feature is active
+3. Audit/review reports → `/docs/current_state/` if dated, root if current analysis
+
+**When a feature is completed:**
+1. Move implementation summary from root → `/docs/archive/`
+2. Keep feature usage guide in root if feature remains active
+3. Update archive README.md with entry pointing to new location
+
+**When documentation is superseded:**
+1. Move old version → `/docs/archive/` with note about what replaced it
+2. Create/update new version in root
+3. Update cross-references in other docs
+
+**Quarterly maintenance (every 3 months):**
+1. Review reports older than 3 months → Move to archive
+2. Check for duplicate documentation → Consolidate and remove duplicates
+3. Verify implementation notes still relevant → Archive if obsolete
+
+#### **Prohibited in Root `/docs/`**
+- ❌ Implementation summaries of completed features (suffix `_IMPLEMENTATION_SUMMARY.md` or `_SUMMARY.md`)
+- ❌ Historical review/audit reports (older than 3 months)
+- ❌ Superseded technical analysis documents
+- ❌ Completed migration plans
+- ❌ Duplicate files (different names, same content)
+- ❌ Point-in-time snapshots with dates in filename (use `/docs/current_state/`)
+- ❌ "Historical", "Old", "Backup", "v2" versions of documents
+
 ### Pull Request Requirements
 
 Every PR (including AI-generated PRs) MUST:
@@ -109,6 +179,9 @@ Every PR (including AI-generated PRs) MUST:
 - Flag when multiple planning documents are created (violation of single source of truth)
 - Recommend consolidation when duplicate as-built docs are detected
 - Validate that PRs include required documentation updates
+- **Enforce documentation organization policy**: Flag when non-current docs are added to root `/docs/` or when completed feature summaries remain in root
+- **Suggest archival**: When a feature implementation summary is completed, suggest moving it to `/docs/archive/`
+- **Prevent clutter**: Recommend moving historical reports, superseded guides, and old analysis to appropriate subdirectories
 
 **Examples of Required Updates:**
 ```yaml

@@ -1412,7 +1412,7 @@ Potential improvements (not in current scope):
 - Multi-station comparison view
 - Station grouping by region
 
-**Documentation:** See `docs/STATION_SELECTION_IMPLEMENTATION.md` for detailed implementation notes.
+**Documentation:** See `docs/archive/STATION_SELECTION_IMPLEMENTATION.md` for historical implementation notes.
 
 ---
 
@@ -2137,9 +2137,9 @@ VITE_API_URL=http://localhost:3000
 - [API_DOCUMENTATION.md](API_DOCUMENTATION.md) - Complete API reference
 - [GETTING_STARTED.md](GETTING_STARTED.md) - Development setup
 - [AZURE_DEPLOYMENT.md](AZURE_DEPLOYMENT.md) - Deployment guide
-- [TRUCK_CHECKS_IMPLEMENTATION.md](TRUCK_CHECKS_IMPLEMENTATION.md) - Truck checks feature
+- [archive/TRUCK_CHECKS_IMPLEMENTATION.md](archive/TRUCK_CHECKS_IMPLEMENTATION.md) - Truck checks feature (archived)
 - [ACHIEVEMENTS.md](ACHIEVEMENTS.md) - Achievement system
-- [EVENT_MANAGEMENT.md](EVENT_MANAGEMENT.md) - Event system
+- [implementation-notes/EVENT_MANAGEMENT.md](implementation-notes/EVENT_MANAGEMENT.md) - Event system
 
 ---
 
