@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { useSocket } from './useSocket'
 import { io } from 'socket.io-client'
 import { StationProvider } from '../contexts/StationContext'
@@ -41,6 +41,14 @@ describe('useSocket', () => {
     <StationProvider>{children}</StationProvider>
   )
 
+  const renderUseSocket = async () => {
+    let hookResult: ReturnType<typeof renderHook<ReturnType<typeof useSocket>>> | undefined
+    await act(async () => {
+      hookResult = renderHook(() => useSocket(), { wrapper })
+    })
+    return hookResult as ReturnType<typeof renderHook<ReturnType<typeof useSocket>>>
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -49,14 +57,14 @@ describe('useSocket', () => {
     vi.clearAllMocks()
   })
 
-  it('initializes socket connection', () => {
-    renderHook(() => useSocket(), { wrapper })
+  it('initializes socket connection', async () => {
+    await renderUseSocket()
 
     expect(io).toHaveBeenCalled()
   })
 
   it('returns isConnected status', async () => {
-    const { result } = renderHook(() => useSocket(), { wrapper })
+    const { result } = await renderUseSocket()
 
     // Initially may be disconnected, but should connect
     await waitFor(() => {
@@ -64,29 +72,29 @@ describe('useSocket', () => {
     })
   })
 
-  it('provides emit function', () => {
-    const { result } = renderHook(() => useSocket(), { wrapper })
+  it('provides emit function', async () => {
+    const { result } = await renderUseSocket()
 
     expect(result.current.emit).toBeDefined()
     expect(typeof result.current.emit).toBe('function')
   })
 
-  it('provides on function', () => {
-    const { result } = renderHook(() => useSocket(), { wrapper })
+  it('provides on function', async () => {
+    const { result } = await renderUseSocket()
 
     expect(result.current.on).toBeDefined()
     expect(typeof result.current.on).toBe('function')
   })
 
-  it('provides off function', () => {
-    const { result } = renderHook(() => useSocket(), { wrapper })
+  it('provides off function', async () => {
+    const { result } = await renderUseSocket()
 
     expect(result.current.off).toBeDefined()
     expect(typeof result.current.off).toBe('function')
   })
 
-  it('cleans up socket connection on unmount', () => {
-    const { unmount } = renderHook(() => useSocket(), { wrapper })
+  it('cleans up socket connection on unmount', async () => {
+    const { unmount } = await renderUseSocket()
 
     const mockSocketInstance = (io as ReturnType<typeof vi.fn>).mock.results[0].value
     
@@ -95,8 +103,8 @@ describe('useSocket', () => {
     expect(mockSocketInstance.disconnect).toHaveBeenCalled()
   })
 
-  it('can emit events', () => {
-    const { result } = renderHook(() => useSocket(), { wrapper })
+  it('can emit events', async () => {
+    const { result } = await renderUseSocket()
 
     const mockSocketInstance = (io as ReturnType<typeof vi.fn>).mock.results[0].value
 
@@ -105,8 +113,8 @@ describe('useSocket', () => {
     expect(mockSocketInstance.emit).toHaveBeenCalledWith('test-event', { data: 'test' })
   })
 
-  it('can register event listeners', () => {
-    const { result } = renderHook(() => useSocket(), { wrapper })
+  it('can register event listeners', async () => {
+    const { result } = await renderUseSocket()
 
     const mockSocketInstance = (io as ReturnType<typeof vi.fn>).mock.results[0].value
     const callback = vi.fn()
@@ -116,8 +124,8 @@ describe('useSocket', () => {
     expect(mockSocketInstance.on).toHaveBeenCalledWith('test-event', callback)
   })
 
-  it('can unregister event listeners', () => {
-    const { result } = renderHook(() => useSocket(), { wrapper })
+  it('can unregister event listeners', async () => {
+    const { result } = await renderUseSocket()
 
     const mockSocketInstance = (io as ReturnType<typeof vi.fn>).mock.results[0].value
     const callback = vi.fn()

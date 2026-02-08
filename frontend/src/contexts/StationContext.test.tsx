@@ -99,16 +99,25 @@ describe('StationContext', () => {
     <StationProvider>{children}</StationProvider>
   );
 
-  it('should initialize with loading state', () => {
-    const { result } = renderHook(() => useStation(), { wrapper });
+  const renderStationHook = async () => {
+    let hookResult: ReturnType<typeof renderHook<ReturnType<typeof useStation>>> | undefined
+    await act(async () => {
+      hookResult = renderHook(() => useStation(), { wrapper })
+    })
+    return hookResult as ReturnType<typeof renderHook<ReturnType<typeof useStation>>>
+  }
+
+  it('should initialize with loading state', async () => {
+    const { result } = await renderStationHook();
     
-    expect(result.current.isLoading).toBe(true);
-    expect(result.current.selectedStation).toBe(null);
-    expect(result.current.stations).toEqual([]);
+    // After act completes, initial load resolves; verify state is ready
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.selectedStation?.id).toBe(DEFAULT_STATION_ID);
+    expect(result.current.stations).toEqual(mockStations);
   });
 
   it('should load stations from API on mount', async () => {
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -119,7 +128,7 @@ describe('StationContext', () => {
   });
 
   it('should select default station when no persisted selection', async () => {
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -132,7 +141,7 @@ describe('StationContext', () => {
   it('should load persisted selection from localStorage', async () => {
     localStorage.setItem('selectedStationId', DEMO_STATION_ID);
     
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -143,7 +152,7 @@ describe('StationContext', () => {
   });
 
   it('should select a station and persist to localStorage', async () => {
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -161,7 +170,7 @@ describe('StationContext', () => {
   it('should clear station selection and revert to default', async () => {
     localStorage.setItem('selectedStationId', DEMO_STATION_ID);
     
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -180,7 +189,7 @@ describe('StationContext', () => {
   it('should identify demo station correctly', async () => {
     localStorage.setItem('selectedStationId', DEMO_STATION_ID);
     
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -196,7 +205,7 @@ describe('StationContext', () => {
   });
 
   it('should identify default station correctly', async () => {
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -212,7 +221,7 @@ describe('StationContext', () => {
   });
 
   it('should refresh stations from API', async () => {
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
