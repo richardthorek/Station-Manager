@@ -158,6 +158,11 @@ async function waitForStabilization(): Promise<number> {
     attempt++;
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
 
+    // Check if we've exceeded the timeout before making another request
+    if (elapsed >= STABILIZATION_TIMEOUT / 1000) {
+      throw new Error(`Stabilization timeout exceeded after ${elapsed}s (max: ${STABILIZATION_TIMEOUT / 1000}s)`);
+    }
+
     try {
       console.log(`Attempt ${attempt}/${maxAttempts} (${elapsed}s elapsed): Checking health endpoint...`);
       
@@ -213,9 +218,16 @@ async function waitForStabilization(): Promise<number> {
       console.log(`   ⚠️  Request failed (${errorMsg}), retrying...`);
     }
 
-    // Wait before next attempt
+    // Wait before next attempt, but check if we'll exceed timeout
     if (attempt < maxAttempts) {
-      await sleep(STABILIZATION_INTERVAL);
+      const elapsedAfterSleep = Date.now() - startTime + STABILIZATION_INTERVAL;
+      if (elapsedAfterSleep < STABILIZATION_TIMEOUT) {
+        await sleep(STABILIZATION_INTERVAL);
+      } else {
+        // Would exceed timeout after sleep, exit now
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        throw new Error(`Stabilization timeout exceeded after ${duration}s (max: ${STABILIZATION_TIMEOUT / 1000}s)`);
+      }
     }
   }
 
