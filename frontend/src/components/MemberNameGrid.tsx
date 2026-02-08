@@ -26,6 +26,7 @@ export function MemberNameGrid({
   onCollapse,
 }: MemberNameGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [pendingOperations, setPendingOperations] = useState<Map<string, 'signing-in' | 'signing-out'>>(new Map());
 
   // Get only active events
   const activeEvents = events.filter(e => e.isActive);
@@ -78,6 +79,31 @@ export function MemberNameGrid({
     // Sort alphabetically
     return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
   }, [members, searchTerm]);
+
+  // Handle member click with immediate visual feedback
+  const handleMemberClick = (memberId: string) => {
+    const isSignedIn = participantIds.has(memberId);
+    const operation = isSignedIn ? 'signing-out' : 'signing-in';
+    
+    // Immediately show visual feedback
+    setPendingOperations(prev => new Map(prev).set(memberId, operation));
+    
+    // Call the appropriate action
+    if (isSignedIn && onCheckOut) {
+      onCheckOut(memberId);
+    } else {
+      onCheckIn(memberId);
+    }
+    
+    // Remove pending state after a delay
+    setTimeout(() => {
+      setPendingOperations(prev => {
+        const next = new Map(prev);
+        next.delete(memberId);
+        return next;
+      });
+    }, 1000);
+  };
 
   // If no active events, don't show the grid
   if (activeEvents.length === 0) {
@@ -176,13 +202,15 @@ export function MemberNameGrid({
             {displayedMembers.length > 0 ? (
               displayedMembers.map(member => {
                 const isSignedIn = participantIds.has(member.id);
+                const pendingOp = pendingOperations.get(member.id);
                 return (
                   <button
                     key={member.id}
-                    className={`member-name-btn ${isSignedIn ? 'signed-in' : ''}`}
-                    onClick={() => (isSignedIn && onCheckOut ? onCheckOut(member.id) : onCheckIn(member.id))}
-                    aria-label={`${member.name}${isSignedIn ? ' (signed in)' : ''}`}
+                    className={`member-name-btn ${isSignedIn ? 'signed-in' : ''} ${pendingOp ? `pending-${pendingOp}` : ''}`}
+                    onClick={() => handleMemberClick(member.id)}
+                    aria-label={`${member.name}${isSignedIn ? ' (signed in)' : ''}${pendingOp ? ' (in progress)' : ''}`}
                     aria-pressed={isSignedIn}
+                    aria-busy={!!pendingOp}
                   >
                     <div className="member-card-content">
                       <span className="member-name-text">{member.name}</span>

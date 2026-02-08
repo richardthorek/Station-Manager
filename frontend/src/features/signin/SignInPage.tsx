@@ -327,11 +327,10 @@ export function SignInPage() {
       const updatedEvent = await api.getEvent(selectedEventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
       
-      // Announce check-in to screen readers and show success toast
+      // Announce check-in to screen readers (no success toast per requirements)
       const member = members.find(m => m.id === memberId);
       if (member) {
         announce(`${member.name} checked in successfully`, 'polite');
-        showSuccess(`${member.name} checked in`);
       }
       
       emit('participant-change', { eventId: selectedEventId, ...result });
@@ -361,10 +360,10 @@ export function SignInPage() {
       const updatedEvent = await api.getEvent(selectedEventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
 
+      // Announce check-out to screen readers (no success toast per requirements)
       const member = members.find(m => m.id === memberId);
       if (member) {
         announce(`${member.name} checked out`, 'polite');
-        showSuccess(`${member.name} checked out`);
       }
 
       emit('participant-change', { eventId: selectedEventId, action: 'removed', participantId: participant.id, memberId });
