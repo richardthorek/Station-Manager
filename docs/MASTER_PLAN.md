@@ -202,6 +202,93 @@ Priority: **HIGH** - High-value user features
 
 ---
 
+#### Issue #XX: Review and Update 'Sign In by Link' and QR Code for Brigade/Station Specificity
+**Status**: ✅ **COMPLETED** (February 2026)  
+**GitHub Issue**: Review and Update 'Sign In by Link' and QR Code for Brigade/Station Specificity
+**Pull Request**: copilot/review-update-signin-methods
+
+**Objective**: Update sign-in links and QR codes to be brigade/station-specific, ensuring members can only check into their designated stations.
+
+**User Story**: As a volunteer firefighter, I want my personal sign-in link to be specific to my station so that I cannot accidentally check into a different brigade/station, and I want a QR code that I can scan with my phone.
+
+**Current State**: 
+- Sign-in links used only member name: `/sign-in?user=John%20Smith`
+- No station information embedded in URL
+- Backend relied on client-provided `X-Station-Id` header
+- No QR code visualization in member profile
+- Potential for members to check into wrong station
+
+**Target State**: 
+- Sign-in links include station ID: `/sign-in?user=John%20Smith&station=bungendore-rfs`
+- Station information embedded in URL itself
+- Backend prioritizes stationId from URL over header
+- QR code visualization with show/hide toggle in profile
+- Prevents cross-station check-ins
+
+**Implementation Summary**:
+1. ✅ **Updated URL Format** - Sign-in links now include `&station={stationId}` parameter
+2. ✅ **Backend Priority Logic** - Prioritizes stationId from URL body > header > default
+3. ✅ **QR Code Component** - Added QRCodeSVG with toggle button in UserProfilePage
+4. ✅ **Validation** - Added optional stationId validation in checkinValidation.ts
+5. ✅ **Backward Compatibility** - Old URLs without stationId still work (fallback to header)
+6. ✅ **Frontend Updates** - SignInLinkPage parses stationId, api.ts passes stationId parameter
+7. ✅ **Comprehensive Tests** - 6 automated tests for station-specific check-in scenarios
+8. ✅ **Documentation** - Created implementation guide and updated API documentation
+9. ✅ **Security Review** - CodeQL scan passed with 0 vulnerabilities
+10. ✅ **Code Review** - Automated code review passed with no issues
+
+**Key Features**:
+- **Brigade-Specific URLs**: Sign-in links now include station ID to prevent cross-station check-ins
+- **QR Code Visualization**: Members can view and share QR codes from their profile page
+- **Priority System**: Backend prioritizes stationId from: 1) Request body, 2) Header, 3) Default
+- **Security**: Member isolation enforced - members looked up only in specified station
+- **Backward Compatible**: Old URLs without stationId still work using header/default
+- **Animated UI**: QR code section has fade-in animation with RFS branding
+
+**Files Changed**:
+- Backend: `routes/checkins.ts`, `middleware/checkinValidation.ts`, `__tests__/url-checkin-station.test.ts`
+- Frontend: `features/profile/UserProfilePage.tsx`, `features/profile/UserProfilePage.css`, `features/signin/SignInLinkPage.tsx`, `services/api.ts`
+- Documentation: `api_register.json`, `implementation-notes/SIGN_IN_LINK_QR_STATION_SPECIFIC.md`
+
+**Testing**:
+- ✅ 6 new automated tests covering:
+  - Check-in with stationId in request body
+  - Priority: body stationId over header
+  - Fallback to header when no body stationId
+  - Member not found in wrong station
+  - Validation of stationId type
+  - Backward compatibility
+- ✅ All existing tests passing
+- ✅ CodeQL security scan: 0 vulnerabilities
+- ✅ Code review: 0 issues
+
+**Success Criteria**:
+- [x] Sign-in URLs include stationId parameter
+- [x] QR code displays station-specific URL
+- [x] Backend prioritizes URL stationId over header
+- [x] Backward compatibility maintained
+- [x] Member isolation by station enforced
+- [x] Tests passing
+- [x] Security scan clean
+- [x] Code review passed
+- [x] Documentation updated
+- [ ] iPad screenshots captured (requires running app)
+
+**Dependencies**: Issue #19 (Multi-Station Support)
+
+**Effort Estimate**: 1 day ✅
+
+**Priority**: P1 (High - Security concern)
+
+**Labels**: `security`, `authentication`, `qr-code`, `multi-station`, `phase-3`, `p1`
+
+**Milestone**: v1.2 - Operational Excellence
+
+**UI Screenshot Requirement**: YES - Member profile page showing QR code section (requires running app for screenshots)
+
+---
+
+
 
 ### PHASE 2: OPERATIONAL EXCELLENCE (Q1-Q2 2026) - v1.2
 
