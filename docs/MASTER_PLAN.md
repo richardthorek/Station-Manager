@@ -1296,28 +1296,52 @@ Priority: **MEDIUM** - Long-term enhancements
 8. Update documentation
 
 **Success Criteria**:
-- [x] Advanced metrics calculated correctly (trend analysis implemented)
+- [x] Advanced metrics calculated correctly (trend analysis, funnel analysis, cohort analysis implemented)
 - [x] Trend analysis working (MoM growth for attendance and events)
 - [x] Heat maps displaying correctly (activity by day/hour with color gradient)
 - [x] Performance acceptable (< 2s load - optimized with minimal data processing)
-- [x] Tests passing (12 comprehensive test cases added)
+- [x] Tests passing (23 comprehensive test cases: 12 initial + 11 new)
 - [x] Documentation updated (AS_BUILT.md updated)
-- [ ] Drill-down working (basic filtering by date range implemented)
-- [ ] Comparison features working (not implemented - deferred)
+- [x] Drill-down working (date range filtering + period comparison implemented)
+- [x] Comparison features working (period comparison UI with side-by-side trend visualization)
+- [x] Funnel charts working (member conversion funnel with 4 stages)
+- [x] Cohort analysis working (retention tracking by registration month)
 - [ ] PDF export working (not implemented - basic reports already have export)
 - [ ] Excel export working (not implemented - basic reports already have export)
 
 **Implementation Notes** (2026-02-08):
-- **Completed**: Core advanced analytics features have been successfully implemented
+- **Phase 1 Completed** (Initial Implementation): Core advanced analytics features successfully implemented
   - Backend API endpoints for trend analysis (`/api/reports/advanced/trend-analysis`)
   - Backend API endpoint for activity heat map (`/api/reports/advanced/heat-map`)
   - Frontend AdvancedReportsPage with dual-axis trend charts and heat map visualization
   - Date range filtering (30 days, 90 days, 12 months, custom)
   - Member growth tracking (current vs previous period)
-  - Comprehensive backend tests (12 new test cases)
-- **Technology**: Used Recharts LineChart for trends, custom CSS heat map for activity patterns
-- **Scope**: Implemented minimal viable advanced analytics focusing on highest-value features
-- **Deferred**: Period comparison, funnel charts, cohort analysis, and additional export formats (already available in basic reports)
+  - Comprehensive backend tests (12 test cases)
+
+- **Phase 2 Completed** (Deferred Features): Advanced analytics enhancements implemented
+  - Backend API endpoint for member funnel analysis (`/api/reports/advanced/funnel`)
+  - Backend API endpoint for cohort analysis (`/api/reports/advanced/cohort`)
+  - Period comparison UI with toggle to compare current period vs previous period
+  - Member funnel visualization (horizontal bar chart showing conversion through 4 stages: registered → first check-in → active → veteran)
+  - Cohort analysis visualization (line chart tracking retention rates for 6 months)
+  - Funnel summary cards with stage-by-stage conversion rates
+  - Comprehensive backend tests (11 additional test cases, 23 total)
+  - All tests passing (404 total: 32 backend + 372 frontend)
+
+- **Technology**:
+  - Used Recharts LineChart for trends and cohort analysis
+  - Used Recharts BarChart with Cell for funnel visualization
+  - Custom CSS heat map for activity patterns
+  - Comparison mode uses dashed line overlay for previous period
+
+- **Scope**: Implemented comprehensive advanced analytics focusing on actionable insights
+  - Trend analysis: Month-over-month growth with percentage change
+  - Heat map: Activity patterns by day of week and hour (7×24 grid)
+  - Funnel: Member conversion through engagement stages
+  - Cohort: Retention tracking by registration month (up to 6 months)
+  - Period comparison: Side-by-side visualization of current vs previous period
+
+- **Remaining**: PDF/Excel export (already available in basic reports, not needed for advanced analytics)
 - **Route**: `/reports/advanced` - accessible from main Reports page
 
 **Dependencies**: Issue #13 (Basic reporting)
