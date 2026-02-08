@@ -13,7 +13,7 @@ A modern, real-time digital sign-in system for Rural Fire Service (RFS) stations
 - ⚡ **Real-Time Sync**: Changes appear instantly across all connected devices
 - 📋 **Activity Tracking**: Monitor what members are working on
 - 👥 **Self-Registration**: New members can register themselves
-- 🎨 **Modern UI**: Clean, responsive interface following NSW RFS branding
+- 🎨 **Modern UI**: Clean, responsive interface following emergency services branding
 
 ### Technical Highlights
 - Built with React + TypeScript for type safety
