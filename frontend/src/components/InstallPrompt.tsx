@@ -7,6 +7,16 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+/**
+ * Detects if the current device is a mobile device (iOS or Android)
+ */
+function isMobileDevice(): boolean {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+  const isAndroid = /android/.test(userAgent);
+  return isIOS || isAndroid;
+}
+
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
@@ -24,7 +34,8 @@ export function InstallPrompt() {
   });
 
   useEffect(() => {
-    if (isInstalled || isRecentlyDismissed) {
+    // Only show on mobile devices
+    if (!isMobileDevice() || isInstalled || isRecentlyDismissed) {
       return;
     }
 
@@ -97,73 +108,38 @@ export function InstallPrompt() {
   return (
     <AnimatePresence>
       <motion.div
-        className="install-prompt-overlay"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
+        className="install-prompt-notification"
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: -100, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        <motion.div
-          className="install-prompt"
-          initial={{ scale: 0.9, y: 20, opacity: 0 }}
-          animate={{ scale: 1, y: 0, opacity: 1 }}
-          exit={{ scale: 0.9, y: 20, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        >
+        <div className="install-prompt-notification__content">
+          <div className="install-prompt-notification__icon">
+            <img src="/android-chrome-192x192.png" alt="Station Manager" />
+          </div>
+          <div className="install-prompt-notification__text">
+            <strong>Install Station Manager</strong>
+            <p>Add to home screen for quick access and offline use</p>
+          </div>
+        </div>
+        
+        <div className="install-prompt-notification__actions">
           <button
-            className="install-prompt__close"
+            className="install-notification-button primary"
+            onClick={handleInstallClick}
+            aria-label="Install app"
+          >
+            Install
+          </button>
+          <button
+            className="install-notification-button close"
             onClick={handleDismiss}
-            aria-label="Close install prompt"
+            aria-label="Dismiss notification"
           >
             ✕
           </button>
-
-          <div className="install-prompt__icon">
-            <img src="/android-chrome-192x192.png" alt="Station Manager" />
-          </div>
-
-          <div className="install-prompt__content">
-            <h2>Install Station Manager</h2>
-            <p>
-              Install this app on your device for quick access and offline functionality.
-              Works even when you lose connection!
-            </p>
-
-            <ul className="install-prompt__features">
-              <li>
-                <span className="feature-icon">📱</span>
-                <span>Quick access from home screen</span>
-              </li>
-              <li>
-                <span className="feature-icon">🔄</span>
-                <span>Automatic background updates</span>
-              </li>
-              <li>
-                <span className="feature-icon">📡</span>
-                <span>Works offline with sync</span>
-              </li>
-              <li>
-                <span className="feature-icon">🚀</span>
-                <span>Faster load times</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="install-prompt__actions">
-            <button
-              className="install-button primary"
-              onClick={handleInstallClick}
-            >
-              Install App
-            </button>
-            <button
-              className="install-button secondary"
-              onClick={handleDismiss}
-            >
-              Not Now
-            </button>
-          </div>
-        </motion.div>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

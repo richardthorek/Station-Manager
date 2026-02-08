@@ -22,14 +22,15 @@ describe('LandingPage', () => {
     render(<LandingPage />)
 
     expect(screen.getByText('Station Manager')).toBeInTheDocument()
-    expect(screen.getByText('Digital management tools for fire stations')).toBeInTheDocument()
+    // Verify the main heading is present (text may vary)
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
   })
 
-  it('displays welcome section', () => {
+  it('displays header with branding', () => {
     render(<LandingPage />)
 
-    expect(screen.getByText('Welcome to Station Manager')).toBeInTheDocument()
-    expect(screen.getByText(/A modern, real-time digital management system/i)).toBeInTheDocument()
+    // Verify brand name is present
+    expect(screen.getByText('Station Manager')).toBeInTheDocument()
   })
 
   it('displays theme toggle button', () => {
@@ -60,11 +61,6 @@ describe('LandingPage', () => {
     expect(screen.getByText('Truck Check')).toBeInTheDocument()
     expect(screen.getByText('Reports & Analytics')).toBeInTheDocument()
     expect(screen.getByText('Station Management')).toBeInTheDocument()
-
-    // Verify info cards are present
-    expect(screen.getByText('Multi-Device Support')).toBeInTheDocument()
-    expect(screen.getByText('Real-Time Sync')).toBeInTheDocument()
-    expect(screen.getByText('Professional Branding')).toBeInTheDocument()
 
     // Verify all clickable links are accessible
     expect(screen.getByRole('link', { name: /go to sign-in/i })).toBeInTheDocument()

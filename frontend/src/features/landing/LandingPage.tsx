@@ -31,11 +31,31 @@ export function LandingPage() {
       <div className="landing-page">
       <header className="landing-header">
         <div className="header-content">
-          <div className="header-title-row">
-            <div>
-              <h1 className="app-title">Station Manager</h1>
-              <p className="app-subtitle">Digital management tools for fire stations</p>
+          <div className="brand-row">
+            <img
+              src="/apple-touch-icon.png"
+              alt="Station Manager logo"
+              className="brand-mark"
+              width={72}
+              height={72}
+              loading="eager"
+              decoding="async"
+            />
+            <div className="brand-block">
+              <p className="eyebrow">Station Manager</p>
+              <h1 className="headline">Digital tools for fire stations</h1>
+              <p className="subheadline">Real-time sign-ins, truck checks, and reporting across every device.</p>
             </div>
+          </div>
+          <div className="header-actions">
+            <button
+              className="header-cta"
+              onClick={() => setShowOnboarding(true)}
+              aria-label="Start guided tour"
+            >
+              <span className="btn-icon">🎓</span>
+              <span className="btn-text">Guided tour</span>
+            </button>
             <button 
               type="button"
               className="theme-toggle-btn"
@@ -50,140 +70,98 @@ export function LandingPage() {
       </header>
 
       <main id="main-content" className="landing-main" tabIndex={-1}>
-        <section className="welcome-section">
-          <div className="welcome-content">
-            <div>
-              <h2>Welcome to Station Manager</h2>
-              <p className="welcome-text">
-                A modern, real-time digital management system for fire stations.
-                Track member presence, manage activities, and coordinate station operations
-                across multiple devices with instant synchronization.
-              </p>
-            </div>
-            <button
-              className="getting-started-btn"
-              onClick={() => setShowOnboarding(true)}
-              aria-label="Start guided tour"
+        <div className="cards-area">
+          <motion.section
+            className="cards-grid"
+            variants={containerVariants}
+            initial="initial"
+            animate="animate"
+          >
+            <motion.article
+              className="feature-card"
+              variants={itemVariants}
+              transition={itemTransition}
             >
-              <span className="btn-icon">🎓</span>
-              <span className="btn-text">Getting Started</span>
-            </button>
-          </div>
-        </section>
-
-        <motion.section
-          className="cards-grid"
-          variants={containerVariants}
-          initial="initial"
-          animate="animate"
-        >
-          <motion.article
-            className="feature-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <div className="feature-icon" aria-hidden="true">🔥</div>
-            <h3>Station Sign-In</h3>
-            <p>Quick and easy member check-in/out with activity tracking. Real-time updates across all devices.</p>
-            <Link to="/signin" className="feature-link">
-              Go to Sign-In
-              <span className="arrow" aria-hidden="true">→</span>
-            </Link>
-          </motion.article>
-
-          <motion.article
-            className="feature-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <div className="feature-icon" aria-hidden="true">🚛</div>
-            <h3>Truck Check</h3>
-            <p>Vehicle maintenance tracking and inspection checklist system.</p>
-            <Link to="/truckcheck" className="feature-link">
-              Go to Truck Checks
-              <span className="arrow" aria-hidden="true">→</span>
-            </Link>
-          </motion.article>
-
-          <motion.article
-            className="feature-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <div className="feature-icon" aria-hidden="true">📊</div>
-            <h3>Reports & Analytics</h3>
-            <p>Historical reporting, analytics, and data export capabilities.</p>
-            <Link to="/reports" className="feature-link">
-              Go to Reports
-              <span className="arrow" aria-hidden="true">→</span>
-            </Link>
-          </motion.article>
-
-          <motion.article
-            className="feature-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <div className="feature-icon" aria-hidden="true">⚙️</div>
-            <h3>Station Management</h3>
-            <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
-            <div className="feature-links">
-              <Link to="/admin/stations" className="feature-link">
-                Stations
+              <div className="feature-icon" aria-hidden="true">🔥</div>
+              <h3>Station Sign-In</h3>
+              <p>Quick and easy member check-in/out with activity tracking. Real-time updates across all devices.</p>
+              <Link to="/signin" className="feature-link">
+                Go to Sign-In
                 <span className="arrow" aria-hidden="true">→</span>
               </Link>
-              <Link to="/admin/brigade-access" className="feature-link">
-                Brigade Access
+            </motion.article>
+
+            <motion.article
+              className="feature-card"
+              variants={itemVariants}
+              transition={itemTransition}
+            >
+              <div className="feature-icon" aria-hidden="true">🚛</div>
+              <h3>Truck Check</h3>
+              <p>Vehicle maintenance tracking and inspection checklist system.</p>
+              <Link to="/truckcheck" className="feature-link">
+                Go to Truck Checks
                 <span className="arrow" aria-hidden="true">→</span>
               </Link>
-            </div>
-          </motion.article>
+            </motion.article>
 
-          <motion.article
-            className="info-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <h3>Multi-Device Support</h3>
-            <p>Access from kiosks, mobile phones, tablets, or via QR codes</p>
-          </motion.article>
-          <motion.article
-            className="info-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <h3>Real-Time Sync</h3>
-            <p>Changes appear instantly across all connected devices</p>
-          </motion.article>
-          <motion.article
-            className="info-card"
-            variants={itemVariants}
-            transition={itemTransition}
-          >
-            <h3>Professional Branding</h3>
-            <p>Clean, modern design suitable for any fire service</p>
-          </motion.article>
-        </motion.section>
+            <motion.article
+              className="feature-card"
+              variants={itemVariants}
+              transition={itemTransition}
+            >
+              <div className="feature-icon" aria-hidden="true">📊</div>
+              <h3>Reports & Analytics</h3>
+              <p>Historical reporting, analytics, and data export capabilities.</p>
+              <Link to="/reports" className="feature-link">
+                Go to Reports
+                <span className="arrow" aria-hidden="true">→</span>
+              </Link>
+            </motion.article>
+
+            <motion.article
+              className="feature-card"
+              variants={itemVariants}
+              transition={itemTransition}
+            >
+              <div className="feature-icon" aria-hidden="true">⚙️</div>
+              <h3>Station Management</h3>
+              <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
+              <div className="feature-links">
+                <Link to="/admin/stations" className="feature-link">
+                  Stations
+                  <span className="arrow" aria-hidden="true">→</span>
+                </Link>
+                <Link to="/admin/brigade-access" className="feature-link">
+                  Brigade Access
+                  <span className="arrow" aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </motion.article>
+          </motion.section>
+        </div>
       </main>
 
       <footer className="landing-footer">
-        <p>Built with ❤️ for the volunteer community</p>
-        <p className="version">
-          Version 1.0 • Build: {__APP_VERSION__.commitShort}
-          {__APP_VERSION__.buildTime && __APP_VERSION__.buildTime !== 'unknown' && (
-            <>
-              {' • '}
-              <span title={`Full SHA: ${__APP_VERSION__.commitSha}\nBuild Time: ${__APP_VERSION__.buildTime}`}>
-                {new Date(__APP_VERSION__.buildTime).toLocaleString()}
-              </span>
-            </>
-          )}
-        </p>
-        <p className="demo-mode-link">
+        <div className="footer-content">
+          <span>Built with ❤️ for the volunteer community</span>
+          <span className="footer-separator">•</span>
+          <span className="version">
+            Version 1.0 • Build: {__APP_VERSION__.commitShort}
+            {__APP_VERSION__.buildTime && __APP_VERSION__.buildTime !== 'unknown' && (
+              <>
+                {' • '}
+                <span title={`Full SHA: ${__APP_VERSION__.commitSha}\nBuild Time: ${__APP_VERSION__.buildTime}`}>
+                  {new Date(__APP_VERSION__.buildTime).toLocaleString()}
+                </span>
+              </>
+            )}
+          </span>
+          <span className="footer-separator">•</span>
           <a href="/?demo=true" className="discrete-link" title="View demo with test data">
             Demo Mode
           </a>
-        </p>
+        </div>
       </footer>
 
         {showOnboarding && (
