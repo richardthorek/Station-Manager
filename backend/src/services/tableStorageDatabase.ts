@@ -997,20 +997,7 @@ export class TableStorageDatabase {
     if (eventId) {
       try {
         await this.eventParticipantsTable.deleteEntity(eventId, participantId);
-        
-        // Update event's updatedAt timestamp
-        const event = await this.getEventById(eventId);
-        if (event) {
-          const monthKey = event.startTime.toISOString().slice(0, 7);
-          try {
-            const entity = await this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId);
-            entity.updatedAt = new Date().toISOString();
-            await this.eventsTable.updateEntity(entity, 'Replace');
-          } catch (error) {
-            logger.warn('Could not update event timestamp after participant removal', { eventId, error });
-          }
-        }
-        
+        await this.updateEventTimestamp(eventId);
         return true;
       } catch (error: any) {
         if (error.statusCode === 404) {
@@ -1028,17 +1015,7 @@ export class TableStorageDatabase {
     for (const event of activeEvents) {
       try {
         await this.eventParticipantsTable.deleteEntity(event.id, participantId);
-        
-        // Update event's updatedAt timestamp
-        const monthKey = event.startTime.toISOString().slice(0, 7);
-        try {
-          const entity = await this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, event.id);
-          entity.updatedAt = new Date().toISOString();
-          await this.eventsTable.updateEntity(entity, 'Replace');
-        } catch (error) {
-          logger.warn('Could not update event timestamp after participant removal', { eventId: event.id, error });
-        }
-        
+        await this.updateEventTimestamp(event.id);
         return true;
       } catch (error: any) {
         if (error.statusCode !== 404) {
@@ -1049,6 +1026,24 @@ export class TableStorageDatabase {
     }
     
     return false; // Participant not found in any active event
+  }
+
+  /**
+   * Helper method to update an event's updatedAt timestamp
+   * @private
+   */
+  private async updateEventTimestamp(eventId: string): Promise<void> {
+    const event = await this.getEventById(eventId);
+    if (!event) return;
+    
+    const monthKey = event.startTime.toISOString().slice(0, 7);
+    try {
+      const entity = await this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId);
+      entity.updatedAt = new Date().toISOString();
+      await this.eventsTable.updateEntity(entity, 'Replace');
+    } catch (error) {
+      logger.warn('Could not update event timestamp after participant removal', { eventId, error });
+    }
   }
 
   async getMemberParticipantInEvent(eventId: string, memberId: string): Promise<EventParticipant | undefined> {
