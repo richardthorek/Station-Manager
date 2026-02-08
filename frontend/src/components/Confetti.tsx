@@ -25,16 +25,20 @@ const CONFETTI_COLORS = [
 
 export function Confetti({ duration = 3000 }: ConfettiProps) {
   // Generate confetti pieces once on mount using useMemo
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Math.random is intentional here - we want random values generated once
   const confettiPieces = useMemo<ConfettiPiece[]>(() => {
     return Array.from({ length: 50 }, (_, i) => ({
       id: i,
+      // eslint-disable-next-line react-hooks/purity
       left: Math.random() * 100,
+      // eslint-disable-next-line react-hooks/purity
       delay: Math.random() * 0.5,
+      // eslint-disable-next-line react-hooks/purity
       duration: 2 + Math.random() * 1,
+      // eslint-disable-next-line react-hooks/purity
       color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
     }));
-  }, []); // Empty deps - only generate once, Math.random is intentional
+  }, []); // Empty deps - only generate once
 
   const [isVisible, setIsVisible] = useState(true);
 

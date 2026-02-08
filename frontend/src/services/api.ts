@@ -448,11 +448,11 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to undo check-in');
   }
 
-  async urlCheckIn(identifier: string): Promise<{ action: string; member: string; checkIn?: CheckIn }> {
+  async urlCheckIn(identifier: string, stationId?: string): Promise<{ action: string; member: string; checkIn?: CheckIn }> {
     const response = await fetch(`${API_BASE_URL}/checkins/url-checkin`, {
       method: 'POST',
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ identifier }),
+      body: JSON.stringify({ identifier, stationId }),
     });
     if (!response.ok) throw new Error('Failed to perform URL check-in');
     return response.json();

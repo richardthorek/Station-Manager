@@ -146,8 +146,10 @@ router.delete('/:memberId', validateMemberIdParam, handleValidationErrors, async
 router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { identifier } = req.body;
-    const stationId = getStationIdFromRequest(req);
+    const { identifier, stationId: urlStationId } = req.body;
+    
+    // Prioritize stationId from URL parameter, fallback to header
+    const stationId = urlStationId || getStationIdFromRequest(req);
 
     if (!identifier || typeof identifier !== 'string') {
       return res.status(400).json({ error: 'User identifier is required' });

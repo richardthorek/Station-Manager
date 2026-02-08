@@ -147,11 +147,13 @@ async function makeRequest(
 async function waitForStabilization(): Promise<number> {
   const startTime = Date.now();
   const maxAttempts = Math.floor(STABILIZATION_TIMEOUT / STABILIZATION_INTERVAL);
+  const timeoutSeconds = STABILIZATION_TIMEOUT / 1000; // Calculate once for reuse
+  const intervalSeconds = STABILIZATION_INTERVAL / 1000;
   let attempt = 0;
 
   console.log('\n🔄 PHASE 1: Waiting for deployment to stabilize...');
-  console.log(`   Max time: ${STABILIZATION_TIMEOUT / 1000}s (${STABILIZATION_TIMEOUT / 60000} minutes)`);
-  console.log(`   Checking every: ${STABILIZATION_INTERVAL / 1000}s`);
+  console.log(`   Max time: ${timeoutSeconds}s (${STABILIZATION_TIMEOUT / 60000} minutes)`);
+  console.log(`   Checking every: ${intervalSeconds}s`);
   console.log(`   Max attempts: ${maxAttempts}\n`);
 
   while (true) {
@@ -161,6 +163,11 @@ async function waitForStabilization(): Promise<number> {
     // Check if we've exceeded the wall clock timeout
     if (elapsed >= STABILIZATION_TIMEOUT / 1000) {
       throw new Error(`Stabilization timeout exceeded after ${elapsed}s (max: ${STABILIZATION_TIMEOUT / 1000}s)`);
+    }
+
+    // Check if we've exceeded the timeout before making another request
+    if (elapsed >= timeoutSeconds) {
+      throw new Error(`Stabilization timeout exceeded after ${elapsed}s (max: ${timeoutSeconds}s)`);
     }
 
     try {
@@ -218,16 +225,24 @@ async function waitForStabilization(): Promise<number> {
       console.log(`   ⚠️  Request failed (${errorMsg}), retrying...`);
     }
 
-    // Wait before next attempt (only if we have time remaining)
-    const elapsedAfterAttempt = (Date.now() - startTime) / 1000;
-    const timeRemaining = STABILIZATION_TIMEOUT / 1000 - elapsedAfterAttempt;
-    
-    if (timeRemaining > 0) {
-      // Wait for the interval, but don't exceed the timeout
-      const waitTime = Math.min(STABILIZATION_INTERVAL, timeRemaining * 1000);
-      await sleep(waitTime);
+    // Wait before next attempt, but check if we'll exceed timeout
+    if (attempt < maxAttempts) {
+      // Recalculate elapsed time for accuracy
+      const currentElapsed = Math.floor((Date.now() - startTime) / 1000);
+      const elapsedAfterSleep = currentElapsed + intervalSeconds;
+      if (elapsedAfterSleep <= timeoutSeconds) {
+        await sleep(STABILIZATION_INTERVAL);
+      } else {
+        // Would exceed timeout after sleep, exit now
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        throw new Error(`Stabilization timeout exceeded after ${duration}s (max: ${timeoutSeconds}s)`);
+      }
     }
   }
+
+  // Timeout exceeded
+  const duration = Math.floor((Date.now() - startTime) / 1000);
+  throw new Error(`Stabilization timeout exceeded after ${duration}s (max: ${timeoutSeconds}s)`);
 }
 
 /**

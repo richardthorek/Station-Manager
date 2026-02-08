@@ -34,6 +34,7 @@ export function SignInLinkPage() {
     initDatabaseStatus();
 
     const userIdentifier = searchParams.get('user');
+    const stationId = searchParams.get('station'); // Extract stationId from URL
     
     const performCheckIn = async () => {
       if (!userIdentifier) {
@@ -44,7 +45,7 @@ export function SignInLinkPage() {
 
       try {
         setStatus('loading');
-        const result = await api.urlCheckIn(userIdentifier);
+        const result = await api.urlCheckIn(userIdentifier, stationId || undefined);
         
         setMemberName(result.member);
         
