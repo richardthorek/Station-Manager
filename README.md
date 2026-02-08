@@ -143,10 +143,10 @@ All screenshots demonstrate:
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - Local development setup
 - **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
-- **[Truck Checks Guide](docs/TRUCK_CHECKS_IMPLEMENTATION.md)** - Vehicle inspection feature documentation
-- **[Storage Migration History](docs/TABLE_STORAGE_MIGRATION_PLAN.md)** - Migration from Cosmos DB to Table Storage (completed)
-- **[Storage Decision](docs/FINAL_STORAGE_DECISION.md)** - Decision rationale: Azure Table Storage
-- **[Project Plan](docs/PROJECT_PLAN.md)** - Original project requirements and planning (historical)
+- **[Truck Checks Guide](docs/archive/TRUCK_CHECKS_IMPLEMENTATION.md)** - Vehicle inspection feature documentation (archived)
+- **[Storage Migration History](docs/archive/TABLE_STORAGE_MIGRATION_PLAN.md)** - Migration from Cosmos DB to Table Storage (completed, archived)
+- **[Storage Decision](docs/archive/FINAL_STORAGE_DECISION.md)** - Decision rationale: Azure Table Storage (archived)
+- **[Project Plan](docs/archive/PROJECT_PLAN.md)** - Original project requirements and planning (historical, archived)
 
 ## 🚢 Deployment
 
