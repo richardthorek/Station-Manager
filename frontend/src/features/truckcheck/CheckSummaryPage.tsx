@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
+import { Lightbox } from '../../components/Lightbox';
 import type { CheckRunWithResults } from '../../types';
 import './CheckSummary.css';
 
@@ -16,6 +18,8 @@ export function CheckSummaryPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; alt: string } | null>(null);
+  const [showQRCode, setShowQRCode] = useState(false);
 
   useEffect(() => {
     if (runId) {
@@ -86,8 +90,19 @@ export function CheckSummaryPage() {
   const doneCount = checkRun.results.filter(r => r.status === 'done').length;
   const skippedCount = checkRun.results.filter(r => r.status === 'skipped').length;
 
+  // Generate QR code data
+  const qrCodeData = `${window.location.origin}/truckcheck/summary/${runId}`;
+
   return (
     <div className="summary-page">
+      {lightboxImage && (
+        <Lightbox
+          imageUrl={lightboxImage.url}
+          alt={lightboxImage.alt}
+          isOpen={true}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
       <header className="summary-header">
         <div className="header-top">
           <Link to="/truckcheck" className="back-link">← Back</Link>
@@ -133,6 +148,20 @@ export function CheckSummaryPage() {
                     <strong>Comment:</strong> {result.comment}
                   </p>
                 )}
+                {result.photoUrl && (
+                  <div className="result-photo-thumbnail">
+                    <button
+                      className="photo-thumbnail-button"
+                      onClick={() => setLightboxImage({ url: result.photoUrl!, alt: `Photo for ${result.itemName}` })}
+                      aria-label={`View photo for ${result.itemName}`}
+                    >
+                      <img src={result.photoUrl} alt={`Photo for ${result.itemName}`} />
+                      <div className="photo-overlay">
+                        <span className="zoom-icon">🔍</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -170,6 +199,30 @@ export function CheckSummaryPage() {
             >
               {submitting ? 'Submitting...' : 'Submit Check'}
             </button>
+            
+            <button
+              className="btn-secondary"
+              onClick={() => setShowQRCode(!showQRCode)}
+              style={{ marginTop: '1rem' }}
+            >
+              {showQRCode ? 'Hide QR Code' : 'Show QR Code for Sharing'}
+            </button>
+            
+            {showQRCode && (
+              <div className="qr-code-section">
+                <h3>Share this Check</h3>
+                <p>Scan this QR code to view the check summary</p>
+                <div className="qr-code-container">
+                  <QRCodeSVG 
+                    value={qrCodeData}
+                    size={200}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+                <p className="qr-code-url">{qrCodeData}</p>
+              </div>
+            )}
           </div>
         </div>
       </main>
