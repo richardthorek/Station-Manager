@@ -201,9 +201,8 @@ export function CheckSummaryPage() {
             </button>
             
             <button
-              className="btn-secondary"
+              className="btn-secondary qr-toggle"
               onClick={() => setShowQRCode(!showQRCode)}
-              style={{ marginTop: '1rem' }}
             >
               {showQRCode ? 'Hide QR Code' : 'Show QR Code for Sharing'}
             </button>

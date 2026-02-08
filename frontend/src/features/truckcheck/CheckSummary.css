@@ -365,6 +365,10 @@
   border-color: var(--rfs-dark-grey);
 }
 
+.btn-secondary.qr-toggle {
+  margin-top: 1rem;
+}
+
 .qr-code-section {
   margin-top: 2rem;
   padding: 2rem;

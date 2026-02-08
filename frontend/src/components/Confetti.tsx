@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import './Confetti.css';
 
@@ -24,24 +24,23 @@ const CONFETTI_COLORS = [
 ];
 
 export function Confetti({ duration = 3000 }: ConfettiProps) {
-  const [confettiPieces, setConfettiPieces] = useState<ConfettiPiece[]>([]);
-
-  useEffect(() => {
-    // Generate 50 confetti pieces on mount
-    const pieces: ConfettiPiece[] = Array.from({ length: 50 }, (_, i) => ({
+  // Generate confetti pieces once on mount using useMemo
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const confettiPieces = useMemo<ConfettiPiece[]>(() => {
+    return Array.from({ length: 50 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
       delay: Math.random() * 0.5,
       duration: 2 + Math.random() * 1,
       color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
     }));
-    
-    // Initialize confetti pieces - this is intentional on mount
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConfettiPieces(pieces);
+  }, []); // Empty deps - only generate once, Math.random is intentional
 
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
-      setConfettiPieces([]);
+      setIsVisible(false);
     }, duration);
 
     return () => clearTimeout(timer);
@@ -49,7 +48,7 @@ export function Confetti({ duration = 3000 }: ConfettiProps) {
 
   return (
     <div className="confetti-container" aria-hidden="true">
-      {confettiPieces.map((piece) => (
+      {isVisible && confettiPieces.map((piece) => (
         <motion.div
           key={piece.id}
           className="confetti-piece"

@@ -66,12 +66,13 @@ export function CheckWorkflowPage() {
     }
   }, [showNamePrompt]);
 
-  // Show confetti when all items completed
+  // Show confetti when all items completed (only once)
   useEffect(() => {
     if (template && results.size === template.items.length && results.size > 0 && !showConfetti) {
       setShowConfetti(true);
     }
-  }, [results.size, template, showConfetti]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results.size, template]); // Exclude showConfetti to prevent loop
 
   // Listen for real-time updates from other contributors
   useEffect(() => {
