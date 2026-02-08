@@ -53,6 +53,7 @@ import demoRouter from './routes/demo';
 import stationsRouter from './routes/stations';
 import brigadeAccessRouter from './routes/brigadeAccess';
 import exportRouter from './routes/export';
+import authRouter from './routes/auth';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -64,6 +65,7 @@ import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
 import { requestIdMiddleware } from './middleware/requestId';
 import { requestLoggingMiddleware } from './middleware/requestLogging';
 import { logger } from './services/logger';
+import { getAdminUserDatabase } from './services/adminUserDatabase';
 
 const app = express();
 const httpServer = createServer(app);
@@ -218,6 +220,7 @@ app.get('/api/status', apiRateLimiter, async (req, res) => {
 });
 
 // API Routes with rate limiting
+app.use('/api/auth', apiRateLimiter, authRouter);
 app.use('/api/demo', apiRateLimiter, demoRouter);
 app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
@@ -397,11 +400,32 @@ async function startServer() {
     await ensureDatabase();
     await ensureTruckChecksDatabase();
     
+    // Initialize admin user database with default credentials if configured
+    const adminDb = getAdminUserDatabase();
+    const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
+    const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+    
+    if (defaultAdminPassword) {
+      await adminDb.initialize(defaultAdminUsername, defaultAdminPassword);
+      logger.info('Admin user database initialized', { username: defaultAdminUsername });
+    } else {
+      logger.warn('No default admin password configured. Set DEFAULT_ADMIN_PASSWORD to enable authentication.');
+    }
+    
+    // Log authentication status
+    const requireAuth = process.env.REQUIRE_AUTH === 'true';
+    logger.info('Authentication status', { 
+      requireAuth, 
+      jwtConfigured: !!process.env.JWT_SECRET,
+      defaultAdminConfigured: !!defaultAdminPassword,
+    });
+    
     // Start HTTP server first - don't block on RFS data loading
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Health check: http://localhost:${PORT}/health`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Authentication: ${requireAuth ? 'ENABLED' : 'DISABLED'}`);
       const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
       const explicitlyDisabled = process.env.USE_TABLE_STORAGE === 'false';
       const useTableStorage = storageConnectionString && !explicitlyDisabled;
