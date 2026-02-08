@@ -1,0 +1,225 @@
+/**
+ * Login Page Styles
+ * 
+ * Responsive design with large touch targets for tablet/mobile access.
+ * NSW RFS branding colors and typography.
+ */
+
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--rfs-core-red) 0%, #c51d11 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.login-header {
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.login-header h1 {
+  color: var(--rfs-white);
+  font-size: 1.75rem;
+  margin: 0.5rem 0 0 0;
+  font-weight: 700;
+}
+
+.login-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 500px;
+}
+
+.login-card {
+  background: var(--rfs-white);
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.login-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.login-card h2 {
+  color: var(--rfs-black);
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+}
+
+.login-description {
+  color: var(--rfs-dark-grey);
+  font-size: 1rem;
+  margin: 0 0 2rem 0;
+  line-height: 1.5;
+}
+
+.login-form {
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  color: var(--rfs-black);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border: 2px solid var(--rfs-light-grey);
+  border-radius: 8px;
+  background: var(--rfs-white);
+  transition: border-color 0.2s ease;
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--rfs-core-red);
+  box-shadow: 0 0 0 3px rgba(229, 40, 27, 0.1);
+}
+
+.form-group input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background: #fee;
+  color: #c00;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  text-align: center;
+  border: 1px solid #fcc;
+}
+
+.login-button {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--rfs-white);
+  background: var(--rfs-core-red);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.login-button:hover:not(:disabled) {
+  background: #c51d11;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 40, 27, 0.3);
+}
+
+.login-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--rfs-white);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  transition: opacity 0.2s ease;
+}
+
+.back-link:hover {
+  opacity: 0.8;
+}
+
+/* Tablet and Desktop */
+@media (min-width: 768px) {
+  .login-header {
+    padding: 2rem 3rem;
+  }
+
+  .login-header h1 {
+    font-size: 2rem;
+  }
+
+  .login-card {
+    padding: 3rem;
+  }
+
+  .login-card h2 {
+    font-size: 2.25rem;
+  }
+
+  .form-group input {
+    padding: 1rem 1.25rem;
+    font-size: 1.0625rem;
+  }
+
+  .login-button {
+    padding: 1.125rem;
+    font-size: 1.25rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .login-page {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+  }
+
+  .login-card {
+    background: #2a2a2a;
+  }
+
+  .login-card h2 {
+    color: var(--rfs-white);
+  }
+
+  .login-description {
+    color: #b0b0b0;
+  }
+
+  .form-group label {
+    color: var(--rfs-white);
+  }
+
+  .form-group input {
+    background: #1a1a1a;
+    border-color: #444;
+    color: var(--rfs-white);
+  }
+
+  .form-group input:focus {
+    border-color: var(--rfs-core-red);
+  }
+
+  .form-group input:disabled {
+    background: #333;
+  }
+}

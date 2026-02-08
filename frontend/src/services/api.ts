@@ -71,12 +71,24 @@ class ApiService {
   }
   /**
    * Create headers with X-Station-Id for multi-station support
+   * and Authorization header for authentication
    */
   private getHeaders(additionalHeaders?: HeadersInit): HeadersInit {
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'X-Station-Id': getCurrentStationId(),
-      ...additionalHeaders,
     };
+    
+    // Add Authorization header if token exists
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // Merge with additional headers
+    if (additionalHeaders) {
+      Object.assign(headers, additionalHeaders);
+    }
+    
     return headers;
   }
 

@@ -3,12 +3,14 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { StationProvider } from './contexts/StationContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { DemoLandingPrompt } from './components/DemoLandingPrompt';
 import { LoadingFallback } from './components/LoadingFallback';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InstallPrompt } from './components/InstallPrompt';
 import { SkipToContent } from './components/SkipToContent';
 import { LiveAnnouncer } from './components/LiveAnnouncer';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { hasSeenDemoPrompt } from './utils/demoPromptUtils';
 import { initDB } from './services/offlineStorage';
 
@@ -28,6 +30,7 @@ const AdvancedReportsPage = lazy(() => import('./features/reports/AdvancedReport
 const CrossStationReportsPage = lazy(() => import('./features/reports/CrossStationReportsPage').then(m => ({ default: m.CrossStationReportsPage })));
 const StationManagementPage = lazy(() => import('./features/admin/stations/StationManagementPage').then(m => ({ default: m.StationManagementPage })));
 const BrigadeAccessPage = lazy(() => import('./features/admin/brigade-access/BrigadeAccessPage').then(m => ({ default: m.BrigadeAccessPage })));
+const LoginPage = lazy(() => import('./features/auth/LoginPage').then(m => ({ default: m.LoginPage })));
 
 /**
  * AnimatedRoutes component - handles route transitions
@@ -40,6 +43,7 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/sign-in" element={<SignInLinkPage />} />
         <Route path="/profile/:memberId" element={<UserProfilePage />} />
@@ -52,8 +56,8 @@ function AnimatedRoutes() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/reports/advanced" element={<AdvancedReportsPage />} />
         <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
-        <Route path="/admin/stations" element={<StationManagementPage />} />
-        <Route path="/admin/brigade-access" element={<BrigadeAccessPage />} />
+        <Route path="/admin/stations" element={<ProtectedRoute><StationManagementPage /></ProtectedRoute>} />
+        <Route path="/admin/brigade-access" element={<ProtectedRoute><BrigadeAccessPage /></ProtectedRoute>} />
       </Routes>
     </AnimatePresence>
   );
@@ -79,20 +83,22 @@ function App() {
 
   return (
     <BrowserRouter>
-      <StationProvider>
-        <ToastProvider>
-          <SkipToContent />
-          <LiveAnnouncer />
-          <OfflineIndicator />
-          <InstallPrompt />
-          {showDemoPrompt && (
-            <DemoLandingPrompt onDismiss={() => setShowDemoPrompt(false)} />
-          )}
-          <Suspense fallback={<LoadingFallback />}>
-            <AnimatedRoutes />
-          </Suspense>
-        </ToastProvider>
-      </StationProvider>
+      <AuthProvider>
+        <StationProvider>
+          <ToastProvider>
+            <SkipToContent />
+            <LiveAnnouncer />
+            <OfflineIndicator />
+            <InstallPrompt />
+            {showDemoPrompt && (
+              <DemoLandingPrompt onDismiss={() => setShowDemoPrompt(false)} />
+            )}
+            <Suspense fallback={<LoadingFallback />}>
+              <AnimatedRoutes />
+            </Suspense>
+          </ToastProvider>
+        </StationProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

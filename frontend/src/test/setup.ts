@@ -6,7 +6,7 @@
  */
 
 import '@testing-library/jest-dom'
-import { afterEach, beforeAll, afterAll } from 'vitest'
+import { afterEach, beforeAll, afterAll, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
 // Cleanup after each test
@@ -39,6 +39,32 @@ global.IntersectionObserver = class IntersectionObserver {
   }
   unobserve() {}
 } as unknown as typeof IntersectionObserver
+
+// Mock fetch API for authentication calls
+global.fetch = vi.fn((url) => {
+  // Mock auth config endpoint
+  if (typeof url === 'string' && url.includes('/auth/config')) {
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({ requireAuth: false }),
+    } as Response)
+  }
+  
+  // Mock auth/me endpoint
+  if (typeof url === 'string' && url.includes('/auth/me')) {
+    return Promise.resolve({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'Not authenticated' }),
+    } as Response)
+  }
+  
+  // Default mock for other endpoints
+  return Promise.resolve({
+    ok: true,
+    json: async () => ({}),
+  } as Response)
+}) as typeof fetch
 
 // Suppress console errors in tests (optional - can be removed if you want to see all errors)
 // Only suppress specific known errors

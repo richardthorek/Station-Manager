@@ -9,6 +9,10 @@
  * - Soft deleting stations
  * - Getting stations by brigade
  * - National dataset lookup (RFS facilities)
+ * 
+ * Authentication:
+ * - POST, PUT, DELETE operations protected with optionalAuth middleware
+ * - Auth required only when REQUIRE_AUTH=true
  */
 
 import { Router, Request, Response } from 'express';
@@ -23,6 +27,7 @@ import {
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { getRFSFacilitiesParser } from '../services/rfsFacilitiesParser';
 import { logger } from '../services/logger';
+import { optionalAuth } from '../middleware/auth';
 
 const router = Router();
 
@@ -242,8 +247,9 @@ router.get('/:id', validateStationId, handleValidationErrors, async (req: Reques
  * POST /api/stations
  * Create a new station
  * Validates that brigade ID is unique to prevent duplicate station creation
+ * Protected by optionalAuth middleware
  */
-router.post('/', validateCreateStation, handleValidationErrors, async (req: Request, res: Response) => {
+router.post('/', optionalAuth, validateCreateStation, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const {
@@ -293,8 +299,9 @@ router.post('/', validateCreateStation, handleValidationErrors, async (req: Requ
 /**
  * PUT /api/stations/:id
  * Update a station
+ * Protected by optionalAuth middleware
  */
-router.put('/:id', validateStationId, validateUpdateStation, handleValidationErrors, async (req: Request, res: Response) => {
+router.put('/:id', optionalAuth, validateStationId, validateUpdateStation, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { id } = req.params;
@@ -337,8 +344,9 @@ router.put('/:id', validateStationId, validateUpdateStation, handleValidationErr
  * DELETE /api/stations/:id
  * Soft delete a station (sets isActive to false)
  * Cannot delete if station has members, events, or other data
+ * Protected by optionalAuth middleware
  */
-router.delete('/:id', validateStationId, handleValidationErrors, async (req: Request, res: Response) => {
+router.delete('/:id', optionalAuth, validateStationId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { id } = req.params;

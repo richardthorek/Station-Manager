@@ -57,6 +57,21 @@ export interface BrigadeAccessToken {
   description?: string;         // Optional description (e.g., "Main Kiosk")
 }
 
+/**
+ * Admin User - for authentication
+ * Used to protect administrative operations
+ */
+export interface AdminUser {
+  id: string;
+  username: string;
+  passwordHash: string;
+  role: 'admin' | 'viewer';
+  createdAt: Date;
+  updatedAt: Date;
+  lastLoginAt?: Date;
+  isActive: boolean;
+}
+
 export interface Member {
   id: string;
   name: string;

@@ -8,8 +8,9 @@
  * - Revoke tokens
  * - Validate tokens
  * 
- * Security note: In production, these endpoints should be protected
- * with authentication to prevent unauthorized token generation.
+ * Authentication:
+ * - POST, DELETE operations protected with optionalAuth middleware
+ * - Auth required only when REQUIRE_AUTH=true
  */
 
 import { Router, Request, Response } from 'express';
@@ -25,12 +26,14 @@ import {
   getAllBrigadeAccessTokens,
 } from '../services/brigadeAccessService';
 import { logger } from '../services/logger';
+import { optionalAuth } from '../middleware/auth';
 
 const router = Router();
 
 /**
  * POST /api/brigade-access/generate
  * Generate a new brigade access token for kiosk mode
+ * Protected by optionalAuth middleware
  * 
  * Body:
  * - brigadeId: string (required)
@@ -40,6 +43,7 @@ const router = Router();
  */
 router.post(
   '/generate',
+  optionalAuth,
   [
     body('brigadeId')
       .trim()
@@ -154,9 +158,11 @@ router.post(
 /**
  * DELETE /api/brigade-access/:token
  * Revoke a brigade access token
+ * Protected by optionalAuth middleware
  */
 router.delete(
   '/:token',
+  optionalAuth,
   [
     param('token')
       .trim()

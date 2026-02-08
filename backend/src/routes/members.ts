@@ -12,6 +12,10 @@
  * - All GET endpoints filter by stationId (from X-Station-Id header or query param)
  * - POST endpoints assign stationId to new members
  * - Backward compatible: defaults to DEFAULT_STATION_ID if no stationId provided
+ * 
+ * Authentication:
+ * - Data endpoints protected with flexibleAuth when ENABLE_DATA_PROTECTION=true
+ * - Accepts JWT tokens or Brigade Access Tokens
  */
 
 import { Router, Request, Response } from 'express';
@@ -26,6 +30,7 @@ import {
 } from '../middleware/memberValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { flexibleAuth } from '../middleware/flexibleAuth';
 import { logger } from '../services/logger';
 
 const router = Router();
@@ -49,7 +54,8 @@ const upload = multer({
 router.use(stationMiddleware);
 
 // Get all members (filtered by station with search, filter, and sort)
-router.get('/', async (req, res) => {
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.get('/', flexibleAuth({ scope: 'station' }), async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
@@ -72,7 +78,8 @@ router.get('/', async (req, res) => {
 });
 
 // Get member by ID
-router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.get('/:id', flexibleAuth({ scope: 'station' }), validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const member = await db.getMemberById(req.params.id);
@@ -91,7 +98,8 @@ router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request
 });
 
 // Get member by QR code
-router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Request, res: Response) => {
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.get('/qr/:qrCode', flexibleAuth({ scope: 'station' }), validateQRCode, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const member = await db.getMemberByQRCode(req.params.qrCode);

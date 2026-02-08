@@ -10,9 +10,10 @@
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../contexts/AuthContext';
 import { OnboardingWizard } from '../../components/OnboardingWizard';
 import { PageTransition } from '../../components/PageTransition';
 import { staggerVariants, getVariants, getTransition, transitions } from '../../utils/animations';
@@ -20,11 +21,18 @@ import './LandingPage.css';
 
 export function LandingPage() {
   const { theme, toggleTheme } = useTheme();
+  const { isAuthenticated, user, logout, requireAuth } = useAuth();
+  const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   const containerVariants = getVariants(staggerVariants.container);
   const itemVariants = getVariants(staggerVariants.item);
   const itemTransition = getTransition(transitions.standard);
+
+  const handleLogout = () => {
+    logout();
+    // Optionally show a toast notification
+  };
 
   return (
     <PageTransition variant="fade">
@@ -56,6 +64,27 @@ export function LandingPage() {
               <span className="btn-icon">🎓</span>
               <span className="btn-text">Guided tour</span>
             </button>
+            {requireAuth && !isAuthenticated && (
+              <button
+                className="header-cta admin-login-btn"
+                onClick={() => navigate('/login')}
+                aria-label="Admin login"
+              >
+                <span className="btn-icon">🔐</span>
+                <span className="btn-text">Admin Login</span>
+              </button>
+            )}
+            {isAuthenticated && user && (
+              <button
+                className="header-cta logout-btn"
+                onClick={handleLogout}
+                aria-label={`Logout ${user.username}`}
+                title={`Logged in as ${user.username}`}
+              >
+                <span className="btn-icon">👤</span>
+                <span className="btn-text">Logout</span>
+              </button>
+            )}
             <button 
               type="button"
               className="theme-toggle-btn"
