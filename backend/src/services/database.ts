@@ -1033,6 +1033,283 @@ class DatabaseService {
     };
   }
 
+  /**
+   * Get trend analysis - month-over-month and year-over-year growth trends
+   */
+  getTrendAnalysis(startDate: Date, endDate: Date, stationId?: string): {
+    attendanceTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+    eventsTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
+    memberGrowth: { currentTotal: number; previousTotal: number; change: number; changePercent: number };
+  } {
+    // Get attendance summary
+    const attendanceSummary = this.getAttendanceSummary(startDate, endDate, stationId);
+
+    // Calculate month-over-month change for attendance
+    const attendanceTrend = attendanceSummary.map((current, index) => {
+      const previous = index > 0 ? attendanceSummary[index - 1] : null;
+      const change = previous ? current.count - previous.count : 0;
+      const changePercent = previous && previous.count > 0
+        ? Math.round(((current.count - previous.count) / previous.count) * 100)
+        : 0;
+
+      return {
+        month: current.month,
+        count: current.count,
+        change,
+        changePercent,
+      };
+    });
+
+    // Get events and calculate trend
+    let events = Array.from(this.events.values())
+      .filter(e => e.startTime >= startDate && e.startTime <= endDate);
+
+    if (stationId) {
+      events = events.filter(e => getEffectiveStationId(e.stationId) === stationId);
+    }
+
+    // Group events by month
+    const eventsByMonth = new Map<string, number>();
+    events.forEach(e => {
+      const monthKey = `${e.startTime.getFullYear()}-${String(e.startTime.getMonth() + 1).padStart(2, '0')}`;
+      eventsByMonth.set(monthKey, (eventsByMonth.get(monthKey) || 0) + 1);
+    });
+
+    const eventsSummary = Array.from(eventsByMonth.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    const eventsTrend = eventsSummary.map((current, index) => {
+      const previous = index > 0 ? eventsSummary[index - 1] : null;
+      const change = previous ? current.count - previous.count : 0;
+      const changePercent = previous && previous.count > 0
+        ? Math.round(((current.count - previous.count) / previous.count) * 100)
+        : 0;
+
+      return {
+        month: current.month,
+        count: current.count,
+        change,
+        changePercent,
+      };
+    });
+
+    // Calculate member growth (compare periods)
+    const midpoint = new Date((startDate.getTime() + endDate.getTime()) / 2);
+
+    let currentMembers = Array.from(this.members.values())
+      .filter(m => !m.isDeleted && m.createdAt <= endDate);
+    let previousMembers = Array.from(this.members.values())
+      .filter(m => !m.isDeleted && m.createdAt <= midpoint);
+
+    if (stationId) {
+      currentMembers = currentMembers.filter(m => getEffectiveStationId(m.stationId) === stationId);
+      previousMembers = previousMembers.filter(m => getEffectiveStationId(m.stationId) === stationId);
+    }
+
+    const currentTotal = currentMembers.length;
+    const previousTotal = previousMembers.length;
+    const memberChange = currentTotal - previousTotal;
+    const memberChangePercent = previousTotal > 0
+      ? Math.round((memberChange / previousTotal) * 100)
+      : 0;
+
+    return {
+      attendanceTrend,
+      eventsTrend,
+      memberGrowth: {
+        currentTotal,
+        previousTotal,
+        change: memberChange,
+        changePercent: memberChangePercent,
+      },
+    };
+  }
+
+  /**
+   * Get activity heat map - shows activity patterns by day of week and hour of day
+   */
+  getActivityHeatMap(startDate: Date, endDate: Date, stationId?: string): Array<{ day: number; hour: number; count: number }> {
+    let participants = Array.from(this.eventParticipants.values())
+      .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
+
+    if (stationId) {
+      participants = participants.filter(p => getEffectiveStationId(p.stationId) === stationId);
+    }
+
+    // Group by day of week (0=Sunday, 6=Saturday) and hour (0-23)
+    const heatMapData = new Map<string, number>();
+
+    participants.forEach(p => {
+      const day = p.checkInTime.getDay(); // 0-6
+      const hour = p.checkInTime.getHours(); // 0-23
+      const key = `${day}-${hour}`;
+      heatMapData.set(key, (heatMapData.get(key) || 0) + 1);
+    });
+
+    // Convert to array format expected by frontend
+    const result: Array<{ day: number; hour: number; count: number }> = [];
+
+    for (let day = 0; day < 7; day++) {
+      for (let hour = 0; hour < 24; hour++) {
+        const key = `${day}-${hour}`;
+        const count = heatMapData.get(key) || 0;
+        result.push({ day, hour, count });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Get member funnel analysis
+   * Shows conversion through stages: registered -> checked in -> active (5+ check-ins) -> veteran (20+ check-ins)
+   */
+  getMemberFunnel(startDate: Date, endDate: Date, stationId?: string): {
+    stages: Array<{ stage: string; count: number; conversionRate: number }>;
+  } {
+    let allMembers = Array.from(this.members.values());
+
+    if (stationId) {
+      allMembers = allMembers.filter(m => getEffectiveStationId(m.stationId) === stationId);
+    }
+
+    // Filter members created within date range for registration stage
+    const registeredMembers = allMembers.filter(m =>
+      m.createdAt && m.createdAt >= startDate && m.createdAt <= endDate
+    );
+
+    // Get all check-ins for these members
+    let allCheckIns = Array.from(this.eventParticipants.values())
+      .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
+
+    if (stationId) {
+      allCheckIns = allCheckIns.filter(p => getEffectiveStationId(p.stationId) === stationId);
+    }
+
+    // Calculate funnel stages
+    const registered = registeredMembers.length;
+    const checkedInMemberIds = new Set(allCheckIns.map(p => p.memberId));
+    const checkedIn = registeredMembers.filter(m => checkedInMemberIds.has(m.id)).length;
+
+    // Count check-ins per member
+    const checkInCounts = new Map<string, number>();
+    allCheckIns.forEach(p => {
+      checkInCounts.set(p.memberId, (checkInCounts.get(p.memberId) || 0) + 1);
+    });
+
+    const activeMembers = registeredMembers.filter(m => {
+      const count = checkInCounts.get(m.id) || 0;
+      return count >= 5;
+    }).length;
+
+    const veteranMembers = registeredMembers.filter(m => {
+      const count = checkInCounts.get(m.id) || 0;
+      return count >= 20;
+    }).length;
+
+    // Calculate conversion rates
+    const stages = [
+      {
+        stage: 'Registered',
+        count: registered,
+        conversionRate: 100,
+      },
+      {
+        stage: 'First Check-In',
+        count: checkedIn,
+        conversionRate: registered > 0 ? Math.round((checkedIn / registered) * 100) : 0,
+      },
+      {
+        stage: 'Active (5+ Check-Ins)',
+        count: activeMembers,
+        conversionRate: registered > 0 ? Math.round((activeMembers / registered) * 100) : 0,
+      },
+      {
+        stage: 'Veteran (20+ Check-Ins)',
+        count: veteranMembers,
+        conversionRate: registered > 0 ? Math.round((veteranMembers / registered) * 100) : 0,
+      },
+    ];
+
+    return { stages };
+  }
+
+  /**
+   * Get cohort analysis
+   * Groups members by registration month and tracks their retention over time
+   */
+  getCohortAnalysis(startDate: Date, endDate: Date, stationId?: string): {
+    cohorts: Array<{ cohort: string; members: number; retentionRates: number[] }>;
+  } {
+    let allMembers = Array.from(this.members.values())
+      .filter(m => m.createdAt && m.createdAt >= startDate && m.createdAt <= endDate);
+
+    if (stationId) {
+      allMembers = allMembers.filter(m => getEffectiveStationId(m.stationId) === stationId);
+    }
+
+    // Group members by registration month
+    const cohortMap = new Map<string, Member[]>();
+    allMembers.forEach(m => {
+      if (m.createdAt) {
+        const cohortKey = `${m.createdAt.getFullYear()}-${String(m.createdAt.getMonth() + 1).padStart(2, '0')}`;
+        if (!cohortMap.has(cohortKey)) {
+          cohortMap.set(cohortKey, []);
+        }
+        cohortMap.get(cohortKey)!.push(m);
+      }
+    });
+
+    // Calculate retention rates for each cohort
+    const cohorts = Array.from(cohortMap.entries())
+      .map(([cohortKey, members]) => {
+        const [year, month] = cohortKey.split('-').map(Number);
+        const cohortStart = new Date(year, month - 1, 1);
+
+        // Calculate retention for up to 6 months
+        const retentionRates: number[] = [];
+
+        for (let i = 0; i < 6; i++) {
+          const periodStart = new Date(cohortStart);
+          periodStart.setMonth(periodStart.getMonth() + i);
+          const periodEnd = new Date(periodStart);
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+          // Stop if period is beyond the date range
+          if (periodStart > endDate) break;
+
+          // Get check-ins for this period
+          let periodCheckIns = Array.from(this.eventParticipants.values())
+            .filter(p =>
+              p.checkInTime >= periodStart &&
+              p.checkInTime < periodEnd
+            );
+
+          if (stationId) {
+            periodCheckIns = periodCheckIns.filter(p => getEffectiveStationId(p.stationId) === stationId);
+          }
+
+          const activeMemberIds = new Set(periodCheckIns.map(p => p.memberId));
+          const retainedCount = members.filter(m => activeMemberIds.has(m.id)).length;
+          const retentionRate = members.length > 0
+            ? Math.round((retainedCount / members.length) * 100)
+            : 0;
+
+          retentionRates.push(retentionRate);
+        }
+
+        return {
+          cohort: cohortKey,
+          members: members.length,
+          retentionRates,
+        };
+      })
+      .sort((a, b) => a.cohort.localeCompare(b.cohort));
+
+    return { cohorts };
+  }
+
   // ============================================
   // Station Management Methods
   // ============================================

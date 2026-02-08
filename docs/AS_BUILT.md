@@ -634,6 +634,9 @@ frontend/src/
 │   │   └── [styles]
 │   ├── reports/               # Reports & Analytics
 │   │   ├── ReportsPage.tsx
+│   │   ├── ReportsPageEnhanced.tsx
+│   │   ├── AdvancedReportsPage.tsx
+│   │   ├── CrossStationReportsPage.tsx
 │   │   └── ReportsPage.css
 │   └── admin/                 # Admin features
 │       ├── stations/          # Station management
@@ -1156,12 +1159,16 @@ The API register contains:
 - `GET /api/achievements/member/:memberId` - Get member achievements
 - `GET /api/achievements/recent` - Get recent unlocks
 
-**Reports & Analytics (5 endpoints)**
+**Reports & Analytics (9 endpoints)**
 - `GET /api/reports/attendance-summary` - Monthly attendance statistics
 - `GET /api/reports/member-participation` - Top members by participation
 - `GET /api/reports/activity-breakdown` - Activity category breakdown
 - `GET /api/reports/event-statistics` - Event statistics (count, duration, etc.)
 - `GET /api/reports/truckcheck-compliance` - Truck check compliance metrics
+- `GET /api/reports/advanced/trend-analysis` - Advanced trend analysis (MoM/YoY growth)
+- `GET /api/reports/advanced/heat-map` - Activity heat map by day/hour
+- `GET /api/reports/advanced/funnel` - Member funnel analysis (conversion through stages)
+- `GET /api/reports/advanced/cohort` - Cohort analysis (member retention by registration month)
 
 **Health Check**
 - `GET /health` - Server health status

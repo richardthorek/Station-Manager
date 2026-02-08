@@ -250,4 +250,282 @@ describe('Reports API', () => {
       expect(response.body.endDate).toBe(endDate);
     });
   });
+
+  describe('Advanced Analytics Endpoints', () => {
+    describe('GET /api/reports/advanced/trend-analysis', () => {
+      it('should return trend analysis data', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/trend-analysis')
+          .expect(200);
+
+        expect(response.body).toHaveProperty('startDate');
+        expect(response.body).toHaveProperty('endDate');
+        expect(response.body).toHaveProperty('trends');
+        expect(response.body.trends).toHaveProperty('attendanceTrend');
+        expect(response.body.trends).toHaveProperty('eventsTrend');
+        expect(response.body.trends).toHaveProperty('memberGrowth');
+      });
+
+      it('should return attendance trend with required fields', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/trend-analysis')
+          .expect(200);
+
+        const attendanceTrend = response.body.trends.attendanceTrend;
+        expect(Array.isArray(attendanceTrend)).toBe(true);
+
+        if (attendanceTrend.length > 0) {
+          const item = attendanceTrend[0];
+          expect(item).toHaveProperty('month');
+          expect(item).toHaveProperty('count');
+          expect(item).toHaveProperty('change');
+          expect(item).toHaveProperty('changePercent');
+          expect(typeof item.count).toBe('number');
+          expect(typeof item.change).toBe('number');
+          expect(typeof item.changePercent).toBe('number');
+        }
+      });
+
+      it('should return events trend with required fields', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/trend-analysis')
+          .expect(200);
+
+        const eventsTrend = response.body.trends.eventsTrend;
+        expect(Array.isArray(eventsTrend)).toBe(true);
+
+        if (eventsTrend.length > 0) {
+          const item = eventsTrend[0];
+          expect(item).toHaveProperty('month');
+          expect(item).toHaveProperty('count');
+          expect(item).toHaveProperty('change');
+          expect(item).toHaveProperty('changePercent');
+        }
+      });
+
+      it('should return member growth with required fields', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/trend-analysis')
+          .expect(200);
+
+        const memberGrowth = response.body.trends.memberGrowth;
+        expect(memberGrowth).toHaveProperty('currentTotal');
+        expect(memberGrowth).toHaveProperty('previousTotal');
+        expect(memberGrowth).toHaveProperty('change');
+        expect(memberGrowth).toHaveProperty('changePercent');
+        expect(typeof memberGrowth.currentTotal).toBe('number');
+        expect(typeof memberGrowth.previousTotal).toBe('number');
+        expect(typeof memberGrowth.change).toBe('number');
+        expect(typeof memberGrowth.changePercent).toBe('number');
+      });
+
+      it('should accept custom date range', async () => {
+        const startDate = new Date('2024-01-01').toISOString();
+        const endDate = new Date('2024-12-31').toISOString();
+
+        const response = await request(app)
+          .get('/api/reports/advanced/trend-analysis')
+          .query({ startDate, endDate })
+          .expect(200);
+
+        expect(response.body.startDate).toBe(startDate);
+        expect(response.body.endDate).toBe(endDate);
+      });
+    });
+
+    describe('GET /api/reports/advanced/heat-map', () => {
+      it('should return activity heat map data', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/heat-map')
+          .expect(200);
+
+        expect(response.body).toHaveProperty('startDate');
+        expect(response.body).toHaveProperty('endDate');
+        expect(response.body).toHaveProperty('heatMap');
+        expect(Array.isArray(response.body.heatMap)).toBe(true);
+      });
+
+      it('should return heat map with day, hour, and count fields', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/heat-map')
+          .expect(200);
+
+        const heatMap = response.body.heatMap;
+        expect(heatMap.length).toBeGreaterThan(0);
+
+        // Heat map should have 7 days * 24 hours = 168 entries
+        expect(heatMap.length).toBe(168);
+
+        const item = heatMap[0];
+        expect(item).toHaveProperty('day');
+        expect(item).toHaveProperty('hour');
+        expect(item).toHaveProperty('count');
+        expect(typeof item.day).toBe('number');
+        expect(typeof item.hour).toBe('number');
+        expect(typeof item.count).toBe('number');
+      });
+
+      it('should return days 0-6 and hours 0-23', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/heat-map')
+          .expect(200);
+
+        const heatMap = response.body.heatMap;
+
+        // Check day range
+        const days = [...new Set(heatMap.map((item: { day: number }) => item.day))] as number[];
+        expect(days.length).toBe(7);
+        expect(Math.min(...days)).toBe(0);
+        expect(Math.max(...days)).toBe(6);
+
+        // Check hour range
+        const hours = [...new Set(heatMap.map((item: { hour: number }) => item.hour))] as number[];
+        expect(hours.length).toBe(24);
+        expect(Math.min(...hours)).toBe(0);
+        expect(Math.max(...hours)).toBe(23);
+      });
+
+      it('should accept custom date range', async () => {
+        const startDate = new Date('2024-06-01').toISOString();
+        const endDate = new Date('2024-06-30').toISOString();
+
+        const response = await request(app)
+          .get('/api/reports/advanced/heat-map')
+          .query({ startDate, endDate })
+          .expect(200);
+
+        expect(response.body.startDate).toBe(startDate);
+        expect(response.body.endDate).toBe(endDate);
+      });
+    });
+
+    describe('GET /api/reports/advanced/funnel', () => {
+      it('should return member funnel analysis', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/funnel')
+          .expect(200);
+
+        expect(response.body).toHaveProperty('startDate');
+        expect(response.body).toHaveProperty('endDate');
+        expect(response.body).toHaveProperty('funnel');
+
+        const { funnel } = response.body;
+        expect(funnel).toHaveProperty('stages');
+        expect(Array.isArray(funnel.stages)).toBe(true);
+      });
+
+      it('should return correct funnel structure', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/funnel')
+          .expect(200);
+
+        const { stages } = response.body.funnel;
+
+        // Funnel should have 4 stages
+        expect(stages.length).toBe(4);
+
+        // Each stage should have the required properties
+        stages.forEach((stage: { stage: string; count: number; conversionRate: number }) => {
+          expect(stage).toHaveProperty('stage');
+          expect(stage).toHaveProperty('count');
+          expect(stage).toHaveProperty('conversionRate');
+          expect(typeof stage.stage).toBe('string');
+          expect(typeof stage.count).toBe('number');
+          expect(typeof stage.conversionRate).toBe('number');
+        });
+
+        // Check stage names
+        expect(stages[0].stage).toBe('Registered');
+        expect(stages[1].stage).toBe('First Check-In');
+        expect(stages[2].stage).toBe('Active (5+ Check-Ins)');
+        expect(stages[3].stage).toBe('Veteran (20+ Check-Ins)');
+
+        // First stage should have 100% conversion rate
+        expect(stages[0].conversionRate).toBe(100);
+      });
+
+      it('should accept custom date range', async () => {
+        const startDate = new Date('2024-06-01').toISOString();
+        const endDate = new Date('2024-06-30').toISOString();
+
+        const response = await request(app)
+          .get('/api/reports/advanced/funnel')
+          .query({ startDate, endDate })
+          .expect(200);
+
+        expect(response.body.startDate).toBe(startDate);
+        expect(response.body.endDate).toBe(endDate);
+      });
+    });
+
+    describe('GET /api/reports/advanced/cohort', () => {
+      it('should return cohort analysis', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/cohort')
+          .expect(200);
+
+        expect(response.body).toHaveProperty('startDate');
+        expect(response.body).toHaveProperty('endDate');
+        expect(response.body).toHaveProperty('cohort');
+
+        const { cohort } = response.body;
+        expect(cohort).toHaveProperty('cohorts');
+        expect(Array.isArray(cohort.cohorts)).toBe(true);
+      });
+
+      it('should return correct cohort structure', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/cohort')
+          .expect(200);
+
+        const { cohorts } = response.body.cohort;
+
+        if (cohorts.length > 0) {
+          const cohort = cohorts[0];
+          expect(cohort).toHaveProperty('cohort');
+          expect(cohort).toHaveProperty('members');
+          expect(cohort).toHaveProperty('retentionRates');
+          expect(typeof cohort.cohort).toBe('string');
+          expect(typeof cohort.members).toBe('number');
+          expect(Array.isArray(cohort.retentionRates)).toBe(true);
+
+          // Cohort string should be in format YYYY-MM
+          expect(cohort.cohort).toMatch(/^\d{4}-\d{2}$/);
+
+          // Retention rates should be percentages (0-100)
+          cohort.retentionRates.forEach((rate: number) => {
+            expect(rate).toBeGreaterThanOrEqual(0);
+            expect(rate).toBeLessThanOrEqual(100);
+          });
+        }
+      });
+
+      it('should accept custom date range', async () => {
+        const startDate = new Date('2024-06-01').toISOString();
+        const endDate = new Date('2024-06-30').toISOString();
+
+        const response = await request(app)
+          .get('/api/reports/advanced/cohort')
+          .query({ startDate, endDate })
+          .expect(200);
+
+        expect(response.body.startDate).toBe(startDate);
+        expect(response.body.endDate).toBe(endDate);
+      });
+
+      it('should sort cohorts chronologically', async () => {
+        const response = await request(app)
+          .get('/api/reports/advanced/cohort')
+          .expect(200);
+
+        const { cohorts } = response.body.cohort;
+
+        if (cohorts.length > 1) {
+          for (let i = 1; i < cohorts.length; i++) {
+            expect(cohorts[i].cohort >= cohorts[i - 1].cohort).toBe(true);
+          }
+        }
+      });
+    });
+  });
 });

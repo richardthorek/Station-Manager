@@ -342,16 +342,16 @@ router.get('/brigade-summary', async (req, res) => {
     const db = await ensureDatabase(req.isDemoMode);
     const { startDate, endDate } = parseDateRange(req);
     const brigadeId = req.query.brigadeId as string;
-    
+
     if (!brigadeId) {
       return res.status(400).json({ error: 'brigadeId parameter is required' });
     }
-    
+
     // Get all stations in the brigade
     const allStations = await db.getAllStations();
     const brigadeStations = allStations.filter(s => s.brigadeId === brigadeId);
     const stationIds = brigadeStations.map(s => s.id);
-    
+
     if (stationIds.length === 0) {
       return res.json({
         brigadeId,
@@ -363,19 +363,19 @@ router.get('/brigade-summary', async (req, res) => {
         },
       });
     }
-    
+
     // Aggregate statistics across all brigade stations
     let totalEvents = 0;
     let totalParticipants = 0;
     let totalCompletedEvents = 0;
-    
+
     for (const stationId of stationIds) {
       const stats = await db.getEventStatistics(startDate, endDate, stationId);
       totalEvents += stats.totalEvents;
       totalParticipants += stats.totalParticipants;
       totalCompletedEvents += stats.completedEvents;
     }
-    
+
     res.json({
       startDate,
       endDate,
@@ -393,6 +393,102 @@ router.get('/brigade-summary', async (req, res) => {
   } catch (error) {
     logger.error('Error generating brigade summary:', error);
     res.status(500).json({ error: 'Failed to generate brigade summary' });
+  }
+});
+
+/**
+ * GET /api/reports/advanced/trend-analysis
+ * Get trend analysis with month-over-month and year-over-year growth
+ * Query params: startDate, endDate (ISO date strings)
+ */
+router.get('/advanced/trend-analysis', async (req, res) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const { startDate, endDate } = parseDateRange(req);
+
+    const trends = await db.getTrendAnalysis(startDate, endDate, stationId);
+
+    res.json({
+      startDate,
+      endDate,
+      trends,
+    });
+  } catch (error) {
+    logger.error('Error generating trend analysis:', error);
+    res.status(500).json({ error: 'Failed to generate trend analysis' });
+  }
+});
+
+/**
+ * GET /api/reports/advanced/heat-map
+ * Get activity heat map showing patterns by day of week and hour
+ * Query params: startDate, endDate (ISO date strings)
+ */
+router.get('/advanced/heat-map', async (req, res) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const { startDate, endDate } = parseDateRange(req);
+
+    const heatMap = await db.getActivityHeatMap(startDate, endDate, stationId);
+
+    res.json({
+      startDate,
+      endDate,
+      heatMap,
+    });
+  } catch (error) {
+    logger.error('Error generating activity heat map:', error);
+    res.status(500).json({ error: 'Failed to generate activity heat map' });
+  }
+});
+
+/**
+ * GET /api/reports/advanced/funnel
+ * Get member funnel analysis showing conversion rates through stages
+ * Query params: startDate, endDate (ISO date strings)
+ */
+router.get('/advanced/funnel', async (req, res) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const { startDate, endDate } = parseDateRange(req);
+
+    const funnel = await db.getMemberFunnel(startDate, endDate, stationId);
+
+    res.json({
+      startDate,
+      endDate,
+      funnel,
+    });
+  } catch (error) {
+    logger.error('Error generating member funnel:', error);
+    res.status(500).json({ error: 'Failed to generate member funnel' });
+  }
+});
+
+/**
+ * GET /api/reports/advanced/cohort
+ * Get cohort analysis tracking member retention by registration month
+ * Query params: startDate, endDate (ISO date strings)
+ */
+router.get('/advanced/cohort', async (req, res) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const { startDate, endDate } = parseDateRange(req);
+
+    const cohort = await db.getCohortAnalysis(startDate, endDate, stationId);
+
+    res.json({
+      startDate,
+      endDate,
+      cohort,
+    });
+  } catch (error) {
+    logger.error('Error generating cohort analysis:', error);
+    res.status(500).json({ error: 'Failed to generate cohort analysis' });
   }
 });
 

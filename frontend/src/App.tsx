@@ -24,6 +24,7 @@ const AdminDashboardPage = lazy(() => import('./features/truckcheck/AdminDashboa
 const TemplateSelectionPage = lazy(() => import('./features/truckcheck/TemplateSelectionPage').then(m => ({ default: m.TemplateSelectionPage })));
 const TemplateEditorPage = lazy(() => import('./features/truckcheck/TemplateEditorPage').then(m => ({ default: m.TemplateEditorPage })));
 const ReportsPage = lazy(() => import('./features/reports/ReportsPageEnhanced').then(m => ({ default: m.ReportsPageEnhanced })));
+const AdvancedReportsPage = lazy(() => import('./features/reports/AdvancedReportsPage').then(m => ({ default: m.AdvancedReportsPage })));
 const CrossStationReportsPage = lazy(() => import('./features/reports/CrossStationReportsPage').then(m => ({ default: m.CrossStationReportsPage })));
 const StationManagementPage = lazy(() => import('./features/admin/stations/StationManagementPage').then(m => ({ default: m.StationManagementPage })));
 const BrigadeAccessPage = lazy(() => import('./features/admin/brigade-access/BrigadeAccessPage').then(m => ({ default: m.BrigadeAccessPage })));
@@ -49,6 +50,7 @@ function AnimatedRoutes() {
         <Route path="/truckcheck/templates" element={<TemplateSelectionPage />} />
         <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
         <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/reports/advanced" element={<AdvancedReportsPage />} />
         <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
         <Route path="/admin/stations" element={<StationManagementPage />} />
         <Route path="/admin/brigade-access" element={<BrigadeAccessPage />} />
