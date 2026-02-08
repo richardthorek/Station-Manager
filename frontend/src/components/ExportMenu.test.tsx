@@ -10,7 +10,8 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { ExportMenu } from './ExportMenu';
 
 describe('ExportMenu', () => {
@@ -18,30 +19,41 @@ describe('ExportMenu', () => {
   const mockExportExcel = vi.fn();
   const mockExportPNG = vi.fn();
 
+  const renderMenu = async (props: Partial<ComponentProps<typeof ExportMenu>> = {}) => {
+    let utils: ReturnType<typeof render> | undefined
+    await act(async () => {
+      utils = render(
+        <ExportMenu
+          onExportPDF={mockExportPDF}
+          onExportExcel={mockExportExcel}
+          onExportPNG={mockExportPNG}
+          {...props}
+        />
+      )
+    })
+    return utils as ReturnType<typeof render>
+  }
+
+  const openPdfOption = async () => {
+    const exportButton = screen.getByText('Export');
+    await act(async () => {
+      fireEvent.click(exportButton);
+    });
+    return screen.findByText('Export as PDF');
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders export button', () => {
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+  it('renders export button', async () => {
+    await renderMenu();
 
     expect(screen.getByText('Export')).toBeInTheDocument();
   });
 
-  it('opens dropdown when export button clicked', () => {
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+  it('opens dropdown when export button clicked', async () => {
+    await renderMenu();
 
     const exportButton = screen.getByText('Export');
     fireEvent.click(exportButton);
@@ -52,13 +64,7 @@ describe('ExportMenu', () => {
   });
 
   it('closes dropdown when clicking outside', async () => {
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+    await renderMenu();
 
     // Open dropdown
     const exportButton = screen.getByText('Export');
@@ -76,13 +82,7 @@ describe('ExportMenu', () => {
   it('calls onExportPDF when PDF option clicked', async () => {
     mockExportPDF.mockResolvedValue(undefined);
 
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+    await renderMenu();
 
     // Open dropdown
     const exportButton = screen.getByText('Export');
@@ -100,13 +100,7 @@ describe('ExportMenu', () => {
   it('calls onExportExcel when Excel option clicked', async () => {
     mockExportExcel.mockResolvedValue(undefined);
 
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+    await renderMenu();
 
     // Open dropdown
     const exportButton = screen.getByText('Export');
@@ -124,13 +118,7 @@ describe('ExportMenu', () => {
   it('calls onExportPNG when PNG option clicked', async () => {
     mockExportPNG.mockResolvedValue(undefined);
 
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+    await renderMenu();
 
     // Open dropdown
     const exportButton = screen.getByText('Export');
@@ -153,19 +141,13 @@ describe('ExportMenu', () => {
     });
     mockExportPDF.mockReturnValue(exportPromise);
 
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+    await renderMenu();
 
     // Open dropdown and click PDF
-    const exportButton = screen.getByText('Export');
-    fireEvent.click(exportButton);
-    const pdfOption = screen.getByText('Export as PDF');
-    fireEvent.click(pdfOption);
+    const pdfOption = await openPdfOption();
+    await act(async () => {
+      fireEvent.click(pdfOption);
+    });
 
     // Should show loading
     await waitFor(() => {
@@ -173,25 +155,21 @@ describe('ExportMenu', () => {
     });
 
     // Resolve the export
-    resolveExport!();
+    await act(async () => {
+      resolveExport!();
+    });
   });
 
   it('shows success message after export completes', async () => {
     mockExportPDF.mockResolvedValue(undefined);
 
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+    await renderMenu();
 
     // Open dropdown and click PDF
-    const exportButton = screen.getByText('Export');
-    fireEvent.click(exportButton);
-    const pdfOption = screen.getByText('Export as PDF');
-    fireEvent.click(pdfOption);
+    const pdfOption = await openPdfOption();
+    await act(async () => {
+      fireEvent.click(pdfOption);
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/Exported as PDF successfully/)).toBeInTheDocument();
@@ -201,34 +179,21 @@ describe('ExportMenu', () => {
   it('closes dropdown after successful export', async () => {
     mockExportPDF.mockResolvedValue(undefined);
 
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+    await renderMenu();
 
     // Open dropdown and click PDF
-    const exportButton = screen.getByText('Export');
-    fireEvent.click(exportButton);
-    const pdfOption = screen.getByText('Export as PDF');
-    fireEvent.click(pdfOption);
+    const pdfOption = await openPdfOption();
+    await act(async () => {
+      fireEvent.click(pdfOption);
+    });
 
     await waitFor(() => {
       expect(screen.queryByText('Export as Excel')).not.toBeInTheDocument();
     });
   });
 
-  it('disables export button when disabled prop is true', () => {
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-        disabled={true}
-      />
-    );
+  it('disables export button when disabled prop is true', async () => {
+    await renderMenu({ disabled: true });
 
     const exportButton = screen.getByRole('button', { name: /export/i });
     expect(exportButton).toBeDisabled();
@@ -238,19 +203,13 @@ describe('ExportMenu', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     mockExportPDF.mockRejectedValue(new Error('Export failed'));
 
-    render(
-      <ExportMenu
-        onExportPDF={mockExportPDF}
-        onExportExcel={mockExportExcel}
-        onExportPNG={mockExportPNG}
-      />
-    );
+    await renderMenu();
 
     // Open dropdown and click PDF
-    const exportButton = screen.getByText('Export');
-    fireEvent.click(exportButton);
-    const pdfOption = screen.getByText('Export as PDF');
-    fireEvent.click(pdfOption);
+    const pdfOption = await openPdfOption();
+    await act(async () => {
+      fireEvent.click(pdfOption);
+    });
 
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to export'));

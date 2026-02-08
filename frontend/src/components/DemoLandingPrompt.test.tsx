@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { DemoLandingPrompt } from './DemoLandingPrompt';
 import { hasSeenDemoPrompt, resetDemoPrompt } from '../utils/demoPromptUtils';
@@ -35,18 +35,26 @@ describe('DemoLandingPrompt', () => {
     resetDemoPrompt();
   });
 
-  it('should render welcome message', () => {
+  const renderPrompt = async (onDismiss: () => void) => {
+    let utils: ReturnType<typeof render> | undefined
+    await act(async () => {
+      utils = render(<MockedDemoLandingPrompt onDismiss={onDismiss} />)
+    })
+    return utils as ReturnType<typeof render>
+  }
+
+  it('should render welcome message', async () => {
     const mockDismiss = vi.fn();
 
-    render(<MockedDemoLandingPrompt onDismiss={mockDismiss} />);
+    await renderPrompt(mockDismiss);
 
     expect(screen.getByText(/Welcome to Station Manager!/i)).toBeInTheDocument();
   });
 
-  it('should show two options: demo and real station', () => {
+  it('should show two options: demo and real station', async () => {
     const mockDismiss = vi.fn();
 
-    render(<MockedDemoLandingPrompt onDismiss={mockDismiss} />);
+    await renderPrompt(mockDismiss);
 
     expect(screen.getByText(/Try the Demo/i)).toBeInTheDocument();
     expect(screen.getByText(/Use Real Station/i)).toBeInTheDocument();
@@ -55,7 +63,7 @@ describe('DemoLandingPrompt', () => {
   it('should call onDismiss when close button is clicked', async () => {
     const mockDismiss = vi.fn();
 
-    render(<MockedDemoLandingPrompt onDismiss={mockDismiss} />);
+    await renderPrompt(mockDismiss);
 
     const closeButton = document.querySelector('.demo-prompt-close');
     if (closeButton) {
@@ -70,7 +78,7 @@ describe('DemoLandingPrompt', () => {
   it('should call onDismiss when "Start Demo" is clicked', async () => {
     const mockDismiss = vi.fn();
 
-    render(<MockedDemoLandingPrompt onDismiss={mockDismiss} />);
+    await renderPrompt(mockDismiss);
 
     const startDemoButton = screen.getByText('Start Demo');
     fireEvent.click(startDemoButton);
@@ -83,7 +91,7 @@ describe('DemoLandingPrompt', () => {
   it('should call onDismiss when "Set Up Station" is clicked', async () => {
     const mockDismiss = vi.fn();
 
-    render(<MockedDemoLandingPrompt onDismiss={mockDismiss} />);
+    await renderPrompt(mockDismiss);
 
     const setupButton = screen.getByText('Set Up Station');
     fireEvent.click(setupButton);
@@ -96,7 +104,7 @@ describe('DemoLandingPrompt', () => {
   it('should set localStorage flag when dismissed', async () => {
     const mockDismiss = vi.fn();
 
-    render(<MockedDemoLandingPrompt onDismiss={mockDismiss} />);
+    await renderPrompt(mockDismiss);
 
     expect(hasSeenDemoPrompt()).toBe(false);
 
@@ -110,18 +118,18 @@ describe('DemoLandingPrompt', () => {
     }
   });
 
-  it('should display helpful tip about station switching', () => {
+  it('should display helpful tip about station switching', async () => {
     const mockDismiss = vi.fn();
 
-    render(<MockedDemoLandingPrompt onDismiss={mockDismiss} />);
+    await renderPrompt(mockDismiss);
 
     expect(screen.getByText(/You can switch between stations anytime/i)).toBeInTheDocument();
   });
 
-  it('should have proper CSS classes for overlay and dialog', () => {
+  it('should have proper CSS classes for overlay and dialog', async () => {
     const mockDismiss = vi.fn();
 
-    render(<MockedDemoLandingPrompt onDismiss={mockDismiss} />);
+    await renderPrompt(mockDismiss);
 
     // Check that the overlay exists with proper class
     const overlay = document.querySelector('.demo-prompt-overlay');
