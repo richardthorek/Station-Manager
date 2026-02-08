@@ -152,10 +152,10 @@ export function CheckSummaryPage() {
                   <div className="result-photo-thumbnail">
                     <button
                       className="photo-thumbnail-button"
-                      onClick={() => setLightboxImage({ url: result.photoUrl!, alt: `Photo for ${result.itemName}` })}
-                      aria-label={`View photo for ${result.itemName}`}
+                      onClick={() => setLightboxImage({ url: result.photoUrl!, alt: result.itemName })}
+                      aria-label={`View documentation for ${result.itemName}`}
                     >
-                      <img src={result.photoUrl} alt={`Photo for ${result.itemName}`} />
+                      <img src={result.photoUrl} alt={result.itemName} />
                       <div className="photo-overlay">
                         <span className="zoom-icon">🔍</span>
                       </div>

@@ -27,7 +27,7 @@ export function Confetti({ duration = 3000 }: ConfettiProps) {
   const [confettiPieces, setConfettiPieces] = useState<ConfettiPiece[]>([]);
 
   useEffect(() => {
-    // Generate 50 confetti pieces
+    // Generate 50 confetti pieces on mount
     const pieces: ConfettiPiece[] = Array.from({ length: 50 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -35,6 +35,9 @@ export function Confetti({ duration = 3000 }: ConfettiProps) {
       duration: 2 + Math.random() * 1,
       color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
     }));
+    
+    // Initialize confetti pieces - this is intentional on mount
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConfettiPieces(pieces);
 
     const timer = setTimeout(() => {
