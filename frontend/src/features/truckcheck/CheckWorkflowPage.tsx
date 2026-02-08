@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useTheme } from '../../hooks/useTheme';
 import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
+import { Lightbox } from '../../components/Lightbox';
+import { Confetti } from '../../components/Confetti';
 import type { Appliance, ChecklistTemplate, CheckRun, CheckResult, CheckStatus } from '../../types';
 import './CheckWorkflow.css';
 
@@ -23,9 +26,16 @@ export function CheckWorkflowPage() {
   const [error, setError] = useState<string | null>(null);
   const [isJoinedCheck, setIsJoinedCheck] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; alt: string } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
 
   // Auto-collapse sidebar on mobile devices
   useEffect(() => {
@@ -55,6 +65,14 @@ export function CheckWorkflowPage() {
       nameInputRef.current?.focus();
     }
   }, [showNamePrompt]);
+
+  // Show confetti when all items completed (only once)
+  useEffect(() => {
+    if (template && results.size === template.items.length && results.size > 0 && !showConfetti) {
+      setShowConfetti(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results.size, template]); // Exclude showConfetti to prevent loop
 
   // Listen for real-time updates from other contributors
   useEffect(() => {
@@ -244,6 +262,48 @@ export function CheckWorkflowPage() {
     }
   }
 
+  // Touch handlers for swipe gestures
+  function onTouchStart(e: React.TouchEvent) {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    setTouchEnd(e.targetTouches[0].clientX);
+  }
+
+  function onTouchEnd() {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      handleNext();
+    }
+    if (isRightSwipe) {
+      handlePrevious();
+    }
+  }
+
+  function getItemIcon(itemName: string): string {
+    const name = itemName.toLowerCase();
+    if (name.includes('oil') || name.includes('fluid')) return '🛢️';
+    if (name.includes('tire') || name.includes('wheel')) return '🛞';
+    if (name.includes('light') || name.includes('beacon')) return '💡';
+    if (name.includes('hose') || name.includes('water')) return '🚿';
+    if (name.includes('radio') || name.includes('communication')) return '📻';
+    if (name.includes('fuel') || name.includes('tank')) return '⛽';
+    if (name.includes('battery')) return '🔋';
+    if (name.includes('extinguisher') || name.includes('fire')) return '🧯';
+    if (name.includes('tool') || name.includes('equipment')) return '🔧';
+    if (name.includes('first aid') || name.includes('medical')) return '🏥';
+    if (name.includes('ladder')) return '🪜';
+    if (name.includes('pump')) return '⚙️';
+    return '✓'; // Default checkmark
+  }
+
   if (loading) {
     return (
       <div className="workflow-page">
@@ -308,6 +368,15 @@ export function CheckWorkflowPage() {
 
   return (
     <div className="workflow-page">
+      {showConfetti && <Confetti duration={4000} />}
+      {lightboxImage && (
+        <Lightbox
+          imageUrl={lightboxImage.url}
+          alt={lightboxImage.alt}
+          isOpen={true}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
       <header className="workflow-header">
         <div className="header-top">
           <Link to="/truckcheck" className="back-link">← Cancel</Link>
@@ -316,6 +385,22 @@ export function CheckWorkflowPage() {
           </button>
         </div>
         <h1>{appliance.name} Check</h1>
+        
+        {/* Horizontal Progress Bar */}
+        <div className="horizontal-progress-bar">
+          <div className="progress-bar-track">
+            <motion.div 
+              className="progress-bar-fill"
+              initial={{ width: 0 }}
+              animate={{ width: `${(results.size / template.items.length) * 100}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+          <div className="progress-text">
+            {results.size} of {template.items.length} items completed ({Math.round((results.size / template.items.length) * 100)}%)
+          </div>
+        </div>
+
         {checkRun && (
           <div className="check-status-info">
             {isJoinedCheck && (
@@ -370,21 +455,32 @@ export function CheckWorkflowPage() {
           </div>
         </aside>
 
-        <main className="workflow-main" ref={scrollContainerRef} id="main-content" tabIndex={-1}>
+        <main className="workflow-main" ref={scrollContainerRef} id="main-content" tabIndex={-1}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
           <div className="items-container">
             {template.items.map((item, index) => (
               <CheckItemCard
                 key={item.id}
                 item={item}
+                itemIcon={getItemIcon(item.name)}
                 isActive={index === currentIndex}
                 result={results.get(item.id)}
                 onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl)}
+                onPhotoClick={(url, alt) => setLightboxImage({ url, alt })}
               />
             ))}
             
             {results.size === template.items.length && (
-              <div className="completion-card">
-                <div className="completion-icon">✅</div>
+              <motion.div 
+                className="completion-card"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, type: 'spring' }}
+              >
+                <div className="completion-icon">🎉</div>
                 <h2>All Items Completed!</h2>
                 <p>You've completed all {template.items.length} items in this check.</p>
                 <button 
@@ -393,7 +489,7 @@ export function CheckWorkflowPage() {
                 >
                   View Summary & Finish
                 </button>
-              </div>
+              </motion.div>
             )}
           </div>
         </main>
@@ -429,12 +525,14 @@ export function CheckWorkflowPage() {
 
 interface CheckItemCardProps {
   item: { id: string; name: string; description: string; referencePhotoUrl?: string };
+  itemIcon: string;
   isActive: boolean;
   result?: CheckResult;
   onResult: (status: CheckStatus, comment?: string, photoUrl?: string) => void;
+  onPhotoClick: (url: string, alt: string) => void;
 }
 
-function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps) {
+function CheckItemCard({ item, itemIcon, isActive, result, onResult, onPhotoClick }: CheckItemCardProps) {
   const [comment, setComment] = useState('');
   const [showComment, setShowComment] = useState(false);
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
@@ -514,17 +612,32 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
   }
 
   return (
-    <div className={`check-item-card ${isActive ? 'active' : ''} ${result ? 'completed' : ''}`}>
+    <motion.div 
+      className={`check-item-card ${isActive ? 'active' : ''} ${result ? 'completed' : ''} ${result?.status === 'issue' ? 'has-issue' : ''}`}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: isActive ? 1 : 0.7, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="item-content">
-        <h2>{item.name}</h2>
+        <div className="item-header">
+          <span className="item-icon" aria-hidden="true">{itemIcon}</span>
+          <h2>{item.name}</h2>
+        </div>
         <p className="item-description">{item.description}</p>
         
         {/* Reference photo if available */}
         {item.referencePhotoUrl ? (
           <div className="reference-photo">
-            <a href={item.referencePhotoUrl} target="_blank" rel="noopener noreferrer">
+            <button
+              className="photo-button"
+              onClick={() => onPhotoClick(item.referencePhotoUrl!, `Reference for ${item.name}`)}
+              aria-label={`View reference photo for ${item.name}`}
+            >
               <img src={item.referencePhotoUrl} alt={`Reference for ${item.name}`} />
-            </a>
+              <div className="photo-overlay">
+                <span className="zoom-icon">🔍</span>
+              </div>
+            </button>
             <p className="photo-caption">Reference Photo (click to enlarge)</p>
           </div>
         ) : (
@@ -545,13 +658,22 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
               <p className="completed-by">Completed by: {result.completedBy}</p>
             )}
             {result.comment && (
-              <p className="result-comment">Comment: {result.comment}</p>
+              <div className="result-comment-box">
+                <strong>Comment:</strong> {result.comment}
+              </div>
             )}
             {result.photoUrl && (
               <div className="result-photo">
-                <a href={result.photoUrl} target="_blank" rel="noopener noreferrer">
+                <button
+                  className="photo-button"
+                  onClick={() => onPhotoClick(result.photoUrl!, 'Issue documentation')}
+                  aria-label="View uploaded photo"
+                >
                   <img src={result.photoUrl} alt="Issue documentation" />
-                </a>
+                  <div className="photo-overlay">
+                    <span className="zoom-icon">🔍</span>
+                  </div>
+                </button>
                 <p className="photo-caption">Uploaded Photo (click to enlarge)</p>
               </div>
             )}
@@ -637,6 +759,6 @@ function CheckItemCard({ item, isActive, result, onResult }: CheckItemCardProps)
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

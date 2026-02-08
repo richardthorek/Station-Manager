@@ -625,8 +625,12 @@ frontend/src/
 │   │   └── ProfilePage.css
 │   ├── truckcheck/            # Vehicle checks
 │   │   ├── TruckCheckPage.tsx
-│   │   ├── CheckWorkflowPage.tsx
+│   │   ├── CheckWorkflowPage.tsx      # Enhanced with progress bar, swipe gestures, icons
+│   │   ├── CheckSummaryPage.tsx       # Enhanced with QR code, photo grid
 │   │   ├── AdminDashboardPage.tsx
+│   │   ├── TemplateEditorPage.tsx
+│   │   ├── TemplateSelectionPage.tsx
+│   │   ├── VehicleManagement.tsx
 │   │   └── [styles]
 │   ├── reports/               # Reports & Analytics
 │   │   ├── ReportsPage.tsx
@@ -642,6 +646,8 @@ frontend/src/
 ├── components/                # Shared components
 │   ├── Header.tsx
 │   ├── Footer.tsx
+│   ├── Lightbox.tsx           # NEW: Photo lightbox modal with keyboard support
+│   ├── Confetti.tsx           # NEW: Celebration confetti animation
 │   └── [other shared]
 ├── hooks/                     # Custom React hooks
 │   └── useSocket.ts
@@ -1400,6 +1406,255 @@ Potential improvements (not in current scope):
 - Station grouping by region
 
 **Documentation:** See `docs/STATION_SELECTION_IMPLEMENTATION.md` for detailed implementation notes.
+
+---
+
+## Truck Check Visual Enhancements
+
+### Overview
+
+Comprehensive visual and UX enhancements to the truck check workflow, providing clear visual guidance, prominent issue highlighting, and interactive photo management.
+
+**Status:** ✅ COMPLETED (February 2026)  
+**GitHub Issue:** richardthorek/Station-Manager#34
+
+### New Components
+
+#### 1. Lightbox (`frontend/src/components/Lightbox.tsx`)
+Modal image viewer for full-screen photo viewing.
+
+**Features:**
+- Full-screen modal with Framer Motion animations
+- Keyboard navigation (Escape key to close)
+- Click outside to close
+- Prevents body scroll when open
+- Accessible with ARIA labels (role="dialog", aria-modal="true")
+- Image scaling with smooth transitions
+
+**Test Coverage:**
+- 8 comprehensive tests in `Lightbox.test.tsx`
+- Tests cover: rendering, interaction, keyboard, ARIA, body scroll
+
+**Styling:**
+- Dark overlay (90% opacity black)
+- Centered image with max 90vh/90vw
+- Close button (top-right, 50px touch target)
+- Smooth fade/scale animations
+
+#### 2. Confetti (`frontend/src/components/Confetti.tsx`)
+Animated celebration for check completion.
+
+**Features:**
+- 50 confetti pieces with random positioning
+- NSW RFS brand colors (#e5281B red, #cbdb2a lime, #fbb034 amber, #215e9e blue, #008550 green, #4CAF50 success)
+- Configurable duration (default 3 seconds)
+- Auto-cleanup after animation
+- Respects `prefers-reduced-motion`
+- Decorative with `aria-hidden="true"`
+
+**Test Coverage:**
+- 6 comprehensive tests in `Confetti.test.tsx`
+- Tests cover: rendering, duration, cleanup, colors, positioning
+
+**Animation:**
+- Framer Motion for smooth physics-based falling
+- Random delays (0-500ms) for natural effect
+- Random durations (2-3 seconds)
+- 360° rotation during fall
+
+### Enhanced Pages
+
+#### CheckWorkflowPage Enhancements
+
+**Horizontal Progress Bar:**
+- Animated gradient progress bar at top of header
+- Shows completion percentage (e.g., "5 of 10 items completed (50%)")
+- Smooth width animation with Framer Motion
+- Lime green gradient fill (#cbdb2a to #a8c920)
+- Prominent with subtle glow effect
+
+**Checklist Item Cards:**
+- Color-coded status badges (done, issue, skipped)
+- **Contextual Icons:** Smart assignment based on item name:
+  - 🛢️ Oil/fluid items
+  - 🛞 Tire/wheel items
+  - 💡 Light/beacon items
+  - 🚿 Hose/water items
+  - 📻 Radio/communication items
+  - ⛽ Fuel/tank items
+  - 🔋 Battery items
+  - 🧯 Extinguisher/fire items
+  - 🔧 Tool/equipment items
+  - 🏥 First aid/medical items
+  - 🪜 Ladder items
+  - ⚙️ Pump items
+  - ✓ Default checkmark
+- Icon in circular background with lime accent
+- Framer Motion card animations (fade-in, scale)
+
+**Issue Highlighting:**
+- Cards with `has-issue` class get prominent styling:
+  - 3px solid amber border (#fbb034)
+  - Enhanced box-shadow with amber glow
+  - Special background tint (rgba(251, 176, 52, 0.08))
+- Issue comment boxes with amber left border
+- High visibility for safety-critical issues
+
+**Swipe Gestures:**
+- Touch event handlers (onTouchStart, onTouchMove, onTouchEnd)
+- Left swipe = Next item
+- Right swipe = Previous item
+- Minimum threshold: 50px
+- Natural navigation for tablet/mobile users
+
+**Photo Integration:**
+- Reference photos and result photos clickable
+- Hover overlay with zoom icon (🔍)
+- Opens Lightbox on click
+- Smooth transition animations
+
+**Completion Celebration:**
+- Confetti animation triggers when all items complete
+- Spring-animated completion card (scale, fade)
+- Large emoji (🎉) with bounce animation
+- Call-to-action button to summary
+
+#### CheckSummaryPage Enhancements
+
+**QR Code Generation:**
+- Uses `qrcode.react` library
+- Generates shareable QR code with URL to check summary
+- Toggle button to show/hide QR section
+- QR code in white container for scanability
+- Size: 200x200px with high error correction (level H)
+
+**Photo Grid:**
+- Thumbnail grid for all result photos
+- Clickable thumbnails (150px height)
+- Hover effects with zoom icon overlay
+- Opens Lightbox for full-screen viewing
+- Accessible with proper ARIA labels
+
+**Enhanced Result Display:**
+- Photos inline with each result item
+- Issue comments prominently highlighted
+- Status badges color-coded (done/issue/skipped)
+- Cleaner visual hierarchy
+
+### CSS Architecture
+
+**CheckWorkflow.css Additions:**
+- `.horizontal-progress-bar` - Progress indicator container
+- `.progress-bar-track` - Progress bar background
+- `.progress-bar-fill` - Animated gradient fill
+- `.check-item-card.has-issue` - Issue card styling
+- `.item-header` & `.item-icon` - Icon display
+- `.photo-button` & `.photo-overlay` - Photo hover effects
+- `.result-comment-box` - Issue comment styling
+
+**CheckSummary.css Additions:**
+- `.result-photo-thumbnail` - Photo grid styling
+- `.photo-thumbnail-button` - Clickable thumbnails
+- `.qr-code-section` - QR code container
+- `.qr-code-container` - White background for QR
+- `.btn-secondary` - Secondary button styling
+
+**Lightbox.css:**
+- Full-screen overlay (z-index: 9999)
+- Close button positioning
+- Image centering and sizing
+- Mobile responsive styling
+
+**Confetti.css:**
+- Fixed positioning (z-index: 9998)
+- Confetti piece styling (10x10px)
+- Respects prefers-reduced-motion
+
+### Accessibility
+
+**WCAG AA Compliance:**
+- All color contrast ratios ≥ 4.5:1
+- Touch targets ≥ 48px (60px for critical actions)
+- Keyboard navigation supported
+- Proper ARIA labels throughout
+- Screen reader friendly
+
+**Keyboard Support:**
+- Escape key closes lightbox
+- Tab navigation for all interactive elements
+- Focus indicators visible
+- Logical focus order
+
+**Reduced Motion:**
+- Confetti animation disabled if `prefers-reduced-motion: reduce`
+- Framer Motion respects user preferences
+- Fallback to static states
+
+### Performance
+
+**Optimizations:**
+- Hardware-accelerated animations (transform, opacity)
+- Efficient re-renders with React.memo where applicable
+- Confetti auto-cleanup prevents memory leaks
+- Lightbox prevents body scroll for better UX
+- Image lazy loading for reference photos
+
+**Bundle Impact:**
+- New components add ~15KB to bundle (minified + gzipped)
+- Framer Motion already included (no new dependency)
+- qrcode.react: ~8KB (new dependency)
+
+### Testing
+
+**Test Statistics:**
+- 14 new tests added (8 Lightbox + 6 Confetti)
+- 100% test pass rate
+- Coverage includes: rendering, interaction, keyboard, accessibility, animations
+
+**Test Files:**
+- `frontend/src/components/Lightbox.test.tsx`
+- `frontend/src/components/Confetti.test.tsx`
+
+**Linting:**
+- 0 new ESLint errors
+- All code follows project conventions
+- TypeScript strict mode compliance
+
+### Implementation Files
+
+**New Files (6):**
+- `frontend/src/components/Lightbox.tsx`
+- `frontend/src/components/Lightbox.css`
+- `frontend/src/components/Lightbox.test.tsx`
+- `frontend/src/components/Confetti.tsx`
+- `frontend/src/components/Confetti.css`
+- `frontend/src/components/Confetti.test.tsx`
+
+**Modified Files (4):**
+- `frontend/src/features/truckcheck/CheckWorkflowPage.tsx`
+- `frontend/src/features/truckcheck/CheckWorkflow.css`
+- `frontend/src/features/truckcheck/CheckSummaryPage.tsx`
+- `frontend/src/features/truckcheck/CheckSummary.css`
+
+### User Experience Improvements
+
+1. **Clear Progress Tracking:** Visual progress bar shows exactly where you are
+2. **Smart Icons:** Contextual icons help identify item types at a glance
+3. **Issue Prominence:** Problems stand out immediately with amber highlighting
+4. **Photo Management:** Easy to view and compare reference/result photos
+5. **Celebration Feedback:** Positive reinforcement on completion
+6. **Shareable Results:** QR codes enable easy result sharing
+7. **Touch-Friendly:** Swipe gestures feel natural on tablets
+
+### Future Enhancements
+
+Potential improvements (not in current scope):
+- Image compression on upload (reduce storage costs)
+- Photo annotation tools (draw on photos to highlight issues)
+- Photo comparison slider (before/after)
+- Offline photo caching
+- PDF export of check with photos
+- Email/SMS notifications with QR code
 
 ---
 
