@@ -230,7 +230,7 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
     const existing = await db.getMemberParticipantInEvent(eventId, memberId);
     if (existing) {
       // Remove participant (undo check-in)
-      await db.removeEventParticipant(existing.id);
+      await db.removeEventParticipant(existing.id, eventId);
       
       // Create audit log for removal
       await db.createEventAuditLog(
@@ -308,7 +308,7 @@ router.delete('/:eventId/participants/:participantId', validateRemoveParticipant
     const participant = participants.find(p => p.id === participantId);
     
     // Remove participant (this will return false if not found)
-    const success = await db.removeEventParticipant(participantId);
+    const success = await db.removeEventParticipant(participantId, eventId);
     
     if (!success) {
       return res.status(404).json({ error: 'Participant not found' });

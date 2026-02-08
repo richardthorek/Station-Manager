@@ -837,7 +837,7 @@ class DatabaseService {
   /**
    * Remove a participant from an event (undo check-in)
    */
-  removeEventParticipant(participantId: string): boolean {
+  removeEventParticipant(participantId: string, eventId?: string): boolean {
     const participant = this.eventParticipants.get(participantId);
     if (!participant) {
       return false;

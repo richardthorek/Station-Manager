@@ -74,7 +74,7 @@ export interface IDatabase {
   getEventParticipants(eventId: string): Promise<EventParticipant[]> | EventParticipant[];
   getEventWithParticipants(eventId: string): Promise<EventWithParticipants | null> | EventWithParticipants | null;
   getEventsWithParticipants(limit?: number, offset?: number, stationId?: string): Promise<EventWithParticipants[]> | EventWithParticipants[];
-  removeEventParticipant(participantId: string): Promise<boolean> | boolean;
+  removeEventParticipant(participantId: string, eventId?: string): Promise<boolean> | boolean;
   getMemberParticipantInEvent(eventId: string, memberId: string): Promise<EventParticipant | undefined> | EventParticipant | undefined;
   getAllActiveParticipants(stationId?: string): Promise<EventParticipant[]> | EventParticipant[];
   

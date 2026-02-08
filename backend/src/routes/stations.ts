@@ -415,7 +415,7 @@ router.post('/demo/reset', async (req: Request, res: Response) => {
     for (const event of events) {
       const participants = await db.getEventParticipants(event.id);
       for (const participant of participants) {
-        await db.removeEventParticipant(participant.id);
+        await db.removeEventParticipant(participant.id, event.id);
       }
       await db.deleteEvent(event.id);
     }
