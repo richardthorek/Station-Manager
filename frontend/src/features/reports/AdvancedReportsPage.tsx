@@ -1,12 +1,15 @@
 /**
  * Advanced Reports Page Component
  *
- * Advanced analytics dashboard with trend analysis and heat maps.
+ * Advanced analytics dashboard with trend analysis, heat maps, funnel analysis, and cohort analysis.
  *
  * Features:
  * - Trend analysis (month-over-month growth for attendance and events)
  * - Member growth tracking
  * - Activity heat map (by day of week and hour)
+ * - Member funnel analysis (conversion through stages)
+ * - Cohort analysis (retention tracking by registration month)
+ * - Period comparison mode
  * - Date range selector
  * - Loading states and error handling
  * - Responsive design for mobile, tablet, and desktop
@@ -15,7 +18,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { format, subDays, subMonths } from 'date-fns';
 import { PageTransition } from '../../components/PageTransition';
 import { SkeletonReportCard, Skeleton } from '../../components/Skeleton';
@@ -48,6 +51,14 @@ interface HeatMapData {
   count: number;
 }
 
+interface FunnelData {
+  stages: Array<{ stage: string; count: number; conversionRate: number }>;
+}
+
+interface CohortData {
+  cohorts: Array<{ cohort: string; members: number; retentionRates: number[] }>;
+}
+
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const HOURS = Array.from({ length: 24 }, (_, i) => `${i}:00`);
 
@@ -55,12 +66,18 @@ export function AdvancedReportsPage() {
   const [dateRange, setDateRange] = useState<DateRange>('last90');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [comparisonMode, setComparisonMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Report data
   const [trendData, setTrendData] = useState<TrendData | null>(null);
   const [heatMapData, setHeatMapData] = useState<HeatMapData[]>([]);
+  const [funnelData, setFunnelData] = useState<FunnelData | null>(null);
+  const [cohortData, setCohortData] = useState<CohortData | null>(null);
+
+  // Comparison period data
+  const [comparisonTrendData, setComparisonTrendData] = useState<TrendData | null>(null);
 
   // Fetch all reports
   const fetchReports = useCallback(async () => {
@@ -99,20 +116,41 @@ export function AdvancedReportsPage() {
       const [
         trendsRes,
         heatMapRes,
+        funnelRes,
+        cohortRes,
       ] = await Promise.all([
         api.getTrendAnalysis(startDateStr, endDateStr),
         api.getActivityHeatMap(startDateStr, endDateStr),
+        api.getMemberFunnel(startDateStr, endDateStr),
+        api.getCohortAnalysis(startDateStr, endDateStr),
       ]);
 
       setTrendData(trendsRes.trends);
       setHeatMapData(heatMapRes.heatMap);
+      setFunnelData(funnelRes.funnel);
+      setCohortData(cohortRes.cohort);
+
+      // Fetch comparison period if enabled
+      if (comparisonMode) {
+        const duration = endDate.getTime() - startDate.getTime();
+        const comparisonEndDate = new Date(startDate.getTime() - 1); // Day before current period starts
+        const comparisonStartDate = new Date(comparisonEndDate.getTime() - duration);
+
+        const comparisonTrendsRes = await api.getTrendAnalysis(
+          comparisonStartDate.toISOString(),
+          comparisonEndDate.toISOString()
+        );
+        setComparisonTrendData(comparisonTrendsRes.trends);
+      } else {
+        setComparisonTrendData(null);
+      }
     } catch (err) {
       console.error('Error fetching advanced reports:', err);
       setError('Failed to load advanced analytics. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [dateRange, customStartDate, customEndDate]);
+  }, [dateRange, customStartDate, customEndDate, comparisonMode]);
 
   // Fetch reports on mount and when date range changes
   useEffect(() => {
@@ -143,6 +181,51 @@ export function AdvancedReportsPage() {
     Change: item.changePercent,
   })) || [];
 
+  // Prepare comparison data
+  const comparisonAttendanceData = comparisonMode && comparisonTrendData
+    ? comparisonTrendData.attendanceTrend.map(item => ({
+        month: formatMonth(item.month),
+        'Previous Period': item.count,
+      }))
+    : [];
+
+  const comparisonEventsData = comparisonMode && comparisonTrendData
+    ? comparisonTrendData.eventsTrend.map(item => ({
+        month: formatMonth(item.month),
+        'Previous Period': item.count,
+      }))
+    : [];
+
+  // Combine current and comparison data
+  const combinedAttendanceData = attendanceTrendData.map((item, index) => ({
+    ...item,
+    ...(comparisonAttendanceData[index] || {}),
+  }));
+
+  const combinedEventsData = eventsTrendData.map((item, index) => ({
+    ...item,
+    ...(comparisonEventsData[index] || {}),
+  }));
+
+  // Prepare funnel chart data
+  const funnelChartData = funnelData?.stages.map(stage => ({
+    stage: stage.stage,
+    count: stage.count,
+    conversionRate: stage.conversionRate,
+  })) || [];
+
+  // Prepare cohort chart data
+  const cohortChartData = cohortData?.cohorts.map(cohort => {
+    const dataPoint: Record<string, string | number> = {
+      cohort: formatMonth(cohort.cohort),
+      members: cohort.members,
+    };
+    cohort.retentionRates.forEach((rate, index) => {
+      dataPoint[`Month ${index + 1}`] = rate;
+    });
+    return dataPoint;
+  }) || [];
+
   // Format heat map data for display
   const getHeatMapColor = (count: number, maxCount: number): string => {
     if (count === 0) return '#f5f5f5';
@@ -164,57 +247,73 @@ export function AdvancedReportsPage() {
           <h1>Advanced Analytics</h1>
         </header>
 
-        {/* Date Range Selector */}
-        <div className="date-range-selector">
-          <div className="date-range-buttons">
-            <button
-              className={dateRange === 'last30' ? 'active' : ''}
-              onClick={() => setDateRange('last30')}
-            >
-              Last 30 Days
-            </button>
-            <button
-              className={dateRange === 'last90' ? 'active' : ''}
-              onClick={() => setDateRange('last90')}
-            >
-              Last 90 Days
-            </button>
-            <button
-              className={dateRange === 'last12months' ? 'active' : ''}
-              onClick={() => setDateRange('last12months')}
-            >
-              Last 12 Months
-            </button>
-            <button
-              className={dateRange === 'custom' ? 'active' : ''}
-              onClick={() => setDateRange('custom')}
-            >
-              Custom Range
-            </button>
+        {/* Controls Section */}
+        <div className="controls-section">
+          {/* Date Range Selector */}
+          <div className="date-range-selector">
+            <div className="date-range-buttons">
+              <button
+                className={dateRange === 'last30' ? 'active' : ''}
+                onClick={() => setDateRange('last30')}
+              >
+                Last 30 Days
+              </button>
+              <button
+                className={dateRange === 'last90' ? 'active' : ''}
+                onClick={() => setDateRange('last90')}
+              >
+                Last 90 Days
+              </button>
+              <button
+                className={dateRange === 'last12months' ? 'active' : ''}
+                onClick={() => setDateRange('last12months')}
+              >
+                Last 12 Months
+              </button>
+              <button
+                className={dateRange === 'custom' ? 'active' : ''}
+                onClick={() => setDateRange('custom')}
+              >
+                Custom Range
+              </button>
+            </div>
+
+            {dateRange === 'custom' && (
+              <div className="custom-date-range">
+                <div className="date-input-group">
+                  <label htmlFor="start-date">Start Date:</label>
+                  <input
+                    id="start-date"
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="date-input-group">
+                  <label htmlFor="end-date">End Date:</label>
+                  <input
+                    id="end-date"
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {dateRange === 'custom' && (
-            <div className="custom-date-range">
-              <div className="date-input-group">
-                <label htmlFor="start-date">Start Date:</label>
-                <input
-                  id="start-date"
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                />
-              </div>
-              <div className="date-input-group">
-                <label htmlFor="end-date">End Date:</label>
-                <input
-                  id="end-date"
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
+          {/* Comparison Mode Toggle */}
+          <div className="comparison-toggle">
+            <label htmlFor="comparison-mode">
+              <input
+                id="comparison-mode"
+                type="checkbox"
+                checked={comparisonMode}
+                onChange={(e) => setComparisonMode(e.target.checked)}
+              />
+              <span>Enable Period Comparison</span>
+            </label>
+          </div>
         </div>
 
         {loading && (
@@ -281,7 +380,7 @@ export function AdvancedReportsPage() {
               <div className="chart-container">
                 {attendanceTrendData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={attendanceTrendData}>
+                    <LineChart data={combinedAttendanceData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis yAxisId="left" />
@@ -296,6 +395,17 @@ export function AdvancedReportsPage() {
                         strokeWidth={2}
                         dot={{ r: 4 }}
                       />
+                      {comparisonMode && (
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="Previous Period"
+                          stroke={CHART_COLORS.lightGrey}
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={{ r: 4 }}
+                        />
+                      )}
                       <Line
                         yAxisId="right"
                         type="monotone"
@@ -319,7 +429,7 @@ export function AdvancedReportsPage() {
               <div className="chart-container">
                 {eventsTrendData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={eventsTrendData}>
+                    <LineChart data={combinedEventsData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis yAxisId="left" />
@@ -334,6 +444,17 @@ export function AdvancedReportsPage() {
                         strokeWidth={2}
                         dot={{ r: 4 }}
                       />
+                      {comparisonMode && (
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="Previous Period"
+                          stroke={CHART_COLORS.lightGrey}
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={{ r: 4 }}
+                        />
+                      )}
                       <Line
                         yAxisId="right"
                         type="monotone"
@@ -348,6 +469,81 @@ export function AdvancedReportsPage() {
                 ) : (
                   <div className="no-data">No events trend data available for this period</div>
                 )}
+              </div>
+            </section>
+
+            {/* Member Funnel Chart */}
+            <section className="chart-section">
+              <h2>Member Funnel Analysis</h2>
+              <div className="chart-container">
+                {funnelChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={funnelChartData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="stage" type="category" width={150} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="count" name="Members">
+                        {funnelChartData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={
+                            index === 0 ? CHART_COLORS.primary :
+                            index === 1 ? CHART_COLORS.amber :
+                            index === 2 ? CHART_COLORS.blue :
+                            CHART_COLORS.green
+                          } />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="no-data">No funnel data available for this period</div>
+                )}
+                <div className="funnel-summary">
+                  {funnelChartData.map((stage, index) => (
+                    <div key={index} className="funnel-stage">
+                      <span className="stage-name">{stage.stage}</span>
+                      <span className="stage-count">{stage.count} members</span>
+                      <span className="stage-conversion">{stage.conversionRate}% conversion</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Cohort Analysis Chart */}
+            <section className="chart-section">
+              <h2>Cohort Analysis (Member Retention by Registration Month)</h2>
+              <div className="chart-container">
+                {cohortChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <LineChart data={cohortChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="cohort" />
+                      <YAxis domain={[0, 100]} label={{ value: 'Retention %', angle: -90, position: 'insideLeft' }} />
+                      <Tooltip />
+                      <Legend />
+                      {[1, 2, 3, 4, 5, 6].map((monthNum, index) => {
+                        const colors = [CHART_COLORS.primary, CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.lime, CHART_COLORS.darkGrey];
+                        return (
+                          <Line
+                            key={monthNum}
+                            type="monotone"
+                            dataKey={`Month ${monthNum}`}
+                            stroke={colors[index]}
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                          />
+                        );
+                      })}
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="no-data">No cohort data available for this period</div>
+                )}
+                <div className="cohort-summary">
+                  <p>This chart shows how well each cohort retains members over time. Each line represents a cohort (members who registered in the same month), tracking their retention percentage month by month.</p>
+                </div>
               </div>
             </section>
 

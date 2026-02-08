@@ -95,6 +95,16 @@ export interface IDatabase {
     memberGrowth: { currentTotal: number; previousTotal: number; change: number; changePercent: number };
   };
   getActivityHeatMap(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{ day: number; hour: number; count: number }>> | Array<{ day: number; hour: number; count: number }>;
+  getMemberFunnel(startDate: Date, endDate: Date, stationId?: string): Promise<{
+    stages: Array<{ stage: string; count: number; conversionRate: number }>;
+  }> | {
+    stages: Array<{ stage: string; count: number; conversionRate: number }>;
+  };
+  getCohortAnalysis(startDate: Date, endDate: Date, stationId?: string): Promise<{
+    cohorts: Array<{ cohort: string; members: number; retentionRates: number[] }>;
+  }> | {
+    cohorts: Array<{ cohort: string; members: number; retentionRates: number[] }>;
+  };
 
   // Event Audit Logs
   createEventAuditLog(

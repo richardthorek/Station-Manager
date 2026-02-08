@@ -1161,6 +1161,155 @@ class DatabaseService {
     return result;
   }
 
+  /**
+   * Get member funnel analysis
+   * Shows conversion through stages: registered -> checked in -> active (5+ check-ins) -> veteran (20+ check-ins)
+   */
+  getMemberFunnel(startDate: Date, endDate: Date, stationId?: string): {
+    stages: Array<{ stage: string; count: number; conversionRate: number }>;
+  } {
+    let allMembers = Array.from(this.members.values());
+
+    if (stationId) {
+      allMembers = allMembers.filter(m => getEffectiveStationId(m.stationId) === stationId);
+    }
+
+    // Filter members created within date range for registration stage
+    const registeredMembers = allMembers.filter(m =>
+      m.createdAt && m.createdAt >= startDate && m.createdAt <= endDate
+    );
+
+    // Get all check-ins for these members
+    let allCheckIns = Array.from(this.eventParticipants.values())
+      .filter(p => p.checkInTime >= startDate && p.checkInTime <= endDate);
+
+    if (stationId) {
+      allCheckIns = allCheckIns.filter(p => getEffectiveStationId(p.stationId) === stationId);
+    }
+
+    // Calculate funnel stages
+    const registered = registeredMembers.length;
+    const checkedInMemberIds = new Set(allCheckIns.map(p => p.memberId));
+    const checkedIn = registeredMembers.filter(m => checkedInMemberIds.has(m.id)).length;
+
+    // Count check-ins per member
+    const checkInCounts = new Map<string, number>();
+    allCheckIns.forEach(p => {
+      checkInCounts.set(p.memberId, (checkInCounts.get(p.memberId) || 0) + 1);
+    });
+
+    const activeMembers = registeredMembers.filter(m => {
+      const count = checkInCounts.get(m.id) || 0;
+      return count >= 5;
+    }).length;
+
+    const veteranMembers = registeredMembers.filter(m => {
+      const count = checkInCounts.get(m.id) || 0;
+      return count >= 20;
+    }).length;
+
+    // Calculate conversion rates
+    const stages = [
+      {
+        stage: 'Registered',
+        count: registered,
+        conversionRate: 100,
+      },
+      {
+        stage: 'First Check-In',
+        count: checkedIn,
+        conversionRate: registered > 0 ? Math.round((checkedIn / registered) * 100) : 0,
+      },
+      {
+        stage: 'Active (5+ Check-Ins)',
+        count: activeMembers,
+        conversionRate: registered > 0 ? Math.round((activeMembers / registered) * 100) : 0,
+      },
+      {
+        stage: 'Veteran (20+ Check-Ins)',
+        count: veteranMembers,
+        conversionRate: registered > 0 ? Math.round((veteranMembers / registered) * 100) : 0,
+      },
+    ];
+
+    return { stages };
+  }
+
+  /**
+   * Get cohort analysis
+   * Groups members by registration month and tracks their retention over time
+   */
+  getCohortAnalysis(startDate: Date, endDate: Date, stationId?: string): {
+    cohorts: Array<{ cohort: string; members: number; retentionRates: number[] }>;
+  } {
+    let allMembers = Array.from(this.members.values())
+      .filter(m => m.createdAt && m.createdAt >= startDate && m.createdAt <= endDate);
+
+    if (stationId) {
+      allMembers = allMembers.filter(m => getEffectiveStationId(m.stationId) === stationId);
+    }
+
+    // Group members by registration month
+    const cohortMap = new Map<string, Member[]>();
+    allMembers.forEach(m => {
+      if (m.createdAt) {
+        const cohortKey = `${m.createdAt.getFullYear()}-${String(m.createdAt.getMonth() + 1).padStart(2, '0')}`;
+        if (!cohortMap.has(cohortKey)) {
+          cohortMap.set(cohortKey, []);
+        }
+        cohortMap.get(cohortKey)!.push(m);
+      }
+    });
+
+    // Calculate retention rates for each cohort
+    const cohorts = Array.from(cohortMap.entries())
+      .map(([cohortKey, members]) => {
+        const [year, month] = cohortKey.split('-').map(Number);
+        const cohortStart = new Date(year, month - 1, 1);
+
+        // Calculate retention for up to 6 months
+        const retentionRates: number[] = [];
+
+        for (let i = 0; i < 6; i++) {
+          const periodStart = new Date(cohortStart);
+          periodStart.setMonth(periodStart.getMonth() + i);
+          const periodEnd = new Date(periodStart);
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+          // Stop if period is beyond the date range
+          if (periodStart > endDate) break;
+
+          // Get check-ins for this period
+          let periodCheckIns = Array.from(this.eventParticipants.values())
+            .filter(p =>
+              p.checkInTime >= periodStart &&
+              p.checkInTime < periodEnd
+            );
+
+          if (stationId) {
+            periodCheckIns = periodCheckIns.filter(p => getEffectiveStationId(p.stationId) === stationId);
+          }
+
+          const activeMemberIds = new Set(periodCheckIns.map(p => p.memberId));
+          const retainedCount = members.filter(m => activeMemberIds.has(m.id)).length;
+          const retentionRate = members.length > 0
+            ? Math.round((retainedCount / members.length) * 100)
+            : 0;
+
+          retentionRates.push(retentionRate);
+        }
+
+        return {
+          cohort: cohortKey,
+          members: members.length,
+          retentionRates,
+        };
+      })
+      .sort((a, b) => a.cohort.localeCompare(b.cohort));
+
+    return { cohorts };
+  }
+
   // ============================================
   // Station Management Methods
   // ============================================

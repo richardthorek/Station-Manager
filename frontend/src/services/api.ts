@@ -974,6 +974,34 @@ class ApiService {
     return response.json();
   }
 
+  async getMemberFunnel(startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    funnel: {
+      stages: Array<{ stage: string; count: number; conversionRate: number }>;
+    };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/advanced/funnel?startDate=${startDate}&endDate=${endDate}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch member funnel');
+    return response.json();
+  }
+
+  async getCohortAnalysis(startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    cohort: {
+      cohorts: Array<{ cohort: string; members: number; retentionRates: number[] }>;
+    };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/reports/advanced/cohort?startDate=${startDate}&endDate=${endDate}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch cohort analysis');
+    return response.json();
+  }
+
   async getBrigadeSummary(brigadeId: string, startDate: string, endDate: string): Promise<{
     startDate: string;
     endDate: string;

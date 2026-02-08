@@ -444,4 +444,52 @@ router.get('/advanced/heat-map', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/reports/advanced/funnel
+ * Get member funnel analysis showing conversion rates through stages
+ * Query params: startDate, endDate (ISO date strings)
+ */
+router.get('/advanced/funnel', async (req, res) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const { startDate, endDate } = parseDateRange(req);
+
+    const funnel = await db.getMemberFunnel(startDate, endDate, stationId);
+
+    res.json({
+      startDate,
+      endDate,
+      funnel,
+    });
+  } catch (error) {
+    logger.error('Error generating member funnel:', error);
+    res.status(500).json({ error: 'Failed to generate member funnel' });
+  }
+});
+
+/**
+ * GET /api/reports/advanced/cohort
+ * Get cohort analysis tracking member retention by registration month
+ * Query params: startDate, endDate (ISO date strings)
+ */
+router.get('/advanced/cohort', async (req, res) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const { startDate, endDate } = parseDateRange(req);
+
+    const cohort = await db.getCohortAnalysis(startDate, endDate, stationId);
+
+    res.json({
+      startDate,
+      endDate,
+      cohort,
+    });
+  } catch (error) {
+    logger.error('Error generating cohort analysis:', error);
+    res.status(500).json({ error: 'Failed to generate cohort analysis' });
+  }
+});
+
 export default router;
