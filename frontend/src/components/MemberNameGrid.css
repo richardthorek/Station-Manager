@@ -425,6 +425,40 @@
   border-color: #B8C929;
 }
 
+/* Pending operation states - immediate visual feedback */
+.member-name-btn.pending-signing-in {
+  border: 3px solid var(--color-lime-green);
+  border-style: solid;
+  animation: pulseGreen 1s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(203, 219, 42, 0.2);
+}
+
+.member-name-btn.pending-signing-out {
+  border: 3px solid var(--color-primary-red);
+  border-style: solid;
+  animation: pulseRed 1s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(229, 40, 27, 0.2);
+}
+
+@keyframes pulseGreen {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(203, 219, 42, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(203, 219, 42, 0.4);
+  }
+}
+
+@keyframes pulseRed {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(229, 40, 27, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(229, 40, 27, 0.4);
+  }
+}
+
+
 .check-mark {
   font-size: 1.2rem;
   color: #000000;
