@@ -17,6 +17,7 @@ import type {
   EventParticipant, 
   EventWithParticipants,
   Station,
+  StationCreationPayload,
   EventAuditLog,
   DeviceInfo,
   LocationInfo
@@ -31,7 +32,7 @@ export interface IDatabase {
   getAllStations(): Promise<Station[]> | Station[];
   getStationById(id: string): Promise<Station | null | undefined> | Station | null | undefined;
   getStationsByBrigade(brigadeId: string): Promise<Station[]> | Station[];
-  createStation(station: Omit<Station, 'id' | 'createdAt' | 'updatedAt'>): Promise<Station> | Station;
+  createStation(station: StationCreationPayload): Promise<Station> | Station;
   updateStation(id: string, updates: Partial<Omit<Station, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Station | null> | Station | null;
   deleteStation(id: string): Promise<boolean> | boolean;
   

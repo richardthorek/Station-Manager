@@ -46,8 +46,8 @@ describe('Rate Limiter Middleware', () => {
       expect(response.headers).toHaveProperty('ratelimit-remaining');
       expect(response.headers).toHaveProperty('ratelimit-reset');
 
-      // Verify limit is set correctly (1000 by default)
-      expect(response.headers['ratelimit-limit']).toBe('1000');
+      // Verify limit is set correctly (≈84 per 5-minute window)
+      expect(response.headers['ratelimit-limit']).toBe('84');
     });
 
     it('should decrement remaining count with each request', async () => {
@@ -63,8 +63,8 @@ describe('Rate Limiter Middleware', () => {
 
     it('should return 429 when rate limit exceeded', async () => {
       // Make requests up to the limit
-      // Note: In test environment with default config (1000 requests per 15 min),
-      // we'd need to make 1000+ requests. For practical testing, we check the structure.
+      // Note: In test environment with default config (≈84 requests per 5 minutes),
+      // we'd need to make 84+ requests. For practical testing, we check the structure.
       
       // This test verifies the handler structure exists and works
       // Real rate limit enforcement is tested in integration tests
@@ -169,8 +169,8 @@ describe('Rate Limiter Middleware', () => {
 
       const response = await request(testApp).get('/test').expect(200);
       
-      // Should have default limit of 1000
-      expect(response.headers['ratelimit-limit']).toBe('1000');
+      // Should have default limit of 84
+      expect(response.headers['ratelimit-limit']).toBe('84');
     });
   });
 

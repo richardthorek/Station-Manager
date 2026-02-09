@@ -86,6 +86,7 @@ async function seedDemoStation() {
     
     if (!demoStation) {
       demoStation = await db.createStation({
+        id: DEMO_STATION_ID,
         name: 'Demo Station',
         brigadeId: DEMO_BRIGADE_ID,
         brigadeName: 'Demo Brigade',
