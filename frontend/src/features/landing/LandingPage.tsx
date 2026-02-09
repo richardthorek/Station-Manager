@@ -50,9 +50,9 @@ export function LandingPage() {
               decoding="async"
             />
             <div className="brand-block">
-              <p className="eyebrow">Station Manager</p>
-              <h1 className="headline">Digital tools for fire stations</h1>
-              <p className="subheadline">Real-time sign-ins, truck checks, and reporting across every device.</p>
+              <p className="eyebrow">Station Manager MVP</p>
+              <h1 className="headline">Digital sign-in for fire stations</h1>
+              <p className="subheadline">Real-time member sign-ins and attendance tracking across every device.</p>
             </div>
           </div>
           <div className="header-actions">
@@ -121,31 +121,41 @@ export function LandingPage() {
             </motion.article>
 
             <motion.article
-              className="feature-card"
+              className="feature-card feature-card--disabled"
               variants={itemVariants}
               transition={itemTransition}
             >
+              <div className="coming-soon-badge">Coming in v1.1</div>
               <div className="feature-icon" aria-hidden="true">🚛</div>
               <h3>Truck Check</h3>
               <p>Vehicle maintenance tracking and inspection checklist system.</p>
-              <Link to="/truckcheck" className="feature-link">
-                Go to Truck Checks
+              <button 
+                className="feature-link feature-link--disabled" 
+                disabled
+                aria-label="Truck checks coming soon in version 1.1"
+              >
+                Coming Soon
                 <span className="arrow" aria-hidden="true">→</span>
-              </Link>
+              </button>
             </motion.article>
 
             <motion.article
-              className="feature-card"
+              className="feature-card feature-card--disabled"
               variants={itemVariants}
               transition={itemTransition}
             >
+              <div className="coming-soon-badge">Coming in v1.1</div>
               <div className="feature-icon" aria-hidden="true">📊</div>
               <h3>Reports & Analytics</h3>
               <p>Historical reporting, analytics, and data export capabilities.</p>
-              <Link to="/reports" className="feature-link">
-                Go to Reports
+              <button 
+                className="feature-link feature-link--disabled" 
+                disabled
+                aria-label="Reports and analytics coming soon in version 1.1"
+              >
+                Coming Soon
                 <span className="arrow" aria-hidden="true">→</span>
-              </Link>
+              </button>
             </motion.article>
 
             <motion.article
@@ -182,7 +192,7 @@ export function LandingPage() {
           <span>Built with ❤️ for the volunteer community</span>
           <span className="footer-separator">•</span>
           <span className="version">
-            Version 1.0 • Build: {__APP_VERSION__.commitShort}
+            Version 1.0 MVP • Build: {__APP_VERSION__.commitShort}
             {__APP_VERSION__.buildTime && __APP_VERSION__.buildTime !== 'unknown' && (
               <>
                 {' • '}
