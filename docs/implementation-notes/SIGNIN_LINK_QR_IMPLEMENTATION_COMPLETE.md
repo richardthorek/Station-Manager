@@ -21,19 +21,21 @@ Successfully implemented brigade/station-specific sign-in links and QR code func
 - Potential for members to accidentally check into wrong station
 
 **After:**
-- Sign-in links include station ID: `/sign-in?user=John%20Smith&station=bungendore-rfs`
+- Sign-in links use member ID and include station ID: `/sign-in?user=6e8b876b-9cfb-499a-970c-deca9cf58aed&station=bungendore-rfs`
 - Station information embedded in URL itself
 - Backend prioritizes URL stationId over header
+- Member ID is the primary identifier; name fallback retained for legacy links/QRs
 - QR code visualization with show/hide toggle
 - Prevents cross-station check-ins
 
 ## Key Features Delivered
 
 ### 1. Brigade-Specific URLs ✅
-- New URL format includes `&station={stationId}` parameter
+- New URL format uses member ID plus `&station={stationId}` parameter
 - Prevents cross-station check-ins
 - More secure and explicit
 - Station embedded in URL itself
+- Legacy name-based links still work via fallback lookup
 
 ### 2. QR Code Visualization ✅
 - Added QRCodeSVG component to member profile page
@@ -69,12 +71,20 @@ Priority order for stationId:
 ```typescript
 router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (req: Request, res: Response) => {
   const { identifier, stationId: urlStationId } = req.body;
-  
-  // Prioritize stationId from URL parameter, fallback to header
   const stationId = urlStationId || getStationIdFromRequest(req);
-  
-  // Find member in the specified station
-  const members = await db.getAllMembers(stationId);
+
+  // Prefer member ID; fallback to name for legacy links/QRs
+  let member = await db.getMemberById(identifier);
+  if (!member) {
+    const members = await db.getAllMembers(stationId);
+    member = members.find(
+      m => m.name.toLowerCase() === decodeURIComponent(identifier).toLowerCase()
+    );
+  }
+
+  if (!member || member.stationId !== stationId) {
+    return res.status(404).json({ error: 'Member not found in this station' });
+  }
   // ... rest of logic
 });
 ```
@@ -84,7 +94,6 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
 export const validateUrlCheckIn = [
   body('identifier')
     .trim()
-    .escape()
     .notEmpty()
     .withMessage('User identifier is required')
     .isLength({ min: 1, max: 500 })
@@ -105,7 +114,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 const generateSignInUrl = () => {
   if (!member) return '';
-  const identifier = encodeURIComponent(member.name);
+  const identifier = encodeURIComponent(member.id);
   const baseUrl = window.location.origin;
   const stationParam = member.stationId ? `&station=${encodeURIComponent(member.stationId)}` : '';
   return `${baseUrl}/sign-in?user=${identifier}${stationParam}`;

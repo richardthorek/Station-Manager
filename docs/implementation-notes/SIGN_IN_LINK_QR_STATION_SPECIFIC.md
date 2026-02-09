@@ -12,7 +12,7 @@ This document describes the implementation of brigade/station-specific sign-in l
 
 ## Problem Statement
 
-Previously, sign-in links used only the member name as an identifier:
+Legacy sign-in links used member names as the identifier and omitted explicit station context:
 ```
 https://example.com/sign-in?user=John%20Smith
 ```
@@ -20,23 +20,22 @@ https://example.com/sign-in?user=John%20Smith
 **Issues:**
 1. No station/brigade information in the URL
 2. Backend relied on client-provided `X-Station-Id` header
-3. Potential for members to check into wrong station
-4. No visual QR code for easy mobile scanning
+3. Name-based identifiers broke on special characters and duplicate names
+4. Links were not using the stable member ID already stored on every record
 
 ## Solution
 
-### 1. Enhanced URL Format
+### 1. Enhanced URL Format (ID-first + station)
 
-New sign-in links now include the `stationId` parameter:
+New sign-in links use the member ID as the primary identifier and embed the station:
 ```
-https://example.com/sign-in?user=John%20Smith&station=bungendore-rfs
+https://example.com/sign-in?user=6e8b876b-9cfb-499a-970c-deca9cf58aed&station=bungendore-rfs
 ```
 
 **Benefits:**
-- ✅ Station is embedded in the URL itself
-- ✅ Links are brigade/station-specific
-- ✅ Prevents cross-station check-ins
-- ✅ More secure and explicit
+- ✅ Stable, unique member IDs (no collisions, no encoding issues)
+- ✅ Station is embedded in the URL to prevent cross-station check-ins
+- ✅ Legacy compatibility: name-based identifiers still work for existing QR codes/links
 
 ### 2. Backend Changes
 
@@ -47,24 +46,29 @@ The `/url-checkin` endpoint now prioritizes the `stationId` from the request bod
 ```typescript
 router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (req: Request, res: Response) => {
   const { identifier, stationId: urlStationId } = req.body;
-  
-  // Prioritize stationId from URL parameter, fallback to header
   const stationId = urlStationId || getStationIdFromRequest(req);
-  
-  // Find member in the specified station
-  const members = await db.getAllMembers(stationId);
-  const member = members.find(
-    m => m.name.toLowerCase() === decodeURIComponent(identifier).toLowerCase()
-  );
+
+  // Prefer member ID; fallback to name for legacy QR codes/links
+  let member = await db.getMemberById(identifier);
+  if (!member) {
+    const members = await db.getAllMembers(stationId);
+    member = members.find(
+      m => m.name.toLowerCase() === decodeURIComponent(identifier).toLowerCase()
+    );
+  }
+  if (!member || member.stationId !== stationId) {
+    return res.status(404).json({ error: 'Member not found in this station' });
+  }
   
   // ... rest of check-in logic
 });
 ```
 
 **Priority Order:**
-1. `stationId` from request body (URL parameter)
-2. `X-Station-Id` header (fallback)
-3. Default station ID (`'default-station'`)
+1. Member lookup: ID first, then legacy name fallback (for older links/QRs)
+2. `stationId` from request body (URL parameter)
+3. `X-Station-Id` header (fallback)
+4. Default station ID (`'default-station'`)
 
 ### 3. Frontend Changes
 
@@ -79,7 +83,7 @@ import { QRCodeSVG } from 'qrcode.react';
 ```typescript
 const generateSignInUrl = () => {
   if (!member) return '';
-  const identifier = encodeURIComponent(member.name);
+  const identifier = encodeURIComponent(member.id);
   const baseUrl = window.location.origin;
   // Include stationId for brigade/station-specific sign-in
   const stationParam = member.stationId ? `&station=${encodeURIComponent(member.stationId)}` : '';
@@ -149,7 +153,6 @@ Added optional validation for `stationId`:
 export const validateUrlCheckIn = [
   body('identifier')
     .trim()
-    .escape()
     .notEmpty()
     .withMessage('User identifier is required')
     .isLength({ min: 1, max: 500 })
@@ -167,7 +170,7 @@ export const validateUrlCheckIn = [
 ```
 ┌─────────────────────────────────────────────────┐
 │  1. User Profile Page                            │
-│  - Member: John Smith                            │
+│  - Member: John Smith (id: 6e8b876b-9cfb-499a-970c-deca9cf58aed) │
 │  - Station: bungendore-rfs                       │
 │  - Generate URL with stationId                   │
 └─────────────────┬───────────────────────────────┘
@@ -176,7 +179,7 @@ export const validateUrlCheckIn = [
                   ▼
 ┌─────────────────────────────────────────────────┐
 │  2. Sign-In URL                                  │
-│  /sign-in?user=John%20Smith&station=bungendore  │
+│  /sign-in?user=6e8b876b-9cfb-499a-970c-deca9cf58aed&station=bungendore-rfs │
 │  (Can be shared as link or QR code)             │
 └─────────────────┬───────────────────────────────┘
                   │
@@ -209,7 +212,10 @@ export const validateUrlCheckIn = [
 
 ## Backward Compatibility
 
-The system maintains backward compatibility with old URLs that don't include a `stationId`:
+The system maintains backward compatibility for older URLs:
+
+- Legacy links that use names still resolve (fallback lookup is triggered when the ID lookup fails).
+- Links without `stationId` continue to work via header/default fallback.
 
 ```
 https://example.com/sign-in?user=John%20Smith

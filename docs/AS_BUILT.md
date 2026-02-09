@@ -1136,7 +1136,7 @@ The API register contains:
 **Check-ins (3 endpoints)**
 - `GET /api/checkins/active` - Get active check-ins
 - `POST /api/checkins` - Check in/out (toggle)
-- `POST /api/checkins/url-checkin` - URL-based check-in
+- `POST /api/checkins/url-checkin` - URL-based check-in (member ID in `user` query param is preferred; falls back to name for legacy links; enforces stationId to prevent cross-station check-ins)
 
 **Events (9 endpoints)** ✨ NEW: Audit logging
 - `GET /api/events` - List events (all, including inactive)

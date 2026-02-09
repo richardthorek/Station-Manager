@@ -206,60 +206,6 @@
           }
         }
       },
-      "POST /api/members": {
-        "method": "POST",
-        "path": "/api/members",
-        "description": "Create new member",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
-          "schema": {
-            "type": "object",
-            "required": [
-              "name"
-            ],
-            "properties": {
-              "name": {
-                "type": "string",
-                "description": "Member full name"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Member created",
-            "schema": {
-              "$ref": "#/definitions/Member"
-            }
-          },
-          "400": {
-            "description": "Invalid or missing name"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-          "implementation": "backend/src/routes/members.ts:113",
-        "socketEvent": "member-added",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "PUT /api/members/:id": {
-        "method": "PUT",
-        "path": "/api/members/:id",
         "description": "Update member information",
         "authentication": "none",
         "parameters": {
@@ -1003,7 +949,7 @@
       "POST /api/checkins/url-checkin": {
         "method": "POST",
         "path": "/api/checkins/url-checkin",
-        "description": "Check in via URL parameter (QR code or name) - brigade/station-specific",
+        "description": "Check in via sign-in link/QR using member ID (preferred) with legacy name fallback; station-specific",
         "authentication": "none",
         "parameters": {},
         "requestBody": {
@@ -1016,48 +962,70 @@
             "properties": {
               "identifier": {
                 "type": "string",
-                "description": "Member name or QR code"
+                "description": "Member ID from sign-in link/QR (preferred); legacy member name accepted for backward compatibility",
+                "minLength": 1,
+                "maxLength": 500
               },
               "stationId": {
                 "type": "string",
                 "required": false,
-                "description": "Station ID for brigade-specific check-in. Prioritized over X-Station-Id header."
+                "description": "Station ID for brigade-specific check-in; overrides X-Station-Id header when provided"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Check-in toggled",
+            "description": "Member already checked in",
             "schema": {
               "type": "object",
               "properties": {
                 "action": {
                   "enum": [
-                    "checked-in",
-                    "undone"
+                    "already-checked-in"
                   ]
                 },
                 "checkIn": {
                   "$ref": "#/definitions/CheckIn"
+                },
+                "member": {
+                  "type": "string",
+                  "description": "Display name of the member"
                 }
               }
             }
           },
           "201": {
-            "description": "Checked in"
+            "description": "Checked in",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "enum": [
+                    "checked-in"
+                  ]
+                },
+                "checkIn": {
+                  "$ref": "#/definitions/CheckIn"
+                },
+                "member": {
+                  "type": "string",
+                  "description": "Display name of the member"
+                }
+              }
+            }
           },
           "400": {
-            "description": "Invalid identifier"
+            "description": "Invalid identifier or no active activity"
           },
           "404": {
-            "description": "Member not found"
+            "description": "Member not found for resolved station"
           },
           "500": {
             "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/checkins.ts:123",
+        "implementation": "backend/src/routes/checkins.ts:145",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -3333,7 +3301,6 @@
           "Frontend provides QR code generation and copy-to-clipboard features"
         ]
       }
-    }
   },
   "socketEvents": {
     "serverToClient": {

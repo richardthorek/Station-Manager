@@ -9,42 +9,28 @@
       "description": "In-memory database service implementation",
       "type": "class",
       "methods": {
-        "getAllMembers": {
-          "signature": "getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Member[]",
-          "line": 236,
-          "description": "Get all members sorted by activity level (check-ins in last 6 months), filtered by stationId if provided and excluding soft-deleted or inactive members",
-          "parameters": [
-            {
-              "name": "stationId",
-              "type": "string | undefined",
-              "description": "Optional station ID for filtering members by station",
-              "optional": true
-            },
-            {
-              "name": "options",
-              "type": "{ search?: string; filter?: string; sort?: string } | undefined",
-              "description": "Search, filter, and sort controls for member listings",
-              "optional": true
-            }
-          ],
-          "returns": "Member[]",
-          "complexity": "O(n log n)",
-          "sideEffects": "none"
-        },
-        "getMemberById": {
-          "signature": "getMemberById(id: string): Member | undefined",
-          "line": 381,
-          "parameters": [
-            {
-              "name": "id",
-              "type": "string",
-              "description": "Member UUID"
-            }
-          ],
-          "returns": "Member | undefined",
-          "complexity": "O(n)",
-          "sideEffects": "none"
-        },
+          "getAllMembers": {
+            "signature": "getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Member[]",
+            "line": 236,
+            "description": "Get all members sorted by activity level (check-ins in last 6 months), filtered by stationId if provided and excluding soft-deleted or inactive members",
+            "parameters": [
+              {
+                "name": "stationId",
+                "type": "string | undefined",
+                "description": "Optional station ID for filtering members by station",
+                "optional": true
+              },
+              {
+                "name": "options",
+                "type": "{ search?: string; filter?: string; sort?: string } | undefined",
+                "description": "Search, filter, and sort controls for member listings",
+                "optional": true
+              }
+            ],
+            "returns": "Member[]",
+            "complexity": "O(n log n)",
+            "sideEffects": "none"
+          },
         "getMemberByQRCode": {
           "signature": "getMemberByQRCode(qrCode: string): Member | undefined",
           "line": 387,
@@ -1283,32 +1269,38 @@
     },
     "checkins": {
       "file": "backend/src/routes/checkins.ts",
-      "description": "Express routes for check-in management",
-      "endpoints": 4,
+      "description": "Express routes for check-in management (member ID is authoritative for URL links; legacy name lookup kept for backward compatibility)",
+      "endpoints": 5,
       "handlers": [
+        {
+          "method": "GET",
+          "path": "/",
+          "handler": "getAllCheckIns",
+          "line": 36
+        },
         {
           "method": "GET",
           "path": "/active",
           "handler": "getActiveCheckIns",
-          "line": 18
+          "line": 50
         },
         {
           "method": "POST",
           "path": "/",
           "handler": "toggleCheckIn",
-          "line": 30
+          "line": 62
         },
         {
           "method": "DELETE",
           "path": "/:memberId",
           "handler": "undoCheckIn",
-          "line": 93
+          "line": 127
         },
         {
           "method": "POST",
           "path": "/url-checkin",
           "handler": "urlBasedCheckIn",
-          "line": 111
+          "line": 145
         }
       ],
       "socketEvents": [
