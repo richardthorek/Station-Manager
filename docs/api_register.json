@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.2.0",
-  "lastUpdated": "2026-02-07",
-  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.",
+  "version": "1.3.0",
+  "lastUpdated": "2026-02-09",
+  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
       "description": "Optional station identifier for multi-station filtering. If not provided, defaults to 'default-station' for backward compatibility.",
@@ -10,6 +10,13 @@
       "required": false,
       "example": "station-123",
       "appliesTo": "all endpoints except /health and /api/status"
+    },
+    "Authorization": {
+      "description": "JWT bearer token for authentication. Required for protected endpoints when REQUIRE_AUTH=true. Format: 'Bearer <token>'",
+      "type": "string",
+      "required": false,
+      "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "appliesTo": "protected endpoints when REQUIRE_AUTH=true"
     }
   },
   "baseUrl": {
@@ -102,7 +109,7 @@
             "description": "Server error"
           }
         },
-          "implementation": "backend/src/routes/members.ts:52",
+        "implementation": "backend/src/routes/members.ts:52",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -147,7 +154,7 @@
             "description": "Server error"
           }
         },
-          "implementation": "backend/src/routes/members.ts:75",
+        "implementation": "backend/src/routes/members.ts:75",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -191,7 +198,7 @@
             "description": "Server error"
           }
         },
-          "implementation": "backend/src/routes/members.ts:94",
+        "implementation": "backend/src/routes/members.ts:94",
         "security": {
           "rateLimiting": {
             "enabled": true,
@@ -206,1878 +213,1962 @@
           }
         }
       },
-        "description": "Update member information",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
+      "description": "Update member information",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Member UUID"
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
               "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Member UUID"
+              "description": "Member full name"
+            },
+            "rank": {
+              "type": "string",
+              "nullable": true,
+              "description": "Optional rank"
             }
           }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Member updated",
+          "schema": {
+            "$ref": "#/definitions/Member"
+          }
         },
-        "requestBody": {
-          "required": true,
+        "400": {
+          "description": "Invalid request"
+        },
+        "404": {
+          "description": "Member not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/members.ts:161",
+      "socketEvent": "member-updated",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "DELETE /api/members/:id": {
+      "method": "DELETE",
+      "path": "/api/members/:id",
+      "description": "Soft delete a member (mark inactive, hide from UI, retain history)",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Member UUID"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Member soft deleted",
           "schema": {
             "type": "object",
-            "required": [
-              "name"
-            ],
             "properties": {
-              "name": {
-                "type": "string",
-                "description": "Member full name"
+              "success": {
+                "type": "boolean"
               },
-              "rank": {
-                "type": "string",
-                "nullable": true,
-                "description": "Optional rank"
+              "member": {
+                "$ref": "#/definitions/Member"
               }
             }
           }
         },
-        "responses": {
-          "200": {
-            "description": "Member updated",
-            "schema": {
-              "$ref": "#/definitions/Member"
-            }
-          },
-          "400": {
-            "description": "Invalid request"
-          },
-          "404": {
-            "description": "Member not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
+        "404": {
+          "description": "Member not found"
         },
-        "implementation": "backend/src/routes/members.ts:161",
-        "socketEvent": "member-updated",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/members.ts:410",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "GET /api/members/:id/history": {
+      "method": "GET",
+      "path": "/api/members/:id/history",
+      "description": "Get member's check-in history",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Member UUID"
           }
         }
       },
-      "DELETE /api/members/:id": {
-        "method": "DELETE",
-        "path": "/api/members/:id",
-        "description": "Soft delete a member (mark inactive, hide from UI, retain history)",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Array of check-ins",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/CheckIn"
+            }
+          }
+        },
+        "404": {
+          "description": "Member not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/members.ts:197",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "POST /api/members/import": {
+      "method": "POST",
+      "path": "/api/members/import",
+      "description": "Validate CSV file for bulk member import",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "contentType": "multipart/form-data",
+        "schema": {
+          "type": "object",
+          "required": [
+            "file"
+          ],
+          "properties": {
+            "file": {
               "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Member UUID"
+              "format": "binary",
+              "description": "CSV file with columns: First Name, Last Name, Rank, Roles"
             }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Member soft deleted",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "success": { "type": "boolean" },
-                "member": { "$ref": "#/definitions/Member" }
-              }
-            }
-          },
-          "404": {
-            "description": "Member not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/members.ts:410",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
           }
         }
       },
-      "GET /api/members/:id/history": {
-        "method": "GET",
-        "path": "/api/members/:id/history",
-        "description": "Get member's check-in history",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Member UUID"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Array of check-ins",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/CheckIn"
-              }
-            }
-          },
-          "404": {
-            "description": "Member not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/members.ts:197",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "POST /api/members/import": {
-        "method": "POST",
-        "path": "/api/members/import",
-        "description": "Validate CSV file for bulk member import",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
-          "contentType": "multipart/form-data",
+      "responses": {
+        "200": {
+          "description": "CSV validation results",
           "schema": {
             "type": "object",
-            "required": ["file"],
             "properties": {
-              "file": {
-                "type": "string",
-                "format": "binary",
-                "description": "CSV file with columns: First Name, Last Name, Rank, Roles"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "CSV validation results",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "totalRows": {"type": "number"},
-                "validCount": {"type": "number"},
-                "invalidCount": {"type": "number"},
-                "duplicateCount": {"type": "number"},
-                "validationResults": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "row": {"type": "number"},
-                      "data": {
-                        "type": "object",
-                        "properties": {
-                          "firstName": {"type": "string"},
-                          "lastName": {"type": "string"},
-                          "name": {"type": "string"},
-                          "rank": {"type": "string"},
-                          "roles": {"type": "string"}
-                        }
-                      },
-                      "isValid": {"type": "boolean"},
-                      "isDuplicate": {"type": "boolean"},
-                      "errors": {
-                        "type": "array",
-                        "items": {"type": "string"}
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "No file uploaded or CSV parsing failed"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/members.ts:219",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
-          },
-          "fileValidation": {
-            "maxSize": "5MB",
-            "allowedTypes": ["text/csv"],
-            "allowedExtensions": [".csv"]
-          }
-        }
-      },
-      "POST /api/members/import/execute": {
-        "method": "POST",
-        "path": "/api/members/import/execute",
-        "description": "Execute bulk member import after validation",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
-          "schema": {
-            "type": "object",
-            "required": ["members"],
-            "properties": {
-              "members": {
+              "totalRows": {
+                "type": "number"
+              },
+              "validCount": {
+                "type": "number"
+              },
+              "invalidCount": {
+                "type": "number"
+              },
+              "duplicateCount": {
+                "type": "number"
+              },
+              "validationResults": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "firstName": {"type": "string"},
-                    "lastName": {"type": "string"},
-                    "name": {"type": "string", "required": true},
-                    "rank": {"type": "string"}
+                    "row": {
+                      "type": "number"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "rank": {
+                          "type": "string"
+                        },
+                        "roles": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "isValid": {
+                      "type": "boolean"
+                    },
+                    "isDuplicate": {
+                      "type": "boolean"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
                   }
                 }
               }
             }
           }
         },
-        "responses": {
-          "200": {
-            "description": "Import results",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "totalAttempted": {"type": "number"},
-                "successCount": {"type": "number"},
-                "failureCount": {"type": "number"},
-                "successful": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "name": {"type": "string"},
-                      "id": {"type": "string"},
-                      "qrCode": {"type": "string"}
-                    }
-                  }
-                },
-                "failed": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "name": {"type": "string"},
-                      "error": {"type": "string"}
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "No members provided"
-          },
-          "500": {
-            "description": "Server error"
-          }
+        "400": {
+          "description": "No file uploaded or CSV parsing failed"
         },
-        "implementation": "backend/src/routes/members.ts:336",
-        "socketEvent": "member-added (for each successful import)",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
-          }
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/members.ts:219",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
+        },
+        "fileValidation": {
+          "maxSize": "5MB",
+          "allowedTypes": [
+            "text/csv"
+          ],
+          "allowedExtensions": [
+            ".csv"
+          ]
         }
       }
     },
-    "activities": {
-      "GET /api/activities": {
-        "method": "GET",
-        "path": "/api/activities",
-        "description": "Get all activities (default + custom)",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Array of activities",
-            "schema": {
+    "POST /api/members/import/execute": {
+      "method": "POST",
+      "path": "/api/members/import/execute",
+      "description": "Execute bulk member import after validation",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "members"
+          ],
+          "properties": {
+            "members": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/Activity"
+                "type": "object",
+                "properties": {
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "rank": {
+                    "type": "string"
+                  }
+                }
               }
             }
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/activities.ts:18",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
           }
         }
       },
-      "POST /api/activities": {
-        "method": "POST",
-        "path": "/api/activities",
-        "description": "Create custom activity",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
+      "responses": {
+        "200": {
+          "description": "Import results",
           "schema": {
             "type": "object",
-            "required": [
-              "name"
-            ],
             "properties": {
-              "name": {
-                "type": "string",
-                "description": "Activity name"
+              "totalAttempted": {
+                "type": "number"
               },
-              "createdBy": {
-                "type": "string",
-                "format": "uuid",
-                "nullable": true,
-                "description": "Member ID who created"
+              "successCount": {
+                "type": "number"
+              },
+              "failureCount": {
+                "type": "number"
+              },
+              "successful": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "qrCode": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "failed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
         },
-        "responses": {
-          "201": {
-            "description": "Activity created",
-            "schema": {
+        "400": {
+          "description": "No members provided"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/members.ts:336",
+      "socketEvent": "member-added (for each successful import)",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
+        }
+      }
+    }
+  },
+  "activities": {
+    "GET /api/activities": {
+      "method": "GET",
+      "path": "/api/activities",
+      "description": "Get all activities (default + custom)",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Array of activities",
+          "schema": {
+            "type": "array",
+            "items": {
               "$ref": "#/definitions/Activity"
             }
-          },
-          "400": {
-            "description": "Invalid or missing name"
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/activities.ts:30",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
+        "500": {
+          "description": "Server error"
         }
       },
-      "GET /api/activities/active": {
-        "method": "GET",
-        "path": "/api/activities/active",
-        "description": "Get currently active activity for station",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Active activity",
-            "schema": {
-              "$ref": "#/definitions/ActiveActivity"
-            }
-          },
-          "404": {
-            "description": "No active activity set"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/activities.ts:48",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "POST /api/activities/active": {
-        "method": "POST",
-        "path": "/api/activities/active",
-        "description": "Set active activity",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
-          "schema": {
-            "type": "object",
-            "required": [
-              "activityId"
-            ],
-            "properties": {
-              "activityId": {
-                "type": "string",
-                "format": "uuid",
-                "description": "Activity UUID"
-              },
-              "setBy": {
-                "type": "string",
-                "format": "uuid",
-                "nullable": true,
-                "description": "Member ID who set it"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Active activity set",
-            "schema": {
-              "$ref": "#/definitions/ActiveActivity"
-            }
-          },
-          "400": {
-            "description": "Missing activity ID"
-          },
-          "404": {
-            "description": "Activity not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/activities.ts:68",
-        "socketEvent": "activity-change",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
+      "implementation": "backend/src/routes/activities.ts:18",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
         }
       }
     },
-    "checkins": {
-      "GET /api/checkins": {
-        "method": "GET",
-        "path": "/api/checkins",
-        "description": "Get all check-ins (both active and inactive)",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Array of all check-ins",
-            "schema": {
-              "type": "array",
-              "items": {
+    "POST /api/activities": {
+      "method": "POST",
+      "path": "/api/activities",
+      "description": "Create custom activity",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Activity name"
+            },
+            "createdBy": {
+              "type": "string",
+              "format": "uuid",
+              "nullable": true,
+              "description": "Member ID who created"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Activity created",
+          "schema": {
+            "$ref": "#/definitions/Activity"
+          }
+        },
+        "400": {
+          "description": "Invalid or missing name"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/activities.ts:30",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "GET /api/activities/active": {
+      "method": "GET",
+      "path": "/api/activities/active",
+      "description": "Get currently active activity for station",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Active activity",
+          "schema": {
+            "$ref": "#/definitions/ActiveActivity"
+          }
+        },
+        "404": {
+          "description": "No active activity set"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/activities.ts:48",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "POST /api/activities/active": {
+      "method": "POST",
+      "path": "/api/activities/active",
+      "description": "Set active activity",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "activityId"
+          ],
+          "properties": {
+            "activityId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Activity UUID"
+            },
+            "setBy": {
+              "type": "string",
+              "format": "uuid",
+              "nullable": true,
+              "description": "Member ID who set it"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Active activity set",
+          "schema": {
+            "$ref": "#/definitions/ActiveActivity"
+          }
+        },
+        "400": {
+          "description": "Missing activity ID"
+        },
+        "404": {
+          "description": "Activity not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/activities.ts:68",
+      "socketEvent": "activity-change",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    }
+  },
+  "checkins": {
+    "GET /api/checkins": {
+      "method": "GET",
+      "path": "/api/checkins",
+      "description": "Get all check-ins (both active and inactive)",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Array of all check-ins",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/CheckIn"
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/checkins.ts:18",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "GET /api/checkins/active": {
+      "method": "GET",
+      "path": "/api/checkins/active",
+      "description": "Get all currently active check-ins",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Array of active check-ins",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/CheckInWithDetails"
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/checkins.ts:30",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "POST /api/checkins": {
+      "method": "POST",
+      "path": "/api/checkins",
+      "description": "Check in member or undo existing check-in (toggle)",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "memberId"
+          ],
+          "properties": {
+            "memberId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Member UUID"
+            },
+            "activityId": {
+              "type": "string",
+              "format": "uuid",
+              "nullable": true,
+              "description": "Activity UUID (uses active if not provided)"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "kiosk",
+                "mobile",
+                "qr"
+              ],
+              "default": "mobile"
+            },
+            "location": {
+              "type": "string",
+              "nullable": true,
+              "description": "Optional location"
+            },
+            "isOffsite": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Check-in undone",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "enum": [
+                  "undone"
+                ]
+              },
+              "checkIn": {
                 "$ref": "#/definitions/CheckIn"
               }
             }
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/checkins.ts:18",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "GET /api/checkins/active": {
-        "method": "GET",
-        "path": "/api/checkins/active",
-        "description": "Get all currently active check-ins",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Array of active check-ins",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/CheckInWithDetails"
-              }
-            }
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/checkins.ts:30",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "POST /api/checkins": {
-        "method": "POST",
-        "path": "/api/checkins",
-        "description": "Check in member or undo existing check-in (toggle)",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
+        "201": {
+          "description": "Checked in",
           "schema": {
             "type": "object",
-            "required": [
-              "memberId"
-            ],
             "properties": {
-              "memberId": {
-                "type": "string",
-                "format": "uuid",
-                "description": "Member UUID"
-              },
-              "activityId": {
-                "type": "string",
-                "format": "uuid",
-                "nullable": true,
-                "description": "Activity UUID (uses active if not provided)"
-              },
-              "method": {
-                "type": "string",
+              "action": {
                 "enum": [
-                  "kiosk",
-                  "mobile",
-                  "qr"
-                ],
-                "default": "mobile"
-              },
-              "location": {
-                "type": "string",
-                "nullable": true,
-                "description": "Optional location"
-              },
-              "isOffsite": {
-                "type": "boolean",
-                "default": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Check-in undone",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "enum": [
-                    "undone"
-                  ]
-                },
-                "checkIn": {
-                  "$ref": "#/definitions/CheckIn"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "Checked in",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "enum": [
-                    "checked-in"
-                  ]
-                },
-                "checkIn": {
-                  "$ref": "#/definitions/CheckIn"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request or no active activity"
-          },
-          "404": {
-            "description": "Member or activity not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/checkins.ts:42",
-        "socketEvent": "checkin or checkout",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "DELETE /api/checkins/:memberId": {
-        "method": "DELETE",
-        "path": "/api/checkins/:memberId",
-        "description": "Undo check-in for specific member",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "memberId": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Member UUID"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Check-in undone",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No active check-in found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/checkins.ts:105",
-        "socketEvent": "checkout",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "POST /api/checkins/url-checkin": {
-        "method": "POST",
-        "path": "/api/checkins/url-checkin",
-        "description": "Check in via sign-in link/QR using member ID (preferred) with legacy name fallback; station-specific",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
-          "schema": {
-            "type": "object",
-            "required": [
-              "identifier"
-            ],
-            "properties": {
-              "identifier": {
-                "type": "string",
-                "description": "Member ID from sign-in link/QR (preferred); legacy member name accepted for backward compatibility",
-                "minLength": 1,
-                "maxLength": 500
-              },
-              "stationId": {
-                "type": "string",
-                "required": false,
-                "description": "Station ID for brigade-specific check-in; overrides X-Station-Id header when provided"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Member already checked in",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "enum": [
-                    "already-checked-in"
-                  ]
-                },
-                "checkIn": {
-                  "$ref": "#/definitions/CheckIn"
-                },
-                "member": {
-                  "type": "string",
-                  "description": "Display name of the member"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "Checked in",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "enum": [
-                    "checked-in"
-                  ]
-                },
-                "checkIn": {
-                  "$ref": "#/definitions/CheckIn"
-                },
-                "member": {
-                  "type": "string",
-                  "description": "Display name of the member"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid identifier or no active activity"
-          },
-          "404": {
-            "description": "Member not found for resolved station"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/checkins.ts:145",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      }
-    },
-    "events": {
-      "GET /api/events": {
-        "method": "GET",
-        "path": "/api/events",
-        "description": "Get all events (active and historical)",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Array of events",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Event"
-              }
-            }
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/events.ts:18",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "GET /api/events/active": {
-        "method": "GET",
-        "path": "/api/events/active",
-        "description": "Get currently active events",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Array of active events",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Event"
-              }
-            }
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/events.ts:30",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "GET /api/events/:id": {
-        "method": "GET",
-        "path": "/api/events/:id",
-        "description": "Get event with participants",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Event UUID"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Event with participants",
-            "schema": {
-              "$ref": "#/definitions/EventWithParticipants"
-            }
-          },
-          "404": {
-            "description": "Event not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/events.ts:42",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "POST /api/events": {
-        "method": "POST",
-        "path": "/api/events",
-        "description": "Create new event",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
-          "schema": {
-            "type": "object",
-            "required": [
-              "name",
-              "type"
-            ],
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "incident",
-                  "training",
-                  "meeting",
-                  "maintenance",
-                  "other"
+                  "checked-in"
                 ]
               },
-              "location": {
-                "type": "string",
-                "nullable": true
-              },
-              "description": {
-                "type": "string",
-                "nullable": true
+              "checkIn": {
+                "$ref": "#/definitions/CheckIn"
               }
             }
           }
         },
-        "responses": {
-          "201": {
-            "description": "Event created",
-            "schema": {
-              "$ref": "#/definitions/Event"
-            }
-          },
-          "400": {
-            "description": "Invalid request"
-          },
-          "500": {
-            "description": "Server error"
-          }
+        "400": {
+          "description": "Invalid request or no active activity"
         },
-        "implementation": "backend/src/routes/events.ts:58",
-        "socketEvent": "event-created",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
+        "404": {
+          "description": "Member or activity not found"
+        },
+        "500": {
+          "description": "Server error"
         }
       },
-      "PUT /api/events/:id/end": {
-        "method": "PUT",
-        "path": "/api/events/:id/end",
-        "description": "End an active event (marks as inactive, event remains visible)",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Event UUID"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Event ended",
-            "schema": {
-              "$ref": "#/definitions/Event"
-            }
-          },
-          "404": {
-            "description": "Event not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/events.ts:118",
-        "socketEvent": "event-ended",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "PUT /api/events/:id/reactivate": {
-        "method": "PUT",
-        "path": "/api/events/:id/reactivate",
-        "description": "Reactivate an ended event (clears end time, sets isActive=true)",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Event UUID"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Event reactivated successfully",
-            "schema": {
-              "$ref": "#/definitions/Event"
-            }
-          },
-          "404": {
-            "description": "Event not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/events.ts:136",
-        "socketEvent": null,
-        "notes": "Events are automatically deactivated after EVENT_EXPIRY_HOURS (default: 12). Use this endpoint to reactivate expired events.",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "POST /api/events/admin/rollover": {
-        "method": "POST",
-        "path": "/api/events/admin/rollover",
-        "description": "Manually trigger event expiry check (marks expired events as inactive)",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Rollover completed successfully",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "example": "Rollover completed successfully"
-                },
-                "deactivatedCount": {
-                  "type": "number",
-                  "description": "Number of events deactivated"
-                },
-                "deactivatedEventIds": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "expiryHours": {
-                  "type": "number",
-                  "description": "Configured expiry hours from EVENT_EXPIRY_HOURS"
-                },
-                "timestamp": {
-                  "type": "string",
-                  "format": "date-time"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/events.ts:232",
-        "notes": "Events older than EVENT_EXPIRY_HOURS (default: 12) are automatically marked as inactive. Expired events remain visible in the UI.",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "POST /api/events/:id/participants": {
-        "method": "POST",
-        "path": "/api/events/:id/participants",
-        "description": "Add participant to event (check-in). If participant already exists, toggles and removes them (undo check-in). Creates audit log entry for traceability.",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Event UUID"
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "schema": {
-            "type": "object",
-            "required": [
-              "memberId"
-            ],
-            "properties": {
-              "memberId": {
-                "type": "string",
-                "format": "uuid",
-                "description": "Member to add to event"
-              },
-              "method": {
-                "type": "string",
-                "enum": ["kiosk", "mobile", "qr", "manual"],
-                "description": "Check-in method (default: 'mobile')"
-              },
-              "location": {
-                "type": "string",
-                "description": "Location description (optional)"
-              },
-              "isOffsite": {
-                "type": "boolean",
-                "description": "Whether check-in is off-site (default: false)"
-              },
-              "performedBy": {
-                "type": "string",
-                "description": "User ID or name of person performing the action (optional)"
-              },
-              "notes": {
-                "type": "string",
-                "maxLength": 500,
-                "description": "Optional notes or reason for action (optional)"
-              },
-              "latitude": {
-                "type": "number",
-                "description": "GPS latitude (optional)"
-              },
-              "longitude": {
-                "type": "number",
-                "description": "GPS longitude (optional)"
-              },
-              "accuracy": {
-                "type": "number",
-                "description": "GPS accuracy in meters (optional)"
-              },
-              "address": {
-                "type": "string",
-                "description": "Human-readable location (optional)"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Participant added",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "type": "string",
-                  "enum": ["added", "removed"],
-                  "description": "Action performed (added or removed if toggled)"
-                },
-                "participant": {
-                  "$ref": "#/definitions/EventParticipant"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "Participant removed (toggle undo)",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "action": {
-                  "type": "string",
-                  "enum": ["removed"]
-                },
-                "participant": {
-                  "$ref": "#/definitions/EventParticipant"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request or event not active"
-          },
-          "404": {
-            "description": "Event or member not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/events.ts:201",
-        "socketEvent": "participant-change",
-        "auditLog": {
+      "implementation": "backend/src/routes/checkins.ts:42",
+      "socketEvent": "checkin or checkout",
+      "security": {
+        "rateLimiting": {
           "enabled": true,
-          "captures": ["timestamp", "device", "location", "performedBy", "notes"],
-          "description": "Creates EventAuditLog entry for both additions and removals (toggle undo)"
-        },
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "DELETE /api/events/:id/participants/:participantId": {
-        "method": "DELETE",
-        "path": "/api/events/:id/participants/:participantId",
-        "description": "Remove participant from event (check out). Creates audit log entry for traceability.",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Event UUID"
-            },
-            "participantId": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Participant UUID"
-            }
-          }
-        },
-        "requestBody": {
-          "schema": {
-            "type": "object",
-            "properties": {
-              "performedBy": {
-                "type": "string",
-                "description": "User ID or name of person performing the removal (optional)"
-              },
-              "notes": {
-                "type": "string",
-                "maxLength": 500,
-                "description": "Optional reason or notes for the removal (optional)"
-              },
-              "latitude": {
-                "type": "number",
-                "description": "GPS latitude (optional)"
-              },
-              "longitude": {
-                "type": "number",
-                "description": "GPS longitude (optional)"
-              },
-              "accuracy": {
-                "type": "number",
-                "description": "GPS accuracy in meters (optional)"
-              },
-              "address": {
-                "type": "string",
-                "description": "Human-readable location (optional)"
-              }
-            }
-          },
-          "required": false,
-          "description": "Optional metadata for audit logging"
-        },
-        "responses": {
-          "200": {
-            "description": "Participant removed",
-            "schema": {
-              "$ref": "#/definitions/EventParticipant"
-            }
-          },
-          "404": {
-            "description": "Participant not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/events.ts:298",
-        "socketEvent": "participant-removed",
-        "auditLog": {
-          "enabled": true,
-          "captures": ["timestamp", "device", "location", "performedBy", "notes"],
-          "description": "Creates EventAuditLog entry for compliance and traceability"
-        },
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        }
-      },
-      "GET /api/events/:eventId/audit": {
-        "method": "GET",
-        "path": "/api/events/:eventId/audit",
-        "description": "Get audit log of all participant additions and removals for an event. Returns chronological sequence of membership changes.",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "eventId": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Event UUID"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Audit logs for event",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "eventId": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "totalLogs": {
-                  "type": "number",
-                  "description": "Total number of audit log entries"
-                },
-                "logs": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/EventAuditLog"
-                  },
-                  "description": "Array of audit log entries in chronological order"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Event not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/events.ts:349",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
         }
       }
     },
-    "achievements": {
-      "GET /api/achievements/member/:memberId": {
-        "method": "GET",
-        "path": "/api/achievements/member/:memberId",
-        "description": "Get achievements for specific member",
-        "authentication": "none",
-        "parameters": {
-          "path": {
+    "DELETE /api/checkins/:memberId": {
+      "method": "DELETE",
+      "path": "/api/checkins/:memberId",
+      "description": "Undo check-in for specific member",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "memberId": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Member UUID"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Check-in undone",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "No active check-in found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/checkins.ts:105",
+      "socketEvent": "checkout",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "POST /api/checkins/url-checkin": {
+      "method": "POST",
+      "path": "/api/checkins/url-checkin",
+      "description": "Check in via sign-in link/QR using member ID (preferred) with legacy name fallback; station-specific",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "identifier"
+          ],
+          "properties": {
+            "identifier": {
+              "type": "string",
+              "description": "Member ID from sign-in link/QR (preferred); legacy member name accepted for backward compatibility",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "stationId": {
+              "type": "string",
+              "required": false,
+              "description": "Station ID for brigade-specific check-in; overrides X-Station-Id header when provided"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Member already checked in",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "enum": [
+                  "already-checked-in"
+                ]
+              },
+              "checkIn": {
+                "$ref": "#/definitions/CheckIn"
+              },
+              "member": {
+                "type": "string",
+                "description": "Display name of the member"
+              }
+            }
+          }
+        },
+        "201": {
+          "description": "Checked in",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "enum": [
+                  "checked-in"
+                ]
+              },
+              "checkIn": {
+                "$ref": "#/definitions/CheckIn"
+              },
+              "member": {
+                "type": "string",
+                "description": "Display name of the member"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid identifier or no active activity"
+        },
+        "404": {
+          "description": "Member not found for resolved station"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/checkins.ts:145",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    }
+  },
+  "events": {
+    "GET /api/events": {
+      "method": "GET",
+      "path": "/api/events",
+      "description": "Get all events (active and historical)",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Array of events",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Event"
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:18",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "GET /api/events/active": {
+      "method": "GET",
+      "path": "/api/events/active",
+      "description": "Get currently active events",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Array of active events",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Event"
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:30",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "GET /api/events/:id": {
+      "method": "GET",
+      "path": "/api/events/:id",
+      "description": "Get event with participants",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Event UUID"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Event with participants",
+          "schema": {
+            "$ref": "#/definitions/EventWithParticipants"
+          }
+        },
+        "404": {
+          "description": "Event not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:42",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "POST /api/events": {
+      "method": "POST",
+      "path": "/api/events",
+      "description": "Create new event",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "name",
+            "type"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "incident",
+                "training",
+                "meeting",
+                "maintenance",
+                "other"
+              ]
+            },
+            "location": {
+              "type": "string",
+              "nullable": true
+            },
+            "description": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Event created",
+          "schema": {
+            "$ref": "#/definitions/Event"
+          }
+        },
+        "400": {
+          "description": "Invalid request"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:58",
+      "socketEvent": "event-created",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "PUT /api/events/:id/end": {
+      "method": "PUT",
+      "path": "/api/events/:id/end",
+      "description": "End an active event (marks as inactive, event remains visible)",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Event UUID"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Event ended",
+          "schema": {
+            "$ref": "#/definitions/Event"
+          }
+        },
+        "404": {
+          "description": "Event not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:118",
+      "socketEvent": "event-ended",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "PUT /api/events/:id/reactivate": {
+      "method": "PUT",
+      "path": "/api/events/:id/reactivate",
+      "description": "Reactivate an ended event (clears end time, sets isActive=true)",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Event UUID"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Event reactivated successfully",
+          "schema": {
+            "$ref": "#/definitions/Event"
+          }
+        },
+        "404": {
+          "description": "Event not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:136",
+      "socketEvent": null,
+      "notes": "Events are automatically deactivated after EVENT_EXPIRY_HOURS (default: 12). Use this endpoint to reactivate expired events.",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "POST /api/events/admin/rollover": {
+      "method": "POST",
+      "path": "/api/events/admin/rollover",
+      "description": "Manually trigger event expiry check (marks expired events as inactive)",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Rollover completed successfully",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "example": "Rollover completed successfully"
+              },
+              "deactivatedCount": {
+                "type": "number",
+                "description": "Number of events deactivated"
+              },
+              "deactivatedEventIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "expiryHours": {
+                "type": "number",
+                "description": "Configured expiry hours from EVENT_EXPIRY_HOURS"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:232",
+      "notes": "Events older than EVENT_EXPIRY_HOURS (default: 12) are automatically marked as inactive. Expired events remain visible in the UI.",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "POST /api/events/:id/participants": {
+      "method": "POST",
+      "path": "/api/events/:id/participants",
+      "description": "Add participant to event (check-in). If participant already exists, toggles and removes them (undo check-in). Creates audit log entry for traceability.",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Event UUID"
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "memberId"
+          ],
+          "properties": {
             "memberId": {
               "type": "string",
               "format": "uuid",
-              "required": true,
-              "description": "Member UUID"
+              "description": "Member to add to event"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "kiosk",
+                "mobile",
+                "qr",
+                "manual"
+              ],
+              "description": "Check-in method (default: 'mobile')"
+            },
+            "location": {
+              "type": "string",
+              "description": "Location description (optional)"
+            },
+            "isOffsite": {
+              "type": "boolean",
+              "description": "Whether check-in is off-site (default: false)"
+            },
+            "performedBy": {
+              "type": "string",
+              "description": "User ID or name of person performing the action (optional)"
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 500,
+              "description": "Optional notes or reason for action (optional)"
+            },
+            "latitude": {
+              "type": "number",
+              "description": "GPS latitude (optional)"
+            },
+            "longitude": {
+              "type": "number",
+              "description": "GPS longitude (optional)"
+            },
+            "accuracy": {
+              "type": "number",
+              "description": "GPS accuracy in meters (optional)"
+            },
+            "address": {
+              "type": "string",
+              "description": "Human-readable location (optional)"
             }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Array of achievements",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Achievement"
-              }
-            }
-          },
-          "404": {
-            "description": "Member not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/achievements.ts",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
           }
         }
       },
-      "GET /api/achievements/recent": {
-        "method": "GET",
-        "path": "/api/achievements/recent",
-        "description": "Get recently unlocked achievements (all members)",
-        "authentication": "none",
-        "parameters": {
-          "query": {
-            "limit": {
-              "type": "number",
-              "default": 10,
-              "description": "Max achievements to return"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Array of recent achievements",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Achievement"
+      "responses": {
+        "201": {
+          "description": "Participant added",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "added",
+                  "removed"
+                ],
+                "description": "Action performed (added or removed if toggled)"
+              },
+              "participant": {
+                "$ref": "#/definitions/EventParticipant"
               }
             }
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/achievements.ts",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
+        "200": {
+          "description": "Participant removed (toggle undo)",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "removed"
+                ]
+              },
+              "participant": {
+                "$ref": "#/definitions/EventParticipant"
+              }
+            }
           }
+        },
+        "400": {
+          "description": "Invalid request or event not active"
+        },
+        "404": {
+          "description": "Event or member not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:201",
+      "socketEvent": "participant-change",
+      "auditLog": {
+        "enabled": true,
+        "captures": [
+          "timestamp",
+          "device",
+          "location",
+          "performedBy",
+          "notes"
+        ],
+        "description": "Creates EventAuditLog entry for both additions and removals (toggle undo)"
+      },
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
         }
       }
     },
-    "reports": {
-      "GET /api/reports/attendance-summary": {
-        "method": "GET",
-        "path": "/api/reports/attendance-summary",
-        "description": "Get monthly attendance statistics grouped by month",
-        "authentication": "none",
-        "parameters": {
-          "query": {
-            "startDate": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Start date for report range (ISO 8601). Defaults to 30 days ago."
-            },
-            "endDate": {
-              "type": "string",
-              "format": "date-time",
-              "description": "End date for report range (ISO 8601). Defaults to now."
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Attendance summary data",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "startDate": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "endDate": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "summary": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "month": {
-                        "type": "string",
-                        "example": "2024-01"
-                      },
-                      "count": {
-                        "type": "number"
-                      }
-                    }
-                  }
-                }
-              }
-            }
+    "DELETE /api/events/:id/participants/:participantId": {
+      "method": "DELETE",
+      "path": "/api/events/:id/participants/:participantId",
+      "description": "Remove participant from event (check out). Creates audit log entry for traceability.",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Event UUID"
           },
-          "500": {
-            "description": "Server error"
+          "participantId": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Participant UUID"
           }
-        },
-        "implementation": "backend/src/routes/reports.ts"
+        }
       },
-      "GET /api/reports/member-participation": {
-        "method": "GET",
-        "path": "/api/reports/member-participation",
-        "description": "Get top members by participation count",
-        "authentication": "none",
-        "parameters": {
-          "query": {
-            "startDate": {
+      "requestBody": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "performedBy": {
               "type": "string",
-              "format": "date-time"
+              "description": "User ID or name of person performing the removal (optional)"
             },
-            "endDate": {
+            "notes": {
               "type": "string",
-              "format": "date-time"
+              "maxLength": 500,
+              "description": "Optional reason or notes for the removal (optional)"
             },
-            "limit": {
+            "latitude": {
               "type": "number",
-              "default": 10,
-              "description": "Maximum number of members to return"
+              "description": "GPS latitude (optional)"
+            },
+            "longitude": {
+              "type": "number",
+              "description": "GPS longitude (optional)"
+            },
+            "accuracy": {
+              "type": "number",
+              "description": "GPS accuracy in meters (optional)"
+            },
+            "address": {
+              "type": "string",
+              "description": "Human-readable location (optional)"
             }
           }
         },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Member participation data",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "startDate": {
-                  "type": "string"
+        "required": false,
+        "description": "Optional metadata for audit logging"
+      },
+      "responses": {
+        "200": {
+          "description": "Participant removed",
+          "schema": {
+            "$ref": "#/definitions/EventParticipant"
+          }
+        },
+        "404": {
+          "description": "Participant not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:298",
+      "socketEvent": "participant-removed",
+      "auditLog": {
+        "enabled": true,
+        "captures": [
+          "timestamp",
+          "device",
+          "location",
+          "performedBy",
+          "notes"
+        ],
+        "description": "Creates EventAuditLog entry for compliance and traceability"
+      },
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "GET /api/events/:eventId/audit": {
+      "method": "GET",
+      "path": "/api/events/:eventId/audit",
+      "description": "Get audit log of all participant additions and removals for an event. Returns chronological sequence of membership changes.",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Event UUID"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Audit logs for event",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "eventId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "totalLogs": {
+                "type": "number",
+                "description": "Total number of audit log entries"
+              },
+              "logs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/EventAuditLog"
                 },
-                "endDate": {
-                  "type": "string"
-                },
-                "limit": {
-                  "type": "number"
-                },
-                "participation": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "memberId": {
-                        "type": "string"
-                      },
-                      "memberName": {
-                        "type": "string"
-                      },
-                      "participationCount": {
-                        "type": "number"
-                      },
-                      "lastCheckIn": {
-                        "type": "string",
-                        "format": "date-time"
-                      }
-                    }
-                  }
-                }
+                "description": "Array of audit log entries in chronological order"
               }
             }
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/reports.ts"
+        "404": {
+          "description": "Event not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
       },
-      "GET /api/reports/activity-breakdown": {
-        "method": "GET",
-        "path": "/api/reports/activity-breakdown",
-        "description": "Get breakdown of activities by category",
-        "authentication": "none",
-        "parameters": {
-          "query": {
-            "startDate": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "endDate": {
-              "type": "string",
-              "format": "date-time"
-            }
+      "implementation": "backend/src/routes/events.ts:349",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    }
+  },
+  "achievements": {
+    "GET /api/achievements/member/:memberId": {
+      "method": "GET",
+      "path": "/api/achievements/member/:memberId",
+      "description": "Get achievements for specific member",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "memberId": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Member UUID"
           }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Activity breakdown data",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "startDate": {
-                  "type": "string"
-                },
-                "endDate": {
-                  "type": "string"
-                },
-                "breakdown": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "category": {
-                        "type": "string",
-                        "enum": [
-                          "training",
-                          "maintenance",
-                          "meeting",
-                          "other"
-                        ]
-                      },
-                      "count": {
-                        "type": "number"
-                      },
-                      "percentage": {
-                        "type": "number"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/reports.ts"
+        }
       },
-      "GET /api/reports/event-statistics": {
-        "method": "GET",
-        "path": "/api/reports/event-statistics",
-        "description": "Get aggregate event statistics",
-        "authentication": "none",
-        "parameters": {
-          "query": {
-            "startDate": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "endDate": {
-              "type": "string",
-              "format": "date-time"
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Array of achievements",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Achievement"
             }
           }
         },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Event statistics",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "startDate": {
-                  "type": "string"
-                },
-                "endDate": {
-                  "type": "string"
-                },
-                "statistics": {
+        "404": {
+          "description": "Member not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/achievements.ts",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "GET /api/achievements/recent": {
+      "method": "GET",
+      "path": "/api/achievements/recent",
+      "description": "Get recently unlocked achievements (all members)",
+      "authentication": "none",
+      "parameters": {
+        "query": {
+          "limit": {
+            "type": "number",
+            "default": 10,
+            "description": "Max achievements to return"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Array of recent achievements",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Achievement"
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/achievements.ts",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    }
+  },
+  "reports": {
+    "GET /api/reports/attendance-summary": {
+      "method": "GET",
+      "path": "/api/reports/attendance-summary",
+      "description": "Get monthly attendance statistics grouped by month",
+      "authentication": "none",
+      "parameters": {
+        "query": {
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start date for report range (ISO 8601). Defaults to 30 days ago."
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End date for report range (ISO 8601). Defaults to now."
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Attendance summary data",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "startDate": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "endDate": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "summary": {
+                "type": "array",
+                "items": {
                   "type": "object",
                   "properties": {
-                    "totalEvents": {
-                      "type": "number"
+                    "month": {
+                      "type": "string",
+                      "example": "2024-01"
                     },
-                    "activeEvents": {
+                    "count": {
                       "type": "number"
-                    },
-                    "completedEvents": {
-                      "type": "number"
-                    },
-                    "totalParticipants": {
-                      "type": "number"
-                    },
-                    "averageParticipantsPerEvent": {
-                      "type": "number"
-                    },
-                    "averageDuration": {
-                      "type": "number",
-                      "description": "Average event duration in minutes"
                     }
                   }
                 }
               }
             }
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/reports.ts"
+        "500": {
+          "description": "Server error"
+        }
       },
-      "GET /api/reports/truckcheck-compliance": {
-        "method": "GET",
-        "path": "/api/reports/truckcheck-compliance",
-        "description": "Get truck check compliance metrics",
-        "authentication": "none",
-        "parameters": {
-          "query": {
-            "startDate": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "endDate": {
-              "type": "string",
-              "format": "date-time"
+      "implementation": "backend/src/routes/reports.ts"
+    },
+    "GET /api/reports/member-participation": {
+      "method": "GET",
+      "path": "/api/reports/member-participation",
+      "description": "Get top members by participation count",
+      "authentication": "none",
+      "parameters": {
+        "query": {
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "limit": {
+            "type": "number",
+            "default": 10,
+            "description": "Maximum number of members to return"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Member participation data",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "startDate": {
+                "type": "string"
+              },
+              "endDate": {
+                "type": "string"
+              },
+              "limit": {
+                "type": "number"
+              },
+              "participation": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "memberId": {
+                      "type": "string"
+                    },
+                    "memberName": {
+                      "type": "string"
+                    },
+                    "participationCount": {
+                      "type": "number"
+                    },
+                    "lastCheckIn": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
             }
           }
         },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Truck check compliance data",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "startDate": {
-                  "type": "string"
-                },
-                "endDate": {
-                  "type": "string"
-                },
-                "compliance": {
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/reports.ts"
+    },
+    "GET /api/reports/activity-breakdown": {
+      "method": "GET",
+      "path": "/api/reports/activity-breakdown",
+      "description": "Get breakdown of activities by category",
+      "authentication": "none",
+      "parameters": {
+        "query": {
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Activity breakdown data",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "startDate": {
+                "type": "string"
+              },
+              "endDate": {
+                "type": "string"
+              },
+              "breakdown": {
+                "type": "array",
+                "items": {
                   "type": "object",
                   "properties": {
-                    "totalChecks": {
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "training",
+                        "maintenance",
+                        "meeting",
+                        "other"
+                      ]
+                    },
+                    "count": {
                       "type": "number"
                     },
-                    "completedChecks": {
+                    "percentage": {
                       "type": "number"
-                    },
-                    "inProgressChecks": {
-                      "type": "number"
-                    },
-                    "checksWithIssues": {
-                      "type": "number"
-                    },
-                    "complianceRate": {
-                      "type": "number",
-                      "description": "Percentage (0-100)"
-                    },
-                    "applianceStats": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "applianceId": {
-                            "type": "string"
-                          },
-                          "applianceName": {
-                            "type": "string"
-                          },
-                          "checkCount": {
-                            "type": "number"
-                          },
-                          "lastCheckDate": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true
-                          }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/reports.ts"
+    },
+    "GET /api/reports/event-statistics": {
+      "method": "GET",
+      "path": "/api/reports/event-statistics",
+      "description": "Get aggregate event statistics",
+      "authentication": "none",
+      "parameters": {
+        "query": {
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Event statistics",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "startDate": {
+                "type": "string"
+              },
+              "endDate": {
+                "type": "string"
+              },
+              "statistics": {
+                "type": "object",
+                "properties": {
+                  "totalEvents": {
+                    "type": "number"
+                  },
+                  "activeEvents": {
+                    "type": "number"
+                  },
+                  "completedEvents": {
+                    "type": "number"
+                  },
+                  "totalParticipants": {
+                    "type": "number"
+                  },
+                  "averageParticipantsPerEvent": {
+                    "type": "number"
+                  },
+                  "averageDuration": {
+                    "type": "number",
+                    "description": "Average event duration in minutes"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/reports.ts"
+    },
+    "GET /api/reports/truckcheck-compliance": {
+      "method": "GET",
+      "path": "/api/reports/truckcheck-compliance",
+      "description": "Get truck check compliance metrics",
+      "authentication": "none",
+      "parameters": {
+        "query": {
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Truck check compliance data",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "startDate": {
+                "type": "string"
+              },
+              "endDate": {
+                "type": "string"
+              },
+              "compliance": {
+                "type": "object",
+                "properties": {
+                  "totalChecks": {
+                    "type": "number"
+                  },
+                  "completedChecks": {
+                    "type": "number"
+                  },
+                  "inProgressChecks": {
+                    "type": "number"
+                  },
+                  "checksWithIssues": {
+                    "type": "number"
+                  },
+                  "complianceRate": {
+                    "type": "number",
+                    "description": "Percentage (0-100)"
+                  },
+                  "applianceStats": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "applianceId": {
+                          "type": "string"
+                        },
+                        "applianceName": {
+                          "type": "string"
+                        },
+                        "checkCount": {
+                          "type": "number"
+                        },
+                        "lastCheckDate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
                         }
                       }
                     }
@@ -2085,1222 +2176,1273 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/reports.ts"
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/reports.ts"
+    }
+  },
+  "stations": {
+    "GET /api/stations/lookup": {
+      "method": "GET",
+      "path": "/api/stations/lookup",
+      "description": "Search and locate fire service stations nationally with geolocation sorting. Supports all Australian states and territories.",
+      "authentication": "optional",
+      "parameters": {
+        "query": {
+          "q": {
+            "type": "string",
+            "required": false,
+            "description": "Search query (station name, suburb, brigade)"
+          },
+          "lat": {
+            "type": "number",
+            "required": false,
+            "description": "User latitude for geolocation sorting"
+          },
+          "lon": {
+            "type": "number",
+            "required": false,
+            "description": "User longitude for geolocation sorting"
+          },
+          "limit": {
+            "type": "integer",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 50,
+            "required": false,
+            "description": "Maximum results per category (default 10, max 50)"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Station lookup results",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/StationSearchResult"
+                }
+              },
+              "count": {
+                "type": "integer"
+              },
+              "query": {
+                "type": "string"
+              },
+              "location": {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number"
+                  },
+                  "lon": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid parameters (missing both query and location)"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/stations.ts:17",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      },
+      "notes": [
+        "Returns merged results: closest stations by distance + matching search results",
+        "Results are deduplicated by station ID",
+        "Distance calculated using Haversine formula",
+        "Search is case-insensitive and matches name, suburb, or brigade",
+        "Performance target: < 200ms response time"
+      ]
+    },
+    "GET /api/stations/count": {
+      "method": "GET",
+      "path": "/api/stations/count",
+      "description": "Get total count of loaded fire service stations (debugging/monitoring)",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Station count",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "description": "Total facilities loaded (typically 4400+)"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/stations.ts:56",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
       }
     },
-    "stations": {
-      "GET /api/stations/lookup": {
-        "method": "GET",
-        "path": "/api/stations/lookup",
-        "description": "Search and locate fire service stations nationally with geolocation sorting. Supports all Australian states and territories.",
-        "authentication": "none",
-        "parameters": {
-          "query": {
-            "q": {
-              "type": "string",
-              "required": false,
-              "description": "Search query (station name, suburb, brigade)"
-            },
-            "lat": {
-              "type": "number",
-              "required": false,
-              "description": "User latitude for geolocation sorting"
-            },
-            "lon": {
-              "type": "number",
-              "required": false,
-              "description": "User longitude for geolocation sorting"
-            },
-            "limit": {
-              "type": "integer",
-              "default": 10,
-              "minimum": 1,
-              "maximum": 50,
-              "required": false,
-              "description": "Maximum results per category (default 10, max 50)"
-            }
+    "GET /api/stations/demo": {
+      "method": "GET",
+      "path": "/api/stations/demo",
+      "description": "Get the demo station for public viewing (unauthenticated access). Returns only the demo station with sample data for demonstration purposes.",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Demo station object",
+          "schema": {
+            "$ref": "#/definitions/Station"
           }
         },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Station lookup results",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "results": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/StationSearchResult"
-                  }
-                },
-                "count": {
-                  "type": "integer"
-                },
-                "query": {
-                  "type": "string"
-                },
-                "location": {
-                  "type": "object",
-                  "properties": {
-                    "lat": {
-                      "type": "number"
-                    },
-                    "lon": {
-                      "type": "number"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid parameters (missing both query and location)"
-          },
-          "500": {
-            "description": "Server error"
-          }
+        "404": {
+          "description": "Demo station not found (not initialized)"
         },
-        "implementation": "backend/src/routes/stations.ts:17",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
-          }
-        },
-        "notes": [
-          "Returns merged results: closest stations by distance + matching search results",
-          "Results are deduplicated by station ID",
-          "Distance calculated using Haversine formula",
-          "Search is case-insensitive and matches name, suburb, or brigade",
-          "Performance target: < 200ms response time"
-        ]
+        "500": {
+          "description": "Server error"
+        }
       },
-      "GET /api/stations/count": {
-        "method": "GET",
-        "path": "/api/stations/count",
-        "description": "Get total count of loaded fire service stations (debugging/monitoring)",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Station count",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "count": {
-                  "type": "integer",
-                  "description": "Total facilities loaded (typically 4400+)"
-                }
-              }
-            }
+      "implementation": "backend/src/routes/stations.ts:46",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000,
+          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      },
+      "notes": [
+        "Always accessible without authentication",
+        "Returns demo-station ID with sample/fake data",
+        "Used for public landing page when REQUIRE_AUTH=true"
+      ]
+    },
+    "GET /api/stations": {
+      "method": "GET",
+      "path": "/api/stations",
+      "description": "Get all stations with optional filtering and pagination",
+      "authentication": "optional",
+      "parameters": {
+        "query": {
+          "brigadeId": {
+            "type": "string",
+            "required": false,
+            "description": "Filter by brigade ID"
           },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/stations.ts:56",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
-            "headers": [
-              "RateLimit-Limit",
-              "RateLimit-Remaining",
-              "RateLimit-Reset"
-            ]
+          "area": {
+            "type": "string",
+            "required": false,
+            "description": "Filter by area"
+          },
+          "district": {
+            "type": "string",
+            "required": false,
+            "description": "Filter by district"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "required": false,
+            "description": "Maximum number of results"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "required": false,
+            "description": "Pagination offset"
           }
         }
       },
-      "GET /api/stations": {
-        "method": "GET",
-        "path": "/api/stations",
-        "description": "Get all stations with optional filtering and pagination",
-        "authentication": "none",
-        "parameters": {
-          "query": {
-            "brigadeId": {
-              "type": "string",
-              "required": false,
-              "description": "Filter by brigade ID"
-            },
-            "area": {
-              "type": "string",
-              "required": false,
-              "description": "Filter by area"
-            },
-            "district": {
-              "type": "string",
-              "required": false,
-              "description": "Filter by district"
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "required": false,
-              "description": "Maximum number of results"
-            },
-            "offset": {
-              "type": "integer",
-              "minimum": 0,
-              "required": false,
-              "description": "Pagination offset"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Paginated list of stations",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "stations": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/Station"
-                  }
-                },
-                "pagination": {
-                  "type": "object",
-                  "properties": {
-                    "total": {
-                      "type": "number"
-                    },
-                    "limit": {
-                      "type": "number"
-                    },
-                    "offset": {
-                      "type": "number"
-                    }
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Paginated list of stations",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "stations": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Station"
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "total": {
+                    "type": "number"
+                  },
+                  "limit": {
+                    "type": "number"
+                  },
+                  "offset": {
+                    "type": "number"
                   }
                 }
               }
             }
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/stations.ts:28",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/stations.ts:28",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
+        }
+      }
+    },
+    "GET /api/stations/:id": {
+      "method": "GET",
+      "path": "/api/stations/:id",
+      "description": "Get specific station by ID",
+      "authentication": "optional",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Station ID"
           }
         }
       },
-      "GET /api/stations/:id": {
-        "method": "GET",
-        "path": "/api/stations/:id",
-        "description": "Get specific station by ID",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Station ID"
-            }
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Station object",
+          "schema": {
+            "$ref": "#/definitions/Station"
           }
         },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Station object",
-            "schema": {
+        "404": {
+          "description": "Station not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/stations.ts:76",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
+        }
+      },
+      "notes": [
+        "Requires authentication when REQUIRE_AUTH=true environment variable is set"
+      ]
+    },
+    "GET /api/stations/brigade/:brigadeId": {
+      "method": "GET",
+      "path": "/api/stations/brigade/:brigadeId",
+      "description": "Get all stations in a brigade",
+      "authentication": "optional",
+      "parameters": {
+        "path": {
+          "brigadeId": {
+            "type": "string",
+            "required": true,
+            "description": "Brigade ID"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Array of stations in the brigade",
+          "schema": {
+            "type": "array",
+            "items": {
               "$ref": "#/definitions/Station"
             }
-          },
-          "404": {
-            "description": "Station not found"
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/stations.ts:76",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/stations.ts:95",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
+        }
+      },
+      "notes": [
+        "Requires authentication when REQUIRE_AUTH=true environment variable is set"
+      ]
+    },
+    "GET /api/stations/check-brigade/:brigadeId": {
+      "method": "GET",
+      "path": "/api/stations/check-brigade/:brigadeId",
+      "description": "Check if a station with this brigade ID already exists. Used for duplicate prevention during station creation.",
+      "authentication": "optional",
+      "parameters": {
+        "path": {
+          "brigadeId": {
+            "type": "string",
+            "required": true,
+            "description": "Brigade ID to check"
           }
         }
       },
-      "GET /api/stations/brigade/:brigadeId": {
-        "method": "GET",
-        "path": "/api/stations/brigade/:brigadeId",
-        "description": "Get all stations in a brigade",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "brigadeId": {
-              "type": "string",
-              "required": true,
-              "description": "Brigade ID"
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Station exists with this brigade ID",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "exists": {
+                "type": "boolean",
+                "const": true
+              },
+              "station": {
+                "$ref": "#/definitions/Station"
+              },
+              "message": {
+                "type": "string",
+                "example": "Station \"Horsley Park Rural Fire Brigade\" already exists with this brigade ID"
+              }
             }
           }
         },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Array of stations in the brigade",
-            "schema": {
-              "type": "array",
-              "items": {
+        "404": {
+          "description": "No active station found with this brigade ID",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "exists": {
+                "type": "boolean",
+                "const": false
+              },
+              "message": {
+                "type": "string",
+                "example": "No active station found with this brigade ID"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/stations.ts:122",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
+        }
+      },
+      "notes": [
+        "Requires authentication when REQUIRE_AUTH=true environment variable is set"
+      ]
+    },
+    "POST /api/stations": {
+      "method": "POST",
+      "path": "/api/stations",
+      "description": "Create a new station. Validates that brigade ID is unique to prevent duplicate station creation. Returns 409 if a station with the same brigade ID already exists.",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "name",
+            "brigadeId",
+            "brigadeName",
+            "hierarchy"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "brigadeId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "brigadeName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "hierarchy": {
+              "type": "object",
+              "required": [
+                "jurisdiction",
+                "area",
+                "district",
+                "brigade",
+                "station"
+              ],
+              "properties": {
+                "jurisdiction": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "area": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "district": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "brigade": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "station": {
+                  "type": "string",
+                  "maxLength": 100
+                }
+              }
+            },
+            "location": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "latitude": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "longitude": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                }
+              }
+            },
+            "contactInfo": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "maxLength": 200
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Station created successfully",
+          "schema": {
+            "$ref": "#/definitions/Station"
+          }
+        },
+        "400": {
+          "description": "Validation error"
+        },
+        "409": {
+          "description": "Station already exists with this brigade ID",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "example": "Station already exists"
+              },
+              "message": {
+                "type": "string",
+                "example": "A station with brigade ID \"horsley-park-rural-fire-brigade\" already exists: Horsley Park Rural Fire Brigade"
+              },
+              "existingStation": {
                 "$ref": "#/definitions/Station"
               }
             }
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/stations.ts:95",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
-          }
+        "500": {
+          "description": "Server error"
         }
       },
-      "GET /api/stations/check-brigade/:brigadeId": {
-        "method": "GET",
-        "path": "/api/stations/check-brigade/:brigadeId",
-        "description": "Check if a station with this brigade ID already exists. Used for duplicate prevention during station creation.",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "brigadeId": {
-              "type": "string",
-              "required": true,
-              "description": "Brigade ID to check"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Station exists with this brigade ID",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "exists": {
-                  "type": "boolean",
-                  "const": true
-                },
-                "station": {
-                  "$ref": "#/definitions/Station"
-                },
-                "message": {
-                  "type": "string",
-                  "example": "Station \"Horsley Park Rural Fire Brigade\" already exists with this brigade ID"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No active station found with this brigade ID",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "exists": {
-                  "type": "boolean",
-                  "const": false
-                },
-                "message": {
-                  "type": "string",
-                  "example": "No active station found with this brigade ID"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/stations.ts:122",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
-          }
+      "implementation": "backend/src/routes/stations.ts:114",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
         }
-      },
-      "POST /api/stations": {
-        "method": "POST",
-        "path": "/api/stations",
-        "description": "Create a new station. Validates that brigade ID is unique to prevent duplicate station creation. Returns 409 if a station with the same brigade ID already exists.",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
-          "schema": {
-            "type": "object",
-            "required": [
-              "name",
-              "brigadeId",
-              "brigadeName",
-              "hierarchy"
-            ],
-            "properties": {
-              "name": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 200
-              },
-              "brigadeId": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 100
-              },
-              "brigadeName": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 200
-              },
-              "hierarchy": {
-                "type": "object",
-                "required": [
-                  "jurisdiction",
-                  "area",
-                  "district",
-                  "brigade",
-                  "station"
-                ],
-                "properties": {
-                  "jurisdiction": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "area": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "district": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "brigade": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "station": {
-                    "type": "string",
-                    "maxLength": 100
-                  }
-                }
-              },
-              "location": {
-                "type": "object",
-                "properties": {
-                  "address": {
-                    "type": "string",
-                    "maxLength": 500
-                  },
-                  "latitude": {
-                    "type": "number",
-                    "minimum": -90,
-                    "maximum": 90
-                  },
-                  "longitude": {
-                    "type": "number",
-                    "minimum": -180,
-                    "maximum": 180
-                  }
-                }
-              },
-              "contactInfo": {
-                "type": "object",
-                "properties": {
-                  "phone": {
-                    "type": "string",
-                    "maxLength": 50
-                  },
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "maxLength": 200
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Station created successfully",
-            "schema": {
-              "$ref": "#/definitions/Station"
-            }
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "409": {
-            "description": "Station already exists with this brigade ID",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "error": {
-                  "type": "string",
-                  "example": "Station already exists"
-                },
-                "message": {
-                  "type": "string",
-                  "example": "A station with brigade ID \"horsley-park-rural-fire-brigade\" already exists: Horsley Park Rural Fire Brigade"
-                },
-                "existingStation": {
-                  "$ref": "#/definitions/Station"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/stations.ts:114",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
-          }
-        }
-      },
-      "PUT /api/stations/:id": {
-        "method": "PUT",
-        "path": "/api/stations/:id",
-        "description": "Update an existing station",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Station ID"
-            }
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "schema": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 200
-              },
-              "brigadeName": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 200
-              },
-              "hierarchy": {
-                "type": "object",
-                "properties": {
-                  "jurisdiction": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "area": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "district": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "brigade": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "station": {
-                    "type": "string",
-                    "maxLength": 100
-                  }
-                }
-              },
-              "location": {
-                "type": "object",
-                "properties": {
-                  "address": {
-                    "type": "string",
-                    "maxLength": 500
-                  },
-                  "latitude": {
-                    "type": "number",
-                    "minimum": -90,
-                    "maximum": 90
-                  },
-                  "longitude": {
-                    "type": "number",
-                    "minimum": -180,
-                    "maximum": 180
-                  }
-                }
-              },
-              "contactInfo": {
-                "type": "object",
-                "properties": {
-                  "phone": {
-                    "type": "string",
-                    "maxLength": 50
-                  },
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "maxLength": 200
-                  }
-                }
-              },
-              "isActive": {
-                "type": "boolean"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Station updated successfully",
-            "schema": {
-              "$ref": "#/definitions/Station"
-            }
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "404": {
-            "description": "Station not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/stations.ts:143",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
-          }
-        }
-      },
-      "DELETE /api/stations/:id": {
-        "method": "DELETE",
-        "path": "/api/stations/:id",
-        "description": "Soft delete a station (sets isActive=false). Prevents deletion if station has members, active check-ins, or events.",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Station ID"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Station deactivated successfully",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean"
-                },
-                "message": {
-                  "type": "string"
-                },
-                "stationId": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Cannot delete station with existing data",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "error": {
-                  "type": "string"
-                },
-                "memberCount": {
-                  "type": "number"
-                },
-                "checkInCount": {
-                  "type": "number"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Station not found"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/stations.ts:178",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
-          }
-        }
-      },
-      "POST /api/stations/demo/reset": {
-        "method": "POST",
-        "path": "/api/stations/demo/reset",
-        "description": "Reset demo station with fresh sample data. Deletes all demo station data and recreates it with realistic samples including members, activities, events, and appliances.",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Demo station reset successfully",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean"
-                },
-                "message": {
-                  "type": "string"
-                },
-                "stationId": {
-                  "type": "string",
-                  "description": "ID of the demo station (demo-station)"
-                },
-                "resetAt": {
-                  "type": "string",
-                  "format": "date-time",
-                  "description": "Timestamp when reset completed"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Server error during reset",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "error": {
-                  "type": "string"
-                },
-                "message": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "implementation": "backend/src/routes/stations.ts:320",
-        "security": {
-          "rateLimiting": {
-            "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000
-          }
-        },
-        "notes": [
-          "Demo station ID is 'demo-station'",
-          "Creates 20 diverse sample members with various ranks",
-          "Creates 5 standard activities",
-          "Creates 10 recent check-ins",
-          "Creates 3-4 events (1 active, rest completed)",
-          "Creates 2 appliances with sample check runs",
-          "Operation may take several seconds to complete",
-          "Emits 'demo-station-reset' WebSocket event on success"
-        ]
       }
     },
-    "brigade-access": {
-      "POST /api/brigade-access/generate": {
-        "method": "POST",
-        "path": "/api/brigade-access/generate",
-        "description": "Generate a new brigade access token for kiosk mode. Tokens lock the sign-in interface to a specific station.",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
+    "PUT /api/stations/:id": {
+      "method": "PUT",
+      "path": "/api/stations/:id",
+      "description": "Update an existing station",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Station ID"
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "brigadeName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "hierarchy": {
+              "type": "object",
+              "properties": {
+                "jurisdiction": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "area": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "district": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "brigade": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "station": {
+                  "type": "string",
+                  "maxLength": 100
+                }
+              }
+            },
+            "location": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "latitude": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "longitude": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                }
+              }
+            },
+            "contactInfo": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "maxLength": 200
+                }
+              }
+            },
+            "isActive": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Station updated successfully",
+          "schema": {
+            "$ref": "#/definitions/Station"
+          }
+        },
+        "400": {
+          "description": "Validation error"
+        },
+        "404": {
+          "description": "Station not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/stations.ts:143",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
+        }
+      }
+    },
+    "DELETE /api/stations/:id": {
+      "method": "DELETE",
+      "path": "/api/stations/:id",
+      "description": "Soft delete a station (sets isActive=false). Prevents deletion if station has members, active check-ins, or events.",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Station ID"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Station deactivated successfully",
           "schema": {
             "type": "object",
             "properties": {
-              "brigadeId": {
-                "type": "string",
-                "maxLength": 100,
-                "description": "Brigade ID to associate with the token"
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              },
+              "stationId": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Cannot delete station with existing data",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string"
+              },
+              "memberCount": {
+                "type": "number"
+              },
+              "checkInCount": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Station not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/stations.ts:178",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
+        }
+      }
+    },
+    "POST /api/stations/demo/reset": {
+      "method": "POST",
+      "path": "/api/stations/demo/reset",
+      "description": "Reset demo station with fresh sample data. Deletes all demo station data and recreates it with realistic samples including members, activities, events, and appliances.",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Demo station reset successfully",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
               },
               "stationId": {
                 "type": "string",
-                "maxLength": 100,
-                "description": "Station ID to lock access to"
+                "description": "ID of the demo station (demo-station)"
               },
-              "description": {
+              "resetAt": {
                 "type": "string",
-                "maxLength": 200,
-                "description": "Optional description for the token (e.g., 'Main Kiosk')"
-              },
-              "expiresInDays": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 3650,
-                "description": "Optional expiration period in days (default: no expiration)"
-              }
-            },
-            "required": [
-              "brigadeId",
-              "stationId"
-            ]
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Token generated successfully",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean"
-                },
-                "token": {
-                  "type": "string",
-                  "format": "uuid",
-                  "description": "Generated UUID token"
-                },
-                "brigadeId": {
-                  "type": "string"
-                },
-                "stationId": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string",
-                  "nullable": true
-                },
-                "createdAt": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "expiresAt": {
-                  "type": "string",
-                  "format": "date-time",
-                  "nullable": true
-                },
-                "kioskUrl": {
-                  "type": "string",
-                  "format": "uri",
-                  "description": "Full kiosk sign-in URL with token",
-                  "example": "https://host/signin?brigade=uuid"
-                }
+                "format": "date-time",
+                "description": "Timestamp when reset completed"
               }
             }
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/brigadeAccess.ts:39",
-        "security": {
-          "notes": [
-            "No authentication required per current design",
-            "Should be protected with admin authentication in production",
-            "Tokens are UUIDs (128-bit random) for security"
-          ]
-        }
-      },
-      "POST /api/brigade-access/validate": {
-        "method": "POST",
-        "path": "/api/brigade-access/validate",
-        "description": "Validate a brigade access token and return associated station info",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": {
-          "required": true,
+        "500": {
+          "description": "Server error during reset",
           "schema": {
             "type": "object",
             "properties": {
-              "token": {
-                "type": "string",
-                "format": "uuid",
-                "description": "Token to validate"
-              }
-            },
-            "required": [
-              "token"
-            ]
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Token is valid",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "valid": {
-                  "type": "boolean",
-                  "enum": [
-                    true
-                  ]
-                },
-                "brigadeId": {
-                  "type": "string"
-                },
-                "stationId": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string",
-                  "nullable": true
-                },
-                "createdAt": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "expiresAt": {
-                  "type": "string",
-                  "format": "date-time",
-                  "nullable": true
-                }
+              "error": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
               }
             }
-          },
-          "404": {
-            "description": "Token not found or expired",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "valid": {
-                  "type": "boolean",
-                  "enum": [
-                    false
-                  ]
-                },
-                "error": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "500": {
-            "description": "Server error"
           }
-        },
-        "implementation": "backend/src/routes/brigadeAccess.ts:110",
-        "security": {
-          "notes": [
-            "Public endpoint used by kiosk mode middleware",
-            "Expired tokens are automatically removed"
-          ]
         }
       },
-      "DELETE /api/brigade-access/:token": {
-        "method": "DELETE",
-        "path": "/api/brigade-access/:token",
-        "description": "Revoke a brigade access token",
-        "authentication": "none",
-        "parameters": {
-          "path": {
-            "token": {
-              "type": "string",
-              "format": "uuid",
-              "required": true,
-              "description": "Token to revoke"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Token revoked successfully",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean"
-                },
-                "message": {
-                  "type": "string"
-                },
-                "token": {
-                  "type": "string",
-                  "format": "uuid"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Token not found"
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/brigadeAccess.ts:155",
-        "security": {
-          "notes": [
-            "Should be protected with admin authentication in production"
-          ]
+      "implementation": "backend/src/routes/stations.ts:320",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 100,
+          "windowMs": 900000
         }
       },
-      "GET /api/brigade-access/brigade/:brigadeId": {
-        "method": "GET",
-        "path": "/api/brigade-access/brigade/:brigadeId",
-        "description": "Get all active tokens for a brigade",
-        "authentication": "none",
-        "parameters": {
-          "path": {
+      "notes": [
+        "Demo station ID is 'demo-station'",
+        "Creates 20 diverse sample members with various ranks",
+        "Creates 5 standard activities",
+        "Creates 10 recent check-ins",
+        "Creates 3-4 events (1 active, rest completed)",
+        "Creates 2 appliances with sample check runs",
+        "Operation may take several seconds to complete",
+        "Emits 'demo-station-reset' WebSocket event on success"
+      ]
+    }
+  },
+  "brigade-access": {
+    "POST /api/brigade-access/generate": {
+      "method": "POST",
+      "path": "/api/brigade-access/generate",
+      "description": "Generate a new brigade access token for kiosk mode. Tokens lock the sign-in interface to a specific station.",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": {
             "brigadeId": {
               "type": "string",
               "maxLength": 100,
-              "required": true,
-              "description": "Brigade ID to filter tokens"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Brigade tokens retrieved",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "brigadeId": {
-                  "type": "string"
-                },
-                "tokens": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/BrigadeAccessToken"
-                  }
-                },
-                "count": {
-                  "type": "integer"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/brigadeAccess.ts:199",
-        "security": {
-          "notes": [
-            "Returns only non-expired tokens",
-            "Should be protected with admin authentication in production"
-          ]
-        }
-      },
-      "GET /api/brigade-access/station/:stationId": {
-        "method": "GET",
-        "path": "/api/brigade-access/station/:stationId",
-        "description": "Get all active tokens for a station",
-        "authentication": "none",
-        "parameters": {
-          "path": {
+              "description": "Brigade ID to associate with the token"
+            },
             "stationId": {
               "type": "string",
               "maxLength": 100,
-              "required": true,
-              "description": "Station ID to filter tokens"
-            }
-          }
-        },
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Station tokens retrieved",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "stationId": {
-                  "type": "string"
-                },
-                "tokens": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/BrigadeAccessToken"
-                  }
-                },
-                "count": {
-                  "type": "integer"
-                }
-              }
+              "description": "Station ID to lock access to"
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "Optional description for the token (e.g., 'Main Kiosk')"
+            },
+            "expiresInDays": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650,
+              "description": "Optional expiration period in days (default: no expiration)"
             }
           },
-          "400": {
-            "description": "Validation error"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/brigadeAccess.ts:240",
-        "security": {
-          "notes": [
-            "Returns only non-expired tokens",
-            "Should be protected with admin authentication in production"
+          "required": [
+            "brigadeId",
+            "stationId"
           ]
         }
       },
-      "GET /api/brigade-access/stats": {
-        "method": "GET",
-        "path": "/api/brigade-access/stats",
-        "description": "Get statistics about active tokens",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "Token statistics",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "totalActiveTokens": {
-                  "type": "integer",
-                  "description": "Number of active (non-expired) tokens"
-                },
-                "timestamp": {
-                  "type": "string",
-                  "format": "date-time"
-                }
+      "responses": {
+        "201": {
+          "description": "Token generated successfully",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "token": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Generated UUID token"
+              },
+              "brigadeId": {
+                "type": "string"
+              },
+              "stationId": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string",
+                "nullable": true
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "kioskUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "Full kiosk sign-in URL with token",
+                "example": "https://host/signin?brigade=uuid"
               }
             }
-          },
-          "500": {
-            "description": "Server error"
           }
         },
-        "implementation": "backend/src/routes/brigadeAccess.ts:282",
-        "security": {
-          "notes": [
-            "Public endpoint for monitoring",
-            "Automatically cleans up expired tokens before counting"
-          ]
+        "400": {
+          "description": "Validation error"
+        },
+        "500": {
+          "description": "Server error"
         }
       },
-      "GET /api/brigade-access/all-tokens": {
-        "method": "GET",
-        "path": "/api/brigade-access/all-tokens",
-        "description": "Get all active tokens across all stations (admin utility). Returns tokens with full kiosk URLs for easy distribution.",
-        "authentication": "none",
-        "parameters": {},
-        "requestBody": null,
-        "responses": {
-          "200": {
-            "description": "All tokens retrieved",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "tokens": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "token": {
-                        "type": "string",
-                        "format": "uuid"
-                      },
-                      "brigadeId": {
-                        "type": "string"
-                      },
-                      "stationId": {
-                        "type": "string"
-                      },
-                      "description": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                      },
-                      "expiresAt": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                      },
-                      "kioskUrl": {
-                        "type": "string",
-                        "format": "uri",
-                        "description": "Full kiosk sign-in URL with embedded token",
-                        "example": "https://host/signin?brigade=uuid"
-                      }
-                    }
-                  }
-                },
-                "count": {
-                  "type": "integer",
-                  "description": "Total number of active tokens"
-                },
-                "timestamp": {
-                  "type": "string",
-                  "format": "date-time"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Server error"
-          }
-        },
-        "implementation": "backend/src/routes/brigadeAccess.ts:300",
-        "security": {
-          "notes": [
-            "Master admin utility endpoint",
-            "Returns only non-expired tokens",
-            "Should be protected with admin authentication in production",
-            "Used by /admin/brigade-access frontend page"
-          ]
-        },
+      "implementation": "backend/src/routes/brigadeAccess.ts:39",
+      "security": {
         "notes": [
-          "Automatically cleans up expired tokens before returning results",
-          "Each token includes pre-formatted kiosk URL for easy copy/paste",
-          "Frontend provides QR code generation and copy-to-clipboard features"
+          "No authentication required per current design",
+          "Should be protected with admin authentication in production",
+          "Tokens are UUIDs (128-bit random) for security"
         ]
       }
+    },
+    "POST /api/brigade-access/validate": {
+      "method": "POST",
+      "path": "/api/brigade-access/validate",
+      "description": "Validate a brigade access token and return associated station info",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Token to validate"
+            }
+          },
+          "required": [
+            "token"
+          ]
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Token is valid",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "valid": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "brigadeId": {
+                "type": "string"
+              },
+              "stationId": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string",
+                "nullable": true
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Token not found or expired",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "valid": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              },
+              "error": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Validation error"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/brigadeAccess.ts:110",
+      "security": {
+        "notes": [
+          "Public endpoint used by kiosk mode middleware",
+          "Expired tokens are automatically removed"
+        ]
+      }
+    },
+    "DELETE /api/brigade-access/:token": {
+      "method": "DELETE",
+      "path": "/api/brigade-access/:token",
+      "description": "Revoke a brigade access token",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Token to revoke"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Token revoked successfully",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              },
+              "token": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Token not found"
+        },
+        "400": {
+          "description": "Validation error"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/brigadeAccess.ts:155",
+      "security": {
+        "notes": [
+          "Should be protected with admin authentication in production"
+        ]
+      }
+    },
+    "GET /api/brigade-access/brigade/:brigadeId": {
+      "method": "GET",
+      "path": "/api/brigade-access/brigade/:brigadeId",
+      "description": "Get all active tokens for a brigade",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "brigadeId": {
+            "type": "string",
+            "maxLength": 100,
+            "required": true,
+            "description": "Brigade ID to filter tokens"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Brigade tokens retrieved",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "brigadeId": {
+                "type": "string"
+              },
+              "tokens": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/BrigadeAccessToken"
+                }
+              },
+              "count": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Validation error"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/brigadeAccess.ts:199",
+      "security": {
+        "notes": [
+          "Returns only non-expired tokens",
+          "Should be protected with admin authentication in production"
+        ]
+      }
+    },
+    "GET /api/brigade-access/station/:stationId": {
+      "method": "GET",
+      "path": "/api/brigade-access/station/:stationId",
+      "description": "Get all active tokens for a station",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "stationId": {
+            "type": "string",
+            "maxLength": 100,
+            "required": true,
+            "description": "Station ID to filter tokens"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Station tokens retrieved",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "stationId": {
+                "type": "string"
+              },
+              "tokens": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/BrigadeAccessToken"
+                }
+              },
+              "count": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Validation error"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/brigadeAccess.ts:240",
+      "security": {
+        "notes": [
+          "Returns only non-expired tokens",
+          "Should be protected with admin authentication in production"
+        ]
+      }
+    },
+    "GET /api/brigade-access/stats": {
+      "method": "GET",
+      "path": "/api/brigade-access/stats",
+      "description": "Get statistics about active tokens",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Token statistics",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "totalActiveTokens": {
+                "type": "integer",
+                "description": "Number of active (non-expired) tokens"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/brigadeAccess.ts:282",
+      "security": {
+        "notes": [
+          "Public endpoint for monitoring",
+          "Automatically cleans up expired tokens before counting"
+        ]
+      }
+    },
+    "GET /api/brigade-access/all-tokens": {
+      "method": "GET",
+      "path": "/api/brigade-access/all-tokens",
+      "description": "Get all active tokens across all stations (admin utility). Returns tokens with full kiosk URLs for easy distribution.",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "All tokens retrieved",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "tokens": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "brigadeId": {
+                      "type": "string"
+                    },
+                    "stationId": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "kioskUrl": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "Full kiosk sign-in URL with embedded token",
+                      "example": "https://host/signin?brigade=uuid"
+                    }
+                  }
+                }
+              },
+              "count": {
+                "type": "integer",
+                "description": "Total number of active tokens"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/brigadeAccess.ts:300",
+      "security": {
+        "notes": [
+          "Master admin utility endpoint",
+          "Returns only non-expired tokens",
+          "Should be protected with admin authentication in production",
+          "Used by /admin/brigade-access frontend page"
+        ]
+      },
+      "notes": [
+        "Automatically cleans up expired tokens before returning results",
+        "Each token includes pre-formatted kiosk URL for easy copy/paste",
+        "Frontend provides QR code generation and copy-to-clipboard features"
+      ]
+    }
   },
   "socketEvents": {
     "serverToClient": {
@@ -3732,7 +3874,10 @@
         },
         "action": {
           "type": "string",
-          "enum": ["participant-added", "participant-removed"],
+          "enum": [
+            "participant-added",
+            "participant-removed"
+          ],
           "description": "Type of action performed"
         },
         "timestamp": {
@@ -3766,7 +3911,12 @@
         },
         "checkInMethod": {
           "type": "string",
-          "enum": ["kiosk", "mobile", "qr", "manual"],
+          "enum": [
+            "kiosk",
+            "mobile",
+            "qr",
+            "manual"
+          ],
           "description": "Method used for check-in"
         },
         "deviceInfo": {
@@ -3844,7 +3994,17 @@
           "description": "When audit log entry was created"
         }
       },
-      "required": ["id", "eventId", "action", "timestamp", "memberId", "memberName", "participantId", "checkInMethod", "createdAt"]
+      "required": [
+        "id",
+        "eventId",
+        "action",
+        "timestamp",
+        "memberId",
+        "memberName",
+        "participantId",
+        "checkInMethod",
+        "createdAt"
+      ]
     },
     "EventWithParticipants": {
       "allOf": [
