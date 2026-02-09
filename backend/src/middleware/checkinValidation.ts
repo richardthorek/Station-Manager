@@ -64,7 +64,8 @@ export const validateUrlCheckIn = [
   body('stationId')
     .optional()
     .isString()
-    .withMessage('Station ID must be a string'),
+    .withMessage('Station ID must be a string')
+    .trim(), // Trim after type validation to handle whitespace
 ];
 
 /**
