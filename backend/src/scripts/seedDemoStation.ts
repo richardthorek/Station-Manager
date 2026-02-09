@@ -2,7 +2,7 @@
  * Demo Station Seed Data Script
  * 
  * Seeds the demo station with realistic sample data including:
- * - 15-20 diverse members with various ranks
+ * - 10 imaginative members with various ranks
  * - 5 standard activities
  * - 10 recent check-ins (last 30 days)
  * - 3-4 events (1 active, rest completed)
@@ -25,26 +25,16 @@ import type { Station, Member, Activity, CheckIn, Event, EventParticipant } from
 
 // Diverse member names with various cultural backgrounds
 const DEMO_MEMBERS = [
-  { name: 'Captain Sarah Chen', rank: 'Captain' },
-  { name: 'Deputy Marcus Rodriguez', rank: 'Deputy Captain' },
-  { name: 'Senior Firefighter Aisha Patel', rank: 'Senior Firefighter' },
-  { name: 'John O\'Brien', rank: 'Firefighter' },
-  { name: 'Emma Nguyen', rank: 'Firefighter' },
-  { name: 'Liam Thompson', rank: 'Firefighter' },
-  { name: 'Sofia Dimitriou', rank: 'Firefighter' },
-  { name: 'James MacDonald', rank: 'Senior Firefighter' },
-  { name: 'Priya Kumar', rank: 'Firefighter' },
-  { name: 'Connor Smith', rank: 'Firefighter' },
-  { name: 'Yasmin Al-Rashid', rank: 'Probationary Firefighter' },
-  { name: 'David Wilson', rank: 'Firefighter' },
-  { name: 'Mei Lin Wang', rank: 'Senior Firefighter' },
-  { name: 'Oliver Johnson', rank: 'Probationary Firefighter' },
-  { name: 'Isabella Rossi', rank: 'Firefighter' },
-  { name: 'Noah Anderson', rank: 'Firefighter' },
-  { name: 'Fatima Hassan', rank: 'Probationary Firefighter' },
-  { name: 'Ethan Brown', rank: 'Senior Firefighter' },
-  { name: 'Chloe Murphy', rank: 'Firefighter' },
-  { name: 'Ryan Park', rank: 'Firefighter' },
+  { name: 'Captain River Vale', rank: 'Captain' },
+  { name: 'Deputy Lia Granite', rank: 'Deputy Captain' },
+  { name: 'Senior Firefighter Marisol Dawn', rank: 'Senior Firefighter' },
+  { name: 'Firefighter Lyle Hart', rank: 'Firefighter' },
+  { name: 'Firefighter Faye Ember', rank: 'Firefighter' },
+  { name: 'Probationary Firefighter Sol Kai', rank: 'Probationary Firefighter' },
+  { name: 'Senior Firefighter Mira Stone', rank: 'Senior Firefighter' },
+  { name: 'Firefighter Theo Penn', rank: 'Firefighter' },
+  { name: 'Firefighter Juniper Quill', rank: 'Firefighter' },
+  { name: 'Probationary Firefighter Ash Calder', rank: 'Probationary Firefighter' },
 ];
 
 // Standard RFS activities

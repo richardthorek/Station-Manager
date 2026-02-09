@@ -607,7 +607,7 @@ Priority: **HIGH** - Critical for production scale
 **Steps**:
 1. Install express-rate-limit package (already available)
 2. Configure rate limiting strategy
-   - API routes: 100 requests per 15 minutes per IP
+   - API routes: ≈1,000 requests per hour per IP (≈84 per 5-minute window)
    - Authentication routes (future): 5 requests per 15 minutes per IP
    - Static files: No rate limiting
 3. Create rate limit middleware
