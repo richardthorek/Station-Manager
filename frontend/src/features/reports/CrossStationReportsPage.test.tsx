@@ -7,12 +7,14 @@ import { act, render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom';
 import { CrossStationReportsPage } from './CrossStationReportsPage';
 import { StationProvider } from '../../contexts/StationContext';
+import { AuthProvider } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 
 // Mock the API service
 vi.mock('../../services/api', () => ({
   api: {
     getStations: vi.fn(),
+    getDemoStation: vi.fn(),
     getCrossStationAttendanceSummary: vi.fn(),
     getCrossStationMemberParticipation: vi.fn(),
     getCrossStationActivityBreakdown: vi.fn(),
@@ -159,7 +161,9 @@ describe('CrossStationReportsPage', () => {
     await act(async () => {
       rendered = render(
         <BrowserRouter>
-          <StationProvider>{component}</StationProvider>
+          <AuthProvider>
+            <StationProvider>{component}</StationProvider>
+          </AuthProvider>
         </BrowserRouter>
       );
     });

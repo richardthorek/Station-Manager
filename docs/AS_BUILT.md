@@ -1741,16 +1741,171 @@ Potential improvements (not in current scope):
    - Not committed to version control
    - Azure App Service application settings
 
-### Authentication Status
+### Authentication & Access Control
 
-**Current:** No authentication required (by design for kiosk access)
+**Status:** ✅ **IMPLEMENTED** (2026-02-09) - Optional JWT Authentication
 
-**Future Considerations:**
-- Optional admin authentication for:
-  - Member deletion
-  - System settings
-  - Historical data export
-  - Template management
+#### Configuration
+
+Authentication is **optional** and controlled via the `REQUIRE_AUTH` environment variable:
+
+```bash
+# Enable authentication (recommended for production)
+REQUIRE_AUTH=true
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRY=24h
+```
+
+#### Authentication Modes
+
+**1. Open Access Mode (REQUIRE_AUTH=false or not set)**
+- Default behavior for development and single-station deployments
+- All stations accessible without authentication
+- Station management features fully accessible
+- Suitable for trusted network environments
+
+**2. Authenticated Mode (REQUIRE_AUTH=true)**
+- Recommended for production and multi-station deployments
+- Public users restricted to demo station only
+- Real brigade/station data requires valid JWT token
+- Station management requires authentication
+
+#### Access Control Tiers
+
+**Unauthenticated Users (when REQUIRE_AUTH=true):**
+- ✅ Access demo station with sample data via `GET /api/stations/demo`
+- ✅ Use all features (sign-in, truck checks, reports) with demo data
+- ❌ Cannot list or access real stations
+- ❌ Cannot access station management features
+- ❌ Cannot switch stations
+- ❌ Cannot access brigade token management
+
+**Authenticated Users:**
+- ✅ Full access to all stations via `GET /api/stations`
+- ✅ Can switch between stations
+- ✅ Access to station management features
+- ✅ Can generate/manage brigade access tokens (kiosk mode)
+- ✅ All CRUD operations on stations
+
+**Kiosk Mode (Brigade Token Access):**
+- ✅ Access via URL parameter: `?brigade=UUID-TOKEN`
+- ✅ Locked to specific station (no switching)
+- ✅ Full features for assigned station
+- ✅ No authentication required (token-based access)
+- ❌ Cannot access station management
+
+#### Protected Endpoints
+
+When `REQUIRE_AUTH=true`, the following endpoints require JWT authentication:
+
+**Station Endpoints:**
+- `GET /api/stations` - List all stations
+- `GET /api/stations/:id` - Get specific station
+- `GET /api/stations/lookup` - Search stations
+- `GET /api/stations/check-brigade/:brigadeId` - Check brigade existence
+- `GET /api/stations/brigade/:brigadeId` - Get stations by brigade
+- `POST /api/stations` - Create station
+- `PUT /api/stations/:id` - Update station
+- `DELETE /api/stations/:id` - Delete station
+
+**Brigade Access Endpoints:**
+- `GET /api/brigade-access/brigade/:brigadeId` - List brigade tokens
+- `GET /api/brigade-access/station/:stationId` - List station tokens
+- `GET /api/brigade-access/stats` - Token statistics
+- `GET /api/brigade-access/all-tokens` - All tokens (admin)
+- `POST /api/brigade-access/generate` - Generate token
+- `DELETE /api/brigade-access/:token` - Revoke token
+
+#### Public Endpoints (Always Accessible)
+
+**Demo Station Access:**
+- `GET /api/stations/demo` - Get demo station (sample data)
+
+**Kiosk Token Validation:**
+- `POST /api/brigade-access/validate` - Validate kiosk token
+
+**Authentication Endpoints:**
+- `POST /api/auth/login` - User login (returns JWT)
+- `GET /api/auth/config` - Get auth configuration
+
+#### User Roles
+
+**Admin Role:**
+- Full CRUD access to all resources
+- Can generate/revoke brigade tokens
+- Can manage stations
+- Can perform all authenticated operations
+
+**Viewer Role (Future):**
+- Read-only access to authenticated endpoints
+- Cannot modify stations or generate tokens
+- Reserved for future implementation
+
+#### JWT Token Format
+
+```typescript
+{
+  "userId": "string",
+  "username": "string",
+  "role": "admin" | "viewer",
+  "iat": number,  // Issued at
+  "exp": number   // Expiry timestamp
+}
+```
+
+**Token Transmission:**
+- Header: `Authorization: Bearer <jwt-token>`
+- Frontend: Stored in localStorage (`auth_token` key)
+- Backend: Verified via `optionalAuth` middleware
+
+#### Security Features
+
+1. **JWT Verification**: Cryptographically signed tokens (HS256)
+2. **Token Expiry**: Configurable expiration (default 24 hours)
+3. **Secure Storage**: Tokens cleared on logout
+4. **401 Handling**: Automatic logout on token expiration
+5. **Brigade Tokens**: UUID v4 tokens for kiosk mode (separate from JWT)
+
+#### Frontend Implementation
+
+**StationContext Behavior:**
+```typescript
+// Unauthenticated users (REQUIRE_AUTH=true)
+const stations = await api.getDemoStation();  // Single demo station
+
+// Authenticated users
+const stations = await api.getStations();     // All stations
+```
+
+**LandingPage Conditional UI:**
+- Station management links hidden for unauthenticated users
+- "Authentication required" message displayed when applicable
+- Login/logout buttons shown based on `requireAuth` config
+
+#### Migration Guide
+
+**Enabling Authentication on Existing Deployment:**
+
+1. Set `REQUIRE_AUTH=true` in backend `.env`
+2. Set `JWT_SECRET` to secure random value
+3. Restart backend service
+4. Existing kiosk devices continue to work (token-based)
+5. Users must log in to access real station data
+
+**Disabling Authentication:**
+
+1. Remove `REQUIRE_AUTH` or set to `false`
+2. Restart backend service
+3. All stations accessible without login
+4. Station management features immediately available
+
+#### Related Documentation
+
+- **Configuration Guide**: `docs/AUTHENTICATION_CONFIGURATION.md`
+- **API Registry**: `docs/api_register.json` (v1.3.0+)
+- **Master Plan**: `docs/MASTER_PLAN.md` (Phase 3 security enhancement)
 
 ---
 

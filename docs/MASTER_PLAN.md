@@ -60,6 +60,100 @@ Priority: **HIGH** - High-value user features
 
 ---
 
+#### Issue: Lock Landing Page to Demo Station; Hide Real Brigade Units
+**Status**: ✅ **COMPLETED** (February 9, 2026)  
+**GitHub Issue**: Lock landing page to demo/default station; hide real brigade units from public access  
+**Pull Request**: copilot/lock-landing-page-to-demo-station
+
+**Objective**: Restrict public access to only demo/default station data; hide real brigade units from unauthenticated users to enhance security and privacy.
+
+**User Story**: As a privacy-conscious brigade administrator, I want real station/brigade data hidden from public visitors so that only authenticated users or kiosk devices with valid tokens can access operational information.
+
+**Current State**: 
+- All stations visible to public visitors without authentication
+- Station management features accessible without login
+- No authentication enforcement on station/brigade endpoints
+- Real brigade data exposed via API to unauthenticated users
+
+**Target State**: 
+- Public visitors only see demo station with sample data
+- Real station data requires authentication (when REQUIRE_AUTH=true)
+- Station management features require login
+- Kiosk mode continues to work with brigade tokens
+- Configurable security via environment variables
+
+**Implementation Summary**:
+
+1. **✅ Backend Security Enhancements**
+   - Added `GET /api/stations/demo` endpoint for public demo station access (no auth required)
+   - Protected station endpoints with `optionalAuth` middleware:
+     - `GET /api/stations` - requires auth when REQUIRE_AUTH=true
+     - `GET /api/stations/:id` - requires auth when REQUIRE_AUTH=true
+     - `GET /api/stations/lookup` - requires auth when REQUIRE_AUTH=true
+     - `GET /api/stations/check-brigade/:brigadeId` - requires auth when REQUIRE_AUTH=true
+     - `GET /api/stations/brigade/:brigadeId` - requires auth when REQUIRE_AUTH=true
+   - Protected brigade access endpoints with `optionalAuth`:
+     - `GET /api/brigade-access/brigade/:brigadeId`
+     - `GET /api/brigade-access/station/:stationId`
+     - `GET /api/brigade-access/stats`
+     - `GET /api/brigade-access/all-tokens`
+
+2. **✅ Frontend Access Control**
+   - Updated `api.ts` with `getDemoStation()` method for public access
+   - Modified `StationContext` to enforce demo-only mode for unauthenticated users:
+     - `loadStations()` now accepts authentication status and loads only demo station when unauthenticated
+     - `loadPersistedSelection()` forces demo station for unauthenticated users when auth is required
+     - `selectStation()` and `clearStation()` prevent changes for unauthenticated users
+     - `refreshStations()` respects authentication status
+   - Updated `LandingPage` to conditionally show station management links based on authentication
+   - Added authentication requirement message for unauthenticated users on station management card
+
+3. **✅ Configuration & Documentation**
+   - Updated `backend/.env.example` with REQUIRE_AUTH configuration documentation
+   - Added JWT_SECRET and JWT_EXPIRY configuration examples
+   - Created comprehensive `AUTHENTICATION_CONFIGURATION.md` guide:
+     - Configuration modes (open access vs authenticated)
+     - Protected and public endpoints
+     - User roles and default credentials
+     - Kiosk mode compatibility
+     - Security recommendations
+     - Troubleshooting guide
+     - Migration guide for existing deployments
+
+4. **✅ API Registry Updates**
+   - Updated `api_register.json` to v1.3.0
+   - Added Authorization header to common headers
+   - Added new `GET /api/stations/demo` endpoint
+   - Updated authentication field for protected endpoints to "optional"
+   - Added authentication requirement notes to all protected endpoints
+
+**Security Model**:
+- **Unauthenticated Users**: Demo station only, no station switching, no management features
+- **Authenticated Users**: Full access to all stations, can manage stations, can generate tokens
+- **Kiosk Mode**: Access via brigade token in URL, locked to specific station, no authentication needed
+
+**Success Criteria**:
+- [x] Backend endpoints protected with optionalAuth middleware
+- [x] Public demo endpoint created and accessible without auth
+- [x] Frontend enforces demo-only mode for unauthenticated users
+- [x] Station management features hidden for unauthenticated users
+- [x] Kiosk mode continues to work with brigade tokens
+- [x] Configuration documented in .env.example
+- [x] Comprehensive authentication guide created
+- [x] API registry updated with authentication requirements
+
+**Files Affected**:
+- Backend routes: `stations.ts`, `brigadeAccess.ts`
+- Frontend: `StationContext.tsx`, `LandingPage.tsx`, `api.ts`
+- Configuration: `backend/.env.example`
+- Documentation: `AUTHENTICATION_CONFIGURATION.md`, `api_register.json`, `MASTER_PLAN.md`
+
+**Effort**: 1 day  
+**Priority**: P1 (Security & Privacy)  
+**Labels**: `security`, `privacy`, `authentication`, `phase-3`, `p1`
+
+---
+
 #### Issue #12: CSV Data Export
 1. Surface `membershipStartDate` and derived `membershipDuration` in profile API responses (fallback to creation date if missing).
 2. Render duration badge in `UserProfilePage` header (e.g., "Member since Feb 2021 · 3y 2m").

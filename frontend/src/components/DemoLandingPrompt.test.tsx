@@ -8,6 +8,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { DemoLandingPrompt } from './DemoLandingPrompt';
 import { hasSeenDemoPrompt, resetDemoPrompt } from '../utils/demoPromptUtils';
 import { StationProvider } from '../contexts/StationContext';
+import { AuthProvider } from '../contexts/AuthContext';
 
 // Mock API
 vi.mock('../services/api', () => ({
@@ -16,6 +17,7 @@ vi.mock('../services/api', () => ({
       { id: 'default-station', name: 'Default Station' },
       { id: 'demo-station', name: 'Demo Station' },
     ])),
+    getDemoStation: vi.fn(() => Promise.resolve({ id: 'demo-station', name: 'Demo Station' })),
   },
   setCurrentStationId: vi.fn(),
   getCurrentStationId: vi.fn(() => 'default-station'),
@@ -23,9 +25,11 @@ vi.mock('../services/api', () => ({
 
 const MockedDemoLandingPrompt = ({ onDismiss }: { onDismiss: () => void }) => (
   <BrowserRouter>
-    <StationProvider>
-      <DemoLandingPrompt onDismiss={onDismiss} />
-    </StationProvider>
+    <AuthProvider>
+      <StationProvider>
+        <DemoLandingPrompt onDismiss={onDismiss} />
+      </StationProvider>
+    </AuthProvider>
   </BrowserRouter>
 );
 

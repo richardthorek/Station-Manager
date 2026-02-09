@@ -202,9 +202,11 @@ router.delete(
 /**
  * GET /api/brigade-access/brigade/:brigadeId
  * Get all active tokens for a brigade
+ * Protected by optionalAuth middleware
  */
 router.get(
   '/brigade/:brigadeId',
+  optionalAuth,
   [
     param('brigadeId')
       .trim()
@@ -244,9 +246,11 @@ router.get(
 /**
  * GET /api/brigade-access/station/:stationId
  * Get all active tokens for a station
+ * Protected by optionalAuth middleware
  */
 router.get(
   '/station/:stationId',
+  optionalAuth,
   [
     param('stationId')
       .trim()
@@ -286,8 +290,9 @@ router.get(
 /**
  * GET /api/brigade-access/stats
  * Get statistics about active tokens
+ * Protected by optionalAuth middleware
  */
-router.get('/stats', async (req: Request, res: Response) => {
+router.get('/stats', optionalAuth, async (req: Request, res: Response) => {
   try {
     const totalTokens = getActiveTokenCount();
     
@@ -308,8 +313,9 @@ router.get('/stats', async (req: Request, res: Response) => {
  * GET /api/brigade-access/all-tokens
  * Get all active tokens across all stations (for admin utility)
  * Returns a map of tokens with their associated station info
+ * Protected by optionalAuth middleware
  */
-router.get('/all-tokens', async (req: Request, res: Response) => {
+router.get('/all-tokens', optionalAuth, async (req: Request, res: Response) => {
   try {
     const allTokens = getAllBrigadeAccessTokens();
     

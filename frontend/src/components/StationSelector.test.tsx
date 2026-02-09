@@ -14,12 +14,14 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StationSelector } from './StationSelector';
 import { StationProvider, DEMO_STATION_ID, DEFAULT_STATION_ID } from '../contexts/StationContext';
+import { AuthProvider } from '../contexts/AuthContext';
 import type { Station } from '../types';
 
 // Mock the API module
 vi.mock('../services/api', () => ({
   api: {
     getStations: vi.fn(),
+    getDemoStation: vi.fn(),
   },
   setCurrentStationId: vi.fn(),
   getCurrentStationId: vi.fn(() => 'default-station'),
@@ -88,9 +90,11 @@ describe('StationSelector', () => {
 
   const renderWithProvider = () => {
     return render(
-      <StationProvider>
-        <StationSelector />
-      </StationProvider>
+      <AuthProvider>
+        <StationProvider>
+          <StationSelector />
+        </StationProvider>
+      </AuthProvider>
     );
   };
 

@@ -12,6 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { StationProvider, useStation, DEMO_STATION_ID, DEFAULT_STATION_ID } from './StationContext';
+import { AuthProvider } from './AuthContext';
 import type { Station } from '../types';
 import { ReactNode } from 'react';
 
@@ -20,6 +21,7 @@ vi.mock('../services/api', () => ({
   api: {
     getStations: vi.fn(),
     getStation: vi.fn(),
+    getDemoStation: vi.fn(),
   },
   setCurrentStationId: vi.fn(),
   getCurrentStationId: vi.fn(() => 'default-station'),
@@ -96,7 +98,9 @@ describe('StationContext', () => {
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <StationProvider>{children}</StationProvider>
+    <AuthProvider>
+      <StationProvider>{children}</StationProvider>
+    </AuthProvider>
   );
 
   const renderStationHook = async () => {

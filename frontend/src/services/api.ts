@@ -105,6 +105,14 @@ class ApiService {
     return data.stations || data;
   }
 
+  async getDemoStation(): Promise<Station> {
+    const response = await fetch(`${API_BASE_URL}/stations/demo`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch demo station');
+    return response.json();
+  }
+
   async getStation(id: string): Promise<Station> {
     const response = await fetch(`${API_BASE_URL}/stations/${id}`, {
       headers: this.getHeaders(),
