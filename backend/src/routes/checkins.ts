@@ -155,14 +155,24 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
       return res.status(400).json({ error: 'User identifier is required' });
     }
 
-    // Try to find member by name (case-insensitive) - filter by station
-    const members = await db.getAllMembers(stationId);
-    const member = members.find(
-      m => m.name.toLowerCase() === decodeURIComponent(identifier).toLowerCase()
-    );
+    // Try to find member by ID first (preferred method)
+    let member = await db.getMemberById(identifier);
+    
+    // Fallback to name-based lookup for backward compatibility (deprecated)
+    if (!member) {
+      const members = await db.getAllMembers(stationId);
+      member = members.find(
+        m => m.name.toLowerCase() === decodeURIComponent(identifier).toLowerCase()
+      );
+    }
 
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
+    }
+
+    // Verify member belongs to the station (if found by ID)
+    if (member.stationId !== stationId) {
+      return res.status(404).json({ error: 'Member not found in this station' });
     }
 
     // Get active activity for this station

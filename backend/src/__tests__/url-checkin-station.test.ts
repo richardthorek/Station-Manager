@@ -64,7 +64,7 @@ describe('POST /api/checkins/url-checkin - Brigade/Station-Specific Check-In', (
     const response = await request(app)
       .post('/api/checkins/url-checkin')
       .send({
-        identifier: 'Station1 Member',
+        identifier: testMemberId, // Use member ID instead of name
         stationId: testStationId,
       });
 
@@ -81,7 +81,7 @@ describe('POST /api/checkins/url-checkin - Brigade/Station-Specific Check-In', (
       .post('/api/checkins/url-checkin')
       .set('X-Station-Id', testStationId2)
       .send({
-        identifier: 'Station1 Member',
+        identifier: testMemberId, // Use member ID instead of name
         stationId: testStationId, // This should be used
       });
 
@@ -97,7 +97,7 @@ describe('POST /api/checkins/url-checkin - Brigade/Station-Specific Check-In', (
       .post('/api/checkins/url-checkin')
       .set('X-Station-Id', testStationId)
       .send({
-        identifier: 'Station1 Member',
+        identifier: testMemberId, // Use member ID instead of name
       });
 
     expect(response.status).toBe(201);
@@ -111,12 +111,12 @@ describe('POST /api/checkins/url-checkin - Brigade/Station-Specific Check-In', (
     const response = await request(app)
       .post('/api/checkins/url-checkin')
       .send({
-        identifier: 'Station1 Member',
+        identifier: testMemberId, // Use member ID instead of name
         stationId: testStationId2, // Wrong station
       });
 
     expect(response.status).toBe(404);
-    expect(response.body.error).toBe('Member not found');
+    expect(response.body.error).toBe('Member not found in this station');
   });
 
   it('should validate stationId is a string when provided', async () => {
@@ -136,10 +136,25 @@ describe('POST /api/checkins/url-checkin - Brigade/Station-Specific Check-In', (
       .post('/api/checkins/url-checkin')
       .set('X-Station-Id', testStationId)
       .send({
-        identifier: 'Station1 Member',
+        identifier: testMemberId, // Use member ID instead of name
       });
 
     expect(response.status).toBe(201);
     expect(response.body.action).toBe('checked-in');
+  });
+
+  it('should support name-based check-in for backward compatibility', async () => {
+    const response = await request(app)
+      .post('/api/checkins/url-checkin')
+      .send({
+        identifier: 'Station1 Member', // Use name for backward compatibility
+        stationId: testStationId,
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({
+      action: 'checked-in',
+      member: 'Station1 Member',
+    });
   });
 });

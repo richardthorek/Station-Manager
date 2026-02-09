@@ -344,15 +344,36 @@ describe('Check-Ins API', () => {
   });
 
   describe('POST /api/checkins/url-checkin - URL-based Check-In', () => {
-    it('should check in a member by name identifier', async () => {
+    it('should check in a member by ID identifier (preferred)', async () => {
       // Create a member with a unique name
       const memberResponse = await request(app)
         .post('/api/members')
         .send({ name: 'URL Check-In Test' });
       
+      const memberId = memberResponse.body.id;
       const memberName = memberResponse.body.name;
 
-      // Check in via URL endpoint
+      // Check in via URL endpoint using ID
+      const response = await request(app)
+        .post('/api/checkins/url-checkin')
+        .send({ identifier: memberId })
+        .expect(201);
+
+      expect(response.body.action).toBe('checked-in');
+      expect(response.body.member).toBe(memberName);
+      expect(response.body.checkIn).toHaveProperty('id');
+      expect(response.body.checkIn.checkInMethod).toBe('qr');
+    });
+
+    it('should check in a member by name identifier (backward compatibility)', async () => {
+      // Create a member with a unique name
+      const memberResponse = await request(app)
+        .post('/api/members')
+        .send({ name: 'URL Check-In Name Test' });
+      
+      const memberName = memberResponse.body.name;
+
+      // Check in via URL endpoint using name (deprecated but supported)
       const response = await request(app)
         .post('/api/checkins/url-checkin')
         .send({ identifier: memberName })
@@ -364,7 +385,7 @@ describe('Check-Ins API', () => {
       expect(response.body.checkIn.checkInMethod).toBe('qr');
     });
 
-    it('should be case-insensitive for member names', async () => {
+    it('should be case-insensitive for member names (backward compatibility)', async () => {
       // Create a member
       const memberResponse = await request(app)
         .post('/api/members')
@@ -388,6 +409,7 @@ describe('Check-Ins API', () => {
         .post('/api/members')
         .send({ name: 'Already Checked In URL' });
       
+      const memberId = memberResponse.body.id;
       const memberName = memberResponse.body.name;
 
       // Check in normally first
@@ -396,10 +418,10 @@ describe('Check-Ins API', () => {
         .send({ memberId: memberResponse.body.id, method: 'kiosk' })
         .expect(201);
 
-      // Try to check in via URL
+      // Try to check in via URL using ID
       const response = await request(app)
         .post('/api/checkins/url-checkin')
-        .send({ identifier: memberName })
+        .send({ identifier: memberId })
         .expect(200);
 
       expect(response.body.action).toBe('already-checked-in');
