@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useStation } from '../contexts/StationContext';
 
@@ -67,25 +67,25 @@ export function useSocket() {
     }
   }, [selectedStation, isConnected]);
 
-  const emit = (event: string, data: unknown) => {
+  const emit = useCallback((event: string, data: unknown) => {
     if (socketRef.current) {
       socketRef.current.emit(event, data);
     }
-  };
+  }, []);
 
-  const on = <T = unknown>(event: string, callback: (data: T) => void) => {
+  const on = useCallback(<T = unknown>(event: string, callback: (data: T) => void) => {
     if (socketRef.current) {
       // Socket.io expects a more permissive callback signature
       socketRef.current.on(event, callback as (data: unknown) => void);
     }
-  };
+  }, []);
 
-  const off = <T = unknown>(event: string, callback?: (data: T) => void) => {
+  const off = useCallback(<T = unknown>(event: string, callback?: (data: T) => void) => {
     if (socketRef.current) {
       // Socket.io expects a more permissive callback signature
       socketRef.current.off(event, callback as ((data: unknown) => void) | undefined);
     }
-  };
+  }, []);
 
   return {
     isConnected,

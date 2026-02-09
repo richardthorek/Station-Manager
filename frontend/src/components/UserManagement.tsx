@@ -115,7 +115,8 @@ export function UserManagement({ members, onClose, onUpdateMember, onAddMember, 
     const urls = members
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(member => {
-        const identifier = encodeURIComponent(member.name);
+        // Use member ID for reliable matching (no special character issues)
+        const identifier = encodeURIComponent(member.id);
         const url = `${baseUrl}/sign-in?user=${identifier}`;
         return `${member.name},${url}`;
       })

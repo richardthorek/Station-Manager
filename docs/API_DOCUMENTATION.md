@@ -421,6 +421,41 @@ Alternative endpoint to explicitly undo a check-in.
 **Errors**:
 - `404`: No active check-in found for member
 
+### URL Check-In
+
+#### `POST /api/checkins/url-checkin`
+
+Check in a member via a shared sign-in link or QR code.
+
+**Request Body**:
+```json
+{
+  "identifier": "member-uuid",
+  "stationId": "default-station"  // optional; overrides header
+}
+```
+
+**Rules**:
+- `identifier` (required): Member ID (UUID). Legacy name values are still accepted for older QR codes/links, but IDs are the primary identifier.
+- `stationId` (optional): Explicit station for the link; falls back to `X-Station-Id` header, then `default-station`.
+- Member must belong to the resolved station; otherwise a 404 is returned.
+- Uses the station's active activity; returns 400 if none is set.
+- Special characters are supported (HTML escaping removed for identifiers).
+
+**Responses**:
+- `201`: `{ "action": "checked-in", "member": "...", "checkIn": { ... } }`
+- `200`: `{ "action": "already-checked-in", "member": "...", "checkIn": { ... } }` (when the member is already checked in)
+- `400`: Invalid identifier or no active activity
+- `404`: Member not found in station
+- `500`: Server error
+
+**Example**:
+```bash
+curl -X POST http://localhost:3000/api/checkins/url-checkin \
+  -H "Content-Type: application/json" \
+  -d '{"identifier":"6e8b876b-9cfb-499a-970c-deca9cf58aed","stationId":"default-station"}'
+```
+
 ---
 
 ## WebSocket Events

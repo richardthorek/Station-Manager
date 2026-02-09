@@ -211,7 +211,8 @@ export function UserProfilePage() {
 
   const generateSignInUrl = () => {
     if (!member) return '';
-    const identifier = encodeURIComponent(member.name);
+    // Use member ID for reliable matching (no special character issues)
+    const identifier = encodeURIComponent(member.id);
     const baseUrl = window.location.origin;
     // Include stationId for brigade/station-specific sign-in
     const stationParam = member.stationId ? `&station=${encodeURIComponent(member.stationId)}` : '';

@@ -155,14 +155,36 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
       return res.status(400).json({ error: 'User identifier is required' });
     }
 
-    // Try to find member by name (case-insensitive) - filter by station
-    const members = await db.getAllMembers(stationId);
-    const member = members.find(
-      m => m.name.toLowerCase() === decodeURIComponent(identifier).toLowerCase()
-    );
+    // Try to find member by ID first (preferred method for reliability)
+    let member = await db.getMemberById(identifier);
+    
+    // Fallback to name-based lookup for backward compatibility (deprecated)
+    // This supports existing QR codes and URLs that use member names
+    if (!member) {
+      logger.debug('Member ID not found, falling back to name lookup', { 
+        identifier, 
+        stationId, 
+        requestId: req.id 
+      });
+      const members = await db.getAllMembers(stationId);
+      member = members.find(
+        m => m.name.toLowerCase() === decodeURIComponent(identifier).toLowerCase()
+      );
+    }
 
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
+    }
+
+    // Verify member belongs to the station (if found by ID)
+    if (member.stationId !== stationId) {
+      logger.warn('Member found but belongs to different station', {
+        memberId: member.id,
+        memberStation: member.stationId,
+        requestedStation: stationId,
+        requestId: req.id
+      });
+      return res.status(404).json({ error: 'Member not found in this station' });
     }
 
     // Get active activity for this station
@@ -190,6 +212,13 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
       false,
       stationId
     );
+
+    logger.info('URL check-in successful', {
+      memberId: member.id,
+      memberName: member.name,
+      stationId,
+      requestId: req.id
+    });
 
     res.status(201).json({
       action: 'checked-in',
