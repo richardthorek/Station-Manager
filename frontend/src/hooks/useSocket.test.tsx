@@ -9,6 +9,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { useSocket } from './useSocket'
 import { io } from 'socket.io-client'
 import { StationProvider } from '../contexts/StationContext'
+import { AuthProvider } from '../contexts/AuthContext'
 import type { ReactNode } from 'react'
 
 // Mock socket.io-client
@@ -30,6 +31,7 @@ vi.mock('socket.io-client', () => {
 vi.mock('../services/api', () => ({
   api: {
     getStations: vi.fn().mockResolvedValue([]),
+    getDemoStation: vi.fn().mockResolvedValue({ id: 'demo-station', name: 'Demo Station' }),
   },
   setCurrentStationId: vi.fn(),
   getCurrentStationId: vi.fn(() => 'default-station'),
@@ -38,7 +40,9 @@ vi.mock('../services/api', () => ({
 describe('useSocket', () => {
   // Wrapper component to provide StationProvider context
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <StationProvider>{children}</StationProvider>
+    <AuthProvider>
+      <StationProvider>{children}</StationProvider>
+    </AuthProvider>
   )
 
   const renderUseSocket = async () => {
