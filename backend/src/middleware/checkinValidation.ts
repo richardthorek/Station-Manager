@@ -57,7 +57,6 @@ export const validateCreateCheckIn = [
 export const validateUrlCheckIn = [
   body('identifier')
     .trim()
-    .escape()
     .notEmpty()
     .withMessage('User identifier is required')
     .isLength({ min: 1, max: 500 })
@@ -65,8 +64,7 @@ export const validateUrlCheckIn = [
   body('stationId')
     .optional()
     .isString()
-    .withMessage('Station ID must be a string')
-    .trim(),
+    .withMessage('Station ID must be a string'),
 ];
 
 /**
