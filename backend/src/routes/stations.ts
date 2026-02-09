@@ -32,6 +32,35 @@ import { optionalAuth } from '../middleware/auth';
 const router = Router();
 
 /**
+ * GET /api/stations/demo
+ * Get the demo station for public access (unauthenticated)
+ * Returns only the demo station with fake data for public viewing
+ * 
+ * Note: This endpoint must be defined before /:id route to avoid conflicts
+ */
+router.get('/demo', async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const { DEMO_STATION_ID } = await import('../constants/stations');
+    
+    // Get the demo station
+    const demoStation = await db.getStationById(DEMO_STATION_ID);
+    
+    if (!demoStation) {
+      return res.status(404).json({ 
+        error: 'Demo station not found',
+        message: 'Demo station has not been initialized'
+      });
+    }
+    
+    res.json(demoStation);
+  } catch (error) {
+    logger.error('Error fetching demo station:', error);
+    res.status(500).json({ error: 'Failed to fetch demo station' });
+  }
+});
+
+/**
  * GET /api/stations/lookup
  * Search and locate fire service stations from national dataset
  * Supports all Australian states and territories
@@ -41,9 +70,10 @@ const router = Router();
  *   - lon: user longitude (for geolocation sorting)
  *   - limit: max results per category (default 10, max 50)
  * 
+ * Protected by optionalAuth middleware
  * Note: This endpoint must be defined before /:id route to avoid conflicts
  */
-router.get('/lookup', async (req, res) => {
+router.get('/lookup', optionalAuth, async (req, res) => {
   try {
     const query = req.query.q as string | undefined;
     const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
@@ -124,8 +154,9 @@ router.get('/count', async (req, res) => {
  * GET /api/stations/check-brigade/:brigadeId
  * Check if a station with this brigade ID already exists
  * Returns the existing station if found, or a 404 if not found
+ * Protected by optionalAuth middleware
  */
-router.get('/check-brigade/:brigadeId', validateBrigadeId, handleValidationErrors, async (req: Request, res: Response) => {
+router.get('/check-brigade/:brigadeId', optionalAuth, validateBrigadeId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stations = await db.getStationsByBrigade(req.params.brigadeId);
@@ -156,8 +187,9 @@ router.get('/check-brigade/:brigadeId', validateBrigadeId, handleValidationError
 /**
  * GET /api/stations/brigade/:brigadeId
  * Get all stations in a specific brigade
+ * Protected by optionalAuth middleware
  */
-router.get('/brigade/:brigadeId', validateBrigadeId, handleValidationErrors, async (req: Request, res: Response) => {
+router.get('/brigade/:brigadeId', optionalAuth, validateBrigadeId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stations = await db.getStationsByBrigade(req.params.brigadeId);
@@ -176,8 +208,9 @@ router.get('/brigade/:brigadeId', validateBrigadeId, handleValidationErrors, asy
  * GET /api/stations
  * Get all stations with optional filtering and pagination
  * Query params: brigadeId, area, district, limit, offset
+ * Protected by optionalAuth middleware (requires authentication when REQUIRE_AUTH=true)
  */
-router.get('/', validateStationQuery, handleValidationErrors, async (req: Request, res: Response) => {
+router.get('/', optionalAuth, validateStationQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     let stations = await db.getAllStations();
@@ -226,8 +259,9 @@ router.get('/', validateStationQuery, handleValidationErrors, async (req: Reques
 /**
  * GET /api/stations/:id
  * Get a single station by ID
+ * Protected by optionalAuth middleware (requires authentication when REQUIRE_AUTH=true)
  */
-router.get('/:id', validateStationId, handleValidationErrors, async (req: Request, res: Response) => {
+router.get('/:id', optionalAuth, validateStationId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const station = await db.getStationById(req.params.id);

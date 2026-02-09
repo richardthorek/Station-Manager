@@ -156,16 +156,22 @@ export function LandingPage() {
               <div className="feature-icon" aria-hidden="true">⚙️</div>
               <h3>Station Management</h3>
               <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
-              <div className="feature-links">
-                <Link to="/admin/stations" className="feature-link">
-                  Stations
-                  <span className="arrow" aria-hidden="true">→</span>
-                </Link>
-                <Link to="/admin/brigade-access" className="feature-link">
-                  Brigade Access
-                  <span className="arrow" aria-hidden="true">→</span>
-                </Link>
-              </div>
+              {(!requireAuth || isAuthenticated) ? (
+                <div className="feature-links">
+                  <Link to="/admin/stations" className="feature-link">
+                    Stations
+                    <span className="arrow" aria-hidden="true">→</span>
+                  </Link>
+                  <Link to="/admin/brigade-access" className="feature-link">
+                    Brigade Access
+                    <span className="arrow" aria-hidden="true">→</span>
+                  </Link>
+                </div>
+              ) : (
+                <p className="auth-required-msg" style={{ marginTop: '1rem', fontSize: '0.875rem', opacity: 0.7 }}>
+                  Authentication required to access station management
+                </p>
+              )}
             </motion.article>
           </motion.section>
         </div>

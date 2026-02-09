@@ -20,6 +20,7 @@ import {
   validateKioskToken,
   canSwitchStation 
 } from '../utils/kioskMode';
+import { useAuth } from './AuthContext';
 
 // LocalStorage key for persisting station selection
 const STORAGE_KEY = 'selectedStationId';
@@ -56,6 +57,7 @@ interface StationProviderProps {
 }
 
 export function StationProvider({ children }: StationProviderProps) {
+  const { isAuthenticated, requireAuth } = useAuth();
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,10 +67,20 @@ export function StationProvider({ children }: StationProviderProps) {
 
   /**
    * Load stations from API
+   * For unauthenticated users, only loads the demo station
    */
-  const loadStations = useCallback(async () => {
+  const loadStations = useCallback(async (isAuthenticated: boolean) => {
     try {
       setError(null);
+      
+      // If not authenticated, only load demo station
+      if (!isAuthenticated) {
+        const demoStation = await api.getDemoStation();
+        setStations([demoStation]);
+        return [demoStation];
+      }
+      
+      // If authenticated, load all stations
       const loadedStations = await api.getStations();
       setStations(loadedStations);
       return loadedStations;
@@ -82,8 +94,9 @@ export function StationProvider({ children }: StationProviderProps) {
 
   /**
    * Load persisted selection from localStorage or kiosk mode
+   * For unauthenticated users without requireAuth, forces demo station
    */
-  const loadPersistedSelection = useCallback(async (availableStations: Station[]) => {
+  const loadPersistedSelection = useCallback(async (availableStations: Station[], isUserAuthenticated: boolean, authRequired: boolean) => {
     try {
       // Check if in kiosk mode first
       const inKioskMode = isKioskMode();
@@ -121,28 +134,43 @@ export function StationProvider({ children }: StationProviderProps) {
         return;
       }
       
-      // Normal mode: Load from localStorage
-      const persistedId = localStorage.getItem(STORAGE_KEY);
-      
-      if (persistedId && availableStations.length > 0) {
-        // Find the persisted station
-        const station = availableStations.find(s => s.id === persistedId);
-        if (station) {
-          setSelectedStation(station);
-          setCurrentStationId(station.id);
-          return;
+      // If authentication is not required OR user is authenticated, allow station selection
+      // Otherwise, force demo station
+      if (!authRequired || isUserAuthenticated) {
+        // Normal mode: Load from localStorage
+        const persistedId = localStorage.getItem(STORAGE_KEY);
+        
+        if (persistedId && availableStations.length > 0) {
+          // Find the persisted station
+          const station = availableStations.find(s => s.id === persistedId);
+          if (station) {
+            setSelectedStation(station);
+            setCurrentStationId(station.id);
+            return;
+          }
         }
-      }
-      
-      // If no persisted selection or station not found, use default
-      const defaultStation = availableStations.find(s => s.id === DEFAULT_STATION_ID);
-      if (defaultStation) {
-        setSelectedStation(defaultStation);
-        setCurrentStationId(defaultStation.id);
-      } else if (availableStations.length > 0) {
-        // Fallback to first station if default not found
-        setSelectedStation(availableStations[0]);
-        setCurrentStationId(availableStations[0].id);
+        
+        // If no persisted selection or station not found, use default
+        const defaultStation = availableStations.find(s => s.id === DEFAULT_STATION_ID);
+        if (defaultStation) {
+          setSelectedStation(defaultStation);
+          setCurrentStationId(defaultStation.id);
+        } else if (availableStations.length > 0) {
+          // Fallback to first station if default not found
+          setSelectedStation(availableStations[0]);
+          setCurrentStationId(availableStations[0].id);
+        }
+      } else {
+        // Auth required but user not authenticated - force demo station
+        const demoStation = availableStations.find(s => s.id === DEMO_STATION_ID);
+        if (demoStation) {
+          setSelectedStation(demoStation);
+          setCurrentStationId(demoStation.id);
+        } else if (availableStations.length > 0) {
+          // Fallback to first station (should be demo)
+          setSelectedStation(availableStations[0]);
+          setCurrentStationId(availableStations[0].id);
+        }
       }
     } catch (err) {
       console.error('Error loading persisted selection:', err);
@@ -159,12 +187,14 @@ export function StationProvider({ children }: StationProviderProps) {
     hasInitialized.current = true;
 
     const initialize = async () => {
-      const loadedStations = await loadStations();
-      await loadPersistedSelection(loadedStations);
+      // Determine if user has access based on authentication
+      const hasAccess = !requireAuth || isAuthenticated;
+      const loadedStations = await loadStations(hasAccess);
+      await loadPersistedSelection(loadedStations, isAuthenticated, requireAuth);
     };
 
     initialize();
-  }, [loadStations, loadPersistedSelection]);
+  }, [loadStations, loadPersistedSelection, isAuthenticated, requireAuth]);
 
   /**
    * Listen for storage changes from other tabs
@@ -195,13 +225,19 @@ export function StationProvider({ children }: StationProviderProps) {
       return;
     }
     
+    // Prevent station switching for unauthenticated users when auth is required
+    if (requireAuth && !isAuthenticated) {
+      console.warn('Station switching requires authentication');
+      return;
+    }
+    
     const station = stations.find(s => s.id === stationId);
     if (station) {
       setSelectedStation(station);
       setCurrentStationId(station.id);
       localStorage.setItem(STORAGE_KEY, station.id);
     }
-  }, [stations, kioskMode]);
+  }, [stations, kioskMode, requireAuth, isAuthenticated]);
 
   /**
    * Clear station selection (revert to default)
@@ -210,6 +246,12 @@ export function StationProvider({ children }: StationProviderProps) {
     // Prevent station clearing in kiosk mode
     if (kioskMode) {
       console.warn('Station clearing is disabled in kiosk mode');
+      return;
+    }
+    
+    // Prevent station clearing for unauthenticated users when auth is required
+    if (requireAuth && !isAuthenticated) {
+      console.warn('Station clearing requires authentication');
       return;
     }
     
@@ -222,14 +264,15 @@ export function StationProvider({ children }: StationProviderProps) {
       setSelectedStation(stations[0]);
       setCurrentStationId(stations[0].id);
     }
-  }, [stations, kioskMode]);
+  }, [stations, kioskMode, requireAuth, isAuthenticated]);
 
   /**
    * Refresh stations from API
    */
   const refreshStations = useCallback(async () => {
     setIsLoading(true);
-    const loadedStations = await loadStations();
+    const hasAccess = !requireAuth || isAuthenticated;
+    const loadedStations = await loadStations(hasAccess);
     
     // Re-select current station if it still exists
     if (selectedStation) {
@@ -238,12 +281,12 @@ export function StationProvider({ children }: StationProviderProps) {
         setSelectedStation(updatedStation);
       } else {
         // Station was removed, select default
-        await loadPersistedSelection(loadedStations);
+        await loadPersistedSelection(loadedStations, isAuthenticated, requireAuth);
       }
     }
     
     setIsLoading(false);
-  }, [loadStations, loadPersistedSelection, selectedStation]);
+  }, [loadStations, loadPersistedSelection, selectedStation, requireAuth, isAuthenticated]);
 
   /**
    * Check if current station is demo station
