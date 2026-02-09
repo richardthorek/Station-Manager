@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "version": "1.3.0",
   "lastUpdated": "2026-02-09",
-  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (100 requests per 15 minutes per IP by default, configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
+  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
       "description": "Optional station identifier for multi-station filtering. If not provided, defaults to 'default-station' for backward compatibility.",
@@ -75,9 +75,9 @@
         "security": {
           "rateLimiting": {
             "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "maxRequests": 84,
+            "windowMs": 300000,
+            "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
             "headers": [
               "RateLimit-Limit",
               "RateLimit-Remaining",
@@ -113,9 +113,9 @@
         "security": {
           "rateLimiting": {
             "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "maxRequests": 84,
+            "windowMs": 300000,
+            "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
             "headers": [
               "RateLimit-Limit",
               "RateLimit-Remaining",
@@ -158,9 +158,9 @@
         "security": {
           "rateLimiting": {
             "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "maxRequests": 84,
+            "windowMs": 300000,
+            "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
             "headers": [
               "RateLimit-Limit",
               "RateLimit-Remaining",
@@ -202,9 +202,9 @@
         "security": {
           "rateLimiting": {
             "enabled": true,
-            "maxRequests": 100,
-            "windowMs": 900000,
-            "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+            "maxRequests": 84,
+            "windowMs": 300000,
+            "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
             "headers": [
               "RateLimit-Limit",
               "RateLimit-Remaining",
@@ -267,9 +267,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -320,9 +320,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -368,9 +368,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -477,8 +477,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         },
         "fileValidation": {
           "maxSize": "5MB",
@@ -590,8 +590,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         }
       }
     }
@@ -622,9 +622,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -678,9 +678,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -714,9 +714,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -775,9 +775,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -813,9 +813,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -849,9 +849,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -954,9 +954,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1005,9 +1005,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1099,9 +1099,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1137,9 +1137,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1173,9 +1173,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1218,9 +1218,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1287,9 +1287,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1333,9 +1333,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1380,9 +1380,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1438,9 +1438,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1586,9 +1586,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1682,9 +1682,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1744,9 +1744,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1794,9 +1794,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1838,9 +1838,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2262,9 +2262,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2308,9 +2308,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2344,9 +2344,9 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000,
-          "description": "Rate limited to 100 requests per 15 minutes per IP (configurable)",
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2435,8 +2435,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         }
       }
     },
@@ -2474,8 +2474,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         }
       },
       "notes": [
@@ -2515,8 +2515,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         }
       },
       "notes": [
@@ -2582,8 +2582,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         }
       },
       "notes": [
@@ -2727,8 +2727,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         }
       }
     },
@@ -2847,8 +2847,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         }
       }
     },
@@ -2914,8 +2914,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         }
       }
     },
@@ -2969,8 +2969,8 @@
       "security": {
         "rateLimiting": {
           "enabled": true,
-          "maxRequests": 100,
-          "windowMs": 900000
+          "maxRequests": 84,
+          "windowMs": 300000
         }
       },
       "notes": [

@@ -358,9 +358,9 @@ The Station Manager implements multiple layers of security protection:
 - **Whitespace Trimming**: Automatic sanitization
 
 ### Rate Limiting
-- **API Routes**: 100 requests per 15 minutes per IP
+- **API Routes**: ≈1,000 requests per hour per IP (≈84 per 5-minute window so usage resets every 5 minutes)
 - **Auth Routes**: 5 requests per 15 minutes per IP (reserved for future)
-- **SPA Fallback**: 100 requests per 15 minutes per IP
+- **SPA Fallback**: ≈1,000 requests per hour per IP (aligned with the API limiter)
 - **Standard Headers**: RateLimit-* headers for client feedback
 
 ### Data Protection

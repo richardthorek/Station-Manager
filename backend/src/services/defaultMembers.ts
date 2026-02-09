@@ -12,16 +12,14 @@ export function buildDisplayName(seed: SeedMember): string {
 }
 
 export const DEFAULT_MEMBERS: SeedMember[] = [
-  { firstName: 'Casey', lastName: 'Harper', rank: 'Captain' },
-  { firstName: 'Jordan', lastName: 'Blaze', rank: 'Senior Deputy Captain' },
-  { firstName: 'Alex', lastName: 'Mason' },
-  { firstName: 'Taylor', lastName: 'Reed', preferredName: 'Tay' },
-  { firstName: 'Morgan', lastName: 'Quinn' },
-  { firstName: 'Riley', lastName: 'Hale', rank: 'Deputy Captain' },
-  { firstName: 'Avery', lastName: 'Cross' },
-  { firstName: 'Sam', lastName: 'Parker' },
-  { firstName: 'Quinn', lastName: 'Banks' },
-  { firstName: 'Charlie', lastName: 'Hayes' },
-  { firstName: 'Dakota', lastName: 'Woods' },
-  { firstName: 'Sydney', lastName: 'Brooks' },
+  { firstName: 'Lennox', lastName: 'Hawke', rank: 'Captain' },
+  { firstName: 'Ivy', lastName: 'Ridge', rank: 'Deputy Captain' },
+  { firstName: 'Rowan', lastName: 'Frost' },
+  { firstName: 'Nova', lastName: 'Reyes' },
+  { firstName: 'Pax', lastName: 'Emberly' },
+  { firstName: 'Sol', lastName: 'Arcade', rank: 'Senior Firefighter' },
+  { firstName: 'Aster', lastName: 'North' },
+  { firstName: 'Quill', lastName: 'Harbor' },
+  { firstName: 'Cora', lastName: 'Vale' },
+  { firstName: 'Finn', lastName: 'Temple' },
 ];

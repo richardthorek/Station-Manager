@@ -1705,9 +1705,9 @@ Potential improvements (not in current scope):
    - Credentials not required
 
 3. **Rate Limiting**
-   - **API Routes:** 100 requests per 15 minutes per IP (configurable via `RATE_LIMIT_API_MAX`)
-   - **Auth Routes:** 5 requests per 15 minutes per IP (configurable via `RATE_LIMIT_AUTH_MAX`) - Reserved for future auth endpoints
-   - **SPA Fallback:** 100 requests per 15 minutes per IP
+  - **API Routes:** ≈1,000 requests per hour per IP (configurable via `RATE_LIMIT_API_MAX`, default ≈84 per 5-minute window)
+  - **Auth Routes:** 5 requests per 15 minutes per IP (configurable via `RATE_LIMIT_AUTH_MAX`) - Reserved for future auth endpoints
+  - **SPA Fallback:** ≈1,000 requests per hour per IP (aligns with API limiter)
    - **Protected Endpoints:** All `/api/*` routes
    - **Headers:** Returns standard `RateLimit-*` headers (Limit, Remaining, Reset)
    - **Custom Error Messages:** Clear 429 responses with retry information

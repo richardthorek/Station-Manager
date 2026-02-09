@@ -5,9 +5,9 @@
  * Uses express-rate-limit with configurable limits via environment variables.
  * 
  * Rate Limits:
- * - API Routes: 1000 requests per 15 minutes per IP (configurable via RATE_LIMIT_API_MAX)
- * - Auth Routes: 5 requests per 15 minutes per IP (configurable via RATE_LIMIT_AUTH_MAX)
- * - Window: 15 minutes (configurable via RATE_LIMIT_WINDOW_MS)
+* - API Routes: 1,000 requests per hour per IP (configurable via RATE_LIMIT_API_MAX)
+* - Auth Routes: 5 requests per 15 minutes per IP (configurable via RATE_LIMIT_AUTH_MAX)
+* - Window: 5 minutes (configurable via RATE_LIMIT_WINDOW_MS) with hourly cap enforced via max per window
  * 
  * Features:
  * - Returns standard rate limit headers (RateLimit-*)
@@ -20,8 +20,8 @@ import type { Request } from 'express';
 import { logger } from '../services/logger';
 
 // Parse environment variables with defaults
-const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10); // 15 minutes
-const RATE_LIMIT_API_MAX = parseInt(process.env.RATE_LIMIT_API_MAX || '1000', 10);
+const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '300000', 10); // 5 minutes
+const RATE_LIMIT_API_MAX = parseInt(process.env.RATE_LIMIT_API_MAX || '84', 10); // ~1,000 requests/hour spread over 5-minute windows
 const RATE_LIMIT_AUTH_MAX = parseInt(process.env.RATE_LIMIT_AUTH_MAX || '5', 10);
 
 /**
@@ -62,7 +62,7 @@ function getClientIp(req: Request): string {
 
 /**
  * Rate limiter for general API routes
- * Default: 100 requests per 15 minutes per IP
+ * Default: ~84 requests per 5 minutes per IP (≈1,000 per hour) so throttling resets every 5 minutes
  */
 export const apiRateLimiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
