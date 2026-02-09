@@ -44,6 +44,8 @@ export interface Station {
   updatedAt: Date;
 }
 
+export type StationCreationPayload = Omit<Station, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
+
 /**
  * Brigade Access Token
  * Used to lock kiosk devices to a specific brigade

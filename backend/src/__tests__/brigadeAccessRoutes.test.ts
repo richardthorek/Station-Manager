@@ -4,23 +4,28 @@
  * Integration tests for brigade access token management API endpoints
  */
 
-import request from 'supertest';
+import request, { SuperAgentTest } from 'supertest';
 import express from 'express';
 import brigadeAccessRouter from '../routes/brigadeAccess';
 import {
   generateBrigadeAccessToken,
   revokeBrigadeAccessToken,
 } from '../services/brigadeAccessService';
+import { authHeader } from './helpers/authHelpers';
 
 // Create test Express app
 const app = express();
 app.use(express.json());
 app.use('/api/brigade-access', brigadeAccessRouter);
+const authAgent = request.agent(app);
 
 describe('Brigade Access API Routes', () => {
+  beforeEach(() => {
+    authAgent.set(authHeader());
+  });
   describe('POST /api/brigade-access/generate', () => {
     it('should generate a new token', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/brigade-access/generate')
         .send({
           brigadeId: 'test-brigade',
@@ -38,7 +43,7 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should generate token with expiration', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/brigade-access/generate')
         .send({
           brigadeId: 'test-brigade',
@@ -59,7 +64,7 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should return 400 for missing brigadeId', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/brigade-access/generate')
         .send({
           stationId: 'test-station',
@@ -69,7 +74,7 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should return 400 for missing stationId', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/brigade-access/generate')
         .send({
           brigadeId: 'test-brigade',
@@ -79,7 +84,7 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should return 400 for invalid expiresInDays', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/brigade-access/generate')
         .send({
           brigadeId: 'test-brigade',
@@ -96,7 +101,7 @@ describe('Brigade Access API Routes', () => {
       // Generate a token first
       const token = generateBrigadeAccessToken('brigade-1', 'station-1', 'Test');
 
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/brigade-access/validate')
         .send({
           token: token.token,
@@ -110,7 +115,7 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should return 404 for invalid token', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/brigade-access/validate')
         .send({
           token: '00000000-0000-4000-8000-000000000000', // Valid UUID format but not in store
@@ -121,7 +126,7 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should return 400 for missing token', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/brigade-access/validate')
         .send({});
 
@@ -129,7 +134,7 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should return 400 for invalid UUID format', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/brigade-access/validate')
         .send({
           token: 'not-a-uuid',
@@ -144,7 +149,7 @@ describe('Brigade Access API Routes', () => {
       // Generate a token first
       const token = generateBrigadeAccessToken('brigade-1', 'station-1');
 
-      const response = await request(app)
+      const response = await authAgent
         .delete(`/api/brigade-access/${token.token}`);
 
       expect(response.status).toBe(200);
@@ -153,14 +158,14 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should return 404 for non-existent token', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .delete('/api/brigade-access/00000000-0000-4000-8000-000000000000');
 
       expect(response.status).toBe(404);
     });
 
     it('should return 400 for invalid UUID format', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .delete('/api/brigade-access/not-a-uuid');
 
       expect(response.status).toBe(400);
@@ -174,7 +179,7 @@ describe('Brigade Access API Routes', () => {
       const token2 = generateBrigadeAccessToken('brigade-alpha', 'station-2', 'Kiosk 2');
       generateBrigadeAccessToken('brigade-beta', 'station-3'); // Different brigade
 
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/brigade-access/brigade/brigade-alpha');
 
       expect(response.status).toBe(200);
@@ -188,7 +193,7 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should return empty array for brigade with no tokens', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/brigade-access/brigade/non-existent-brigade');
 
       expect(response.status).toBe(200);
@@ -204,7 +209,7 @@ describe('Brigade Access API Routes', () => {
       const token2 = generateBrigadeAccessToken('brigade-2', 'station-alpha', 'Kiosk 2');
       generateBrigadeAccessToken('brigade-1', 'station-beta'); // Different station
 
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/brigade-access/station/station-alpha');
 
       expect(response.status).toBe(200);
@@ -218,7 +223,7 @@ describe('Brigade Access API Routes', () => {
     });
 
     it('should return empty array for station with no tokens', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/brigade-access/station/non-existent-station');
 
       expect(response.status).toBe(200);
@@ -234,7 +239,7 @@ describe('Brigade Access API Routes', () => {
       generateBrigadeAccessToken('brigade-1', 'station-2');
       generateBrigadeAccessToken('brigade-2', 'station-3');
 
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/brigade-access/stats');
 
       expect(response.status).toBe(200);
@@ -249,7 +254,7 @@ describe('Brigade Access API Routes', () => {
       generateBrigadeAccessToken('brigade-1', 'station-1', undefined, expiresAt);
       generateBrigadeAccessToken('brigade-1', 'station-2');
 
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/brigade-access/stats');
 
       expect(response.status).toBe(200);

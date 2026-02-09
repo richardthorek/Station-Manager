@@ -11,6 +11,7 @@ import {
   EventParticipant,
   EventWithParticipants,
   Station,
+  StationCreationPayload,
   EventAuditLog,
   DeviceInfo,
   LocationInfo
@@ -1578,14 +1579,11 @@ export class TableStorageDatabase {
     return stations;
   }
 
-  async createStation(stationData: Omit<Station, 'id' | 'createdAt' | 'updatedAt'> | Station): Promise<Station> {
-    const station: Station = 'id' in stationData && stationData.id ? {
-      ...stationData,
-      createdAt: 'createdAt' in stationData ? stationData.createdAt : new Date(),
-      updatedAt: 'updatedAt' in stationData ? stationData.updatedAt : new Date(),
-    } : {
-      id: uuidv4(),
-      ...stationData,
+  async createStation(stationData: StationCreationPayload): Promise<Station> {
+    const { id, ...rest } = stationData;
+    const station: Station = {
+      id: id || uuidv4(),
+      ...rest,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

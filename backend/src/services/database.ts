@@ -15,7 +15,7 @@
  * Note: Data is lost on server restart. Use Azure Table Storage for persistence.
  */
 
-import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants, Station, EventAuditLog, DeviceInfo, LocationInfo } from '../types';
+import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants, Station, StationCreationPayload, EventAuditLog, DeviceInfo, LocationInfo } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { autoExpireEvents } from './rolloverService';
 import { DEFAULT_STATION_ID, DEMO_STATION_ID, DEMO_BRIGADE_ID, getEffectiveStationId } from '../constants/stations';
@@ -1341,10 +1341,11 @@ class DatabaseService {
   /**
    * Create a new station
    */
-  createStation(stationData: Omit<Station, 'id' | 'createdAt' | 'updatedAt'>): Station {
+  createStation(stationData: StationCreationPayload): Station {
+    const { id, ...rest } = stationData;
     const station: Station = {
-      id: uuidv4(),
-      ...stationData,
+      id: id || uuidv4(),
+      ...rest,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

@@ -22,8 +22,9 @@ describeOrSkip('RFS Facilities Parser', () => {
     it('should load fire service facilities data nationally', () => {
       const count = parser.getCount();
       expect(count).toBeGreaterThan(0);
-      // In test environment, we have 10 test stations (not the full 4400+ dataset)
-      expect(count).toBe(10);
+      // The shared dataset now contains the full national list (~4.4k stations)
+      expect(count).toBeGreaterThanOrEqual(4000);
+      expect(count).toBeLessThanOrEqual(5000);
     });
 
     it('should load facilities from multiple states', () => {
@@ -32,14 +33,13 @@ describeOrSkip('RFS Facilities Parser', () => {
       
       // Get unique states
       const states = new Set(allStations.map(s => s.state));
-      
+
       // Should have multiple states (NSW, VIC, QLD, etc.)
       expect(states.size).toBeGreaterThan(1);
-      
-      // Common states that should be present in our test data
+
+      // Common states in the national dataset
       const statesArray = Array.from(states);
-      expect(statesArray.some(s => s.includes('VIC'))).toBe(true);
-      expect(statesArray.some(s => s.includes('NSW'))).toBe(true);
+      expect(statesArray).toEqual(expect.arrayContaining(['VICTORIA', 'NEW SOUTH WALES']));
     });
 
     it('should parse station data correctly', () => {
@@ -60,7 +60,16 @@ describeOrSkip('RFS Facilities Parser', () => {
       expect(typeof station.longitude).toBe('number');
       
       // State should be one of the Australian states/territories
-      const validStates = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'];
+      const validStates = [
+        'NEW SOUTH WALES',
+        'VICTORIA',
+        'QUEENSLAND',
+        'SOUTH AUSTRALIA',
+        'WESTERN AUSTRALIA',
+        'TASMANIA',
+        'NORTHERN TERRITORY',
+        'AUSTRALIAN CAPITAL TERRITORY'
+      ];
       expect(validStates.includes(station.state)).toBe(true);
     });
 
@@ -82,7 +91,7 @@ describeOrSkip('RFS Facilities Parser', () => {
       const results = parser.searchStations('Bulli');
       
       expect(results.length).toBeGreaterThan(0);
-      expect(results[0].name).toBe('Bulli');
+      expect(results[0].name.toLowerCase()).toBe('bulli');
       expect(results[0].relevanceScore).toBeGreaterThan(0.9); // High score for exact match
     });
 
@@ -95,10 +104,10 @@ describeOrSkip('RFS Facilities Parser', () => {
     });
 
     it('should find stations by suburb', () => {
-      const results = parser.searchStations('melbourne');
+      const results = parser.searchStations('bendigo');
       
       expect(results.length).toBeGreaterThan(0);
-      expect(results.some(r => r.suburb.toLowerCase().includes('melbourne') || r.name.toLowerCase().includes('melbourne'))).toBe(true);
+      expect(results.some(r => r.suburb.toLowerCase().includes('bendigo') || r.name.toLowerCase().includes('bendigo'))).toBe(true);
     });
 
     it('should be case-insensitive', () => {

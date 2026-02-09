@@ -14,8 +14,10 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import stationsRouter from '../routes/stations';
 import { ensureDatabase } from '../services/dbFactory';
+import { authHeader } from './helpers/authHelpers';
 
 let app: Express;
+let authAgent: ReturnType<typeof request.agent>;
 
 beforeAll(() => {
   // Set up Express app with routes
@@ -30,6 +32,11 @@ beforeAll(() => {
   app.set('io', mockIo);
   
   app.use('/api/stations', stationsRouter);
+  authAgent = request.agent(app);
+});
+
+beforeEach(() => {
+  authAgent.set(authHeader());
 });
 
 describe('Stations API', () => {
@@ -51,7 +58,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/stations')
         .send(newStation)
         .expect(201);
@@ -93,7 +100,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/stations')
         .send(newStation)
         .expect(201);
@@ -109,7 +116,7 @@ describe('Stations API', () => {
         // Missing brigadeId, brigadeName, and hierarchy
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/stations')
         .send(invalidStation)
         .expect(400);
@@ -129,7 +136,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/stations')
         .send(invalidStation)
         .expect(400);
@@ -156,7 +163,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/stations')
         .send(invalidStation)
         .expect(400);
@@ -179,7 +186,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/stations')
         .send(xssStation)
         .expect(201);
@@ -204,7 +211,7 @@ describe('Stations API', () => {
         },
       };
 
-      await request(app)
+      await authAgent
         .post('/api/stations')
         .send(newStation)
         .expect(201);
@@ -223,7 +230,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .post('/api/stations')
         .send(duplicateStation)
         .expect(409);
@@ -252,13 +259,13 @@ describe('Stations API', () => {
         },
       };
 
-      await request(app)
+      await authAgent
         .post('/api/stations')
         .send(newStation)
         .expect(201);
 
       // Check if brigade exists
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/stations/check-brigade/check-test-brigade')
         .expect(200);
 
@@ -269,7 +276,7 @@ describe('Stations API', () => {
     });
 
     it('should return 404 if brigade ID does not exist', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/stations/check-brigade/nonexistent-brigade-id')
         .expect(404);
 
@@ -280,7 +287,7 @@ describe('Stations API', () => {
 
   describe('GET /api/stations', () => {
     it('should return all stations with pagination', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/stations')
         .expect(200);
 
@@ -298,7 +305,7 @@ describe('Stations API', () => {
     });
 
     it('should filter stations by brigadeId', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get(`/api/stations?brigadeId=${testBrigadeId}`)
         .expect(200);
 
@@ -309,7 +316,7 @@ describe('Stations API', () => {
     });
 
     it('should filter stations by area', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/stations?area=Southern%20Highlands')
         .expect(200);
 
@@ -320,7 +327,7 @@ describe('Stations API', () => {
     });
 
     it('should filter stations by district', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/stations?district=Goulburn')
         .expect(200);
 
@@ -331,7 +338,7 @@ describe('Stations API', () => {
     });
 
     it('should support pagination with limit and offset', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/stations?limit=2&offset=0')
         .expect(200);
 
@@ -341,7 +348,7 @@ describe('Stations API', () => {
     });
 
     it('should return stations sorted by name', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/stations')
         .expect(200);
 
@@ -353,7 +360,7 @@ describe('Stations API', () => {
 
   describe('GET /api/stations/:id', () => {
     it('should return a specific station by ID', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get(`/api/stations/${testStationId}`)
         .expect(200);
 
@@ -363,7 +370,7 @@ describe('Stations API', () => {
     });
 
     it('should return 404 for non-existent station ID', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/stations/non-existent-id')
         .expect(404);
 
@@ -374,7 +381,7 @@ describe('Stations API', () => {
 
   describe('GET /api/stations/brigade/:brigadeId', () => {
     it('should return all stations in a brigade', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get(`/api/stations/brigade/${testBrigadeId}`)
         .expect(200);
 
@@ -389,7 +396,7 @@ describe('Stations API', () => {
     });
 
     it('should return empty array for brigade with no stations', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get('/api/stations/brigade/non-existent-brigade')
         .expect(200);
 
@@ -401,7 +408,7 @@ describe('Stations API', () => {
     });
 
     it('should return stations sorted by name within brigade', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .get(`/api/stations/brigade/${testBrigadeId}`)
         .expect(200);
 
@@ -418,7 +425,7 @@ describe('Stations API', () => {
         name: 'Updated Station Name',
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .put(`/api/stations/${testStationId}`)
         .send(updates)
         .expect(200);
@@ -436,7 +443,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .put(`/api/stations/${testStationId}`)
         .send(updates)
         .expect(200);
@@ -452,7 +459,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .put(`/api/stations/${testStationId}`)
         .send(updates)
         .expect(200);
@@ -472,7 +479,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .put(`/api/stations/${testStationId}`)
         .send(updates)
         .expect(200);
@@ -481,7 +488,7 @@ describe('Stations API', () => {
     });
 
     it('should return 404 for non-existent station', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .put('/api/stations/non-existent-id')
         .send({ name: 'Test' })
         .expect(404);
@@ -498,7 +505,7 @@ describe('Stations API', () => {
         },
       };
 
-      const response = await request(app)
+      const response = await authAgent
         .put(`/api/stations/${testStationId}`)
         .send(updates)
         .expect(400);
@@ -514,7 +521,7 @@ describe('Stations API', () => {
       const db = await ensureDatabase();
       await db.createMember('Test Member', { stationId: testStationId });
 
-      const response = await request(app)
+      const response = await authAgent
         .delete(`/api/stations/${testStationId}`)
         .expect(400);
 
@@ -527,7 +534,7 @@ describe('Stations API', () => {
     it('should prevent deletion of station with active check-ins', async () => {
       // This test assumes there are no members or they've been removed
       // and creates a scenario with active check-ins
-      const response = await request(app)
+      const response = await authAgent
         .delete(`/api/stations/${testStationId}`)
         .expect(400);
 
@@ -536,7 +543,7 @@ describe('Stations API', () => {
     });
 
     it('should return 404 when deleting non-existent station', async () => {
-      const response = await request(app)
+      const response = await authAgent
         .delete('/api/stations/non-existent-id')
         .expect(404);
 
@@ -559,14 +566,14 @@ describe('Stations API', () => {
         },
       };
 
-      const createResponse = await request(app)
+      const createResponse = await authAgent
         .post('/api/stations')
         .send(newStation)
         .expect(201);
 
       const stationId = createResponse.body.id;
 
-      const deleteResponse = await request(app)
+      const deleteResponse = await authAgent
         .delete(`/api/stations/${stationId}`)
         .expect(200);
 
@@ -575,7 +582,7 @@ describe('Stations API', () => {
       expect(deleteResponse.body.message).toContain('deactivated');
 
       // Verify station is marked inactive
-      const getResponse = await request(app)
+      const getResponse = await authAgent
         .get(`/api/stations/${stationId}`)
         .expect(200);
 
