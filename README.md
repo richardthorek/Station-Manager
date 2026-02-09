@@ -1,9 +1,25 @@
-# RFS Station Manager
+# RFS Station Manager (MVP Launch)
 
 A modern, real-time digital sign-in system for Rural Fire Service (RFS) stations. Track member presence and activities across multiple devices with instant synchronization.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.0--MVP-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+## 🚀 MVP Launch - Sign-In Only
+
+**This is the MVP (Minimum Viable Product) launch** focused exclusively on the core sign-in functionality. Additional features will be rolled out in version 1.1 and beyond.
+
+### Available Now (v1.0 MVP)
+- ✅ **Member Sign-In System**: Quick and easy check-in/out with activity tracking
+- ✅ **Real-Time Sync**: Changes appear instantly across all connected devices
+- ✅ **Event Management**: Create and manage events with participant tracking
+- ✅ **Multi-Device Support**: Works on kiosks, tablets, mobile phones
+- ✅ **QR Code Sign-In**: Personal sign-in links and QR codes for each member
+- ✅ **Admin Portal**: Station management and brigade access control (authenticated)
+
+### Coming in v1.1
+- 🚧 **Truck Check**: Vehicle maintenance tracking and inspection checklists
+- 🚧 **Reports & Analytics**: Historical reporting and data export capabilities
 
 ## ✨ Features
 
@@ -57,9 +73,13 @@ Visit `http://localhost:5173` to see the application landing page.
 
 The application uses a feature-based routing structure for scalability:
 
-- **`/`** - Landing page with overview of all features
-- **`/signin`** - Station member sign-in system (current functionality)
-- **`/truckcheck`** - Vehicle maintenance tracking (placeholder for future feature)
+- **`/`** - Landing page with overview of available features
+- **`/signin`** - Station member sign-in system (✅ MVP feature)
+- **`/profile/:memberId`** - Member profile with QR code and stats (✅ MVP feature)
+- **`/admin/stations`** - Station management (✅ MVP feature, requires authentication)
+- **`/admin/brigade-access`** - Brigade access token management (✅ MVP feature, requires authentication)
+- **`/truckcheck`** - Vehicle maintenance tracking (🚧 Coming in v1.1)
+- **`/reports`** - Reports and analytics (🚧 Coming in v1.1)
 
 Additional features can be easily added as new routes following this pattern.
 
@@ -81,18 +101,20 @@ Additional features can be easily added as new routes following this pattern.
 2. Enter the member's name
 3. They'll appear in the member list with a unique QR code
 
-## 📊 Screenshots
+## 📊 Screenshots (MVP Features)
 
-Comprehensive UI screenshots for all major pages have been captured at iPad resolution (landscape & portrait). See the full UI review with screenshots:
+Comprehensive UI screenshots for MVP features have been captured at iPad resolution (landscape & portrait). See the full UI review with screenshots:
 
 **📸 [View Complete UI Review](docs/current_state/UI_REVIEW_20260207.md)**
 
-### Key Screenshots
-- **Landing Page**: Main dashboard with feature navigation
-- **Sign-In System**: Member check-in/out with real-time updates
-- **Truck Checks**: Vehicle maintenance tracking interface
-- **Reports & Analytics**: Dashboard with charts and metrics
-- **Admin Pages**: Station management and brigade access control
+### Key Screenshots (MVP)
+- **Landing Page**: Main dashboard with feature navigation (✅ MVP)
+- **Sign-In System**: Member check-in/out with real-time updates (✅ MVP)
+- **Admin Pages**: Station management and brigade access control (✅ MVP)
+
+### Coming in v1.1
+- **Truck Checks**: Vehicle maintenance tracking interface (🚧 Coming soon)
+- **Reports & Analytics**: Dashboard with charts and metrics (🚧 Coming soon)
 
 All screenshots demonstrate:
 - ✅ Responsive design (iPad landscape 1024×768 & portrait 768×1024)
