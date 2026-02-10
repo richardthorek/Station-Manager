@@ -12,9 +12,11 @@
 
 import request from 'supertest';
 import express, { Express } from 'express';
-import stationsRouter from '../routes/stations';
 import { ensureDatabase } from '../services/dbFactory';
 import { authHeader } from './helpers/authHelpers';
+
+const stationsModule = require('../routes/stations');
+const stationsRouter = stationsModule.default ?? stationsModule;
 
 let app: Express;
 let authAgent: ReturnType<typeof request.agent>;

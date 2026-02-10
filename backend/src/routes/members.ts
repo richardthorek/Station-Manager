@@ -30,10 +30,15 @@ import {
 } from '../middleware/memberValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { getEffectiveStationId } from '../constants/stations';
 import { flexibleAuth } from '../middleware/flexibleAuth';
 import { logger } from '../services/logger';
 
 const router = Router();
+
+function memberMatchesStation(member: { stationId?: string }, stationId: string): boolean {
+  return getEffectiveStationId(member.stationId) === getEffectiveStationId(stationId);
+}
 
 // Configure multer for CSV upload (memory storage)
 const upload = multer({
@@ -52,10 +57,12 @@ const upload = multer({
 
 // Apply station middleware to all routes
 router.use(stationMiddleware);
+// Protect all member routes when ENABLE_DATA_PROTECTION=true
+router.use(flexibleAuth({ scope: 'station' }));
 
 // Get all members (filtered by station with search, filter, and sort)
 // Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
-router.get('/', flexibleAuth({ scope: 'station' }), async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
@@ -79,11 +86,15 @@ router.get('/', flexibleAuth({ scope: 'station' }), async (req, res) => {
 
 // Get member by ID
 // Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
-router.get('/:id', flexibleAuth({ scope: 'station' }), validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
+router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     const member = await db.getMemberById(req.params.id);
     if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    if (!memberMatchesStation(member, stationId)) {
       return res.status(404).json({ error: 'Member not found' });
     }
     res.json(member);
@@ -99,11 +110,15 @@ router.get('/:id', flexibleAuth({ scope: 'station' }), validateMemberId, handleV
 
 // Get member by QR code
 // Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
-router.get('/qr/:qrCode', flexibleAuth({ scope: 'station' }), validateQRCode, handleValidationErrors, async (req: Request, res: Response) => {
+router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     const member = await db.getMemberByQRCode(req.params.qrCode);
     if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    if (!memberMatchesStation(member, stationId)) {
       return res.status(404).json({ error: 'Member not found' });
     }
     res.json(member);
@@ -169,6 +184,11 @@ router.post('/', validateCreateMember, handleValidationErrors, async (req: Reque
 router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const existing = await db.getMemberById(req.params.id);
+    if (!existing || !memberMatchesStation(existing, stationId)) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
     const { name, rank, membershipStartDate } = req.body;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Valid name is required' });
@@ -206,8 +226,12 @@ router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Req
 router.get('/:id/history', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
     const member = await db.getMemberById(req.params.id);
     if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    if (!memberMatchesStation(member, stationId)) {
       return res.status(404).json({ error: 'Member not found' });
     }
     // Check-ins are filtered by the member's station (member already filtered by getMemberById)
@@ -421,6 +445,11 @@ router.post('/import/execute', async (req: Request, res: Response) => {
 router.delete('/:id', validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const existing = await db.getMemberById(req.params.id);
+    if (!existing || !memberMatchesStation(existing, stationId)) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
     const deleted = await db.deleteMember(req.params.id);
 
     if (!deleted) {

@@ -32,8 +32,8 @@ export function setCurrentStationId(stationId: string | null) {
   currentStationId = stationId;
 }
 
-export function getCurrentStationId(): string {
-  return currentStationId || DEFAULT_STATION_ID;
+export function getCurrentStationId(): string | null {
+  return currentStationId;
 }
 
 class ApiService {
@@ -74,9 +74,11 @@ class ApiService {
    * and Authorization header for authentication
    */
   private getHeaders(additionalHeaders?: HeadersInit): HeadersInit {
-    const headers: Record<string, string> = {
-      'X-Station-Id': getCurrentStationId(),
-    };
+    const headers: Record<string, string> = {};
+    const stationId = getCurrentStationId();
+    if (stationId) {
+      headers['X-Station-Id'] = stationId;
+    }
     
     // Add Authorization header if token exists
     const token = localStorage.getItem('auth_token');

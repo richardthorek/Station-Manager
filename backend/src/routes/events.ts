@@ -27,6 +27,7 @@ import {
 } from '../middleware/eventValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { getEffectiveStationId } from '../constants/stations';
 import { flexibleAuth } from '../middleware/flexibleAuth';
 import { logger } from '../services/logger';
 import { extractDeviceInfo, extractLocationInfo, sanitizeNotes } from '../utils/auditUtils';
@@ -34,15 +35,21 @@ import { extractDeviceInfo, extractLocationInfo, sanitizeNotes } from '../utils/
 const router = Router();
 const REACTIVATE_WINDOW_HOURS = 24;
 
+function eventMatchesStation(event: { stationId?: string }, stationId: string): boolean {
+  return getEffectiveStationId(event.stationId) === getEffectiveStationId(stationId);
+}
+
 // Apply station middleware to all routes
 router.use(stationMiddleware);
+// Protect all event routes when ENABLE_DATA_PROTECTION=true
+router.use(flexibleAuth({ scope: 'station' }));
 
 /**
  * Get events with pagination support (filtered by station)
  * Query params: limit (default 50), offset (default 0)
  * Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
  */
-router.get('/', flexibleAuth({ scope: 'station' }), validateEventQuery, handleValidationErrors, async (req: Request, res: Response) => {
+router.get('/', validateEventQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
@@ -90,9 +97,14 @@ router.get('/:eventId', validateEventId, handleValidationErrors, async (req: Req
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
+    const stationId = getStationIdFromRequest(req);
     const event = await db.getEventWithParticipants(eventId);
     
     if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if (!eventMatchesStation(event, stationId)) {
       return res.status(404).json({ error: 'Event not found' });
     }
     
@@ -138,6 +150,12 @@ router.put('/:eventId/end', validateEventId, handleValidationErrors, async (req:
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
+    const stationId = getStationIdFromRequest(req);
+    const existingEvent = await db.getEventById(eventId);
+
+    if (!existingEvent || !eventMatchesStation(existingEvent, stationId)) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
     const event = await db.endEvent(eventId);
     
     if (!event) {
@@ -159,9 +177,10 @@ router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, asyn
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
+    const stationId = getStationIdFromRequest(req);
     const existingEvent = await db.getEventById(eventId);
 
-    if (!existingEvent) {
+    if (!existingEvent || !eventMatchesStation(existingEvent, stationId)) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
@@ -215,6 +234,10 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
     // Check if event exists
     const event = await db.getEventById(eventId);
     if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if (!eventMatchesStation(event, stationId)) {
       return res.status(404).json({ error: 'Event not found' });
     }
     
@@ -303,6 +326,11 @@ router.delete('/:eventId/participants/:participantId', validateRemoveParticipant
     const { eventId, participantId } = req.params;
     const { performedBy, notes } = req.body || {}; // Handle empty body for DELETE
     const stationId = getStationIdFromRequest(req);
+
+    const event = await db.getEventById(eventId);
+    if (!event || !eventMatchesStation(event, stationId)) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
     
     // Try to get participant details before removal for audit log
     // Note: participant might be in the event or might not exist
@@ -356,10 +384,11 @@ router.get('/:eventId/audit', validateEventId, handleValidationErrors, async (re
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
+    const stationId = getStationIdFromRequest(req);
     
     // Verify event exists
     const event = await db.getEventById(eventId);
-    if (!event) {
+    if (!event || !eventMatchesStation(event, stationId)) {
       return res.status(404).json({ error: 'Event not found' });
     }
     
@@ -384,6 +413,12 @@ router.delete('/:eventId', validateEventId, handleValidationErrors, async (req: 
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { eventId } = req.params;
+    const stationId = getStationIdFromRequest(req);
+
+    const existingEvent = await db.getEventById(eventId);
+    if (!existingEvent || !eventMatchesStation(existingEvent, stationId)) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
     
     const event = await db.deleteEvent(eventId);
     

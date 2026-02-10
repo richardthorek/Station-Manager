@@ -111,6 +111,12 @@ async function validateBrigadeToken(req: Request): Promise<AuthResult | null> {
  * Validate that the request has access to the requested resource
  * based on the authentication scope
  */
+function resolveRequestedStationId(req: Request): string | undefined {
+  return (req.stationId as string | undefined)
+    || (req.headers['x-station-id'] as string | undefined)
+    || (req.query.stationId as string | undefined);
+}
+
 function validateScope(authResult: AuthResult, req: Request, scope: string): boolean {
   // JWT with admin role has full access
   if (authResult.credentialType === 'jwt' && authResult.role === 'admin') {
@@ -120,7 +126,7 @@ function validateScope(authResult: AuthResult, req: Request, scope: string): boo
   // Brigade token can access brigade-scoped or station-scoped resources
   if (authResult.credentialType === 'brigade-token') {
     // Check if requested resource matches token's brigade/station
-    const requestedStationId = req.headers['x-station-id'] as string || req.query.stationId as string;
+    const requestedStationId = resolveRequestedStationId(req);
     const requestedBrigadeId = req.query.brigadeId as string;
 
     if (scope === 'brigade' && requestedBrigadeId) {
@@ -131,7 +137,12 @@ function validateScope(authResult: AuthResult, req: Request, scope: string): boo
       return authResult.stationId === requestedStationId;
     }
 
-    // If no specific resource requested, allow access to token's scope
+    // If no specific station requested, do not allow station-scoped access
+    if (scope === 'station') {
+      return false;
+    }
+
+    // If no specific resource requested for brigade scope, allow access
     return true;
   }
 
@@ -181,6 +192,14 @@ export function flexibleAuth(options: FlexibleAuthOptions = {}) {
         message: 'This endpoint requires authentication. Please provide a valid JWT token or Brigade Access Token.',
       });
       return;
+    }
+
+    // If brigade token provides stationId and none is provided, lock request to token station
+    if (authResult.credentialType === 'brigade-token' && authResult.stationId) {
+      if (!resolveRequestedStationId(req)) {
+        req.stationId = authResult.stationId;
+        req.isDemoMode = false;
+      }
     }
 
     // Validate scope access

@@ -49,7 +49,6 @@ import checkinsRouter from './routes/checkins';
 import eventsRouter from './routes/events';
 import truckChecksRouter from './routes/truckChecks';
 import reportsRouter from './routes/reports';
-import demoRouter from './routes/demo';
 import stationsRouter from './routes/stations';
 import brigadeAccessRouter from './routes/brigadeAccess';
 import exportRouter from './routes/export';
@@ -60,7 +59,6 @@ import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
 import { getRFSFacilitiesParser } from './services/rfsFacilitiesParser';
 import { getVersionInfo } from './services/version';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
-import { demoModeMiddleware } from './middleware/demoModeMiddleware';
 import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
 import { requestIdMiddleware } from './middleware/requestId';
 import { requestLoggingMiddleware } from './middleware/requestLogging';
@@ -162,7 +160,6 @@ app.use(compression({
 
 app.use(requestIdMiddleware); // Add unique request ID to each request
 app.use(requestLoggingMiddleware); // Log all HTTP requests and responses
-app.use(demoModeMiddleware); // Detect demo mode from query parameter
 app.use(kioskModeMiddleware); // Detect and validate kiosk mode from brigade token
 
 // Serve static files from frontend build (for production)
@@ -282,7 +279,6 @@ app.get('/api/status', apiRateLimiter, async (req, res) => {
 
 // API Routes with rate limiting
 app.use('/api/auth', apiRateLimiter, authRouter);
-app.use('/api/demo', apiRateLimiter, demoRouter);
 app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, checkinsRouter);

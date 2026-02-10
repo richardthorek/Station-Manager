@@ -16,13 +16,14 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { DEFAULT_STATION_ID, getEffectiveStationId } from '../constants/stations';
+import { getEffectiveStationId } from '../constants/stations';
 
-// Extend Express Request type to include stationId
+// Extend Express Request type to include stationId and demo flag
 declare global {
   namespace Express {
     interface Request {
       stationId?: string;
+      isDemoMode?: boolean;
     }
   }
 }
@@ -56,11 +57,11 @@ export function stationMiddleware(req: Request, res: Response, next: NextFunctio
   // Check stationId query parameter as fallback (useful for GET requests)
   const queryStationId = req.query.stationId as string | undefined;
   
-  // Priority: header > query > default
+  // Priority: header > query
   const rawStationId = headerStationId || queryStationId;
   
-  // Use getEffectiveStationId to ensure we always have a valid station ID
-  req.stationId = getEffectiveStationId(rawStationId);
+  req.stationId = rawStationId;
+  req.isDemoMode = !rawStationId;
   
   next();
 }

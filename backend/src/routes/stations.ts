@@ -28,37 +28,10 @@ import { handleValidationErrors } from '../middleware/validationHandler';
 import { getRFSFacilitiesParser } from '../services/rfsFacilitiesParser';
 import { logger } from '../services/logger';
 import { optionalAuth } from '../middleware/auth';
+import { stationMiddleware } from '../middleware/stationMiddleware';
 
 const router = Router();
-
-/**
- * GET /api/stations/demo
- * Get the demo station for public access (unauthenticated)
- * Returns only the demo station with fake data for public viewing
- * 
- * Note: This endpoint must be defined before /:id route to avoid conflicts
- */
-router.get('/demo', async (req: Request, res: Response) => {
-  try {
-    const db = await ensureDatabase(req.isDemoMode);
-    const { DEMO_STATION_ID } = await import('../constants/stations');
-    
-    // Get the demo station
-    const demoStation = await db.getStationById(DEMO_STATION_ID);
-    
-    if (!demoStation) {
-      return res.status(404).json({ 
-        error: 'Demo station not found',
-        message: 'Demo station has not been initialized'
-      });
-    }
-    
-    res.json(demoStation);
-  } catch (error) {
-    logger.error('Error fetching demo station:', error);
-    res.status(500).json({ error: 'Failed to fetch demo station' });
-  }
-});
+router.use(stationMiddleware);
 
 /**
  * GET /api/stations/lookup
@@ -81,7 +54,7 @@ router.get('/lookup', optionalAuth, async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
 
     const parser = getRFSFacilitiesParser();
-    
+
     // Ensure data is loaded
     await parser.loadData();
 
@@ -89,14 +62,14 @@ router.get('/lookup', optionalAuth, async (req, res) => {
     if (!parser.isDataAvailable()) {
       return res.status(503).json({
         error: 'Station lookup service unavailable',
-        message: 'RFS facilities CSV data is not available. Please contact the administrator.'
+        message: 'RFS facilities CSV data is not available. Please contact the administrator.',
       });
     }
 
     // Validate that at least one parameter is provided
     if (!query && (lat === undefined || lon === undefined)) {
       return res.status(400).json({
-        error: 'At least one of query (q) or location (lat, lon) must be provided'
+        error: 'At least one of query (q) or location (lat, lon) must be provided',
       });
     }
 
@@ -107,13 +80,13 @@ router.get('/lookup', optionalAuth, async (req, res) => {
       results,
       count: results.length,
       query,
-      location: lat !== undefined && lon !== undefined ? { lat, lon } : undefined
+      location: lat !== undefined && lon !== undefined ? { lat, lon } : undefined,
     });
   } catch (error) {
     logger.error('Error in station lookup:', error);
     res.status(500).json({
       error: 'Failed to lookup stations',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -122,30 +95,32 @@ router.get('/lookup', optionalAuth, async (req, res) => {
  * GET /api/stations/count
  * Get count of loaded fire service stations nationally (for debugging/monitoring)
  * 
+ * Protected by optionalAuth middleware
  * Note: This endpoint must be defined before /:id route to avoid conflicts
  */
-router.get('/count', async (req, res) => {
+router.get('/count', optionalAuth, async (req, res) => {
   try {
     const parser = getRFSFacilitiesParser();
+
     await parser.loadData();
-    
+
     if (!parser.isDataAvailable()) {
       return res.json({
         count: 0,
         available: false,
-        message: 'RFS facilities CSV data is not available'
+        message: 'RFS facilities CSV data is not available',
       });
     }
-    
+
     res.json({
       count: parser.getCount(),
-      available: true
+      available: true,
     });
   } catch (error) {
     logger.error('Error getting station count:', error);
     res.status(500).json({
       error: 'Failed to get station count',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -419,94 +394,6 @@ router.delete('/:id', optionalAuth, validateStationId, handleValidationErrors, a
   } catch (error) {
     logger.error('Error deleting station:', error);
     res.status(500).json({ error: 'Failed to delete station' });
-  }
-});
-
-/**
- * POST /api/stations/demo/reset
- * Reset the demo station with fresh sample data
- * 
- * This endpoint:
- * 1. Deletes all demo station data (members, events, check-ins, appliances, etc.)
- * 2. Recreates the demo station
- * 3. Seeds with fresh sample data
- * 
- * Note: This route must be defined before /:id to avoid conflicts
- */
-router.post('/demo/reset', async (req: Request, res: Response) => {
-  try {
-    const db = await ensureDatabase(req.isDemoMode);
-    const truckChecksDb = await (await import('../services/truckChecksDbFactory')).ensureTruckChecksDatabase(req.isDemoMode);
-    const { DEMO_STATION_ID } = await import('../constants/stations');
-    
-    logger.info('Resetting demo station');
-    
-    // Step 1: Delete all demo station data
-    logger.info('Deleting demo station data');
-    
-    // Delete check-ins
-    const checkIns = await db.getAllCheckIns(DEMO_STATION_ID);
-    for (const checkIn of checkIns) {
-      if (checkIn.isActive) {
-        await db.deactivateCheckIn(checkIn.id);
-      }
-    }
-    
-    // Delete event participants and events
-    const events = await db.getEvents(1000, 0, DEMO_STATION_ID);
-    for (const event of events) {
-      const participants = await db.getEventParticipants(event.id);
-      for (const participant of participants) {
-        await db.removeEventParticipant(participant.id, event.id);
-      }
-      await db.deleteEvent(event.id);
-    }
-    
-    // Delete truck check results and runs
-    const checkRuns = await truckChecksDb.getAllCheckRuns(DEMO_STATION_ID);
-    for (const run of checkRuns) {
-      const results = await truckChecksDb.getResultsByRunId(run.id);
-      for (const result of results) {
-        await truckChecksDb.deleteCheckResult(result.id);
-      }
-    }
-    
-    // Delete appliances (templates are auto-deleted)
-    const appliances = await truckChecksDb.getAllAppliances(DEMO_STATION_ID);
-    for (const appliance of appliances) {
-      await truckChecksDb.deleteAppliance(appliance.id);
-    }
-    
-    logger.info('Demo station data deleted');
-    
-    // Step 2: Reseed demo station
-    logger.info('Reseeding demo station');
-    const { seedDemoStation } = await import('../scripts/seedDemoStation');
-    await seedDemoStation();
-    
-    logger.info('Demo station reset complete');
-    
-    // Emit WebSocket event to notify clients - station-scoped for demo
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`station-${DEMO_STATION_ID}`).emit('demo-station-reset', { 
-        stationId: DEMO_STATION_ID,
-        resetAt: new Date(),
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'Demo station reset successfully',
-      stationId: DEMO_STATION_ID,
-      resetAt: new Date(),
-    });
-  } catch (error) {
-    logger.error('Error resetting demo station:', error);
-    res.status(500).json({ 
-      error: 'Failed to reset demo station',
-      message: error instanceof Error ? error.message : 'Unknown error',
-    });
   }
 });
 

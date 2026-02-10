@@ -13,7 +13,6 @@
     "seed:test": "NODE_ENV=test TABLE_STORAGE_TABLE_SUFFIX=Test ts-node src/scripts/seedDatabase.ts",
     "seed:dev": "NODE_ENV=development TABLE_STORAGE_TABLE_SUFFIX=Dev ts-node src/scripts/seedDatabase.ts",
     "seed:prod": "NODE_ENV=production ts-node src/scripts/seedDatabase.ts",
-    "seed:demo": "ts-node src/scripts/seedDemoStation.ts",
     "purge:prod": "NODE_ENV=production PURGE_CONFIRM=YES ts-node src/scripts/purgeProdTestData.ts",
     "purge:prod:truck": "NODE_ENV=production PURGE_CONFIRM=YES PURGE_TRUCK_CHECKS=true ts-node src/scripts/purgeProdTestData.ts",
     "upload:csv": "ts-node src/scripts/uploadCsvToBlobStorage.ts",

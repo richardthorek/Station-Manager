@@ -21,7 +21,7 @@ describe('LandingPage', () => {
   it('renders the landing page', () => {
     render(<LandingPage />)
 
-    expect(screen.getByText('Station Manager MVP')).toBeInTheDocument()
+    expect(screen.getByText('Station Manager')).toBeInTheDocument()
     // Verify the main heading is present (text may vary)
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
   })
@@ -29,8 +29,8 @@ describe('LandingPage', () => {
   it('displays header with branding', () => {
     render(<LandingPage />)
 
-    // Verify brand name is present (now includes MVP)
-    expect(screen.getByText('Station Manager MVP')).toBeInTheDocument()
+    // Verify brand name is present
+    expect(screen.getByText('Station ManagerP')).toBeInTheDocument()
   })
 
   it('displays theme toggle button', () => {

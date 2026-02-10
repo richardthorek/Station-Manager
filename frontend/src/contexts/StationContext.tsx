@@ -75,9 +75,8 @@ export function StationProvider({ children }: StationProviderProps) {
       
       // If not authenticated, only load demo station
       if (!isAuthenticated) {
-        const demoStation = await api.getDemoStation();
-        setStations([demoStation]);
-        return [demoStation];
+        setStations([]);
+        return [];
       }
       
       // If authenticated, load all stations
@@ -150,27 +149,13 @@ export function StationProvider({ children }: StationProviderProps) {
           }
         }
         
-        // If no persisted selection or station not found, use default
-        const defaultStation = availableStations.find(s => s.id === DEFAULT_STATION_ID);
-        if (defaultStation) {
-          setSelectedStation(defaultStation);
-          setCurrentStationId(defaultStation.id);
-        } else if (availableStations.length > 0) {
-          // Fallback to first station if default not found
-          setSelectedStation(availableStations[0]);
-          setCurrentStationId(availableStations[0].id);
-        }
+        // If no persisted selection or station not found, leave unselected
+        setSelectedStation(null);
+        setCurrentStationId(null);
       } else {
         // Auth required but user not authenticated - force demo station
-        const demoStation = availableStations.find(s => s.id === DEMO_STATION_ID);
-        if (demoStation) {
-          setSelectedStation(demoStation);
-          setCurrentStationId(demoStation.id);
-        } else if (availableStations.length > 0) {
-          // Fallback to first station (should be demo)
-          setSelectedStation(availableStations[0]);
-          setCurrentStationId(availableStations[0].id);
-        }
+        setSelectedStation(null);
+        setCurrentStationId(null);
       }
     } catch (err) {
       console.error('Error loading persisted selection:', err);
@@ -256,14 +241,8 @@ export function StationProvider({ children }: StationProviderProps) {
     }
     
     localStorage.removeItem(STORAGE_KEY);
-    const defaultStation = stations.find(s => s.id === DEFAULT_STATION_ID);
-    if (defaultStation) {
-      setSelectedStation(defaultStation);
-      setCurrentStationId(defaultStation.id);
-    } else if (stations.length > 0) {
-      setSelectedStation(stations[0]);
-      setCurrentStationId(stations[0].id);
-    }
+    setSelectedStation(null);
+    setCurrentStationId(null);
   }, [stations, kioskMode, requireAuth, isAuthenticated]);
 
   /**

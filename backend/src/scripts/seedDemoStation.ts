@@ -23,18 +23,18 @@ import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { DEMO_STATION_ID, DEMO_BRIGADE_ID } from '../constants/stations';
 import type { Station, Member, Activity, CheckIn, Event, EventParticipant } from '../types';
 
-// Diverse member names with various cultural backgrounds
+// Fake roster for demo station (10 made-up names with varied ranks)
 const DEMO_MEMBERS = [
-  { name: 'Captain River Vale', rank: 'Captain' },
-  { name: 'Deputy Lia Granite', rank: 'Deputy Captain' },
-  { name: 'Senior Firefighter Marisol Dawn', rank: 'Senior Firefighter' },
-  { name: 'Firefighter Lyle Hart', rank: 'Firefighter' },
-  { name: 'Firefighter Faye Ember', rank: 'Firefighter' },
-  { name: 'Probationary Firefighter Sol Kai', rank: 'Probationary Firefighter' },
-  { name: 'Senior Firefighter Mira Stone', rank: 'Senior Firefighter' },
-  { name: 'Firefighter Theo Penn', rank: 'Firefighter' },
-  { name: 'Firefighter Juniper Quill', rank: 'Firefighter' },
-  { name: 'Probationary Firefighter Ash Calder', rank: 'Probationary Firefighter' },
+  { name: 'Axel Thorne', rank: 'Captain' },
+  { name: 'Maris Vale', rank: 'Senior Deputy Captain' },
+  { name: 'Soraya Finch', rank: 'Deputy Captain' },
+  { name: 'Devon Quill', rank: 'Firefighter' },
+  { name: 'Kira Embers', rank: 'Firefighter' },
+  { name: 'Lucien Hale', rank: 'Deputy Captain' },
+  { name: 'Rhea Calder', rank: 'Firefighter' },
+  { name: 'Rio Penn', rank: 'Firefighter' },
+  { name: 'Aria Lark', rank: 'Probationary Firefighter' },
+  { name: 'Milo Sable', rank: 'Firefighter' },
 ];
 
 // Standard RFS activities

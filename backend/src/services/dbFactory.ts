@@ -143,11 +143,15 @@ async function initializeDatabaseService(): Promise<IDatabase> {
  * Initialize test/demo database instance
  */
 async function initializeTestDatabaseService(): Promise<IDatabase> {
-  return initializeDatabase({
-    name: 'Test Database',
-    inMemoryDb: inMemoryDb as IDatabase,
-    tableStorageDb: tableStorageTestDb as IDatabase & { connect: () => Promise<void> },
-  });
+  if (process.env.DEMO_USE_TABLE_STORAGE === 'true') {
+    return initializeDatabase({
+      name: 'Test Database',
+      inMemoryDb: inMemoryDb as IDatabase,
+      tableStorageDb: tableStorageTestDb as IDatabase & { connect: () => Promise<void> },
+    });
+  }
+
+  return inMemoryDb as IDatabase;
 }
 
 // Export promises that resolve to the database instances

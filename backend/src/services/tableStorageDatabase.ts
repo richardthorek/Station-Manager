@@ -718,7 +718,7 @@ export class TableStorageDatabase {
 
   // ===== EVENT METHODS =====
 
-  async createEvent(activityId: string, createdBy?: string): Promise<Event> {
+  async createEvent(activityId: string, createdBy?: string, stationId?: string): Promise<Event> {
     const activity = await this.getActivityById(activityId);
     if (!activity) {
       throw new Error('Activity not found');
@@ -728,6 +728,7 @@ export class TableStorageDatabase {
       id: uuidv4(),
       activityId,
       activityName: activity.name,
+      stationId: getEffectiveStationId(stationId),
       startTime: new Date(),
       isActive: true,
       createdBy,
@@ -744,6 +745,7 @@ export class TableStorageDatabase {
       rowKey: event.id,
       activityId: event.activityId,
       activityName: event.activityName,
+      stationId: event.stationId || '',
       startTime: event.startTime.toISOString(),
       endTime: event.endTime?.toISOString() || '',
       isActive: event.isActive,
@@ -757,7 +759,7 @@ export class TableStorageDatabase {
     return event;
   }
 
-  async getEvents(limit: number = 50, offset: number = 0): Promise<Event[]> {
+  async getEvents(limit: number = 50, offset: number = 0, stationId?: string): Promise<Event[]> {
     // Query recent months
     const now = new Date();
     const months = [];
@@ -767,7 +769,7 @@ export class TableStorageDatabase {
       months.push(date.toISOString().slice(0, 7));
     }
 
-    const allEvents: Event[] = [];
+    let allEvents: Event[] = [];
     
     for (const month of months) {
       const entities = this.eventsTable.listEntities<TableEntity>({
@@ -783,6 +785,12 @@ export class TableStorageDatabase {
       }
     }
 
+    // Filter by station when provided
+    if (stationId) {
+      const effectiveStationId = getEffectiveStationId(stationId);
+      allEvents = allEvents.filter(event => getEffectiveStationId(event.stationId) === effectiveStationId);
+    }
+
     // Sort by startTime descending
     allEvents.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
 
@@ -790,8 +798,8 @@ export class TableStorageDatabase {
     return allEvents.slice(offset, offset + limit);
   }
 
-  async getActiveEvents(): Promise<Event[]> {
-    const events = await this.getEvents(100, 0);
+  async getActiveEvents(stationId?: string): Promise<Event[]> {
+    const events = await this.getEvents(100, 0, stationId);
     const activeEvents = events.filter(e => e.isActive && !e.isDeleted); // Filter out deleted events
     
     // Auto-expire events that have exceeded time limit
@@ -799,7 +807,7 @@ export class TableStorageDatabase {
     await autoExpireEvents(activeEvents, this as any);
     
     // Return currently active events (excluding ones we just expired)
-    const updatedEvents = await this.getEvents(100, 0);
+    const updatedEvents = await this.getEvents(100, 0, stationId);
     return updatedEvents.filter(e => e.isActive && !e.isDeleted); // Filter out deleted events
   }
 
@@ -887,6 +895,7 @@ export class TableStorageDatabase {
       id: entity.rowKey as string,
       activityId: entity.activityId as string,
       activityName: entity.activityName as string,
+      stationId: (entity.stationId as string) || undefined,
       startTime: new Date(entity.startTime as string),
       endTime: entity.endTime ? new Date(entity.endTime as string) : undefined,
       isActive: entity.isActive as boolean,
@@ -904,7 +913,8 @@ export class TableStorageDatabase {
     memberId: string,
     method: 'kiosk' | 'mobile' | 'qr',
     location?: string,
-    isOffsite: boolean = false
+    isOffsite: boolean = false,
+    stationId?: string
   ): Promise<EventParticipant> {
     const event = await this.getEventById(eventId);
     if (!event) throw new Error('Event not found');
@@ -918,6 +928,7 @@ export class TableStorageDatabase {
       memberId,
       memberName: member.name,
       memberRank: member.rank || null,
+      stationId: getEffectiveStationId(stationId || event.stationId),
       checkInTime: new Date(),
       checkInMethod: method,
       location,
@@ -932,6 +943,7 @@ export class TableStorageDatabase {
       memberId: participant.memberId,
       memberName: participant.memberName,
       memberRank: participant.memberRank || '',
+      stationId: participant.stationId || '',
       checkInTime: participant.checkInTime.toISOString(),
       checkInMethod: participant.checkInMethod,
       location: participant.location || '',
@@ -975,8 +987,8 @@ export class TableStorageDatabase {
     };
   }
 
-  async getEventsWithParticipants(limit: number = 50, offset: number = 0): Promise<EventWithParticipants[]> {
-    const events = await this.getEvents(limit, offset);
+  async getEventsWithParticipants(limit: number = 50, offset: number = 0, stationId?: string): Promise<EventWithParticipants[]> {
+    const events = await this.getEvents(limit, offset, stationId);
     
     const eventsWithParticipants = await Promise.all(
       events.map(async (event) => {
@@ -1059,8 +1071,8 @@ export class TableStorageDatabase {
     return undefined;
   }
 
-  async getAllActiveParticipants(): Promise<EventParticipant[]> {
-    const activeEvents = await this.getActiveEvents();
+  async getAllActiveParticipants(stationId?: string): Promise<EventParticipant[]> {
+    const activeEvents = await this.getActiveEvents(stationId);
     const allParticipants: EventParticipant[] = [];
 
     for (const event of activeEvents) {
@@ -1082,6 +1094,7 @@ export class TableStorageDatabase {
       memberId: entity.memberId as string,
       memberName: entity.memberName as string,
       memberRank: (entity.memberRank as string) || null,
+      stationId: (entity.stationId as string) || undefined,
       checkInTime: new Date(entity.checkInTime as string),
       checkInMethod: entity.checkInMethod as 'kiosk' | 'mobile' | 'qr',
       location: (entity.location as string) || undefined,
@@ -1133,8 +1146,8 @@ export class TableStorageDatabase {
   /**
    * Get attendance summary - monthly participation count
    */
-  async getAttendanceSummary(startDate: Date, endDate: Date): Promise<Array<{ month: string; count: number }>> {
-    const participants = await this.getAllEventParticipants(startDate, endDate);
+  async getAttendanceSummary(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{ month: string; count: number }>> {
+    const participants = await this.getAllEventParticipants(startDate, endDate, stationId);
 
     // Group by month
     const monthCounts = new Map<string, number>();
@@ -1152,13 +1165,13 @@ export class TableStorageDatabase {
   /**
    * Get member participation - top members by event participation
    */
-  async getMemberParticipation(startDate: Date, endDate: Date, limit: number = 10): Promise<Array<{
+  async getMemberParticipation(startDate: Date, endDate: Date, limit: number = 10, stationId?: string): Promise<Array<{
     memberId: string;
     memberName: string;
     participationCount: number;
     lastCheckIn: string;
   }>> {
-    const participants = await this.getAllEventParticipants(startDate, endDate);
+    const participants = await this.getAllEventParticipants(startDate, endDate, stationId);
 
     // Group by member
     const memberStats = new Map<string, { name: string; count: number; lastCheckIn: Date }>();
@@ -1193,12 +1206,12 @@ export class TableStorageDatabase {
   /**
    * Get activity breakdown - count by activity category
    */
-  async getActivityBreakdown(startDate: Date, endDate: Date): Promise<Array<{
+  async getActivityBreakdown(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{
     category: string;
     count: number;
     percentage: number;
   }>> {
-    const events = await this.getEventsByDateRange(startDate, endDate);
+    const events = await this.getEventsByDateRange(startDate, endDate, stationId);
 
     const categoryCounts = new Map<string, number>();
     for (const event of events) {
@@ -1220,7 +1233,7 @@ export class TableStorageDatabase {
   /**
    * Get event statistics
    */
-  async getEventStatistics(startDate: Date, endDate: Date): Promise<{
+  async getEventStatistics(startDate: Date, endDate: Date, stationId?: string): Promise<{
     totalEvents: number;
     activeEvents: number;
     completedEvents: number;
@@ -1228,12 +1241,12 @@ export class TableStorageDatabase {
     averageParticipantsPerEvent: number;
     averageDuration: number;
   }> {
-    const events = await this.getEventsByDateRange(startDate, endDate);
+    const events = await this.getEventsByDateRange(startDate, endDate, stationId);
 
     const activeEvents = events.filter(e => e.isActive).length;
     const completedEvents = events.filter(e => !e.isActive && e.endTime).length;
 
-    const participants = await this.getAllEventParticipants(startDate, endDate);
+    const participants = await this.getAllEventParticipants(startDate, endDate, stationId);
 
     // Calculate average duration for completed events
     const durations = events
@@ -1264,8 +1277,8 @@ export class TableStorageDatabase {
     eventsTrend: Array<{ month: string; count: number; change: number; changePercent: number }>;
     memberGrowth: { currentTotal: number; previousTotal: number; change: number; changePercent: number };
   }> {
-    // Get attendance summary (Note: stationId filtering not implemented in Table Storage yet)
-    const attendanceSummary = await this.getAttendanceSummary(startDate, endDate);
+    // Get attendance summary filtered by station
+    const attendanceSummary = await this.getAttendanceSummary(startDate, endDate, stationId);
 
     // Calculate month-over-month change for attendance
     const attendanceTrend = attendanceSummary.map((current, index) => {
@@ -1284,7 +1297,7 @@ export class TableStorageDatabase {
     });
 
     // Get events and calculate trend
-    const events = await this.getEventsByDateRange(startDate, endDate);
+    const events = await this.getEventsByDateRange(startDate, endDate, stationId);
 
     // Group events by month
     const eventsByMonth = new Map<string, number>();
@@ -1342,7 +1355,7 @@ export class TableStorageDatabase {
    * Get activity heat map - shows activity patterns by day of week and hour of day
    */
   async getActivityHeatMap(startDate: Date, endDate: Date, stationId?: string): Promise<Array<{ day: number; hour: number; count: number }>> {
-    const participants = await this.getAllEventParticipants(startDate, endDate);
+    const participants = await this.getAllEventParticipants(startDate, endDate, stationId);
 
     // Group by day of week (0=Sunday, 6=Saturday) and hour (0-23)
     const heatMapData = new Map<string, number>();
@@ -1376,7 +1389,7 @@ export class TableStorageDatabase {
   async getMemberFunnel(startDate: Date, endDate: Date, stationId?: string): Promise<{
     stages: Array<{ stage: string; count: number; conversionRate: number }>;
   }> {
-    const allMembers = await this.getAllMembers();
+    const allMembers = await this.getAllMembers(stationId);
 
     // Filter members created within date range for registration stage
     const registeredMembers = allMembers.filter(m =>
@@ -1384,7 +1397,7 @@ export class TableStorageDatabase {
     );
 
     // Get all check-ins for these members
-    const allCheckIns = await this.getAllEventParticipants(startDate, endDate);
+    const allCheckIns = await this.getAllEventParticipants(startDate, endDate, stationId);
 
     // Calculate funnel stages
     const registered = registeredMembers.length;
@@ -1441,7 +1454,7 @@ export class TableStorageDatabase {
   async getCohortAnalysis(startDate: Date, endDate: Date, stationId?: string): Promise<{
     cohorts: Array<{ cohort: string; members: number; retentionRates: number[] }>;
   }> {
-    const allMembers = await this.getAllMembers();
+    const allMembers = await this.getAllMembers(stationId);
     const filteredMembers = allMembers.filter(m =>
       m.createdAt && new Date(m.createdAt) >= startDate && new Date(m.createdAt) <= endDate
     );
@@ -1478,7 +1491,7 @@ export class TableStorageDatabase {
           if (periodStart > endDate) break;
 
           // Get check-ins for this period
-          const periodCheckIns = await this.getAllEventParticipants(periodStart, periodEnd);
+          const periodCheckIns = await this.getAllEventParticipants(periodStart, periodEnd, stationId);
 
           const activeMemberIds = new Set(periodCheckIns.map(p => p.memberId));
           const retainedCount = members.filter(m => activeMemberIds.has(m.id)).length;
@@ -1623,8 +1636,8 @@ export class TableStorageDatabase {
   /**
    * Helper method to get events by date range
    */
-  private async getEventsByDateRange(startDate: Date, endDate: Date): Promise<Event[]> {
-    const allEvents = await this.getEvents(10000); // Get a large number of events
+  private async getEventsByDateRange(startDate: Date, endDate: Date, stationId?: string): Promise<Event[]> {
+    const allEvents = await this.getEvents(10000, 0, stationId); // Get a large number of events
     return allEvents.filter(e => {
       const eventTime = new Date(e.startTime);
       return eventTime >= startDate && eventTime <= endDate;
@@ -1634,8 +1647,8 @@ export class TableStorageDatabase {
   /**
    * Helper method to get all event participants in a date range
    */
-  private async getAllEventParticipants(startDate: Date, endDate: Date): Promise<EventParticipant[]> {
-    const events = await this.getEventsByDateRange(startDate, endDate);
+  private async getAllEventParticipants(startDate: Date, endDate: Date, stationId?: string): Promise<EventParticipant[]> {
+    const events = await this.getEventsByDateRange(startDate, endDate, stationId);
     const allParticipants: EventParticipant[] = [];
     
     for (const event of events) {

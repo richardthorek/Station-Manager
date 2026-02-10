@@ -116,7 +116,7 @@ describe('StationContext', () => {
     
     // After act completes, initial load resolves; verify state is ready
     expect(result.current.isLoading).toBe(false);
-    expect(result.current.selectedStation?.id).toBe(DEFAULT_STATION_ID);
+    expect(result.current.selectedStation).toBe(null);
     expect(result.current.stations).toEqual(mockStations);
   });
 
@@ -138,8 +138,8 @@ describe('StationContext', () => {
       expect(result.current.isLoading).toBe(false);
     });
     
-    expect(result.current.selectedStation?.id).toBe(DEFAULT_STATION_ID);
-    expect(setCurrentStationId).toHaveBeenCalledWith(DEFAULT_STATION_ID);
+    expect(result.current.selectedStation).toBe(null);
+    expect(setCurrentStationId).toHaveBeenCalledWith(null);
   });
 
   it('should load persisted selection from localStorage', async () => {
@@ -186,7 +186,7 @@ describe('StationContext', () => {
       result.current.clearStation();
     });
     
-    expect(result.current.selectedStation?.id).toBe(DEFAULT_STATION_ID);
+    expect(result.current.selectedStation).toBe(null);
     expect(localStorage.getItem('selectedStationId')).toBe(null);
   });
 
@@ -220,7 +220,7 @@ describe('StationContext', () => {
     act(() => {
       result.current.selectStation(DEMO_STATION_ID);
     });
-    
+
     expect(result.current.isDefaultStation()).toBe(false);
   });
 

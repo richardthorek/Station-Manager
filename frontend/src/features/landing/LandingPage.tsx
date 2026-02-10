@@ -50,7 +50,7 @@ export function LandingPage() {
               decoding="async"
             />
             <div className="brand-block">
-              <p className="eyebrow">Station Manager MVP</p>
+              <p className="eyebrow">Station Manager</p>
               <h1 className="headline">Digital sign-in for fire stations</h1>
               <p className="subheadline">Real-time member sign-ins and attendance tracking across every device.</p>
             </div>
