@@ -63,7 +63,7 @@ import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
 import { requestIdMiddleware } from './middleware/requestId';
 import { requestLoggingMiddleware } from './middleware/requestLogging';
 import { logger } from './services/logger';
-import { getAdminUserDatabase } from './services/adminUserDatabase';
+import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services/adminUserDbFactory';
 
 const app = express();
 const httpServer = createServer(app);
@@ -501,19 +501,23 @@ async function initializeDatabasesInBackground() {
     logger.info('Truck checks database initialized');
     
     // Initialize admin user database with default credentials if configured
-    const adminDb = getAdminUserDatabase();
-    const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
+    const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME;
     const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+    const requireAuth = process.env.REQUIRE_AUTH === 'true';
     
-    if (defaultAdminPassword) {
-      await adminDb.initialize(defaultAdminUsername, defaultAdminPassword);
-      logger.info('Admin user database initialized with default credentials');
+    if (defaultAdminUsername && defaultAdminPassword) {
+      await initializeAdminUserDatabase(defaultAdminUsername, defaultAdminPassword);
+      logger.info('✅ Admin user database initialized');
     } else {
-      logger.warn('No default admin password configured. Set DEFAULT_ADMIN_PASSWORD to enable authentication.');
+      if (requireAuth) {
+        logger.error('❌ CONFIGURATION ERROR: REQUIRE_AUTH=true but DEFAULT_ADMIN_USERNAME and DEFAULT_ADMIN_PASSWORD are required!');
+        logger.error('   Authentication will fail. Set both DEFAULT_ADMIN_USERNAME and DEFAULT_ADMIN_PASSWORD environment variables to create admin account.');
+      } else {
+        logger.warn('⚠️  No default admin credentials configured. Set DEFAULT_ADMIN_USERNAME and DEFAULT_ADMIN_PASSWORD to enable authentication.');
+      }
     }
     
     // Log authentication status
-    const requireAuth = process.env.REQUIRE_AUTH === 'true';
     logger.info('Authentication status', { 
       requireAuth, 
       jwtConfigured: !!process.env.JWT_SECRET,

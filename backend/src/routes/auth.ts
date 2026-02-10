@@ -14,7 +14,7 @@
 
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { getAdminUserDatabase } from '../services/adminUserDatabase';
+import { getAdminDb } from '../services/adminUserDbFactory';
 import { logger } from '../services/logger';
 import { authMiddleware } from '../middleware/auth';
 
@@ -36,11 +36,28 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    const adminDb = getAdminUserDatabase();
+    const adminDb = getAdminDb();
     const user = await adminDb.verifyCredentials(username, password);
 
     if (!user) {
-      logger.warn('Failed login attempt', { username, ip: req.ip });
+      // Only check if users exist when credential verification fails
+      const allUsers = await adminDb.getAllUsers();
+      
+      if (allUsers.length === 0) {
+        logger.error('Login failed: No admin accounts exist. DEFAULT_ADMIN_PASSWORD may not be configured.', { 
+          username, 
+          ip: req.ip 
+        });
+        return res.status(401).json({ 
+          error: 'Invalid username or password',
+          // Include hint in development mode
+          ...(process.env.NODE_ENV === 'development' && {
+            hint: 'No admin accounts configured. Set DEFAULT_ADMIN_PASSWORD environment variable.'
+          })
+        });
+      }
+      
+      logger.warn('Failed login attempt', { username, ip: req.ip, totalAdminAccounts: allUsers.length });
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
@@ -95,7 +112,7 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const adminDb = getAdminUserDatabase();
+    const adminDb = getAdminDb();
     const user = await adminDb.getUserById(req.user.userId);
 
     if (!user) {
