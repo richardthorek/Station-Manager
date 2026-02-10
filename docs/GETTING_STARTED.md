@@ -68,9 +68,10 @@ The backend server will start on `http://localhost:3000`
 
 **Authentication Note**: By default, authentication is disabled in development. If you want to test the authentication system:
 1. Set `REQUIRE_AUTH=true` in `backend/.env`
-2. Set `DEFAULT_ADMIN_PASSWORD=YourSecurePassword123` in `backend/.env`
-3. Restart the backend server
-4. Login at `http://localhost:5173/login` with username `admin` and your configured password
+2. Set `DEFAULT_ADMIN_USERNAME=youradminname` in `backend/.env`
+3. Set `DEFAULT_ADMIN_PASSWORD=YourSecurePassword123` in `backend/.env`
+4. Restart the backend server
+5. Login at `http://localhost:5173/login` with your configured username and password
 
 ### 3. Set Up the Frontend
 

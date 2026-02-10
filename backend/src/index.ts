@@ -501,19 +501,19 @@ async function initializeDatabasesInBackground() {
     logger.info('Truck checks database initialized');
     
     // Initialize admin user database with default credentials if configured
-    const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
+    const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME;
     const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
     const requireAuth = process.env.REQUIRE_AUTH === 'true';
     
-    if (defaultAdminPassword) {
+    if (defaultAdminUsername && defaultAdminPassword) {
       await initializeAdminUserDatabase(defaultAdminUsername, defaultAdminPassword);
       logger.info('✅ Admin user database initialized');
     } else {
       if (requireAuth) {
-        logger.error('❌ CONFIGURATION ERROR: REQUIRE_AUTH=true but DEFAULT_ADMIN_PASSWORD is not set!');
-        logger.error('   Authentication will fail. Set DEFAULT_ADMIN_PASSWORD environment variable to create admin account.');
+        logger.error('❌ CONFIGURATION ERROR: REQUIRE_AUTH=true but DEFAULT_ADMIN_USERNAME and DEFAULT_ADMIN_PASSWORD are required!');
+        logger.error('   Authentication will fail. Set both DEFAULT_ADMIN_USERNAME and DEFAULT_ADMIN_PASSWORD environment variables to create admin account.');
       } else {
-        logger.warn('⚠️  No default admin password configured. Set DEFAULT_ADMIN_PASSWORD to enable authentication.');
+        logger.warn('⚠️  No default admin credentials configured. Set DEFAULT_ADMIN_USERNAME and DEFAULT_ADMIN_PASSWORD to enable authentication.');
       }
     }
     

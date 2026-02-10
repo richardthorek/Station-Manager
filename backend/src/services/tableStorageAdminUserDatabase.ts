@@ -140,7 +140,7 @@ export class TableStorageAdminUserDatabase {
     
     if (users.length === 0 && defaultUsername && defaultPassword) {
       await this.createAdminUser(defaultUsername, defaultPassword, 'admin');
-      logger.info('Created default admin user in Table Storage', { username: defaultUsername });
+      logger.info('Created default admin user in Table Storage');
     }
   }
 

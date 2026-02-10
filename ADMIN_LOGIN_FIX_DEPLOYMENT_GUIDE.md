@@ -72,7 +72,7 @@ You already have these set, no changes needed:
 ```bash
 # Authentication (already configured)
 REQUIRE_AUTH=true
-DEFAULT_ADMIN_USERNAME=admin
+DEFAULT_ADMIN_USERNAME=<your-admin-username>
 DEFAULT_ADMIN_PASSWORD=<your-secure-password>
 JWT_SECRET=<your-jwt-secret>
 
