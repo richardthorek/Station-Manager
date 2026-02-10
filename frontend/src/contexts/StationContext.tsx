@@ -57,7 +57,7 @@ interface StationProviderProps {
 }
 
 export function StationProvider({ children }: StationProviderProps) {
-  const { isAuthenticated, requireAuth } = useAuth();
+  const { isAuthenticated, requireAuth, isLoading: authLoading } = useAuth();
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -166,8 +166,14 @@ export function StationProvider({ children }: StationProviderProps) {
 
   /**
    * Initialize: Load stations and persisted selection
+   * Wait for authentication to complete before initializing
    */
   useEffect(() => {
+    // Don't initialize until auth has finished loading
+    if (authLoading) {
+      return;
+    }
+    
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
@@ -179,7 +185,7 @@ export function StationProvider({ children }: StationProviderProps) {
     };
 
     initialize();
-  }, [loadStations, loadPersistedSelection, isAuthenticated, requireAuth]);
+  }, [authLoading, loadStations, loadPersistedSelection, isAuthenticated, requireAuth]);
 
   /**
    * Listen for storage changes from other tabs
