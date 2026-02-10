@@ -1,6 +1,13 @@
 /**
  * Station Selector Component Tests
  * 
+ * NOTE: StationSelector component is deprecated and no longer used in the application.
+ * Station selection now happens automatically through:
+ * - Brigade token in URL (kiosk mode)
+ * - Default/demo station (normal mode)
+ * 
+ * These tests are kept for reference but skipped since the component is not in use.
+ * 
  * Tests for station selector dropdown including:
  * - Rendering and display
  * - Search/filter functionality
@@ -81,7 +88,7 @@ const mockStations: Station[] = [
   },
 ];
 
-describe('StationSelector', () => {
+describe.skip('StationSelector (deprecated)', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
