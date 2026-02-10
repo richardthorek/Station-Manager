@@ -107,6 +107,9 @@ describe('StationSelector', () => {
   });
 
   it('should display selected station name', async () => {
+    // Set up localStorage with a selected station first
+    localStorage.setItem('selectedStationId', DEFAULT_STATION_ID);
+    
     renderWithProvider();
     
     await waitFor(() => {
@@ -356,6 +359,9 @@ describe('StationSelector', () => {
   });
 
   it('should mark selected station with checkmark', async () => {
+    // Set up localStorage with a selected station first
+    localStorage.setItem('selectedStationId', DEFAULT_STATION_ID);
+    
     const user = userEvent.setup();
     renderWithProvider();
     
