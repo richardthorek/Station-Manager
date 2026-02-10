@@ -561,6 +561,7 @@ npm run test:coverage # Generate coverage report
 - Mock external dependencies (Socket.io, API calls)
 - Test user interactions with `@testing-library/user-event`
 - Test accessibility (semantic HTML, ARIA labels, keyboard navigation)
+- **See `/docs/TESTING_BEST_PRACTICES.md` for comprehensive testing guidelines, including handling async state updates and act(...) warnings**
 
 **Testing Guidelines:**
 
