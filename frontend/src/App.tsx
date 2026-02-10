@@ -1,10 +1,9 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { StationProvider } from './contexts/StationContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { AuthProvider } from './contexts/AuthContext';
-import { DemoLandingPrompt } from './components/DemoLandingPrompt';
 import { LoadingFallback } from './components/LoadingFallback';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InstallPrompt } from './components/InstallPrompt';
@@ -12,7 +11,6 @@ import { SkipToContent } from './components/SkipToContent';
 import { LiveAnnouncer } from './components/LiveAnnouncer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ComingSoonPage } from './components/ComingSoonPage';
-import { hasSeenDemoPrompt } from './utils/demoPromptUtils';
 import { initDB } from './services/offlineStorage';
 
 // Lazy load all route components for better code splitting
@@ -78,21 +76,11 @@ function AnimatedRoutes() {
 }
 
 function App() {
-  const [showDemoPrompt, setShowDemoPrompt] = useState(false);
-
   useEffect(() => {
     // Initialize IndexedDB for offline storage
     initDB().catch(err => {
       console.error('Failed to initialize offline database:', err);
     });
-
-    // Show demo prompt on first visit
-    if (!hasSeenDemoPrompt()) {
-      // Small delay for better UX
-      setTimeout(() => {
-        setShowDemoPrompt(true);
-      }, 500);
-    }
   }, []);
 
   return (
@@ -104,9 +92,6 @@ function App() {
             <LiveAnnouncer />
             <OfflineIndicator />
             <InstallPrompt />
-            {showDemoPrompt && (
-              <DemoLandingPrompt onDismiss={() => setShowDemoPrompt(false)} />
-            )}
             <Suspense fallback={<LoadingFallback />}>
               <AnimatedRoutes />
             </Suspense>
