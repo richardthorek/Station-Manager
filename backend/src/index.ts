@@ -63,7 +63,7 @@ import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
 import { requestIdMiddleware } from './middleware/requestId';
 import { requestLoggingMiddleware } from './middleware/requestLogging';
 import { logger } from './services/logger';
-import { getAdminUserDatabase } from './services/adminUserDatabase';
+import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services/adminUserDbFactory';
 
 const app = express();
 const httpServer = createServer(app);
@@ -501,13 +501,12 @@ async function initializeDatabasesInBackground() {
     logger.info('Truck checks database initialized');
     
     // Initialize admin user database with default credentials if configured
-    const adminDb = getAdminUserDatabase();
     const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
     const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
     const requireAuth = process.env.REQUIRE_AUTH === 'true';
     
     if (defaultAdminPassword) {
-      await adminDb.initialize(defaultAdminUsername, defaultAdminPassword);
+      await initializeAdminUserDatabase(defaultAdminUsername, defaultAdminPassword);
       logger.info('✅ Admin user database initialized', { username: defaultAdminUsername });
     } else {
       if (requireAuth) {
@@ -523,7 +522,6 @@ async function initializeDatabasesInBackground() {
       requireAuth, 
       jwtConfigured: !!process.env.JWT_SECRET,
       defaultAdminConfigured: !!defaultAdminPassword,
-      adminAccountCreated: !!defaultAdminPassword,
     });
     
     // Log database type

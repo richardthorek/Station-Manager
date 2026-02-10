@@ -14,7 +14,7 @@
 
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { getAdminUserDatabase } from '../services/adminUserDatabase';
+import { getAdminDb } from '../services/adminUserDbFactory';
 import { logger } from '../services/logger';
 import { authMiddleware } from '../middleware/auth';
 
@@ -36,7 +36,7 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    const adminDb = getAdminUserDatabase();
+    const adminDb = getAdminDb();
     const allUsers = await adminDb.getAllUsers();
     
     // Check if no admin users exist at all
@@ -112,7 +112,7 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const adminDb = getAdminUserDatabase();
+    const adminDb = getAdminDb();
     const user = await adminDb.getUserById(req.user.userId);
 
     if (!user) {

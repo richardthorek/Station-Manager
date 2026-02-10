@@ -12,6 +12,19 @@ import express from 'express';
 import authRouter from '../routes/auth';
 import { getAdminUserDatabase } from '../services/adminUserDatabase';
 
+// Mock the factory to use in-memory database for tests
+jest.mock('../services/adminUserDbFactory', () => {
+  const { getAdminUserDatabase } = require('../services/adminUserDatabase');
+  return {
+    getAdminDb: () => getAdminUserDatabase(),
+    ensureAdminUserDatabase: () => getAdminUserDatabase(),
+    initializeAdminUserDatabase: async (username?: string, password?: string) => {
+      const db = getAdminUserDatabase();
+      await db.initialize(username, password);
+    },
+  };
+});
+
 describe('Authentication Routes', () => {
   let app: express.Application;
   let adminDb: ReturnType<typeof getAdminUserDatabase>;
