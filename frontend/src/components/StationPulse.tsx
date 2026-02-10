@@ -87,8 +87,7 @@ export function StationPulse({
     const complianceInsights = generateComplianceInsights(
       complianceRate,
       checksWithIssues,
-      totalChecks,
-      applianceCount
+      totalChecks
     );
     insights.push(...complianceInsights);
 

@@ -86,7 +86,8 @@ export function analyzeTrend(values: number[]): {
     denominator += Math.pow(xValues[i] - xMean, 2);
   }
 
-  const slope = denominator !== 0 ? numerator / denominator : 0;
+  // Calculate slope for trend analysis
+  // const slope = denominator !== 0 ? numerator / denominator : 0;
 
   // Calculate percentage change from first to last
   const firstValue = values[0] || 1;
@@ -196,8 +197,7 @@ export function generateAttendanceInsights(
 export function generateComplianceInsights(
   complianceRate: number,
   checksWithIssues: number,
-  totalChecks: number,
-  applianceCount: number
+  totalChecks: number
 ): Insight[] {
   const insights: Insight[] = [];
 
