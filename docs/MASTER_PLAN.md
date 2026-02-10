@@ -116,6 +116,9 @@ The Station Manager v1.0 MVP focuses exclusively on **core sign-in functionality
 - Achievement system
 - Additional enhancements based on client feedback
 
+### February 2026 Stabilization
+- 2026-02-10: Admin portal color-contrast remediation completed. Added accessible status/alert tokens (`--surface-error/warning/info/success`, `--text-error-strong`, `--text-warning-strong`, `--text-on-amber`) and applied them across admin alerts and badges. Before/after iPad screenshots captured in `docs/current_state/ADMIN_CONTRAST_REVIEW_20260210.md`.
+
 ---
 
 ### PHASE 3: ESSENTIAL FEATURES (Q2 2026) - v1.3

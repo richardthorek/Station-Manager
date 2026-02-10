@@ -61,7 +61,7 @@
 
 .back-link {
   display: inline-block;
-  color: var(--rfs-core-red);
+  color: var(--color-error);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.9rem;
@@ -96,10 +96,10 @@
 .error-message {
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: rgba(229, 40, 27, 0.1);
+  background: var(--surface-error);
   border: 2px solid var(--rfs-core-red);
   border-radius: 8px;
-  color: var(--rfs-core-red);
+  color: var(--text-error-strong);
   font-weight: 500;
   display: flex;
   justify-content: space-between;
@@ -188,6 +188,7 @@
 
 .stat-card.gradient-amber {
   background: linear-gradient(135deg, var(--ui-amber) 0%, #e89c2a 100%);
+  color: var(--text-on-amber);
 }
 
 .stat-card.gradient-blue {

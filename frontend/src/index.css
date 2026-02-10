@@ -22,6 +22,17 @@
   --rfs-neutral-medium: #e0e0e0; /* Assess against style guide greys */
   --rfs-neutral-dark: #333333; /* Consider replacing with --rfs-dark-grey or another specified grey */
 
+  /* Accessible status surfaces */
+  --surface-error: #fff7f6;
+  --text-error-strong: var(--rfs-core-red-dark);
+  --surface-warning: #fff8eb;
+  --text-warning-strong: #4a3000;
+  --surface-info: #eef4fb;
+  --text-info-strong: #1b4f8f;
+  --surface-success: #e8f5ee;
+  --text-success-strong: #0b5c3b;
+  --text-on-amber: #1f1400;
+
   /* Design System - Spacing Scale */
   --spacing-xs: 0.25rem;   /* 4px */
   --spacing-sm: 0.5rem;    /* 8px */
@@ -156,6 +167,17 @@
   /*   #ffffff on #215e9e (blue button): 6.65:1 ✓ */
   /*   #000000 on #cbdb2a (lime button): 13.71:1 ✓ */
   /*   #000000 on #fbb034 (amber badge): 11.36:1 ✓ */
+
+  /* Accessible status surfaces */
+  --surface-error: #2a0f0d;
+  --text-error-strong: #ff6b5a;
+  --surface-warning: #2d2008;
+  --text-warning-strong: #ffd166;
+  --surface-info: #10263d;
+  --text-info-strong: #9ec5ff;
+  --surface-success: #0f2a1f;
+  --text-success-strong: #8be4b5;
+  --text-on-amber: #1f1400;
 
   color-scheme: dark;
   color: var(--text-primary);

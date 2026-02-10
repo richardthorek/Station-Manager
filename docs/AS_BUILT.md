@@ -660,6 +660,10 @@ frontend/src/
     └── index.ts
 ```
 
+### Frontend Theming
+- Global CSS variables in `frontend/src/index.css` carry the NSW RFS palette and theme surfaces for light/dark modes.
+- February 2026 update: added contrast-safe status tokens (`--surface-error/warning/info/success`, `--text-error-strong`, `--text-warning-strong`, `--text-info-strong`, `--text-success-strong`, `--text-on-amber`) and applied them to admin alerts/badges to meet WCAG AA in both themes.
+
 ### Backend Service Structure and Function Registry
 
 **Machine-Readable Function Registry**: [`docs/function_register.json`](function_register.json) - Complete registry of all backend functions, service methods, and business logic

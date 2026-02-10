@@ -29,10 +29,10 @@
 .lookup-info {
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
-  background: rgba(33, 94, 158, 0.1);
-  border: 2px solid var(--ui-blue);
+  background: var(--surface-info);
+  border: 2px solid var(--text-info-strong);
   border-radius: 8px;
-  color: var(--ui-blue);
+  color: var(--text-info-strong);
   font-size: 0.9rem;
   text-align: center;
 }
@@ -40,10 +40,10 @@
 .lookup-error {
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
-  background: rgba(229, 40, 27, 0.1);
+  background: var(--surface-error);
   border: 2px solid var(--rfs-core-red);
   border-radius: 8px;
-  color: var(--rfs-core-red);
+  color: var(--text-error-strong);
   font-size: 0.9rem;
   text-align: center;
 }
