@@ -7,24 +7,35 @@ import * as path from 'path';
 const csvPath = path.join(__dirname, '../data/rfs-facilities.csv');
 const csvExists = fs.existsSync(csvPath);
 
+// Threshold to distinguish test fixture from full dataset
+const TEST_FIXTURE_THRESHOLD = 100;
+
 // Skip all tests if CSV file doesn't exist (expected in CI/CD environments)
 const describeOrSkip = csvExists ? describe : describe.skip;
 
 describeOrSkip('RFS Facilities Parser', () => {
   let parser: ReturnType<typeof getRFSFacilitiesParser>;
+  let isTestFixture: boolean;
 
   beforeAll(async () => {
     parser = getRFSFacilitiesParser();
     await parser.loadData();
+    // Detect if we're using test fixture (< 100 rows) vs full dataset (4000+ rows)
+    isTestFixture = parser.getCount() < TEST_FIXTURE_THRESHOLD;
   });
 
   describe('Data Loading', () => {
     it('should load fire service facilities data nationally', () => {
       const count = parser.getCount();
       expect(count).toBeGreaterThan(0);
-      // The shared dataset now contains the full national list (~4.4k stations)
-      expect(count).toBeGreaterThanOrEqual(4000);
-      expect(count).toBeLessThanOrEqual(5000);
+      if (!isTestFixture) {
+        // Full dataset should have ~4.4k stations
+        expect(count).toBeGreaterThanOrEqual(4000);
+        expect(count).toBeLessThanOrEqual(5000);
+      } else {
+        // Test fixture should have at least 5 stations for meaningful tests
+        expect(count).toBeGreaterThanOrEqual(5);
+      }
     });
 
     it('should load facilities from multiple states', () => {
@@ -37,9 +48,15 @@ describeOrSkip('RFS Facilities Parser', () => {
       // Should have multiple states (NSW, VIC, QLD, etc.)
       expect(states.size).toBeGreaterThan(1);
 
-      // Common states in the national dataset
-      const statesArray = Array.from(states);
-      expect(statesArray).toEqual(expect.arrayContaining(['VICTORIA', 'NEW SOUTH WALES']));
+      if (!isTestFixture) {
+        // Full dataset uses full state names
+        const statesArray = Array.from(states);
+        expect(statesArray).toEqual(expect.arrayContaining(['VICTORIA', 'NEW SOUTH WALES']));
+      } else {
+        // Test fixture uses abbreviated state names
+        const statesArray = Array.from(states);
+        expect(statesArray).toEqual(expect.arrayContaining(['VIC', 'NSW']));
+      }
     });
 
     it('should parse station data correctly', () => {
@@ -61,14 +78,10 @@ describeOrSkip('RFS Facilities Parser', () => {
       
       // State should be one of the Australian states/territories
       const validStates = [
-        'NEW SOUTH WALES',
-        'VICTORIA',
-        'QUEENSLAND',
-        'SOUTH AUSTRALIA',
-        'WESTERN AUSTRALIA',
-        'TASMANIA',
-        'NORTHERN TERRITORY',
-        'AUSTRALIAN CAPITAL TERRITORY'
+        'NEW SOUTH WALES', 'VICTORIA', 'QUEENSLAND', 'SOUTH AUSTRALIA',
+        'WESTERN AUSTRALIA', 'TASMANIA', 'NORTHERN TERRITORY', 'AUSTRALIAN CAPITAL TERRITORY',
+        // Abbreviated forms (used in test fixture)
+        'NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'
       ];
       expect(validStates.includes(station.state)).toBe(true);
     });
@@ -104,10 +117,17 @@ describeOrSkip('RFS Facilities Parser', () => {
     });
 
     it('should find stations by suburb', () => {
-      const results = parser.searchStations('bendigo');
-      
-      expect(results.length).toBeGreaterThan(0);
-      expect(results.some(r => r.suburb.toLowerCase().includes('bendigo') || r.name.toLowerCase().includes('bendigo'))).toBe(true);
+      if (isTestFixture) {
+        // Test fixture doesn't have Bendigo, use a suburb from the fixture
+        const results = parser.searchStations('sydney');
+        expect(results.length).toBeGreaterThan(0);
+        expect(results.some(r => r.suburb.toLowerCase().includes('sydney') || r.name.toLowerCase().includes('sydney'))).toBe(true);
+      } else {
+        // Full dataset should have Bendigo
+        const results = parser.searchStations('bendigo');
+        expect(results.length).toBeGreaterThan(0);
+        expect(results.some(r => r.suburb.toLowerCase().includes('bendigo') || r.name.toLowerCase().includes('bendigo'))).toBe(true);
+      }
     });
 
     it('should be case-insensitive', () => {

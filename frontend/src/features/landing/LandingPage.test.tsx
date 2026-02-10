@@ -21,7 +21,7 @@ describe('LandingPage', () => {
   it('renders the landing page', () => {
     render(<LandingPage />)
 
-    expect(screen.getByText('Station Manager')).toBeInTheDocument()
+    expect(screen.getByText('Station Manager MVP')).toBeInTheDocument()
     // Verify the main heading is present (text may vary)
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
   })
@@ -29,8 +29,8 @@ describe('LandingPage', () => {
   it('displays header with branding', () => {
     render(<LandingPage />)
 
-    // Verify brand name is present
-    expect(screen.getByText('Station Manager')).toBeInTheDocument()
+    // Verify brand name is present (now includes MVP)
+    expect(screen.getByText('Station Manager MVP')).toBeInTheDocument()
   })
 
   it('displays theme toggle button', () => {
@@ -41,19 +41,15 @@ describe('LandingPage', () => {
     expect(themeToggle).toBeInTheDocument()
   })
 
-  it('has navigation links to features', () => {
+  it('has navigation link to sign-in (MVP feature)', () => {
     render(<LandingPage />)
 
-    // Check for Sign-In link
+    // Check for Sign-In link (MVP feature - enabled)
     const signInLink = screen.getByRole('link', { name: /go to sign-in/i })
     expect(signInLink).toHaveAttribute('href', '/signin')
-
-    // Check for Truck Checks link
-    const truckCheckLink = screen.getByRole('link', { name: /go to truck checks/i })
-    expect(truckCheckLink).toHaveAttribute('href', '/truckcheck')
   })
 
-  it('displays all feature cards and they are accessible', () => {
+  it('displays all feature cards with coming soon for non-MVP features', () => {
     render(<LandingPage />)
 
     // Verify all main feature cards are present
@@ -62,9 +58,18 @@ describe('LandingPage', () => {
     expect(screen.getByText('Reports & Analytics')).toBeInTheDocument()
     expect(screen.getByText('Station Management')).toBeInTheDocument()
 
-    // Verify all clickable links are accessible
+    // Verify sign-in link is accessible (MVP feature)
     expect(screen.getByRole('link', { name: /go to sign-in/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /go to truck checks/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /go to reports/i })).toBeInTheDocument()
+    
+    // Verify non-MVP features have disabled buttons with coming soon message
+    const truckCheckButton = screen.getByRole('button', { name: /truck checks coming soon/i })
+    expect(truckCheckButton).toBeDisabled()
+    
+    const reportsButton = screen.getByRole('button', { name: /reports and analytics coming soon/i })
+    expect(reportsButton).toBeDisabled()
+    
+    // Verify "Coming in v1.1" badges are present
+    const comingSoonBadges = screen.getAllByText('Coming in v1.1')
+    expect(comingSoonBadges).toHaveLength(2) // Truck Check and Reports
   })
 })

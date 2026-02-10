@@ -54,6 +54,70 @@ Only the following types of documents are allowed in the root `/docs/` directory
 - **Feature Guides**: `docs/FEATURE_DEVELOPMENT_GUIDE.md`, `docs/GETTING_STARTED.md`
 - **UI Review**: `docs/current_state/UI_REVIEW_20260207.md` - Comprehensive UI/UX review with iPad screenshots
 
+---
+
+## 🚀 MVP LAUNCH STATUS (February 2026) - v1.0
+
+**Status**: ✅ **PRODUCTION READY** (Sign-In Only MVP)
+
+### Launch Scope
+
+The Station Manager v1.0 MVP focuses exclusively on **core sign-in functionality** for the first client deployment. This strategic decision ensures a solid, well-tested foundation before expanding to additional features.
+
+#### ✅ Included in MVP (v1.0)
+- **Sign-In System**: Full-featured member check-in/out with real-time sync
+- **Event Management**: Create and manage events with participant tracking
+- **Member Profiles**: Individual profiles with QR codes and statistics
+- **Activity Tracking**: Monitor what members are working on
+- **Multi-Device Support**: Kiosk mode, mobile, tablet, QR code sign-in
+- **Admin Portal**: Station management and brigade access control (authenticated)
+- **Real-Time Updates**: WebSocket synchronization across all devices
+- **Demo Mode**: Public demo station for testing and exploration
+
+#### 🚧 Deferred to v1.1+ (Post-MVP)
+- **Truck Check**: Vehicle maintenance tracking and inspection checklists → v1.1
+- **Reports & Analytics**: Historical reporting and data export → v1.1
+- **Advanced Features**: Multi-station reports, achievements, etc. → v1.2+
+
+### Launch Preparation Actions Taken
+
+1. **✅ UI/UX Updates**
+   - Landing page updated to show "MVP" badge
+   - Truck Check and Reports cards greyed out with "Coming in v1.1" badges
+   - Disabled navigation buttons for non-MVP features
+   - Created Coming Soon page component for future features
+
+2. **✅ Route Protection**
+   - `/signin`, `/profile/:memberId` routes fully functional
+   - `/truckcheck/*` and `/reports/*` routes redirect to Coming Soon page
+   - Admin routes protected with authentication
+
+3. **✅ Documentation Updates**
+   - README.md updated to reflect MVP scope
+   - MASTER_PLAN.md updated with launch status
+   - Clear messaging about v1.1 features
+
+4. **✅ Authentication & Security**
+   - System admin authentication enforced via REQUIRE_AUTH
+   - Brigade access tokens for kiosk mode
+   - Demo station available for public access
+   - Protected admin endpoints
+
+### Post-MVP Rollout Plan
+
+**v1.1 (Q2 2026)**: 
+- Enable Truck Check feature
+- Enable Reports & Analytics
+- Full testing and QA
+
+**v1.2+ (Q3-Q4 2026)**:
+- Advanced features as per Phase 3-4 roadmap
+- Multi-station reporting
+- Achievement system
+- Additional enhancements based on client feedback
+
+---
+
 ### PHASE 3: ESSENTIAL FEATURES (Q2 2026) - v1.3
 
 Priority: **HIGH** - High-value user features
