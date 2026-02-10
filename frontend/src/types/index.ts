@@ -52,6 +52,7 @@ export interface StationLookupResult {
   latitude: number;
   longitude: number;
   distance?: number; // Distance in kilometers from user location
+  existsInSystem?: boolean; // True if this brigade already exists in the system
 }
 
 export interface Member {

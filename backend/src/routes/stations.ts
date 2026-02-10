@@ -76,9 +76,26 @@ router.get('/lookup', optionalAuth, async (req, res) => {
     // Perform lookup
     const results = parser.lookup(query, lat, lon, limit);
 
+    // Cross-reference with existing stations to mark duplicates
+    const db = await ensureDatabase(req.isDemoMode);
+    const existingStations = await db.getAllStations();
+    
+    // Create a map of normalized brigade names for quick lookup
+    const existingBrigadeNames = new Set(
+      existingStations
+        .filter(s => s.isActive)
+        .map(s => s.brigadeName.toLowerCase().trim())
+    );
+    
+    // Mark results that already exist
+    const resultsWithExistingFlag = results.map(result => ({
+      ...result,
+      existsInSystem: result.brigade ? existingBrigadeNames.has(result.brigade.toLowerCase().trim()) : false,
+    }));
+
     res.json({
-      results,
-      count: results.length,
+      results: resultsWithExistingFlag,
+      count: resultsWithExistingFlag.length,
       query,
       location: lat !== undefined && lon !== undefined ? { lat, lon } : undefined,
     });

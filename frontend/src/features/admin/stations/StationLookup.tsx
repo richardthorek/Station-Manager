@@ -188,7 +188,14 @@ export function StationLookup({ onSelect }: StationLookupProps) {
               }}
             >
               <div className="result-header">
-                <h4 className="result-name">{result.name}</h4>
+                <h4 className="result-name">
+                  {result.name}
+                  {result.existsInSystem && (
+                    <span className="existing-badge" title="This brigade already exists in your system">
+                      Existing
+                    </span>
+                  )}
+                </h4>
                 {result.distance !== undefined && (
                   <span className="result-distance">
                     {formatDistance(result.distance)}
