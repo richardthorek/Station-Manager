@@ -192,7 +192,7 @@ export function StationLookup({ onSelect }: StationLookupProps) {
                   {result.name}
                   {result.existsInSystem && (
                     <span className="existing-badge" title="This brigade already exists in your system">
-                      Existing
+                      ✓ Existing
                     </span>
                   )}
                 </h4>
