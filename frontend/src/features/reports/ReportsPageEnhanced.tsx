@@ -523,7 +523,6 @@ export function ReportsPageEnhanced() {
               complianceRate={truckCheckCompliance?.complianceRate || 0}
               checksWithIssues={truckCheckCompliance?.checksWithIssues || 0}
               totalChecks={truckCheckCompliance?.totalChecks || 0}
-              applianceCount={truckCheckCompliance?.applianceStats.length || 0}
               topMemberCount={memberParticipation.length}
               totalMembers={memberParticipation.length}
               totalEvents={eventStatistics?.totalEvents || 0}

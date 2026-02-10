@@ -72,21 +72,17 @@ export function analyzeTrend(values: number[]): {
     return { direction: 'stable', strength: 'weak', percentage: 0 };
   }
 
-  // Simple linear regression slope
-  const n = values.length;
-  const xValues = Array.from({ length: n }, (_, i) => i);
-  const xMean = (n - 1) / 2;
-  const yMean = calculateAverage(values);
-
-  let numerator = 0;
-  let denominator = 0;
-
-  for (let i = 0; i < n; i++) {
-    numerator += (xValues[i] - xMean) * (values[i] - yMean);
-    denominator += Math.pow(xValues[i] - xMean, 2);
-  }
-
-  // Calculate slope for trend analysis
+  // Simple linear regression slope (not currently used but kept for future enhancement)
+  // const n = values.length;
+  // const xValues = Array.from({ length: n }, (_, i) => i);
+  // const xMean = (n - 1) / 2;
+  // const yMean = calculateAverage(values);
+  // let numerator = 0;
+  // let denominator = 0;
+  // for (let i = 0; i < n; i++) {
+  //   numerator += (xValues[i] - xMean) * (values[i] - yMean);
+  //   denominator += Math.pow(xValues[i] - xMean, 2);
+  // }
   // const slope = denominator !== 0 ? numerator / denominator : 0;
 
   // Calculate percentage change from first to last

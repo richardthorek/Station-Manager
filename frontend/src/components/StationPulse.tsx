@@ -31,7 +31,6 @@ interface StationPulseProps {
   complianceRate: number;
   checksWithIssues: number;
   totalChecks: number;
-  applianceCount: number;
 
   // Participation data
   topMemberCount: number;
@@ -48,7 +47,6 @@ export function StationPulse({
   complianceRate,
   checksWithIssues,
   totalChecks,
-  applianceCount,
   topMemberCount,
   totalMembers,
   totalEvents,
@@ -106,7 +104,6 @@ export function StationPulse({
     complianceRate,
     checksWithIssues,
     totalChecks,
-    applianceCount,
     topMemberCount,
     totalMembers,
     totalEvents,
