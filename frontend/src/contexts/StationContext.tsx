@@ -243,7 +243,7 @@ export function StationProvider({ children }: StationProviderProps) {
     localStorage.removeItem(STORAGE_KEY);
     setSelectedStation(null);
     setCurrentStationId(null);
-  }, [stations, kioskMode, requireAuth, isAuthenticated]);
+  }, [kioskMode, requireAuth, isAuthenticated]);
 
   /**
    * Refresh stations from API
