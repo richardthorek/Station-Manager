@@ -504,20 +504,26 @@ async function initializeDatabasesInBackground() {
     const adminDb = getAdminUserDatabase();
     const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
     const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+    const requireAuth = process.env.REQUIRE_AUTH === 'true';
     
     if (defaultAdminPassword) {
       await adminDb.initialize(defaultAdminUsername, defaultAdminPassword);
-      logger.info('Admin user database initialized with default credentials');
+      logger.info('✅ Admin user database initialized', { username: defaultAdminUsername });
     } else {
-      logger.warn('No default admin password configured. Set DEFAULT_ADMIN_PASSWORD to enable authentication.');
+      if (requireAuth) {
+        logger.error('❌ CONFIGURATION ERROR: REQUIRE_AUTH=true but DEFAULT_ADMIN_PASSWORD is not set!');
+        logger.error('   Authentication will fail. Set DEFAULT_ADMIN_PASSWORD environment variable to create admin account.');
+      } else {
+        logger.warn('⚠️  No default admin password configured. Set DEFAULT_ADMIN_PASSWORD to enable authentication.');
+      }
     }
     
     // Log authentication status
-    const requireAuth = process.env.REQUIRE_AUTH === 'true';
     logger.info('Authentication status', { 
       requireAuth, 
       jwtConfigured: !!process.env.JWT_SECRET,
       defaultAdminConfigured: !!defaultAdminPassword,
+      adminAccountCreated: !!defaultAdminPassword,
     });
     
     // Log database type

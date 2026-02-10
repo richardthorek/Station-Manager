@@ -53,11 +53,24 @@ npm install
 # Create environment file
 cp .env.example .env
 
+# Edit .env file to configure authentication (optional for development)
+# For development, authentication is disabled by default
+# To enable authentication, uncomment and set these variables in .env:
+#   REQUIRE_AUTH=true
+#   DEFAULT_ADMIN_USERNAME=admin
+#   DEFAULT_ADMIN_PASSWORD=YourSecurePassword123
+
 # Start the development server
 npm run dev
 ```
 
 The backend server will start on `http://localhost:3000`
+
+**Authentication Note**: By default, authentication is disabled in development. If you want to test the authentication system:
+1. Set `REQUIRE_AUTH=true` in `backend/.env`
+2. Set `DEFAULT_ADMIN_PASSWORD=YourSecurePassword123` in `backend/.env`
+3. Restart the backend server
+4. Login at `http://localhost:5173/login` with username `admin` and your configured password
 
 ### 3. Set Up the Frontend
 
