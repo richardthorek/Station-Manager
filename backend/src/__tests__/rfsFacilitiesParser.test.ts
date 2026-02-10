@@ -7,18 +7,21 @@ import * as path from 'path';
 const csvPath = path.join(__dirname, '../data/rfs-facilities.csv');
 const csvExists = fs.existsSync(csvPath);
 
+// Threshold to distinguish test fixture from full dataset
+const TEST_FIXTURE_THRESHOLD = 100;
+
 // Skip all tests if CSV file doesn't exist (expected in CI/CD environments)
 const describeOrSkip = csvExists ? describe : describe.skip;
 
 describeOrSkip('RFS Facilities Parser', () => {
   let parser: ReturnType<typeof getRFSFacilitiesParser>;
-  let isTestFixture = false;
+  let isTestFixture: boolean;
 
   beforeAll(async () => {
     parser = getRFSFacilitiesParser();
     await parser.loadData();
     // Detect if we're using test fixture (< 100 rows) vs full dataset (4000+ rows)
-    isTestFixture = parser.getCount() < 100;
+    isTestFixture = parser.getCount() < TEST_FIXTURE_THRESHOLD;
   });
 
   describe('Data Loading', () => {
@@ -30,7 +33,7 @@ describeOrSkip('RFS Facilities Parser', () => {
         expect(count).toBeGreaterThanOrEqual(4000);
         expect(count).toBeLessThanOrEqual(5000);
       } else {
-        // Test fixture has 10 stations
+        // Test fixture should have at least 5 stations for meaningful tests
         expect(count).toBeGreaterThanOrEqual(5);
       }
     });
