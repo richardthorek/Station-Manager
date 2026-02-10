@@ -1,0 +1,192 @@
+/**
+ * AttentionToggle Styles
+ */
+
+.attention-toggle {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attention-toggle__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1rem;
+  background: white;
+  border: 2px solid var(--rfs-light-grey);
+  border-radius: 24px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.attention-toggle__button:hover {
+  border-color: var(--rfs-amber);
+  background: rgba(251, 176, 52, 0.03);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.attention-toggle__button:focus {
+  outline: none;
+  border-color: var(--rfs-blue);
+  box-shadow: 0 0 0 3px rgba(33, 94, 158, 0.1);
+}
+
+.attention-toggle__button:focus-visible {
+  outline: 2px solid var(--rfs-blue);
+  outline-offset: 2px;
+}
+
+.attention-toggle__button:active {
+  transform: translateY(0);
+}
+
+.attention-toggle__button--active {
+  background: linear-gradient(135deg, var(--rfs-amber) 0%, var(--rfs-lime) 100%);
+  border-color: var(--rfs-amber);
+  color: var(--rfs-black);
+  font-weight: 600;
+}
+
+.attention-toggle__button--active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(251, 176, 52, 0.25);
+}
+
+.attention-toggle__icon {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.attention-toggle__label {
+  user-select: none;
+}
+
+.attention-toggle__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  background: var(--rfs-core-red);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.attention-toggle__button--active .attention-toggle__badge {
+  background: var(--rfs-black);
+}
+
+.attention-toggle__message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 133, 80, 0.08);
+  border-left: 3px solid var(--rfs-green);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--rfs-green);
+  font-weight: 500;
+}
+
+.attention-toggle__success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: var(--rfs-green);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .attention-toggle__button {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.85rem;
+  }
+
+  .attention-toggle__icon {
+    font-size: 1rem;
+  }
+
+  .attention-toggle__badge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .attention-toggle__label {
+    display: none;
+  }
+
+  .attention-toggle__button {
+    padding: 0.5rem;
+    border-radius: 50%;
+    width: 2.5rem;
+    height: 2.5rem;
+    justify-content: center;
+  }
+
+  .attention-toggle__badge {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+  }
+
+  .attention-toggle__message {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .attention-toggle__button {
+    border-width: 3px;
+  }
+
+  .attention-toggle__button--active {
+    border-width: 4px;
+  }
+
+  .attention-toggle__badge {
+    border: 2px solid white;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .attention-toggle__button,
+  .attention-toggle__badge,
+  .attention-toggle__message {
+    transition: none;
+  }
+
+  .attention-toggle__button:hover {
+    transform: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .attention-toggle {
+    display: none;
+  }
+}

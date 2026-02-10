@@ -32,8 +32,12 @@ import { KPICard } from '../../components/KPICard';
 import { DataTable, type Column } from '../../components/DataTable';
 import { ExportMenu } from '../../components/ExportMenu';
 import { HeatMapChart } from '../../components/HeatMapChart';
+import { StationPulse } from '../../components/StationPulse';
+import { TrendExplainer } from '../../components/TrendExplainer';
+import { AttentionToggle } from '../../components/AttentionToggle';
 import { api } from '../../services/api';
 import { exportAsPDF, exportAsExcel, exportAllChartsAsPNG } from '../../utils/exportUtils.lazy';
+import { analyzeTrend, formatTrendExplanation } from '../../utils/analyticsHelpers';
 import './ReportsPage.css';
 
 // RFS brand colors for charts
@@ -104,6 +108,10 @@ export function ReportsPageEnhanced() {
   const [comparePrevious, setComparePrevious] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Attention guidance toggles
+  const [showComplianceIssuesOnly, setShowComplianceIssuesOnly] = useState(false);
+  const [showTopParticipantsOnly, setShowTopParticipantsOnly] = useState(false);
 
   // Report data
   const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary[]>([]);
@@ -253,6 +261,53 @@ export function ReportsPageEnhanced() {
       value: item.count,
     }));
   }, [activityBreakdown]);
+
+  // Analyze attendance trend for explanations
+  const attendanceTrend = useMemo(() => {
+    const values = attendanceSummary.map(item => item.count);
+    return analyzeTrend(values);
+  }, [attendanceSummary]);
+
+  // Filter compliance data based on attention toggle
+  const filteredApplianceStats = useMemo(() => {
+    if (!truckCheckCompliance) return [];
+
+    if (showComplianceIssuesOnly) {
+      // Show only appliances that need attention (no recent check or overdue)
+      const now = new Date();
+      const thirtyDaysAgo = subDays(now, 30);
+
+      return truckCheckCompliance.applianceStats.filter(appliance => {
+        if (!appliance.lastCheckDate) return true; // No check ever
+        const lastCheck = new Date(appliance.lastCheckDate);
+        return lastCheck < thirtyDaysAgo; // Check older than 30 days
+      });
+    }
+
+    return truckCheckCompliance.applianceStats;
+  }, [truckCheckCompliance, showComplianceIssuesOnly]);
+
+  // Filter participation data based on attention toggle
+  const filteredParticipation = useMemo(() => {
+    if (showTopParticipantsOnly) {
+      // Show only top 5 most active members
+      return memberParticipation.slice(0, 5);
+    }
+    return memberParticipation;
+  }, [memberParticipation, showTopParticipantsOnly]);
+
+  // Count of compliance issues
+  const complianceIssueCount = useMemo(() => {
+    if (!truckCheckCompliance) return 0;
+    const now = new Date();
+    const thirtyDaysAgo = subDays(now, 30);
+
+    return truckCheckCompliance.applianceStats.filter(appliance => {
+      if (!appliance.lastCheckDate) return true;
+      const lastCheck = new Date(appliance.lastCheckDate);
+      return lastCheck < thirtyDaysAgo;
+    }).length;
+  }, [truckCheckCompliance]);
 
   // Table columns for member participation
   const participationColumns: Column<MemberParticipation>[] = [
@@ -461,6 +516,19 @@ export function ReportsPageEnhanced() {
 
         {!loading && !error && (
           <main className="reports-main" id="main-content" tabIndex={-1}>
+            {/* AI Station Pulse - Overview Widget */}
+            <StationPulse
+              checkInCounts={attendanceSummary.map(item => item.count)}
+              previousCheckInTotal={comparePrevious ? previousTotalCheckIns : undefined}
+              complianceRate={truckCheckCompliance?.complianceRate || 0}
+              checksWithIssues={truckCheckCompliance?.checksWithIssues || 0}
+              totalChecks={truckCheckCompliance?.totalChecks || 0}
+              topMemberCount={memberParticipation.length}
+              totalMembers={memberParticipation.length}
+              totalEvents={eventStatistics?.totalEvents || 0}
+              hasRecentActivity={checkInData.length > 0 || (eventStatistics?.activeEvents || 0) > 0}
+            />
+
             {/* KPI Dashboard Cards */}
             <section className="kpi-dashboard">
               <h2 className="section-title">Key Metrics</h2>
@@ -500,7 +568,19 @@ export function ReportsPageEnhanced() {
 
             {/* Monthly Attendance Chart */}
             <section className="chart-section" id="attendance-chart">
-              <h2>Monthly Attendance</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2>Monthly Attendance</h2>
+                <TrendExplainer
+                  explanation={formatTrendExplanation(attendanceTrend, 'Attendance')}
+                  recommendation={
+                    attendanceTrend.direction === 'decreasing' && attendanceTrend.strength !== 'weak'
+                      ? 'Consider organizing more events or reaching out to inactive members.'
+                      : attendanceTrend.direction === 'increasing'
+                      ? 'Continue current engagement strategies to maintain momentum.'
+                      : undefined
+                  }
+                />
+              </div>
               <div className="chart-container">
                 {attendanceChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={350}>
@@ -570,11 +650,19 @@ export function ReportsPageEnhanced() {
 
               {/* Member Participation Table */}
               <section className="chart-section">
-                <h2>Top Members (Participation)</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h2>Top Members (Participation)</h2>
+                  <AttentionToggle
+                    label="Show Top 5 Only"
+                    enabled={showTopParticipantsOnly}
+                    onChange={setShowTopParticipantsOnly}
+                    issueCount={0}
+                  />
+                </div>
                 <div className="table-container">
-                  {memberParticipation.length > 0 ? (
+                  {filteredParticipation.length > 0 ? (
                     <DataTable
-                      data={memberParticipation}
+                      data={filteredParticipation}
                       columns={participationColumns}
                       pageSize={10}
                       showSearch={true}
@@ -601,7 +689,15 @@ export function ReportsPageEnhanced() {
             {/* Truck Check Compliance */}
             {truckCheckCompliance && (
               <section className="chart-section">
-                <h2>Truck Check Compliance</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h2>Truck Check Compliance</h2>
+                  <AttentionToggle
+                    label="Show Issues Only"
+                    enabled={showComplianceIssuesOnly}
+                    onChange={setShowComplianceIssuesOnly}
+                    issueCount={complianceIssueCount}
+                  />
+                </div>
                 <div className="compliance-container">
                   <div className="compliance-gauge">
                     <div className="gauge-value" style={{
@@ -633,7 +729,7 @@ export function ReportsPageEnhanced() {
                     </div>
                   </div>
 
-                  {truckCheckCompliance.applianceStats.length > 0 && (
+                  {filteredApplianceStats.length > 0 && (
                     <div className="appliance-stats">
                       <h3>Checks by Appliance</h3>
                       <table className="appliance-table">
@@ -645,7 +741,7 @@ export function ReportsPageEnhanced() {
                           </tr>
                         </thead>
                         <tbody>
-                          {truckCheckCompliance.applianceStats.map(appliance => (
+                          {filteredApplianceStats.map(appliance => (
                             <tr key={appliance.applianceId}>
                               <td>{appliance.applianceName}</td>
                               <td>{appliance.checkCount}</td>
