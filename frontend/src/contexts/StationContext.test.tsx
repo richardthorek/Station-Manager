@@ -117,16 +117,27 @@ describe('StationContext', () => {
     // After act completes, initial load resolves; verify state is ready
     expect(result.current.isLoading).toBe(false);
     expect(result.current.selectedStation).toBe(null);
-    expect(result.current.stations).toEqual(mockStations);
+    // Stations should NOT be loaded on initialization (lazy loading)
+    expect(result.current.stations).toEqual([]);
   });
 
-  it('should load stations from API on mount', async () => {
+  it('should load stations from API when ensureStationsLoaded is called', async () => {
     const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
     
+    // Stations not loaded yet
+    expect(api.getStations).not.toHaveBeenCalled();
+    expect(result.current.stations).toEqual([]);
+    
+    // Trigger lazy loading
+    await act(async () => {
+      await result.current.ensureStationsLoaded();
+    });
+    
+    // Now stations should be loaded
     expect(api.getStations).toHaveBeenCalledTimes(1);
     expect(result.current.stations).toEqual(mockStations);
   });
@@ -151,6 +162,7 @@ describe('StationContext', () => {
       expect(result.current.isLoading).toBe(false);
     });
     
+    // Should restore ID but as placeholder (full data loaded lazily)
     expect(result.current.selectedStation?.id).toBe(DEMO_STATION_ID);
     expect(setCurrentStationId).toHaveBeenCalledWith(DEMO_STATION_ID);
   });
@@ -160,6 +172,11 @@ describe('StationContext', () => {
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
+    });
+    
+    // Load stations first
+    await act(async () => {
+      await result.current.ensureStationsLoaded();
     });
     
     act(() => {
@@ -201,6 +218,11 @@ describe('StationContext', () => {
     
     expect(result.current.isDemoStation()).toBe(true);
     
+    // Load stations first before selecting
+    await act(async () => {
+      await result.current.ensureStationsLoaded();
+    });
+    
     act(() => {
       result.current.selectStation(DEFAULT_STATION_ID);
     });
@@ -217,6 +239,11 @@ describe('StationContext', () => {
     
     expect(result.current.isDefaultStation()).toBe(true);
     
+    // Load stations first before selecting
+    await act(async () => {
+      await result.current.ensureStationsLoaded();
+    });
+    
     act(() => {
       result.current.selectStation(DEMO_STATION_ID);
     });
@@ -231,25 +258,36 @@ describe('StationContext', () => {
       expect(result.current.isLoading).toBe(false);
     });
     
-    expect(api.getStations).toHaveBeenCalledTimes(1);
+    // Initially, stations not loaded
+    expect(api.getStations).not.toHaveBeenCalled();
     
     await act(async () => {
       await result.current.refreshStations();
     });
     
-    expect(api.getStations).toHaveBeenCalledTimes(2);
+    // After refresh, stations should be loaded
+    expect(api.getStations).toHaveBeenCalledTimes(1);
   });
 
   it('should handle API errors gracefully', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(api.getStations).mockRejectedValueOnce(new Error('API Error'));
     
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
     
+    // Error should not be set yet (stations not loaded)
+    expect(result.current.error).toBe(null);
+    
+    // Trigger lazy loading which will fail
+    await act(async () => {
+      await result.current.ensureStationsLoaded();
+    });
+    
+    // Now error should be set
     expect(result.current.error).toBe('API Error');
     expect(result.current.stations).toEqual([]);
     
@@ -267,10 +305,15 @@ describe('StationContext', () => {
   });
 
   it('should sync selection across tabs via storage event', async () => {
-    const { result } = renderHook(() => useStation(), { wrapper });
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
+    });
+    
+    // Load stations so they're available for sync
+    await act(async () => {
+      await result.current.ensureStationsLoaded();
     });
     
     // Initially no station is selected

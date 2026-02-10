@@ -23,6 +23,8 @@ export function StationSelector() {
     isDemoStation,
     isKioskMode,
     canSwitchStations,
+    ensureStationsLoaded,
+    isLoadingStations,
   } = useStation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -151,10 +153,15 @@ export function StationSelector() {
   /**
    * Toggle dropdown open/closed
    */
-  const toggleDropdown = () => {
+  const toggleDropdown = async () => {
     // Prevent opening dropdown in kiosk mode
     if (isKioskMode || !canSwitchStations()) {
       return;
+    }
+    
+    // If opening dropdown, ensure stations are loaded
+    if (!isOpen) {
+      await ensureStationsLoaded();
     }
     
     setIsOpen(!isOpen);
@@ -229,7 +236,9 @@ export function StationSelector() {
           </div>
 
           <div className="station-list" ref={listRef} id={listboxId}>
-            {filteredStations.length === 0 ? (
+            {isLoadingStations ? (
+              <div className="station-list-loading">Loading stations...</div>
+            ) : filteredStations.length === 0 ? (
               <div className="station-list-empty">No stations found</div>
             ) : (
               filteredStations.map((station, index) => {
