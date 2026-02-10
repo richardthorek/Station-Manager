@@ -37,26 +37,26 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     const adminDb = getAdminDb();
-    const allUsers = await adminDb.getAllUsers();
-    
-    // Check if no admin users exist at all
-    if (allUsers.length === 0) {
-      logger.error('Login failed: No admin accounts exist. DEFAULT_ADMIN_PASSWORD may not be configured.', { 
-        username, 
-        ip: req.ip 
-      });
-      return res.status(401).json({ 
-        error: 'Invalid username or password',
-        // Include hint in development mode
-        ...(process.env.NODE_ENV === 'development' && {
-          hint: 'No admin accounts configured. Set DEFAULT_ADMIN_PASSWORD environment variable.'
-        })
-      });
-    }
-    
     const user = await adminDb.verifyCredentials(username, password);
 
     if (!user) {
+      // Only check if users exist when credential verification fails
+      const allUsers = await adminDb.getAllUsers();
+      
+      if (allUsers.length === 0) {
+        logger.error('Login failed: No admin accounts exist. DEFAULT_ADMIN_PASSWORD may not be configured.', { 
+          username, 
+          ip: req.ip 
+        });
+        return res.status(401).json({ 
+          error: 'Invalid username or password',
+          // Include hint in development mode
+          ...(process.env.NODE_ENV === 'development' && {
+            hint: 'No admin accounts configured. Set DEFAULT_ADMIN_PASSWORD environment variable.'
+          })
+        });
+      }
+      
       logger.warn('Failed login attempt', { username, ip: req.ip, totalAdminAccounts: allUsers.length });
       return res.status(401).json({ error: 'Invalid username or password' });
     }

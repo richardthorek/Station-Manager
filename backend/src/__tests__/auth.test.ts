@@ -119,7 +119,11 @@ describe('Authentication Routes', () => {
       expect(response.body.hint).toContain('DEFAULT_ADMIN_PASSWORD');
 
       // Restore original NODE_ENV
-      process.env.NODE_ENV = originalEnv;
+      if (originalEnv !== undefined) {
+        process.env.NODE_ENV = originalEnv;
+      } else {
+        delete process.env.NODE_ENV;
+      }
     });
   });
 

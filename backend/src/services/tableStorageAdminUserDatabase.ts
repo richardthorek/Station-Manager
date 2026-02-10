@@ -68,12 +68,28 @@ export class TableStorageAdminUserDatabase {
       this.adminUsersTable = TableClient.fromConnectionString(this.connectionString, tableName);
       
       // Create table if it doesn't exist
-      await this.adminUsersTable.createTable();
+      try {
+        await this.adminUsersTable.createTable();
+        logger.info('Admin Users table created or already exists', { tableName });
+      } catch (createError: any) {
+        // Table creation errors are acceptable if table already exists (409 conflict)
+        if (createError.statusCode !== 409) {
+          logger.error('Failed to create Admin Users table', { 
+            error: createError, 
+            tableName,
+            message: createError.message 
+          });
+          throw createError;
+        }
+      }
       
       this.isConnected = true;
       logger.info('Connected to Azure Table Storage for Admin Users', { tableName });
     } catch (error) {
-      logger.error('Failed to connect to Azure Table Storage for Admin Users', { error });
+      logger.error('Failed to connect to Azure Table Storage for Admin Users', { 
+        error,
+        message: error instanceof Error ? error.message : String(error)
+      });
       throw error;
     }
   }
