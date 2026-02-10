@@ -507,7 +507,7 @@ async function initializeDatabasesInBackground() {
     
     if (defaultAdminPassword) {
       await initializeAdminUserDatabase(defaultAdminUsername, defaultAdminPassword);
-      logger.info('✅ Admin user database initialized', { username: defaultAdminUsername });
+      logger.info('✅ Admin user database initialized');
     } else {
       if (requireAuth) {
         logger.error('❌ CONFIGURATION ERROR: REQUIRE_AUTH=true but DEFAULT_ADMIN_PASSWORD is not set!');
