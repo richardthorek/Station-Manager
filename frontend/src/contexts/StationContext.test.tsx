@@ -114,24 +114,28 @@ describe('StationContext', () => {
   it('should initialize with loading state', async () => {
     const { result } = await renderStationHook();
     
-    // After act completes, initial load resolves; verify state is ready
+    // After initialization, should be ready with no station selected
     expect(result.current.isLoading).toBe(false);
     expect(result.current.selectedStation).toBe(null);
-    expect(result.current.stations).toEqual(mockStations);
+    // Stations should NOT be loaded on initialization (only for kiosk mode)
+    expect(result.current.stations).toEqual([]);
+    // API should not be called on normal initialization
+    expect(api.getStations).not.toHaveBeenCalled();
   });
 
-  it('should load stations from API on mount', async () => {
+  it('should not load stations from API on mount in normal mode', async () => {
     const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
     
-    expect(api.getStations).toHaveBeenCalledTimes(1);
-    expect(result.current.stations).toEqual(mockStations);
+    // Stations not loaded in normal mode
+    expect(api.getStations).not.toHaveBeenCalled();
+    expect(result.current.stations).toEqual([]);
   });
 
-  it('should select default station when no persisted selection', async () => {
+  it('should default to null station when no selection', async () => {
     const { result } = await renderStationHook();
     
     await waitFor(() => {
@@ -142,7 +146,7 @@ describe('StationContext', () => {
     expect(setCurrentStationId).toHaveBeenCalledWith(null);
   });
 
-  it('should load persisted selection from localStorage', async () => {
+  it('should restore station selection from localStorage', async () => {
     localStorage.setItem('selectedStationId', DEMO_STATION_ID);
     
     const { result } = await renderStationHook();
@@ -151,36 +155,40 @@ describe('StationContext', () => {
       expect(result.current.isLoading).toBe(false);
     });
     
-    expect(result.current.selectedStation?.id).toBe(DEMO_STATION_ID);
-    expect(setCurrentStationId).toHaveBeenCalledWith(DEMO_STATION_ID);
+    // In normal mode, station selection is not persisted - always defaults to null
+    // (Station selection is only through URL token or default)
+    expect(result.current.selectedStation).toBe(null);
   });
 
-  it('should select a station and persist to localStorage', async () => {
+  it('should refresh stations from API when explicitly requested', async () => {
     const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
     
-    act(() => {
-      result.current.selectStation('test-station-1');
+    // Initially, stations not loaded
+    expect(api.getStations).not.toHaveBeenCalled();
+    
+    // Explicitly refresh (e.g., from admin page)
+    await act(async () => {
+      await result.current.refreshStations();
     });
     
-    expect(result.current.selectedStation?.id).toBe('test-station-1');
-    expect(localStorage.getItem('selectedStationId')).toBe('test-station-1');
-    expect(setCurrentStationId).toHaveBeenCalledWith('test-station-1');
+    // After refresh, stations should be loaded
+    expect(api.getStations).toHaveBeenCalledTimes(1);
+    expect(result.current.stations).toEqual(mockStations);
   });
 
   it('should clear station selection and revert to default', async () => {
-    localStorage.setItem('selectedStationId', DEMO_STATION_ID);
-    
     const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
     
-    expect(result.current.selectedStation?.id).toBe(DEMO_STATION_ID);
+    // In normal mode, always defaults to null
+    expect(result.current.selectedStation).toBe(null);
     
     act(() => {
       result.current.clearStation();
@@ -191,20 +199,13 @@ describe('StationContext', () => {
   });
 
   it('should identify demo station correctly', async () => {
-    localStorage.setItem('selectedStationId', DEMO_STATION_ID);
-    
     const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
     
-    expect(result.current.isDemoStation()).toBe(true);
-    
-    act(() => {
-      result.current.selectStation(DEFAULT_STATION_ID);
-    });
-    
+    // In normal mode with no selection, not a demo station
     expect(result.current.isDemoStation()).toBe(false);
   });
 
@@ -215,59 +216,37 @@ describe('StationContext', () => {
       expect(result.current.isLoading).toBe(false);
     });
     
+    // With no selection, it's considered default
     expect(result.current.isDefaultStation()).toBe(true);
-    
-    act(() => {
-      result.current.selectStation(DEMO_STATION_ID);
-    });
-
-    expect(result.current.isDefaultStation()).toBe(false);
   });
 
-  it('should refresh stations from API', async () => {
+  it('should handle API errors gracefully when refreshing', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(api.getStations).mockRejectedValueOnce(new Error('API Error'));
+    
     const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
     
-    expect(api.getStations).toHaveBeenCalledTimes(1);
+    // Error should not be set yet (stations not loaded)
+    expect(result.current.error).toBe(null);
     
+    // Trigger refresh which will fail
     await act(async () => {
       await result.current.refreshStations();
     });
     
-    expect(api.getStations).toHaveBeenCalledTimes(2);
-  });
-
-  it('should handle API errors gracefully', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.mocked(api.getStations).mockRejectedValueOnce(new Error('API Error'));
-    
-    const { result } = renderHook(() => useStation(), { wrapper });
-    
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
-    
+    // Now error should be set
     expect(result.current.error).toBe('API Error');
     expect(result.current.stations).toEqual([]);
     
     consoleError.mockRestore();
   });
 
-  it('should throw error when used outside provider', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
-    expect(() => {
-      renderHook(() => useStation());
-    }).toThrow('useStation must be used within a StationProvider');
-    
-    consoleError.mockRestore();
-  });
-
-  it('should sync selection across tabs via storage event', async () => {
-    const { result } = renderHook(() => useStation(), { wrapper });
+  it('should not sync selection across tabs in normal mode', async () => {
+    const { result } = await renderStationHook();
     
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -276,7 +255,7 @@ describe('StationContext', () => {
     // Initially no station is selected
     expect(result.current.selectedStation).toBe(null);
     
-    // Simulate storage event from another tab selecting a station
+    // Simulate storage event from another tab (should be ignored in normal mode)
     act(() => {
       const storageEvent = new StorageEvent('storage', {
         key: 'selectedStationId',
@@ -287,8 +266,18 @@ describe('StationContext', () => {
       window.dispatchEvent(storageEvent);
     });
     
-    await waitFor(() => {
-      expect(result.current.selectedStation?.id).toBe(DEMO_STATION_ID);
-    });
+    // In normal mode, storage events don't change station (no selector)
+    // Station would only be empty array since stations aren't loaded
+    expect(result.current.selectedStation).toBe(null);
+  });
+
+  it('should throw error when used outside provider', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    expect(() => {
+      renderHook(() => useStation());
+    }).toThrow('useStation must be used within a StationProvider');
+    
+    consoleError.mockRestore();
   });
 });

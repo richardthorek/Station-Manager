@@ -74,10 +74,9 @@ describe('Header', () => {
     expect(screen.getByText('Station Manager')).toBeInTheDocument()
     expect(screen.getByText('🚒')).toBeInTheDocument()
     
-    // Wait for station selector to load
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /select station/i })).toBeInTheDocument()
-    })
+    // Station selector has been removed from header
+    // Station selection now happens through URL token or defaults to demo
+    expect(screen.queryByRole('button', { name: /select station/i })).not.toBeInTheDocument()
   })
 
   it('shows connected status when connected', async () => {

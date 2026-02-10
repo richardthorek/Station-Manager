@@ -13,7 +13,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
-import { StationSelector } from './StationSelector';
 import { useStation } from '../contexts/StationContext';
 import './Header.css';
 
@@ -89,9 +88,6 @@ export function Header({
               🎭 DEMO MODE
             </div>
           )}
-        </div>
-        <div className="header-center">
-          <StationSelector />
         </div>
         <div className="header-status">
           {showAdminMenu && (
