@@ -16,7 +16,7 @@
   display: flex;
   gap: 1rem;
   padding: 1.5rem;
-  background: rgba(251, 176, 52, 0.1);
+  background: var(--surface-warning);
   border: 2px solid var(--ui-amber);
   border-radius: 12px;
   margin-bottom: 1.5rem;
@@ -25,11 +25,12 @@
 .warning-icon {
   font-size: 2rem;
   line-height: 1;
+  color: var(--text-warning-strong);
 }
 
 .warning-content h3 {
   margin: 0 0 0.5rem 0;
-  color: var(--ui-amber);
+  color: var(--text-warning-strong);
   font-size: 1.1rem;
 }
 
@@ -76,7 +77,7 @@
 }
 
 .confirm-message strong {
-  color: var(--rfs-core-red);
+  color: var(--text-error-strong);
   font-weight: 600;
 }
 
@@ -88,10 +89,10 @@
 
 .error-message {
   padding: 1rem;
-  background: rgba(229, 40, 27, 0.1);
+  background: var(--surface-error);
   border: 2px solid var(--rfs-core-red);
   border-radius: 8px;
-  color: var(--rfs-core-red);
+  color: var(--text-error-strong);
   margin-bottom: 1.5rem;
 }
 

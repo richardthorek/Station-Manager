@@ -60,7 +60,7 @@
 
 .back-link {
   display: inline-block;
-  color: var(--rfs-core-red);
+  color: var(--color-error);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.9rem;
@@ -306,7 +306,7 @@
   padding: 0.15rem 0.4rem;
   font-size: 0.65rem;
   font-weight: 700;
-  color: var(--rfs-white);
+  color: var(--text-on-amber);
   background: var(--ui-amber);
   border-radius: 4px;
   text-transform: uppercase;
@@ -474,7 +474,7 @@
 }
 
 .station-table th.sorted {
-  color: var(--rfs-core-red);
+  color: var(--text-error-strong);
 }
 
 .station-table tbody tr {
@@ -507,7 +507,7 @@
   padding: 0.2rem 0.5rem;
   font-size: 0.7rem;
   font-weight: 700;
-  color: var(--rfs-white);
+  color: var(--text-on-amber);
   background: var(--ui-amber);
   border-radius: 4px;
   text-transform: uppercase;
@@ -599,7 +599,7 @@
 
 .pagination-button:hover:not(:disabled) {
   border-color: var(--rfs-core-red);
-  color: var(--rfs-core-red);
+  color: var(--text-error-strong);
 }
 
 .pagination-button:disabled {
@@ -644,10 +644,10 @@
 .error-message {
   margin: 1rem 0;
   padding: 1rem;
-  background: rgba(229, 40, 27, 0.1);
+  background: var(--surface-error);
   border: 2px solid var(--rfs-core-red);
   border-radius: 8px;
-  color: var(--rfs-core-red);
+  color: var(--text-error-strong);
   font-weight: 500;
   display: flex;
   justify-content: space-between;
