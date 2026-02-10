@@ -248,7 +248,7 @@ export class TableStorageAdminUserDatabase {
       
       return null;
     } catch (error) {
-      logger.error('Error querying user by username', { error, username });
+      logger.error('Error querying user by username', { error });
       throw error;
     }
   }
