@@ -10,6 +10,12 @@ import {
   clearDatabase,
 } from './offlineStorage';
 
+// Mock api module to provide station context
+vi.mock('./api', () => ({
+  getCurrentStationId: vi.fn(() => 'test-station-id'),
+  setCurrentStationId: vi.fn(),
+}));
+
 // Mock idb
 vi.mock('idb', () => ({
   openDB: vi.fn(() => Promise.resolve({

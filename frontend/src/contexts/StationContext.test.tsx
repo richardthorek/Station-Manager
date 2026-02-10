@@ -273,14 +273,15 @@ describe('StationContext', () => {
       expect(result.current.isLoading).toBe(false);
     });
     
-    expect(result.current.selectedStation?.id).toBe(DEFAULT_STATION_ID);
+    // Initially no station is selected
+    expect(result.current.selectedStation).toBe(null);
     
-    // Simulate storage event from another tab
+    // Simulate storage event from another tab selecting a station
     act(() => {
       const storageEvent = new StorageEvent('storage', {
         key: 'selectedStationId',
         newValue: DEMO_STATION_ID,
-        oldValue: DEFAULT_STATION_ID,
+        oldValue: null,
         storageArea: localStorage,
       });
       window.dispatchEvent(storageEvent);

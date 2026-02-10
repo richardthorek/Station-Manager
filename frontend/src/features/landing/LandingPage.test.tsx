@@ -30,7 +30,7 @@ describe('LandingPage', () => {
     render(<LandingPage />)
 
     // Verify brand name is present
-    expect(screen.getByText('Station ManagerP')).toBeInTheDocument()
+    expect(screen.getByText('Station Manager')).toBeInTheDocument()
   })
 
   it('displays theme toggle button', () => {
