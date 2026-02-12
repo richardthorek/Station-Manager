@@ -67,6 +67,18 @@ These endpoints are always accessible without authentication:
 - `POST /api/auth/login` - Login endpoint
 - `GET /api/auth/config` - Authentication configuration
 
+### Demo Station Endpoints (Authentication Bypassed)
+
+**IMPORTANT**: The demo station is publicly accessible even when `ENABLE_DATA_PROTECTION=true`.
+
+When requests include the header `X-Station-Id: demo-station`, authentication is automatically bypassed for all data endpoints:
+- `GET /api/members` - Demo members (with demo station ID)
+- `GET /api/activities` - Demo activities (with demo station ID)
+- `GET /api/events` - Demo events (with demo station ID)
+- `GET /api/checkins` - Demo check-ins (with demo station ID)
+
+This allows users to explore the application with sample data without requiring authentication. All other stations still require authentication when data protection is enabled.
+
 ## User Roles
 
 The system supports two user roles:
@@ -92,6 +104,22 @@ Password: admin123
 ```
 
 **⚠️ IMPORTANT**: Change the default admin password before deploying to production!
+
+## Demo Station
+
+The demo station (`demo-station`) is automatically seeded on server startup with sample data:
+- **10 demo members** with varied ranks (Captain, Deputy Captain, Firefighters, etc.)
+- **5 standard activities** (Training, Maintenance, Meeting, Brigade Training, District Training)
+- **Demo brigade** hierarchy for realistic testing
+
+Demo station characteristics:
+- **Always publicly accessible** - No authentication required, even when `ENABLE_DATA_PROTECTION=true`
+- **Isolated data** - Demo members, activities, and events are separate from real brigade data
+- **Auto-seeded** - Data is automatically created on server startup for in-memory database
+- **Reset capability** - Admin can reset demo data via the API
+- **Testing & Demonstration** - Perfect for exploring features without affecting real data
+
+This allows new users and evaluators to test the application immediately without needing credentials or setup.
 
 ## Kiosk Mode
 
