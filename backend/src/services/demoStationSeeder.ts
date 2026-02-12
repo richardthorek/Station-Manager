@@ -16,6 +16,7 @@ import type { Station } from '../types';
 
 // Track if demo station has been seeded in this session
 let demoStationSeeded = false;
+let seedingInProgress = false;
 
 /**
  * Seed demo station with sample data if it doesn't exist
@@ -25,6 +26,14 @@ export async function seedDemoStationIfNeeded(): Promise<void> {
   if (demoStationSeeded) {
     return;
   }
+
+  // Prevent concurrent seeding attempts
+  if (seedingInProgress) {
+    logger.debug('Demo station seeding already in progress, skipping');
+    return;
+  }
+
+  seedingInProgress = true;
 
   try {
     const db = await ensureDatabase();
@@ -59,8 +68,9 @@ export async function seedDemoStationIfNeeded(): Promise<void> {
 
     // Create standard activities (if they don't exist for demo station)
     const activities = ['Training', 'Maintenance', 'Meeting', 'Brigade Training', 'District Training'];
+    const existingActivities = await db.getAllActivities(DEMO_STATION_ID);
+    
     for (const name of activities) {
-      const existingActivities = await db.getAllActivities(DEMO_STATION_ID);
       const exists = existingActivities.some((a) => a.name === name);
       if (!exists) {
         await db.createActivity(name, undefined, DEMO_STATION_ID);
@@ -92,7 +102,9 @@ export async function seedDemoStationIfNeeded(): Promise<void> {
     });
 
     demoStationSeeded = true;
+    seedingInProgress = false;
   } catch (error) {
+    seedingInProgress = false;
     logger.error('Failed to seed demo station', { error });
     // Don't throw - allow server to continue even if seeding fails
   }
