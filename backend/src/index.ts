@@ -124,6 +124,7 @@ app.use(helmet({
         "'self'",
         "ws:", "wss:", // WebSocket connections for Socket.io
         "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
+        "https://z.clarity.ms", // Microsoft Clarity data collection endpoint
         "https://fonts.googleapis.com", // Google Fonts CSS (Fetch API)
       ],
       // Allow self-hosted fonts, data URIs, and Google Fonts
@@ -469,7 +470,8 @@ io.on('connection', (socket: SocketWithStation) => {
 });
 
 // Serve frontend for all other GET routes (SPA fallback) - Must be last!
-app.get(/^\/(?!api).*/, spaRateLimiter, (req, res) => {
+// Exclude /assets/* paths to prevent serving index.html for static assets
+app.get(/^\/(?!api|assets).*/, spaRateLimiter, (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 

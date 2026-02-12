@@ -1673,7 +1673,7 @@ Potential improvements (not in current scope):
 
 ### Current Security Measures
 
-1. **Security Headers (Helmet)** ✅ IMPLEMENTED (2026-02-06)
+1. **Security Headers (Helmet)** ✅ IMPLEMENTED (2026-02-06, updated 2026-02-12)
    - **Helmet Middleware**: Industry-standard security headers via helmet 8.1.0
    - **Content-Security-Policy (CSP)**: Protects against XSS and injection attacks
      - `default-src 'self'` - Only allow resources from same origin by default
@@ -1681,7 +1681,7 @@ Potential improvements (not in current scope):
      - `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com` - Styles from same origin + inline (React) + Google Fonts
      - `font-src 'self' data: https://fonts.gstatic.com` - Fonts from same origin, data URIs, and Google Fonts
      - `img-src 'self' data: blob: https:` - Images from same origin, data URIs, blobs, and HTTPS
-     - `connect-src 'self' ws: wss: https://www.clarity.ms https://fonts.googleapis.com` - WebSocket (Socket.io), Clarity analytics, Google Fonts CSS fetch
+     - `connect-src 'self' ws: wss: https://www.clarity.ms https://z.clarity.ms https://fonts.googleapis.com` - WebSocket (Socket.io), Clarity analytics (www + z collection endpoint), Google Fonts CSS fetch
      - `object-src 'none'` - Block object/embed/applet elements
      - `media-src 'self'` - Media only from same origin
      - `frame-src 'none'` - Block all iframe embedding of external content
@@ -1910,6 +1910,84 @@ const stations = await api.getStations();     // All stations
 - **Configuration Guide**: `docs/AUTHENTICATION_CONFIGURATION.md`
 - **API Registry**: `docs/api_register.json` (v1.3.0+)
 - **Master Plan**: `docs/MASTER_PLAN.md` (Phase 3 security enhancement)
+
+---
+
+## Static Asset Serving & SPA Routing
+
+**Status:** ✅ **FIXED** (2026-02-12) - Asset Loading Issue Resolved
+
+### Architecture
+
+The backend serves both static assets and the React Single Page Application using a layered middleware approach:
+
+```typescript
+// backend/src/index.ts
+// 1. Static files served first (from frontend/dist)
+app.use(express.static(frontendPath));
+
+// 2. SPA fallback for client-side routing (excludes /api and /assets paths)
+app.get(/^\/(?!api|assets).*/, spaRateLimiter, (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+```
+
+### Asset Path Exclusion Fix (2026-02-12)
+
+**Issue:** Production deployment was serving 500 errors for CSS/JS assets because the SPA fallback route was incorrectly catching `/assets/*` requests.
+
+**Root Cause:**
+- Previous SPA regex: `/^\/(?!api).*/` matched `/assets/index-abc123.js`
+- When `express.static` couldn't find the file or encountered an error, the request fell through to the SPA fallback
+- SPA fallback tried to serve `index.html` instead of the asset, causing:
+  - 500 Internal Server Errors
+  - MIME type mismatches (CSS served as HTML/JSON)
+  - Failed asset loading on sign-in page
+
+**Fix:**
+- Updated SPA regex to: `/^\/(?!api|assets).*/`
+- Now `/assets/*` paths are explicitly excluded from SPA fallback
+- Assets are served only by `express.static` middleware
+- If asset not found, returns proper 404 instead of serving index.html
+
+**Test Coverage:**
+- New test suite: `backend/src/__tests__/spaFallback.test.ts` (10 tests)
+- Validates exclusion of `/api/*` and `/assets/*` from SPA fallback
+- Tests nested asset paths and various file types
+- All 516 backend tests pass
+
+### Static File Serving
+
+**Production Build:**
+```bash
+# Frontend build creates optimized assets in frontend/dist/
+npm run build --prefix frontend
+
+# Assets are hashed for cache busting:
+/assets/index-[hash].js
+/assets/index-[hash].css
+/assets/vendor-react-[hash].js
+```
+
+**Middleware Order (Critical):**
+1. Security headers (Helmet)
+2. CORS configuration
+3. JSON body parser
+4. Compression
+5. Request ID & logging
+6. **express.static(frontendPath)** ← Serves assets
+7. API routes (`/api/*`)
+8. SPA fallback (`/(?!api|assets).*`) ← Serves index.html
+
+**Rate Limiting:**
+- SPA fallback route applies rate limiting (84 req/5min per IP)
+- Static assets served by express.static are NOT rate-limited (performance)
+
+### Related Issues Fixed
+- ✅ Asset 500 errors resolved
+- ✅ MIME type errors resolved (CSS served correctly)
+- ✅ CSP violation for z.clarity.ms fixed (added to connect-src)
+- ✅ Demo users display (fixed in commit 55d0684)
 
 ---
 

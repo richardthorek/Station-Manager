@@ -43,6 +43,7 @@ beforeAll(() => {
           "'self'",
           "ws:", "wss:", // WebSocket connections for Socket.io
           "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
+          "https://z.clarity.ms", // Microsoft Clarity data collection endpoint
           "https://fonts.googleapis.com", // Google Fonts CSS (Fetch API)
         ],
         // Allow self-hosted fonts, data URIs, and Google Fonts
@@ -165,6 +166,7 @@ describe('Security Headers - Helmet Middleware', () => {
 
       const csp = response.headers['content-security-policy'];
       expect(csp).toMatch(/connect-src[^;]*https:\/\/www\.clarity\.ms/);
+      expect(csp).toMatch(/connect-src[^;]*https:\/\/z\.clarity\.ms/);
     });
 
     it('should allow Google Fonts CSS fetch', async () => {
