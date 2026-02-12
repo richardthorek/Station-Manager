@@ -67,10 +67,26 @@ import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services
 
 const app = express();
 const httpServer = createServer(app);
+
+// Parse allowed origins for CORS (used by both Express and Socket.io)
+// Supports comma-separated list for multi-brigade deployment
+const allowedOriginsList = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map(url => url.trim())
+  .filter(url => url.length > 0);
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      // Allow requests with no origin or from allowed origins
+      if (!origin || allowedOriginsList.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
@@ -139,8 +155,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// CORS Configuration
+// Log configured allowed origins for debugging
+logger.info('CORS allowed origins configured', { origins: allowedOriginsList });
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., mobile apps, server-to-server, Postman)
+    // or requests from allowed origins
+    if (!origin || allowedOriginsList.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn('CORS request blocked', { origin, allowedOrigins: allowedOriginsList });
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID'],
+}));
+
 // Middleware
-app.use(cors());
 app.use(express.json());
 
 // Response compression - reduces bandwidth and improves load times

@@ -1915,6 +1915,117 @@ const stations = await api.getStations();     // All stations
 
 ## Deployment Architecture
 
+### Multi-Domain Hosting Support
+
+**Status:** ✅ Fully Supported (February 2026)  
+**Documentation:** `docs/MULTI_DOMAIN_HOSTING_ANALYSIS.md`
+
+The system supports flexible deployment across multiple domains and hosting scenarios:
+
+#### Supported Deployment Scenarios
+
+1. **Subdomain Migration**
+   - Move from `bungendorerfs.org` to `station-manager.bungendorerfs.org`
+   - Requires only environment variable updates
+   - Same-domain cookies work across subdomains
+   - Impact: LOW (one-time user re-login)
+
+2. **Token-Based Multi-Brigade Access** ✅ Recommended
+   - Brigades link from their own domains (e.g., `brigade1.org`, `brigade2.org`)
+   - Station Manager hosted on central domain
+   - Brigade access tokens provide secure cross-domain access
+   - Already implemented and working
+   - Cost-effective: Single infrastructure serves all brigades
+
+3. **Multi-Domain Deployment**
+   - Separate instances per brigade subdomain
+   - Complete isolation per brigade
+   - Higher infrastructure costs
+   - Suited for large-scale adoption
+
+#### CORS Configuration
+
+**Security Fix (February 2026):** Fixed permissive CORS configuration that allowed all origins.
+
+**Current Implementation:**
+```typescript
+// backend/src/index.ts
+// Parse allowed origins from comma-separated list
+const allowedOriginsList = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map(url => url.trim())
+  .filter(url => url.length > 0);
+
+// Express CORS with origin allowlist
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOriginsList.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn('CORS request blocked', { origin, allowedOrigins: allowedOriginsList });
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID'],
+}));
+
+// Socket.io CORS (matches Express CORS)
+const io = new Server(httpServer, {
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin || allowedOriginsList.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+```
+
+**Environment Variables:**
+```bash
+# Single origin (backward compatible)
+FRONTEND_URL=https://station-manager.bungendorerfs.org
+
+# Multiple origins for multi-brigade support
+FRONTEND_URLS=https://station-manager.bungendorerfs.org,https://brigade1.org,https://brigade2.org
+```
+
+**Benefits:**
+- ✅ Secure origin allowlist (replaces permissive `cors()`)
+- ✅ Supports single or multiple origins
+- ✅ Backward compatible with existing deployments
+- ✅ Logged blocked requests for security monitoring
+- ✅ Aligned Express and Socket.io CORS configuration
+
+#### Cross-Domain Brigade Access
+
+Brigade access tokens enable secure cross-domain linking:
+
+**Flow:**
+1. Admin generates brigade token via `/api/brigade-access/generate`
+2. Token embedded in URL: `https://station-manager.bungendorerfs.org/signin?brigade=TOKEN`
+3. Brigade website links to this URL from their domain
+4. User clicks link, navigates to Station Manager
+5. Token validates, locks to brigade station (kiosk mode)
+6. User signs in, session persists
+
+**Requirements:**
+- Brigade domain must be in CORS allowlist (if embedding iframe)
+- Direct linking (recommended) requires no CORS configuration
+- Token provides station identification and access control
+
+**See Also:** `docs/MULTI_DOMAIN_HOSTING_ANALYSIS.md` for comprehensive analysis
+
+---
+
+## Deployment Architecture (Continued)
+
 ### Production Environment (Azure)
 
 ```

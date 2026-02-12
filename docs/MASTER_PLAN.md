@@ -2031,6 +2031,182 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
+#### Issue: Multi-Domain Hosting Analysis and CORS Security Fix
+**Status**: ✅ **COMPLETED** (February 11, 2026)  
+**GitHub Issue**: Implications of Hosting Station-Manager at Different URLs or Domains  
+**Pull Request**: copilot/assess-hosting-implications
+
+**Objective**: Analyze implications of hosting Station Manager at different URLs/domains, fix permissive CORS configuration, and document multi-brigade deployment strategies.
+
+**User Story**: As a system administrator, I need to understand the implications of hosting Station Manager on different domains or subdomains so I can plan migrations and enable multi-brigade access securely.
+
+**Current State**: 
+- Hosted on bungendorerfs.org
+- CORS configuration allows ALL origins (security risk)
+- No documentation on domain migration or multi-brigade setup
+- Token-based brigade access implemented but CORS not properly configured
+
+**Target State**: 
+- Comprehensive analysis of hosting scenarios documented
+- CORS properly configured with allowlist
+- Support for multiple frontend origins (multi-brigade deployment)
+- Documentation for domain migration and brigade onboarding
+- Security vulnerability fixed
+
+**Implementation Summary**:
+
+1. **✅ Comprehensive Analysis Document Created**
+   - Created `docs/MULTI_DOMAIN_HOSTING_ANALYSIS.md` (38,884 characters)
+   - Analyzed 3 deployment scenarios:
+     - Subdomain migration (bungendorerfs.org → station-manager.bungendorerfs.org)
+     - Token-based multi-brigade access (brigades linking from their own domains)
+     - Full multi-domain deployment (separate instances per brigade)
+   - Documented technical, operational, and user-facing impacts
+   - Risk assessment with mitigation strategies
+   - Migration checklist and deployment recommendations
+
+2. **✅ CORS Security Fix Implemented**
+   - **Issue**: `app.use(cors())` allowed ALL origins (high security risk)
+   - **Fix**: Implemented origin allowlist with dynamic validation
+   - Added support for `FRONTEND_URLS` environment variable (comma-separated list)
+   - Backward compatible with existing `FRONTEND_URL` variable
+   - Updated both Express CORS and Socket.io CORS configurations
+   - Added logging for blocked CORS requests
+   - Configured proper CORS options: credentials, methods, allowed headers
+
+3. **✅ Environment Configuration Enhanced**
+   - Updated `backend/.env.example` with comprehensive CORS documentation
+   - Added examples for single origin and multiple origins
+   - Documented use cases for multi-brigade support
+   - Clear migration path from FRONTEND_URL to FRONTEND_URLS
+
+4. **✅ Analysis Coverage**
+   - **Authentication & Sessions**: JWT storage, cross-domain implications, migration strategy
+   - **Data Isolation**: Multi-station architecture readiness, station middleware
+   - **CORS & Cross-Domain**: Three implementation options (single, multiple, wildcard)
+   - **Browser Storage**: localStorage/sessionStorage/cookie implications, migration impact
+   - **URL Changes**: Bookmarks, QR codes, brigade tokens, SEO considerations
+   - **Token-Based Access**: Cross-domain brigade linking (already works!)
+   - **Infrastructure**: DNS, SSL, Azure deployment, cost comparison
+   - **Risk Assessment**: Security, operational, technical, and cost risks with mitigations
+
+**Key Findings**:
+
+✅ **System is Well-Prepared**:
+- Token-based brigade access already supports cross-domain linking
+- Multi-station architecture provides data isolation
+- JWT authentication is domain-agnostic
+- Environment-driven configuration enables flexible deployment
+
+⚠️ **Required Changes**:
+- CORS security fix (implemented in this PR)
+- Documentation updates (completed)
+- Migration communication plan (documented)
+
+**Recommendations**:
+- **For Subdomain Migration**: Update env vars, configure DNS/SSL, redirect old URLs
+- **For Multi-Brigade Support**: Update CORS to allow multiple origins, provide token generation
+- **Infrastructure**: Single Azure App Service with multi-origin CORS (cost-effective)
+- **Cost**: ~$13-15 AUD/month (no increase for multi-brigade support)
+
+**Code Changes**:
+```typescript
+// backend/src/index.ts
+// Parse allowed origins from comma-separated list
+const allowedOriginsList = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map(url => url.trim())
+  .filter(url => url.length > 0);
+
+// Express CORS with origin validation
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOriginsList.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn('CORS request blocked', { origin, allowedOrigins: allowedOriginsList });
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID'],
+}));
+
+// Socket.io CORS (matching Express)
+const io = new Server(httpServer, {
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin || allowedOriginsList.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+```
+
+**Environment Variables**:
+```bash
+# Single origin (backward compatible)
+FRONTEND_URL=https://station-manager.bungendorerfs.org
+
+# Multiple origins for multi-brigade support
+FRONTEND_URLS=https://station-manager.bungendorerfs.org,https://brigade1.org,https://brigade2.org
+```
+
+**Success Criteria**:
+- [x] Comprehensive analysis document created
+- [x] CORS security vulnerability fixed
+- [x] Multiple origin support implemented
+- [x] Environment variables documented
+- [x] Migration strategies documented
+- [x] Risk assessment completed
+- [x] Deployment recommendations provided
+- [x] Brigade onboarding process documented
+
+**Testing**:
+```bash
+# Test CORS from allowed origin
+curl -H "Origin: https://station-manager.bungendorerfs.org" \
+     -H "Access-Control-Request-Method: POST" \
+     -X OPTIONS \
+     https://station-manager.bungendorerfs.org/api/members
+
+# Test CORS from blocked origin (should fail)
+curl -H "Origin: https://malicious-site.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -X OPTIONS \
+     https://station-manager.bungendorerfs.org/api/members
+```
+
+**Security Impact**: 
+- **HIGH PRIORITY FIX**: Closed CORS vulnerability that allowed any origin to make requests
+- Defense-in-depth: JWT authentication still protected sensitive endpoints
+- Proper CORS configuration adds additional security layer
+
+**Documentation Created**:
+- `docs/MULTI_DOMAIN_HOSTING_ANALYSIS.md` - Comprehensive 38KB analysis document
+- Updated `backend/.env.example` - CORS configuration examples
+- Updated `MASTER_PLAN.md` - This entry
+
+**Dependencies**: None
+
+**Effort Estimate**: 4 hours ✅
+
+**Priority**: P1 (High - Security Fix + Strategic Planning)
+
+**Labels**: `security`, `infrastructure`, `documentation`, `phase-2`, `complete`
+
+**Milestone**: v1.2 - Operational Excellence
+
+**UI Screenshot Requirement**: N/A (Backend configuration + documentation)
+
+---
+
 ## Success Metrics
 
 ### Key Performance Indicators (KPIs)
