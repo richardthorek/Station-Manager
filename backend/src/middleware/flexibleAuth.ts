@@ -22,6 +22,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { validateBrigadeAccessToken } from '../services/brigadeAccessService';
 import { logger } from '../services/logger';
+import { DEMO_STATION_ID } from '../constants/stations';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const ENABLE_DATA_PROTECTION = process.env.ENABLE_DATA_PROTECTION === 'true';
@@ -164,6 +165,17 @@ export function flexibleAuth(options: FlexibleAuthOptions = {}) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // If protection is disabled and not explicitly required, allow access
     if (!requireAuth) {
+      next();
+      return;
+    }
+
+    // Demo station is always publicly accessible (for demo/testing purposes)
+    const requestedStationId = resolveRequestedStationId(req);
+    if (requestedStationId === DEMO_STATION_ID) {
+      logger.debug('Demo station access - bypassing authentication', {
+        path: req.path,
+        method: req.method,
+      });
       next();
       return;
     }

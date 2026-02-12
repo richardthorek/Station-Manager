@@ -58,6 +58,7 @@ import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
 import { getRFSFacilitiesParser } from './services/rfsFacilitiesParser';
 import { getVersionInfo } from './services/version';
+import { seedDemoStationIfNeeded } from './services/demoStationSeeder';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -535,6 +536,9 @@ async function initializeDatabasesInBackground() {
     } else {
       logger.info('Database: In-memory (data will be lost on restart)');
     }
+    
+    // Seed demo station data (for in-memory database or on first startup)
+    await seedDemoStationIfNeeded();
     
     // Mark as initialized
     databaseInitialized = true;
