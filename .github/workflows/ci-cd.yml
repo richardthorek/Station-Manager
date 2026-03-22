@@ -369,7 +369,7 @@ jobs:
 
       - name: Login to Azure
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F04003FFA701477E897BF9329FCA2C5E }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0FB429D7D41741EAA3FF70DCD8F0A441 }}
