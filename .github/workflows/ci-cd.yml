@@ -199,7 +199,7 @@ jobs:
           fi
 
       - name: Upload backend coverage reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-coverage
@@ -246,7 +246,7 @@ jobs:
           fi
 
       - name: Upload frontend coverage reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: frontend-coverage
@@ -323,7 +323,7 @@ jobs:
           fi
 
       - name: Upload bundle stats
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: bundle-stats
@@ -361,7 +361,7 @@ jobs:
           cd .. && ls -lh release.zip
 
       - name: Upload deployment artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: node-app
           path: release.zip
