@@ -1,141 +1,68 @@
 # Dependabot configuration for RFS Station Manager
 # Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
-# This configuration manages automated dependency updates for:
-# - npm packages in root workspace (/)
-# - npm packages in backend (/backend)
-# - npm packages in frontend (/frontend)
-# - GitHub Actions workflows (/.github/workflows)
+# Goal: keep the number of open Dependabot PRs to an absolute minimum.
 #
-# Best Practices Applied:
-# - Grouped updates to reduce PR spam
-# - Separate handling of production and development dependencies
-# - Security-focused patch updates
-# - Version pinning strategies to minimize breaking changes
+# Strategy: ONE grouped PR per ecosystem.
+#   - All npm updates (root, backend, frontend) are combined into a SINGLE PR
+#     via a multi-directory group covering every dependency type and update
+#     type (patch, minor, major; production and development).
+#   - GitHub Actions updates are a separate ecosystem and CANNOT be merged into
+#     the npm PR, so they get their own single grouped PR.
+#
+# Net result: at most 2 open Dependabot PRs at any time (1 npm + 1 actions),
+# instead of one PR per package.
+#
+# Note on security updates: Dependabot security (vulnerability) PRs are not
+# capped by open-pull-requests-limit and may still open separately so that
+# critical fixes are not blocked. The groups below also apply to security
+# updates (applies-to: security-updates) so they are batched where possible.
 
 version: 2
 
 updates:
-  # ========================
-  # Backend npm dependencies
-  # ========================
+  # ============================================================
+  # All npm dependencies (root + backend + frontend) → ONE PR
+  # ============================================================
   - package-ecosystem: "npm"
-    directory: "/backend"
+    directories:
+      - "/"
+      - "/backend"
+      - "/frontend"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "09:00"
       timezone: "Australia/Sydney"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
     labels:
       - "dependencies"
       - "npm"
-      - "backend"
     commit-message:
       prefix: "chore(deps):"
       prefix-development: "chore(deps-dev):"
       include: "scope"
-    # Group updates to reduce number of PRs
-    groups:
-      # Security patches get highest priority - apply immediately
-      security:
-        dependency-type: "production"
-        update-types:
-          - "version-update:semver-patch"
-        patterns:
-          - "*"
-      # Minor and patch updates for production dependencies
-      production-minor:
-        dependency-type: "production"
-        update-types:
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
-        exclude-patterns:
-          - "typescript"
-          - "jest"
-      # Development dependency updates
-      development:
-        dependency-type: "development"
-    # Versioning strategy: increase for apps (backend is a server application)
+    # Versioning strategy: increase for apps (server + SPA)
     versioning-strategy: "increase"
-
-  # ===========================
-  # Frontend npm dependencies
-  # ===========================
-  - package-ecosystem: "npm"
-    directory: "/frontend"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Australia/Sydney"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "npm"
-      - "frontend"
-    commit-message:
-      prefix: "chore(deps):"
-      prefix-development: "chore(deps-dev):"
-      include: "scope"
-    # Group updates to reduce number of PRs and manage risk
     groups:
-      # Security patches get highest priority and applied immediately
-      security:
-        dependency-type: "production"
-        update-types:
-          - "version-update:semver-patch"
+      # Batch every npm version update into a single PR across all directories
+      all-npm:
+        applies-to: version-updates
         patterns:
           - "*"
-      # Core React ecosystem updates (carefully managed)
-      production-core:
-        dependency-type: "production"
         update-types:
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
-        patterns:
-          - "react*"
-          - "react-router*"
-          - "framer-motion"
-          - "socket.io-client"
-      # Other production dependencies
-      production-other:
-        dependency-type: "production"
+          - "patch"
+          - "minor"
+          - "major"
+      # Batch security fixes together too (does not block individual critical PRs)
+      all-npm-security:
+        applies-to: security-updates
         patterns:
           - "*"
-        exclude-patterns:
-          - "react*"
-          - "react-router*"
-          - "framer-motion"
-          - "socket.io-client"
-      # Development dependency updates (build tools, testing, etc)
-      development:
-        dependency-type: "development"
-    # Versioning strategy: increase for apps (frontend is a React SPA)
-    versioning-strategy: "increase"
 
-  # ================================
-  # Root workspace npm dependencies
-  # ================================
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Australia/Sydney"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "npm"
-      - "root"
-    commit-message:
-      prefix: "chore(deps):"
-      include: "scope"
-
-  # ==================================
-  # GitHub Actions workflow updates
-  # ==================================
+  # ============================================================
+  # GitHub Actions (separate ecosystem) → ONE PR
+  # ============================================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -143,7 +70,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Australia/Sydney"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 1
     labels:
       - "dependencies"
       - "github-actions"
@@ -151,3 +78,16 @@ updates:
     commit-message:
       prefix: "ci(deps):"
       include: "scope"
+    groups:
+      all-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+          - "major"
+      all-actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
