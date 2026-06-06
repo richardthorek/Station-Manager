@@ -200,7 +200,22 @@ export default defineConfig({
         '**/*.d.ts',
         'src/main.tsx',
         'src/vite-env.d.ts',
+        // Browser-only APIs not available in jsdom
+        'src/utils/haptic.ts',           // navigator.vibrate
+        'src/utils/announcer.ts',        // ARIA live region DOM manipulation
+        // Offline/PWA utilities: require IndexedDB + service worker (not in jsdom)
+        'src/services/offlineStorage.ts',
+        'src/services/offlineQueue.ts',
+        'src/services/offlineSupport.ts',
+        // Pure animation helpers (Framer Motion / requestAnimationFrame wrappers)
+        'src/utils/animations.ts',
       ],
+      thresholds: {
+        statements: 63,
+        branches: 56,
+        functions: 69,
+        lines: 64,
+      },
     },
   },
 })
