@@ -163,6 +163,12 @@ export interface Appliance {
   name: string;
   description?: string;
   photoUrl?: string;
+  /**
+   * Canonical vehicle-type slug (e.g. 'cat1-pumper', 'cat7-tanker', 'bulk-water',
+   * 'command'). A shared vocabulary lets reports group appliances of the same type
+   * across brigades for cross-brigade trend analysis. Optional.
+   */
+  vehicleType?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -188,6 +194,17 @@ export interface ChecklistItem {
   description: string;
   referencePhotoUrl?: string;
   order: number;
+  /**
+   * Canonical item-code slug (e.g. 'tyre-condition', 'fluid-levels'). Stable across
+   * brigades and template edits so the same logical check can be aggregated even when
+   * brigades word the item differently. Optional for backward compatibility.
+   */
+  itemCode?: string;
+  /**
+   * Grouping label for the item (e.g. 'Engine Bay', 'Cabin', 'Pump & Tank'). Used to
+   * render the checklist in sections. Optional.
+   */
+  section?: string;
 }
 
 /**
@@ -224,6 +241,14 @@ export interface CheckResult {
   itemId: string;
   itemName: string;
   itemDescription: string;
+  /**
+   * Canonical item-code copied from the checklist item at the time of the check.
+   * Denormalised here so historical results stay comparable across brigades for trend
+   * analysis even if the template changes later.
+   */
+  itemCode?: string;
+  /** Grouping label copied from the checklist item at the time of the check. */
+  section?: string;
   status: CheckStatus;
   comment?: string;
   photoUrl?: string;

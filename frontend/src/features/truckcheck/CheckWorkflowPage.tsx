@@ -166,7 +166,7 @@ export function CheckWorkflowPage() {
     }
   }
 
-  async function handleItemResult(itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string, photoUrl?: string) {
+  async function handleItemResult(itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string, photoUrl?: string, itemCode?: string, section?: string) {
     if (!checkRun) return;
 
     try {
@@ -178,7 +178,9 @@ export function CheckWorkflowPage() {
         status,
         comment,
         photoUrl,
-        completedBy // Track who completed this item
+        completedBy, // Track who completed this item
+        itemCode,    // Canonical code for cross-brigade trend analysis
+        section      // Grouping label captured at time of check
       );
       
       const newResults = new Map(results);
@@ -468,7 +470,7 @@ export function CheckWorkflowPage() {
                 itemIcon={getItemIcon(item.name)}
                 isActive={index === currentIndex}
                 result={results.get(item.id)}
-                onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl)}
+                onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl, item.itemCode, item.section)}
                 onPhotoClick={(url, alt) => setLightboxImage({ url, alt })}
               />
             ))}
@@ -524,7 +526,7 @@ export function CheckWorkflowPage() {
 }
 
 interface CheckItemCardProps {
-  item: { id: string; name: string; description: string; referencePhotoUrl?: string };
+  item: { id: string; name: string; description: string; referencePhotoUrl?: string; itemCode?: string; section?: string };
   itemIcon: string;
   isActive: boolean;
   result?: CheckResult;
