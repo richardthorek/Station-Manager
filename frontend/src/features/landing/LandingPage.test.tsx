@@ -49,7 +49,7 @@ describe('LandingPage', () => {
     expect(signInLink).toHaveAttribute('href', '/signin')
   })
 
-  it('displays all feature cards with coming soon for non-MVP features', () => {
+  it('displays all feature cards as active (v1.1)', () => {
     render(<LandingPage />)
 
     // Verify all main feature cards are present
@@ -58,18 +58,13 @@ describe('LandingPage', () => {
     expect(screen.getByText('Reports & Analytics')).toBeInTheDocument()
     expect(screen.getByText('Station Management')).toBeInTheDocument()
 
-    // Verify sign-in link is accessible (MVP feature)
-    expect(screen.getByRole('link', { name: /go to sign-in/i })).toBeInTheDocument()
-    
-    // Verify non-MVP features have disabled buttons with coming soon message
-    const truckCheckButton = screen.getByRole('button', { name: /truck checks coming soon/i })
-    expect(truckCheckButton).toBeDisabled()
-    
-    const reportsButton = screen.getByRole('button', { name: /reports and analytics coming soon/i })
-    expect(reportsButton).toBeDisabled()
-    
-    // Verify "Coming in v1.1" badges are present
-    const comingSoonBadges = screen.getAllByText('Coming in v1.1')
-    expect(comingSoonBadges).toHaveLength(2) // Truck Check and Reports
+    // Verify all feature links are active and route correctly (v1.1 un-gated)
+    expect(screen.getByRole('link', { name: /go to sign-in/i })).toHaveAttribute('href', '/signin')
+    expect(screen.getByRole('link', { name: /go to truck check/i })).toHaveAttribute('href', '/truckcheck')
+    expect(screen.getByRole('link', { name: /go to reports/i })).toHaveAttribute('href', '/reports')
+
+    // Verify the "Coming in v1.1" gating has been removed entirely
+    expect(screen.queryByText('Coming in v1.1')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /coming soon/i })).not.toBeInTheDocument()
   })
 })
