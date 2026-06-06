@@ -20,7 +20,7 @@
     "test": "NODE_ENV=test jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:post-deploy": "TABLE_STORAGE_TABLE_SUFFIX=Test ts-node src/scripts/postDeploymentTests.ts"
+    "test:post-deploy": "TABLE_STORAGE_TABLE_SUFFIX=Test node dist/scripts/postDeploymentTests.js"
   },
   "keywords": [],
   "author": "",
