@@ -105,10 +105,10 @@ The Station Manager v1.0 MVP focuses exclusively on **core sign-in functionality
 
 ### Post-MVP Rollout Plan
 
-**v1.1 (Q2 2026)**: 
-- Enable Truck Check feature
-- Enable Reports & Analytics
-- Full testing and QA
+**v1.1 (Q2 2026)** ✅ SHIPPED (June 2026):
+- ✅ Enabled Truck Check feature
+- ✅ Enabled Reports & Analytics
+- Full QA in progress
 
 **v1.2+ (Q3-Q4 2026)**:
 - Advanced features as per Phase 3-4 roadmap
@@ -119,6 +119,8 @@ The Station Manager v1.0 MVP focuses exclusively on **core sign-in functionality
 ### June 2026 Stabilization
 - 2026-06-06: Dependency security remediation. Cleared all open Dependabot alerts — backend 25 → 0 (3 critical, 10 high resolved) and frontend 28 → 0 (4 critical, 14 high resolved). Fixes applied via in-range `npm audit fix` (direct deps `express-rate-limit`, `multer` patched via lockfile) plus targeted `overrides` for transitive chains: backend `protobufjs ^7.5.5` (clears the OpenTelemetry/applicationinsights chain) and `@azure/functions-old → uuid ^11.1.1`; frontend `exceljs → uuid ^11.1.1`. No production code changes; backend (516) and frontend (411) test suites and builds all pass.
 - 2026-06-06: Dependabot consolidated to one grouped PR per ecosystem (npm across root/backend/frontend; GitHub Actions separately) with `open-pull-requests-limit: 1` to prevent PR pileups. Added `CLAUDE.md` at repo root as an AI-agent navigation guide.
+- 2026-06-06: Coverage thresholds re-enabled (backend jest.config.js + frontend vite.config.ts). Added exclusions for untestable files (Azure-credential-dependent services, browser-only APIs). Thresholds set ~2% below actual to gate on regression immediately. PR #507.
+- 2026-06-06: **v1.1 shipped.** Removed ComingSoonPage gates from `/truckcheck/*` and `/reports/*`. Wired up all 9 sub-routes (6 truck check, 3 reports) as lazy-loaded components. Landing page cards activated, "Coming in v1.1" badges removed, footer version bumped to 1.1. PR #509.
 
 ### February 2026 Stabilization
 - 2026-02-10: Admin portal color-contrast remediation completed. Added accessible status/alert tokens (`--surface-error/warning/info/success`, `--text-error-strong`, `--text-warning-strong`, `--text-on-amber`) and applied them across admin alerts and badges. Before/after iPad screenshots captured in `docs/current_state/ADMIN_CONTRAST_REVIEW_20260210.md`.
