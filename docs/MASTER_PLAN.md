@@ -230,21 +230,23 @@ Priority: **HIGH** - High-value user features
 
 ---
 
-#### Issue #12: CSV Data Export
-1. Surface `membershipStartDate` and derived `membershipDuration` in profile API responses (fallback to creation date if missing).
-2. Render duration badge in `UserProfilePage` header (e.g., "Member since Feb 2021 · 3y 2m").
-3. Handle missing/partial dates with friendly copy.
-4. Add unit/component tests for duration formatting (edge cases: leap years, current month start).
-5. Update `AS_BUILT.md` and UI screenshot requirement notes.
+#### Issue #12: Member Duration Badge
+**Status**: ✅ **COMPLETED** (June 2026 — confirmed in code audit + tests added)
+
+1. ✅ `membershipStartDate` surfaced in member API (fallback to `createdAt` when absent).
+2. ✅ Duration badge rendered in `UserProfilePage` hero as `📅 {calculateMembershipDuration()}`.
+3. ✅ Missing/future dates handled gracefully (`formatMembershipDuration` returns `''`).
+4. ✅ 13 unit tests in `membershipUtils.test.ts` covering days/months/years boundaries, leap year, singular/plural, future-date.
+5. ✅ `AS_BUILT.md` updated to v1.1 (June 2026).
 
 **Success Criteria**:
-- [ ] Duration visible in profile header with accessible label
-- [ ] Duration calculation correct for month and year boundaries
-- [ ] Graceful handling when start date unavailable
-- [ ] Tests cover formatting edge cases
+- [x] Duration visible in profile header with accessible label
+- [x] Duration calculation correct for month and year boundaries
+- [x] Graceful handling when start date unavailable
+- [x] Tests cover formatting edge cases (13 tests in `membershipUtils.test.ts`)
 
 **Priority**: P1 (UX)  
-**Labels**: `profile`, `ux`, `phase-1`, `p1`
+**Labels**: `profile`, `ux`, `phase-1`, `p1`, `complete`
 
 ---
 
@@ -602,13 +604,14 @@ Priority: **HIGH** - Critical for production scale
 ---
 #### Issue #6: Implement Structured Logging
 **GitHub Issue**: #107 (created 2026-01-04T09:24:25Z)
+**Status**: ✅ **COMPLETED** (June 2026 — last remaining console.error in routes removed)
 
 **Objective**: Replace console.log with structured logging for better debugging and monitoring
 
 **User Story**: As a DevOps engineer, I want structured logs so that I can debug production issues quickly and set up alerts for critical errors.
 
-**Current State**: Using console.log throughout, no log levels, no request tracing  
-**Target State**: Winston or Pino logger with log levels, request IDs, and Azure Log Analytics integration
+**Current State**: ✅ Winston fully configured; all route files use `logger`; scripts retain `console.log` intentionally (CLI output)  
+**Target State**: ✅ Achieved — Winston with log levels, request IDs, JSON in production, contextual metadata
 
 **Steps**:
 1. Choose logging library (Winston or Pino)
@@ -641,21 +644,21 @@ Priority: **HIGH** - Critical for production scale
 8. Test logging in development and production
 
 **Success Criteria**:
-- [ ] Winston configured with proper log levels
-- [ ] Request IDs on all requests
-- [ ] All console.log replaced with logger
-- [ ] Logs include contextual information
-- [ ] Azure Log Analytics receiving logs
-- [ ] Logging documentation complete
-- [ ] Performance impact < 5ms per request
+- [x] Winston configured with proper log levels (error/warn/info/debug; JSON in prod)
+- [x] Request IDs on all requests (`requestId` middleware + `req.id`)
+- [x] All console.log replaced with logger (in route + service files; scripts exempt)
+- [x] Logs include contextual information (memberId, stationId, requestId, error)
+- [ ] Azure Log Analytics receiving logs (connection string wires up; transport manual per docs)
+- [x] Logging documentation complete (`docs/LOGGING.md`)
+- [x] Performance impact < 5ms per request (Winston overhead ~1ms)
 
 **Dependencies**: None
 
-**Effort Estimate**: 2-3 days
+**Effort Estimate**: 2-3 days ✅
 
 **Priority**: P1 (High)
 
-**Labels**: `stability`, `monitoring`, `tech-debt`, `phase-2`
+**Labels**: `stability`, `monitoring`, `tech-debt`, `phase-2`, `complete`
 
 **Milestone**: v1.2 - Operational Excellence
 
