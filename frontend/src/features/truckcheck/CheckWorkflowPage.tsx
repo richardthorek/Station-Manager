@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../hooks/useTheme';
@@ -217,6 +217,43 @@ export function CheckWorkflowPage() {
     navigate(`/truckcheck/summary/${checkRun.id}`);
   }
 
+  /**
+   * Fast-path for the common "everything is fine" case: mark every remaining
+   * unchecked item as Done in one action, the way you'd run a finger down a paper
+   * checklist. Items already marked (including any issues) are left untouched.
+   */
+  async function handleMarkRemainingDone() {
+    if (!checkRun || !template) return;
+    const remaining = template.items.filter((it) => !results.has(it.id));
+    if (remaining.length === 0) return;
+    if (!window.confirm(`Mark the remaining ${remaining.length} item${remaining.length > 1 ? 's' : ''} as OK?`)) {
+      return;
+    }
+
+    try {
+      const newResults = new Map(results);
+      for (const it of remaining) {
+        const result = await api.createCheckResult(
+          checkRun.id,
+          it.id,
+          it.name,
+          it.description,
+          'done',
+          undefined,
+          undefined,
+          completedBy,
+          it.itemCode,
+          it.section
+        );
+        newResults.set(it.id, result);
+      }
+      setResults(newResults);
+    } catch (err) {
+      setError('Failed to mark remaining items');
+      console.error(err);
+    }
+  }
+
   function findNextUncompletedItem(startIndex: number): number {
     if (!template) return -1;
     
@@ -401,6 +438,15 @@ export function CheckWorkflowPage() {
           <div className="progress-text">
             {results.size} of {template.items.length} items completed ({Math.round((results.size / template.items.length) * 100)}%)
           </div>
+          {checkRun && results.size < template.items.length && (
+            <button
+              type="button"
+              className="btn-mark-remaining"
+              onClick={handleMarkRemainingDone}
+            >
+              ✓ Mark remaining {template.items.length - results.size} as OK
+            </button>
+          )}
         </div>
 
         {checkRun && (
@@ -463,17 +509,25 @@ export function CheckWorkflowPage() {
           onTouchEnd={onTouchEnd}
         >
           <div className="items-container">
-            {template.items.map((item, index) => (
-              <CheckItemCard
-                key={item.id}
-                item={item}
-                itemIcon={getItemIcon(item.name)}
-                isActive={index === currentIndex}
-                result={results.get(item.id)}
-                onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl, item.itemCode, item.section)}
-                onPhotoClick={(url, alt) => setLightboxImage({ url, alt })}
-              />
-            ))}
+            {template.items.map((item, index) => {
+              const prevSection = index > 0 ? template.items[index - 1].section : undefined;
+              const showSectionHeader = !!item.section && item.section !== prevSection;
+              return (
+                <Fragment key={item.id}>
+                  {showSectionHeader && (
+                    <h2 className="workflow-section-header">{item.section}</h2>
+                  )}
+                  <CheckItemCard
+                    item={item}
+                    itemIcon={getItemIcon(item.name)}
+                    isActive={index === currentIndex}
+                    result={results.get(item.id)}
+                    onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl, item.itemCode, item.section)}
+                    onPhotoClick={(url, alt) => setLightboxImage({ url, alt })}
+                  />
+                </Fragment>
+              );
+            })}
             
             {results.size === template.items.length && (
               <motion.div 

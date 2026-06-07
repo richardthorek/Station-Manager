@@ -1107,3 +1107,51 @@
     max-height: 200px;
   }
 }
+
+/* ============================================
+   v1.1 — Mark-remaining fast path & section headers
+   ============================================ */
+
+/* "Mark remaining as OK" sits in the dark header alongside the progress text */
+.btn-mark-remaining {
+  display: block;
+  margin: 0.5rem auto 0;
+  padding: 0.5rem 1rem;
+  min-height: 44px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid var(--rfs-lime);
+  color: var(--rfs-white);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn-mark-remaining:hover {
+  background: var(--rfs-lime);
+  color: var(--rfs-black);
+}
+
+.btn-mark-remaining:active {
+  transform: scale(0.98);
+}
+
+/* Section dividers within the checklist (light content area) */
+.workflow-section-header {
+  margin: 1.5rem 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+  border-left: 4px solid var(--rfs-lime);
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.workflow-section-header:first-child {
+  margin-top: 0;
+}
