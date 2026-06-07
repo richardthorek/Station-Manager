@@ -1138,6 +1138,16 @@
   transform: scale(0.98);
 }
 
+.btn-mark-remaining:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-mark-remaining:disabled:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--rfs-white);
+}
+
 /* Section dividers within the checklist (light content area) */
 .workflow-section-header {
   margin: 1.5rem 0 0.5rem;

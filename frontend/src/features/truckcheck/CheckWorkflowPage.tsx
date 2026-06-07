@@ -30,6 +30,7 @@ export function CheckWorkflowPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [markingRemaining, setMarkingRemaining] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -223,7 +224,7 @@ export function CheckWorkflowPage() {
    * checklist. Items already marked (including any issues) are left untouched.
    */
   async function handleMarkRemainingDone() {
-    if (!checkRun || !template) return;
+    if (!checkRun || !template || markingRemaining) return;
     const remaining = template.items.filter((it) => !results.has(it.id));
     if (remaining.length === 0) return;
     if (!window.confirm(`Mark the remaining ${remaining.length} item${remaining.length > 1 ? 's' : ''} as OK?`)) {
@@ -231,6 +232,7 @@ export function CheckWorkflowPage() {
     }
 
     try {
+      setMarkingRemaining(true);
       const newResults = new Map(results);
       for (const it of remaining) {
         const result = await api.createCheckResult(
@@ -251,6 +253,8 @@ export function CheckWorkflowPage() {
     } catch (err) {
       setError('Failed to mark remaining items');
       console.error(err);
+    } finally {
+      setMarkingRemaining(false);
     }
   }
 
@@ -443,8 +447,11 @@ export function CheckWorkflowPage() {
               type="button"
               className="btn-mark-remaining"
               onClick={handleMarkRemainingDone}
+              disabled={markingRemaining}
             >
-              ✓ Mark remaining {template.items.length - results.size} as OK
+              {markingRemaining
+                ? 'Marking…'
+                : `✓ Mark remaining ${template.items.length - results.size} as OK`}
             </button>
           )}
         </div>
