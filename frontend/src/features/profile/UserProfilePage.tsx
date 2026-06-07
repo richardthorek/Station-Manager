@@ -291,7 +291,9 @@ export function UserProfilePage() {
                     <div className="profile-hero-rank">{member.rank || 'Visitor'}</div>
                   </div>
                   <div className="profile-hero-meta">
-                    <span className="hero-chip">📅 {calculateMembershipDuration()}</span>
+                    {calculateMembershipDuration() && (
+                      <span className="hero-chip">📅 {calculateMembershipDuration()}</span>
+                    )}
                     <span className="hero-chip">🆔 {member.id}</span>
                   </div>
                 </div>
