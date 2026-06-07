@@ -182,12 +182,14 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     }
   }
 
-  async createAppliance(name: string, description?: string, photoUrl?: string): Promise<Appliance> {
+  async createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string, vehicleType?: string): Promise<Appliance> {
     const appliance: Appliance = {
       id: uuidv4(),
       name,
       description,
       photoUrl,
+      stationId,
+      vehicleType,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -198,6 +200,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       name: appliance.name,
       description: appliance.description || '',
       photoUrl: appliance.photoUrl || '',
+      stationId: appliance.stationId || '',
+      vehicleType: appliance.vehicleType || '',
       createdAt: appliance.createdAt.toISOString(),
       updatedAt: appliance.updatedAt.toISOString(),
     };
@@ -206,13 +210,14 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     return appliance;
   }
 
-  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance | null> {
+  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string): Promise<Appliance | null> {
     try {
       const entity = await this.appliancesTable.getEntity<TableEntity>('Appliance', id);
-      
+
       entity.name = name;
       entity.description = description || '';
       entity.photoUrl = photoUrl || '';
+      entity.vehicleType = vehicleType || '';
       entity.updatedAt = new Date().toISOString();
 
       await this.appliancesTable.updateEntity(entity, 'Replace');
@@ -240,6 +245,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       name: entity.name as string,
       description: (entity.description as string) || undefined,
       photoUrl: (entity.photoUrl as string) || undefined,
+      stationId: (entity.stationId as string) || undefined,
+      vehicleType: (entity.vehicleType as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };
@@ -284,6 +291,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       description: item.description,
       referencePhotoUrl: item.referencePhotoUrl,
       order: index,
+      itemCode: item.itemCode,
+      section: item.section,
     }));
 
     const template: ChecklistTemplate = {
@@ -505,7 +514,10 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     status: CheckStatus,
     comment?: string,
     photoUrl?: string,
-    completedBy?: string
+    completedBy?: string,
+    stationId?: string,
+    itemCode?: string,
+    section?: string
   ): Promise<CheckResult> {
     const checkResult: CheckResult = {
       id: uuidv4(),
@@ -513,6 +525,9 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       itemId,
       itemName,
       itemDescription,
+      stationId,
+      itemCode,
+      section,
       status,
       comment,
       photoUrl,
@@ -528,6 +543,9 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       itemId: checkResult.itemId,
       itemName: checkResult.itemName,
       itemDescription: checkResult.itemDescription,
+      stationId: checkResult.stationId || '',
+      itemCode: checkResult.itemCode || '',
+      section: checkResult.section || '',
       status: checkResult.status,
       comment: checkResult.comment || '',
       photoUrl: checkResult.photoUrl || '',
@@ -604,6 +622,9 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       itemId: entity.itemId as string,
       itemName: entity.itemName as string,
       itemDescription: entity.itemDescription as string,
+      stationId: (entity.stationId as string) || undefined,
+      itemCode: (entity.itemCode as string) || undefined,
+      section: (entity.section as string) || undefined,
       status: entity.status as CheckStatus,
       comment: (entity.comment as string) || undefined,
       photoUrl: (entity.photoUrl as string) || undefined,

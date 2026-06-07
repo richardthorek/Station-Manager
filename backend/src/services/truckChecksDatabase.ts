@@ -118,30 +118,33 @@ class TruckChecksDatabase {
     return this.appliances.get(id);
   }
 
-  createAppliance(name: string, description?: string, photoUrl?: string): Appliance {
+  createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string, vehicleType?: string): Appliance {
     const appliance: Appliance = {
       id: uuidv4(),
       name,
       description,
       photoUrl,
+      stationId,
+      vehicleType,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     this.appliances.set(appliance.id, appliance);
-    
+
     // Create a default template for the new appliance
     const template = this.createDefaultTemplate(appliance);
     this.templates.set(template.id, template);
-    
+
     return appliance;
   }
 
-  updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Appliance | undefined {
+  updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string): Appliance | undefined {
     const appliance = this.appliances.get(id);
     if (appliance) {
       appliance.name = name;
       appliance.description = description;
       appliance.photoUrl = photoUrl;
+      appliance.vehicleType = vehicleType;
       appliance.updatedAt = new Date();
       return appliance;
     }
@@ -304,7 +307,10 @@ class TruckChecksDatabase {
     status: CheckStatus,
     comment?: string,
     photoUrl?: string,
-    completedBy?: string
+    completedBy?: string,
+    stationId?: string,
+    itemCode?: string,
+    section?: string
   ): CheckResult {
     const checkRun = this.checkRuns.get(runId);
     if (!checkRun) {
@@ -317,6 +323,9 @@ class TruckChecksDatabase {
       itemId,
       itemName,
       itemDescription,
+      stationId,
+      itemCode,
+      section,
       status,
       comment,
       photoUrl,

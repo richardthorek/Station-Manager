@@ -6,6 +6,7 @@ import { AchievementGrid } from '../../components/AchievementBadge';
 import { PageTransition } from '../../components/PageTransition';
 import { api } from '../../services/api';
 import { useSocket } from '../../hooks/useSocket';
+import { formatMembershipDuration } from './membershipUtils';
 import type { Member, CheckIn, Activity } from '../../types';
 import type { MemberAchievementSummary } from '../../types/achievements';
 import './UserProfilePage.css';
@@ -179,20 +180,7 @@ export function UserProfilePage() {
   const calculateMembershipDuration = () => {
     if (!member) return '';
     const startDate = new Date(member.membershipStartDate || member.createdAt);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - startDate.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 30) {
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
-    } else if (diffDays < 365) {
-      const months = Math.floor(diffDays / 30);
-      return `${months} month${months !== 1 ? 's' : ''}`;
-    } else {
-      const years = Math.floor(diffDays / 365);
-      const months = Math.floor((diffDays % 365) / 30);
-      return months > 0 ? `${years} year${years !== 1 ? 's' : ''} ${months} month${months !== 1 ? 's' : ''}` : `${years} year${years !== 1 ? 's' : ''}`;
-    }
+    return formatMembershipDuration(startDate);
   };
 
   const getActiveStreak = () => {
@@ -303,7 +291,9 @@ export function UserProfilePage() {
                     <div className="profile-hero-rank">{member.rank || 'Visitor'}</div>
                   </div>
                   <div className="profile-hero-meta">
-                    <span className="hero-chip">📅 {calculateMembershipDuration()}</span>
+                    {calculateMembershipDuration() && (
+                      <span className="hero-chip">📅 {calculateMembershipDuration()}</span>
+                    )}
                     <span className="hero-chip">🆔 {member.id}</span>
                   </div>
                 </div>

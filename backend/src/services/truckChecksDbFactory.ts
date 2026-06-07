@@ -26,8 +26,8 @@ export interface ITruckChecksDatabase {
   // Appliances
   getAllAppliances(stationId?: string): Promise<Appliance[]> | Appliance[];
   getApplianceById(id: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
-  createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string): Promise<Appliance> | Appliance;
-  updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
+  createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string, vehicleType?: string): Promise<Appliance> | Appliance;
+  updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
   deleteAppliance(id: string): Promise<boolean> | boolean;
 
   // Templates
@@ -55,7 +55,9 @@ export interface ITruckChecksDatabase {
     comment?: string,
     photoUrl?: string,
     completedBy?: string,
-    stationId?: string
+    stationId?: string,
+    itemCode?: string,
+    section?: string
   ): Promise<CheckResult> | CheckResult;
   getResultsByRunId(runId: string): Promise<CheckResult[]> | CheckResult[];
   getCheckRunWithResults(runId: string): Promise<CheckRunWithResults | null> | CheckRunWithResults | null;

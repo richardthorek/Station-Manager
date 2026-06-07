@@ -121,41 +121,31 @@ export function LandingPage() {
             </motion.article>
 
             <motion.article
-              className="feature-card feature-card--disabled"
+              className="feature-card"
               variants={itemVariants}
               transition={itemTransition}
             >
-              <div className="coming-soon-badge">Coming in v1.1</div>
               <div className="feature-icon" aria-hidden="true">🚛</div>
               <h3>Truck Check</h3>
               <p>Vehicle maintenance tracking and inspection checklist system.</p>
-              <button 
-                className="feature-link feature-link--disabled" 
-                disabled
-                aria-label="Truck checks coming soon in version 1.1"
-              >
-                Coming Soon
+              <Link to="/truckcheck" className="feature-link">
+                Go to Truck Check
                 <span className="arrow" aria-hidden="true">→</span>
-              </button>
+              </Link>
             </motion.article>
 
             <motion.article
-              className="feature-card feature-card--disabled"
+              className="feature-card"
               variants={itemVariants}
               transition={itemTransition}
             >
-              <div className="coming-soon-badge">Coming in v1.1</div>
               <div className="feature-icon" aria-hidden="true">📊</div>
               <h3>Reports & Analytics</h3>
               <p>Historical reporting, analytics, and data export capabilities.</p>
-              <button 
-                className="feature-link feature-link--disabled" 
-                disabled
-                aria-label="Reports and analytics coming soon in version 1.1"
-              >
-                Coming Soon
+              <Link to="/reports" className="feature-link">
+                Go to Reports
                 <span className="arrow" aria-hidden="true">→</span>
-              </button>
+              </Link>
             </motion.article>
 
             <motion.article
@@ -192,7 +182,7 @@ export function LandingPage() {
           <span>Built with ❤️ for the volunteer community</span>
           <span className="footer-separator">•</span>
           <span className="version">
-            Version 1.0 MVP • Build: {__APP_VERSION__.commitShort}
+            Version 1.1 • Build: {__APP_VERSION__.commitShort}
             {__APP_VERSION__.buildTime && __APP_VERSION__.buildTime !== 'unknown' && (
               <>
                 {' • '}
