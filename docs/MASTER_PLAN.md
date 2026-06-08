@@ -1552,6 +1552,77 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
+#### Feature: AI Voice (and Vision) Truck-Maintenance Agent
+**Status**: 📐 **DESIGN / FUTURE RELEASE** (design doc only — not implemented)
+**Design**: `docs/AI_MAINTENANCE_AGENT_DESIGN.md`
+
+**Objective**: A hands-free assistant that walks a volunteer through a truck check by
+voice ("I'm starting the Cat 1 tanker…"), prompting follow-ups in the same physical
+area of the truck, tuned to each brigade's layout and each vehicle's age/quirks. Camera
+("vision") is a later phase.
+
+**Product decisions captured (June 2026)**:
+- Connectivity: **cloud-only first**; offline/native later.
+- Output: produce the **same auditable `CheckRun`/`CheckResult`** records **and** keep a
+  full narrative transcript (`AgentSession`/`AgentTurn`).
+- Layout: **per-truck zones/compartments** seeded from a standard starter taxonomy
+  (every truck unique; codes give cross-brigade comparability).
+- Nuance: **hybrid** — brigades author structured facts (zones, equipment, vehicle
+  year/variant, quirks), the LLM infers natural follow-ups and age adjustments.
+
+**Phasing**: Phase 1 = truck-model schema + admin UI (no AI, independently useful);
+Phase 2 = cloud voice agent (PWA) → CheckRun + transcript; Phase 3 = offline/native;
+Phase 4 = vision. Schema is designed to be additive and backward-compatible across both
+DB twins. Real-time/voice sessions are a natural fit for the scale-to-zero Container Apps
+hosting option (see `infra/`).
+
+**Schema deltas (summary)**: new `ApplianceZone`, `ApplianceEquipment`, `AgentSession`,
+`AgentTurn`; optional extensions to `Appliance` (year/make/model/variant/quirksNotes),
+`ChecklistItem` (zoneId/equipmentId/expectedResponseType/unit), `CheckRun` (source/
+agentSessionId), `CheckResult` (zoneId/source/capturedValue/confidence/needsReview). See
+the design doc for full detail.
+
+**Priority**: P2 (strategic) · **Labels**: `feature`, `ai`, `truck-check`, `phase-4`
+
+---
+
+#### Feature: Self-Service Sign-up, Multi-Tenant Billing & Commercialization
+**Status**: 📐 **DESIGN / FUTURE RELEASE** (design doc only — not implemented)
+**Design**: `docs/SAAS_COMMERCIALIZATION_DESIGN.md`
+
+**Objective**: Turn Station Manager into a self-service SaaS — a brigade signs up online,
+picks a plan, pays via **Stripe**, enrols device-type accounts (kiosk/tablet/phone/
+wearable), and activates member accounts. The AI maintenance agent is sold as a paid
+add-on.
+
+**Tenancy**: introduce a top-level **`Organization`** (billing tenant) above the existing
+`brigadeId`/`stationId` model; formalise `BrigadeAccessToken` into first-class `Device`
+accounts; add optional member activation (login). `organizationId` becomes the outer
+isolation boundary; existing data migrates under one default org (mirrors `default-station`).
+
+**Billing (Stripe — endorsed)**: Checkout + Billing + Customer Portal + signature-verified
+webhooks → entitlement sync; Stripe Tax for GST; metered usage for AI overage; Invoicing
+for grant-funded brigades. We store only Stripe IDs (PCI SAQ-A).
+
+**Pricing assessment & recommendation**: Basic infra cost per brigade is < A$1/mo, so
+**Basic at A$10/mo is very healthy**. AI cost is usage-driven (~A$0.60/voice session;
+~A$5–7/mo light, A$18–36/mo heavy), so a **flat A$15 AI tier does not safely cover it**.
+Recommendation: **Community (free)** funnel tier, **Basic A$10/mo**, **AI (Pro) A$19/mo**
+with a fair-use allowance (~25 sessions) + ~A$0.60/session overage (or honour A$15 with a
+tighter cap). Push **annual billing (2 months free)** to cut Stripe fee drag and suit
+grant/council budgets.
+
+**Schema deltas (summary)**: new `Organization`, `Device`, `UsageRecord`, `BillingEvent`;
+optional extensions to `Station` (+organizationId), `AdminUser` (+organizationId, owner
+role), `Member` (+email/authStatus/userId/invitedAt). Plans = code-level catalog mapped to
+Stripe Price IDs. Phased A (tenant model) → B (billing+signup) → C (devices+members) → D
+(AI metering + storefront). Phase D depends on the AI agent (Phase 2 of that design).
+
+**Priority**: P2 (strategic / commercialization) · **Labels**: `feature`, `billing`,
+`multi-tenant`, `stripe`, `phase-4`
+
+---
+
 
 #### Issue #18: Notification System (Email/SMS)
 **GitHub Issue**: #120 (created 2026-01-04T09:26:06Z)
