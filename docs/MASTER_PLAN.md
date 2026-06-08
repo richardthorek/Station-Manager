@@ -1584,6 +1584,43 @@ the design doc for full detail.
 
 ---
 
+#### Feature: Self-Service Sign-up, Multi-Tenant Billing & Commercialization
+**Status**: 📐 **DESIGN / FUTURE RELEASE** (design doc only — not implemented)
+**Design**: `docs/SAAS_COMMERCIALIZATION_DESIGN.md`
+
+**Objective**: Turn Station Manager into a self-service SaaS — a brigade signs up online,
+picks a plan, pays via **Stripe**, enrols device-type accounts (kiosk/tablet/phone/
+wearable), and activates member accounts. The AI maintenance agent is sold as a paid
+add-on.
+
+**Tenancy**: introduce a top-level **`Organization`** (billing tenant) above the existing
+`brigadeId`/`stationId` model; formalise `BrigadeAccessToken` into first-class `Device`
+accounts; add optional member activation (login). `organizationId` becomes the outer
+isolation boundary; existing data migrates under one default org (mirrors `default-station`).
+
+**Billing (Stripe — endorsed)**: Checkout + Billing + Customer Portal + signature-verified
+webhooks → entitlement sync; Stripe Tax for GST; metered usage for AI overage; Invoicing
+for grant-funded brigades. We store only Stripe IDs (PCI SAQ-A).
+
+**Pricing assessment & recommendation**: Basic infra cost per brigade is < A$1/mo, so
+**Basic at A$10/mo is very healthy**. AI cost is usage-driven (~A$0.60/voice session;
+~A$5–7/mo light, A$18–36/mo heavy), so a **flat A$15 AI tier does not safely cover it**.
+Recommendation: **Community (free)** funnel tier, **Basic A$10/mo**, **AI (Pro) A$19/mo**
+with a fair-use allowance (~25 sessions) + ~A$0.60/session overage (or honour A$15 with a
+tighter cap). Push **annual billing (2 months free)** to cut Stripe fee drag and suit
+grant/council budgets.
+
+**Schema deltas (summary)**: new `Organization`, `Device`, `UsageRecord`, `BillingEvent`;
+optional extensions to `Station` (+organizationId), `AdminUser` (+organizationId, owner
+role), `Member` (+email/authStatus/userId/invitedAt). Plans = code-level catalog mapped to
+Stripe Price IDs. Phased A (tenant model) → B (billing+signup) → C (devices+members) → D
+(AI metering + storefront). Phase D depends on the AI agent (Phase 2 of that design).
+
+**Priority**: P2 (strategic / commercialization) · **Labels**: `feature`, `billing`,
+`multi-tenant`, `stripe`, `phase-4`
+
+---
+
 
 #### Issue #18: Notification System (Email/SMS)
 **GitHub Issue**: #120 (created 2026-01-04T09:26:06Z)
