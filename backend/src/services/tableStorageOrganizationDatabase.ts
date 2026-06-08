@@ -6,7 +6,7 @@
  * Entitlements are stored as a JSON string column.
  */
 
-import { TableClient, TableEntity } from '@azure/data-tables';
+import { TableClient, TableEntity, odata } from '@azure/data-tables';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './logger';
 import type { Organization, PlanCode, Entitlements, OrganizationStatus } from '../types';
@@ -140,8 +140,10 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
   }
 
   async getOrganizationBySlug(slug: string): Promise<Organization | null> {
+    // Use the odata tagged-template helper, which safely parameterises the
+    // value (no manual string interpolation into the filter).
     const iterator = this.table.listEntities<OrganizationEntity>({
-      queryOptions: { filter: `slug eq '${slug.replace(/'/g, "''")}'` },
+      queryOptions: { filter: odata`slug eq ${slug}` },
     });
     for await (const entity of iterator) {
       return this.fromEntity(entity as OrganizationEntity);
