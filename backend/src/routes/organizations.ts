@@ -14,6 +14,7 @@
 
 import { Router, Request, Response } from 'express';
 import { authMiddleware, requireAdmin, requireOwner } from '../middleware/auth';
+import { sensitiveActionRateLimiter } from '../middleware/rateLimiter';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { getAdminDb } from '../services/adminUserDbFactory';
 import { clampEntitlements, getDefaultEntitlements, isPlanCode, PLANS } from '../constants/plans';
@@ -21,6 +22,10 @@ import { logger } from '../services/logger';
 import type { Entitlements, PlanCode } from '../types';
 
 const router = Router();
+
+// Rate-limit all organization-management routes (these perform authorization
+// and account mutations). Defense in depth alongside the app-level limiter.
+router.use(sensitiveActionRateLimiter);
 
 /** Resolve the caller's organization id or send 400. */
 function orgId(req: Request, res: Response): string | null {

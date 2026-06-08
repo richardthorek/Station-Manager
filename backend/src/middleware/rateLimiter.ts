@@ -119,6 +119,40 @@ export const authRateLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter for sensitive routes that perform authentication/authorization
+ * or expensive work (signup, login, organization management). Applied directly
+ * on those routers so the protection is visible at the handler (defense in
+ * depth alongside the app-level apiRateLimiter, and statically analysable).
+ *
+ * Skipped under NODE_ENV=test so route-level tests that exercise these handlers
+ * many times are not throttled; production and development keep it active.
+ */
+export const sensitiveActionRateLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: RATE_LIMIT_AUTH_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests, please try again later.',
+  keyGenerator: getClientIp,
+  validate: { keyGeneratorIpFallback: false },
+  skip: () => process.env.NODE_ENV === 'test',
+  handler: (req, res) => {
+    const retryAfter = res.getHeader('RateLimit-Reset');
+    logger.warn('Sensitive-action rate limit exceeded', {
+      clientIp: getClientIp(req),
+      path: req.path,
+      method: req.method,
+      requestId: req.id,
+    });
+    res.status(429).json({
+      error: 'Too many requests',
+      message: 'You have exceeded the rate limit. Please try again later.',
+      retryAfter,
+    });
+  },
+});
+
+/**
  * Rate limiter for SPA fallback route (serving index.html)
  * Same as API rate limiter but separate instance to avoid conflicts
  */

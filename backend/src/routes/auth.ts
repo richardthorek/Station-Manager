@@ -18,6 +18,7 @@ import { getAdminDb } from '../services/adminUserDbFactory';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { logger } from '../services/logger';
 import { authMiddleware } from '../middleware/auth';
+import { sensitiveActionRateLimiter } from '../middleware/rateLimiter';
 import type { AdminUser } from '../types';
 
 const router = Router();
@@ -46,7 +47,7 @@ function signToken(user: Pick<AdminUser, 'id' | 'username' | 'role' | 'organizat
  * first owner account, then returns a JWT. Billing/upgrade happens later via
  * the organization management screens (Stripe wiring is a follow-up).
  */
-router.post('/signup', async (req: Request, res: Response) => {
+router.post('/signup', sensitiveActionRateLimiter, async (req: Request, res: Response) => {
   try {
     const { organizationName, billingEmail, username, password } = req.body ?? {};
 
@@ -93,7 +94,7 @@ router.post('/signup', async (req: Request, res: Response) => {
  * POST /api/auth/login
  * Authenticate user and return JWT token
  */
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', sensitiveActionRateLimiter, async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 

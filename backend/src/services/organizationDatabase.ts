@@ -18,10 +18,13 @@ export interface CreateOrganizationInput {
 
 /** Generate a url-safe slug from an organization name. */
 export function slugify(name: string): string {
+  // Collapse every run of non-alphanumerics to a single '-'. After this there
+  // are no consecutive dashes, so trimming needs only a single-character,
+  // non-backtracking pattern (avoids the polynomial-ReDoS of an anchored `-+`).
   const base = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/^-|-$/g, '');
   return base || 'org';
 }
 
