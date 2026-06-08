@@ -24,6 +24,15 @@ export default defineConfig([
       'jsx-a11y': jsxA11y,
     },
     rules: {
+      // React Compiler rules added in eslint-plugin-react-hooks@7 — disabled because
+      // this project does not use the React Compiler; these fire on valid patterns.
+      'react-hooks/react-compiler': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/immutability': 'off',
+      'react-hooks/purity': 'off',
+      'react-hooks/refs': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+
       // Accessibility rules (jsx-a11y)
       'jsx-a11y/alt-text': 'warn',
       'jsx-a11y/anchor-has-content': 'warn',

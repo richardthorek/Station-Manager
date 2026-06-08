@@ -162,17 +162,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 500, // Warn for chunks > 500 KB
     rollupOptions: {
       output: {
-        // Manual chunk splitting for better caching and smaller initial bundle
-        manualChunks: {
-          // Vendor chunks
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-charts': ['recharts'],
-          'vendor-motion': ['framer-motion'],
-          'vendor-socket': ['socket.io-client'],
-          // Date utilities - split out date-fns for tree-shaking
-          'vendor-date': ['date-fns'],
-          // Export utilities (heavy)
-          'vendor-export': ['exceljs', 'jspdf', 'html2canvas', 'papaparse'],
+        manualChunks: (id) => {
+          if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/react-router-dom/')) return 'vendor-react';
+          if (id.includes('/node_modules/recharts/')) return 'vendor-charts';
+          if (id.includes('/node_modules/framer-motion/')) return 'vendor-motion';
+          if (id.includes('/node_modules/socket.io-client/')) return 'vendor-socket';
+          if (id.includes('/node_modules/date-fns/')) return 'vendor-date';
+          if (id.includes('/node_modules/exceljs/') || id.includes('/node_modules/jspdf/') || id.includes('/node_modules/html2canvas/') || id.includes('/node_modules/papaparse/')) return 'vendor-export';
         },
       },
     },
