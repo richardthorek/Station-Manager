@@ -23,10 +23,6 @@ import type { Entitlements, PlanCode } from '../types';
 
 const router = Router();
 
-// Rate-limit all organization-management routes (these perform authorization
-// and account mutations). Defense in depth alongside the app-level limiter.
-router.use(sensitiveActionRateLimiter);
-
 /** Resolve the caller's organization id or send 400. */
 function orgId(req: Request, res: Response): string | null {
   const id = req.user?.organizationId;
@@ -38,7 +34,7 @@ function orgId(req: Request, res: Response): string | null {
 }
 
 /** GET current organization (+ plan catalog for the UI). */
-router.get('/current', authMiddleware, async (req: Request, res: Response) => {
+router.get('/current', sensitiveActionRateLimiter, authMiddleware, async (req: Request, res: Response) => {
   const id = orgId(req, res);
   if (!id) return;
   const db = ensureOrganizationDatabase();
@@ -50,7 +46,7 @@ router.get('/current', authMiddleware, async (req: Request, res: Response) => {
 });
 
 /** PUT current organization — owner only. */
-router.put('/current', authMiddleware, requireOwner, async (req: Request, res: Response) => {
+router.put('/current', sensitiveActionRateLimiter, authMiddleware, requireOwner, async (req: Request, res: Response) => {
   const id = orgId(req, res);
   if (!id) return;
   const db = ensureOrganizationDatabase();
@@ -97,7 +93,7 @@ router.put('/current', authMiddleware, requireOwner, async (req: Request, res: R
 });
 
 /** GET users in the current organization — admin/owner. */
-router.get('/current/users', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
+router.get('/current/users', sensitiveActionRateLimiter, authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   const id = orgId(req, res);
   if (!id) return;
   const adminDb = getAdminDb();
@@ -116,7 +112,7 @@ router.get('/current/users', authMiddleware, requireAdmin, async (req: Request, 
 });
 
 /** POST create a user within the current organization — admin/owner. */
-router.post('/current/users', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
+router.post('/current/users', sensitiveActionRateLimiter, authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   const id = orgId(req, res);
   if (!id) return;
   const { username, password, role } = req.body ?? {};
