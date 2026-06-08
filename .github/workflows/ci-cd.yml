@@ -61,18 +61,14 @@
 #     - Fail-fast: subsequent steps stop on first failure
 #
 # Post-Deployment Testing Strategy:
-#   TEMPORARILY DISABLED (2026-02-08)
+#   RE-ENABLED (2026-06-06)
 #
-#   Reason: Tests require ts-node (dev dependency) but deployment environment
-#   only has production dependencies installed. This causes test script to fail.
+#   Fix: postDeploymentTests.ts is compiled to dist/scripts/postDeploymentTests.js
+#   by the standard `tsc` build (it's included in src/**/* and not excluded).
+#   The npm script now runs `node dist/scripts/postDeploymentTests.js` instead of
+#   ts-node, so no dev dependencies are required in the deployed environment.
 #
-#   TODO: Re-enable after fixing test infrastructure to work without dev dependencies
-#   Options to fix:
-#     1. Compile test scripts to JavaScript and include in deployment
-#     2. Use a different test approach that doesn't require ts-node
-#     3. Install dev dependencies in a separate test step (not in deployment)
-#
-#   Original two-phase approach (for reference):
+#   Two-phase approach:
 #     Phase 1: Stabilization (up to 20 minutes)
 #       - Waits 30 seconds for Azure App Service restart to begin
 #       - Polls health endpoint every 10 seconds
@@ -199,7 +195,7 @@ jobs:
           fi
 
       - name: Upload backend coverage reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-coverage
@@ -246,7 +242,7 @@ jobs:
           fi
 
       - name: Upload frontend coverage reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: frontend-coverage
@@ -323,7 +319,7 @@ jobs:
           fi
 
       - name: Upload bundle stats
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: bundle-stats
@@ -361,7 +357,7 @@ jobs:
           cd .. && ls -lh release.zip
 
       - name: Upload deployment artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: node-app
           path: release.zip
@@ -369,7 +365,7 @@ jobs:
 
       - name: Login to Azure
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F04003FFA701477E897BF9329FCA2C5E }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0FB429D7D41741EAA3FF70DCD8F0A441 }}
@@ -464,59 +460,39 @@ jobs:
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
 
-      # Post-deployment smoke tests temporarily disabled
-      # Issue: ts-node not available in production environment (dev dependency only)
-      # TODO: Re-enable after fixing test infrastructure to work without dev dependencies
-      # See: https://github.com/richardthorek/Station-Manager/issues/XXX
-      #
-      # - name: Run post-deployment smoke tests
-      #   if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-      #   env:
-      #     APP_URL: ${{ secrets.APP_URL }}
-      #     TABLE_STORAGE_TABLE_SUFFIX: Test
-      #     STABILIZATION_TIMEOUT: 1200
-      #     STABILIZATION_INTERVAL: 10
-      #     FUNCTIONAL_TEST_TIMEOUT: 120
-      #     FUNCTIONAL_TEST_RETRIES: 2
-      #     REQUEST_TIMEOUT: 10000
-      #     GITHUB_SHA: ${{ github.sha }}
-      #   run: |
-      #     cd backend
-      #     echo "🧪 Running two-phase post-deployment tests..."
-      #     echo ""
-      #     echo "Phase 1: Stabilization (up to 20 minutes)"
-      #     echo "  - Polls until site is up AND correct version"
-      #     echo "  - Exits immediately when ready (efficient!)"
-      #     echo ""
-      #     echo "Phase 2: Functional tests (minimal retries)"
-      #     echo "  - Runs fast with 2 retries per test"
-      #     echo "  - Expected: 30-60 seconds"
-      #     echo ""
-      #     echo "Target: $APP_URL"
-      #     echo "Commit: ${{ github.sha }}"
-      #     echo ""
-      #     npm run test:post-deploy
-      #
-      # - name: Post-deployment test summary
-      #   if: always()
-      #   run: |
-      #     if [ "${{ github.ref }}" != "refs/heads/main" ] || [ "${{ github.event_name }}" = "pull_request" ]; then
-      #       echo "Post-deployment tests skipped (non-main branch or PR)" >> $GITHUB_STEP_SUMMARY
-      #       exit 0
-      #     fi
-      #
-      #     echo "## 🧪 Post-Deployment Tests" >> $GITHUB_STEP_SUMMARY
-      #     echo "" >> $GITHUB_STEP_SUMMARY
-      #     if [ ${{ job.status }} == 'success' ]; then
-      #       echo "✅ All smoke tests passed!" >> $GITHUB_STEP_SUMMARY
-      #       echo "" >> $GITHUB_STEP_SUMMARY
-      #       echo "The deployed application is responding correctly and all critical endpoints are functional." >> $GITHUB_STEP_SUMMARY
-      #     else
-      #       echo "❌ Some smoke tests failed!" >> $GITHUB_STEP_SUMMARY
-      #       echo "" >> $GITHUB_STEP_SUMMARY
-      #       echo "Check the test output above for details. The deployment may have issues." >> $GITHUB_STEP_SUMMARY
-      #     fi
-      #     echo "" >> $GITHUB_STEP_SUMMARY
-      #     echo "- **Target URL**: ${{ secrets.APP_URL }}" >> $GITHUB_STEP_SUMMARY
-      #     echo "- **Test Environment**: TABLE_STORAGE_TABLE_SUFFIX=Test" >> $GITHUB_STEP_SUMMARY
-      #     echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+      - name: Run post-deployment smoke tests
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          TABLE_STORAGE_TABLE_SUFFIX: Test
+          STABILIZATION_TIMEOUT: 1200
+          STABILIZATION_INTERVAL: 10
+          FUNCTIONAL_TEST_TIMEOUT: 120
+          FUNCTIONAL_TEST_RETRIES: 2
+          REQUEST_TIMEOUT: 10000
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          cd backend
+          echo "🧪 Running two-phase post-deployment tests..."
+          echo ""
+          echo "Phase 1: Stabilization (up to 20 minutes)"
+          echo "  - Polls until site is up AND correct version"
+          echo "  - Exits immediately when ready (efficient!)"
+          echo ""
+          echo "Phase 2: Functional tests (minimal retries)"
+          echo "  - Runs fast with 2 retries per test"
+          echo "  - Expected: 30-60 seconds"
+          echo ""
+          echo "Target: $APP_URL"
+          echo "Commit: ${{ github.sha }}"
+          echo ""
+          npm run test:post-deploy
+
+      - name: Post-deployment test summary
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          echo "## 🧪 Post-Deployment Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target URL**: ${{ secrets.APP_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Environment**: TABLE_STORAGE_TABLE_SUFFIX=Test" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

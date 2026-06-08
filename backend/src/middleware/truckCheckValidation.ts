@@ -43,6 +43,14 @@ export const validateCreateAppliance = [
     .withMessage('Photo URL must be a valid URL')
     .isLength({ max: 2000 })
     .withMessage('Photo URL must not exceed 2000 characters'),
+
+  body('vehicleType')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Vehicle type must not exceed 100 characters')
+    .matches(/^[a-z0-9-]+$/)
+    .withMessage('Vehicle type must be a lowercase slug (letters, numbers, hyphens only)'),
 ];
 
 /**
@@ -80,6 +88,14 @@ export const validateUpdateAppliance = [
     .withMessage('Photo URL must be a valid URL')
     .isLength({ max: 2000 })
     .withMessage('Photo URL must not exceed 2000 characters'),
+
+  body('vehicleType')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Vehicle type must not exceed 100 characters')
+    .matches(/^[a-z0-9-]+$/)
+    .withMessage('Vehicle type must be a lowercase slug (letters, numbers, hyphens only)'),
 ];
 
 /**
@@ -163,6 +179,21 @@ export const validateUpdateTemplate = [
     .withMessage('Reference photo URL must be a valid URL')
     .isLength({ max: 2000 })
     .withMessage('Reference photo URL must not exceed 2000 characters'),
+
+  body('items.*.itemCode')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Item code must not exceed 100 characters')
+    .matches(/^[a-z0-9-]+$/)
+    .withMessage('Item code must be a lowercase slug (letters, numbers, hyphens only)'),
+
+  body('items.*.section')
+    .optional({ checkFalsy: true })
+    .trim()
+    .escape()
+    .isLength({ max: 100 })
+    .withMessage('Section must not exceed 100 characters'),
 ];
 
 // ============================================
@@ -331,6 +362,21 @@ export const validateCreateCheckResult = [
     .escape()
     .isLength({ max: 100 })
     .withMessage('CompletedBy must not exceed 100 characters'),
+
+  body('itemCode')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Item code must not exceed 100 characters')
+    .matches(/^[a-z0-9-]+$/)
+    .withMessage('Item code must be a lowercase slug (letters, numbers, hyphens only)'),
+
+  body('section')
+    .optional({ checkFalsy: true })
+    .trim()
+    .escape()
+    .isLength({ max: 100 })
+    .withMessage('Section must not exceed 100 characters'),
 ];
 
 /**

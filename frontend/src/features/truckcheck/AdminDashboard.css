@@ -378,6 +378,89 @@
   font-size: 1.2rem;
 }
 
+.export-section {
+  background: var(--rfs-white);
+  color: var(--rfs-black);
+  padding: 1.25rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.export-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.export-date-range {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.export-date-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.export-date-input label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--rfs-black);
+}
+
+.export-date-input input[type="date"] {
+  padding: 0.45rem 0.75rem;
+  border: 2px solid var(--rfs-neutral-light);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background: white;
+}
+
+.export-date-input input[type="date"]:focus {
+  outline: none;
+  border-color: var(--rfs-core-red);
+}
+
+.btn-export-csv {
+  padding: 0.55rem 1.25rem;
+  background: var(--rfs-core-red);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+.btn-export-csv:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-export-csv:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.export-feedback {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.export-feedback--success {
+  color: #2e7d32;
+}
+
+.export-feedback--error {
+  color: var(--rfs-core-red);
+}
+
 @media (max-width: 768px) {
   .dashboard-header {
     padding: 1rem;
@@ -414,5 +497,19 @@
 
   .results-grid {
     grid-template-columns: 1fr;
+  }
+
+  .export-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .export-date-range {
+    flex-direction: column;
+  }
+
+  .btn-export-csv {
+    width: 100%;
+    text-align: center;
   }
 }

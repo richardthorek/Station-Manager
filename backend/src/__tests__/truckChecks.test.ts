@@ -694,3 +694,156 @@ describe('Truck Checks API - Integration Tests', () => {
     expect(completeResponse.body).toHaveProperty('status', 'completed');
   });
 });
+
+describe('Truck Checks API - Cross-brigade schema fields', () => {
+  describe('Appliance vehicleType', () => {
+    it('should persist vehicleType on create', async () => {
+      const response = await request(app)
+        .post('/api/truck-checks/appliances')
+        .send({ name: 'Tanker 1', description: 'Cat 7', vehicleType: 'cat7-tanker' })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('vehicleType', 'cat7-tanker');
+    });
+
+    it('should update vehicleType', async () => {
+      const created = await request(app)
+        .post('/api/truck-checks/appliances')
+        .send({ name: 'Tanker 2', vehicleType: 'cat1-pumper' });
+
+      const response = await request(app)
+        .put(`/api/truck-checks/appliances/${created.body.id}`)
+        .send({ name: 'Tanker 2', vehicleType: 'bulk-water' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('vehicleType', 'bulk-water');
+    });
+
+    it('should reject a vehicleType that is not a lowercase slug', async () => {
+      const response = await request(app)
+        .post('/api/truck-checks/appliances')
+        .send({ name: 'Bad Type', vehicleType: 'Cat 7 Tanker!' })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error', 'Validation failed');
+    });
+
+    it('should allow omitting vehicleType (backward compatible)', async () => {
+      const response = await request(app)
+        .post('/api/truck-checks/appliances')
+        .send({ name: 'No Type Appliance' })
+        .expect(201);
+
+      expect(response.body.vehicleType).toBeUndefined();
+    });
+  });
+
+  describe('ChecklistItem itemCode and section', () => {
+    let applianceId: string;
+
+    beforeAll(async () => {
+      const created = await request(app)
+        .post('/api/truck-checks/appliances')
+        .send({ name: 'Template Schema Appliance' });
+      applianceId = created.body.id;
+    });
+
+    it('should persist itemCode and section on template items', async () => {
+      const items = [
+        { id: '1', name: 'Engine Oil', description: 'Check oil level', order: 1, itemCode: 'fluid-levels', section: 'Engine Bay' },
+        { id: '2', name: 'Tyres', description: 'Check tread', order: 2, itemCode: 'tyre-condition', section: 'Exterior' },
+      ];
+
+      const response = await request(app)
+        .put(`/api/truck-checks/templates/${applianceId}`)
+        .send({ items })
+        .expect(200);
+
+      expect(response.body.items[0]).toHaveProperty('itemCode', 'fluid-levels');
+      expect(response.body.items[0]).toHaveProperty('section', 'Engine Bay');
+      expect(response.body.items[1]).toHaveProperty('itemCode', 'tyre-condition');
+    });
+
+    it('should reject an itemCode that is not a lowercase slug', async () => {
+      const items = [
+        { id: '1', name: 'Engine Oil', description: 'Check oil level', order: 1, itemCode: 'Fluid Levels' },
+      ];
+
+      const response = await request(app)
+        .put(`/api/truck-checks/templates/${applianceId}`)
+        .send({ items })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error', 'Validation failed');
+    });
+  });
+
+  describe('CheckResult itemCode and section (trend analysis)', () => {
+    let runId: string;
+
+    beforeAll(async () => {
+      const appliance = await request(app)
+        .post('/api/truck-checks/appliances')
+        .send({ name: 'Result Schema Appliance', vehicleType: 'cat7-tanker' });
+      const run = await request(app)
+        .post('/api/truck-checks/runs')
+        .send({ applianceId: appliance.body.id, completedBy: 'tester', completedByName: 'Tester' });
+      runId = run.body.id;
+    });
+
+    it('should denormalise itemCode and section onto the result', async () => {
+      const response = await request(app)
+        .post('/api/truck-checks/results')
+        .send({
+          runId,
+          itemId: 'item-a',
+          itemName: 'Tyres',
+          itemDescription: 'Check tread',
+          status: 'issue',
+          comment: 'Worn',
+          itemCode: 'tyre-condition',
+          section: 'Exterior',
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('itemCode', 'tyre-condition');
+      expect(response.body).toHaveProperty('section', 'Exterior');
+
+      // And it round-trips when fetching the run with results
+      const run = await request(app).get(`/api/truck-checks/runs/${runId}`).expect(200);
+      const stored = run.body.results.find((r: { itemId: string }) => r.itemId === 'item-a');
+      expect(stored).toHaveProperty('itemCode', 'tyre-condition');
+    });
+
+    it('should reject a result itemCode that is not a lowercase slug', async () => {
+      const response = await request(app)
+        .post('/api/truck-checks/results')
+        .send({
+          runId,
+          itemId: 'item-b',
+          itemName: 'Tyres',
+          itemDescription: 'Check tread',
+          status: 'done',
+          itemCode: 'Tyre Condition',
+        })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error', 'Validation failed');
+    });
+
+    it('should still accept results without itemCode (backward compatible)', async () => {
+      const response = await request(app)
+        .post('/api/truck-checks/results')
+        .send({
+          runId,
+          itemId: 'item-c',
+          itemName: 'Lights',
+          itemDescription: 'Check lights',
+          status: 'done',
+        })
+        .expect(201);
+
+      expect(response.body.itemCode).toBeUndefined();
+    });
+  });
+});

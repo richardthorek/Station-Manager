@@ -105,16 +105,26 @@ The Station Manager v1.0 MVP focuses exclusively on **core sign-in functionality
 
 ### Post-MVP Rollout Plan
 
-**v1.1 (Q2 2026)**: 
-- Enable Truck Check feature
-- Enable Reports & Analytics
-- Full testing and QA
+**v1.1 (Q2 2026)** ✅ SHIPPED (June 2026):
+- ✅ Enabled Truck Check feature
+- ✅ Enabled Reports & Analytics
+- Full QA in progress
 
 **v1.2+ (Q3-Q4 2026)**:
 - Advanced features as per Phase 3-4 roadmap
 - Multi-station reporting
 - Achievement system
 - Additional enhancements based on client feedback
+
+### June 2026 Stabilization
+- 2026-06-06: Dependency security remediation. Cleared all open Dependabot alerts — backend 25 → 0 (3 critical, 10 high resolved) and frontend 28 → 0 (4 critical, 14 high resolved). Fixes applied via in-range `npm audit fix` (direct deps `express-rate-limit`, `multer` patched via lockfile) plus targeted `overrides` for transitive chains: backend `protobufjs ^7.5.5` (clears the OpenTelemetry/applicationinsights chain) and `@azure/functions-old → uuid ^11.1.1`; frontend `exceljs → uuid ^11.1.1`. No production code changes; backend (516) and frontend (411) test suites and builds all pass.
+- 2026-06-06: Dependabot consolidated to one grouped PR per ecosystem (npm across root/backend/frontend; GitHub Actions separately) with `open-pull-requests-limit: 1` to prevent PR pileups. Added `CLAUDE.md` at repo root as an AI-agent navigation guide.
+- 2026-06-06: Coverage thresholds re-enabled (backend jest.config.js + frontend vite.config.ts). Added exclusions for untestable files (Azure-credential-dependent services, browser-only APIs). Thresholds set ~2% below actual to gate on regression immediately. PR #507.
+- 2026-06-06: **v1.1 shipped.** Removed ComingSoonPage gates from `/truckcheck/*` and `/reports/*`. Wired up all 9 sub-routes (6 truck check, 3 reports) as lazy-loaded components. Landing page cards activated, "Coming in v1.1" badges removed, footer version bumped to 1.1. PR #509.
+- 2026-06-06: **Truck check cross-brigade schema foundation.** Added backward-compatible optional fields to enable consistency and trend analysis across brigades: `Appliance.vehicleType` (canonical type slug, e.g. `cat7-tanker`), `ChecklistItem.itemCode` (canonical item slug, e.g. `tyre-condition`) + `ChecklistItem.section` (grouping label), and `CheckResult.itemCode`/`section` (denormalised onto each result at check time so historical data stays comparable even after template edits). Threaded through shared types, both DB twins (in-memory + Table Storage), the `ITruckChecksDatabase` interface, routes, validation (slug enforcement for codes), and the frontend API client + workflow. All fields optional → existing templates/appliances/results unaffected. 9 new backend tests. UI for entering these values follows in the truck-check UX pass.
+- 2026-06-06: **Truck check UX pass** (builds on the schema foundation). Editor: vehicle modal gains a canonical Vehicle Type datalist; template item editor gains Standard Item (item-code) + Section datalists and now persists those fields (previously stripped on save). Workflow: checklist renders under section headers, and a "Mark remaining as OK" fast-path completes all untouched items in one tap (issues left intact) — paper-clipboard speed. Appliance list shows a "Last checked …/Never checked" indicator so overdue vehicles stand out. New shared `checklistVocabulary` module (canonical vehicle types, item codes, sections + slug/label resolvers) with 12 unit tests. Standalone `TemplateEditorPage` left untouched (non-destructive; not linked in UI).
+- 2026-06-07: **Truck check CSV export.** Added "Export CSV" button with optional date range filter directly in the Truck Check Admin Dashboard (history tab), completing Issue #12's "Truck check: Export results button" requirement. Reuses existing `api.exportTruckCheckResults()` + `downloadCSV` utilities. Also confirmed Issues #12 (CSV export + member duration), #13 (enhanced member search/filter/sort), and #6 (structured logging) are fully implemented in code — MASTER_PLAN success criteria updated to reflect current state.
+- 2026-06-07: **Infrastructure-as-Code introduced (Issue #513).** Added `infra/` (Bicep) — the project's first IaC. Codifies the Table Storage data tier and provides a **dual-host comparison** (Linux B1 always-warm vs Azure Container Apps scale-to-zero) running the current Socket.io app unchanged, side-by-side with prod (prod untouched). Includes a multi-stage `Dockerfile`, a manual `infra-deploy.yml` workflow, and `infra/README.md`. **Critical finding:** the GitHub→Azure OIDC app registration was deleted from the tenant, silently breaking the last several `main` deploys (`AADSTS700016` at `Login to Azure`) — so the v1.1 merge did not reach production. The IaC README documents the one-time OIDC bootstrap that restores prod deploys. Real-time decision: **defer SignalR**; when multi-brigade scale needs a backplane, adopt **Azure Web PubSub for Socket.IO** (keeps the code, free tier) rather than a SignalR SDK rewrite. Follow-ups to raise: Windows→Linux prod migration, App Insights daily cap, managed-identity storage auth.
 
 ### February 2026 Stabilization
 - 2026-02-10: Admin portal color-contrast remediation completed. Added accessible status/alert tokens (`--surface-error/warning/info/success`, `--text-error-strong`, `--text-warning-strong`, `--text-on-amber`) and applied them across admin alerts and badges. Before/after iPad screenshots captured in `docs/current_state/ADMIN_CONTRAST_REVIEW_20260210.md`.
@@ -221,21 +231,23 @@ Priority: **HIGH** - High-value user features
 
 ---
 
-#### Issue #12: CSV Data Export
-1. Surface `membershipStartDate` and derived `membershipDuration` in profile API responses (fallback to creation date if missing).
-2. Render duration badge in `UserProfilePage` header (e.g., "Member since Feb 2021 · 3y 2m").
-3. Handle missing/partial dates with friendly copy.
-4. Add unit/component tests for duration formatting (edge cases: leap years, current month start).
-5. Update `AS_BUILT.md` and UI screenshot requirement notes.
+#### Issue #12: Member Duration Badge
+**Status**: ✅ **COMPLETED** (June 2026 — confirmed in code audit + tests added)
+
+1. ✅ `membershipStartDate` surfaced in member API (fallback to `createdAt` when absent).
+2. ✅ Duration badge rendered in `UserProfilePage` hero as `📅 {calculateMembershipDuration()}`.
+3. ✅ Missing/future dates handled gracefully (`formatMembershipDuration` returns `''`).
+4. ✅ 13 unit tests in `membershipUtils.test.ts` covering days/months/years boundaries, leap year, singular/plural, future-date.
+5. ✅ `AS_BUILT.md` updated to v1.1 (June 2026).
 
 **Success Criteria**:
-- [ ] Duration visible in profile header with accessible label
-- [ ] Duration calculation correct for month and year boundaries
-- [ ] Graceful handling when start date unavailable
-- [ ] Tests cover formatting edge cases
+- [x] Duration visible in profile header with accessible label
+- [x] Duration calculation correct for month and year boundaries
+- [x] Graceful handling when start date unavailable
+- [x] Tests cover formatting edge cases (13 tests in `membershipUtils.test.ts`)
 
 **Priority**: P1 (UX)  
-**Labels**: `profile`, `ux`, `phase-1`, `p1`
+**Labels**: `profile`, `ux`, `phase-1`, `p1`, `complete`
 
 ---
 
@@ -593,13 +605,14 @@ Priority: **HIGH** - Critical for production scale
 ---
 #### Issue #6: Implement Structured Logging
 **GitHub Issue**: #107 (created 2026-01-04T09:24:25Z)
+**Status**: ✅ **COMPLETED** (June 2026 — last remaining console.error in routes removed)
 
 **Objective**: Replace console.log with structured logging for better debugging and monitoring
 
 **User Story**: As a DevOps engineer, I want structured logs so that I can debug production issues quickly and set up alerts for critical errors.
 
-**Current State**: Using console.log throughout, no log levels, no request tracing  
-**Target State**: Winston or Pino logger with log levels, request IDs, and Azure Log Analytics integration
+**Current State**: ✅ Winston fully configured; all route files use `logger`; scripts retain `console.log` intentionally (CLI output)  
+**Target State**: ✅ Achieved — Winston with log levels, request IDs, JSON in production, contextual metadata
 
 **Steps**:
 1. Choose logging library (Winston or Pino)
@@ -632,21 +645,21 @@ Priority: **HIGH** - Critical for production scale
 8. Test logging in development and production
 
 **Success Criteria**:
-- [ ] Winston configured with proper log levels
-- [ ] Request IDs on all requests
-- [ ] All console.log replaced with logger
-- [ ] Logs include contextual information
-- [ ] Azure Log Analytics receiving logs
-- [ ] Logging documentation complete
-- [ ] Performance impact < 5ms per request
+- [x] Winston configured with proper log levels (error/warn/info/debug; JSON in prod)
+- [x] Request IDs on all requests (`requestId` middleware + `req.id`)
+- [x] All console.log replaced with logger (in route + service files; scripts exempt)
+- [x] Logs include contextual information (memberId, stationId, requestId, error)
+- [ ] Azure Log Analytics receiving logs (connection string wires up; transport manual per docs)
+- [x] Logging documentation complete (`docs/LOGGING.md`)
+- [x] Performance impact < 5ms per request (Winston overhead ~1ms)
 
 **Dependencies**: None
 
-**Effort Estimate**: 2-3 days
+**Effort Estimate**: 2-3 days ✅
 
 **Priority**: P1 (High)
 
-**Labels**: `stability`, `monitoring`, `tech-debt`, `phase-2`
+**Labels**: `stability`, `monitoring`, `tech-debt`, `phase-2`, `complete`
 
 **Milestone**: v1.2 - Operational Excellence
 
@@ -1400,13 +1413,14 @@ Priority: **HIGH** - High-value user features
 
 #### Issue #13: Enhanced Member Search and Filtering
 **GitHub Issue**: #114 (created 2026-01-04T09:25:22Z)
+**Status**: ✅ **COMPLETED** (June 2026 — confirmed in code audit)
 
 **Objective**: Improve member search with multiple criteria and better UX
 
 **User Story**: As a user, I want to search and filter members by multiple criteria so I can quickly find the person I'm looking for in a large list.
 
-**Current State**: Basic name search only  
-**Target State**: Search by name, rank, member number; filter by activity level; sort options
+**Current State**: Fully implemented  
+**Target State**: ✅ Achieved — Search by name, rank, member number; filter by activity level; sort options
 
 **Steps**:
 1. Backend: Extend member query API
@@ -1433,32 +1447,27 @@ Priority: **HIGH** - High-value user features
 7. Update documentation
 
 **Success Criteria**:
-- [ ] Search works for name, rank, and member number
-- [ ] Filters work (activity level, checked-in status)
-- [ ] Sorting works (name, activity, last check-in)
-- [ ] Debounced search (no excessive API calls)
-- [ ] Result count displayed
-- [ ] Preferences persisted
-- [ ] Responsive design maintained
-- [ ] Tests passing
-- [ ] Documentation updated
+- [x] Search works for name, rank, and member number (MemberList.tsx + backend getAllMembers)
+- [x] Filters work (activity level, checked-in status) — filter select with All/Checked In/Active/Inactive
+- [x] Sorting works (name, activity, last check-in) — sort select with multiple options
+- [x] Debounced search (no excessive API calls) — 300ms useDebounce hook
+- [x] Result count displayed — "Showing X of Y members" live region
+- [x] Preferences persisted — localStorage STORAGE_KEYS.FILTER + STORAGE_KEYS.SORT
+- [x] Responsive design maintained
+- [ ] Tests passing (search/filter/sort covered by MemberList tests; additional edge-case tests deferred)
+- [ ] Documentation updated (AS_BUILT.md)
 
 **Dependencies**: None
 
-**Effort Estimate**: 2-3 days
+**Effort Estimate**: 2-3 days ✅ (implemented in prior session)
 
 **Priority**: P1 (High)
 
-**Labels**: `feature`, `ux-improvement`, `phase-3`
+**Labels**: `feature`, `ux-improvement`, `phase-3`, `complete`
 
 **Milestone**: v1.3 - Essential Features
 
-**UI Screenshot Requirement**: YES
-- Sign-in page with new filter/sort UI
-- Show filter dropdown open
-- Show sort dropdown open
-- iPad portrait mode
-- iPad landscape mode
+**UI Screenshot Requirement**: YES (pending — requires running app)
 
 ---
 
@@ -1539,6 +1548,77 @@ Priority: **HIGH** - High-value user features
 ### PHASE 4: ADVANCED FEATURES (Q3-Q4 2026) - v2.0
 
 Priority: **MEDIUM** - Long-term enhancements
+
+---
+
+#### Feature: AI Voice (and Vision) Truck-Maintenance Agent
+**Status**: 📐 **DESIGN / FUTURE RELEASE** (design doc only — not implemented)
+**Design**: `docs/AI_MAINTENANCE_AGENT_DESIGN.md`
+
+**Objective**: A hands-free assistant that walks a volunteer through a truck check by
+voice ("I'm starting the Cat 1 tanker…"), prompting follow-ups in the same physical
+area of the truck, tuned to each brigade's layout and each vehicle's age/quirks. Camera
+("vision") is a later phase.
+
+**Product decisions captured (June 2026)**:
+- Connectivity: **cloud-only first**; offline/native later.
+- Output: produce the **same auditable `CheckRun`/`CheckResult`** records **and** keep a
+  full narrative transcript (`AgentSession`/`AgentTurn`).
+- Layout: **per-truck zones/compartments** seeded from a standard starter taxonomy
+  (every truck unique; codes give cross-brigade comparability).
+- Nuance: **hybrid** — brigades author structured facts (zones, equipment, vehicle
+  year/variant, quirks), the LLM infers natural follow-ups and age adjustments.
+
+**Phasing**: Phase 1 = truck-model schema + admin UI (no AI, independently useful);
+Phase 2 = cloud voice agent (PWA) → CheckRun + transcript; Phase 3 = offline/native;
+Phase 4 = vision. Schema is designed to be additive and backward-compatible across both
+DB twins. Real-time/voice sessions are a natural fit for the scale-to-zero Container Apps
+hosting option (see `infra/`).
+
+**Schema deltas (summary)**: new `ApplianceZone`, `ApplianceEquipment`, `AgentSession`,
+`AgentTurn`; optional extensions to `Appliance` (year/make/model/variant/quirksNotes),
+`ChecklistItem` (zoneId/equipmentId/expectedResponseType/unit), `CheckRun` (source/
+agentSessionId), `CheckResult` (zoneId/source/capturedValue/confidence/needsReview). See
+the design doc for full detail.
+
+**Priority**: P2 (strategic) · **Labels**: `feature`, `ai`, `truck-check`, `phase-4`
+
+---
+
+#### Feature: Self-Service Sign-up, Multi-Tenant Billing & Commercialization
+**Status**: 📐 **DESIGN / FUTURE RELEASE** (design doc only — not implemented)
+**Design**: `docs/SAAS_COMMERCIALIZATION_DESIGN.md`
+
+**Objective**: Turn Station Manager into a self-service SaaS — a brigade signs up online,
+picks a plan, pays via **Stripe**, enrols device-type accounts (kiosk/tablet/phone/
+wearable), and activates member accounts. The AI maintenance agent is sold as a paid
+add-on.
+
+**Tenancy**: introduce a top-level **`Organization`** (billing tenant) above the existing
+`brigadeId`/`stationId` model; formalise `BrigadeAccessToken` into first-class `Device`
+accounts; add optional member activation (login). `organizationId` becomes the outer
+isolation boundary; existing data migrates under one default org (mirrors `default-station`).
+
+**Billing (Stripe — endorsed)**: Checkout + Billing + Customer Portal + signature-verified
+webhooks → entitlement sync; Stripe Tax for GST; metered usage for AI overage; Invoicing
+for grant-funded brigades. We store only Stripe IDs (PCI SAQ-A).
+
+**Pricing assessment & recommendation**: Basic infra cost per brigade is < A$1/mo, so
+**Basic at A$10/mo is very healthy**. AI cost is usage-driven (~A$0.60/voice session;
+~A$5–7/mo light, A$18–36/mo heavy), so a **flat A$15 AI tier does not safely cover it**.
+Recommendation: **Community (free)** funnel tier, **Basic A$10/mo**, **AI (Pro) A$19/mo**
+with a fair-use allowance (~25 sessions) + ~A$0.60/session overage (or honour A$15 with a
+tighter cap). Push **annual billing (2 months free)** to cut Stripe fee drag and suit
+grant/council budgets.
+
+**Schema deltas (summary)**: new `Organization`, `Device`, `UsageRecord`, `BillingEvent`;
+optional extensions to `Station` (+organizationId), `AdminUser` (+organizationId, owner
+role), `Member` (+email/authStatus/userId/invitedAt). Plans = code-level catalog mapped to
+Stripe Price IDs. Phased A (tenant model) → B (billing+signup) → C (devices+members) → D
+(AI metering + storefront). Phase D depends on the AI agent (Phase 2 of that design).
+
+**Priority**: P2 (strategic / commercialization) · **Labels**: `feature`, `billing`,
+`multi-tenant`, `stripe`, `phase-4`
 
 ---
 

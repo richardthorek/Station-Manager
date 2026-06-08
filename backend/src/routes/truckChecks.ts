@@ -105,15 +105,15 @@ router.get('/appliances/:id', validateApplianceId, handleValidationErrors, async
  */
 router.post('/appliances', validateCreateAppliance, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const { name, description, photoUrl } = req.body;
+    const { name, description, photoUrl, vehicleType } = req.body;
     const stationId = getStationIdFromRequest(req);
-    
+
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.createAppliance(name, description, photoUrl, stationId);
+    const appliance = await db.createAppliance(name, description, photoUrl, stationId, vehicleType);
     res.status(201).json(appliance);
   } catch (error) {
     logger.error('Error creating appliance:', error);
@@ -127,14 +127,14 @@ router.post('/appliances', validateCreateAppliance, handleValidationErrors, asyn
  */
 router.put('/appliances/:id', validateUpdateAppliance, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const { name, description, photoUrl } = req.body;
-    
+    const { name, description, photoUrl, vehicleType } = req.body;
+
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
     }
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.updateAppliance(req.params.id, name, description, photoUrl);
+    const appliance = await db.updateAppliance(req.params.id, name, description, photoUrl, vehicleType);
     if (!appliance) {
       return res.status(404).json({ error: 'Appliance not found' });
     }
@@ -374,12 +374,12 @@ router.put('/runs/:id/complete', validateCompleteCheckRun, handleValidationError
  */
 router.post('/results', validateCreateCheckResult, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const { runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy } = req.body;
+    const { runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy, itemCode, section } = req.body;
     const stationId = getStationIdFromRequest(req);
-    
+
     if (!runId || !itemId || !itemName || !itemDescription || !status) {
-      return res.status(400).json({ 
-        error: 'runId, itemId, itemName, itemDescription, and status are required' 
+      return res.status(400).json({
+        error: 'runId, itemId, itemName, itemDescription, and status are required'
       });
     }
 
@@ -397,7 +397,9 @@ router.post('/results', validateCreateCheckResult, handleValidationErrors, async
       comment,
       photoUrl,
       completedBy,
-      stationId
+      stationId,
+      itemCode,
+      section
     );
     
     // Emit real-time update for collaborative checking - station-scoped

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
+import { downloadCSV, getTodayFormatted } from '../../utils/csvUtils';
 import { VehicleManagement } from './VehicleManagement';
 import type { CheckRunWithResults, Appliance } from '../../types';
 import './AdminDashboard.css';
@@ -18,6 +19,10 @@ export function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
+  const [exportStartDate, setExportStartDate] = useState('');
+  const [exportEndDate, setExportEndDate] = useState('');
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportFeedback, setExportFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -59,6 +64,27 @@ export function AdminDashboardPage() {
     } catch (err) {
       setError('Failed to load check runs');
       console.error(err);
+    }
+  }
+
+  async function handleExportResults() {
+    try {
+      setExportLoading(true);
+      setExportFeedback(null);
+      const blob = await api.exportTruckCheckResults(
+        exportStartDate || undefined,
+        exportEndDate || undefined,
+      );
+      const dateRange = exportStartDate || exportEndDate
+        ? `-${exportStartDate || 'all'}-to-${exportEndDate || 'all'}`
+        : '';
+      downloadCSV(blob, `truckcheck-results${dateRange}-${getTodayFormatted()}.csv`);
+      setExportFeedback({ type: 'success', message: 'Export downloaded successfully.' });
+    } catch {
+      setExportFeedback({ type: 'error', message: 'Export failed. Please try again.' });
+    } finally {
+      setExportLoading(false);
+      setTimeout(() => setExportFeedback(null), 4000);
     }
   }
 
@@ -160,6 +186,49 @@ export function AdminDashboardPage() {
               <span>Issues Only</span>
             </label>
           </div>
+        </div>
+
+        <div className="export-section">
+          <div className="export-controls">
+            <div className="export-date-range">
+              <div className="export-date-input">
+                <label htmlFor="export-start">From:</label>
+                <input
+                  id="export-start"
+                  type="date"
+                  value={exportStartDate}
+                  onChange={(e) => setExportStartDate(e.target.value)}
+                  disabled={exportLoading}
+                />
+              </div>
+              <div className="export-date-input">
+                <label htmlFor="export-end">To:</label>
+                <input
+                  id="export-end"
+                  type="date"
+                  value={exportEndDate}
+                  onChange={(e) => setExportEndDate(e.target.value)}
+                  disabled={exportLoading}
+                />
+              </div>
+            </div>
+            <button
+              className="btn-export-csv"
+              onClick={handleExportResults}
+              disabled={exportLoading}
+              aria-busy={exportLoading}
+            >
+              {exportLoading ? 'Exporting…' : '📥 Export CSV'}
+            </button>
+          </div>
+          {exportFeedback && (
+            <p
+              className={`export-feedback export-feedback--${exportFeedback.type}`}
+              role={exportFeedback.type === 'error' ? 'alert' : 'status'}
+            >
+              {exportFeedback.message}
+            </p>
+          )}
         </div>
 
         <div className="stats-summary">

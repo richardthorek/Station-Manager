@@ -578,21 +578,21 @@ class ApiService {
     return response.json();
   }
 
-  async createAppliance(name: string, description?: string, photoUrl?: string): Promise<Appliance> {
+  async createAppliance(name: string, description?: string, photoUrl?: string, vehicleType?: string): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`, {
       method: 'POST',
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ name, description, photoUrl }),
+      body: JSON.stringify({ name, description, photoUrl, vehicleType }),
     });
     if (!response.ok) throw new Error('Failed to create appliance');
     return response.json();
   }
 
-  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string): Promise<Appliance> {
+  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
       method: 'PUT',
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ name, description, photoUrl }),
+      body: JSON.stringify({ name, description, photoUrl, vehicleType }),
     });
     if (!response.ok) throw new Error('Failed to update appliance');
     return response.json();
@@ -695,12 +695,14 @@ class ApiService {
     status: CheckStatus,
     comment?: string,
     photoUrl?: string,
-    completedBy?: string
+    completedBy?: string,
+    itemCode?: string,
+    section?: string
   ): Promise<CheckResult> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/results`, {
       method: 'POST',
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy }),
+      body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy, itemCode, section }),
     });
     if (!response.ok) throw new Error('Failed to create check result');
     return response.json();

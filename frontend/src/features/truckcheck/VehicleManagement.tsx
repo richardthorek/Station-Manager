@@ -2,6 +2,7 @@ import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react'
 import { api } from '../../services/api';
 import type { Appliance, ChecklistTemplate, ChecklistItem } from '../../types';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { VEHICLE_TYPES, ITEM_CODES, SECTIONS, resolveVocabSlug, vocabLabel } from './checklistVocabulary';
 import './VehicleManagement.css';
 
 interface VehicleManagementProps {
@@ -16,6 +17,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
   const [vehicleName, setVehicleName] = useState('');
   const [vehicleDescription, setVehicleDescription] = useState('');
+  const [vehicleType, setVehicleType] = useState('');
   const [vehiclePhotoUrl, setVehiclePhotoUrl] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -71,6 +73,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     setSelectedVehicle(null);
     setVehicleName('');
     setVehicleDescription('');
+    setVehicleType('');
     setVehiclePhotoUrl('');
     setPhotoFile(null);
     setIsEditMode(false);
@@ -81,6 +84,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     setSelectedVehicle(vehicle);
     setVehicleName(vehicle.name);
     setVehicleDescription(vehicle.description || '');
+    setVehicleType(vocabLabel(vehicle.vehicleType, VEHICLE_TYPES));
     setVehiclePhotoUrl(vehicle.photoUrl || '');
     setPhotoFile(null);
     setIsEditMode(true);
@@ -131,10 +135,12 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
         photoUrl = uploadResponse.photoUrl;
       }
 
+      const typeSlug = resolveVocabSlug(vehicleType, VEHICLE_TYPES);
+
       if (isEditMode && selectedVehicle) {
-        await api.updateAppliance(selectedVehicle.id, vehicleName, vehicleDescription || undefined, photoUrl || undefined);
+        await api.updateAppliance(selectedVehicle.id, vehicleName, vehicleDescription || undefined, photoUrl || undefined, typeSlug);
       } else {
-        await api.createAppliance(vehicleName, vehicleDescription || undefined, photoUrl || undefined);
+        await api.createAppliance(vehicleName, vehicleDescription || undefined, photoUrl || undefined, typeSlug);
       }
 
       setShowVehicleModal(false);
@@ -170,6 +176,8 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
         description: item.description,
         referencePhotoUrl: item.referencePhotoUrl,
         order: index,
+        itemCode: resolveVocabSlug(item.itemCode || '', ITEM_CODES),
+        section: item.section?.trim() || undefined,
       }));
 
       await api.updateTemplate(template.applianceId, items);
@@ -309,6 +317,27 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
             </div>
 
             <div className="form-group">
+              <label htmlFor={`vehicle-type-${modalIdSuffix}`}>Vehicle Type</label>
+              <input
+                id={`vehicle-type-${modalIdSuffix}`}
+                list={`vehicle-type-options-${modalIdSuffix}`}
+                type="text"
+                value={vehicleType}
+                onChange={(e) => setVehicleType(e.target.value)}
+                placeholder="e.g., Category 7 — Medium Tanker"
+              />
+              <datalist id={`vehicle-type-options-${modalIdSuffix}`}>
+                {VEHICLE_TYPES.map((vt) => (
+                  <option key={vt.value} value={vt.label} />
+                ))}
+              </datalist>
+              <small>
+                Pick a standard type so this vehicle&apos;s checks can be compared with the
+                same type at other brigades.
+              </small>
+            </div>
+
+            <div className="form-group">
               <label htmlFor={`vehicle-photo-${modalIdSuffix}`}>Vehicle Photo</label>
               {(vehiclePhotoUrl || photoFile) && (
                 <div className="photo-preview">
@@ -363,7 +392,22 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
         >
           <div className="modal-content template-editor">
             <h2>Edit Checklist Template: {template.applianceName}</h2>
-            
+            <p className="template-editor-hint">
+              Tag items with a standard code so the same check trends across brigades,
+              and group them into sections to match how you walk around the vehicle.
+            </p>
+
+            <datalist id="template-item-code-options">
+              {ITEM_CODES.map((ic) => (
+                <option key={ic.value} value={ic.value}>{ic.label}</option>
+              ))}
+            </datalist>
+            <datalist id="template-section-options">
+              {SECTIONS.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+
             <div className="template-items">
               {template.items.map((item, index) => (
                 <div key={item.id} className="template-item">
@@ -383,6 +427,26 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
                       className="item-description"
                       rows={2}
                     />
+                    <div className="item-taxonomy">
+                      <input
+                        type="text"
+                        list="template-item-code-options"
+                        value={item.itemCode || ''}
+                        onChange={(e) => handleUpdateTemplateItem(index, 'itemCode', e.target.value)}
+                        placeholder="Standard item (for cross-brigade trends)"
+                        className="item-code"
+                        aria-label="Standard item code"
+                      />
+                      <input
+                        type="text"
+                        list="template-section-options"
+                        value={item.section || ''}
+                        onChange={(e) => handleUpdateTemplateItem(index, 'section', e.target.value)}
+                        placeholder="Section (e.g. Engine Bay)"
+                        className="item-section"
+                        aria-label="Section"
+                      />
+                    </div>
                     <div className="item-photo-upload">
                       {item.referencePhotoUrl && (
                         <img src={item.referencePhotoUrl} alt="Reference" className="item-photo-preview" />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../hooks/useTheme';
@@ -30,6 +30,7 @@ export function CheckWorkflowPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [markingRemaining, setMarkingRemaining] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -166,7 +167,7 @@ export function CheckWorkflowPage() {
     }
   }
 
-  async function handleItemResult(itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string, photoUrl?: string) {
+  async function handleItemResult(itemId: string, itemName: string, itemDescription: string, status: CheckStatus, comment?: string, photoUrl?: string, itemCode?: string, section?: string) {
     if (!checkRun) return;
 
     try {
@@ -178,7 +179,9 @@ export function CheckWorkflowPage() {
         status,
         comment,
         photoUrl,
-        completedBy // Track who completed this item
+        completedBy, // Track who completed this item
+        itemCode,    // Canonical code for cross-brigade trend analysis
+        section      // Grouping label captured at time of check
       );
       
       const newResults = new Map(results);
@@ -213,6 +216,46 @@ export function CheckWorkflowPage() {
     if (!checkRun) return;
     // Optionally we could call completeCheckRun here, but summary page handles final completion.
     navigate(`/truckcheck/summary/${checkRun.id}`);
+  }
+
+  /**
+   * Fast-path for the common "everything is fine" case: mark every remaining
+   * unchecked item as Done in one action, the way you'd run a finger down a paper
+   * checklist. Items already marked (including any issues) are left untouched.
+   */
+  async function handleMarkRemainingDone() {
+    if (!checkRun || !template || markingRemaining) return;
+    const remaining = template.items.filter((it) => !results.has(it.id));
+    if (remaining.length === 0) return;
+    if (!window.confirm(`Mark the remaining ${remaining.length} item${remaining.length > 1 ? 's' : ''} as OK?`)) {
+      return;
+    }
+
+    try {
+      setMarkingRemaining(true);
+      const newResults = new Map(results);
+      for (const it of remaining) {
+        const result = await api.createCheckResult(
+          checkRun.id,
+          it.id,
+          it.name,
+          it.description,
+          'done',
+          undefined,
+          undefined,
+          completedBy,
+          it.itemCode,
+          it.section
+        );
+        newResults.set(it.id, result);
+      }
+      setResults(newResults);
+    } catch (err) {
+      setError('Failed to mark remaining items');
+      console.error(err);
+    } finally {
+      setMarkingRemaining(false);
+    }
   }
 
   function findNextUncompletedItem(startIndex: number): number {
@@ -399,6 +442,18 @@ export function CheckWorkflowPage() {
           <div className="progress-text">
             {results.size} of {template.items.length} items completed ({Math.round((results.size / template.items.length) * 100)}%)
           </div>
+          {checkRun && results.size < template.items.length && (
+            <button
+              type="button"
+              className="btn-mark-remaining"
+              onClick={handleMarkRemainingDone}
+              disabled={markingRemaining}
+            >
+              {markingRemaining
+                ? 'Marking…'
+                : `✓ Mark remaining ${template.items.length - results.size} as OK`}
+            </button>
+          )}
         </div>
 
         {checkRun && (
@@ -461,17 +516,25 @@ export function CheckWorkflowPage() {
           onTouchEnd={onTouchEnd}
         >
           <div className="items-container">
-            {template.items.map((item, index) => (
-              <CheckItemCard
-                key={item.id}
-                item={item}
-                itemIcon={getItemIcon(item.name)}
-                isActive={index === currentIndex}
-                result={results.get(item.id)}
-                onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl)}
-                onPhotoClick={(url, alt) => setLightboxImage({ url, alt })}
-              />
-            ))}
+            {template.items.map((item, index) => {
+              const prevSection = index > 0 ? template.items[index - 1].section : undefined;
+              const showSectionHeader = !!item.section && item.section !== prevSection;
+              return (
+                <Fragment key={item.id}>
+                  {showSectionHeader && (
+                    <h2 className="workflow-section-header">{item.section}</h2>
+                  )}
+                  <CheckItemCard
+                    item={item}
+                    itemIcon={getItemIcon(item.name)}
+                    isActive={index === currentIndex}
+                    result={results.get(item.id)}
+                    onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl, item.itemCode, item.section)}
+                    onPhotoClick={(url, alt) => setLightboxImage({ url, alt })}
+                  />
+                </Fragment>
+              );
+            })}
             
             {results.size === template.items.length && (
               <motion.div 
@@ -524,7 +587,7 @@ export function CheckWorkflowPage() {
 }
 
 interface CheckItemCardProps {
-  item: { id: string; name: string; description: string; referencePhotoUrl?: string };
+  item: { id: string; name: string; description: string; referencePhotoUrl?: string; itemCode?: string; section?: string };
   itemIcon: string;
   isActive: boolean;
   result?: CheckResult;

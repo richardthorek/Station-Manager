@@ -1,8 +1,8 @@
 # RFS Station Manager - As-Built Documentation
 
-**Document Version:** 1.0  
-**Last Updated:** February 2026  
-**System Version:** 1.0.0  
+**Document Version:** 1.1  
+**Last Updated:** June 2026  
+**System Version:** 1.1.0  
 **Status:** Production Ready
 
 ---
@@ -531,17 +531,18 @@ Station vehicles/appliances.
 interface Appliance {
   id: string;
   name: string;
-  callSign: string;
-  type: 'tanker' | 'cat1' | 'cat7' | 'rescue' | 'trailer' | 'other';
-  registrationNumber?: string;
+  description?: string;
   photoUrl?: string;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  stationId?: string;
+  vehicleType?: string;  // canonical slug e.g. 'cat7-tanker' (v1.1)
+  createdAt: string;
+  updatedAt?: string;
 }
 ```
 
-#### 8. **templates**
+`vehicleType` is a lowercase hyphenated slug from the shared vocabulary (see `checklistVocabulary.ts` for the canonical list). Optional for backward compatibility — existing appliances without it continue to work.
+
+#### 9. **templates**
 Checklist templates for truck checks.
 
 ```typescript
@@ -549,57 +550,69 @@ interface ChecklistTemplate {
   id: string;
   name: string;
   description?: string;
+  applianceId: string;
+  stationId?: string;
   items: ChecklistItem[];
-  applianceTypes: string[];
-  isDefault: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 interface ChecklistItem {
   id: string;
-  text: string;
-  category?: string;
-  requiresPhoto: boolean;
+  name: string;
+  description?: string;
   order: number;
+  referencePhotoUrl?: string;
+  itemCode?: string;  // canonical slug e.g. 'tyre-condition' (v1.1)
+  section?: string;   // grouping label e.g. 'Engine Bay' (v1.1)
 }
 ```
 
-#### 9. **check_runs**
+`itemCode` and `section` enable cross-brigade trend analysis. `itemCode` is a lowercase hyphenated slug; `section` is a free-text grouping label. Both optional.
+
+#### 10. **check_runs**
 Truck check execution instances.
 
 ```typescript
 interface CheckRun {
   id: string;
   applianceId: string;
+  applianceName: string;
   templateId: string;
-  startedAt: Date;
-  completedAt?: Date;
-  status: 'in-progress' | 'completed' | 'failed';
+  status: 'in-progress' | 'completed';
+  startTime: string;
+  endTime?: string;
   completedBy?: string;
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  completedByName?: string;
+  additionalComments?: string;
+  stationId?: string;
+  contributors?: string[];
+  hasIssues?: boolean;
 }
 ```
 
-#### 10. **check_results**
-Individual check item results.
+#### 11. **check_results**
+Individual check item results, with cross-brigade codes denormalised at write time.
 
 ```typescript
 interface CheckResult {
   id: string;
-  checkRunId: string;
+  runId: string;
   itemId: string;
+  itemName: string;
+  itemDescription?: string;
   status: 'done' | 'issue' | 'skipped';
-  notes?: string;
+  comment?: string;
   photoUrl?: string;
-  checkedBy: string;
-  checkedAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  completedBy?: string;
+  stationId?: string;
+  itemCode?: string;   // denormalised from ChecklistItem at check time (v1.1)
+  section?: string;    // denormalised from ChecklistItem at check time (v1.1)
+  createdAt: string;
 }
 ```
+
+Denormalising `itemCode` and `section` onto each result at write time means historical comparisons remain stable even after a brigade later edits their checklist template.
 
 ---
 
@@ -1669,6 +1682,72 @@ Potential improvements (not in current scope):
 
 ---
 
+## Truck Check v1.1 Additions (June 2026)
+
+### Overview
+
+Shipped as part of the v1.1 release (PR #509). Builds on the visual enhancements from February 2026. All changes are backward-compatible — existing templates, appliances, and check results are unaffected.
+
+**Status:** ✅ COMPLETED (June 2026)
+
+### Cross-Brigade Schema Foundation
+
+New optional fields on core truck check types enable consistent trend analysis across brigades.
+
+#### Appliance.vehicleType
+Canonical vehicle-type slug (e.g. `cat7-tanker`). Stored in both DB implementations. Validated as a lowercase hyphenated slug (regex `/^[a-z0-9-]+$/`). Frontend editor shows a `<datalist>` of canonical types from `checklistVocabulary.ts`.
+
+#### ChecklistItem.itemCode + .section
+`itemCode` is a canonical item slug (e.g. `tyre-condition`); `section` is a grouping label (e.g. `Engine Bay`). Both optional. Template editor exposes datalist inputs for each. The `handleSaveTemplate` API call now correctly persists these fields (previously they were stripped on save).
+
+#### CheckResult.itemCode + .section (denormalised)
+At the moment a check result is written, `itemCode` and `section` are copied from the template item onto the result row. This means historical comparisons remain stable even after a brigade later edits or re-orders their template.
+
+#### Vocabulary module
+`frontend/src/features/truckcheck/checklistVocabulary.ts` exports:
+- `VEHICLE_TYPES` — 11 canonical vehicle-type entries
+- `ITEM_CODES` — 19 canonical item-code entries
+- `SECTIONS` — 6 standard section names
+- `slugify(input)` — converts free text to a lowercase hyphenated slug
+- `resolveVocabSlug(input, entries)` — maps a label or slug to its canonical value
+- `vocabLabel(slug, entries)` — maps a slug back to its display label
+
+12 unit tests in `checklistVocabulary.test.ts`.
+
+#### Backend changes
+- `backend/src/types/index.ts` — new optional fields on `Appliance`, `ChecklistItem`, `CheckResult`
+- `backend/src/services/truckChecksDatabase.ts` — in-memory twin updated
+- `backend/src/services/tableStorageTruckChecksDatabase.ts` — Table Storage twin updated
+- `backend/src/services/truckChecksDbFactory.ts` — `ITruckChecksDatabase` interface updated
+- `backend/src/routes/truckChecks.ts` — routes extract and pass new fields
+- `backend/src/middleware/truckCheckValidation.ts` — slug validation added
+- `backend/src/__tests__/truckChecks.test.ts` — 9 new cross-brigade schema tests
+
+### UX Pass
+
+#### Checklist workflow
+- **Section headers**: When items carry `section` values, the workflow renders a section-header row each time the section changes (Fragment-based, no container element).
+- **"Mark remaining as OK" fast-path**: A single-tap button in the progress header marks all unchecked items as `done` in one operation. Items with `status === 'issue'` are intentionally excluded.
+
+#### Appliance list
+- **Last-checked indicator**: Each appliance card shows a human-readable "Checked today / Checked X days ago / Never checked" label derived from the most-recent completed check run. Overdue appliances stand out immediately.
+
+#### Template editor
+- Vehicle Type: `<input list="vehicle-types-list">` datalist with canonical types.
+- Standard Item (item code): `<input list="item-codes-list">` datalist per template item.
+- Section: `<input list="sections-list">` datalist per template item.
+- Hint text guides users toward canonical values without preventing free text.
+
+### CSV Export in Admin Dashboard
+
+The Truck Check Admin Dashboard history tab now includes an "Export CSV" button with optional From/To date-range inputs. Calls the existing `GET /api/export/truckcheck-results` endpoint. Uses `downloadCSV` + `getTodayFormatted` utilities from `csvUtils.ts`. No new backend endpoints required.
+
+**Files modified:**
+- `frontend/src/features/truckcheck/AdminDashboardPage.tsx`
+- `frontend/src/features/truckcheck/AdminDashboard.css`
+
+---
+
 ## Security & Authentication
 
 ### Current Security Measures
@@ -2140,6 +2219,37 @@ Brigade access tokens enable secure cross-domain linking:
 - ✅ Testing and validation completed
 - ✅ Production deployment successful
 - ✅ Previous database solution decommissioned
+
+> ⚠️ **OS discrepancy (June 2026):** The diagram above lists the App Service OS
+> as Linux, but the live `bungrfsstation` plan is **Windows/IIS/iisnode** (see
+> `web.config` and `docs/AZURE_DEPLOYMENT_OPTIMIZATION.md`, which documents a
+> prod outage caused by assuming Linux). Migrating prod to **Linux B1** is a
+> tracked follow-up — see Infrastructure-as-Code below.
+
+### Infrastructure-as-Code (June 2026)
+
+**Location:** `infra/` (Bicep) · **Guide:** `infra/README.md`
+
+Until June 2026 there was **no IaC** — all Azure resources were created by hand
+in the portal, which led to documentation drift (an archived doc still describes
+a Cosmos DB the app no longer uses) and an undetected break in the deploy
+pipeline (the GitHub OIDC app registration was deleted from the tenant, failing
+the last several `main` deploys at `Login to Azure` with `AADSTS700016`).
+
+The `infra/` directory codifies the data tier (Table Storage) and provides a
+**dual-host comparison** that runs the current Socket.io app unchanged,
+side-by-side with production (prod is **not** modified):
+
+| Module | Resource | Role |
+|---|---|---|
+| `modules/storage.bicep` | Storage account + Table service | Data tier |
+| `modules/appservice-linux.bicep` | Linux **B1** App Service | Always-warm host (~$13/mo flat) |
+| `modules/containerapp.bicep` | Container Apps env + app | Scale-to-zero host (~$0/mo idle, ~few-sec cold start) |
+
+Deployed via `.github/workflows/infra-deploy.yml` (manual `workflow_dispatch`)
+or `az deployment group create`. The container image is built from the repo
+`Dockerfile` (multi-stage; backend serves the built SPA). The one-time OIDC
+bootstrap in `infra/README.md` also **restores the broken production deploy**.
 
 ### CI/CD Pipeline
 

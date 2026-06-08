@@ -336,7 +336,7 @@ router.get('/all-tokens', optionalAuth, async (req: Request, res: Response) => {
       timestamp: new Date(),
     });
   } catch (error) {
-    console.error('Error fetching all tokens:', error);
+    logger.error('Error fetching all tokens', { error });
     res.status(500).json({
       error: 'Failed to fetch all tokens',
       message: error instanceof Error ? error.message : 'Unknown error',

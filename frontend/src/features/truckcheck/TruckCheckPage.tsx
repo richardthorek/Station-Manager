@@ -27,6 +27,7 @@ export function TruckCheckPage() {
   const navigate = useNavigate();
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [activeChecks, setActiveChecks] = useState<Map<string, CheckRun>>(new Map());
+  const [lastChecked, setLastChecked] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +54,21 @@ export function TruckCheckPage() {
           activeMap.set(run.applianceId, run);
         });
       setActiveChecks(activeMap);
+
+      // Track the most recent completed check per appliance for an "at a glance"
+      // overdue indicator — the digital equivalent of the last dated line on a
+      // clipboard sheet.
+      const lastCheckedMap = new Map<string, string>();
+      checkRuns
+        .filter((run: CheckRun) => run.status === 'completed')
+        .forEach((run: CheckRun) => {
+          const when = run.endTime || run.startTime;
+          const existing = lastCheckedMap.get(run.applianceId);
+          if (!existing || new Date(when) > new Date(existing)) {
+            lastCheckedMap.set(run.applianceId, when as string);
+          }
+        });
+      setLastChecked(lastCheckedMap);
     } catch (err) {
       setError('Failed to load appliances');
       console.error(err);
@@ -63,6 +79,17 @@ export function TruckCheckPage() {
 
   function handleStartCheck(applianceId: string) {
     navigate(`/truckcheck/check/${applianceId}`);
+  }
+
+  function formatLastChecked(iso?: string): string {
+    if (!iso) return 'Never checked';
+    const then = new Date(iso);
+    const days = Math.floor((Date.now() - then.getTime()) / (1000 * 60 * 60 * 24));
+    if (days <= 0) return 'Checked today';
+    if (days === 1) return 'Checked yesterday';
+    if (days < 7) return `Checked ${days} days ago`;
+    if (days < 14) return 'Checked last week';
+    return `Last checked ${then.toLocaleDateString()}`;
   }
 
   if (loading) {
@@ -151,7 +178,10 @@ export function TruckCheckPage() {
                   {appliance.description && (
                     <p className="appliance-description">{appliance.description}</p>
                   )}
-                  <button 
+                  <p className={`appliance-last-checked ${lastChecked.has(appliance.id) ? '' : 'never'}`}>
+                    {formatLastChecked(lastChecked.get(appliance.id))}
+                  </p>
+                  <button
                     className="btn-primary"
                     onClick={() => handleStartCheck(appliance.id)}
                   >
