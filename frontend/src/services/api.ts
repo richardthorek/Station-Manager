@@ -17,6 +17,7 @@ import type {
   StationLookupResult
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
+import type { Organization, Entitlements } from '../contexts/AuthContext';
 
 // Use relative URL in production, localhost in development; ensure trailing /api
 const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
@@ -1215,6 +1216,77 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to export truck check results');
     return response.blob();
   }
+
+  // ============================================
+  // Organization (SaaS tenant) management
+  // ============================================
+
+  async getCurrentOrganization(): Promise<{ organization: Organization; plans: PlanDefinition[] }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to load organization');
+    return response.json();
+  }
+
+  async updateOrganization(updates: {
+    name?: string;
+    billingEmail?: string;
+    planCode?: Organization['planCode'];
+    moduleToggles?: Partial<Pick<Entitlements, 'signInEnabled' | 'truckCheckEnabled' | 'reportsEnabled' | 'aiEnabled'>>;
+  }): Promise<{ organization: Organization }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(updates),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to update organization');
+    }
+    return response.json();
+  }
+
+  async getOrganizationUsers(): Promise<{ users: OrganizationUser[] }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current/users`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to load users');
+    return response.json();
+  }
+
+  async createOrganizationUser(input: {
+    username: string;
+    password: string;
+    role: 'owner' | 'admin' | 'viewer';
+  }): Promise<{ user: OrganizationUser }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current/users`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create user');
+    }
+    return response.json();
+  }
+}
+
+export interface PlanDefinition {
+  code: 'community' | 'basic' | 'ai';
+  name: string;
+  priceMonthlyAud: number;
+  description: string;
+}
+
+export interface OrganizationUser {
+  id: string;
+  username: string;
+  role: 'owner' | 'admin' | 'viewer';
+  isActive: boolean;
+  lastLoginAt?: string;
+  createdAt?: string;
 }
 
 export const api = new ApiService();

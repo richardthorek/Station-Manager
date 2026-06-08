@@ -15,14 +15,79 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { getAdminDb } from '../services/adminUserDbFactory';
+import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { logger } from '../services/logger';
 import { authMiddleware } from '../middleware/auth';
+import type { AdminUser } from '../types';
 
 const router = Router();
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '24h';
+
+/** Build a signed JWT for a user, including SaaS tenancy claims. */
+function signToken(user: Pick<AdminUser, 'id' | 'username' | 'role' | 'organizationId'>): string {
+  return jwt.sign(
+    {
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+      organizationId: user.organizationId,
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRY } as jwt.SignOptions
+  );
+}
+
+/**
+ * POST /api/auth/signup
+ * Self-service sign-up: creates an Organization (free Community plan) and its
+ * first owner account, then returns a JWT. Billing/upgrade happens later via
+ * the organization management screens (Stripe wiring is a follow-up).
+ */
+router.post('/signup', async (req: Request, res: Response) => {
+  try {
+    const { organizationName, billingEmail, username, password } = req.body ?? {};
+
+    if (!organizationName || !billingEmail || !username || !password) {
+      return res.status(400).json({
+        error: 'organizationName, billingEmail, username and password are required',
+      });
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    const adminDb = getAdminDb();
+    const existing = await adminDb.getUserByUsername(username);
+    if (existing) {
+      return res.status(409).json({ error: 'Username already taken' });
+    }
+
+    // Create the organization (Community/free by default) then the owner user.
+    const orgDb = ensureOrganizationDatabase();
+    const organization = await orgDb.createOrganization({
+      name: organizationName,
+      billingEmail,
+      planCode: 'community',
+    });
+
+    const owner = await adminDb.createAdminUser(username, password, 'owner', organization.id);
+
+    const token = signToken(owner);
+    logger.info('Organization signed up', { organizationId: organization.id, slug: organization.slug });
+
+    return res.status(201).json({
+      token,
+      user: { id: owner.id, username: owner.username, role: owner.role, organizationId: owner.organizationId },
+      organization,
+    });
+  } catch (error) {
+    logger.error('Error during signup', { error });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 /**
  * POST /api/auth/login
@@ -61,16 +126,8 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        username: user.username,
-        role: user.role,
-      },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRY } as jwt.SignOptions
-    );
+    // Generate JWT token (includes organizationId for SaaS tenancy)
+    const token = signToken(user);
 
     logger.info('User logged in', { username: user.username, userId: user.id });
 
@@ -81,6 +138,7 @@ router.post('/login', async (req: Request, res: Response) => {
         id: user.id,
         username: user.username,
         role: user.role,
+        organizationId: user.organizationId,
         lastLoginAt: user.lastLoginAt,
       },
     });
@@ -119,12 +177,22 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Return user info (without password hash)
+    // Resolve organization + entitlements for the client to gate features.
+    let organization = null;
+    if (user.organizationId) {
+      const orgDb = ensureOrganizationDatabase();
+      organization = await orgDb.getOrganizationById(user.organizationId);
+    }
+
+    // Return user info (without password hash) + org context
     res.json({
       id: user.id,
       username: user.username,
       role: user.role,
+      organizationId: user.organizationId,
       lastLoginAt: user.lastLoginAt,
+      organization,
+      entitlements: organization?.entitlements ?? null,
     });
   } catch (error) {
     logger.error('Error fetching user info', { error });

@@ -53,6 +53,7 @@ import stationsRouter from './routes/stations';
 import brigadeAccessRouter from './routes/brigadeAccess';
 import exportRouter from './routes/export';
 import authRouter from './routes/auth';
+import organizationsRouter from './routes/organizations';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -60,11 +61,13 @@ import { getRFSFacilitiesParser } from './services/rfsFacilitiesParser';
 import { getVersionInfo } from './services/version';
 import { seedDemoStationIfNeeded } from './services/demoStationSeeder';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
+import { requireFeature } from './middleware/entitlements';
 import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
 import { requestIdMiddleware } from './middleware/requestId';
 import { requestLoggingMiddleware } from './middleware/requestLogging';
 import { logger } from './services/logger';
 import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services/adminUserDbFactory';
+import { initializeOrganizationDatabase } from './services/organizationDbFactory';
 
 const app = express();
 const httpServer = createServer(app);
@@ -314,15 +317,21 @@ app.get('/api/status', apiRateLimiter, async (req, res) => {
   }
 });
 
-// API Routes with rate limiting
+// API Routes with rate limiting.
+// Feature gating (requireFeature) is a no-op unless ENABLE_ENTITLEMENTS=true,
+// so single-tenant deployments and the demo are unaffected. When enabled, an
+// authenticated org's plan/toggles decide which modules are reachable — e.g. a
+// maintenance-only brigade can disable the sign-in book, and standard plans
+// have AI gated off.
 app.use('/api/auth', apiRateLimiter, authRouter);
+app.use('/api/organizations', apiRateLimiter, organizationsRouter);
 app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
-app.use('/api/checkins', apiRateLimiter, checkinsRouter);
-app.use('/api/events', apiRateLimiter, eventsRouter);
+app.use('/api/checkins', apiRateLimiter, requireFeature('signInEnabled'), checkinsRouter);
+app.use('/api/events', apiRateLimiter, requireFeature('signInEnabled'), eventsRouter);
 app.use('/api/stations', apiRateLimiter, stationsRouter);
-app.use('/api/truck-checks', apiRateLimiter, truckChecksRouter);
-app.use('/api/reports', apiRateLimiter, reportsRouter);
+app.use('/api/truck-checks', apiRateLimiter, requireFeature('truckCheckEnabled'), truckChecksRouter);
+app.use('/api/reports', apiRateLimiter, requireFeature('reportsEnabled'), reportsRouter);
 app.use('/api/brigade-access', apiRateLimiter, brigadeAccessRouter);
 app.use('/api/export', apiRateLimiter, exportRouter);
 
@@ -538,11 +547,16 @@ async function initializeDatabasesInBackground() {
     await ensureTruckChecksDatabase();
     logger.info('Truck checks database initialized');
     
+    // Ensure the Organization store and Admin User store are available for
+    // self-service signup, regardless of whether a default admin is configured.
+    await initializeOrganizationDatabase();
+    ensureAdminUserDatabase();
+
     // Initialize admin user database with default credentials if configured
     const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME;
     const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
     const requireAuth = process.env.REQUIRE_AUTH === 'true';
-    
+
     if (defaultAdminUsername && defaultAdminPassword) {
       await initializeAdminUserDatabase(defaultAdminUsername, defaultAdminPassword);
       logger.info('✅ Admin user database initialized');
