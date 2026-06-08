@@ -1,0 +1,19 @@
+# Keep the build context small and deterministic.
+**/node_modules
+**/dist
+**/coverage
+**/.git
+**/.github
+**/*.log
+**/.env
+**/.env.*
+**/.vscode
+**/.idea
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+docs
+infra
+*.md
+release.zip

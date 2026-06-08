@@ -1,0 +1,178 @@
+# ============================================================================
+# Infrastructure deploy (manual) — dual-host comparison spike
+# ----------------------------------------------------------------------------
+# Provisions the Bicep infrastructure and deploys the app to the two
+# experiment hosts (Linux B1 App Service + Azure Container Apps), side by side
+# with production. PRODUCTION (`bungrfsstation`) IS NOT TOUCHED.
+#
+# Manual only (workflow_dispatch). Requires the one-time OIDC bootstrap in
+# infra/README.md to be complete (the same bootstrap fixes the currently
+# broken production deploy). Assumes the Container Apps GHCR image is PUBLIC
+# for the spike — see infra/README.md.
+# ============================================================================
+
+name: Infra Deploy (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      resource_group:
+        description: 'Target resource group'
+        required: true
+        default: 'bungrfsstation_group'
+      deploy_linux:
+        description: 'Deploy the Linux B1 App Service option'
+        type: boolean
+        default: true
+      deploy_container_app:
+        description: 'Deploy the Container Apps option'
+        type: boolean
+        default: true
+      location:
+        description: 'Azure region'
+        required: true
+        default: 'australiaeast'
+
+concurrency:
+  group: infra-deploy
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22.x'
+
+jobs:
+  build-image:
+    name: Build & push container image (GHCR)
+    if: ${{ inputs.deploy_container_app }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Compute lowercase image ref
+        id: meta
+        run: |
+          owner_repo="${GITHUB_REPOSITORY,,}"   # GHCR requires lowercase
+          echo "image=ghcr.io/${owner_repo}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ghcr.io/${{ github.repository_owner }}/station-manager:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-infra:
+    name: Provision Bicep + deploy hosts
+    needs: [build-image]
+    # Run even if build-image was skipped (Linux-only deploys).
+    if: ${{ always() && (inputs.deploy_linux || inputs.deploy_container_app) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Login to Azure (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F04003FFA701477E897BF9329FCA2C5E }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0FB429D7D41741EAA3FF70DCD8F0A441 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_ECE14A699FEA4BB9AA978A7C54A2FE67 }}
+
+      - name: What-if (preview changes)
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az deployment group what-if \
+              --resource-group "${{ inputs.resource_group }}" \
+              --template-file infra/main.bicep \
+              --parameters \
+                location="${{ inputs.location }}" \
+                deployLinuxAppService=${{ inputs.deploy_linux }} \
+                deployContainerApp=${{ inputs.deploy_container_app }} \
+                containerImage="${{ needs.build-image.outputs.image }}" \
+                registryServer="" \
+              || echo "what-if reported differences (continuing)"
+
+      - name: Deploy infrastructure
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az deployment group create \
+              --resource-group "${{ inputs.resource_group }}" \
+              --template-file infra/main.bicep \
+              --parameters \
+                location="${{ inputs.location }}" \
+                deployLinuxAppService=${{ inputs.deploy_linux }} \
+                deployContainerApp=${{ inputs.deploy_container_app }} \
+                containerImage="${{ needs.build-image.outputs.image }}" \
+                registryServer="" \
+              --query "properties.outputs" -o json | tee deployment-outputs.json
+
+  deploy-linux-app:
+    name: Zip-deploy app to Linux B1
+    needs: [deploy-infra]
+    if: ${{ inputs.deploy_linux }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Build app
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+          npm run build
+
+      - name: Package (prebuilt dist + prod node_modules + startup.sh)
+        run: |
+          cd backend && npm ci --omit=dev --ignore-scripts && cd ..
+          mkdir -p deploy/backend deploy/frontend
+          cp package.json deploy/
+          cp -r backend/dist deploy/backend/
+          cp -r backend/node_modules deploy/backend/
+          cp backend/package.json deploy/backend/
+          cp -r frontend/dist deploy/frontend/
+          cp startup.sh deploy/
+          cd deploy && zip -r ../infra-linux-release.zip . >/dev/null && cd ..
+
+      - name: Login to Azure (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F04003FFA701477E897BF9329FCA2C5E }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0FB429D7D41741EAA3FF70DCD8F0A441 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_ECE14A699FEA4BB9AA978A7C54A2FE67 }}
+
+      - name: Deploy to Linux web app
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'bungrfs-linux'
+          package: infra-linux-release.zip

@@ -1,5 +1,12 @@
 # Azure Resource Configuration Guide
 
+> ⚠️ **OUTDATED (June 2026).** This document describes an **Azure Cosmos DB /
+> MongoDB** setup that the application **no longer uses** — production migrated
+> to **Azure Table Storage** in Q1 2026. It is retained only for history. For
+> the current infrastructure see `infra/` (Bicep), `infra/README.md`, and the
+> "Deployment Architecture" / "Infrastructure-as-Code" sections of
+> `docs/AS_BUILT.md`.
+
 This guide helps you configure the RFS Station Manager application with your actual deployed Azure resources.
 
 ## Overview

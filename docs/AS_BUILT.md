@@ -2220,6 +2220,37 @@ Brigade access tokens enable secure cross-domain linking:
 - ✅ Production deployment successful
 - ✅ Previous database solution decommissioned
 
+> ⚠️ **OS discrepancy (June 2026):** The diagram above lists the App Service OS
+> as Linux, but the live `bungrfsstation` plan is **Windows/IIS/iisnode** (see
+> `web.config` and `docs/AZURE_DEPLOYMENT_OPTIMIZATION.md`, which documents a
+> prod outage caused by assuming Linux). Migrating prod to **Linux B1** is a
+> tracked follow-up — see Infrastructure-as-Code below.
+
+### Infrastructure-as-Code (June 2026)
+
+**Location:** `infra/` (Bicep) · **Guide:** `infra/README.md`
+
+Until June 2026 there was **no IaC** — all Azure resources were created by hand
+in the portal, which led to documentation drift (an archived doc still describes
+a Cosmos DB the app no longer uses) and an undetected break in the deploy
+pipeline (the GitHub OIDC app registration was deleted from the tenant, failing
+the last several `main` deploys at `Login to Azure` with `AADSTS700016`).
+
+The `infra/` directory codifies the data tier (Table Storage) and provides a
+**dual-host comparison** that runs the current Socket.io app unchanged,
+side-by-side with production (prod is **not** modified):
+
+| Module | Resource | Role |
+|---|---|---|
+| `modules/storage.bicep` | Storage account + Table service | Data tier |
+| `modules/appservice-linux.bicep` | Linux **B1** App Service | Always-warm host (~$13/mo flat) |
+| `modules/containerapp.bicep` | Container Apps env + app | Scale-to-zero host (~$0/mo idle, ~few-sec cold start) |
+
+Deployed via `.github/workflows/infra-deploy.yml` (manual `workflow_dispatch`)
+or `az deployment group create`. The container image is built from the repo
+`Dockerfile` (multi-stage; backend serves the built SPA). The one-time OIDC
+bootstrap in `infra/README.md` also **restores the broken production deploy**.
+
 ### CI/CD Pipeline
 
 **Primary Workflow:** `.github/workflows/ci-cd.yml`  
