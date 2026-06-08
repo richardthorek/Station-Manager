@@ -32,8 +32,10 @@ declare global {
       user?: {
         userId: string;
         username: string;
-        role: 'admin' | 'viewer';
+        role: 'owner' | 'admin' | 'viewer';
+        organizationId?: string;
       };
+      organization?: import('../types').Organization;
     }
   }
 }
@@ -76,7 +78,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     const decoded = jwt.verify(token, JWT_SECRET) as {
       userId: string;
       username: string;
-      role: 'admin' | 'viewer';
+      role: 'owner' | 'admin' | 'viewer';
+      organizationId?: string;
     };
 
     // Attach user to request
@@ -128,8 +131,9 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
-  if (req.user.role !== 'admin') {
-    logger.warn('Access denied - insufficient permissions', { 
+  // 'owner' is a superset of 'admin' for authorization purposes.
+  if (req.user.role !== 'admin' && req.user.role !== 'owner') {
+    logger.warn('Access denied - insufficient permissions', {
       userId: req.user.userId,
       role: req.user.role,
     });
@@ -137,6 +141,22 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
+  next();
+}
+
+/**
+ * Require organization owner role (billing / plan / user management).
+ * Must be used after authMiddleware.
+ */
+export function requireOwner(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  if (req.user.role !== 'owner') {
+    res.status(403).json({ error: 'Owner role required' });
+    return;
+  }
   next();
 }
 

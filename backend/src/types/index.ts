@@ -40,6 +40,7 @@ export interface Station {
   };
   isActive: boolean;            // Whether station is currently active
   kioskToken?: string;          // Secure, unguessable token for kiosk mode access (optional)
+  organizationId?: string;      // SaaS tenancy: owning Organization (optional for backward compat)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -67,11 +68,59 @@ export interface AdminUser {
   id: string;
   username: string;
   passwordHash: string;
-  role: 'admin' | 'viewer';
+  role: 'owner' | 'admin' | 'viewer';
+  organizationId?: string;       // SaaS tenancy: which Organization this user belongs to
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt?: Date;
   isActive: boolean;
+}
+
+/**
+ * SaaS plan codes. Plans map to a default set of Entitlements
+ * (see backend/src/constants/plans.ts).
+ */
+export type PlanCode = 'community' | 'basic' | 'ai';
+
+export type OrganizationStatus = 'trialing' | 'active' | 'past_due' | 'canceled';
+
+/**
+ * Feature entitlements for an organization. Derived from the plan, but the
+ * module toggles (signInEnabled / truckCheckEnabled / reportsEnabled) can be
+ * narrowed by the owner — e.g. a maintenance-only brigade can hide the
+ * sign-in book, and a sign-in-only brigade can hide truck checks.
+ * `aiEnabled` can never exceed what the plan allows.
+ */
+export interface Entitlements {
+  signInEnabled: boolean;
+  truckCheckEnabled: boolean;
+  reportsEnabled: boolean;
+  aiEnabled: boolean;
+  maxStations: number;
+  maxDevices: number;
+  aiIncludedSessions: number;
+}
+
+export type EntitlementFeature = 'signInEnabled' | 'truckCheckEnabled' | 'reportsEnabled' | 'aiEnabled';
+
+/**
+ * Organization — the top-level SaaS billing tenant. Owns one or more
+ * stations/brigades, holds the (future) Stripe subscription, and carries the
+ * resolved feature entitlements used for gating.
+ */
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;                  // url-safe unique handle
+  billingEmail: string;
+  planCode: PlanCode;
+  status: OrganizationStatus;
+  entitlements: Entitlements;
+  stripeCustomerId?: string;     // reserved for Stripe Billing (not yet wired)
+  stripeSubscriptionId?: string;
+  trialEndsAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Member {

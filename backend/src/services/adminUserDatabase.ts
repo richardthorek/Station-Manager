@@ -30,7 +30,8 @@ class AdminUserDatabase {
   async createAdminUser(
     username: string,
     password: string,
-    role: 'admin' | 'viewer' = 'admin'
+    role: 'owner' | 'admin' | 'viewer' = 'admin',
+    organizationId?: string
   ): Promise<AdminUser> {
     // Check if username already exists
     if (this.usersByUsername.has(username)) {
@@ -45,6 +46,7 @@ class AdminUserDatabase {
       username,
       passwordHash,
       role,
+      organizationId,
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true,

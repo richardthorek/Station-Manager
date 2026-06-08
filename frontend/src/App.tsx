@@ -10,6 +10,7 @@ import { InstallPrompt } from './components/InstallPrompt';
 import { SkipToContent } from './components/SkipToContent';
 import { LiveAnnouncer } from './components/LiveAnnouncer';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { FeatureRoute } from './components/FeatureRoute';
 import { initDB } from './services/offlineStorage';
 
 // Lazy load all route components for better code splitting
@@ -20,6 +21,8 @@ const UserProfilePage = lazy(() => import('./features/profile/UserProfilePage').
 const StationManagementPage = lazy(() => import('./features/admin/stations/StationManagementPage').then(m => ({ default: m.StationManagementPage })));
 const BrigadeAccessPage = lazy(() => import('./features/admin/brigade-access/BrigadeAccessPage').then(m => ({ default: m.BrigadeAccessPage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const SignupPage = lazy(() => import('./features/auth/SignupPage').then(m => ({ default: m.SignupPage })));
+const OrganizationPage = lazy(() => import('./features/admin/organization/OrganizationPage').then(m => ({ default: m.OrganizationPage })));
 
 // Truck Check routes (v1.1)
 const TruckCheckPage = lazy(() => import('./features/truckcheck/TruckCheckPage').then(m => ({ default: m.TruckCheckPage })));
@@ -47,28 +50,30 @@ function AnimatedRoutes() {
         {/* Landing & Auth */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        
-        {/* Sign-In (MVP Feature - Fully Enabled) */}
-        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+
+        {/* Sign-In — gated by the signInEnabled entitlement (maintenance-only brigades can hide it) */}
+        <Route path="/signin" element={<FeatureRoute feature="signInEnabled" title="Sign-in book"><SignInPage /></FeatureRoute>} />
         <Route path="/sign-in" element={<SignInLinkPage />} />
         <Route path="/profile/:memberId" element={<UserProfilePage />} />
-        
-        {/* Truck Check (v1.1) */}
-        <Route path="/truckcheck" element={<TruckCheckPage />} />
-        <Route path="/truckcheck/admin" element={<AdminDashboardPage />} />
-        <Route path="/truckcheck/check/:applianceId" element={<CheckWorkflowPage />} />
-        <Route path="/truckcheck/summary/:runId" element={<CheckSummaryPage />} />
-        <Route path="/truckcheck/select" element={<TemplateSelectionPage />} />
-        <Route path="/truckcheck/templates/:applianceId" element={<TemplateEditorPage />} />
 
-        {/* Reports (v1.1) */}
-        <Route path="/reports" element={<ReportsPageEnhanced />} />
-        <Route path="/reports/advanced" element={<AdvancedReportsPage />} />
-        <Route path="/reports/cross-station" element={<CrossStationReportsPage />} />
-        
+        {/* Truck Check (v1.1) — gated by truckCheckEnabled */}
+        <Route path="/truckcheck" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TruckCheckPage /></FeatureRoute>} />
+        <Route path="/truckcheck/admin" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><AdminDashboardPage /></FeatureRoute>} />
+        <Route path="/truckcheck/check/:applianceId" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><CheckWorkflowPage /></FeatureRoute>} />
+        <Route path="/truckcheck/summary/:runId" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><CheckSummaryPage /></FeatureRoute>} />
+        <Route path="/truckcheck/select" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateSelectionPage /></FeatureRoute>} />
+        <Route path="/truckcheck/templates/:applianceId" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateEditorPage /></FeatureRoute>} />
+
+        {/* Reports (v1.1) — gated by reportsEnabled */}
+        <Route path="/reports" element={<FeatureRoute feature="reportsEnabled" title="Reports"><ReportsPageEnhanced /></FeatureRoute>} />
+        <Route path="/reports/advanced" element={<FeatureRoute feature="reportsEnabled" title="Reports"><AdvancedReportsPage /></FeatureRoute>} />
+        <Route path="/reports/cross-station" element={<FeatureRoute feature="reportsEnabled" title="Reports"><CrossStationReportsPage /></FeatureRoute>} />
+
         {/* Admin Routes (Protected) */}
         <Route path="/admin/stations" element={<ProtectedRoute><StationManagementPage /></ProtectedRoute>} />
         <Route path="/admin/brigade-access" element={<ProtectedRoute><BrigadeAccessPage /></ProtectedRoute>} />
+        <Route path="/admin/organization" element={<ProtectedRoute><OrganizationPage /></ProtectedRoute>} />
       </Routes>
     </AnimatePresence>
   );

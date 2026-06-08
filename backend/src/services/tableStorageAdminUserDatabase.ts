@@ -35,7 +35,8 @@ function buildTableName(baseName: string): string {
 interface AdminUserEntity extends TableEntity {
   username: string;
   passwordHash: string;
-  role: 'admin' | 'viewer';
+  role: 'owner' | 'admin' | 'viewer';
+  organizationId?: string;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
@@ -104,6 +105,7 @@ export class TableStorageAdminUserDatabase {
       username: user.username,
       passwordHash: user.passwordHash,
       role: user.role,
+      organizationId: user.organizationId,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
       lastLoginAt: user.lastLoginAt?.toISOString(),
@@ -120,6 +122,7 @@ export class TableStorageAdminUserDatabase {
       username: entity.username,
       passwordHash: entity.passwordHash,
       role: entity.role,
+      organizationId: entity.organizationId,
       createdAt: new Date(entity.createdAt),
       updatedAt: new Date(entity.updatedAt),
       lastLoginAt: entity.lastLoginAt ? new Date(entity.lastLoginAt) : undefined,
@@ -150,7 +153,8 @@ export class TableStorageAdminUserDatabase {
   async createAdminUser(
     username: string,
     password: string,
-    role: 'admin' | 'viewer' = 'admin'
+    role: 'owner' | 'admin' | 'viewer' = 'admin',
+    organizationId?: string
   ): Promise<AdminUser> {
     if (!this.isConnected) {
       await this.connect();
@@ -170,6 +174,7 @@ export class TableStorageAdminUserDatabase {
       username,
       passwordHash,
       role,
+      organizationId,
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true,
