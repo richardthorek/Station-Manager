@@ -77,12 +77,9 @@ export function DataTable<T extends object>({
 
       if (aValue === bValue) return 0;
 
-      let comparison = 0;
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        comparison = aValue - bValue;
-      } else {
-        comparison = String(aValue).localeCompare(String(bValue));
-      }
+      const comparison = (typeof aValue === 'number' && typeof bValue === 'number')
+        ? aValue - bValue
+        : String(aValue).localeCompare(String(bValue));
 
       return sortDirection === 'asc' ? comparison : -comparison;
     });
