@@ -29,13 +29,9 @@ export function Confetti({ duration = 3000 }: ConfettiProps) {
   const confettiPieces = useMemo<ConfettiPiece[]>(() => {
     return Array.from({ length: 50 }, (_, i) => ({
       id: i,
-      // eslint-disable-next-line react-hooks/purity
       left: Math.random() * 100,
-      // eslint-disable-next-line react-hooks/purity
       delay: Math.random() * 0.5,
-      // eslint-disable-next-line react-hooks/purity
       duration: 2 + Math.random() * 1,
-      // eslint-disable-next-line react-hooks/purity
       color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
     }));
   }, []); // Empty deps - only generate once
