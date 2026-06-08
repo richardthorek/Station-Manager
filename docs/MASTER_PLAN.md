@@ -1550,6 +1550,40 @@ Priority: **MEDIUM** - Long-term enhancements
 
 ---
 
+#### Feature: AI Voice (and Vision) Truck-Maintenance Agent
+**Status**: 📐 **DESIGN / FUTURE RELEASE** (design doc only — not implemented)
+**Design**: `docs/AI_MAINTENANCE_AGENT_DESIGN.md`
+
+**Objective**: A hands-free assistant that walks a volunteer through a truck check by
+voice ("I'm starting the Cat 1 tanker…"), prompting follow-ups in the same physical
+area of the truck, tuned to each brigade's layout and each vehicle's age/quirks. Camera
+("vision") is a later phase.
+
+**Product decisions captured (June 2026)**:
+- Connectivity: **cloud-only first**; offline/native later.
+- Output: produce the **same auditable `CheckRun`/`CheckResult`** records **and** keep a
+  full narrative transcript (`AgentSession`/`AgentTurn`).
+- Layout: **per-truck zones/compartments** seeded from a standard starter taxonomy
+  (every truck unique; codes give cross-brigade comparability).
+- Nuance: **hybrid** — brigades author structured facts (zones, equipment, vehicle
+  year/variant, quirks), the LLM infers natural follow-ups and age adjustments.
+
+**Phasing**: Phase 1 = truck-model schema + admin UI (no AI, independently useful);
+Phase 2 = cloud voice agent (PWA) → CheckRun + transcript; Phase 3 = offline/native;
+Phase 4 = vision. Schema is designed to be additive and backward-compatible across both
+DB twins. Real-time/voice sessions are a natural fit for the scale-to-zero Container Apps
+hosting option (see `infra/`).
+
+**Schema deltas (summary)**: new `ApplianceZone`, `ApplianceEquipment`, `AgentSession`,
+`AgentTurn`; optional extensions to `Appliance` (year/make/model/variant/quirksNotes),
+`ChecklistItem` (zoneId/equipmentId/expectedResponseType/unit), `CheckRun` (source/
+agentSessionId), `CheckResult` (zoneId/source/capturedValue/confidence/needsReview). See
+the design doc for full detail.
+
+**Priority**: P2 (strategic) · **Labels**: `feature`, `ai`, `truck-check`, `phase-4`
+
+---
+
 
 #### Issue #18: Notification System (Email/SMS)
 **GitHub Issue**: #120 (created 2026-01-04T09:26:06Z)
