@@ -18,6 +18,7 @@
 import { Member, Activity, CheckIn, ActiveActivity, CheckInWithDetails, Event, EventParticipant, EventWithParticipants, Station, StationCreationPayload, EventAuditLog, DeviceInfo, LocationInfo } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { autoExpireEvents } from './rolloverService';
+import type { IDatabase } from './dbFactory';
 import { DEFAULT_STATION_ID, DEMO_STATION_ID, DEMO_BRIGADE_ID, getEffectiveStationId } from '../constants/stations';
 import { DEFAULT_MEMBERS, buildDisplayName } from './defaultMembers';
 import { logger } from './logger';
@@ -485,6 +486,19 @@ class DatabaseService {
     return activity;
   }
 
+  /**
+   * Soft delete an activity (hidden from getAllActivities, retained for history)
+   */
+  deleteActivity(id: string): Activity | null {
+    const activity = this.activities.get(id);
+    if (!activity) {
+      return null;
+    }
+    activity.isDeleted = true;
+    this.activities.set(id, activity);
+    return activity;
+  }
+
   // Active Activity methods
   getActiveActivity(stationId?: string): ActiveActivity | null {
     // For multi-station support, we need to track active activity per station
@@ -666,24 +680,25 @@ class DatabaseService {
    * Expired events remain visible in getEvents(), they're just marked as inactive.
    * @param stationId - Optional station ID to filter by
    */
-  getActiveEvents(stationId?: string): Event[] {
+  async getActiveEvents(stationId?: string): Promise<Event[]> {
     let activeEvents = Array.from(this.events.values())
       .filter(event => event.isActive);
-    
+
     if (stationId) {
       activeEvents = activeEvents.filter(e => getEffectiveStationId(e.stationId) === stationId);
     }
-    
+
     activeEvents = activeEvents.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
-    
-    // Auto-expire events that have exceeded time limit
-    // This is synchronous because in-memory DB operations are instant
-    autoExpireEvents(activeEvents, this as any).then(() => {
-      // Events have been marked inactive in the database
-    }).catch(err => {
+
+    // Auto-expire events that have exceeded the time limit before returning,
+    // so expired events are never included in the response (matches the
+    // Table Storage implementation, which also awaits expiry)
+    try {
+      await autoExpireEvents(activeEvents, this as IDatabase);
+    } catch (err) {
       logger.error('Error auto-expiring events', { error: err });
-    });
-    
+    }
+
     // Return only currently active events (excluding ones we just expired)
     let result = Array.from(this.events.values())
       .filter(event => event.isActive);

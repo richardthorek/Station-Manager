@@ -256,6 +256,19 @@
           "complexity": "O(1)",
           "sideEffects": "Adds custom activity to database"
         },
+        "deleteActivity": {
+          "signature": "deleteActivity(id: string): Activity | null",
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Activity UUID"
+            }
+          ],
+          "returns": "Activity | null",
+          "complexity": "O(1)",
+          "sideEffects": "Soft-deletes activity (sets isDeleted flag; hidden from getAllActivities)"
+        },
         "getActiveActivity": {
           "signature": "getActiveActivity(): ActiveActivity | null",
           "line": 270,
@@ -377,11 +390,11 @@
           "sideEffects": "none"
         },
         "getActiveEvents": {
-          "signature": "getActiveEvents(): Event[]",
+          "signature": "getActiveEvents(stationId?: string): Promise<Event[]>",
           "line": 354,
-          "returns": "Event[]",
+          "returns": "Promise<Event[]>",
           "complexity": "O(n)",
-          "sideEffects": "none"
+          "sideEffects": "Auto-expires events past the expiry window (awaited before returning)"
         },
         "getEventById": {
           "signature": "getEventById(id: string): Event | undefined",

@@ -785,6 +785,60 @@
           ]
         }
       }
+    },
+    "DELETE /api/activities/:activityId": {
+      "method": "DELETE",
+      "path": "/api/activities/:activityId",
+      "description": "Soft delete an activity (hidden from lists, retained for history). Station-scoped: only activities visible to the requesting station can be deleted.",
+      "authentication": "flexibleAuth (station scope) when ENABLE_DATA_PROTECTION=true",
+      "parameters": {
+        "activityId": {
+          "in": "path",
+          "type": "string",
+          "required": true,
+          "description": "Activity UUID"
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Activity soft-deleted",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "activity": {
+                "$ref": "#/definitions/Activity"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid activity ID"
+        },
+        "404": {
+          "description": "Activity not found (or belongs to another station)"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/activities.ts:135",
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
     }
   },
   "checkins": {

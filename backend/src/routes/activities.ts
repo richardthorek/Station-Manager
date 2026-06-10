@@ -19,7 +19,9 @@ import { ensureDatabase } from '../services/dbFactory';
 import {
   validateCreateActivity,
   validateSetActiveActivity,
+  validateActivityId,
 } from '../middleware/activityValidation';
+import { DEFAULT_STATION_ID, getEffectiveStationId } from '../constants/stations';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 import { flexibleAuth } from '../middleware/flexibleAuth';
@@ -75,7 +77,8 @@ router.get('/active', flexibleAuth({ scope: 'station' }), async (req, res) => {
 });
 
 // Set active activity (per-station)
-router.post('/active', validateSetActiveActivity, handleValidationErrors, async (req: Request, res: Response) => {
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.post('/active', validateSetActiveActivity, handleValidationErrors, flexibleAuth({ scope: 'station' }), async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { activityId, setBy } = req.body;
@@ -106,7 +109,8 @@ router.post('/active', validateSetActiveActivity, handleValidationErrors, async 
 });
 
 // Create custom activity (assigns station)
-router.post('/', validateCreateActivity, handleValidationErrors, async (req: Request, res: Response) => {
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.post('/', validateCreateActivity, handleValidationErrors, flexibleAuth({ scope: 'station' }), async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { name, createdBy } = req.body;
@@ -126,28 +130,34 @@ router.post('/', validateCreateActivity, handleValidationErrors, async (req: Req
   }
 });
 
-// Delete activity (soft delete)
-router.delete('/:activityId', async (req: Request, res: Response) => {
+// Delete activity (soft delete, persisted via the database service)
+// Protected by flexibleAuth when ENABLE_DATA_PROTECTION=true
+router.delete('/:activityId', validateActivityId, handleValidationErrors, flexibleAuth({ scope: 'station' }), async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { activityId } = req.params;
-    
-    if (!activityId) {
-      return res.status(400).json({ error: 'Activity ID is required' });
-    }
+    const stationId = getStationIdFromRequest(req);
 
-    // Get the activity first
     const activity = await db.getActivityById(activityId);
-    
+
     if (!activity) {
       return res.status(404).json({ error: 'Activity not found' });
     }
 
-    // Soft delete by setting isDeleted flag
-    // Note: This is a workaround until updateActivity method is added to IDatabase
-    (activity as any).isDeleted = true;
+    // Only allow deleting activities visible to this station
+    // (station-specific activities of the same station, or shared defaults)
+    const activityStationId = getEffectiveStationId(activity.stationId);
+    if (activityStationId !== getEffectiveStationId(stationId) && activityStationId !== DEFAULT_STATION_ID) {
+      return res.status(404).json({ error: 'Activity not found' });
+    }
 
-    res.json({ message: 'Activity deleted successfully', activity });
+    const deletedActivity = await db.deleteActivity(activityId);
+
+    if (!deletedActivity) {
+      return res.status(404).json({ error: 'Activity not found' });
+    }
+
+    res.json({ message: 'Activity deleted successfully', activity: deletedActivity });
   } catch (error) {
     logger.error('Error deleting activity', { 
       error, 

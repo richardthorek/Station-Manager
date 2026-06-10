@@ -184,6 +184,82 @@
   letter-spacing: 0.5px;
 }
 
+.activity-empty-state {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.5rem;
+}
+
+.activity-empty-state-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.activity-empty-state-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.add-activity-toggle {
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: 1rem;
+  min-height: 60px;
+  background: transparent;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-activity-toggle:hover {
+  border-color: var(--rfs-lime);
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.add-activity-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.add-activity-input {
+  flex: 1 1 200px;
+  min-height: 60px;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+
+.add-activity-input:focus {
+  outline: none;
+  border-color: var(--rfs-lime);
+  box-shadow: 0 0 0 3px rgba(203, 219, 42, 0.2);
+}
+
+.add-activity-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.add-activity-actions .btn-primary,
+.add-activity-actions .btn-secondary {
+  min-height: 60px;
+}
+
 .activity-delete-btn {
   position: absolute;
   top: 5px;

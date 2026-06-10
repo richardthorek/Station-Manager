@@ -126,6 +126,7 @@ export function MemberList({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingOperations, setPendingOperations] = useState<Map<string, 'signing-in' | 'signing-out'>>(new Map());
   const membersContainerRef = useRef<HTMLDivElement>(null);
+  const membersGridRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const addMemberInputRef = useRef<HTMLInputElement>(null);
   
@@ -202,6 +203,14 @@ export function MemberList({
 
     fetchMembers();
   }, [debouncedSearchTerm, filter, sort, initialMembers, filteredMembers.length]);
+
+  // Scroll back to the top of the list whenever search/filter/sort changes,
+  // so users aren't left stranded mid-list looking at fewer results
+  useEffect(() => {
+    if (membersGridRef.current) {
+      membersGridRef.current.scrollTop = 0;
+    }
+  }, [debouncedSearchTerm, filter, sort, selectedLetter]);
 
   // Apply letter filter locally (after API filtering)
   // Also apply partitioning: active members (within last year) at top, inactive at bottom
@@ -435,7 +444,7 @@ export function MemberList({
             <span>Refreshing...</span>
           </div>
         )}
-        <div className="members-grid" role="list" aria-label="Member list">
+        <div className="members-grid" ref={membersGridRef} role="list" aria-label="Member list">
           {displayedMembers.length > 0 ? (
             displayedMembers.map(member => {
               const isCheckedIn = checkedInMemberIds.has(member.id);

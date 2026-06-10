@@ -334,13 +334,16 @@ export class TableStorageDatabase {
       checkInCounts.set(p.memberId, current);
     });
     
-    // Get currently checked-in members
+    // Get currently checked-in members (fetch all events' participants in parallel
+    // rather than one sequential query per event)
     const activeEvents = await this.getActiveEvents();
     const checkedInMemberIds = new Set<string>();
-    for (const event of activeEvents) {
-      const eventParticipants = await this.getEventParticipants(event.id);
+    const activeEventParticipants = await Promise.all(
+      activeEvents.map(event => this.getEventParticipants(event.id))
+    );
+    activeEventParticipants.forEach(eventParticipants => {
       eventParticipants.forEach(p => checkedInMemberIds.add(p.memberId));
-    }
+    });
     
     // Apply search filter
     if (options?.search) {
@@ -1649,14 +1652,14 @@ export class TableStorageDatabase {
    */
   private async getAllEventParticipants(startDate: Date, endDate: Date, stationId?: string): Promise<EventParticipant[]> {
     const events = await this.getEventsByDateRange(startDate, endDate, stationId);
-    const allParticipants: EventParticipant[] = [];
-    
-    for (const event of events) {
-      const participants = await this.getEventParticipants(event.id);
-      allParticipants.push(...participants);
-    }
-    
-    return allParticipants;
+
+    // Fetch participants for all events in parallel rather than one sequential
+    // query per event (this is called on every member-list fetch)
+    const participantsPerEvent = await Promise.all(
+      events.map(event => this.getEventParticipants(event.id))
+    );
+
+    return participantsPerEvent.flat();
   }
 
   // ============================================
