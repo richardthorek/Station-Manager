@@ -48,6 +48,7 @@ export interface IDatabase {
   getAllActivities(stationId?: string): Promise<Activity[]> | Activity[];
   getActivityById(id: string): Promise<Activity | null | undefined> | Activity | null | undefined;
   createActivity(name: string, createdBy?: string, stationId?: string): Promise<Activity> | Activity;
+  deleteActivity(id: string): Promise<Activity | null> | Activity | null; // Soft delete
   
   // Active Activity
   getActiveActivity(stationId?: string): Promise<ActiveActivity | null> | ActiveActivity | null;

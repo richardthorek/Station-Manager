@@ -1144,11 +1144,12 @@ The API register contains:
 - `PUT /api/members/:id` - Update member
 - `GET /api/members/:id/history` - Get member check-in history
 
-**Activities (4 endpoints)**
+**Activities (5 endpoints)**
 - `GET /api/activities` - List all activities
 - `POST /api/activities` - Create custom activity
 - `GET /api/activities/active` - Get current active activity
 - `POST /api/activities/active` - Set active activity
+- `DELETE /api/activities/:activityId` - Soft delete activity (station-scoped)
 
 **Check-ins (3 endpoints)**
 - `GET /api/checkins/active` - Get active check-ins

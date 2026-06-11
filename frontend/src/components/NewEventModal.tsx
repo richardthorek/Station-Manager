@@ -1,4 +1,4 @@
-import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
+import { useState, useEffect, useRef, type KeyboardEvent, type MouseEvent } from 'react';
 import type { Activity } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import './NewEventModal.css';
@@ -8,16 +8,48 @@ interface NewEventModalProps {
   activities: Activity[];
   onClose: () => void;
   onCreate: (activityId: string) => void;
+  onCreateActivity?: (name: string) => Promise<Activity | null>;
   onDeleteActivity: (activityId: string) => void;
 }
 
-export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteActivity }: NewEventModalProps) {
+export function NewEventModal({ isOpen, activities, onClose, onCreate, onCreateActivity, onDeleteActivity }: NewEventModalProps) {
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
+  const [showAddActivity, setShowAddActivity] = useState(false);
+  const [newActivityName, setNewActivityName] = useState('');
+  const [isCreatingActivity, setIsCreatingActivity] = useState(false);
+  const addActivityInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useFocusTrap<HTMLDivElement>(isOpen);
   const handleClose = () => {
     setSelectedActivityId('');
+    setShowAddActivity(false);
+    setNewActivityName('');
     onClose();
   };
+
+  const handleAddActivity = async () => {
+    const name = newActivityName.trim();
+    if (!name || !onCreateActivity || isCreatingActivity) return;
+
+    setIsCreatingActivity(true);
+    try {
+      const activity = await onCreateActivity(name);
+      if (activity) {
+        // Select the new activity so the user can start the event immediately
+        setSelectedActivityId(activity.id);
+        setNewActivityName('');
+        setShowAddActivity(false);
+      }
+    } finally {
+      setIsCreatingActivity(false);
+    }
+  };
+
+  // Focus the name input when the add-activity form opens
+  useEffect(() => {
+    if (showAddActivity) {
+      addActivityInputRef.current?.focus();
+    }
+  }, [showAddActivity]);
 
   const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;
@@ -48,6 +80,8 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
     const handleEscape = (event: Event) => {
       if ((event as globalThis.KeyboardEvent).key === 'Escape') {
         setSelectedActivityId('');
+        setShowAddActivity(false);
+        setNewActivityName('');
         onClose();
       }
     };
@@ -92,6 +126,15 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
             Select an activity type to start a new event. Participants can sign in to this event.
           </p>
 
+          {activities.length === 0 && (
+            <div className="activity-empty-state" role="status">
+              <p className="activity-empty-state-title">No activity types yet</p>
+              <p className="activity-empty-state-hint">
+                Add your first activity type below to start an event.
+              </p>
+            </div>
+          )}
+
           <div className="activity-grid" role="radiogroup" aria-label="Activity type selection">
             {activities.map((activity) => (
               <div key={activity.id} className="activity-option-wrapper">
@@ -128,6 +171,60 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onDeleteA
               </div>
             ))}
           </div>
+
+          {onCreateActivity && (
+            showAddActivity ? (
+              <div className="add-activity-form">
+                <label htmlFor="new-activity-name" className="sr-only">New activity name</label>
+                <input
+                  id="new-activity-name"
+                  ref={addActivityInputRef}
+                  type="text"
+                  className="add-activity-input"
+                  placeholder="Activity name..."
+                  value={newActivityName}
+                  maxLength={200}
+                  onChange={(e) => setNewActivityName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddActivity();
+                    }
+                  }}
+                  disabled={isCreatingActivity}
+                />
+                <div className="add-activity-actions">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handleAddActivity}
+                    disabled={!newActivityName.trim() || isCreatingActivity}
+                  >
+                    {isCreatingActivity ? 'Adding…' : 'Add'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setShowAddActivity(false);
+                      setNewActivityName('');
+                    }}
+                    disabled={isCreatingActivity}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="add-activity-toggle"
+                onClick={() => setShowAddActivity(true)}
+              >
+                + Add activity type
+              </button>
+            )
+          )}
         </div>
 
         <div className="modal-footer">

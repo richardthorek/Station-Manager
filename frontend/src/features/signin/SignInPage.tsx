@@ -241,7 +241,7 @@ export function SignInPage() {
   const handleCreateEvent = async (activityId: string) => {
     try {
       const event = await api.createEvent(activityId);
-      setEvents([event, ...events]);
+      setEvents(prev => [event, ...prev]);
       setSelectedEventId(event.id);
       emit('event-created', event);
       
@@ -378,7 +378,7 @@ export function SignInPage() {
   const handleAddMember = async (name: string, rank?: string | null) => {
     try {
       const member = await api.createMember(name, rank);
-      setMembers([...members, member]);
+      setMembers(prev => [...prev, member]);
       announce(`Success: ${name} added as new member`, 'polite');
       showSuccess(`${name} added as new member`);
       emit('member-added', member);
@@ -395,14 +395,16 @@ export function SignInPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset, loadingMore]);
 
-  const handleCreateActivity = async (name: string) => {
+  const handleCreateActivity = async (name: string): Promise<Activity | null> => {
     try {
       const activity = await api.createActivity(name);
-      setActivities([...activities, activity]);
+      setActivities(prev => [...prev, activity]);
       showSuccess(`Activity "${name}" created`);
+      return activity;
     } catch (err) {
       console.error('Error creating activity:', err);
       showError(formatErrorMessage(err));
+      return null;
     }
   };
 
@@ -411,7 +413,7 @@ export function SignInPage() {
       await api.deleteActivity(activityId);
       
       // Remove the activity from the list
-      setActivities(activities.filter(a => a.id !== activityId));
+      setActivities(prev => prev.filter(a => a.id !== activityId));
       
       emit('activity-deleted', { activityId });
       showSuccess('Activity deleted');
@@ -424,7 +426,7 @@ export function SignInPage() {
   const handleUpdateMember = async (id: string, name: string) => {
     try {
       const updatedMember = await api.updateMember(id, name);
-      setMembers(members.map(m => m.id === id ? updatedMember : m));
+      setMembers(prev => prev.map(m => m.id === id ? updatedMember : m));
       emit('member-update', updatedMember);
     } catch (err) {
       console.error('Error updating member:', err);
@@ -669,6 +671,7 @@ export function SignInPage() {
         activities={activities}
         onClose={() => setShowNewEventModal(false)}
         onCreate={handleCreateEvent}
+        onCreateActivity={handleCreateActivity}
         onDeleteActivity={handleDeleteActivity}
       />
 

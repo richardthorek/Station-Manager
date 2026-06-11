@@ -7,7 +7,7 @@
  * - Protecting against XSS attacks
  */
 
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 
 /**
  * Validation for creating a custom activity
@@ -38,6 +38,19 @@ export const validateCreateActivity = [
  * Validation for setting active activity
  * POST /api/activities/active
  */
+/**
+ * Validation for activity ID route parameter
+ * DELETE /api/activities/:activityId
+ */
+export const validateActivityId = [
+  param('activityId')
+    .trim()
+    .notEmpty()
+    .withMessage('Activity ID is required')
+    .isLength({ max: 100 })
+    .withMessage('Activity ID is invalid'),
+];
+
 export const validateSetActiveActivity = [
   body('activityId')
     .trim()
