@@ -53,6 +53,7 @@ Only the following types of documents are allowed in the root `/docs/` directory
 - **API Documentation**: `docs/API_DOCUMENTATION.md` - Human-readable API reference
 - **Feature Guides**: `docs/FEATURE_DEVELOPMENT_GUIDE.md`, `docs/GETTING_STARTED.md`
 - **UI Review**: `docs/current_state/UI_REVIEW_20260207.md` - Comprehensive UI/UX review with iPad screenshots
+- **Suite / Multi-App Strategy**: `docs/SUITE_INTEGRATION_PLAN.md` - Assessment + options for delivering Station Manager, Fire Break Calculator and Fire Santa Run as one product suite (shared identity, subscription, brand)
 
 ---
 
@@ -1620,6 +1621,35 @@ Stripe Price IDs. Phased A (tenant model) → B (billing+signup) → C (devices+
 
 **Priority**: P2 (strategic / commercialization) · **Labels**: `feature`, `billing`,
 `multi-tenant`, `stripe`, `phase-4`
+
+---
+
+#### Feature: RFS Tools Suite — Multi-App Integration (Station Manager + Fire Break Calculator + Fire Santa Run)
+**Status**: 📐 **DESIGN / FUTURE RELEASE** (assessment + options only — not implemented)
+**Design**: `docs/SUITE_INTEGRATION_PLAN.md`
+
+**Objective**: Deliver three sibling RFS/NSW apps — Station Manager (this repo),
+`fireBreakCalculator`, and `fire-santa-run` — as **one product suite** with a single
+sign-on, a single subscription, a consistent RFS brand/UX, and lower hosting/maintenance
+cost. Builds directly on the Organization/entitlements/Stripe model in
+`SAAS_COMMERCIALIZATION_DESIGN.md`, extending entitlements with per-app flags
+(`santaRunEnabled`, `fireBreakEnabled`, …).
+
+**Options (spectrum)**: A = federation (shared identity + subscription only, 3 deploys);
+B = A + shared `@rfs/*` packages (unified brand/UX); C = unified monorepo + single
+deployment (all four goals, highest effort). **Recommendation**: phase toward C
+(A → B → C), banking value at each step.
+
+**Auth recommendation**: decouple identity from entitlement — standardise authentication
+on **Microsoft Entra External ID** (already used by Santa Run; removes SM's custom
+password liability) while keeping SM's org+entitlements as the authZ/billing layer. NB:
+this would revise the JWT-retaining assumption in `SAAS_COMMERCIALIZATION_DESIGN.md` §2.
+
+**Open decisions**: integration depth (A/B/C); auth direction (Entra vs SM JWT);
+real-time standard for a unified backend (Socket.io vs Azure Web PubSub); plan/SKU shape.
+
+**Priority**: P2 (strategic / suite) · **Labels**: `feature`, `multi-app`, `suite`,
+`multi-tenant`, `phase-4`
 
 ---
 
