@@ -136,6 +136,7 @@ on:
       - 'docs/**'
       - '*.md'
       - '.github/*.md'
+      - 'aar-studio/**'   # AAR Studio has its own workflow (aar-studio.yml)
   pull_request:
     branches:
       - main

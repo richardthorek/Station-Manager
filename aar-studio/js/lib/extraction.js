@@ -1,0 +1,141 @@
+// Finding extraction: prompts, JSON schema, chunking and the live trigger
+// policy. The only impure part is the chatJson call.
+
+import { chatJson } from './llm.js';
+import { CATEGORIES, CATEGORY_IDS, GENERAL_PHASE, sessionPhases, createFinding } from './model.js';
+import { countWords, fmtClock } from './text.js';
+
+/** Live auto-extraction policy: ≥45 s elapsed AND ≥70 new words pending. */
+export const TRIGGER = { minMs: 45_000, minWords: 70 };
+
+export function shouldAutoExtract({ msSinceLast, wordsPending }) {
+  return msSinceLast >= TRIGGER.minMs && wordsPending >= TRIGGER.minWords;
+}
+
+/**
+ * Group consecutive segments into chunks of ~maxWords for one LLM call each,
+ * breaking on phase boundaries so phase context stays coherent.
+ */
+export function chunkSegments(segments, maxWords = 450) {
+  const chunks = [];
+  let current = [];
+  let words = 0;
+  for (const seg of segments) {
+    const w = countWords(seg.text);
+    const phaseBreak = current.length && current[current.length - 1].phase !== seg.phase;
+    if (current.length && (words + w > maxWords || phaseBreak)) {
+      chunks.push(current);
+      current = [];
+      words = 0;
+    }
+    current.push(seg);
+    words += w;
+  }
+  if (current.length) chunks.push(current);
+  return chunks;
+}
+
+export function findingsSchema(phases) {
+  return {
+    type: 'object',
+    properties: {
+      findings: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            category: { type: 'string', enum: CATEGORY_IDS },
+            phase: { type: 'string', enum: phases },
+            text: { type: 'string', description: 'One discrete finding, a single clear sentence or two.' },
+            quote: { type: 'string', description: 'Short verbatim quote from the transcript supporting this finding.' },
+            segmentIds: { type: 'array', items: { type: 'string' } },
+          },
+          required: ['category', 'phase', 'text', 'quote', 'segmentIds'],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ['findings'],
+    additionalProperties: false,
+  };
+}
+
+export function buildMessages({ session, segments }) {
+  const phases = sessionPhases(session);
+  const units = (session.units ?? []).map((u) => `${u.unit}${u.role ? ` (${u.role})` : ''}`).join(', ') || 'not recorded';
+  const categories = CATEGORIES.map((c) => `- "${c.id}" = ${c.label}`).join('\n');
+  const system = `You analyse the live transcript of a fire brigade After Action Review (AAR) meeting and extract discrete findings.
+
+Incident: ${session.incident.title || 'untitled'} — ${session.incident.type || 'unknown type'}, ${session.incident.date || 'date unknown'}, ${session.incident.location || 'location unknown'}.
+Attending units: ${units}.
+Incident phases discussed: ${phases.join(', ')}. "${GENERAL_PHASE}" is the bucket for anything not tied to one phase.
+
+Classify every finding into exactly one category:
+${categories}
+
+Transcript reality: this is usually a single room microphone with many speakers, so words are garbled. Fix obvious mis-hearings from context (e.g. "be a operators" → "BA operators"). Mark names or figures you are not sure of with "(unclear)". Keep Australian fire-service terminology exactly as used: BA, BACO, Cat 1, Cat 6, 38 mm, 65 mm, OCC, FRNSW, SCC, appliance, fireground, talkgroup.
+
+Rules:
+- Each finding is one discrete point, written as a clear standalone sentence (or two) a brigade member could read cold.
+- Ignore small talk, jokes, scheduling chatter and the facilitator's process talk ("let's move on to suppression").
+- Each transcript segment is prefixed with its id like [s12]. Every finding must include the segment ids it came from in segmentIds, and a short verbatim quote in quote.
+- Use the segment's tagged phase as a hint, but assign the phase the content is actually about.
+- If a chunk contains nothing of substance, return an empty findings array.
+
+Respond with a JSON object: {"findings": [{"category", "phase", "text", "quote", "segmentIds"}]}.`;
+
+  const lines = segments.map((seg) => {
+    const time = seg.t != null ? ` ${fmtClock(seg.t)}` : '';
+    const speaker = seg.speaker ? ` ${seg.speaker}:` : '';
+    return `[${seg.id}]${time} (${seg.phase})${speaker} ${seg.text}`;
+  });
+  const user = `Extract findings from these transcript segments:\n\n${lines.join('\n')}`;
+  return [
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ];
+}
+
+/** Map a raw model finding into a session finding, clamping bad values. */
+export function toFinding(raw, session, segmentPool) {
+  const phases = sessionPhases(session);
+  const validIds = new Set(segmentPool.map((s) => s.id));
+  return createFinding({
+    category: CATEGORY_IDS.includes(raw.category) ? raw.category : 'happened',
+    phase: phases.includes(raw.phase) ? raw.phase : GENERAL_PHASE,
+    text: String(raw.text ?? '').trim(),
+    quote: String(raw.quote ?? '').trim(),
+    segmentIds: (Array.isArray(raw.segmentIds) ? raw.segmentIds : []).filter((id) => validIds.has(id)),
+    source: 'ai',
+  });
+}
+
+/**
+ * Run extraction over `segments` in chunks. Returns the new findings
+ * (not yet deduped). onProgress(done, total) fires per chunk.
+ */
+export async function extractFromSegments({ session, segments, settings, onProgress = () => {}, fetchImpl = globalThis.fetch }) {
+  const usable = segments.filter((s) => s.text.trim());
+  if (!usable.length) return [];
+  const phases = sessionPhases(session);
+  const schema = findingsSchema(phases);
+  const chunks = chunkSegments(usable);
+  const findings = [];
+  let done = 0;
+  for (const chunk of chunks) {
+    const result = await chatJson({
+      settings,
+      deployment: settings.llmDeployment,
+      messages: buildMessages({ session, segments: chunk }),
+      schema,
+      schemaName: 'aar_findings',
+      fetchImpl,
+    });
+    for (const raw of result?.findings ?? []) {
+      const f = toFinding(raw, session, usable);
+      if (f.text) findings.push(f);
+    }
+    onProgress(++done, chunks.length);
+  }
+  return findings;
+}

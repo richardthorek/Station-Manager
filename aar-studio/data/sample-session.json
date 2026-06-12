@@ -1,0 +1,150 @@
+{
+  "id": "sample-wamboin-2026",
+  "schemaVersion": 1,
+  "createdAt": "2026-06-12T09:05:00.000Z",
+  "updatedAt": "2026-06-12T10:02:00.000Z",
+  "incident": {
+    "title": "Wamboin Structure Fire — 412 Macs Reef Road",
+    "date": "2026-06-06",
+    "location": "412 Macs Reef Road, Wamboin NSW",
+    "type": "Structure Fire"
+  },
+  "aar": {
+    "date": "2026-06-12",
+    "location": "Bungendore Station",
+    "facilitator": "Duty Officer (unclear)"
+  },
+  "units": [
+    { "unit": "Wamboin", "role": "First on scene — pump, initial attack" },
+    { "unit": "Jerrabomberra Creek", "role": "Relief truck — overnight overhaul & watching" },
+    { "unit": "Queanbeyan / Ridgeway / Bungendore", "role": "BA crews, suppression, water shuttle" },
+    { "unit": "Support Brigade", "role": "Logistics — BA cylinder resupply" },
+    { "unit": "Fire & Rescue NSW", "role": "Two appliances; interior crews under RFS control" },
+    { "unit": "Police / Essential Energy / FI", "role": "Scene control, power isolation, investigation" }
+  ],
+  "phases": ["Arrival", "Rescue", "Suppression", "Overhaul"],
+  "currentPhase": "Overhaul",
+  "speakers": {
+    "Speaker 1": "Facilitator",
+    "Speaker 2": "Wamboin captain",
+    "Speaker 3": "Pump operator",
+    "Speaker 4": "BACO"
+  },
+  "segments": [
+    { "id": "seg-001", "t": 95, "speaker": "Speaker 1", "text": "Alright, let's start with arrival. Page went out cleanly, we required one and four and had two and six on the initial response plus the two FRNSW trucks — eight appliances all up.", "phase": "Arrival", "source": "paste", "analysed": true },
+    { "id": "seg-002", "t": 210, "speaker": "Speaker 2", "text": "Coming up the driveway it's about two hundred metres, narrow, and the ground falls away maybe a metre and a half on the Delta side. The overhead imagery we had just doesn't show the topography at all.", "phase": "Arrival", "source": "paste", "analysed": true },
+    { "id": "seg-003", "t": 412, "speaker": "Speaker 3", "text": "Honest call from me — I set the pump up about ten metres from the smoke. I was masked up the whole night and we couldn't flake hose without walking into it. We should have set up further back, you can always move up.", "phase": "Arrival", "source": "paste", "analysed": true },
+    { "id": "seg-004", "t": 760, "speaker": "Speaker 2", "text": "We couldn't do a proper 360 to start with — cars and rubbish blocked the back. It was about thirty minutes in before a spare BA crew got around, and they moved two G-size argon bottles and an LPG off the wall.", "phase": "Rescue", "source": "paste", "analysed": true },
+    { "id": "seg-005", "t": 1290, "speaker": "Speaker 2", "text": "A single thirty-eight had basically no effect. Once we got the ground monitor going at eight hundred litres a minute in that Z pattern it knocked it down and we actually conserved water doing it.", "phase": "Suppression", "source": "paste", "analysed": true },
+    { "id": "seg-006", "t": 1505, "speaker": "Speaker 3", "text": "When the tanks ran dry we dumped the three Cat 1s to go hunting for dams in the dark, and for ten or twenty minutes we were back to one crew on a single thirty-eight. We should just call more tankers up front next time.", "phase": "Suppression", "source": "paste", "analysed": true },
+    { "id": "seg-007", "t": 1820, "speaker": "Speaker 4", "text": "We went straight to a Stage 2 board, set a two-cylinder limit per operator and pooled every three hundred bar cylinder from every truck at staging. At peak we had about ten operators with eight committed.", "phase": "Suppression", "source": "paste", "analysed": true },
+    { "id": "seg-008", "t": 2400, "speaker": "Speaker 2", "text": "The relief brigade was never actually paged — it all went through the group chat, so most of their members never knew the job was on. If you want a truck, page it through dispatch.", "phase": "Overhaul", "source": "paste", "analysed": true },
+    { "id": "seg-009", "t": 2710, "speaker": "Speaker 1", "text": "And the reignition about ten the next morning — the crew worked with the fire investigator, cut and peeled the sheeting back in daylight. TIC from outside only read twelve to fifteen degrees even with deep-seated heat in the middle.", "phase": "Overhaul", "source": "paste", "analysed": true }
+  ],
+  "findings": [
+    { "id": "f-001", "category": "well", "phase": "Arrival", "text": "Dispatch and turnout worked: the page went out cleanly and the operator quota was comfortably exceeded (required 1+4, had 2+6 plus FRNSW on the initial response).", "quote": "we required one and four and had two and six on the initial response", "segmentIds": ["seg-001"], "source": "ai", "createdAt": "2026-06-12T09:10:00.000Z" },
+    { "id": "f-002", "category": "happened", "phase": "Arrival", "text": "Access was via a ~200 m narrow driveway with a sharp drop-off on the Delta side; overhead imagery used for planning did not convey the steep topography.", "quote": "the overhead imagery we had just doesn't show the topography at all", "segmentIds": ["seg-002"], "source": "ai", "createdAt": "2026-06-12T09:10:00.000Z" },
+    { "id": "f-003", "category": "didnt", "phase": "Arrival", "text": "The pump was set up roughly 10 m from thick smoke: the operator worked masked in the hot zone all night and hose could not be flaked without entering smoke.", "quote": "I set the pump up about ten metres from the smoke", "segmentIds": ["seg-003"], "source": "ai", "createdAt": "2026-06-12T09:11:00.000Z" },
+    { "id": "f-004", "category": "next", "phase": "Arrival", "text": "Err further back when positioning the pump and attack appliances — moving up later is easy, pulling back out of the hot zone is not.", "quote": "We should have set up further back, you can always move up", "segmentIds": ["seg-003"], "source": "ai", "createdAt": "2026-06-12T09:11:00.000Z" },
+    { "id": "f-005", "category": "happened", "phase": "Rescue", "text": "An initial 360 was not feasible — terrain, stored cars and rubbish blocked the rear. The full 360 was completed about 30 minutes in by a spare BA crew.", "quote": "It was about thirty minutes in before a spare BA crew got around", "segmentIds": ["seg-004"], "source": "ai", "createdAt": "2026-06-12T09:12:00.000Z" },
+    { "id": "f-006", "category": "next", "phase": "Rescue", "text": "Where the initial 360 is impossible, explicitly task the first spare BA crew to complete it — on this job it found and relocated gas cylinders against the shed wall.", "quote": "they moved two G-size argon bottles and an LPG off the wall", "segmentIds": ["seg-004"], "source": "ai", "createdAt": "2026-06-12T09:12:00.000Z" },
+    { "id": "f-007", "category": "well", "phase": "Suppression", "text": "The ground monitor was the right call: 800 L/min worked in a Z-pattern knocked the fire down decisively and conserved water where single 38 mm lines had no effect.", "quote": "the ground monitor going at eight hundred litres a minute in that Z pattern", "segmentIds": ["seg-005"], "source": "ai", "createdAt": "2026-06-12T09:13:00.000Z" },
+    { "id": "f-008", "category": "didnt", "phase": "Suppression", "text": "With tanks dry, the three Cat 1s were dispersed to hunt water in the dark, scaling operations back to a single crew on one 38 mm for 10–20 minutes.", "quote": "for ten or twenty minutes we were back to one crew on a single thirty-eight", "segmentIds": ["seg-006"], "source": "ai", "createdAt": "2026-06-12T09:13:00.000Z" },
+    { "id": "f-009", "category": "next", "phase": "Suppression", "text": "For a going structure fire off reticulated water, call for more tankers up front (the comparable job used 8 Cat 1s) and run 65 mm to staging with trucks rotating through.", "quote": "We should just call more tankers up front next time", "segmentIds": ["seg-006"], "source": "ai", "createdAt": "2026-06-12T09:13:00.000Z" },
+    { "id": "f-010", "category": "well", "phase": "Suppression", "text": "BA management was strong: straight to a Stage 2 board, a two-cylinder-per-operator limit, and every 300-bar cylinder on the fireground pooled at staging — about 10 operators at peak.", "quote": "straight to a Stage 2 board, set a two-cylinder limit per operator", "segmentIds": ["seg-007"], "source": "ai", "createdAt": "2026-06-12T09:14:00.000Z" },
+    { "id": "f-011", "category": "well", "phase": "Suppression", "text": "The BACO performance was singled out as outstanding — constant comms, intensity confirmations and a full picture of who was where.", "quote": "(unclear) the best BACO they'd worked with", "segmentIds": [], "source": "manual", "createdAt": "2026-06-12T09:20:00.000Z" },
+    { "id": "f-012", "category": "didnt", "phase": "Suppression", "text": "Foam was probably warranted for a fuel-laden shed (racing fuel and metho in the rear dyno room) but was not used.", "quote": "", "segmentIds": [], "source": "manual", "createdAt": "2026-06-12T09:21:00.000Z" },
+    { "id": "f-013", "category": "didnt", "phase": "Overhaul", "text": "The relief brigade was tasked via group chat instead of a formal page, so most of its members never knew the job was happening.", "quote": "If you want a truck, page it through dispatch", "segmentIds": ["seg-008"], "source": "ai", "createdAt": "2026-06-12T09:15:00.000Z" },
+    { "id": "f-014", "category": "next", "phase": "Overhaul", "text": "Use formal paging via dispatch for any truck or relief tasking; SCC can tailor the page to exactly what is needed. Reserve group chats for individual availability.", "quote": "page it through dispatch", "segmentIds": ["seg-008"], "source": "ai", "createdAt": "2026-06-12T09:15:00.000Z" },
+    { "id": "f-015", "category": "happened", "phase": "Overhaul", "text": "Reignition at ~1000 the next morning was worked directly with the fire investigator; TIC readings from outside were only 12–15° despite known deep-seated heat — exterior TIC will not find buried hot spots.", "quote": "TIC from outside only read twelve to fifteen degrees", "segmentIds": ["seg-009"], "source": "ai", "createdAt": "2026-06-12T09:16:00.000Z" },
+    { "id": "f-016", "category": "didnt", "phase": "General", "text": "The BA cylinder refurbishment program plus the long weekend left no refill capacity until Tuesday — pre-notice logistics on any confirmed structure fire.", "quote": "", "segmentIds": [], "source": "manual", "createdAt": "2026-06-12T09:22:00.000Z" }
+  ],
+  "report": {
+    "headline": "Wamboin Structure Fire — 412 Macs Reef Road",
+    "contextBar": "The property: rural block up a medium–long driveway (~200 m) · steep terrain, sharp drop-off on the western side · tight access, no vehicle route to the rear · no mains water · shed uphill of the house, trees within 0.5 m",
+    "stats": [
+      { "value": "8", "label": "Appliances on initial dispatch" },
+      { "value": "10", "label": "BA operators at peak" },
+      { "value": "800", "label": "L/min ground monitor — decisive" },
+      { "value": "30", "label": "Min before 360° was possible" },
+      { "value": "~1000", "label": "Reignition next morning" },
+      { "value": "0", "label": "Injuries" }
+    ],
+    "snapshot": [
+      "Fully involved two-bay × four-bay shed: cars, gas cylinders, and an unknown rear dyno room holding racing fuel and metho. Centre roof collapse and multiple explosions during initial attack. Single 38 mm lines had no effect; the ground monitor knocked it down. With no reticulated water, three Cat 1s shuttled supply until a dam on the neighbouring property turned the fight. Declared a crime scene; overnight watch held; one reignition extinguished with the fire investigator next morning."
+    ],
+    "phases": [
+      {
+        "name": "Arrival",
+        "happened": "Night-time page on a long weekend; six RFS appliances plus two FRNSW trucks on initial dispatch. Long, narrow driveway with difficult topography; staging at the gate with three appliances at the head at any one time.",
+        "well": [
+          "Clean dispatch and arrival. Operator quota exceeded; specific resource request (\"4 BA operators + driver\"); tight driveway staging flowed straight into attack."
+        ],
+        "didnt": [
+          "Working room is the #1 lesson. Pump set up ~10 m from thick smoke; hose couldn't be flaked without entering it; operator masked all night. Set up further back — moving up is easy, pulling back isn't."
+        ]
+      },
+      {
+        "name": "Rescue",
+        "happened": "Effectively a nil rescue phase — crews worked on confirmed advice of nobody inside. The initial 360 was blocked by terrain and stored cars; a spare BA crew completed it ~30 minutes in and relocated gas cylinders from the shed wall.",
+        "well": [
+          "Good intelligence at the gate. Occupants confirmed accounted for and power isolated before crews committed up the driveway."
+        ],
+        "didnt": [
+          "Task the 360 explicitly. Where terrain prevents an initial 360, task the first spare BA crew to complete it — it found hazards and changed the picture."
+        ]
+      },
+      {
+        "name": "Suppression",
+        "happened": "Single 38 mm lines had negligible effect; the ground monitor at 800 L/min in a Z-pattern knocked the fire down. An improvised relay (pumper fed by Cat 6, three Cat 1s shuttling) held until the neighbouring dam turned the corner.",
+        "well": [
+          "Right tool, fast. Monitor at 800 L/min in a Z-pattern conserved water and knocked the fire down where 38s could not.",
+          "Strong BA control. Straight to Stage 2 board; two-cylinder limit; every 300-bar cylinder pooled at staging; standout BACO performance.",
+          "Interagency cooperation. FRNSW interior crews worked under RFS operations without friction; Essential Energy isolated power."
+        ],
+        "didnt": [
+          "Call water early. Hunting dams in the dark cost a 10–20 min scale-back. Roll more tankers up front, run 65 mm to staging and rotate trucks; bulk water and ACT support exist — but you must ask.",
+          "Match the relay to the supply. Closed relay needs continuous water; intermittent shuttle = open relay and keep the tank topped.",
+          "Foam was probably warranted for a fuel-laden shed — not used.",
+          "Own the cordon. Civilians played police and RFS off against each other — brief police directly and early."
+        ]
+      },
+      {
+        "name": "Overhaul",
+        "happened": "Containment declared deliberately — confirmed face-to-face with crews, then formally reported. Crime-scene constraints shaped overhaul; an overnight watch was held and a reignition at ~1000 was worked with the fire investigator in daylight.",
+        "well": [
+          "Deliberate containment call — confirmed face-to-face with crews before reporting, then a quick shift to overhaul under crime-scene constraints."
+        ],
+        "didnt": [
+          "Page, don't message. Relief brigade tasked by group chat — most members never knew. SCC can tailor the page to exactly what's needed.",
+          "Exterior TIC won't find buried hot spots. Readings of 12–15° outside despite deep-seated heat in the middle; crews correctly declined to enter under the collapsed roof."
+        ]
+      }
+    ],
+    "themes": [
+      {
+        "title": "Logistics and readiness aftermath",
+        "body": "The BA cylinder refurbishment program left the district thin on spares, and FRNSW could not refill cylinders over the long weekend — capacity was not restored until Tuesday. Pre-notice refill and logistics as soon as a structure fire is confirmed, and assume a confirmed fire triggers roughly 8 operators plus logistics immediately."
+      }
+    ],
+    "recommendations": [
+      "Positioning and working room — set the pump and primary attack appliances further back from the structure on arrival, with room to flake hose, stage BA and run decon clear of the hot zone.",
+      "Water strategy for non-reticulated structure fires: request 6–8 Cat 1s at confirmation; run 65 mm to staging and rotate trucks; consider bulk water and ACT resources early.",
+      "Relay doctrine: dual 65 mm closed relay where supply is continuous; open relay with tank top-up where supply is intermittent. Cover at a training night.",
+      "Trigger logistics early: BA support, spare cylinders and refill pre-notice on confirmation of a working structure fire.",
+      "Consider early foam application for sheds/workshops where fuel loads are likely.",
+      "Formal paging for truck/brigade taskings, with SCC tailoring the paged requirement; group chats for individual availability only.",
+      "Review spare cylinder holdings during refurbishment programs; establish an after-hours refill arrangement with FRNSW.",
+      "Brief police directly and early on civilian exclusion and who authorises scene access.",
+      "Task the first spare BA crew to complete the 360 where terrain prevents it initially.",
+      "Duty officer and captain to review the fire investigation engagement/sequencing issues offline."
+    ],
+    "actions": [
+      "Position for working room: set the pump and attack appliances further back from the structure on arrival, with space to flake hose, stage BA and run decon clear of the hot zone.",
+      "Pre-roll water, BA support and logistics the moment a working structure fire is confirmed — multiple Triple Zero calls means it's real.",
+      "Formal paging via dispatch for any truck or relief tasking — group chats are for individual availability only."
+    ],
+    "assessment": "A hot, fast-moving job — described as the most intense the brigades had run in a long time without hydrant backup — handled well. Nobody was hurt, the fire never threatened the house or bush despite trees within half a metre of the shed, and the crews adapted intelligently to water and cylinder constraints. The single most important lesson is positioning: establish enough working room between truck and fire from the outset.",
+    "caveat": "Compiled from the AAR meeting transcript (single-mic recording) and whiteboard notes — verify figures and callsigns before district distribution. Full detail in the accompanying AAR summary document."
+  }
+}
