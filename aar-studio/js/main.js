@@ -1,0 +1,64 @@
+// App bootstrap: hash router, nav, re-render policy.
+
+import { h, clear } from './ui.js';
+import * as store from './store.js';
+import { openSettingsDialog } from './settings.js';
+import * as home from './views/home.js';
+import * as setup from './views/setup.js';
+import * as capture from './views/capture.js';
+import * as board from './views/board.js';
+import * as review from './views/review.js';
+import * as report from './views/report.js';
+
+const ROUTES = [
+  { hash: '#/home', label: 'Sessions', view: home, always: true },
+  { hash: '#/setup', label: 'Setup', view: setup },
+  { hash: '#/capture', label: 'Capture', view: capture },
+  { hash: '#/board', label: 'Board', view: board },
+  { hash: '#/review', label: 'Review', view: review },
+  { hash: '#/report', label: 'Report', view: report },
+];
+
+const main = document.getElementById('view');
+const nav = document.getElementById('nav');
+const sessionLabel = document.getElementById('session-label');
+
+function currentRoute() {
+  return ROUTES.find((r) => r.hash === location.hash) ?? ROUTES[0];
+}
+
+function renderNav() {
+  const session = store.getSession();
+  clear(nav);
+  for (const r of ROUTES) {
+    nav.append(h('a', {
+      href: r.hash,
+      class: `nav__link${currentRoute() === r ? ' nav__link--active' : ''}${!r.always && !session ? ' nav__link--disabled' : ''}`,
+    }, r.label));
+  }
+  nav.append(h('button', { class: 'nav__settings', title: 'Settings', 'aria-label': 'Settings', onclick: openSettingsDialog }, '⚙'));
+  sessionLabel.textContent = session ? (session.incident.title || 'Untitled AAR') : '';
+}
+
+function render() {
+  const route = currentRoute();
+  if (!route.always && !store.getSession()) {
+    location.hash = '#/home';
+    return;
+  }
+  renderNav();
+  clear(main);
+  route.view.render(main);
+}
+
+window.addEventListener('hashchange', render);
+
+store.subscribe((reason) => {
+  // Field-level edits use {silent:true}; everything else re-renders the view.
+  if (reason === 'save-error') return;
+  render();
+});
+
+store.resumeLastSession();
+if (!location.hash) location.hash = store.getSession() ? '#/board' : '#/home';
+render();

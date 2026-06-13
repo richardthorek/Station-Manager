@@ -1,0 +1,50 @@
+# AAR Studio — test + deploy to Azure Static Web Apps.
+# The app has no build step; the deploy uploads aar-studio/ as-is.
+#
+# Required repository secret for deploys:
+#   AZURE_STATIC_WEB_APPS_API_TOKEN_AAR_STUDIO — deployment token from the
+#   Static Web App resource (Overview → Manage deployment token).
+
+name: AAR Studio
+
+on:
+  push:
+    branches: [main]
+    paths: ['aar-studio/**', '.github/workflows/aar-studio.yml']
+  pull_request:
+    branches: [main]
+    paths: ['aar-studio/**', '.github/workflows/aar-studio.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests (node --test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run pure-module tests
+        working-directory: aar-studio
+        run: npm test
+
+  deploy:
+    name: Deploy to Azure Static Web Apps
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_AAR_STUDIO }}
+          action: upload
+          app_location: aar-studio
+          output_location: ''
+          skip_app_build: true
+          skip_api_build: true

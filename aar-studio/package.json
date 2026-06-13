@@ -1,0 +1,14 @@
+{
+  "name": "aar-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI-facilitated After Action Reviews for fire brigades — static web app, no build step",
+  "scripts": {
+    "test": "node --test",
+    "dev": "python3 -m http.server 8080"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
