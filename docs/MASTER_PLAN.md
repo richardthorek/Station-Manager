@@ -54,6 +54,18 @@ Only the following types of documents are allowed in the root `/docs/` directory
 - **Feature Guides**: `docs/FEATURE_DEVELOPMENT_GUIDE.md`, `docs/GETTING_STARTED.md`
 - **UI Review**: `docs/current_state/UI_REVIEW_20260207.md` - Comprehensive UI/UX review with iPad screenshots
 
+### Companion app: AAR Studio (June 2026)
+
+`aar-studio/` hosts **AAR Studio**, a self-contained static web app (no build
+step, no backend) for AI-facilitated After Action Reviews — live transcript
+capture, finding extraction onto a presentable board, and packaged
+snapshot/summary reports. It shares no code or deployment with Station Manager
+and deploys separately to Azure Static Web Apps via
+`.github/workflows/aar-studio.yml` (the main CI/CD pipeline ignores
+`aar-studio/**`). Its plan and architecture live in `aar-studio/docs/PLAN.md`
+and `aar-studio/docs/ARCHITECTURE.md`; the registries and AS_BUILT in this
+directory intentionally do not cover it.
+
 ---
 
 ## 🚀 MVP LAUNCH STATUS (February 2026) - v1.0
