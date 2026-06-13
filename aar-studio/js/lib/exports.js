@@ -34,45 +34,7 @@ function subLine(session) {
   return bits.join(' &nbsp;&middot;&nbsp; ');
 }
 
-/**
- * One-page executive snapshot, a standalone HTML document: dark header,
- * red context bar, stats row, the incident, who attended, What worked /
- * Lessons columns, Top three actions footer.
- */
-export function renderSnapshotHtml(session) {
-  const r = session.report ?? emptyReport(session);
-  const stats = (r.stats ?? []).filter((s) => s.value || s.label);
-  const statsRow = stats.length
-    ? `<table class="factrow"><tr>${stats.map((s) => `<td><span class="num">${esc(s.value)}</span><span class="lbl">${esc(s.label)}</span></td>`).join('')}</tr></table>`
-    : '';
-
-  const unitRows = [];
-  const units = session.units ?? [];
-  for (let i = 0; i < units.length; i += 2) {
-    const pair = [units[i], units[i + 1]].filter(Boolean)
-      .map((u) => `<td class="unit">${esc(u.unit)}</td><td>${esc(u.role)}</td>`).join('\n          ');
-    unitRows.push(`      <tr>${pair}</tr>`);
-  }
-
-  const well = (r.phases ?? []).flatMap((p) => p.well ?? []);
-  const didnt = (r.phases ?? []).flatMap((p) => p.didnt ?? []);
-  const bullet = (text) => {
-    // "Bold lead. rest" — bold up to the first sentence break, like the example.
-    const m = String(text).match(/^(.{3,80}?[.:])\s+(.*)$/s);
-    return m ? `<li><b>${esc(m[1])}</b> ${esc(m[2])}</li>` : `<li>${esc(text)}</li>`;
-  };
-
-  const themes = (r.themes ?? []).filter((t) => t.title || t.body)
-    .map((t) => `<h2>${esc(t.title)}</h2><div class="incident"><p>${esc(t.body)}</p></div>`).join('\n');
-
-  const actions = (r.actions ?? []).filter(Boolean);
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>${esc(r.headline || session.incident.title || 'AAR Snapshot')}</title>
-<style>
+const SNAPSHOT_CSS = `
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Helvetica, Arial, sans-serif; color:#1a1f24; font-size:9.2pt; line-height:1.32; }
   .page { max-width:210mm; margin:0 auto; }
@@ -112,10 +74,39 @@ export function renderSnapshotHtml(session) {
   .actions .n { color:#e8b84b; font-weight:bold; font-size:11pt; padding-right:6px; }
   .footer { padding:7px 24px 10px 24px; font-size:7.2pt; color:#7a8590; }
   @media print { .page { max-width:none; } }
-</style>
-</head>
-<body>
-<div class="page">
+`;
+
+/** "Bold lead. rest" — bold up to the first sentence break, like the artwork. */
+function leadBullet(text) {
+  const m = String(text).match(/^(.{3,80}?[.:])\s+(.*)$/s);
+  return m ? `<li><b>${esc(m[1])}</b> ${esc(m[2])}</li>` : `<li>${esc(text)}</li>`;
+}
+
+/** Inner snapshot markup (everything inside <body>), shared with the combined report. */
+function snapshotBody(session) {
+  const r = session.report ?? emptyReport(session);
+  const stats = (r.stats ?? []).filter((s) => s.value || s.label);
+  const statsRow = stats.length
+    ? `<table class="factrow"><tr>${stats.map((s) => `<td><span class="num">${esc(s.value)}</span><span class="lbl">${esc(s.label)}</span></td>`).join('')}</tr></table>`
+    : '';
+
+  const unitRows = [];
+  const units = session.units ?? [];
+  for (let i = 0; i < units.length; i += 2) {
+    const pair = [units[i], units[i + 1]].filter(Boolean)
+      .map((u) => `<td class="unit">${esc(u.unit)}</td><td>${esc(u.role)}</td>`).join('\n          ');
+    unitRows.push(`      <tr>${pair}</tr>`);
+  }
+
+  const well = (r.phases ?? []).flatMap((p) => p.well ?? []);
+  const didnt = (r.phases ?? []).flatMap((p) => p.didnt ?? []);
+
+  const themes = (r.themes ?? []).filter((t) => t.title || t.body)
+    .map((t) => `<h2>${esc(t.title)}</h2><div class="incident"><p>${esc(t.body)}</p></div>`).join('\n');
+
+  const actions = (r.actions ?? []).filter(Boolean);
+
+  return `<div class="page">
   <div class="header">
     <div class="kicker">After Action Review &mdash; Executive Snapshot</div>
     <h1>${esc(r.headline || session.incident.title)}</h1>
@@ -134,13 +125,13 @@ ${unitRows.join('\n')}
       <td class="left">
         <div class="colhead good">What worked</div>
         <ul class="g">
-${well.map(bullet).join('\n')}
+${well.map(leadBullet).join('\n')}
         </ul>
       </td>
       <td class="right">
         <div class="colhead bad">Lessons &mdash; fix next time</div>
         <ul class="b">
-${didnt.map(bullet).join('\n')}
+${didnt.map(leadBullet).join('\n')}
         </ul>
       </td>
     </tr></tbody></table>
@@ -154,7 +145,25 @@ ${actions.map((a, i) => `      <td><span class="n">${i + 1}</span>${esc(a)}</td>
   </div>` : ''}
 ${r.assessment ? `  <div class="section"><h2>Overall assessment</h2><div class="incident"><p>${esc(r.assessment)}</p></div></div>` : ''}
 ${r.caveat ? `  <div class="footer">${esc(r.caveat)}</div>` : ''}
-</div>
+</div>`;
+}
+
+/**
+ * One-page executive snapshot, a standalone HTML document: dark header,
+ * red context bar, stats row, the incident, who attended, What worked /
+ * Lessons columns, Top three actions footer.
+ */
+export function renderSnapshotHtml(session) {
+  const r = session.report ?? emptyReport(session);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${esc(r.headline || session.incident.title || 'AAR Snapshot')}</title>
+<style>${SNAPSHOT_CSS}</style>
+</head>
+<body>
+${snapshotBody(session)}
 </body>
 </html>
 `;
@@ -239,6 +248,113 @@ export function renderTranscriptText(session) {
       return `${t}${sp}${s.text}`;
     })
     .join('\n\n');
+}
+
+const COMBINED_CSS = `
+  .doc { max-width:210mm; margin:0 auto; padding:0 24px 24px; }
+  .doc h1 { font-size:14pt; color:#15212b; margin:18px 0 8px; }
+  .doc h3 { font-size:9.5pt; margin:8px 0 3px; color:#15212b; }
+  .doc p { margin-bottom:6px; }
+  .doc ol { margin:4px 0 8px 18px; }
+  .doc ol li { margin-bottom:4px; font-size:8.7pt; }
+  .meta { font-size:8.4pt; color:#4a5560; margin-bottom:8px; }
+  .register { width:100%; border-collapse:collapse; margin-top:4px; }
+  .register th { text-align:left; font-size:7.4pt; text-transform:uppercase; letter-spacing:0.6px; color:#4a5560; border-bottom:2px solid #c8102e; padding:3px 6px 3px 0; }
+  .register td { font-size:8.4pt; padding:3px 8px 3px 0; border-bottom:1px solid #dde3e8; vertical-align:top; }
+  .register .cat { white-space:nowrap; font-weight:bold; }
+  .register .quote { color:#4a5560; font-style:italic; }
+  .transcript p { font-size:8.4pt; margin-bottom:5px; }
+  .transcript .who { font-weight:bold; color:#15212b; }
+  .transcript .t { color:#7a8590; font-family:Consolas,monospace; font-size:7.6pt; padding-right:4px; }
+  .pagebreak { break-before:page; page-break-before:always; }
+`;
+
+function summarySection(session) {
+  const r = session.report ?? emptyReport(session);
+  const out = [`<div class="doc pagebreak">`, `<h1>Full summary</h1>`];
+  const meta = [];
+  if (session.aar.date || session.aar.location) meta.push(`AAR conducted ${esc([session.aar.date, session.aar.location].filter(Boolean).join(', '))}`);
+  if (session.aar.facilitator) meta.push(`Facilitator: ${esc(session.aar.facilitator)}`);
+  if (session.phases?.length) meta.push(`Format: ${esc(session.phases.join(' → '))}`);
+  if (meta.length) out.push(`<p class="meta">${meta.join(' &nbsp;&middot;&nbsp; ')}</p>`);
+
+  for (const p of r.phases ?? []) {
+    if (!p.happened && !(p.well?.length) && !(p.didnt?.length)) continue;
+    out.push(`<h2>${esc(p.name)}</h2>`);
+    if (p.happened) out.push(`<p>${esc(p.happened)}</p>`);
+    if (p.well?.length) out.push(`<h3>What went well</h3><ul class="g">${p.well.map(leadBullet).join('')}</ul>`);
+    if (p.didnt?.length) out.push(`<h3>What didn&rsquo;t / lessons</h3><ul class="b">${p.didnt.map(leadBullet).join('')}</ul>`);
+  }
+  for (const t of r.themes ?? []) {
+    if (!t.title && !t.body) continue;
+    out.push(`<h2>${esc(t.title)}</h2><p>${esc(t.body)}</p>`);
+  }
+  if (r.recommendations?.length) {
+    out.push(`<h2>Consolidated recommendations</h2><ol>${r.recommendations.map((rec) => `<li>${esc(rec)}</li>`).join('')}</ol>`);
+  }
+  const actions = (r.actions ?? []).filter(Boolean);
+  if (actions.length) out.push(`<h2>Top three actions</h2><ol>${actions.map((a) => `<li><b>${esc(a)}</b></li>`).join('')}</ol>`);
+  if (r.assessment) out.push(`<h2>Overall assessment</h2><p>${esc(r.assessment)}</p>`);
+  out.push('</div>');
+  return out.join('\n');
+}
+
+function registerSection(session) {
+  if (!session.findings?.length) return '';
+  const rows = [];
+  for (const phase of sessionPhases(session)) {
+    for (const cat of CATEGORIES) {
+      for (const f of session.findings.filter((x) => x.phase === phase && x.category === cat.id)) {
+        const quote = f.quote ? `<div class="quote">&ldquo;${esc(f.quote)}&rdquo;</div>` : '';
+        rows.push(`<tr><td>${esc(phase)}</td><td class="cat">${esc(cat.short)}</td><td>${esc(f.text)}${quote}</td></tr>`);
+      }
+    }
+  }
+  return `<div class="doc pagebreak">
+<h1>Findings register</h1>
+<p class="meta">${session.findings.length} findings captured during the AAR.</p>
+<table class="register">
+<thead><tr><th>Phase</th><th>Category</th><th>Finding</th></tr></thead>
+<tbody>${rows.join('\n')}</tbody>
+</table>
+</div>`;
+}
+
+function transcriptSection(session) {
+  if (!session.segments?.length) return '';
+  const paras = session.segments.map((s) => {
+    const t = s.t != null ? `<span class="t">[${fmtClock(s.t)}]</span>` : '';
+    const who = s.speaker ? `<span class="who">${esc(speakerName(session, s.speaker))}:</span> ` : '';
+    return `<p>${t}${who}${esc(s.text)}</p>`;
+  });
+  return `<div class="doc pagebreak transcript">
+<h1>Appendix — transcript</h1>
+<p class="meta">${session.segments.length} segments. Machine transcription — wording is approximate.</p>
+${paras.join('\n')}
+</div>`;
+}
+
+/**
+ * Combined report: snapshot page + full summary + findings register +
+ * optional transcript appendix, one standalone printable HTML document.
+ */
+export function renderCombinedHtml(session, { includeTranscript = false } = {}) {
+  const r = session.report ?? emptyReport(session);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${esc(r.headline || session.incident.title || 'AAR Report')}</title>
+<style>${SNAPSHOT_CSS}${COMBINED_CSS}</style>
+</head>
+<body>
+${snapshotBody(session)}
+${summarySection(session)}
+${registerSection(session)}
+${includeTranscript ? transcriptSection(session) : ''}
+</body>
+</html>
+`;
 }
 
 // re-export for view convenience

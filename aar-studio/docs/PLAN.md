@@ -1,7 +1,7 @@
 # AAR Studio — Plan
 
 **Status:** Living document — update when scope or priorities change.
-**Last updated:** June 2026 (Stages 1–2 and 4 delivered, Stage 3 partially delivered)
+**Last updated:** June 2026 (Stages 1–4 delivered; Stage 5 polish remaining)
 
 ## Vision
 
@@ -79,23 +79,23 @@ Azure Static Web Apps.
 - Review view: edit/recategorise/rephase/delete findings; edit segment text,
   phase and speaker; rename diarised speakers (map applied everywhere).
 
-### Stage 3 — Report studio 🔶 (editing + exports delivered; AI generation next)
+### Stage 3 — Report studio ✅ (delivered)
 
-Delivered:
 - Report data model `{headline, contextBar, stats[], snapshot[], phases[],
   themes[], recommendations[], actions[3], assessment, caveat}`; blank
   template creation pre-filled from session metadata.
+- **AI report generation** from the curated findings (`lib/reportGen.js`):
+  strict JSON schema aligned to the session's phases, style rules matching
+  the snapshot artwork ("Bold lead. Detail." bullets, Australian fire-service
+  terminology, no invented facts, "(unclear)" markers preserved); uses the
+  optional report deployment with fallback to the chat deployment;
+  regenerate-with-confirm once a report exists.
 - Report editor with live preview (iframe), every field editable.
 - Exports: one-page executive snapshot HTML (dark header, red context bar,
   stats row, who attended, What worked / Lessons columns, Top three actions
-  footer), Markdown summary + findings register, JSON session export,
-  print-to-PDF via the preview.
-
-Remaining:
-- **AI report generation** from the curated findings + transcript (separate
-  optional report deployment, e.g. a larger model than the live-extraction one).
-- **Combined HTML report** export (snapshot page + full summary + findings
-  register + optional transcript appendix in one file).
+  footer), **combined HTML report** (snapshot page + full summary + findings
+  register + optional transcript appendix, print-paginated), Markdown summary
+  + findings register, JSON session export, print-to-PDF via the preview.
 
 ### Stage 4 — Live audio capture ✅ (delivered)
 

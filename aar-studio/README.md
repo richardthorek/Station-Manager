@@ -9,9 +9,9 @@ Speech-to-text and AI analysis call your own Azure resources directly from the
 browser; nothing leaves the machine except those calls, and all session data
 lives in `localStorage`.
 
-> Status: Stages 1–2 and 4 complete (setup, live listen with real-time
+> Status: Stages 1–4 complete — setup, live listen with real-time
 > transcription, transcript paste ingest, AI extraction, live board, review,
-> report editing + exports). AI report generation is next — see
+> AI report generation and all exports. Stage 5 polish remains — see
 > [`docs/PLAN.md`](docs/PLAN.md).
 
 ## The workflow
@@ -33,10 +33,13 @@ lives in `localStorage`.
    dedupe, manual quick-add, and a fullscreen high-contrast **Present** mode
    for the projector.
 4. **Review** — edit findings and transcript, rename diarised speakers.
-5. **Report** — structured report (headline, context bar, key stats, snapshot,
-   per-phase detail, themes, recommendations, top three actions, assessment),
-   every field editable with live preview. Export a one-page snapshot HTML,
-   Markdown summary, session JSON, or print to PDF.
+5. **Report** — AI drafts the structured report from your curated findings
+   (headline, context bar, key stats, snapshot, per-phase detail, themes,
+   recommendations, top three actions, assessment, verification caveat);
+   every field stays editable with live preview. Export a one-page snapshot
+   HTML, a combined HTML report (snapshot + full summary + findings register
+   + optional transcript appendix), Markdown summary, session JSON, or print
+   to PDF.
 
 Load the **Wamboin sample** from the home screen to see a finished session
 without any Azure setup.

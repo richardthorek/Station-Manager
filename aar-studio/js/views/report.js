@@ -4,27 +4,57 @@
 
 import { h, toast, download } from '../ui.js';
 import * as store from '../store.js';
-import { emptyReport, renderSnapshotHtml, renderMarkdown, sessionFilename } from '../lib/exports.js';
+import { getSettings } from '../settings.js';
+import { emptyReport, renderSnapshotHtml, renderCombinedHtml, renderMarkdown, sessionFilename } from '../lib/exports.js';
+import { generateReport } from '../lib/reportGen.js';
+import { LlmError } from '../lib/llm.js';
 
 function field(labelText, input) {
   return h('label', { class: 'field' }, h('span', { class: 'field__label' }, labelText), input);
+}
+
+let generating = false;
+
+async function generate(statusEl) {
+  if (generating) return;
+  const session = store.getSession();
+  generating = true;
+  if (statusEl) statusEl.textContent = 'Generating report from the findings… (this can take a minute on a large model)';
+  try {
+    const report = await generateReport({ session, settings: getSettings() });
+    store.update((s) => { s.report = report; }, { reason: 'report' });
+    toast('Report generated — every field below is editable');
+  } catch (err) {
+    const hint = err instanceof LlmError && err.hint ? ` — ${err.hint}` : '';
+    toast(`${err.message}${hint}`, 'error', 8000);
+    if (statusEl) statusEl.textContent = '';
+  } finally {
+    generating = false;
+  }
 }
 
 export function render(container) {
   const session = store.getSession();
 
   if (!session.report) {
+    const status = h('p', { class: 'muted', role: 'status' });
+    const hasFindings = session.findings.length > 0;
     container.append(
       h('h1', {}, 'Report'),
       h('section', { class: 'panel' },
         h('p', {}, 'No report yet for this session.'),
         h('div', { class: 'btn-row' },
-          h('button', { class: 'btn btn--primary', onclick: () => {
+          h('button', {
+            class: 'btn btn--primary', disabled: !hasFindings,
+            title: hasFindings ? '' : 'Capture and analyse the discussion first — the report is built from the findings',
+            onclick: (e) => { e.target.disabled = true; generate(status).finally(() => { e.target.disabled = false; }); },
+          }, `✨ Generate with AI (${session.findings.length} findings)`),
+          h('button', { class: 'btn', onclick: () => {
             store.update((s) => { s.report = emptyReport(s); }, { reason: 'report' });
           } }, 'Start from a blank template'),
-          h('button', { class: 'btn', disabled: true, title: 'AI report generation lands with Stage 3 — see aar-studio/docs/PLAN.md' }, '✨ Generate with AI (coming soon)'),
         ),
-        h('p', { class: 'muted' }, 'The blank template is pre-filled from your session setup; AI generation from the curated findings is the next stage. Load the Wamboin sample from Home to see a finished report.'),
+        status,
+        h('p', { class: 'muted' }, 'Generation uses the report deployment from ⚙ Settings (falls back to the chat deployment). Load the Wamboin sample from Home to see a finished report.'),
       ),
     );
     return;
@@ -64,14 +94,26 @@ export function render(container) {
     field("What didn't go well / lessons (one bullet per line)", h('textarea', { rows: 4, oninput: (e) => { store.update((s) => { s.report.phases[i].didnt = splitLines(e.target.value); }, { silent: true }); refresh(); } }, lines(p.didnt))),
   ));
 
+  const transcriptCheck = h('input', { type: 'checkbox' });
+  const genStatus = h('span', { class: 'muted' });
+
   container.append(
     h('div', { class: 'board-toolbar' },
       h('h1', {}, 'Report'),
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn btn--primary', onclick: () => download(sessionFilename(session, 'snapshot', 'html'), renderSnapshotHtml(store.getSession()), 'text/html') }, '⬇ Snapshot HTML'),
+        h('button', { class: 'btn', onclick: () => download(sessionFilename(session, 'report', 'html'), renderCombinedHtml(store.getSession(), { includeTranscript: transcriptCheck.checked }), 'text/html') }, '⬇ Combined report'),
+        h('label', { class: 'field field--check', title: 'Append the full transcript to the combined report' }, transcriptCheck, h('span', {}, '+ transcript')),
         h('button', { class: 'btn', onclick: () => download(sessionFilename(session, 'summary', 'md'), renderMarkdown(store.getSession()), 'text/markdown') }, '⬇ Markdown'),
         h('button', { class: 'btn', onclick: () => download(sessionFilename(session, 'session', 'json'), store.exportSessionJson(), 'application/json') }, '⬇ Session JSON'),
         h('button', { class: 'btn', onclick: () => { preview.contentWindow?.print(); } }, '🖨 Print / PDF'),
+        h('button', { class: 'btn', disabled: !session.findings.length, onclick: (e) => {
+          if (window.confirm('Regenerate the report with AI? Your current report (including manual edits) will be replaced.')) {
+            e.target.disabled = true;
+            generate(genStatus).finally(() => { e.target.disabled = false; });
+          }
+        } }, '✨ Regenerate'),
+        genStatus,
       ),
     ),
     h('div', { class: 'report-layout' },
