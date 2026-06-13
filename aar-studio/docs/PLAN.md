@@ -1,7 +1,7 @@
 # AAR Studio — Plan
 
 **Status:** Living document — update when scope or priorities change.
-**Last updated:** June 2026 (initial version, Stages 1–2 delivered, Stage 3 partially delivered)
+**Last updated:** June 2026 (Stages 1–2 and 4 delivered, Stage 3 partially delivered)
 
 ## Vision
 
@@ -97,18 +97,22 @@ Remaining:
 - **Combined HTML report** export (snapshot page + full summary + findings
   register + optional transcript appendix in one file).
 
-### Stage 4 — Live audio capture ⬜
+### Stage 4 — Live audio capture ✅ (delivered)
 
 - One shared audio pipeline: source (mic `getUserMedia` / tab or system audio
   `getDisplayMedia` / decoded uploaded file) → `AudioWorklet` tap → resample →
   16 kHz mono PCM16 → Azure Speech **push stream**; RMS level meter from the
   same tap.
 - Azure AI Speech JS SDK (`microsoft-cognitiveservices-speech-sdk` from
-  jsDelivr, lazy-loaded), `ConversationTranscriber` with diarization toggle,
-  en-AU default; live interim results in the Capture view.
-- Optional local `MediaRecorder` backup recording offered as a download.
-- Phase clicker tags live segments; auto-extraction loop using the Stage 2
-  trigger policy (45 s / 70 words / phase change / on demand).
+  jsDelivr, lazy-loaded on first use), `ConversationTranscriber` with the
+  diarization toggle (plain `SpeechRecognizer` when off), en-AU default; live
+  interim results and elapsed/level display in the Capture view; diarised ids
+  mapped to stable "Speaker N" labels (renameable in Review).
+- Optional local `MediaRecorder` backup recording (mic/tab sources) offered
+  as a download after stop.
+- Phase clicker tags live segments; auto-extraction loop runs the Stage 2
+  trigger policy (45 s / 70 words, plus phase change / on demand / on stop),
+  so the board maintains itself as the discussion progresses.
 
 ### Stage 5 — Polish ⬜
 

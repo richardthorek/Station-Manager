@@ -13,7 +13,7 @@ export const DEFAULT_SETTINGS = {
   llmDeployment: '',        // live extraction, e.g. gpt-4o / gpt-4.1-mini
   reportDeployment: '',     // optional larger model for report generation
   apiVersion: '2024-10-21',
-  // Azure AI Speech (Stage 4 — live audio)
+  // Azure AI Speech (live listen)
   speechKey: '',
   speechRegion: 'australiaeast',
   language: 'en-AU',
@@ -102,7 +102,7 @@ export function openSettingsDialog() {
       field('Report deployment (optional)', text('reportDeployment', { placeholder: 'gpt-4o' }), 'Falls back to the chat deployment when empty.'),
       field('API version', text('apiVersion', { placeholder: DEFAULT_SETTINGS.apiVersion })),
       h('div', { class: 'settings__row' }, testBtn, status),
-      h('h3', {}, 'Azure AI Speech (live audio — coming in Stage 4)'),
+      h('h3', {}, 'Azure AI Speech (live listen)'),
       field('Speech key', (inputs.speechKey = h('input', { type: 'password', value: s.speechKey, autocomplete: 'off' }))),
       field('Region', text('speechRegion', { placeholder: 'australiaeast' })),
       field('Language', text('language', { placeholder: 'en-AU' })),

@@ -4,7 +4,7 @@
 import { h, toast } from '../ui.js';
 import * as store from '../store.js';
 import { CATEGORIES, sessionPhases, createFinding } from '../lib/model.js';
-import { analyseNow } from './capture.js';
+import { analyseNow } from '../analyse.js';
 
 let phaseFilter = null; // null = all
 

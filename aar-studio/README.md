@@ -9,19 +9,25 @@ Speech-to-text and AI analysis call your own Azure resources directly from the
 browser; nothing leaves the machine except those calls, and all session data
 lives in `localStorage`.
 
-> Status: Stages 1–2 complete (setup, transcript paste ingest, AI extraction,
-> live board, review, report editing + exports). Live audio capture and AI
-> report generation are next — see [`docs/PLAN.md`](docs/PLAN.md).
+> Status: Stages 1–2 and 4 complete (setup, live listen with real-time
+> transcription, transcript paste ingest, AI extraction, live board, review,
+> report editing + exports). AI report generation is next — see
+> [`docs/PLAN.md`](docs/PLAN.md).
 
 ## The workflow
 
 1. **Setup** — incident title/date/location/type, AAR date/location,
    facilitator, attending units, configurable phases (default Arrival, Rescue,
    Suppression, Overhaul, plus an implicit General bucket).
-2. **Capture** — paste a Teams transcript today (the DOCX copy format,
-   `Name: text` lines, or WEBVTT); live audio (room mic / shared Teams tab /
-   uploaded file via Azure AI Speech with diarization) arrives in Stage 4.
-   Click the current phase as the room moves through it.
+2. **Capture** — **live listen**: room microphone (primary mode — one mic,
+   many speakers), a shared Teams tab ("Share audio" ticked), or an uploaded
+   recording, transcribed in real time by Azure AI Speech with optional
+   diarization, interim results on screen, an input level meter, and an
+   optional local backup recording offered as a download. Or paste a Teams
+   transcript (the DOCX copy format, `Name: text` lines, or WEBVTT). Click
+   the current phase as the room moves through it — findings keep flowing
+   onto the board automatically (~every 45 s / 70 words, on phase change,
+   and on demand).
 3. **Board** — AI extracts discrete findings into four columns (*what
    happened / went well / didn't go well / next time*) with phase chips,
    dedupe, manual quick-add, and a fullscreen high-contrast **Present** mode
@@ -73,11 +79,14 @@ Calls go browser → Azure with the `api-key` header; structured outputs
 supports them, with automatic fallback to `json_object` and then plain-JSON
 parsing. `temperature`/`max_tokens` are never sent, so reasoning models work.
 
-### Azure AI Speech (live audio — Stage 4)
+### Azure AI Speech (live listen)
 
 Create a Speech resource (e.g. `australiaeast`), and put its key/region in
-Settings. Language defaults to `en-AU`; diarization is a toggle. The SDK is
-loaded lazily from jsDelivr only when capture starts.
+Settings. Language defaults to `en-AU`; diarization is a toggle (on = speakers
+come out as renameable "Speaker 1/2/…"). The SDK is loaded lazily from
+jsDelivr only when live listening starts. Microphone access requires HTTPS
+(or `localhost`); for Teams meetings, share the **meeting tab** and tick
+**Share audio** in the browser picker.
 
 ### Key handling — read this
 

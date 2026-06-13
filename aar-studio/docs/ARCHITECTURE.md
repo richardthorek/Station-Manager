@@ -108,7 +108,7 @@ since the last pass **and** ≥70 new words are pending, plus immediately on
 phase change and on demand. (Wired to the manual Analyse button until Stage 4
 adds live audio.)
 
-## Audio pipeline (Stage 4 — designed, not yet built)
+## Audio pipeline (live listen)
 
 ```
 mic (getUserMedia) ─┐
@@ -120,9 +120,19 @@ uploaded file ─► decodeAudioData ─► buffer source ──────┘ 
                                                                  └─► MediaRecorder (optional local backup)
 ```
 
-Speech: `microsoft-cognitiveservices-speech-sdk` from jsDelivr, lazy `import()`,
-`ConversationTranscriber` (diarization toggle) with `en-AU` default. All three
-sources feed the same push stream, so transcription code has one input path.
+Speech: `microsoft-cognitiveservices-speech-sdk` from jsDelivr, lazily
+injected on first use, `ConversationTranscriber` (diarization toggle, plain
+`SpeechRecognizer` when off) with `en-AU` default. All three sources feed the
+same push stream, so transcription code has one input path.
+
+Modules: `js/audio/worklet.js` (AudioWorklet PCM tap), `js/audio/speech.js`
+(SDK loader + transcriber wrapper), `js/audio/live.js` (singleton controller —
+survives view re-renders; final results become session segments tagged with
+the current phase; segment timestamps come from the recogniser offset).
+`js/analyse.js` owns the shared extraction runner and the live trigger
+counters; the controller polls `maybeAutoExtract()` every 5 s and runs a final
+pass on stop. Pure helpers (resampling, RMS, speaker labels) live in
+`js/lib/audioUtils.js` under test.
 
 ## Security / deployment
 

@@ -1,52 +1,13 @@
-// Capture: phase clicker, transcript ingest (paste path now; live audio
-// arrives in Stage 4), segment list, AI analysis.
+// Capture: live listen (mic / shared tab / file via Azure AI Speech),
+// phase clicker, transcript paste ingest, segment list, AI analysis.
 
-import { h, toast, confirmDanger } from '../ui.js';
+import { h, toast, confirmDanger, pickFile } from '../ui.js';
 import * as store from '../store.js';
-import { getSettings } from '../settings.js';
+import { analyseNow } from '../analyse.js';
+import * as live from '../audio/live.js';
 import { sessionPhases, createSegment, speakerName, GENERAL_PHASE } from '../lib/model.js';
 import { parseTranscript } from '../lib/transcriptParser.js';
-import { extractFromSegments } from '../lib/extraction.js';
-import { dedupeFindings } from '../lib/dedupe.js';
-import { LlmError } from '../lib/llm.js';
 import { fmtClock } from '../lib/text.js';
-
-let analysing = false;
-
-/** Run extraction over un-analysed segments; shared with the Board view. */
-export async function analyseNow(statusEl) {
-  if (analysing) return;
-  const session = store.getSession();
-  const pending = session.segments.filter((seg) => !seg.analysed && seg.text.trim());
-  if (!pending.length) {
-    toast('Nothing new to analyse — all segments are already processed');
-    return;
-  }
-  analysing = true;
-  const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
-  try {
-    setStatus(`Analysing ${pending.length} segment(s)…`);
-    const found = await extractFromSegments({
-      session,
-      segments: pending,
-      settings: getSettings(),
-      onProgress: (done, total) => setStatus(`Analysing… chunk ${done}/${total}`),
-    });
-    const { added, skipped } = dedupeFindings(session.findings, found);
-    store.update((s) => {
-      s.findings.push(...added);
-      const ids = new Set(pending.map((seg) => seg.id));
-      for (const seg of s.segments) if (ids.has(seg.id)) seg.analysed = true;
-    }, { reason: 'findings' });
-    toast(`${added.length} new finding(s)${skipped.length ? `, ${skipped.length} duplicate(s) skipped` : ''}`);
-  } catch (err) {
-    const hint = err instanceof LlmError && err.hint ? ` — ${err.hint}` : '';
-    toast(`${err.message}${hint}`, 'error', 8000);
-    setStatus('');
-  } finally {
-    analysing = false;
-  }
-}
 
 function ingestPaste(textarea) {
   const raw = textarea.value;
@@ -68,6 +29,78 @@ function ingestPaste(textarea) {
   toast(`Added ${rows.length} segment(s) (detected format: ${format})`);
 }
 
+function audioPanel(status) {
+  const ls = live.getState();
+  const backupCheck = h('input', { type: 'checkbox', checked: true });
+
+  const startBtn = (kind, onclick) => h('button', {
+    class: 'btn btn--big',
+    disabled: ls.status !== 'idle',
+    onclick,
+  }, `${live.SOURCES[kind].icon} ${live.SOURCES[kind].label}`);
+
+  const idleControls = h('div', {},
+    h('div', { class: 'btn-row' },
+      startBtn('mic', () => live.start('mic', { backup: backupCheck.checked })),
+      startBtn('display', () => live.start('display', { backup: backupCheck.checked })),
+      startBtn('file', async () => {
+        const file = await pickFile('audio/*');
+        if (file) live.start('file', { file });
+      }),
+    ),
+    h('label', { class: 'field field--check' }, backupCheck,
+      h('span', {}, 'Keep a local backup recording (offered as a download when you stop)')),
+    h('p', { class: 'muted' },
+      'Room microphone is the primary mode — one mic, many speakers; diarization and language are set in ⚙ Settings. For a Teams meeting, share the meeting tab and tick “Share audio”.'),
+  );
+
+  // Live elements updated directly by the controller (no re-render per frame)
+  const meterBar = h('div', { class: 'meter__bar' });
+  const meter = h('div', { class: 'meter', title: 'Input level' }, meterBar);
+  const elapsed = h('span', { class: 'live__elapsed' }, '0:00');
+  const interimEl = h('div', { class: 'live__interim', 'aria-live': 'off' });
+  const stateText = ls.status === 'starting' ? 'Connecting…'
+    : ls.status === 'stopping' ? 'Stopping…'
+    : `Listening — ${live.SOURCES[ls.source]?.label ?? ''}`;
+
+  const liveControls = h('div', { class: 'live' },
+    h('div', { class: 'live__row' },
+      h('span', { class: 'live__dot', 'aria-hidden': 'true' }),
+      h('span', { class: 'live__state' }, stateText),
+      elapsed,
+      meter,
+      h('button', { class: 'btn btn--danger', disabled: ls.status !== 'listening', onclick: () => live.stop() }, '■ Stop listening'),
+    ),
+    interimEl,
+    ls.recording ? h('p', { class: 'muted' }, '● Local backup recording in progress') : null,
+  );
+
+  const panel = h('section', { class: 'panel' },
+    h('h2', {}, 'Live listen'),
+    ls.status === 'idle' ? idleControls : liveControls,
+    ls.recordingUrl && ls.status === 'idle'
+      ? h('p', {}, h('a', { class: 'btn', href: ls.recordingUrl, download: ls.recordingName }, '⬇ Download backup recording'))
+      : null,
+    ls.error ? h('p', { class: 'live__error', role: 'alert' }, ls.error) : null,
+  );
+
+  // High-frequency updates touch the DOM directly; anything structural
+  // (status flips, errors) re-renders the view, which rebuilds this panel
+  // from live.getState() and re-registers this listener with fresh nodes.
+  live.setUiListener((event, s) => {
+    if (event === 'level') {
+      meterBar.style.setProperty('--level', String(Math.min(1, s.level * 6)));
+      if (s.startedAt) elapsed.textContent = fmtClock((Date.now() - s.startedAt) / 1000);
+    } else if (event === 'interim') {
+      interimEl.textContent = s.interim ? `${s.interimSpeaker ? s.interimSpeaker + ': ' : ''}${s.interim}…` : '';
+    } else {
+      store.update(() => {}, { reason: 'live' });
+    }
+  });
+
+  return panel;
+}
+
 export function render(container) {
   const session = store.getSession();
   const phases = sessionPhases(session);
@@ -79,7 +112,7 @@ export function render(container) {
       onclick: () => {
         store.update((s) => { s.currentPhase = p; }, { reason: 'phase' });
         // Phase change is an extraction trigger.
-        analyseNow(status);
+        analyseNow(status, { quiet: true });
       },
     }, p)),
   );
@@ -101,7 +134,7 @@ export function render(container) {
         ),
         h('span', { class: 'segment__text' }, seg.text),
       )))
-    : h('p', { class: 'muted' }, 'No transcript yet. Paste one below, or wait for live audio capture (Stage 4).');
+    : h('p', { class: 'muted' }, 'No transcript yet. Start live listening above, or paste a transcript below.');
 
   container.append(
     h('h1', {}, 'Live capture'),
@@ -110,16 +143,7 @@ export function render(container) {
       h('p', { class: 'muted' }, 'Click the phase as the room moves through it — new segments are tagged with it, and changing phase triggers an analysis pass.'),
       phaseButtons,
     ),
-    h('section', { class: 'panel' },
-      h('h2', {}, 'Audio'),
-      h('p', { class: 'muted' },
-        'Room microphone, shared Teams tab audio and uploaded recordings land in Stage 4 (Azure AI Speech with diarization). Until then, use the transcript paste below — the AI analysis pipeline is identical.'),
-      h('div', { class: 'btn-row' },
-        h('button', { class: 'btn', disabled: true, title: 'Coming in Stage 4' }, '🎙 Room microphone'),
-        h('button', { class: 'btn', disabled: true, title: 'Coming in Stage 4' }, '🖥 Share Teams tab audio'),
-        h('button', { class: 'btn', disabled: true, title: 'Coming in Stage 4' }, '📂 Upload audio file'),
-      ),
-    ),
+    audioPanel(status),
     h('section', { class: 'panel' },
       h('h2', {}, 'Paste a transcript'),
       pasteBox,
@@ -142,4 +166,10 @@ export function render(container) {
       ) : null,
     ),
   );
+
+  // Auto-scroll the transcript to the latest segment while listening.
+  if (live.getState().status === 'listening' && segments.length) {
+    const list = container.querySelector('.segments');
+    if (list) list.scrollTop = list.scrollHeight;
+  }
 }
