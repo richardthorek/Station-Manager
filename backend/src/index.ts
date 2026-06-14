@@ -87,7 +87,12 @@ const io = new Server(httpServer, {
       if (!origin || allowedOriginsList.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        // Deny CORS headers for unlisted origins, but do NOT throw: a throw
+        // turns every same-origin asset request that carries an Origin header
+        // into a 500. Same-origin requests don't need CORS headers, so they
+        // still succeed; genuine cross-origin requests are blocked by the
+        // browser (no ACAO header), which is the intended behaviour.
+        callback(null, false);
       }
     },
     methods: ['GET', 'POST'],
@@ -172,8 +177,14 @@ app.use(cors({
     if (!origin || allowedOriginsList.includes(origin)) {
       callback(null, true);
     } else {
+      // Deny CORS headers for unlisted origins, but do NOT throw. Throwing turns
+      // every request that carries an Origin header — including same-origin
+      // asset fetches (module scripts, stylesheets) — into a 500, which takes
+      // the whole site down if FRONTEND_URLS is missing or wrong. Same-origin
+      // requests don't need CORS headers and still succeed; genuine cross-origin
+      // callers are blocked client-side by the browser (no ACAO), as intended.
       logger.warn('CORS request blocked', { origin, allowedOrigins: allowedOriginsList });
-      callback(new Error('Not allowed by CORS'));
+      callback(null, false);
     }
   },
   credentials: true,
