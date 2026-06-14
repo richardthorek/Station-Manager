@@ -17,7 +17,7 @@
 # Quality Gates:
 #   - All linting must pass (zero errors, zero warnings)
 #   - Type checking must pass (TypeScript strict mode)
-#   - All tests must pass (45+ tests)
+#   - All tests must pass (backend Jest + frontend Vitest + AAR Studio node:test)
 #   - Build must succeed
 #   - Deployment only occurs if all above gates pass
 #   - Post-deployment tests validate live application
@@ -28,6 +28,7 @@
 #   Artifact Packaging:
 #     - Ships pre-built backend/dist (compiled TypeScript)
 #     - Ships pre-built frontend/dist (optimized static assets)
+#     - Ships aar-studio/ (no-build static bundle, mounted at /aar by the backend)
 #     - Ships backend/node_modules (pre-installed production dependencies)
 #     - Ships package.json and package-lock.json (for reference)
 #     - Does NOT ship source code (.ts files)
@@ -105,7 +106,7 @@
 #   - Concurrency control (cancels outdated PR runs)
 #   - Path filtering: Skip pipeline for documentation-only changes
 #     (docs/**, *.md files) to reduce deployment frequency
-#   - Optimized artifact packaging (no node_modules in deployment)
+#   - Optimized artifact packaging (aar-studio/ bundled for /aar App Service mount)
 #   - Azure post-deploy builds (SCM_DO_BUILD_DURING_DEPLOYMENT=true)
 #
 # Future Optimizations:
@@ -136,7 +137,6 @@ on:
       - 'docs/**'
       - '*.md'
       - '.github/*.md'
-      - 'aar-studio/**'   # AAR Studio has its own workflow (aar-studio.yml)
   pull_request:
     branches:
       - main
@@ -261,6 +261,11 @@ jobs:
             echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Run AAR Studio unit tests
+        run: |
+          cd aar-studio
+          npm test
+
       - name: Build application
         env:
           GIT_COMMIT_SHA: ${{ github.sha }}
@@ -346,13 +351,15 @@ jobs:
           cp backend/package.json deploy/backend/
           cp backend/package-lock.json deploy/backend/
           cp -r frontend/dist deploy/frontend/
+          cp -r aar-studio deploy/aar-studio
           cp startup.sh deploy/ 2>/dev/null || true
           cp web.config deploy/ 2>/dev/null || true
-          
+
           echo "📦 Package contents:"
           du -sh deploy/backend/node_modules
           du -sh deploy/backend/dist
           du -sh deploy/frontend/dist
+          du -sh deploy/aar-studio
           
           cd deploy && zip -r ../release.zip .
           cd .. && ls -lh release.zip

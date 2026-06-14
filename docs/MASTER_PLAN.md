@@ -56,15 +56,19 @@ Only the following types of documents are allowed in the root `/docs/` directory
 
 ### Companion app: AAR Studio (June 2026)
 
-`aar-studio/` hosts **AAR Studio**, a self-contained static web app (no build
-step, no backend) for AI-facilitated After Action Reviews — live transcript
-capture, finding extraction onto a presentable board, and packaged
-snapshot/summary reports. It shares no code or deployment with Station Manager
-and deploys separately to Azure Static Web Apps via
-`.github/workflows/aar-studio.yml` (the main CI/CD pipeline ignores
-`aar-studio/**`). Its plan and architecture live in `aar-studio/docs/PLAN.md`
-and `aar-studio/docs/ARCHITECTURE.md`; the registries and AS_BUILT in this
-directory intentionally do not cover it.
+`aar-studio/` hosts **AAR Studio**, a no-build static bundle (its own vanilla
+ES modules and `node --test` suite) for AI-facilitated After Action Reviews —
+live transcript capture, finding extraction onto a presentable board, and
+packaged snapshot/summary reports. It is part of the **single Station Manager
+application**: the Express backend serves it at `/aar` within the one Azure App
+Service deployment, and the landing-page app picker links to it as **AAR
+Studio**. The backend applies the extra CSP / `Permissions-Policy` it needs,
+scoped to `/aar` (see `backend/src/index.ts`); the bundle is located via
+`AAR_STUDIO_PATH` (default `../aar-studio`) and must be included in the deploy
+package. `aar-studio.yml` runs the unit tests only; `ci-cd.yml` handles
+deployment. Its plan and architecture live in `aar-studio/docs/PLAN.md` and
+`aar-studio/docs/ARCHITECTURE.md`; the registries and AS_BUILT in this
+directory intentionally do not cover its internals.
 
 ---
 

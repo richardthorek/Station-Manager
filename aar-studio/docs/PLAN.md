@@ -1,7 +1,7 @@
 # AAR Studio — Plan
 
 **Status:** Living document — update when scope or priorities change.
-**Last updated:** June 2026 (Stages 1–4 delivered; Stage 5 polish remaining)
+**Last updated:** June 2026 (Stages 1–4 + 6 delivered; Stage 5 polish remaining)
 
 ## Vision
 
@@ -23,8 +23,9 @@ end:
 
 Everything runs in the browser. Azure AI Speech and Azure OpenAI (Azure AI
 Foundry deployments) are called directly from the client; keys live in
-`localStorage` only. There is **no backend**. Deployment target is Azure
-Static Web Apps.
+`localStorage` only. The AAR app has **no server-side logic of its own**; it
+ships as a no-build static bundle served by the Station Manager backend at
+`/aar` within the single Azure App Service deployment.
 
 The Wamboin structure fire AAR (June 2026) is the reference example: its
 summary, one-page snapshot and session data are bundled as
@@ -33,11 +34,14 @@ session.
 
 ## Relationship to Station Manager
 
-AAR Studio lives in `aar-studio/` inside the Station-Manager repo but is fully
-self-contained: no shared code, no shared deploy. The main CI/CD pipeline
-ignores it (`paths-ignore`); it has its own workflow
-(`.github/workflows/aar-studio.yml`) that runs its node tests and deploys to
-Azure Static Web Apps.
+AAR Studio lives in `aar-studio/` inside the Station-Manager repo. It shares no
+application code with Station Manager (its own vanilla ES modules, its own
+`node --test` suite), but it is **not deployed separately**: the Express backend
+serves it at `/aar` as part of the one Azure App Service deployment, and the app
+picker on the landing page links to it. The backend applies the security
+headers it needs, scoped to `/aar` (see `backend/src/index.ts`); the folder is
+located via `AAR_STUDIO_PATH` (default `../aar-studio` from the repo root) and
+must be included in the deployment package.
 
 ## Delivery stages
 
@@ -53,8 +57,8 @@ Azure Static Web Apps.
   api-version / key, Azure Speech key / region / language (en-AU default) /
   diarization toggle; **Test connection** button; stored in `localStorage`.
 - Sample Wamboin session JSON; load-sample button on Home.
-- `staticwebapp.config.json` (CSP, Permissions-Policy), SWA deploy workflow,
-  README, node test runner (`node --test`, zero dependencies).
+- README, node test runner (`node --test`, zero dependencies). (Security
+  headers for `/aar` now live in the Station Manager backend; see Stage 6.)
 
 ### Stage 2 — Transcript ingest, extraction & live board ✅ (delivered)
 
@@ -114,6 +118,20 @@ Azure Static Web Apps.
   trigger policy (45 s / 70 words, plus phase change / on demand / on stop),
   so the board maintains itself as the discussion progresses.
 
+### Stage 6 — App Service integration ✅ (delivered)
+
+- AAR Studio is now part of the **single Station Manager application** rather
+  than a separate Azure Static Web App. The Express backend serves it at `/aar`
+  (`backend/src/index.ts`), and the landing-page app picker has an **AAR Studio**
+  card linking to it.
+- The CSP and `Permissions-Policy` AAR Studio needs (jsDelivr scripts, Azure
+  OpenAI/Speech connect targets, `frame-src` for the report preview, microphone
+  and display-capture) are applied by the backend, scoped to `/aar`, overriding
+  Helmet's stricter global policy for that path only.
+- The mount is guarded by `existsSync`, located via `AAR_STUDIO_PATH` (default
+  `../aar-studio` from the repo root), so a deployment that omits the bundle
+  still boots cleanly. The obsolete `staticwebapp.config.json` has been removed.
+
 ### Stage 5 — Polish ⬜
 
 - Dedupe threshold tuning with real transcripts; merge-suggestion UI.
@@ -126,8 +144,8 @@ Azure Static Web Apps.
 
 | # | Decision | Rationale |
 |---|----------|-----------|
-| 1 | No build step, plain ES modules | Deployable to SWA by copying files; trivially debuggable at an incident-review timescale; no toolchain rot. |
-| 2 | Browser → Azure direct, keys in localStorage | No backend to run or secure; acceptable because keys are the operator's own and scoped resources; clearly documented trade-off. |
+| 1 | No build step, plain ES modules | Served as static files by the Station Manager backend at `/aar` by copying the folder into the deploy package; trivially debuggable at an incident-review timescale; no toolchain rot. |
+| 2 | Browser → Azure direct, keys in localStorage | No AAR-specific server logic to run or secure; acceptable because keys are the operator's own and scoped resources; clearly documented trade-off. |
 | 3 | Structured outputs w/ fallback chain | `json_schema` strict where supported; older api-versions/models fall back to `json_object`, then fenced-JSON parsing. |
 | 4 | One audio pipeline for mic/tab/file | Uniform 16 kHz PCM16 push stream means STT code has a single input path; the level meter and backup recorder tap the same graph. |
 | 5 | Pure logic modules (parser, dedupe, exports, extraction policy) | Testable with `node --test` and no browser; views stay thin. |

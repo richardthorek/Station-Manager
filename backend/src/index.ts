@@ -16,6 +16,7 @@
 
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 
 // Load environment variables from common locations (no overrides) before any other imports
 const candidateEnvPaths = [
@@ -205,6 +206,40 @@ app.use(kioskModeMiddleware); // Detect and validate kiosk mode from brigade tok
 // Serve static files from frontend build (for production)
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
+
+// Serve the AAR Studio companion app (a no-build vanilla static bundle) as part
+// of this single App Service deployment, reachable from the app picker at /aar.
+// It needs a more permissive policy than the main app — it calls Azure AI Speech
+// and Azure OpenAI directly from the browser, lazy-loads the Speech SDK from
+// jsDelivr, renders the report preview in a srcdoc iframe, and uses the
+// microphone / display-capture for live listening. Those needs used to live in
+// staticwebapp.config.json; under App Service they are enforced here, scoped to
+// /aar so the main app keeps Helmet's stricter global policy. Guarded by
+// existsSync so a deployment that doesn't bundle aar-studio still boots cleanly.
+const aarStudioPath = process.env.AAR_STUDIO_PATH || path.join(__dirname, '../../aar-studio');
+if (fs.existsSync(path.join(aarStudioPath, 'index.html'))) {
+  const aarCsp = [
+    "default-src 'self'",
+    "script-src 'self' https://cdn.jsdelivr.net blob:",
+    "worker-src 'self' blob:",
+    "connect-src 'self' https://cdn.jsdelivr.net https://*.openai.azure.com https://*.cognitiveservices.azure.com https://*.services.ai.azure.com https://*.api.cognitive.microsoft.com wss://*.stt.speech.microsoft.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "media-src 'self' blob:",
+    "frame-src 'self' blob:",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+  app.use('/aar', (req, res, next) => {
+    // Override Helmet's global CSP / Permissions-Policy for the AAR sub-app only.
+    res.setHeader('Content-Security-Policy', aarCsp);
+    res.setHeader('Permissions-Policy', 'microphone=(self), display-capture=(self), camera=()');
+    next();
+  }, express.static(aarStudioPath));
+  logger.info('AAR Studio mounted at /aar', { path: aarStudioPath });
+} else {
+  logger.warn('AAR Studio bundle not found; /aar will not be served', { path: aarStudioPath });
+}
 
 // Health check
 app.get('/health', async (req, res) => {
@@ -479,8 +514,9 @@ io.on('connection', (socket: SocketWithStation) => {
 });
 
 // Serve frontend for all other GET routes (SPA fallback) - Must be last!
-// Exclude /assets/* paths to prevent serving index.html for static assets
-app.get(/^\/(?!api|assets).*/, spaRateLimiter, (req, res) => {
+// Exclude /assets/* (frontend static assets) and /aar/* (the AAR Studio sub-app,
+// served above) so neither gets the React index.html.
+app.get(/^\/(?!api|assets|aar).*/, spaRateLimiter, (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
