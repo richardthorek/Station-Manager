@@ -100,20 +100,25 @@ jsDelivr only when live listening starts. Microphone access requires HTTPS
   borrowed machines. For a shared deployment, put the resources behind your
   own subscription and hand out scoped keys per facilitator.
 
-## Deployment (Azure Static Web Apps)
+## Deployment (part of Station Manager on Azure App Service)
 
-1. Create a **Static Web App** (Free tier is fine), deployment source
-   *Other*.
-2. Copy the deployment token (Overview → *Manage deployment token*) into the
-   repo secret `AZURE_STATIC_WEB_APPS_API_TOKEN_AAR_STUDIO`.
-3. Pushes to `main` touching `aar-studio/**` run
-   [`.github/workflows/aar-studio.yml`](../.github/workflows/aar-studio.yml):
-   tests, then an upload of this directory as-is (`skip_app_build: true`).
+AAR Studio is **not deployed on its own**. It ships inside the Station Manager
+App Service deployment and is served by the Express backend at **`/aar`**,
+reachable from the app picker on the landing page. There is no separate
+hosting resource, build step, or deploy token.
 
-`staticwebapp.config.json` ships a CSP (self + `cdn.jsdelivr.net` scripts;
-connections limited to Azure OpenAI/Speech domains) and a
-`Permissions-Policy` allowing microphone and display capture for this origin
-only.
+The security headers AAR Studio needs (a CSP allowing `cdn.jsdelivr.net`
+scripts and the Azure OpenAI/Speech connect targets, plus a
+`Permissions-Policy` enabling microphone and display capture) are applied by
+the backend, scoped to the `/aar` path — see the AAR Studio mount in
+`backend/src/index.ts`. The backend looks for this folder at
+`../aar-studio` relative to the repo root, overridable with the
+`AAR_STUDIO_PATH` environment variable; the deployment package must include
+it. (The infrastructure-as-code and the CI workflow that build that package
+are maintained separately.)
+
+You can still run it fully standalone for local development with
+`python3 -m http.server` (above) — it has no backend dependency of its own.
 
 ## Repository layout
 

@@ -32,10 +32,13 @@ aar-studio/
 │       └── exports.js          # snapshot HTML, Markdown summary, report template
 ├── data/sample-session.json    # Wamboin structure fire example session
 ├── test/                       # node:test suites for js/lib (zero deps)
-├── staticwebapp.config.json    # CSP, Permissions-Policy, SPA fallback
 ├── package.json                # {"type":"module"} + npm test (node --test)
 └── docs/ (PLAN.md, ARCHITECTURE.md)
 ```
+
+Served by the Station Manager Express backend at `/aar` (see "Security /
+deployment" below); the security headers it needs are applied there rather than
+in a static-host config file.
 
 Views import `store` + `lib`; `lib` never imports views or `ui.js`. `llm.js`
 uses only `fetch`, so it is loadable under node for tests.
@@ -136,15 +139,17 @@ pass on stop. Pure helpers (resampling, RMS, speaker labels) live in
 
 ## Security / deployment
 
-- Azure Static Web Apps; `staticwebapp.config.json` sets CSP
-  (`script-src 'self' cdn.jsdelivr.net blob:`; `connect-src` limited to
-  `*.openai.azure.com`, `*.cognitiveservices.azure.com`,
+- Served by the Station Manager Express backend at `/aar` as part of the single
+  Azure App Service deployment (no separate hosting resource). The backend
+  applies a CSP scoped to `/aar` (`script-src 'self' cdn.jsdelivr.net blob:`;
+  `connect-src` limited to `*.openai.azure.com`, `*.cognitiveservices.azure.com`,
   `*.services.ai.azure.com`, `*.api.cognitive.microsoft.com`,
-  `wss://*.stt.speech.microsoft.com`; `style-src 'self' 'unsafe-inline'`) and
-  `Permissions-Policy: microphone=(self), display-capture=(self)`.
-- Keys are entered by the operator and stay in `localStorage`; nothing is
-  proxied or logged server-side because there is no server. Use scoped,
-  rotatable keys; see README for the trade-offs.
-- GitHub Actions workflow `.github/workflows/aar-studio.yml`: node tests on
-  PR/push touching `aar-studio/**`, SWA deploy from `main`
-  (`skip_app_build: true`).
+  `wss://*.stt.speech.microsoft.com`; `style-src 'self' 'unsafe-inline'`;
+  `frame-src 'self' blob:` for the report preview) plus
+  `Permissions-Policy: microphone=(self), display-capture=(self)` — see the AAR
+  Studio mount in `backend/src/index.ts`. The main app keeps Helmet's stricter
+  global policy.
+- Keys are entered by the operator and stay in `localStorage`; the AAR app has
+  no server-side logic of its own — calls go browser → Azure directly, nothing
+  is proxied or logged. Use scoped, rotatable keys; see README for the
+  trade-offs.

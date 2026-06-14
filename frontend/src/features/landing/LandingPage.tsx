@@ -153,6 +153,21 @@ export function LandingPage() {
               variants={itemVariants}
               transition={itemTransition}
             >
+              <div className="feature-icon" aria-hidden="true">🎙️</div>
+              <h3>AAR Studio</h3>
+              <p>AI-assisted After Action Reviews: capture the discussion live, build a findings board, and export the report.</p>
+              {/* AAR Studio is a self-contained static sub-app served by the backend at /aar, so this is a plain link, not a router route. */}
+              <a href="/aar/" className="feature-link">
+                Go to AAR Studio
+                <span className="arrow" aria-hidden="true">→</span>
+              </a>
+            </motion.article>
+
+            <motion.article
+              className="feature-card"
+              variants={itemVariants}
+              transition={itemTransition}
+            >
               <div className="feature-icon" aria-hidden="true">⚙️</div>
               <h3>Station Management</h3>
               <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
