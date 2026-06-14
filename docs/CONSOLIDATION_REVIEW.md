@@ -187,3 +187,4 @@ token work rather than running it as a separate project.
 - Specify the streaming-voice WebSocket contract for the maintenance agent.
 - When #3 ships, update `aar-studio/docs/ARCHITECTURE.md` and the `/aar` CSP in
   `backend/src/index.ts` to reflect the gateway-only connect targets.
+- Identify opportunities to make the package smaller and reduce deployment time from <10 minutes.
