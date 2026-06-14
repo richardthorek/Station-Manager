@@ -17,7 +17,7 @@
 # Quality Gates:
 #   - All linting must pass (zero errors, zero warnings)
 #   - Type checking must pass (TypeScript strict mode)
-#   - All tests must pass (45+ tests)
+#   - All tests must pass (backend Jest + frontend Vitest + AAR Studio node:test)
 #   - Build must succeed
 #   - Deployment only occurs if all above gates pass
 #   - Post-deployment tests validate live application
@@ -28,6 +28,7 @@
 #   Artifact Packaging:
 #     - Ships pre-built backend/dist (compiled TypeScript)
 #     - Ships pre-built frontend/dist (optimized static assets)
+#     - Ships aar-studio/ (no-build static bundle, mounted at /aar by the backend)
 #     - Ships backend/node_modules (pre-installed production dependencies)
 #     - Ships package.json and package-lock.json (for reference)
 #     - Does NOT ship source code (.ts files)
@@ -105,7 +106,7 @@
 #   - Concurrency control (cancels outdated PR runs)
 #   - Path filtering: Skip pipeline for documentation-only changes
 #     (docs/**, *.md files) to reduce deployment frequency
-#   - Optimized artifact packaging (no node_modules in deployment)
+#   - Optimized artifact packaging (aar-studio/ bundled for /aar App Service mount)
 #   - Azure post-deploy builds (SCM_DO_BUILD_DURING_DEPLOYMENT=true)
 #
 # Future Optimizations:
@@ -136,7 +137,6 @@ on:
       - 'docs/**'
       - '*.md'
       - '.github/*.md'
-      - 'aar-studio/**'   # AAR Studio has its own workflow (aar-studio.yml)
   pull_request:
     branches:
       - main
@@ -261,6 +261,11 @@ jobs:
             echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Run AAR Studio unit tests
+        run: |
+          cd aar-studio
+          npm test
+
       - name: Build application
         env:
           GIT_COMMIT_SHA: ${{ github.sha }}
@@ -346,13 +351,15 @@ jobs:
           cp backend/package.json deploy/backend/
           cp backend/package-lock.json deploy/backend/
           cp -r frontend/dist deploy/frontend/
+          cp -r aar-studio deploy/aar-studio
           cp startup.sh deploy/ 2>/dev/null || true
           cp web.config deploy/ 2>/dev/null || true
-          
+
           echo "📦 Package contents:"
           du -sh deploy/backend/node_modules
           du -sh deploy/backend/dist
           du -sh deploy/frontend/dist
+          du -sh deploy/aar-studio
           
           cd deploy && zip -r ../release.zip .
           cd .. && ls -lh release.zip
@@ -368,16 +375,16 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: azure/login@v3
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F04003FFA701477E897BF9329FCA2C5E }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0FB429D7D41741EAA3FF70DCD8F0A441 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_ECE14A699FEA4BB9AA978A7C54A2FE67 }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ff11f578-2330-478f-b3f1-f97fe351ea94
+          subscription-id: 67fb0ac0-a5bf-4906-bf1f-5756416dc98b
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'bungrfsstation'
+          app-name: 'bungrfs-linux'
           slot-name: 'Production'
           package: release.zip
         continue-on-error: true
@@ -402,7 +409,7 @@ jobs:
         if: steps.check-deploy.outputs.deployment_failed == 'true'
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'bungrfsstation'
+          app-name: 'bungrfs-linux'
           slot-name: 'Production'
           package: release.zip
 
@@ -423,7 +430,7 @@ jobs:
           
           az webapp config appsettings set \
             --resource-group bungrfsstation_group \
-            --name bungrfsstation \
+            --name bungrfs-linux \
             --settings \
               GIT_COMMIT_SHA="${{ github.sha }}" \
               GIT_COMMIT_SHORT="$(echo "${{ github.sha }}" | cut -c1-7)" \
@@ -433,13 +440,13 @@ jobs:
           echo "   - GIT_COMMIT_SHA: ${{ github.sha }}"
           echo "   - GIT_COMMIT_SHORT: $(echo "${{ github.sha }}" | cut -c1-7)"
           echo "   - BUILD_TIMESTAMP: $BUILD_TS"
-          
+
           # Restart the app to immediately pick up new environment variables
           echo ""
           echo "🔄 Restarting Azure App Service to apply new environment variables..."
           az webapp restart \
             --resource-group bungrfsstation_group \
-            --name bungrfsstation \
+            --name bungrfs-linux \
             --output none
           echo "✅ App restart initiated"
           
@@ -457,14 +464,14 @@ jobs:
           echo "## 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
-          echo "- **App Name**: bungrfsstation" >> $GITHUB_STEP_SUMMARY
+          echo "- **App Name**: bungrfs-linux" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Run post-deployment smoke tests
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
-          APP_URL: ${{ secrets.APP_URL }}
+          APP_URL: https://bungrfs-linux.azurewebsites.net
           TABLE_STORAGE_TABLE_SUFFIX: Test
           STABILIZATION_TIMEOUT: 1200
           STABILIZATION_INTERVAL: 10
@@ -494,6 +501,6 @@ jobs:
         run: |
           echo "## 🧪 Post-Deployment Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Target URL**: ${{ secrets.APP_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target URL**: https://bungrfs-linux.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
           echo "- **Test Environment**: TABLE_STORAGE_TABLE_SUFFIX=Test" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

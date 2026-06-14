@@ -93,9 +93,9 @@ jobs:
       - name: Login to Azure (OIDC)
         uses: azure/login@v3
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F04003FFA701477E897BF9329FCA2C5E }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0FB429D7D41741EAA3FF70DCD8F0A441 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_ECE14A699FEA4BB9AA978A7C54A2FE67 }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ff11f578-2330-478f-b3f1-f97fe351ea94
+          subscription-id: 67fb0ac0-a5bf-4906-bf1f-5756416dc98b
 
       - name: What-if (preview changes)
         uses: azure/cli@v2
@@ -167,9 +167,9 @@ jobs:
       - name: Login to Azure (OIDC)
         uses: azure/login@v3
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F04003FFA701477E897BF9329FCA2C5E }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0FB429D7D41741EAA3FF70DCD8F0A441 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_ECE14A699FEA4BB9AA978A7C54A2FE67 }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ff11f578-2330-478f-b3f1-f97fe351ea94
+          subscription-id: 67fb0ac0-a5bf-4906-bf1f-5756416dc98b
 
       - name: Deploy to Linux web app
         uses: azure/webapps-deploy@v3

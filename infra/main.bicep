@@ -72,13 +72,14 @@ module storage 'modules/storage.bicep' = {
 
 // Build the connection string from the freshly-created account's keys without
 // emitting the secret from the storage module's outputs.
-var storageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${listKeys(storage.outputs.storageAccountId, '2023-05-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+var storageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${listKeys(resourceId('Microsoft.Storage/storageAccounts', storageAccountName), '2023-05-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
 
 // ---------------------------------------------------------------------------
 // Hosting option A — Linux B1 App Service (always warm)
 // ---------------------------------------------------------------------------
 module linux 'modules/appservice-linux.bicep' = if (deployLinuxAppService) {
   name: 'linux-appservice'
+  dependsOn: [storage]
   params: {
     location: location
     appServicePlanName: '${namePrefix}-linux-plan'
@@ -94,6 +95,7 @@ module linux 'modules/appservice-linux.bicep' = if (deployLinuxAppService) {
 // ---------------------------------------------------------------------------
 module containerApp 'modules/containerapp.bicep' = if (deployContainerApp) {
   name: 'container-app'
+  dependsOn: [storage]
   params: {
     location: location
     logAnalyticsWorkspaceName: '${namePrefix}-aca-logs'
@@ -113,5 +115,5 @@ module containerApp 'modules/containerapp.bicep' = if (deployContainerApp) {
 // Outputs
 // ---------------------------------------------------------------------------
 output storageAccountNameOut string = storage.outputs.storageAccountName
-output linuxHostName string = deployLinuxAppService ? linux.outputs.defaultHostName : ''
-output containerAppFqdn string = deployContainerApp ? containerApp.outputs.fqdn : ''
+output linuxHostName string = deployLinuxAppService ? linux!.outputs.defaultHostName : ''
+output containerAppFqdn string = deployContainerApp ? containerApp!.outputs.fqdn : ''
