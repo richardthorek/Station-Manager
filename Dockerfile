@@ -21,7 +21,7 @@ RUN apt-get update \
 # Install dependencies first (better layer caching).
 COPY backend/package*.json backend/
 COPY frontend/package*.json frontend/
-RUN npm ci --prefix backend && npm ci --prefix frontend
+RUN npm ci --prefix backend && npm ci --prefix frontend --legacy-peer-deps
 
 # Copy sources and build (tsc for backend + copies rfs-facilities.csv; vite for frontend).
 COPY . .
