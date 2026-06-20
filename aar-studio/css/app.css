@@ -315,3 +315,41 @@ body.present .board__empty { color: #93a1ad; }
 @media print {
   .topbar, .board-toolbar, .quick-add, .phase-filter, .toast-host { display: none; }
 }
+
+/* ---------- friendly home + capture (non-technical flow) ---------- */
+.hero--home { background: linear-gradient(135deg, var(--ink), var(--ink-2)); padding: 2rem 1.6rem; }
+.hero__hint { font-size: 0.85rem; color: #aebac4 !important; margin-top: 0.9rem; }
+.btn--hero { min-height: 64px; padding: 0.9rem 1.6rem; font-size: 1.1rem; font-weight: 700; }
+.hero .btn--hero.btn--primary { box-shadow: var(--shadow); }
+
+.reviews { margin-bottom: 1.6rem; }
+.review-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
+.review-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 1rem; cursor: pointer;
+  display: flex; flex-direction: column; gap: 0.6rem; transition: border-color 0.15s, transform 0.05s;
+}
+.review-card:hover { border-color: var(--red); }
+.review-card:active { transform: translateY(1px); }
+.review-card__title { font-size: 1rem; margin: 0; color: var(--ink); }
+.review-card__meta { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--muted); }
+.review-card__stat { margin: 0; font-size: 0.82rem; font-weight: 600; color: var(--ink-2); }
+.review-card__actions { display: flex; gap: 0.3rem; justify-content: flex-end; }
+.icon-btn--danger:hover { color: #fff; background: var(--red); }
+
+.home-footer { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); padding: 0.5rem 0 1.5rem; }
+.home-footer__sep { color: var(--line); }
+.link-btn { background: none; border: 0; color: var(--ink-2); text-decoration: underline; cursor: pointer; font-size: 0.88rem; padding: 0.4rem; min-height: 44px; }
+.link-btn:hover { color: var(--red); }
+
+.capture-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.panel--capture { display: flex; flex-direction: column; gap: 0.8rem; }
+.capture-start { display: flex; }
+.capture-start .btn--hero { width: 100%; }
+.more-ways { margin-top: 0.4rem; }
+.more-ways summary, .paste-section summary, .advanced summary { cursor: pointer; color: var(--ink-2); font-weight: 600; padding: 0.5rem 0; min-height: 44px; }
+.live__progress { margin: 0.2rem 0 0; }
+.setup-intro { max-width: 60ch; margin-top: -0.2rem; }
+.paste-section { margin-top: 1rem; }
+.paste-section .paste-box { margin-top: 0.5rem; }
+.advanced { border-top: 1px solid var(--line); padding-top: 0.6rem; margin-top: 1rem; }

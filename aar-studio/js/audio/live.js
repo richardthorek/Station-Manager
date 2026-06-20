@@ -10,7 +10,7 @@ import { createSegment } from '../lib/model.js';
 import { countWords } from '../lib/text.js';
 import { rms, downsampleTo16k, createSpeakerLabeler } from '../lib/audioUtils.js';
 import { loadSpeechSdk, createTranscriber } from './speech.js';
-import { noteNewWords, maybeAutoExtract, analyseNow } from '../analyse.js';
+import { noteNewWords, maybeAutoExtract, analyseNow, fillMetadataFromDiscussion } from '../analyse.js';
 
 export const SOURCES = {
   mic: { label: 'Room microphone', icon: '🎙' },
@@ -221,9 +221,11 @@ export async function stop() {
   await teardown();
   state.status = 'idle';
   emit();
-  // Wrap up: analyse whatever the last extraction pass hasn't seen.
+  // Wrap up: analyse whatever the last extraction pass hasn't seen, then fill in
+  // any incident details the discussion revealed (title, location, units, type).
   const session = store.getSession();
   if (session?.segments.some((seg) => !seg.analysed && seg.text.trim())) {
-    analyseNow(null, { quiet: true });
+    await analyseNow(null, { quiet: true });
   }
+  fillMetadataFromDiscussion();
 }

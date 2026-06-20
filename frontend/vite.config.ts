@@ -80,6 +80,12 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         // Ensure dev builds with minimal assets don't warn by allowing the generated SW bundle
         globIgnores: ['**/node_modules/**/*'],
+        // Don't serve the React app shell (navigateFallback) for the AAR Studio
+        // sub-app or the API. The SW is scoped to '/', so without this denylist it
+        // intercepts /aar navigations and returns the main index.html, leaving a
+        // blank screen instead of letting the request reach the server (which
+        // serves the standalone AAR Studio bundle).
+        navigateFallbackDenylist: [/^\/aar/, /^\/api/],
         // Network-first strategy for API calls
         runtimeCaching: [
           {

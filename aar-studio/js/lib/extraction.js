@@ -2,7 +2,7 @@
 // policy. The only impure part is the chatJson call.
 
 import { chatJson } from './llm.js';
-import { CATEGORIES, CATEGORY_IDS, GENERAL_PHASE, sessionPhases, createFinding } from './model.js';
+import { CATEGORIES, CATEGORY_IDS, GENERAL_PHASE, INCIDENT_TYPES, sessionPhases, createFinding } from './model.js';
 import { countWords, fmtClock } from './text.js';
 
 /** Live auto-extraction policy: ≥45 s elapsed AND ≥70 new words pending. */
@@ -108,6 +108,89 @@ export function toFinding(raw, session, segmentPool) {
     segmentIds: (Array.isArray(raw.segmentIds) ? raw.segmentIds : []).filter((id) => validIds.has(id)),
     source: 'ai',
   });
+}
+
+// --- Incident metadata, pulled from the discussion ---------------------------
+// The friendly flow lets people just start recording; the AI then fills in the
+// title / location / type / units from what's said, so they rarely have to type.
+
+export function metadataSchema() {
+  return {
+    type: 'object',
+    properties: {
+      title: { type: 'string', description: 'Short incident title, e.g. "Structure fire — 412 Macs Reef Road". "" if not stated.' },
+      location: { type: 'string', description: 'Where the incident was. "" if not stated.' },
+      incidentType: { type: 'string', enum: ['', ...INCIDENT_TYPES], description: 'Closest matching type, or "" if unclear.' },
+      units: {
+        type: 'array',
+        description: 'Brigades / agencies that attended, with their role if mentioned.',
+        items: {
+          type: 'object',
+          properties: { unit: { type: 'string' }, role: { type: 'string' } },
+          required: ['unit', 'role'],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ['title', 'location', 'incidentType', 'units'],
+    additionalProperties: false,
+  };
+}
+
+export function buildMetadataMessages({ session, segments }) {
+  const system = `You read the transcript of a fire brigade After Action Review and pull out the basic incident details that were mentioned.
+
+Only report what is actually stated or clearly implied — never invent a title, location, units or type. Use "" (or an empty array) when something is not mentioned. Keep Australian fire-service terminology and unit names as spoken (e.g. "Wamboin", "Bungendore", "FRNSW", "Cat 1"). Mark anything you are unsure of with "(unclear)".
+
+Respond with a JSON object: {"title", "location", "incidentType", "units": [{"unit", "role"}]}.`;
+  const lines = segments.map((seg) => `${seg.speaker ? seg.speaker + ': ' : ''}${seg.text}`);
+  const user = `From this debrief transcript, extract the incident details:\n\n${lines.join('\n')}`;
+  return [
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ];
+}
+
+/**
+ * Build a non-destructive patch: only fields the user (or a previous pass) hasn't
+ * already filled get the discussion-derived value. Returns { incident?, units? }
+ * with just the keys that should change, or {} if nothing to apply.
+ */
+export function mergeMetadata(session, meta = {}) {
+  const patch = {};
+  const incident = {};
+  if (meta.title?.trim() && !session.incident.title?.trim()) incident.title = meta.title.trim();
+  if (meta.location?.trim() && !session.incident.location?.trim()) incident.location = meta.location.trim();
+  if (meta.incidentType && INCIDENT_TYPES.includes(meta.incidentType) && !session.incident.type) incident.type = meta.incidentType;
+  if (Object.keys(incident).length) patch.incident = incident;
+  const units = (Array.isArray(meta.units) ? meta.units : [])
+    .map((u) => ({ unit: String(u.unit ?? '').trim(), role: String(u.role ?? '').trim() }))
+    .filter((u) => u.unit);
+  if (units.length && !(session.units ?? []).length) patch.units = units;
+  return patch;
+}
+
+/** Ask the model for the incident metadata mentioned across the transcript. */
+export async function extractMetadata({ session, segments, settings, fetchImpl = globalThis.fetch }) {
+  const usable = (segments ?? []).filter((s) => s.text.trim());
+  if (!usable.length) return {};
+  // One call over a representative slice (metadata is usually said up front).
+  let words = 0;
+  const slice = [];
+  for (const seg of usable) {
+    slice.push(seg);
+    words += countWords(seg.text);
+    if (words > 1200) break;
+  }
+  const result = await chatJson({
+    settings,
+    deployment: settings.llmDeployment,
+    messages: buildMetadataMessages({ session, segments: slice }),
+    schema: metadataSchema(),
+    schemaName: 'aar_metadata',
+    fetchImpl,
+  });
+  return result ?? {};
 }
 
 /**
