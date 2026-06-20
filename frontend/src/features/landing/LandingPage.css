@@ -560,6 +560,22 @@
   font-size: 1rem;
 }
 
+/* Suite sibling-app badge (e.g. "Seasonal") */
+.suite-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--rfs-lime);
+  color: var(--rfs-black);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 1;
+}
+
 .feature-link--disabled:hover .arrow {
   transform: none;
 }
