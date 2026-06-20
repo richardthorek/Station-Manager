@@ -1,12 +1,10 @@
 /**
  * Landing Page Component
  *
- * Central hub displaying all available features:
- * - Sign-In system
- * - Truck Checks (vehicle inspections)
- * - Future features
- *
- * Provides easy navigation to different modules of the application.
+ * The logged-in hub — and the Bushie Tools suite app-launcher. Surfaces
+ * Station Manager's own modules (sign-in, truck check, reports, AAR Studio,
+ * admin) plus the sibling suite apps (Fire Santa Run, Fire Break Calculator),
+ * each unlocked by the org's entitlements.
  */
 
 import { useState } from 'react';
@@ -17,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { OnboardingWizard } from '../../components/OnboardingWizard';
 import { PageTransition } from '../../components/PageTransition';
 import { staggerVariants, getVariants, getTransition, transitions } from '../../utils/animations';
+import { SUITE_SIBLING_APPS } from '../../config/suiteApps';
 import './LandingPage.css';
 
 export function LandingPage() {
@@ -195,6 +194,35 @@ export function LandingPage() {
                 </p>
               )}
             </motion.article>
+
+            {/* Bushie Tools sibling apps — separate deployments, unlocked by entitlements. */}
+            {SUITE_SIBLING_APPS.map((suiteApp) => {
+              const locked = Boolean(entitlements && suiteApp.feature && !hasFeature(suiteApp.feature));
+              return (
+                <motion.article
+                  key={suiteApp.id}
+                  className={`feature-card${locked ? ' feature-card--locked' : ''}`}
+                  variants={itemVariants}
+                  transition={itemTransition}
+                >
+                  {suiteApp.seasonal && <span className="suite-badge">Seasonal</span>}
+                  <div className="feature-icon" aria-hidden="true">{suiteApp.icon}</div>
+                  <h3>{suiteApp.name}</h3>
+                  <p>{suiteApp.description}</p>
+                  {locked ? (
+                    <span className="feature-link feature-link--locked" aria-label={`${suiteApp.name} is not included in your plan`}>
+                      Not in your plan
+                      <span className="lock-icon" aria-hidden="true">🔒</span>
+                    </span>
+                  ) : (
+                    <a href={suiteApp.href} className="feature-link" target="_blank" rel="noopener noreferrer">
+                      Open {suiteApp.name}
+                      <span className="arrow" aria-hidden="true">↗</span>
+                    </a>
+                  )}
+                </motion.article>
+              );
+            })}
           </motion.section>
         </div>
       </main>

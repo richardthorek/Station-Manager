@@ -67,4 +67,24 @@ describe('LandingPage', () => {
     expect(screen.queryByText('Coming in v1.1')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /coming soon/i })).not.toBeInTheDocument()
   })
+
+  it('renders the suite sibling-app launcher cards', () => {
+    render(<LandingPage />)
+
+    // Bushie Tools suite apps appear on the launcher.
+    expect(screen.getByText('Fire Santa Run')).toBeInTheDocument()
+    expect(screen.getByText('Fire Break Calculator')).toBeInTheDocument()
+    // The seasonal badge surfaces on Fire Santa Run.
+    expect(screen.getByText('Seasonal')).toBeInTheDocument()
+  })
+
+  it('links sibling apps externally when entitlements are absent (back-compat)', () => {
+    render(<LandingPage />)
+
+    // With no org/entitlement context the launcher leaves sibling apps unlocked
+    // (single-tenant / kiosk back-compat) and links out to them.
+    const santaLink = screen.getByRole('link', { name: /open fire santa run/i })
+    expect(santaLink).toHaveAttribute('target', '_blank')
+    expect(santaLink).toHaveAttribute('href', expect.stringMatching(/santa/i))
+  })
 })
