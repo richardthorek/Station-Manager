@@ -117,7 +117,7 @@ member **logins** can be a Basic+ feature if we ever need to gate it.
 **AI session top-up packs** and optional **hardware bundles** (tablet + stand + headset).
 Stripe Checkout/Payment Links cover this without a separate cart.
 
-## 7. Pricing — assessment & recommendation
+## 7. Pricing — assessment, recommendation & open questions
 
 ### Cost model (per brigade / month)
 
@@ -127,7 +127,7 @@ Stripe Checkout/Payment Links cover this without a separate cart.
 - **Stripe fee:** AU domestic card ≈ 1.75% + A$0.30; on A$10 that's ≈ **A$0.48 (≈5%)**.
   Annual billing amortises the fixed A$0.30 (one charge vs twelve).
 - **Email/SMS** (verification, invites): cents.
-- **AI per voice session (~12 min):** STT ≈ A$0.20 + TTS ≈ A$0.08 + LLM (with prompt
+- **AI per AAR session (~12 min):** STT ≈ A$0.20 + TTS ≈ A$0.08 + LLM (with prompt
   caching) ≈ A$0.15–0.60 → **≈ A$0.40–0.90, call it ~A$0.60/session**.
 - **AI per brigade/month:** light use (weekly, 2–3 trucks ≈ 8–12 sessions) ≈ **A$5–7**;
   heavy use (30–60 sessions) ≈ **A$18–36**.
@@ -135,12 +135,12 @@ Stripe Checkout/Payment Links cover this without a separate cart.
 ### What this means
 
 - **Basic at A$10/mo is very healthy** (≈90%+ margin) — infra is near-zero, only Stripe
-  fees matter. Your A$10 instinct is right.
-- **A flat A$15 AI tier does _not_ safely cover AI** — a light brigade is roughly
-  break-even and a heavy brigade is a clear loss. AI cost is **usage-driven**, so flat
+  fees matter.
+- **Flat AI pricing does _not_ safely cover AI** — a heavy brigade at 30–60 sessions/mo
+  costs us A$18–36 vs whatever flat fee we charge. AI cost is **usage-driven**, so flat
   pricing transfers all the risk to us.
 
-### Recommendation
+### Recommended tiers
 
 Keep the headline low to drive adoption, but make AI **fair-use metered** so price tracks
 cost:
@@ -148,18 +148,130 @@ cost:
 | Tier | Price (rec.) | Includes |
 |---|---|---|
 | **Community (Free)** | A$0 | 1 station, manual sign-in + truck check, capped members/devices. Adoption funnel + goodwill for volunteer brigades. |
-| **Basic** | **A$10/mo** or **A$100/yr** (2 months free) | Full manual suite, unlimited members, multiple devices, reports + CSV export, real-time sync. |
-| **AI (Pro)** | **A$19/mo** or **A$190/yr**, *including* a fair-use allowance (~25 voice sessions/mo), then **~A$0.60/session** overage or top-up packs | Everything in Basic + the voice maintenance agent, zone-aware prompting, transcripts. |
+| **Basic** | **A$10/mo** or **A$100/yr** (2 months free) | Full Station Manager suite: unlimited members, multiple devices, reports + CSV export, real-time sync. AAR Studio (no AI — export only). |
+| **AI Pro** | **A$19/mo** or **A$190/yr**, *including* ~25 AAR sessions/mo, then **~A$0.60/session** overage or top-up packs | Everything in Basic + AI-powered AAR Studio (live transcription, auto-findings, AI report), voice maintenance agent, transcripts. |
+| **Bushie Suite** | **A$29/mo** or **A$290/yr** | Everything in AI Pro + all Bushie Tools apps (Fire Break Calculator + Fire Santa Run) once the suite integration (issues #556–558) ships. |
 
-- If you want to **honour the A$15 number**, it's viable as the AI tier **with a tighter
-  allowance** (~15 sessions/mo) and the same overage — I'd just recommend A$19 with a
-  more generous cap as the safer default. Avoid **flat unlimited** AI unless priced ~A$25–29.
-- **Annual billing** (2 months free) is the single biggest lever: it cuts Stripe fee drag,
-  reduces churn, and suits grant/council-funded brigades who budget yearly.
-- Add **Stripe Tax** for GST from day one; show prices inc. GST to brigades.
+> Net: **Community → Basic A$10 → AI Pro A$19 → Bushie Suite A$29**. Each step adds
+> clear value. Annual billing (2 months free) is the biggest adoption lever.
 
-> Net: **Basic A$10**, **AI A$19 with fair-use metering** (or A$15 with a smaller included
-> allowance). Both protect margin while staying very reasonable for volunteer orgs.
+### 7a. Pricing model options — discussion
+
+These are the main structural choices we need to make before locking Stripe products.
+
+---
+
+#### Option 1 (recommended): Flat per-station, tiered by capability
+
+**How it works:** one price per station per month, regardless of roster size. Members
+are unlimited (they're records, not logins). Price gates *what you can do*, not *how
+many people* you have.
+
+**Why:** Volunteer brigades can have 100+ members on the roster but only 5–10 active
+at any time. Charging per member penalises large rural brigades and creates "is adding
+a new member going to cost us money?" friction — the last thing a bushie should have to
+think about. A flat per-station fee is predictable (they can budget it), aligns with
+how brigades think of themselves ("we're Wamboin station"), and is dead simple to explain.
+
+**Station caps by tier:**
+- Community: 1 station
+- Basic: up to 3 stations (covers a small group/district)
+- AI Pro: up to 5 stations + unlimited AAR sessions within allowance
+- Bushie Suite: unlimited stations
+
+---
+
+#### Option 2: Per-user (active member logins)
+
+**How it works:** charge per activated member login per month (e.g. A$2/user/mo on
+Basic, A$4/user/mo on AI Pro).
+
+**Why not (for now):** Today members don't have logins — they're just records. Member
+activation (email invite → personal login) is a Phase C feature. Introducing per-user
+pricing before that exists creates complexity with no product backing it. Revisit when
+member logins ship. If adopted, it would work as a *per-seat* add-on on top of a base
+station fee (like the "seat + base" model common in ops tools).
+
+---
+
+#### Option 3: Per-brigade-size bands
+
+**How it works:** tiered bands — "under 25 members," "25–75," "75+" — with a higher
+flat rate per band.
+
+**Why not:** brigade size is noisy data (honorary/inactive members inflate rosters),
+hard to audit, and creates an incentive to not enter members. Flat per-station is
+cleaner and equally monetisable once multi-station orgs are common.
+
+---
+
+#### Option 4: Per-app pricing (à la carte)
+
+**How it works:** Station Manager as the base (A$10/mo), AAR Studio as an add-on
+(+A$5/mo), Fire Break Calculator and Fire Santa Run as further add-ons.
+
+**Trade-off:** gives flexibility but fragments the selling story. The "Bushie Suite"
+bundle at a slight discount to à la carte achieves the same flexibility with a stronger
+value perception. Recommended approach: publish the Bundle tier prominently; à la carte
+is the fallback for brigades who only want one app.
+
+---
+
+### 7b. AI usage, metering, and cost protection
+
+This is the most important pricing decision because AI is the only cost that scales
+with usage.
+
+**The problem:** a brigade running 30 post-incident AARs/month with 4 trucks each
+could generate 120 AI sessions. At A$0.60/session that's A$72 of cost to us — nearly 4×
+the AI Pro subscription revenue. Flat unlimited AI is not viable.
+
+**The solution: fair-use allowance + metered overage**
+
+- AI Pro includes **~25 AAR sessions/month** (covers light-to-moderate use: weekly
+  reviews, 2–3 trucks per incident).
+- Above the allowance: **~A$0.60/session** overage, billed via Stripe metered billing
+  at month end, OR pre-purchased **top-up packs** (e.g. 20 sessions for A$10).
+- Overage is shown clearly in the app ("12 sessions remaining this month").
+- `UsageRecord` table tracks consumption; the AI gateway (issue #555) checks before
+  each call.
+
+**Why top-up packs are better than pure overage for volunteer orgs:**
+- Brigades on grant funding can't absorb an unexpected bill
+- A pre-paid pack ("buy 20 more sessions") is a single predictable charge they can
+  seek approval for
+- Stripe Checkout / Payment Links support one-off purchases without a separate cart
+
+**Metering unit: session vs audio-minute**
+- **Session (recommended):** one "session" = one AAR from start to stop. Simple to
+  explain, easy to predict. A 12-minute session and a 90-minute session both count as
+  one. This is the right abstraction for brigades who think "we ran an AAR today."
+- **Audio-minute:** fine-grained but confusing ("wait, does it count if I paused?").
+  Possible for future voice-maintenance-agent use where session length varies wildly.
+
+**Recommendation:** meter by session for AAR Studio; meter by minute for the voice
+maintenance agent (AI_MAINTENANCE_AGENT_DESIGN.md).
+
+---
+
+### 7c. GST & grant-funded brigades
+
+- Enable **Stripe Tax** from day one; show prices inc. GST to AU customers.
+- Many brigades are grant or council funded and need **invoicing** (annual invoice,
+  pay by bank transfer). Stripe Invoicing covers this — flag it on the sign-up form
+  ("Need to pay by invoice? Contact us").
+- **Annual billing** (2 months free) is the biggest tool for grant-funded brigades who
+  budget yearly: one invoice, no monthly card charge, no churn risk mid-grant.
+
+---
+
+> **Summary of decisions needed** (also captured in §12):
+> 1. Confirm tier names and prices before Stripe products are created.
+> 2. Confirm per-station (recommended) vs per-user pricing.
+> 3. Confirm AI metering unit: session (recommended) vs audio-minute.
+> 4. Confirm top-up pack sizes and prices.
+> 5. Bushie Suite pricing: A$29/mo confirmed, or adjusted once suite integration scope is clearer.
+> 6. Free trial: 14 days (recommended) vs 30 days; AI included in trial or gated?
 
 ## 8. Entitlements & feature gating
 
@@ -177,9 +289,15 @@ cost:
 interface Organization {
   id: string; name: string; billingEmail: string;
   stripeCustomerId?: string; stripeSubscriptionId?: string;
-  planCode: 'community' | 'basic' | 'ai';
+  planCode: 'community' | 'basic' | 'ai' | 'suite';  // 'suite' = Bushie Suite (all apps)
   status: 'trialing' | 'active' | 'past_due' | 'canceled';
-  entitlements: { aiEnabled: boolean; maxStations: number; maxDevices: number; aiIncludedSessions: number };
+  entitlements: {
+    aiEnabled: boolean; maxStations: number; maxDevices: number;
+    aiIncludedSessions: number;
+    aarStudioEnabled: boolean;       // true on ai + suite
+    santaRunEnabled: boolean;        // true on suite
+    fireBreakEnabled: boolean;       // true on suite
+  };
   createdAt: string; updatedAt?: string;
 }
 interface Device { /* §4 */ }
@@ -223,11 +341,29 @@ data migrates under one default Organization (mirrors the `default-station` patt
 | **C — Devices + members** | `Device` accounts (formalise tokens) + member activation/invites | |
 | **D — AI metering + storefront** | `UsageRecord` metering, fair-use/overage, top-up packs, optional hardware store | depends on the AI agent (Phase 2 of that design) |
 
-## 12. Open questions
+## 12. Open questions (decisions needed before Stripe products are created)
 
-- Free tier limits (members/devices) that drive upgrades without alienating volunteers.
-- Trial length (14 vs 30 days) and whether AI is trialable.
-- Per-org vs per-brigade billing for multi-brigade groups (e.g., a district running several).
-- Do we meter AI by **session** or by **audio-minute**? (Session is simpler to explain.)
-- Grant/PO workflow: how many brigades will need Stripe **Invoicing** vs cards.
-- Member-login rollout: needed for the AI speaker identity, or keep device-level for now?
+**Pricing model** (see §7a–7c for full discussion):
+- [ ] **Pricing unit:** confirm flat per-station (recommended) vs per-user vs brigade-size bands.
+- [ ] **Tier names & prices:** Community/Basic (A$10)/AI Pro (A$19)/Bushie Suite (A$29) — or adjust.
+- [ ] **AI metering unit:** session (recommended) vs audio-minute. Apply to AAR Studio only first.
+- [ ] **Top-up pack sizes:** e.g. 20 sessions / A$10 — confirm before Stripe products created.
+- [ ] **Free tier limits:** member/device caps that drive upgrade without alienating volunteers.
+- [ ] **Trial:** 14 days (recommended) vs 30 days; AI included in trial, or gated?
+- [ ] **Annual discount:** 2 months free (≈17% — standard SaaS) confirmed?
+
+**Billing mechanics:**
+- [ ] **Grant/PO workflow:** proportion of brigades needing Stripe Invoicing vs card? (Affects onboarding UX.)
+- [ ] **Per-org vs per-station billing:** a district org with 5 stations — one subscription or five?
+- [ ] **Bushie Suite pricing:** A$29/mo locked in, or wait until suite integration scope is clearer?
+
+**Product scope:**
+- [ ] **Member-login rollout:** needed for AI speaker identity — is this Phase C, or post-suite?
+- [ ] **AAR Studio in Basic tier:** include AAR Studio (no AI) in Basic, or keep it AI-only?
+- [ ] **Fire Break Calculator:** free standalone (public calculator) even on Community? Or suite-only?
+- [ ] **Fire Santa Run seasonality:** entitlement flag shows/hides it; confirm seasonal billing (pause/resume) is handled.
+
+**Suite integration decisions** (see also `docs/SUITE_INTEGRATION_PLAN.md §8`):
+- [ ] **Auth:** Entra External ID for authN + SM entitlements for authZ, OR keep SM JWT as IdP?
+- [ ] **Real-time transport:** Socket.io (SM) vs Azure Web PubSub (Santa Run) for unified backend?
+- [ ] **Backend runtime:** port Hono/Functions → Express (Phase 3 bulk effort — budget explicitly).

@@ -135,9 +135,9 @@ The Station Manager v1.0 MVP focuses exclusively on **core sign-in functionality
 
 ### Commercialization & coherence roadmap (mid-2026, planning)
 
-Forward plan captured in increments; detailed analysis to follow. Cross-app
-detail lives in `docs/CONSOLIDATION_REVIEW.md` and billing detail in
-`docs/SAAS_COMMERCIALIZATION_DESIGN.md`. Recommended order:
+Forward plan captured in increments. Cross-app detail in `docs/CONSOLIDATION_REVIEW.md`,
+billing detail in `docs/SAAS_COMMERCIALIZATION_DESIGN.md`, suite integration in
+`docs/SUITE_INTEGRATION_PLAN.md`. Recommended order — each item links to its GitHub issue:
 
 > **Guiding ethos — "for the average bushie."** Design for the older, less
 > tech-savvy firefighter as much as the young guns: plain language (no jargon),
@@ -145,7 +145,7 @@ detail lives in `docs/CONSOLIDATION_REVIEW.md` and billing detail in
 > targets, and "just talk / just tap" flows. If a bushie can't use it cold,
 > it's not done. Apply this lens to every UI/UX point below.
 
-- **Rebrand to "Bushie Tools"** — adopt *Bushie Tools* as the product-family /
+- **[#549] Rebrand to "Bushie Tools"** — adopt *Bushie Tools* as the product-family /
   suite name (colloquial for bush firefighters), framing Station Manager, AAR
   Studio, Fire Break Calculator and Fire Santa Run as approachable tools that put
   advanced capability in ordinary members' hands. This is the customer-facing name
@@ -154,37 +154,44 @@ detail lives in `docs/CONSOLIDATION_REVIEW.md` and billing detail in
   one login, one subscription). Naming/branding sweep across landing, app-picker,
   AAR Studio, and docs; fold into the design-system work below so brand and tokens
   land together.
-- **Collaborative session notes (AAR Studio)** — recording stays the centre of
-  gravity, but let a room contribute alongside it: timestamped text notes added
+- **[#550] Visual consistency (design-system unification)** — extract one canonical
+  RFS token set (palette `#e5281B`/`#cbdb2a`, Public Sans, spacing, ≥60px touch
+  targets) into a shared CSS file used by both the React SPA and AAR Studio;
+  realign AAR's divergent brand/fonts and fix its sub-60px controls. Low-risk,
+  do first / in parallel with #549.
+- **[#551] Collaborative session notes (AAR Studio)** — recording stays the centre
+  of gravity, but let a room contribute alongside it: timestamped text notes added
   live by other participants on their own devices, aligned to the recorded
   discussion timeline. A shared session (URL/code), a lightweight note-taker
   role, and multi-contributor input (voice + text) so a whole room can feed one
   review. Notes merge into findings extraction like transcript segments.
-- **Visual consistency (design-system unification)** — extract one canonical RFS
-  token set (palette `#e5281B`/`#cbdb2a`, Public Sans, spacing, ≥60px touch
-  targets) into a shared CSS file used by both the React SPA and AAR Studio;
-  realign AAR's divergent brand/fonts and fix its sub-60px controls. Low-risk,
-  do first / in parallel.
-- **AAR Studio UX redesign for non-technical users** — friendly landing (start /
-  resume a review), one-tap "quick kick-off" recording with device date/time/
-  location defaults, automatic phase + finding-category inference (no manual
-  clicking), metadata (title/location/units/type) pulled from the discussion,
-  remove developer jargon (e.g. "import JSON"). In progress.
-- **Entitlement-enforcement hardening (prerequisite for paid tiers)** — close the
-  gating leaks so every feature/route is controlled by plan: gate `/api/export`,
+- **[#544 — shipped] AAR Studio UX redesign for non-technical users** — friendly
+  landing, one-tap "quick kick-off" recording, automatic phase + finding-category
+  inference, metadata from the discussion, jargon removed. ✅ Merged Jun 2026.
+- **[#552] Entitlement-enforcement hardening (prerequisite for paid tiers)** — close
+  the gating leaks so every feature/route is controlled by plan: gate `/api/export`,
   enforce `maxStations`/`maxDevices` limits on creation, audit each route's
   `requireFeature`/`FeatureRoute` pairing. Must land before billing.
-- **Stripe billing (SaaS Phase B)** — `stripe` SDK + price env mapping; checkout
-  session endpoint; signature-verified webhook that syncs org `status` +
+- **[#553] Stripe billing (SaaS Phase B)** — `stripe` SDK + price env mapping;
+  checkout session endpoint; signature-verified webhook that syncs org `status` +
   `entitlements` from subscription events; customer-portal link; `BillingEvent`
   audit; trial flow. Turns the existing plan model into real subscriptions.
-- **Marketing landing for unauthenticated visitors** — a logged-out front door
-  (what it is, plan/pricing tiers, sign-up CTA → checkout); the current public
-  app-picker becomes the post-login home.
-- **AI tier features (later)** — server-side AI gateway (metered, capability-
-  routed text/voice/image, provider adapters) per `CONSOLIDATION_REVIEW.md` #1
-  and `AI_MAINTENANCE_AGENT_DESIGN.md`; `UsageRecord` metering for the AI plan;
-  migrate AAR Studio's browser-direct AI behind the gateway.
+- **[#554] Marketing landing for unauthenticated visitors** — a logged-out front
+  door (what it is, plan/pricing tiers, sign-up CTA → checkout); the current public
+  app-picker becomes the post-login home. See `docs/SAAS_COMMERCIALIZATION_DESIGN.md`
+  §7 for the full pricing model discussion including tier options, per-brigade vs
+  per-user pricing, and AI metering.
+- **[#555] AI tier features** — server-side AI gateway (metered, capability-routed
+  text/voice/image, provider adapters); `UsageRecord` metering; migrate AAR Studio's
+  browser-direct AI behind the gateway. See `CONSOLIDATION_REVIEW.md` and
+  `AI_MAINTENANCE_AGENT_DESIGN.md`.
+- **[#556] Bushie Tools suite — Phase 1: shared identity & subscription** —
+  extend entitlements with per-app flags (`santaRunEnabled`, `fireBreakEnabled`,
+  `aarStudioEnabled`); cross-app entitlements endpoint; suite portal/app-launcher.
+- **[#557] Bushie Tools suite — Phase 2: shared packages** — extract `@rfs/ui`,
+  `@rfs/types`, `@rfs/auth-sdk`, `@rfs/data` for adoption by all four apps.
+- **[#558] Bushie Tools suite — Phase 3: monorepo consolidation** — single
+  deployment (pending architecture decisions: auth, real-time transport, CI/CD).
 
 ### June 2026 Stabilization
 - 2026-06-06: Dependency security remediation. Cleared all open Dependabot alerts — backend 25 → 0 (3 critical, 10 high resolved) and frontend 28 → 0 (4 critical, 14 high resolved). Fixes applied via in-range `npm audit fix` (direct deps `express-rate-limit`, `multer` patched via lockfile) plus targeted `overrides` for transitive chains: backend `protobufjs ^7.5.5` (clears the OpenTelemetry/applicationinsights chain) and `@azure/functions-old → uuid ^11.1.1`; frontend `exceljs → uuid ^11.1.1`. No production code changes; backend (516) and frontend (411) test suites and builds all pass.
@@ -1694,6 +1701,7 @@ Stripe Price IDs. Phased A (tenant model) → B (billing+signup) → C (devices+
 ---
 
 #### Feature: "Bushie Tools" Suite — Multi-App Integration (Station Manager + AAR Studio + Fire Break Calculator + Fire Santa Run)
+**GitHub Issues**: [#556](https://github.com/richardthorek/Station-Manager/issues/556) (Phase 1 — federation) · [#557](https://github.com/richardthorek/Station-Manager/issues/557) (Phase 2 — shared packages) · [#558](https://github.com/richardthorek/Station-Manager/issues/558) (Phase 3 — monorepo)
 **Status**: 📐 **DESIGN / FUTURE RELEASE** (assessment + options only — not implemented)
 **Design**: `docs/SUITE_INTEGRATION_PLAN.md`. **Customer-facing name**: *Bushie
 Tools* (see the rebrand item in the Commercialization & coherence roadmap above) —
