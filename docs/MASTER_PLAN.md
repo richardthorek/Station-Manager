@@ -132,6 +132,38 @@ The Station Manager v1.0 MVP focuses exclusively on **core sign-in functionality
 - Achievement system
 - Additional enhancements based on client feedback
 
+### Commercialization & coherence roadmap (mid-2026, planning)
+
+Forward plan captured in increments; detailed analysis to follow. Cross-app
+detail lives in `docs/CONSOLIDATION_REVIEW.md` and billing detail in
+`docs/SAAS_COMMERCIALIZATION_DESIGN.md`. Recommended order:
+
+- **Visual consistency (design-system unification)** — extract one canonical RFS
+  token set (palette `#e5281B`/`#cbdb2a`, Public Sans, spacing, ≥60px touch
+  targets) into a shared CSS file used by both the React SPA and AAR Studio;
+  realign AAR's divergent brand/fonts and fix its sub-60px controls. Low-risk,
+  do first / in parallel.
+- **AAR Studio UX redesign for non-technical users** — friendly landing (start /
+  resume a review), one-tap "quick kick-off" recording with device date/time/
+  location defaults, automatic phase + finding-category inference (no manual
+  clicking), metadata (title/location/units/type) pulled from the discussion,
+  remove developer jargon (e.g. "import JSON"). In progress.
+- **Entitlement-enforcement hardening (prerequisite for paid tiers)** — close the
+  gating leaks so every feature/route is controlled by plan: gate `/api/export`,
+  enforce `maxStations`/`maxDevices` limits on creation, audit each route's
+  `requireFeature`/`FeatureRoute` pairing. Must land before billing.
+- **Stripe billing (SaaS Phase B)** — `stripe` SDK + price env mapping; checkout
+  session endpoint; signature-verified webhook that syncs org `status` +
+  `entitlements` from subscription events; customer-portal link; `BillingEvent`
+  audit; trial flow. Turns the existing plan model into real subscriptions.
+- **Marketing landing for unauthenticated visitors** — a logged-out front door
+  (what it is, plan/pricing tiers, sign-up CTA → checkout); the current public
+  app-picker becomes the post-login home.
+- **AI tier features (later)** — server-side AI gateway (metered, capability-
+  routed text/voice/image, provider adapters) per `CONSOLIDATION_REVIEW.md` #1
+  and `AI_MAINTENANCE_AGENT_DESIGN.md`; `UsageRecord` metering for the AI plan;
+  migrate AAR Studio's browser-direct AI behind the gateway.
+
 ### June 2026 Stabilization
 - 2026-06-06: Dependency security remediation. Cleared all open Dependabot alerts — backend 25 → 0 (3 critical, 10 high resolved) and frontend 28 → 0 (4 critical, 14 high resolved). Fixes applied via in-range `npm audit fix` (direct deps `express-rate-limit`, `multer` patched via lockfile) plus targeted `overrides` for transitive chains: backend `protobufjs ^7.5.5` (clears the OpenTelemetry/applicationinsights chain) and `@azure/functions-old → uuid ^11.1.1`; frontend `exceljs → uuid ^11.1.1`. No production code changes; backend (516) and frontend (411) test suites and builds all pass.
 - 2026-06-06: Dependabot consolidated to one grouped PR per ecosystem (npm across root/backend/frontend; GitHub Actions separately) with `open-pull-requests-limit: 1` to prevent PR pileups. Added `CLAUDE.md` at repo root as an AI-agent navigation guide.
