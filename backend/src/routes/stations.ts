@@ -29,6 +29,7 @@ import { getRFSFacilitiesParser } from '../services/rfsFacilitiesParser';
 import { logger } from '../services/logger';
 import { optionalAuth } from '../middleware/auth';
 import { stationMiddleware } from '../middleware/stationMiddleware';
+import { enforceStationLimit } from '../middleware/entitlements';
 
 const router = Router();
 router.use(stationMiddleware);
@@ -275,7 +276,7 @@ router.get('/:id', optionalAuth, validateStationId, handleValidationErrors, asyn
  * Validates that brigade ID is unique to prevent duplicate station creation
  * Protected by optionalAuth middleware
  */
-router.post('/', optionalAuth, validateCreateStation, handleValidationErrors, async (req: Request, res: Response) => {
+router.post('/', optionalAuth, enforceStationLimit(), validateCreateStation, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const {
