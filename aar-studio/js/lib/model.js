@@ -1,6 +1,6 @@
 // Session data model: factories, constants and import validation. Pure.
 
-import { uid } from './text.js';
+import { uid, friendlyDateTime } from './text.js';
 
 export const SCHEMA_VERSION = 1;
 export const GENERAL_PHASE = 'General';
@@ -50,6 +50,18 @@ export function createSegment({ t = null, speaker = '', text = '', phase = GENER
 export function createFinding({ category, phase = GENERAL_PHASE, text = '', quote = '', segmentIds = [], source = 'manual' }) {
   if (!CATEGORY_IDS.includes(category)) category = 'happened';
   return { id: uid(), category, phase, text, quote, segmentIds, source, createdAt: new Date().toISOString() };
+}
+
+/**
+ * What to show as a review's name. Real incident title if the user (or the AI)
+ * has one; otherwise a friendly fallback from when it was started, so a review
+ * is never shown as "Untitled". `created` is the session's createdAt.
+ */
+export function displayTitle(session) {
+  const title = session?.incident?.title?.trim();
+  if (title) return title;
+  const created = session?.createdAt ? new Date(session.createdAt) : new Date();
+  return `Review — ${friendlyDateTime(created)}`;
 }
 
 /** Phases available for tagging: configured phases + the implicit General bucket. */
