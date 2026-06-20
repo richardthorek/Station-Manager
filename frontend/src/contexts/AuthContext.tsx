@@ -10,7 +10,14 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 
-export type EntitlementFeature = 'signInEnabled' | 'truckCheckEnabled' | 'reportsEnabled' | 'aiEnabled';
+export type EntitlementFeature =
+  | 'signInEnabled'
+  | 'truckCheckEnabled'
+  | 'reportsEnabled'
+  | 'aiEnabled'
+  | 'aarStudioEnabled'
+  | 'santaRunEnabled'
+  | 'fireBreakEnabled';
 
 export interface Entitlements {
   signInEnabled: boolean;
@@ -20,6 +27,9 @@ export interface Entitlements {
   maxStations: number;
   maxDevices: number;
   aiIncludedSessions: number;
+  aarStudioEnabled?: boolean;
+  santaRunEnabled?: boolean;
+  fireBreakEnabled?: boolean;
 }
 
 export interface Organization {

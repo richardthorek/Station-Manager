@@ -1,16 +1,21 @@
 /**
  * Authentication Routes Tests
- * 
+ *
  * Tests the authentication system including:
  * - Login with valid credentials
  * - Login failures
  * - Admin account initialization
+ * - GET /api/auth/entitlements (suite app probe)
  */
 
 import request from 'supertest';
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import authRouter from '../routes/auth';
 import { getAdminUserDatabase } from '../services/adminUserDatabase';
+import { getOrganizationDatabase } from '../services/organizationDatabase';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
 // Mock the factory to use in-memory database for tests
 jest.mock('../services/adminUserDbFactory', () => {
@@ -22,6 +27,13 @@ jest.mock('../services/adminUserDbFactory', () => {
       const db = getAdminUserDatabase();
       await db.initialize(username, password);
     },
+  };
+});
+
+jest.mock('../services/organizationDbFactory', () => {
+  const { getOrganizationDatabase } = require('../services/organizationDatabase');
+  return {
+    ensureOrganizationDatabase: () => getOrganizationDatabase(),
   };
 });
 
@@ -166,7 +178,7 @@ describe('Authentication Routes', () => {
   describe('Admin Database Initialization', () => {
     it('should initialize with default credentials', async () => {
       await adminDb.initialize('admin', 'testPassword123');
-      
+
       const users = await adminDb.getAllUsers();
       expect(users).toHaveLength(1);
       expect(users[0].username).toBe('admin');
@@ -175,7 +187,7 @@ describe('Authentication Routes', () => {
 
     it('should not initialize when credentials are missing', async () => {
       await adminDb.initialize();
-      
+
       const users = await adminDb.getAllUsers();
       expect(users).toHaveLength(0);
     });
@@ -183,9 +195,61 @@ describe('Authentication Routes', () => {
     it('should not create duplicate users on multiple initializations', async () => {
       await adminDb.initialize('admin', 'testPassword123');
       await adminDb.initialize('admin', 'testPassword123');
-      
+
       const users = await adminDb.getAllUsers();
       expect(users).toHaveLength(1);
+    });
+  });
+
+  describe('GET /api/auth/entitlements', () => {
+    const orgDb = getOrganizationDatabase();
+
+    beforeEach(async () => {
+      await orgDb.clear();
+    });
+
+    afterEach(async () => {
+      await orgDb.clear();
+    });
+
+    it('returns 401 with no token', async () => {
+      const res = await request(app).get('/api/auth/entitlements');
+      expect(res.status).toBe(401);
+    });
+
+    it('returns null entitlements for a user with no org', async () => {
+      const token = jwt.sign({ userId: 'u1', username: 'u1', role: 'admin' }, JWT_SECRET, { expiresIn: '1h' });
+      const res = await request(app)
+        .get('/api/auth/entitlements')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.entitlements).toBeNull();
+      expect(res.body.planCode).toBeNull();
+    });
+
+    it('returns entitlements for a community-plan org', async () => {
+      const org = await orgDb.createOrganization({ name: 'Test Org', billingEmail: 'x@x.com', planCode: 'community' });
+      const token = jwt.sign({ userId: 'u2', username: 'u2', role: 'owner', organizationId: org.id }, JWT_SECRET, { expiresIn: '1h' });
+      const res = await request(app)
+        .get('/api/auth/entitlements')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.planCode).toBe('community');
+      expect(res.body.entitlements.signInEnabled).toBe(true);
+      expect(res.body.entitlements.aarStudioEnabled).toBe(false);
+    });
+
+    it('returns aarStudioEnabled=true for AI-plan org', async () => {
+      const org = await orgDb.createOrganization({ name: 'AI Org', billingEmail: 'ai@x.com', planCode: 'ai' });
+      const token = jwt.sign({ userId: 'u3', username: 'u3', role: 'owner', organizationId: org.id }, JWT_SECRET, { expiresIn: '1h' });
+      const res = await request(app)
+        .get('/api/auth/entitlements')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.planCode).toBe('ai');
+      expect(res.body.entitlements.aarStudioEnabled).toBe(true);
+      expect(res.body.entitlements.aiEnabled).toBe(true);
+      expect(res.body.status).toBeDefined();
     });
   });
 });

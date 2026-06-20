@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.3.0",
-  "lastUpdated": "2026-02-09",
+  "version": "1.4.0",
+  "lastUpdated": "2026-06-20",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -4288,6 +4288,54 @@
         "stationId",
         "createdAt"
       ]
+    }
+  },
+  "auth": {
+    "GET /api/auth/entitlements": {
+      "method": "GET",
+      "path": "/api/auth/entitlements",
+      "description": "Lightweight entitlement probe for the authenticated user's organisation. Returns the current entitlements object and plan code. Designed for sibling apps (e.g. AAR Studio at /aar) to check access without fetching the full /auth/me payload.",
+      "authentication": "Bearer JWT (SM-issued)",
+      "rateLimit": "standard API limiter",
+      "responses": {
+        "200": {
+          "description": "Entitlements resolved",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "entitlements": {
+                "oneOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "signInEnabled": { "type": "boolean" },
+                      "truckCheckEnabled": { "type": "boolean" },
+                      "reportsEnabled": { "type": "boolean" },
+                      "aiEnabled": { "type": "boolean" },
+                      "aarStudioEnabled": { "type": "boolean" },
+                      "santaRunEnabled": { "type": "boolean" },
+                      "fireBreakEnabled": { "type": "boolean" },
+                      "maxStations": { "type": "number" },
+                      "maxDevices": { "type": "number" },
+                      "aiIncludedSessions": { "type": "number" }
+                    }
+                  }
+                ],
+                "description": "null when the user has no associated organisation"
+              },
+              "planCode": {
+                "oneOf": [{ "type": "null" }, { "type": "string", "enum": ["community", "basic", "ai"] }]
+              },
+              "status": {
+                "oneOf": [{ "type": "null" }, { "type": "string" }]
+              }
+            }
+          }
+        },
+        "401": { "description": "Missing or invalid JWT" },
+        "500": { "description": "Internal server error" }
+      }
     }
   },
   "maintenance": {
