@@ -348,6 +348,34 @@ body.present .board__empty { color: #93a1ad; }
   .topbar, .board-toolbar, .quick-add, .phase-filter, .toast-host { display: none; }
 }
 
+/* ---------- room notes (collaborative) ---------- */
+.room-notes summary { font-weight: 700; cursor: pointer; padding: 0.5rem 0; min-height: var(--tap-min-sm); display: flex; align-items: center; }
+.room-notes__share { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin: 0.4rem 0; }
+.room-notes__code {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  background: var(--rfs-lime);
+  color: #1a1a1a;
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--radius-sm);
+}
+.room-notes__url { font-size: 0.8rem; word-break: break-all; margin: 0.2rem 0 0.6rem; }
+.room-notes__list { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; max-height: 320px; overflow-y: auto; }
+.room-note { border: 1px solid var(--line); border-left: 4px solid var(--rfs-lime); border-radius: var(--radius-sm); padding: 0.4rem 0.6rem; background: #fff; }
+.room-note__meta { display: flex; gap: 0.5rem; align-items: baseline; }
+.room-note__label { font-weight: 700; font-size: 0.85rem; }
+.room-note__time { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+.room-note__text { display: block; margin-top: 0.2rem; }
+
+/* ---------- participant join page ---------- */
+body.join-mode .nav { display: none; }
+.join { max-width: 40rem; margin: 1.5rem auto; }
+.join__text { min-height: calc(var(--tap-min) * 2); font-size: 1.05rem; }
+.join .btn--hero { width: 100%; }
+.join__status { margin-top: 0.8rem; }
+
 /* ---------- friendly home + capture (non-technical flow) ---------- */
 .hero--home { background: linear-gradient(135deg, var(--ink), var(--ink-2)); padding: 2rem 1.6rem; }
 .hero__hint { font-size: 0.85rem; color: #aebac4 !important; margin-top: 0.9rem; }

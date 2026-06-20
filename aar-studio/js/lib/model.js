@@ -37,10 +37,20 @@ export function createSession(partial = {}) {
     currentPhase: GENERAL_PHASE,
     segments: [],
     findings: [],
+    notes: [],
     speakers: {},
     report: null,
     ...partial,
   };
+}
+
+/**
+ * A room note: free text contributed live by a participant from their own
+ * device during the review. `t` is the offset (seconds) from recording start
+ * when known; `label` attributes the note ("Room" or a participant name).
+ */
+export function createNote({ text = '', label = 'Room', t = null, wallTs = Date.now() } = {}) {
+  return { id: uid(), text: String(text), label: String(label || 'Room'), t, wallTs, source: 'note', analysed: false };
 }
 
 export function createSegment({ t = null, speaker = '', text = '', phase = GENERAL_PHASE, source = 'paste' } = {}) {
@@ -108,6 +118,13 @@ export function normaliseSession(obj) {
     id: f.id || uid(),
     category: CATEGORY_IDS.includes(f.category) ? f.category : 'happened',
     segmentIds: Array.isArray(f.segmentIds) ? f.segmentIds : [],
+  }));
+  s.notes = (Array.isArray(obj.notes) ? obj.notes : []).map((n) => ({
+    ...createNote(), ...n,
+    id: n.id || uid(),
+    text: String(n.text ?? ''),
+    label: String(n.label || 'Room'),
+    analysed: Boolean(n.analysed),
   }));
   if (!sessionPhases(s).includes(s.currentPhase)) s.currentPhase = GENERAL_PHASE;
   return s;

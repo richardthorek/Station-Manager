@@ -8,6 +8,7 @@ import { getSettings } from './settings.js';
 import { extractFromSegments, extractMetadata, mergeMetadata, shouldAutoExtract } from './lib/extraction.js';
 import { dedupeFindings } from './lib/dedupe.js';
 import { LlmError } from './lib/llm.js';
+import { GENERAL_PHASE } from './lib/model.js';
 
 let analysing = false;
 let lastExtractAt = 0;
@@ -70,7 +71,20 @@ export async function analyseNow(statusEl = null, { quiet = false } = {}) {
   if (analysing) return;
   const session = store.getSession();
   if (!session) return;
-  const pending = session.segments.filter((seg) => !seg.analysed && seg.text.trim());
+  const pendingSegs = session.segments.filter((seg) => !seg.analysed && seg.text.trim());
+  const pendingNotes = (session.notes ?? []).filter((n) => !n.analysed && n.text.trim());
+  // Room notes are fed to the AI as extra evidence, shaped like transcript
+  // segments and clearly attributed so the model treats them as observations.
+  const noteEvidence = pendingNotes.map((n) => ({
+    id: n.id,
+    t: n.t,
+    speaker: `Room note${n.label && n.label !== 'Room' ? ` (${n.label})` : ''}`,
+    text: n.text,
+    phase: session.currentPhase ?? GENERAL_PHASE,
+    source: 'note',
+    analysed: false,
+  }));
+  const pending = [...pendingSegs, ...noteEvidence];
   if (!pending.length) {
     if (!quiet) toast('Nothing new to analyse — all segments are already processed');
     return;
@@ -90,8 +104,10 @@ export async function analyseNow(statusEl = null, { quiet = false } = {}) {
     const { added, skipped } = dedupeFindings(session.findings, found);
     store.update((s) => {
       s.findings.push(...added);
-      const ids = new Set(pending.map((seg) => seg.id));
-      for (const seg of s.segments) if (ids.has(seg.id)) seg.analysed = true;
+      const segIds = new Set(pendingSegs.map((seg) => seg.id));
+      for (const seg of s.segments) if (segIds.has(seg.id)) seg.analysed = true;
+      const noteIds = new Set(pendingNotes.map((n) => n.id));
+      for (const n of (s.notes ?? [])) if (noteIds.has(n.id)) n.analysed = true;
     }, { reason: 'findings' });
     setStatus('');
     if (!quiet || added.length) {

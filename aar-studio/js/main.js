@@ -10,6 +10,7 @@ import * as capture from './views/capture.js';
 import * as board from './views/board.js';
 import * as review from './views/review.js';
 import * as report from './views/report.js';
+import * as join from './views/join.js';
 
 const ROUTES = [
   { hash: '#/home', label: 'Reviews', view: home, always: true },
@@ -42,6 +43,18 @@ function renderNav() {
 }
 
 function render() {
+  // Participant join page: a standalone "add a note" screen reached from a
+  // share link. No session required; the facilitator nav is hidden.
+  if (location.hash.startsWith('#/join')) {
+    document.body.classList.add('join-mode');
+    clear(nav);
+    sessionLabel.textContent = '';
+    clear(main);
+    join.render(main);
+    return;
+  }
+  document.body.classList.remove('join-mode');
+
   const route = currentRoute();
   if (!route.always && !store.getSession()) {
     location.hash = '#/home';

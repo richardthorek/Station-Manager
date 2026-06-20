@@ -5,9 +5,65 @@ import { h, toast, confirmDanger, pickFile } from '../ui.js';
 import * as store from '../store.js';
 import { analyseNow } from '../analyse.js';
 import * as live from '../audio/live.js';
-import { createSegment, speakerName, displayTitle, GENERAL_PHASE } from '../lib/model.js';
+import { createSegment, createNote, speakerName, displayTitle, GENERAL_PHASE } from '../lib/model.js';
 import { parseTranscript } from '../lib/transcriptParser.js';
 import { fmtClock } from '../lib/text.js';
+import { codeForSession, joinUrl, hostSession } from '../lib/collab.js';
+
+// Host the room-notes relay once per session id (survives capture re-renders).
+let hostedCode = null;
+function ensureHosting(session) {
+  const code = codeForSession(session.id);
+  if (hostedCode === code) return code;
+  hostedCode = code;
+  hostSession(code, {
+    onNote: (note) => {
+      const ls = live.getState();
+      const t = ls.status === 'listening' && ls.startedAt
+        ? Math.round((Date.now() - ls.startedAt) / 1000)
+        : (typeof note.offsetSec === 'number' ? note.offsetSec : null);
+      store.update((s) => {
+        (s.notes ??= []).push(createNote({ text: note.text, label: note.label, t }));
+      }, { reason: 'session' });
+      toast(`Room note from ${note.label}`);
+    },
+  }).catch(() => { hostedCode = null; });
+  return code;
+}
+
+function roomNotesPanel() {
+  const session = store.getSession();
+  const code = ensureHosting(session);
+  const url = joinUrl(code);
+  const notes = session.notes ?? [];
+
+  const copyBtn = h('button', {
+    class: 'btn btn--small',
+    onclick: async () => {
+      try { await navigator.clipboard?.writeText(url); toast('Join link copied'); }
+      catch { toast('Copy failed — share the code instead', 'error'); }
+    },
+  }, 'Copy join link');
+
+  return h('details', { class: 'panel room-notes', open: notes.length > 0 },
+    h('summary', {}, `Room notes${notes.length ? ` (${notes.length})` : ''}`),
+    h('p', { class: 'muted' }, 'Let the whole room chip in. Anyone can add notes from their phone — they’re timed to the discussion and feed the findings.'),
+    h('div', { class: 'room-notes__share' },
+      h('span', { class: 'room-notes__code', title: 'Session join code' }, code),
+      copyBtn,
+    ),
+    h('p', { class: 'muted room-notes__url' }, url),
+    notes.length
+      ? h('ul', { class: 'room-notes__list' }, notes.slice().reverse().map((n) => h('li', { class: 'room-note' },
+          h('span', { class: 'room-note__meta' },
+            h('span', { class: 'room-note__label' }, n.label || 'Room'),
+            n.t != null ? h('span', { class: 'room-note__time' }, fmtClock(n.t)) : null,
+          ),
+          h('span', { class: 'room-note__text' }, n.text),
+        )))
+      : h('p', { class: 'muted' }, 'No room notes yet — share the link above to invite the room.'),
+  );
+}
 
 // Quick kick-off asks Capture to start a source as soon as it mounts.
 let pendingAutoStart = null;
@@ -129,6 +185,7 @@ export function render(container) {
       h('a', { class: 'btn', href: '#/board' }, session.findings.length ? `See findings (${session.findings.length}) →` : 'Findings →'),
     ),
     audioPanel(),
+    roomNotesPanel(),
     h('section', { class: 'panel' },
       h('h2', {}, `What was said${segments.length ? ` (${segments.length})` : ''}`),
       transcript,
