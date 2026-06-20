@@ -244,8 +244,10 @@ if (fs.existsSync(path.join(aarStudioPath, 'index.html'))) {
     "default-src 'self'",
     "script-src 'self' https://cdn.jsdelivr.net blob:",
     "worker-src 'self' blob:",
-    "connect-src 'self' https://cdn.jsdelivr.net https://*.openai.azure.com https://*.cognitiveservices.azure.com https://*.services.ai.azure.com https://*.api.cognitive.microsoft.com wss://*.stt.speech.microsoft.com",
-    "style-src 'self' 'unsafe-inline'",
+    // connect-src also governs the SW/browser fetch() for Google-Fonts CSS.
+    "connect-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://*.openai.azure.com https://*.cognitiveservices.azure.com https://*.services.ai.azure.com https://*.api.cognitive.microsoft.com wss://*.stt.speech.microsoft.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
     "media-src 'self' blob:",
     "frame-src 'self' blob:",

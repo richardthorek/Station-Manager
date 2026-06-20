@@ -52,9 +52,9 @@ export default defineConfig({
         'robots.txt',
       ],
       manifest: {
-        name: 'Station Manager',
-        short_name: 'Station Manager',
-        description: 'Digital management tools for fire stations - Real-time sign-in, truck checks, and station operations',
+        name: 'Bushie Tools',
+        short_name: 'Bushie Tools',
+        description: 'Simple tools for volunteer fire brigades — sign-in book, truck checks, reports, and AI-facilitated After Action Reviews',
         theme_color: '#E2231A',
         background_color: '#000000',
         display: 'standalone',
