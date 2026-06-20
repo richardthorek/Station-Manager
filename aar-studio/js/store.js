@@ -2,6 +2,7 @@
 // mutation, tiny pub/sub so views can re-render on structural changes.
 
 import { createSession, normaliseSession } from './lib/model.js';
+import { toDateInput } from './lib/text.js';
 
 const SESSION_PREFIX = 'aarstudio.session.';
 const LAST_KEY = 'aarstudio.lastSession';
@@ -53,6 +54,43 @@ export function newSession() {
   return current;
 }
 
+/**
+ * Start a review with the least possible friction: today's date pre-set, the
+ * title/location/units left blank so the AI can fill them from the discussion.
+ * The caller jumps straight to capture and starts the mic.
+ */
+export function quickStart() {
+  const today = toDateInput(new Date());
+  current = createSession({
+    incident: { title: '', date: today, location: '', type: '' },
+    aar: { date: today, location: '', facilitator: '' },
+  });
+  persist();
+  notify('session-loaded');
+  return current;
+}
+
+/** Best-effort device location (e.g. from geolocation); never overwrites a value. */
+export function setIncidentLocation(location) {
+  if (!current || !location || current.incident.location?.trim()) return;
+  update((s) => { s.incident.location = location; }, { reason: 'session' });
+}
+
+/** Rename the current or a given session's incident title. */
+export function renameSession(id, title) {
+  if (current?.id === id) {
+    update((s) => { s.incident.title = title; }, { reason: 'session' });
+    return;
+  }
+  const raw = localStorage.getItem(SESSION_PREFIX + id);
+  if (!raw) return;
+  const s = normaliseSession(JSON.parse(raw));
+  s.incident.title = title;
+  s.updatedAt = new Date().toISOString();
+  localStorage.setItem(SESSION_PREFIX + id, JSON.stringify(s));
+  notify('session-loaded');
+}
+
 export function openSession(id) {
   const raw = localStorage.getItem(SESSION_PREFIX + id);
   if (!raw) throw new Error('Session not found');
@@ -87,8 +125,10 @@ export function listSessions() {
       const s = JSON.parse(localStorage.getItem(key));
       sessions.push({
         id: s.id,
-        title: s.incident?.title || 'Untitled AAR',
+        title: s.incident?.title || '',
+        location: s.incident?.location || '',
         incidentDate: s.incident?.date || '',
+        createdAt: s.createdAt || s.updatedAt || '',
         updatedAt: s.updatedAt || '',
         findings: s.findings?.length ?? 0,
         segments: s.segments?.length ?? 0,

@@ -5,7 +5,7 @@
 import { toast } from './ui.js';
 import * as store from './store.js';
 import { getSettings } from './settings.js';
-import { extractFromSegments, shouldAutoExtract } from './lib/extraction.js';
+import { extractFromSegments, extractMetadata, mergeMetadata, shouldAutoExtract } from './lib/extraction.js';
 import { dedupeFindings } from './lib/dedupe.js';
 import { LlmError } from './lib/llm.js';
 
@@ -27,6 +27,39 @@ export async function maybeAutoExtract() {
   if (analysing) return;
   if (!shouldAutoExtract({ msSinceLast: Date.now() - lastExtractAt, wordsPending: pendingWords })) return;
   await analyseNow(null, { quiet: true });
+}
+
+/**
+ * Fill in blank incident details (title, location, type, units) from the
+ * discussion. Non-destructive — never overwrites anything the user typed.
+ * Quiet by default; toasts only when it actually fills something in.
+ */
+export async function fillMetadataFromDiscussion({ quiet = true } = {}) {
+  const session = store.getSession();
+  if (!session?.segments.some((seg) => seg.text.trim())) return;
+  // Nothing left to fill? Skip the call.
+  const blank = !session.incident.title?.trim() || !session.incident.location?.trim()
+    || !session.incident.type || !(session.units ?? []).length;
+  if (!blank) return;
+  try {
+    const meta = await extractMetadata({ session, segments: session.segments, settings: getSettings() });
+    const patch = mergeMetadata(session, meta);
+    if (!patch.incident && !patch.units) return;
+    store.update((s) => {
+      if (patch.incident) Object.assign(s.incident, patch.incident);
+      if (patch.units) s.units = patch.units;
+    }, { reason: 'session' });
+    const filled = [
+      patch.incident?.title && 'title',
+      patch.incident?.location && 'location',
+      patch.incident?.type && 'type',
+      patch.units && 'units',
+    ].filter(Boolean);
+    if (filled.length) toast(`Filled in the ${filled.join(', ')} from the discussion`);
+  } catch (err) {
+    // Best-effort — a metadata miss shouldn't disrupt the review.
+    if (!quiet) toast(`Couldn't read details from the discussion: ${err.message}`, 'error');
+  }
 }
 
 /**

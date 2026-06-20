@@ -2,6 +2,7 @@
 
 import { h, clear } from './ui.js';
 import * as store from './store.js';
+import { displayTitle } from './lib/model.js';
 import { openSettingsDialog } from './settings.js';
 import * as home from './views/home.js';
 import * as setup from './views/setup.js';
@@ -11,11 +12,11 @@ import * as review from './views/review.js';
 import * as report from './views/report.js';
 
 const ROUTES = [
-  { hash: '#/home', label: 'Sessions', view: home, always: true },
-  { hash: '#/setup', label: 'Setup', view: setup },
-  { hash: '#/capture', label: 'Capture', view: capture },
-  { hash: '#/board', label: 'Board', view: board },
-  { hash: '#/review', label: 'Review', view: review },
+  { hash: '#/home', label: 'Reviews', view: home, always: true },
+  { hash: '#/setup', label: 'Details', view: setup },
+  { hash: '#/capture', label: 'Record', view: capture },
+  { hash: '#/board', label: 'Findings', view: board },
+  { hash: '#/review', label: 'Edit', view: review },
   { hash: '#/report', label: 'Report', view: report },
 ];
 
@@ -37,7 +38,7 @@ function renderNav() {
     }, r.label));
   }
   nav.append(h('button', { class: 'nav__settings', title: 'Settings', 'aria-label': 'Settings', onclick: openSettingsDialog }, '⚙'));
-  sessionLabel.textContent = session ? (session.incident.title || 'Untitled AAR') : '';
+  sessionLabel.textContent = session ? displayTitle(session) : '';
 }
 
 function render() {

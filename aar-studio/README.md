@@ -16,32 +16,34 @@ lives in `localStorage`.
 
 ## The workflow
 
-1. **Setup** — incident title/date/location/type, AAR date/location,
-   facilitator, attending units, configurable phases (default Arrival, Rescue,
-   Suppression, Overhaul, plus an implicit General bucket).
-2. **Capture** — **live listen**: room microphone (primary mode — one mic,
-   many speakers), a shared Teams tab ("Share audio" ticked), or an uploaded
-   recording, transcribed in real time by Azure AI Speech with optional
-   diarization, interim results on screen, an input level meter, and an
-   optional local backup recording offered as a download. Or paste a Teams
-   transcript (the DOCX copy format, `Name: text` lines, or WEBVTT). Click
-   the current phase as the room moves through it — findings keep flowing
-   onto the board automatically (~every 45 s / 70 words, on phase change,
-   and on demand).
-3. **Board** — AI extracts discrete findings into four columns (*what
-   happened / went well / didn't go well / next time*) with phase chips,
-   dedupe, manual quick-add, and a fullscreen high-contrast **Present** mode
-   for the projector.
-4. **Review** — edit findings and transcript, rename diarised speakers.
-5. **Report** — AI drafts the structured report from your curated findings
-   (headline, context bar, key stats, snapshot, per-phase detail, themes,
-   recommendations, top three actions, assessment, verification caveat);
-   every field stays editable with live preview. Export a one-page snapshot
-   HTML, a combined HTML report (snapshot + full summary + findings register
-   + optional transcript appendix), Markdown summary, session JSON, or print
-   to PDF.
+The app is built for a non-technical facilitator: **just talk, and it does the
+heavy lifting.** You can fill in details if you want to, but you never have to.
 
-Load the **Wamboin sample** from the home screen to see a finished session
+1. **Start recording now** (quick kick-off) — one tap creates a review with
+   today's date/time (and the device's location if allowed), then starts the
+   room microphone immediately. No form to fill first. (Prefer to enter the
+   incident title/location/units up front? "Set up a review first" is there too,
+   but it's optional.)
+2. **Capture** — room microphone (one mic, many speakers), a shared Teams tab
+   ("Share audio" ticked), or an uploaded recording, transcribed in real time by
+   Azure AI Speech with optional diarization, interim results on screen, a level
+   meter, and an optional local backup recording. **No phase-clicking and no
+   "analyse" button** — findings appear automatically as the discussion goes on,
+   and the AI works out which incident phase each one belongs to. On stop, it
+   also fills in any blank incident details (title, location, attending crews,
+   type) from what was said.
+3. **Findings** — discrete findings land in four columns (*what happened / went
+   well / didn't go well / next time*) with phase chips, dedupe, manual
+   quick-add, and a fullscreen high-contrast **Present** mode for the projector.
+4. **Edit** — adjust findings and transcript, rename speakers — only if you want
+   to. The defaults are meant to stand on their own.
+5. **Report** — AI drafts the structured report from the findings (headline,
+   context bar, key stats, snapshot, per-phase detail, themes, recommendations,
+   top three actions, assessment, verification caveat); every field stays
+   editable with live preview. Export a one-page snapshot HTML, a combined HTML
+   report, Markdown summary, a backup file, or print to PDF.
+
+Choose **See an example** on the home screen to explore a finished review
 without any Azure setup.
 
 ## Local development

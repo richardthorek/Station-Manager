@@ -44,3 +44,30 @@ export function uid() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** A Date → the value an <input type="date"> expects (local date, "YYYY-MM-DD"). */
+export function toDateInput(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Friendly date for display, e.g. "20 Jun 2026". Accepts a Date or "YYYY-MM-DD". */
+export function friendlyDate(value) {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** Friendly date + time, e.g. "20 Jun 2026, 3:42pm". */
+export function friendlyDateTime(date = new Date()) {
+  let h = date.getHours();
+  const min = String(date.getMinutes()).padStart(2, '0');
+  const ampm = h < 12 ? 'am' : 'pm';
+  h = h % 12 || 12;
+  return `${friendlyDate(date)}, ${h}:${min}${ampm}`;
+}
