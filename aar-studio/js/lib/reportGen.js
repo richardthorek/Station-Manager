@@ -155,6 +155,7 @@ export async function generateReport({ session, settings, fetchImpl = globalThis
   const raw = await chatJson({
     settings,
     deployment: settings.reportDeployment || settings.llmDeployment,
+    kind: 'report',
     messages: buildReportMessages(session),
     schema: reportSchema(sessionPhases(session)),
     schemaName: 'aar_report',

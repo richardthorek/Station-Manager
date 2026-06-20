@@ -727,6 +727,47 @@ backend/src/
 
 ---
 
+## AI Gateway (`/api/ai/*`)
+
+Server-side proxy for AI providers so credentials never reach the browser and
+usage can be metered for billing (added June 2026, issue #555).
+
+**Routes** (`backend/src/routes/ai.ts`, mounted at `/api/ai`):
+- `POST /api/ai/chat` — chat completion for live finding/metadata extraction.
+- `POST /api/ai/report` — chat completion on the heavier report model.
+- `POST /api/ai/speech/token` — vends a short-lived Azure Speech authorization
+  token (the browser opens the realtime STT websocket with the token, never the
+  subscription key). One token == one AAR "session".
+- `GET /api/ai/usage` — authenticated org view of sessions used vs allowance.
+
+**Provider adapters** (`backend/src/services/aiGateway.ts`): Azure OpenAI
+(chat/report), Azure Speech (token vend), and a stubbed Anthropic adapter (the
+capability-routing seam). All configuration is env-driven:
+`AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_KEY`, `AZURE_OPENAI_DEPLOYMENT_CHAT`,
+`AZURE_OPENAI_DEPLOYMENT_REPORT`, `AZURE_OPENAI_API_VERSION` (optional),
+`AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`. Endpoints return 503 when the
+relevant capability isn't configured.
+
+**Gating & metering:** an `aiEnabled` entitlement is required when org context is
+present (403 otherwise); the monthly allowance (`Entitlements.aiIncludedSessions`)
+is counted in *sessions* (speech-token vends) and enforced at the speech-token
+endpoint with a 402 `{ remaining, resetAt }`. `chat`/`report` require `aiEnabled`
+but are not hard-gated so analysis already in flight is never cut off. Requests
+with no org context pass through (kiosk/demo/anonymous AAR back-compat); usage is
+recorded only when an org is known. Every billable action writes a `UsageRecord`
+(`services/usageDatabase.ts` + Table Storage twin + `usageDbFactory.ts`).
+`services/meteredUsageReporter.ts` batches sessions to Stripe metered billing on
+an hourly timer — opt-in (`STRIPE_METERED_USAGE_ENABLED` + `STRIPE_AI_METER_EVENT`)
+and a safe no-op until a meter is configured.
+
+**AAR Studio** runs in gateway mode by default: `lib/llm.js` posts to
+`/api/ai/chat`|`/report` (Bearer token read from the same-origin SPA's
+`auth_token`) unless the user sets their own Azure endpoint in Settings (the
+local/dev BYO-Azure override). Live listen vends a Speech token from
+`/api/ai/speech/token` and uses `SpeechConfig.fromAuthorizationToken`.
+
+---
+
 ## National Fire Service Facilities Dataset
 
 ### Overview

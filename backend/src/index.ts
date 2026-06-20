@@ -56,6 +56,7 @@ import exportRouter from './routes/export';
 import authRouter from './routes/auth';
 import organizationsRouter from './routes/organizations';
 import billingRouter from './routes/billing';
+import aiRouter from './routes/ai';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -70,6 +71,8 @@ import { requestLoggingMiddleware } from './middleware/requestLogging';
 import { logger } from './services/logger';
 import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services/adminUserDbFactory';
 import { initializeOrganizationDatabase } from './services/organizationDbFactory';
+import { initializeUsageDatabase } from './services/usageDbFactory';
+import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 
 const app = express();
 const httpServer = createServer(app);
@@ -380,6 +383,7 @@ app.get('/api/status', apiRateLimiter, async (req, res) => {
 app.use('/api/auth', apiRateLimiter, authRouter);
 app.use('/api/organizations', apiRateLimiter, organizationsRouter);
 app.use('/api/billing', apiRateLimiter, billingRouter);
+app.use('/api/ai', apiRateLimiter, aiRouter);
 app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, requireFeature('signInEnabled'), checkinsRouter);
@@ -606,6 +610,8 @@ async function initializeDatabasesInBackground() {
     // Ensure the Organization store and Admin User store are available for
     // self-service signup, regardless of whether a default admin is configured.
     await initializeOrganizationDatabase();
+    await initializeUsageDatabase();
+    startMeteredUsageReporter();
     ensureAdminUserDatabase();
 
     // Initialize admin user database with default credentials if configured

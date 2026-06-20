@@ -34,10 +34,14 @@ export function loadSpeechSdk() {
  * Returns { start, stop, push } — push takes an ArrayBuffer of PCM16 @16 kHz.
  */
 export function createTranscriber({ sdk, settings, onInterim, onFinal, onError }) {
-  if (!settings.speechKey || !settings.speechRegion) {
-    throw new Error('No Azure Speech key/region configured — open Settings and fill in the Speech section');
+  if (!settings.speechRegion || (!settings.authToken && !settings.speechKey)) {
+    throw new Error('No Azure Speech credentials available — sign in to use the built-in AI, or set a Speech key/region in Settings');
   }
-  const speechConfig = sdk.SpeechConfig.fromSubscription(settings.speechKey, settings.speechRegion);
+  // Gateway mode vends a short-lived authorization token (no subscription key in
+  // the browser); direct mode uses the user's own Speech key from Settings.
+  const speechConfig = settings.authToken
+    ? sdk.SpeechConfig.fromAuthorizationToken(settings.authToken, settings.speechRegion)
+    : sdk.SpeechConfig.fromSubscription(settings.speechKey, settings.speechRegion);
   speechConfig.speechRecognitionLanguage = settings.language || 'en-AU';
 
   const format = sdk.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1);

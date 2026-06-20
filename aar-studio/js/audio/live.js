@@ -18,6 +18,47 @@ export const SOURCES = {
   file: { label: 'Audio file', icon: '📂' },
 };
 
+// Plain-language messages for the gateway's gating responses.
+const SPEECH_TOKEN_HINTS = {
+  401: 'Please sign in to your brigade account to use live listening.',
+  402: 'AI session limit reached — upgrade or top up to keep using live listening.',
+  403: 'Live listening needs the AI Pro plan. Upgrade to turn it on.',
+  503: 'The AI speech service isn’t set up on the server yet. Ask your administrator to configure it.',
+};
+
+function gatewayAuthHeader() {
+  try {
+    const token = globalThis.localStorage?.getItem('auth_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Gateway mode: ask the server to vend a short-lived Azure Speech token so the
+ * browser never holds a subscription key. Returns { token, region }. Throws a
+ * friendly Error on a gating/availability failure.
+ */
+async function fetchSpeechToken() {
+  let res;
+  try {
+    res = await fetch('/api/ai/speech/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...gatewayAuthHeader() },
+      body: JSON.stringify({}),
+    });
+  } catch {
+    throw new Error('Could not reach the AI service to start listening. Check you are online and try again.');
+  }
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json())?.error ?? ''; } catch { /* not json */ }
+    throw new Error(SPEECH_TOKEN_HINTS[res.status] || `Speech service error (${res.status})${detail ? `: ${detail}` : ''}`);
+  }
+  return res.json();
+}
+
 const state = {
   status: 'idle', // idle | starting | listening | stopping
   source: null,
@@ -136,6 +177,16 @@ export async function start(sourceKind, { file = null, backup = false } = {}) {
 
   try {
     const sdk = await loadSpeechSdk();
+
+    // Gateway mode (no user-supplied Speech key): vend a short-lived token from
+    // the server. This also runs the AI session allowance/entitlement gate, so a
+    // 402/403/503 here stops the start cleanly with a friendly message.
+    let liveSettings = settings;
+    if (!String(settings.speechKey ?? '').trim()) {
+      const { token, region } = await fetchSpeechToken();
+      liveSettings = { ...settings, authToken: token, speechRegion: region || settings.speechRegion };
+    }
+
     audioCtx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
     await audioCtx.resume();
     await audioCtx.audioWorklet.addModule('./js/audio/worklet.js');
@@ -145,7 +196,7 @@ export async function start(sourceKind, { file = null, backup = false } = {}) {
     labeler = createSpeakerLabeler();
     transcriber = createTranscriber({
       sdk,
-      settings,
+      settings: liveSettings,
       onInterim: (text, speakerId) => {
         state.interim = text ?? '';
         state.interimSpeaker = labeler(speakerId);

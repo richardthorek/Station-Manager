@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth, type EntitlementFeature } from '../../../contexts/AuthContext';
-import { api, type PlanDefinition, type OrganizationUser } from '../../../services/api';
+import { api, type PlanDefinition, type OrganizationUser, type AiUsage } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
 import './OrganizationPage.css';
 
@@ -31,6 +31,7 @@ export function OrganizationPage() {
 
   const [plans, setPlans] = useState<PlanDefinition[]>([]);
   const [users, setUsers] = useState<OrganizationUser[]>([]);
+  const [aiUsage, setAiUsage] = useState<AiUsage | null>(null);
   const [saving, setSaving] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
@@ -56,6 +57,16 @@ export function OrganizationPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // AI session usage — only relevant when the AI module is on for this org.
+  const aiEnabled = organization?.entitlements.aiEnabled ?? false;
+  useEffect(() => {
+    if (!aiEnabled) {
+      setAiUsage(null);
+      return;
+    }
+    api.getAiUsage().then(setAiUsage).catch(() => setAiUsage(null));
+  }, [aiEnabled]);
 
   // Show feedback for Stripe redirect outcomes
   useEffect(() => {
@@ -241,6 +252,40 @@ export function OrganizationPage() {
 
             {!isOwner && <p className="org-hint">Only the owner can change the plan.</p>}
           </section>
+
+          {aiEnabled && aiUsage && (
+            <section className="org-section">
+              <h2>AI usage this month</h2>
+              {(() => {
+                const pct = aiUsage.included > 0
+                  ? Math.min(100, Math.round((aiUsage.used / aiUsage.included) * 100))
+                  : 100;
+                const low = aiUsage.remaining <= Math.max(1, Math.ceil(aiUsage.included * 0.1));
+                const resetDate = new Date(aiUsage.resetAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+                return (
+                  <>
+                    <p className="org-ai-usage-count">
+                      <strong>{aiUsage.used}</strong> of <strong>{aiUsage.included}</strong> AI review sessions used
+                      {' · '}<span className="org-hint">resets {resetDate}</span>
+                    </p>
+                    <div className="org-ai-meter" role="img" aria-label={`${aiUsage.used} of ${aiUsage.included} sessions used`}>
+                      <div className={`org-ai-meter-fill ${low ? 'low' : ''}`} style={{ width: `${pct}%` }} />
+                    </div>
+                    {aiUsage.remaining === 0 ? (
+                      <p className="org-ai-nudge">
+                        You’ve used all your AI sessions for this month.{' '}
+                        {isOwner ? 'Upgrade or top up to keep using AAR Studio.' : 'Ask your owner to upgrade or top up.'}
+                      </p>
+                    ) : low ? (
+                      <p className="org-ai-nudge">
+                        Only {aiUsage.remaining} AI session{aiUsage.remaining === 1 ? '' : 's'} left this month.
+                      </p>
+                    ) : null}
+                  </>
+                );
+              })()}
+            </section>
+          )}
 
           <section className="org-section">
             <h2>Modules</h2>

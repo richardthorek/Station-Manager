@@ -123,6 +123,25 @@ export interface Organization {
   updatedAt: Date;
 }
 
+/**
+ * AI usage metering. One row per billable AI action routed through the
+ * server-side AI gateway (`/api/ai/*`). A "session" — the unit the AI plan
+ * allowance (`aiIncludedSessions`) is measured in — corresponds to a `speech`
+ * record (one live-listen start). `chat`/`report` rows are recorded for cost
+ * visibility but do not consume the session allowance.
+ */
+export type UsageType = 'chat' | 'report' | 'speech';
+
+export interface UsageRecord {
+  id: string;
+  organizationId: string;
+  sessionId?: string;            // optional correlation id (AAR review/session)
+  type: UsageType;
+  units: number;                 // sessions for 'speech'; provider calls for chat/report
+  createdAt: Date;
+  reportedToStripe?: boolean;    // set once batched metered usage is sent to Stripe
+}
+
 export interface Member {
   id: string;
   name: string;

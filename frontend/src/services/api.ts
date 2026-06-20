@@ -1309,6 +1309,14 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to fetch billing status');
     return response.json();
   }
+
+  async getAiUsage(): Promise<AiUsage> {
+    const response = await fetch(`${API_BASE_URL}/ai/usage`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch AI usage');
+    return response.json();
+  }
 }
 
 export interface PlanDefinition {
@@ -1334,6 +1342,14 @@ export interface BillingStatus {
   trialEndsAt: string | null;
   hasPaymentMethod: boolean;
   stripeConfigured: boolean;
+}
+
+export interface AiUsage {
+  used: number;
+  included: number;
+  remaining: number;
+  resetAt: string;
+  aiEnabled: boolean;
 }
 
 export const api = new ApiService();
