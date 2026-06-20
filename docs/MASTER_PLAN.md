@@ -138,6 +138,23 @@ Forward plan captured in increments; detailed analysis to follow. Cross-app
 detail lives in `docs/CONSOLIDATION_REVIEW.md` and billing detail in
 `docs/SAAS_COMMERCIALIZATION_DESIGN.md`. Recommended order:
 
+> **Guiding ethos — "for the average bushie."** Design for the older, less
+> tech-savvy firefighter as much as the young guns: plain language (no jargon),
+> minimum friction (defaults over forms, one obvious next step), big touch
+> targets, and "just talk / just tap" flows. If a bushie can't use it cold,
+> it's not done. Apply this lens to every UI/UX point below.
+
+- **Rebrand to "Bushie Tools"** — adopt *Bushie Tools* as the product family name
+  (colloquial for bush firefighters), framing Station Manager + AAR Studio as
+  approachable tools that put advanced capability in ordinary members' hands.
+  Naming/branding sweep across landing, app-picker, AAR Studio, and docs; fold
+  into the design-system work below so brand and tokens land together.
+- **Collaborative session notes (AAR Studio)** — recording stays the centre of
+  gravity, but let a room contribute alongside it: timestamped text notes added
+  live by other participants on their own devices, aligned to the recorded
+  discussion timeline. A shared session (URL/code), a lightweight note-taker
+  role, and multi-contributor input (voice + text) so a whole room can feed one
+  review. Notes merge into findings extraction like transcript segments.
 - **Visual consistency (design-system unification)** — extract one canonical RFS
   token set (palette `#e5281B`/`#cbdb2a`, Public Sans, spacing, ≥60px touch
   targets) into a shared CSS file used by both the React SPA and AAR Studio;
