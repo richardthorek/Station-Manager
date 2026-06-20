@@ -1968,6 +1968,16 @@ const stations = await api.getStations();     // All stations
 - "Authentication required" message displayed when applicable
 - Login/logout buttons shown based on `requireAuth` config
 
+**Public front door vs. app-picker (June 2026):**
+- The root path `/` is resolved by `HomeRoute` (in `App.tsx`): logged-out
+  visitors get the marketing/pricing page (`features/marketing/MarketingPage`);
+  signed-in users — and anyone in demo mode (`/?demo=true`) — get the app-picker
+  (`features/landing/LandingPage`), which is also reachable directly at `/apps`.
+- The marketing page's paid-plan CTAs link to `/signup?plan=basic|ai&interval=…`;
+  `SignupPage` reads those params and, after creating the org + owner, starts a
+  Stripe Checkout session for the chosen plan (falling back to
+  `/admin/organization` if billing is unavailable).
+
 #### Migration Guide
 
 **Enabling Authentication on Existing Deployment:**
