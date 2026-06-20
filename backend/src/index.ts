@@ -73,6 +73,7 @@ import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services
 import { initializeOrganizationDatabase } from './services/organizationDbFactory';
 import { initializeUsageDatabase } from './services/usageDbFactory';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
+import { registerAarCollabHandlers } from './services/aarCollab';
 
 const app = express();
 const httpServer = createServer(app);
@@ -244,8 +245,9 @@ if (fs.existsSync(path.join(aarStudioPath, 'index.html'))) {
     "default-src 'self'",
     "script-src 'self' https://cdn.jsdelivr.net blob:",
     "worker-src 'self' blob:",
-    // connect-src also governs the SW/browser fetch() for Google-Fonts CSS.
-    "connect-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://*.openai.azure.com https://*.cognitiveservices.azure.com https://*.services.ai.azure.com https://*.api.cognitive.microsoft.com wss://*.stt.speech.microsoft.com",
+    // connect-src also governs the SW/browser fetch() for Google-Fonts CSS, and
+    // the same-origin Socket.io connection (ws:/wss:) used by collaborative notes.
+    "connect-src 'self' ws: wss: https://cdn.jsdelivr.net https://fonts.googleapis.com https://*.openai.azure.com https://*.cognitiveservices.azure.com https://*.services.ai.azure.com https://*.api.cognitive.microsoft.com wss://*.stt.speech.microsoft.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
@@ -408,6 +410,9 @@ interface SocketWithStation extends Socket {
 // Socket.io connection handling with room-based isolation
 io.on('connection', (socket: SocketWithStation) => {
   logger.info('WebSocket client connected', { socketId: socket.id });
+
+  // AAR Studio collaborative session notes (ephemeral room relay).
+  registerAarCollabHandlers(io, socket);
 
   // Handle station room joining
   socket.on('join-station', async (data: { stationId: string; brigadeId?: string }) => {

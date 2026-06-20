@@ -766,6 +766,19 @@ and a safe no-op until a meter is configured.
 local/dev BYO-Azure override). Live listen vends a Speech token from
 `/api/ai/speech/token` and uses `SpeechConfig.fromAuthorizationToken`.
 
+### Collaborative session notes (AAR Studio)
+
+A room can contribute timestamped text notes to a live review (issue #551).
+`backend/src/services/aarCollab.ts` registers **ephemeral** Socket.io handlers on
+the existing server (no new infra, no persistence): `aar:host` (facilitator joins
+room `aar-<CODE>`), `aar:join` (participant joins), and `aar:note` (server stamps
+and fans a note out to the room). The facilitator's browser is the source of
+truth — notes land in its localStorage session (`notes[]`) and feed the AI
+extraction pass as attributed evidence. The participant page is a static AAR
+route (`/aar/#/join/<CODE>`); the `/aar` CSP allows same-origin `ws:`/`wss:` and
+loads `socket.io-client` from jsDelivr. Joining requires no AI entitlement; only
+the facilitator's analysis does.
+
 ---
 
 ## National Fire Service Facilities Dataset
