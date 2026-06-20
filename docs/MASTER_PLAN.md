@@ -53,6 +53,7 @@ Only the following types of documents are allowed in the root `/docs/` directory
 - **API Documentation**: `docs/API_DOCUMENTATION.md` - Human-readable API reference
 - **Feature Guides**: `docs/FEATURE_DEVELOPMENT_GUIDE.md`, `docs/GETTING_STARTED.md`
 - **UI Review**: `docs/current_state/UI_REVIEW_20260207.md` - Comprehensive UI/UX review with iPad screenshots
+- **Suite / Multi-App Strategy**: `docs/SUITE_INTEGRATION_PLAN.md` - Assessment + options for delivering Station Manager, AAR Studio, Fire Break Calculator and Fire Santa Run as one product suite (the **"Bushie Tools"** brand — shared identity, subscription, brand)
 
 ### Companion app: AAR Studio (June 2026)
 
@@ -144,11 +145,15 @@ detail lives in `docs/CONSOLIDATION_REVIEW.md` and billing detail in
 > targets, and "just talk / just tap" flows. If a bushie can't use it cold,
 > it's not done. Apply this lens to every UI/UX point below.
 
-- **Rebrand to "Bushie Tools"** — adopt *Bushie Tools* as the product family name
-  (colloquial for bush firefighters), framing Station Manager + AAR Studio as
-  approachable tools that put advanced capability in ordinary members' hands.
-  Naming/branding sweep across landing, app-picker, AAR Studio, and docs; fold
-  into the design-system work below so brand and tokens land together.
+- **Rebrand to "Bushie Tools"** — adopt *Bushie Tools* as the product-family /
+  suite name (colloquial for bush firefighters), framing Station Manager, AAR
+  Studio, Fire Break Calculator and Fire Santa Run as approachable tools that put
+  advanced capability in ordinary members' hands. This is the customer-facing name
+  for the multi-app suite analysed in `docs/SUITE_INTEGRATION_PLAN.md` — the
+  rebrand and that suite-integration work are the same product story (one brand,
+  one login, one subscription). Naming/branding sweep across landing, app-picker,
+  AAR Studio, and docs; fold into the design-system work below so brand and tokens
+  land together.
 - **Collaborative session notes (AAR Studio)** — recording stays the centre of
   gravity, but let a room contribute alongside it: timestamped text notes added
   live by other participants on their own devices, aligned to the recorded
@@ -1685,6 +1690,37 @@ Stripe Price IDs. Phased A (tenant model) → B (billing+signup) → C (devices+
 
 **Priority**: P2 (strategic / commercialization) · **Labels**: `feature`, `billing`,
 `multi-tenant`, `stripe`, `phase-4`
+
+---
+
+#### Feature: "Bushie Tools" Suite — Multi-App Integration (Station Manager + AAR Studio + Fire Break Calculator + Fire Santa Run)
+**Status**: 📐 **DESIGN / FUTURE RELEASE** (assessment + options only — not implemented)
+**Design**: `docs/SUITE_INTEGRATION_PLAN.md`. **Customer-facing name**: *Bushie
+Tools* (see the rebrand item in the Commercialization & coherence roadmap above) —
+this section is the technical integration plan behind that single brand.
+
+**Objective**: Deliver three sibling RFS/NSW apps — Station Manager (this repo),
+`fireBreakCalculator`, and `fire-santa-run` — as **one product suite** with a single
+sign-on, a single subscription, a consistent RFS brand/UX, and lower hosting/maintenance
+cost. Builds directly on the Organization/entitlements/Stripe model in
+`SAAS_COMMERCIALIZATION_DESIGN.md`, extending entitlements with per-app flags
+(`santaRunEnabled`, `fireBreakEnabled`, …).
+
+**Options (spectrum)**: A = federation (shared identity + subscription only, 3 deploys);
+B = A + shared `@rfs/*` packages (unified brand/UX); C = unified monorepo + single
+deployment (all four goals, highest effort). **Recommendation**: phase toward C
+(A → B → C), banking value at each step.
+
+**Auth recommendation**: decouple identity from entitlement — standardise authentication
+on **Microsoft Entra External ID** (already used by Santa Run; removes SM's custom
+password liability) while keeping SM's org+entitlements as the authZ/billing layer. NB:
+this would revise the JWT-retaining assumption in `SAAS_COMMERCIALIZATION_DESIGN.md` §2.
+
+**Open decisions**: integration depth (A/B/C); auth direction (Entra vs SM JWT);
+real-time standard for a unified backend (Socket.io vs Azure Web PubSub); plan/SKU shape.
+
+**Priority**: P2 (strategic / suite) · **Labels**: `feature`, `multi-app`, `suite`,
+`multi-tenant`, `phase-4`
 
 ---
 
