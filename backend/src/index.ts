@@ -382,7 +382,7 @@ app.use('/api/stations', apiRateLimiter, stationsRouter);
 app.use('/api/truck-checks', apiRateLimiter, requireFeature('truckCheckEnabled'), truckChecksRouter);
 app.use('/api/reports', apiRateLimiter, requireFeature('reportsEnabled'), reportsRouter);
 app.use('/api/brigade-access', apiRateLimiter, brigadeAccessRouter);
-app.use('/api/export', apiRateLimiter, exportRouter);
+app.use('/api/export', apiRateLimiter, requireFeature('reportsEnabled'), exportRouter);
 
 // Achievement routes (now handles database selection per-request based on demo mode)
 app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());

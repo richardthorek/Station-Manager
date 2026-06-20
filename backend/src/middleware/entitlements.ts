@@ -1,23 +1,24 @@
 /**
  * Entitlement / feature-gating middleware.
  *
- * Backward-compatible and opt-in, matching the project's REQUIRE_AUTH /
- * ENABLE_DATA_PROTECTION conventions:
- *   - When ENABLE_ENTITLEMENTS !== 'true', gating is a no-op (existing
- *     single-tenant deployments and the demo keep working unchanged).
- *   - When enabled, an authenticated user's Organization is loaded and the
- *     requested feature is checked against its entitlements. Requests with no
- *     organization context (e.g. kiosk/demo) are allowed through — those paths
- *     are governed by the existing auth/data-protection layers instead.
+ * On by default. Set ENABLE_ENTITLEMENTS=false to disable (dev/test only).
+ * Requests with no organization context (kiosk/demo/backward-compat) are
+ * always allowed through — those paths are governed by the existing auth/
+ * data-protection layers instead.
  */
 
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { logger } from '../services/logger';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
+import { ensureDatabase } from '../services/dbFactory';
+import { DEFAULT_STATION_ID, DEMO_STATION_ID } from '../constants/stations';
 import type { EntitlementFeature } from '../types';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+
 function entitlementsEnabled(): boolean {
-  return process.env.ENABLE_ENTITLEMENTS === 'true';
+  return process.env.ENABLE_ENTITLEMENTS !== 'false';
 }
 
 /**
@@ -26,9 +27,25 @@ function entitlementsEnabled(): boolean {
  */
 export async function attachOrganization(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
-    if (req.user?.organizationId && !req.organization) {
+    // Prefer organizationId from req.user (set by authMiddleware upstream).
+    // Fall back to soft-decoding the Authorization header so routes without an
+    // explicit auth middleware (e.g. /api/export) can still be org-gated.
+    let organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        try {
+          const decoded = jwt.verify(authHeader.substring(7), JWT_SECRET) as { organizationId?: string };
+          organizationId = decoded.organizationId ?? undefined;
+        } catch {
+          // Missing/invalid/expired token — not an error here, gate will pass through.
+        }
+      }
+    }
+
+    if (organizationId && !req.organization) {
       const db = ensureOrganizationDatabase();
-      const org = await db.getOrganizationById(req.user.organizationId);
+      const org = await db.getOrganizationById(organizationId);
       if (org) {
         req.organization = org;
       }
@@ -72,6 +89,56 @@ export function requireFeature(feature: EntitlementFeature) {
         upgradeRequired: true,
       });
       return;
+    }
+
+    next();
+  };
+}
+
+/**
+ * Enforce the maxStations entitlement on station creation.
+ * Place on POST /api/stations before the route handler.
+ */
+export function enforceStationLimit() {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!entitlementsEnabled()) {
+      next();
+      return;
+    }
+
+    await attachOrganization(req, res, () => undefined);
+
+    if (!req.organization) {
+      next();
+      return;
+    }
+
+    const { maxStations } = req.organization.entitlements;
+    try {
+      const db = await ensureDatabase(req.isDemoMode);
+      const all = await db.getAllStations();
+      // Exclude the built-in default/demo stations from the org's quota count.
+      // Once stations carry organizationId this filter can be org-scoped instead.
+      const SYSTEM_IDS = new Set([DEFAULT_STATION_ID, DEMO_STATION_ID]);
+      const activeCount = all.filter((s) => s.isActive && !SYSTEM_IDS.has(s.id)).length;
+      if (activeCount >= maxStations) {
+        logger.info('Station limit reached', {
+          organizationId: req.organization.id,
+          planCode: req.organization.planCode,
+          maxStations,
+          activeCount,
+        });
+        res.status(403).json({
+          error: 'Station limit reached for your plan',
+          upgradeRequired: true,
+          planCode: req.organization.planCode,
+          limit: maxStations,
+          current: activeCount,
+        });
+        return;
+      }
+    } catch (error) {
+      logger.warn('enforceStationLimit: station count check failed (continuing)', { error });
     }
 
     next();

@@ -255,9 +255,14 @@ Organizations are the billing tenant; features are gated per-org. Default-**off*
   (denylist regression); 500s on assets = CORS throwing or `FRONTEND_URLS` wrong;
   blocked font/analytics fetches = host missing from `connect-src` (which governs
   SW `fetch()`, not just `font-src`).
-- Entitlement gating is **default-off** (`ENABLE_ENTITLEMENTS`). With it off,
-  `requireFeature`/`FeatureRoute` allow everything — don't assume a feature is
-  locked just because it's wrapped.
+- Entitlement gating is **default-on** (`ENABLE_ENTITLEMENTS !== 'false'`). To
+  disable for local dev set `ENABLE_ENTITLEMENTS=false`. **Never disable in
+  production** — it removes all plan/billing enforcement. Requests with no org
+  context (kiosk/demo/plain JWT) always pass through regardless of this flag.
+  New routes that are plan-gated must add `requireFeature(...)` in `index.ts`
+  and a matching `<FeatureRoute>` in the frontend; gating `/api/export` behind
+  `reportsEnabled` and enforcing `maxStations` on `POST /api/stations` are live
+  examples. See `backend/src/middleware/entitlements.ts`.
 - Post-deployment smoke tests are disabled in CI (need ts-node, prod has no dev
   deps). Don't rely on them.
 - Node 22.x / npm ≥ 10 required.

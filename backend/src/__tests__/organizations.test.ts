@@ -156,7 +156,8 @@ describe('SaaS foundation', () => {
   });
 
   describe('entitlement gating', () => {
-    it('allows a gated route when ENABLE_ENTITLEMENTS is off, even if the feature is disabled (back-compat)', async () => {
+    it('allows a gated route when ENABLE_ENTITLEMENTS=false, even if the feature is disabled (back-compat)', async () => {
+      process.env.ENABLE_ENTITLEMENTS = 'false'; // explicitly opt-out
       const token = (await signup()).body.token as string;
       await request(app)
         .put('/api/organizations/current')
@@ -164,7 +165,7 @@ describe('SaaS foundation', () => {
         .send({ moduleToggles: { truckCheckEnabled: false } });
 
       const res = await request(app).get('/api/gated').set('Authorization', `Bearer ${token}`);
-      expect(res.status).toBe(200); // gating is a no-op when disabled
+      expect(res.status).toBe(200); // gating is a no-op when explicitly disabled
     });
 
     it('blocks a gated route for an org without the feature when entitlements are enabled', async () => {
