@@ -3,7 +3,7 @@ import { useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { StationProvider } from './contexts/StationContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoadingFallback } from './components/LoadingFallback';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InstallPrompt } from './components/InstallPrompt';
@@ -15,6 +15,7 @@ import { initDB } from './services/offlineStorage';
 
 // Lazy load all route components for better code splitting
 const LandingPage = lazy(() => import('./features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
+const MarketingPage = lazy(() => import('./features/marketing/MarketingPage').then(m => ({ default: m.MarketingPage })));
 const SignInPage = lazy(() => import('./features/signin/SignInPage').then(m => ({ default: m.SignInPage })));
 const SignInLinkPage = lazy(() => import('./features/signin/SignInLinkPage').then(m => ({ default: m.SignInLinkPage })));
 const UserProfilePage = lazy(() => import('./features/profile/UserProfilePage').then(m => ({ default: m.UserProfilePage })));
@@ -38,6 +39,22 @@ const AdvancedReportsPage = lazy(() => import('./features/reports/AdvancedReport
 const CrossStationReportsPage = lazy(() => import('./features/reports/CrossStationReportsPage').then(m => ({ default: m.CrossStationReportsPage })));
 
 /**
+ * HomeRoute — decides what the root path shows.
+ *
+ * Logged-out visitors get the public marketing / pricing page (the Bushie
+ * Tools front door). Signed-in users — and anyone in demo mode (?demo=true) —
+ * get the app-picker, which is now the post-login home.
+ */
+function HomeRoute() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const isDemo = new URLSearchParams(useLocation().search).get('demo') === 'true';
+
+  if (isLoading) return <LoadingFallback />;
+  if (isAuthenticated || isDemo) return <LandingPage />;
+  return <MarketingPage />;
+}
+
+/**
  * AnimatedRoutes component - handles route transitions
  * Separated to allow useLocation hook inside Router context
  */
@@ -48,7 +65,8 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
         {/* Landing & Auth */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<HomeRoute />} />
+        <Route path="/apps" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
 

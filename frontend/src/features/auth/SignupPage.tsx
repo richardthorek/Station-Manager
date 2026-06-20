@@ -9,14 +9,23 @@
 
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../services/api';
 import { PageTransition } from '../../components/PageTransition';
 import './LoginPage.css';
 
 export function SignupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signup } = useAuth();
+
+  // A paid plan can be pre-selected from the marketing page
+  // (e.g. /signup?plan=basic&interval=annual). After the account is created we
+  // send the owner straight into Stripe Checkout for that plan.
+  const planParam = searchParams.get('plan');
+  const selectedPlan = planParam === 'basic' || planParam === 'ai' ? planParam : null;
+  const selectedInterval = searchParams.get('interval') === 'annual' ? 'annual' : 'monthly';
 
   const [organizationName, setOrganizationName] = useState('');
   const [billingEmail, setBillingEmail] = useState('');
@@ -37,6 +46,21 @@ export function SignupPage() {
     setIsLoading(true);
     try {
       await signup({ organizationName, billingEmail, username, password });
+
+      // If the visitor picked a paid plan on the marketing page, take them
+      // straight to Stripe Checkout. If billing isn't available, fall back to
+      // the Organization screen where they can upgrade manually.
+      if (selectedPlan) {
+        try {
+          const { checkoutUrl } = await api.createCheckoutSession(selectedPlan, selectedInterval);
+          window.location.href = checkoutUrl;
+          return;
+        } catch {
+          navigate('/admin/organization?billing=unavailable', { replace: true });
+          return;
+        }
+      }
+
       navigate('/admin/organization', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-up failed');
@@ -59,8 +83,9 @@ export function SignupPage() {
               <div className="login-icon">🚒</div>
               <h2>Sign Up</h2>
               <p className="login-description">
-                Start free on the Community plan — sign-in book and basic truck checks.
-                Add reports and the AI maintenance agent any time.
+                {selectedPlan === 'basic' && 'Create your account, then add your payment details for the Basic plan. 14-day free trial — cancel any time.'}
+                {selectedPlan === 'ai' && 'Create your account, then add your payment details for the AI Pro plan. 14-day free trial — cancel any time.'}
+                {!selectedPlan && 'Start free on the Community plan — sign-in book and basic truck checks. Add reports and the AI maintenance agent any time.'}
               </p>
 
               <form onSubmit={handleSubmit} className="login-form">
@@ -124,7 +149,11 @@ export function SignupPage() {
                 </div>
 
                 <button type="submit" className="login-button" disabled={isLoading}>
-                  {isLoading ? 'Creating account…' : 'Create account'}
+                  {isLoading
+                    ? 'Creating account…'
+                    : selectedPlan
+                      ? 'Create account & continue to payment'
+                      : 'Create account'}
                 </button>
 
                 <p className="login-description" style={{ marginTop: '1rem' }}>

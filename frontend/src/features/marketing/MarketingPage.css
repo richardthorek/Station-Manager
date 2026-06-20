@@ -1,0 +1,496 @@
+/* Marketing / pricing landing page — Bushie Tools front door. */
+
+.marketing-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+
+.mkt-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mkt-header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mkt-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.mkt-brand-mark {
+  border-radius: 10px;
+}
+
+.mkt-brand-name {
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.mkt-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mkt-nav-link {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.mkt-nav-link:hover {
+  color: var(--rfs-core-red);
+}
+
+.mkt-theme-toggle {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+
+.mkt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid transparent;
+  font-size: 1rem;
+  line-height: 1.2;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.mkt-btn:active {
+  transform: translateY(1px);
+}
+
+.mkt-btn--lg {
+  min-height: 60px;
+  padding: 0.85rem 2rem;
+  font-size: 1.1rem;
+}
+
+.mkt-btn--primary {
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
+  border-color: var(--rfs-core-red);
+}
+
+.mkt-btn--primary:hover {
+  background: var(--rfs-core-red-dark);
+}
+
+.mkt-btn--ghost {
+  background: transparent;
+  color: var(--rfs-core-red);
+  border-color: var(--rfs-core-red);
+}
+
+.mkt-btn--ghost:hover {
+  background: var(--surface-error);
+}
+
+.mkt-nav-cta {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+
+.mkt-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.mkt-section-title {
+  text-align: center;
+  font-size: 1.8rem;
+  margin: 0 0 0.5rem;
+}
+
+.mkt-section-sub {
+  text-align: center;
+  color: var(--text-secondary);
+  margin: 0 auto 1.5rem;
+  max-width: 38rem;
+}
+
+/* ── Hero ───────────────────────────────────────────────────────────── */
+
+.mkt-hero {
+  text-align: center;
+  padding: 4rem 1rem 3rem;
+}
+
+.mkt-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--rfs-core-red);
+  margin: 0 0 0.75rem;
+}
+
+.mkt-hero-title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.1;
+  margin: 0 0 1rem;
+}
+
+.mkt-hero-sub {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  max-width: 40rem;
+  margin: 0 auto 2rem;
+  line-height: 1.5;
+}
+
+.mkt-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.mkt-hero-note {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* ── Apps ───────────────────────────────────────────────────────────── */
+
+.mkt-apps {
+  padding: 3rem 0;
+}
+
+.mkt-apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.mkt-app-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.mkt-app-card h3 {
+  margin: 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.mkt-app-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.mkt-app-icon {
+  font-size: 2rem;
+}
+
+.mkt-app-card--soon {
+  opacity: 0.75;
+}
+
+.mkt-badge {
+  display: inline-block;
+  margin-top: 0.75rem;
+  background: var(--rfs-lime);
+  color: #1a1a1a;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 10px;
+}
+
+/* ── Pricing ────────────────────────────────────────────────────────── */
+
+.mkt-pricing {
+  padding: 3rem 0;
+}
+
+.mkt-interval-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.mkt-interval-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.mkt-interval-btn.active {
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
+  border-color: var(--rfs-core-red);
+}
+
+.mkt-interval-badge {
+  background: var(--rfs-lime);
+  color: #1a1a1a;
+  border-radius: 10px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.mkt-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.mkt-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.mkt-plan--featured {
+  border-color: var(--rfs-core-red);
+  box-shadow: 0 0 0 2px var(--rfs-core-red);
+}
+
+.mkt-plan--suite {
+  border-style: dashed;
+}
+
+.mkt-plan-flag {
+  position: absolute;
+  top: -0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.7rem;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.mkt-plan-name {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.mkt-plan-tagline {
+  margin: 0.25rem 0 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.mkt-plan-price {
+  margin: 0 0 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.mkt-plan-amount {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--rfs-core-red);
+}
+
+.mkt-plan-unit {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.mkt-plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  flex: 1;
+}
+
+.mkt-plan-features li {
+  padding: 0.4rem 0 0.4rem 1.5rem;
+  position: relative;
+  font-size: 0.95rem;
+}
+
+.mkt-plan-features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #008550;
+  font-weight: 800;
+}
+
+.mkt-plan-cta {
+  width: 100%;
+}
+
+.mkt-gst-note {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 1.5rem;
+}
+
+.mkt-gst-note a {
+  color: var(--rfs-core-red);
+}
+
+/* ── FAQ ────────────────────────────────────────────────────────────── */
+
+.mkt-faq {
+  padding: 3rem 0;
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.mkt-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mkt-faq-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+}
+
+.mkt-faq-item summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.6rem 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.mkt-faq-item p {
+  margin: 0 0 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ── Final CTA ──────────────────────────────────────────────────────── */
+
+.mkt-final-cta {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  margin: 2rem 0 3rem;
+}
+
+.mkt-final-cta h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.6rem;
+}
+
+.mkt-final-cta p {
+  margin: 0 0 1.5rem;
+  color: var(--text-secondary);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+
+.mkt-footer {
+  border-top: 1px solid var(--border-color);
+  padding: 1.5rem;
+}
+
+.mkt-footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.mkt-footer-link {
+  color: var(--rfs-core-red);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.mkt-footer-sep {
+  opacity: 0.5;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .mkt-nav {
+    gap: 0.6rem;
+  }
+  .mkt-nav-link {
+    font-size: 0.9rem;
+  }
+  /* Keep the most important actions; hide section anchors on small screens. */
+  .mkt-nav .mkt-nav-link[href^="#"] {
+    display: none;
+  }
+  .mkt-hero {
+    padding: 2.5rem 0.5rem 2rem;
+  }
+  .mkt-hero-actions .mkt-btn {
+    width: 100%;
+  }
+}
