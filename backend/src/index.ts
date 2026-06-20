@@ -135,6 +135,9 @@ app.use(helmet({
         "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
         "https://z.clarity.ms", // Microsoft Clarity data collection endpoint
         "https://fonts.googleapis.com", // Google Fonts CSS (Fetch API)
+        "https://fonts.gstatic.com", // Google Fonts files — the service worker fetch()es
+                                     // these to cache them; connect-src governs SW fetch,
+                                     // so font-src alone isn't enough (CSP error otherwise)
       ],
       // Allow self-hosted fonts, data URIs, and Google Fonts
       fontSrc: [
