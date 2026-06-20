@@ -285,6 +285,20 @@ export interface EventAuditLog {
   createdAt: Date;
 }
 
+/**
+ * Audit record for a Stripe webhook event. Written for every event received,
+ * including errors, to provide an idempotency / troubleshooting trail.
+ */
+export interface BillingEvent {
+  id: string;
+  organizationId?: string;
+  stripeEventId: string;
+  eventType: string;
+  payload: string;       // JSON of event.data.object
+  processedAt: Date;
+  error?: string;        // set if processing threw
+}
+
 // ============================================
 // Truck Checks Types
 // ============================================
