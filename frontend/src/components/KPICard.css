@@ -20,7 +20,7 @@
 
 /* Color themes */
 .kpi-card--red {
-  --gradient-start: #e5281B;
+  --gradient-start: var(--rfs-core-red);
   --gradient-end: #c42217;
   color: var(--rfs-white);
 }

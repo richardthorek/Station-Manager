@@ -131,7 +131,7 @@ export function StationLookup({ onSelect }: StationLookupProps) {
       <div className="lookup-search">
         <input
           type="text"
-          placeholder="Search by station name, suburb, or brigade..."
+          placeholder="Search by station name, suburb, or brigade / unit..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           className="lookup-input"
@@ -191,7 +191,7 @@ export function StationLookup({ onSelect }: StationLookupProps) {
                 <h4 className="result-name">
                   {result.name}
                   {result.existsInSystem && (
-                    <span className="existing-badge" title="This brigade already exists in your system">
+                    <span className="existing-badge" title="This station already exists in your system">
                       ✓ Existing
                     </span>
                   )}
@@ -205,7 +205,7 @@ export function StationLookup({ onSelect }: StationLookupProps) {
               <div className="result-details">
                 {result.brigade && (
                   <span className="result-detail">
-                    <strong>Brigade:</strong> {result.brigade}
+                    <strong>Brigade / Unit:</strong> {result.brigade}
                   </span>
                 )}
                 {result.district && (

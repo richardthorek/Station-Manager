@@ -98,7 +98,7 @@ export function TruckCheckPage() {
         <div className="truckcheck-page">
         <header className="truckcheck-header">
           <Link to="/" className="back-link">← Back to Home</Link>
-          <h1>Truck Checks</h1>
+          <h1>Vehicle Checks</h1>
         </header>
         <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="loading">Loading appliances...</div>
@@ -114,7 +114,7 @@ export function TruckCheckPage() {
         <div className="truckcheck-page">
         <header className="truckcheck-header">
           <Link to="/" className="back-link">← Back to Home</Link>
-          <h1>Truck Checks</h1>
+          <h1>Vehicle Checks</h1>
         </header>
         <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="error">{error}</div>
@@ -139,7 +139,7 @@ export function TruckCheckPage() {
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
         </div>
-        <h1>Truck Checks</h1>
+        <h1>Vehicle Checks</h1>
         <p className="subtitle">Weekly vehicle inspection system</p>
       </header>
 

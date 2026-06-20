@@ -54,13 +54,13 @@ describe('LandingPage', () => {
 
     // Verify all main feature cards are present
     expect(screen.getByText('Station Sign-In')).toBeInTheDocument()
-    expect(screen.getByText('Truck Check')).toBeInTheDocument()
+    expect(screen.getByText('Vehicle Check')).toBeInTheDocument()
     expect(screen.getByText('Reports & Analytics')).toBeInTheDocument()
     expect(screen.getByText('Station Management')).toBeInTheDocument()
 
     // Verify all feature links are active and route correctly (v1.1 un-gated)
     expect(screen.getByRole('link', { name: /go to sign-in/i })).toHaveAttribute('href', '/signin')
-    expect(screen.getByRole('link', { name: /go to truck check/i })).toHaveAttribute('href', '/truckcheck')
+    expect(screen.getByRole('link', { name: /go to vehicle check/i })).toHaveAttribute('href', '/truckcheck')
     expect(screen.getByRole('link', { name: /go to reports/i })).toHaveAttribute('href', '/reports')
 
     // Verify the "Coming in v1.1" gating has been removed entirely

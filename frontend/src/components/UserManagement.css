@@ -81,7 +81,7 @@
 }
 
 .btn-export {
-  background: #C6D931;
+  background: var(--rfs-lime);
   color: #000000;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -179,7 +179,7 @@
 .add-member-controls input:focus,
 .add-member-controls select:focus {
   outline: none;
-  border-color: #E2231A;
+  border-color: var(--rfs-core-red);
 }
 
 .rank-select {
@@ -193,7 +193,7 @@
 }
 
 .btn-primary {
-  background: #E2231A;
+  background: var(--rfs-core-red);
   color: #ffffff;
   border: none;
   padding: 0.75rem 1.4rem;
@@ -235,7 +235,7 @@
 }
 
 .user-item:hover {
-  border-color: #C6D931;
+  border-color: var(--rfs-lime);
   background: var(--bg-card);
 }
 
@@ -260,7 +260,7 @@
 .btn-link {
   background: none;
   border: none;
-  color: #E2231A;
+  color: var(--rfs-core-red);
   cursor: pointer;
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
@@ -290,7 +290,7 @@
 
 .user-edit input:focus {
   outline: none;
-  border-color: #E2231A;
+  border-color: var(--rfs-core-red);
 }
 
 .btn-sm {
@@ -323,7 +323,7 @@
 }
 
 .modal-footer .btn-secondary:focus-visible {
-  outline: 2px solid #E2231A;
+  outline: 2px solid var(--rfs-core-red);
   outline-offset: 2px;
 }
 

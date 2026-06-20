@@ -34,7 +34,7 @@ const ONBOARDING_STEPS: Step[] = [
   {
     title: 'Welcome to Station Manager',
     icon: '👋',
-    description: 'Your complete digital management solution for fire stations',
+    description: 'Your complete digital management solution for stations and units',
     details: [
       'Track member presence in real-time',
       'Manage station activities and events',
@@ -83,7 +83,7 @@ const ONBOARDING_STEPS: Step[] = [
     description: 'Explore Station Manager at your own pace',
     details: [
       'Check out Reports & Analytics',
-      'Set up Truck Checks for vehicles',
+      'Set up Vehicle Checks for your fleet',
       'Invite your team members',
       'Access this guide anytime from the landing page'
     ],

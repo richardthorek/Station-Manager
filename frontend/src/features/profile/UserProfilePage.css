@@ -489,7 +489,7 @@
 
 .btn-edit {
   padding: 0.5rem 1rem;
-  background: #E2231A;
+  background: var(--rfs-core-red);
   color: white;
   border: none;
   border-radius: 6px;
@@ -521,7 +521,7 @@
 .profile-edit input:focus,
 .profile-edit select:focus {
   outline: none;
-  border-color: #E2231A;
+  border-color: var(--rfs-core-red);
 }
 
 .rank-dropdown {
@@ -615,7 +615,7 @@
 }
 
 .history-status.active {
-  background: #C6D931;
+  background: var(--rfs-lime);
   color: #000;
 }
 

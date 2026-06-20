@@ -403,10 +403,10 @@ export function ReportsPage() {
             </section>
           </div>
 
-          {/* Truck Check Compliance */}
+          {/* Vehicle Check Compliance */}
           {truckCheckCompliance && (
             <section className="chart-section">
-              <h2>Truck Check Compliance</h2>
+              <h2>Vehicle Check Compliance</h2>
               <div className="compliance-container">
                 <div className="compliance-gauge">
                   <div className="gauge-value" style={{

@@ -20,7 +20,7 @@ export const SOURCES = {
 
 // Plain-language messages for the gateway's gating responses.
 const SPEECH_TOKEN_HINTS = {
-  401: 'Please sign in to your brigade account to use live listening.',
+  401: 'Please sign in to your team account to use live listening.',
   402: 'AI session limit reached — upgrade or top up to keep using live listening.',
   403: 'Live listening needs the AI Pro plan. Upgrade to turn it on.',
   503: 'The AI speech service isn’t set up on the server yet. Ask your administrator to configure it.',

@@ -78,11 +78,11 @@ export function EditStationModal({ station, onClose, onUpdated }: EditStationMod
     }
 
     if (!formData.brigadeName.trim()) {
-      newErrors.brigadeName = 'Brigade name is required';
+      newErrors.brigadeName = 'Brigade / unit name is required';
     }
 
     if (!formData.brigadeId.trim()) {
-      newErrors.brigadeId = 'Brigade ID is required';
+      newErrors.brigadeId = 'Brigade / unit ID is required';
     }
 
     if (!formData.area.trim()) {
@@ -220,13 +220,13 @@ export function EditStationModal({ station, onClose, onUpdated }: EditStationMod
               <div className="form-error">{errors.submit}</div>
             )}
 
-            {/* Brigade Information */}
+            {/* Brigade / Unit Information */}
             <div className="form-section">
-              <h3>Brigade Information</h3>
-              
+              <h3>Brigade / Unit Information</h3>
+
               <div className="form-group">
                 <label htmlFor="brigadeName">
-                  Brigade Name <span className="required">*</span>
+                  Brigade / Unit Name <span className="required">*</span>
                 </label>
                 <input
                   id="brigadeName"
@@ -240,7 +240,7 @@ export function EditStationModal({ station, onClose, onUpdated }: EditStationMod
 
               <div className="form-group">
                 <label htmlFor="brigadeId">
-                  Brigade ID <span className="required">*</span>
+                  Brigade / Unit ID <span className="required">*</span>
                 </label>
                 <input
                   id="brigadeId"

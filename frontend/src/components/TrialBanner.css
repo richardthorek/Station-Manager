@@ -17,7 +17,7 @@
 
 .trial-banner__cta {
   padding: 0.35rem 0.9rem;
-  background: #e5281b;
+  background: var(--rfs-core-red);
   color: #fff;
   border: none;
   border-radius: 6px;

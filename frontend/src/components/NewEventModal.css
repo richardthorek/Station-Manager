@@ -282,7 +282,7 @@
 
 .activity-delete-btn:hover {
   opacity: 1;
-  background: #E2231A;
+  background: var(--rfs-core-red);
   transform: scale(1.1);
 }
 
@@ -307,7 +307,7 @@
 }
 
 .btn-primary {
-  background: #C6D931;
+  background: var(--rfs-lime);
   color: #000;
 }
 

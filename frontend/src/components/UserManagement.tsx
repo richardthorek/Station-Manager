@@ -18,15 +18,19 @@ export function UserManagement({ members, onClose, onUpdateMember, onAddMember, 
   const [editName, setEditName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [newMemberName, setNewMemberName] = useState('');
-  const [newMemberRank, setNewMemberRank] = useState('Firefighter');
+  const [newMemberRank, setNewMemberRank] = useState('Member');
   const [isAdding, setIsAdding] = useState(false);
   const modalRef = useFocusTrap<HTMLDivElement>(true);
   const editInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
 
+  // Generic ranks first (work for any service), then common fire-brigade ranks.
   const rankOptions = [
+    'Member',
     'Visitor',
     'Trainee',
+    'Crew Leader',
+    'Team Leader',
     'Firefighter',
     'Deputy Captain',
     'Senior Deputy Captain',

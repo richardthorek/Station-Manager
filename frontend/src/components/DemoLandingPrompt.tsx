@@ -103,7 +103,7 @@ export function DemoLandingPrompt({ onDismiss }: DemoLandingPromptProps) {
 
         <div className="demo-prompt-content">
           <p className="demo-prompt-intro">
-            Explore the system with our interactive demo station, or set up your own brigade's station.
+            Explore the system with our interactive demo station, or set up your own station or unit.
           </p>
 
           <div className="demo-prompt-options">
@@ -130,7 +130,7 @@ export function DemoLandingPrompt({ onDismiss }: DemoLandingPromptProps) {
               <div className="option-icon">🚒</div>
               <h3>Use Real Station</h3>
               <p>
-                Set up and manage your actual brigade station with:
+                Set up and manage your own station with:
               </p>
               <ul>
                 <li>Real member tracking and attendance</li>

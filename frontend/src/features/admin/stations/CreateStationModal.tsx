@@ -163,16 +163,16 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
     }
 
     if (!formData.brigadeName.trim()) {
-      newErrors.brigadeName = 'Brigade name is required';
+      newErrors.brigadeName = 'Brigade / unit name is required';
     }
 
     if (!formData.brigadeId.trim()) {
-      newErrors.brigadeId = 'Brigade ID is required';
+      newErrors.brigadeId = 'Brigade / unit ID is required';
     }
 
     // Check if station already exists
     if (existingStation) {
-      newErrors.brigadeId = `This brigade ID is already in use by "${existingStation.name}". Please choose a different brigade.`;
+      newErrors.brigadeId = `This ID is already in use by "${existingStation.name}". Please choose a different one.`;
     }
 
     if (!formData.area.trim()) {
@@ -309,7 +309,7 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
             <div className="lookup-section">
               <h3>Search National Dataset</h3>
               <p className="lookup-hint">
-                Search for your station in the national RFS facilities database to auto-populate details.
+                Search for your station in the national emergency-services facilities database to auto-populate details.
               </p>
               <StationLookup onSelect={handleLookupSelect} />
               <div className="lookup-divider">
@@ -332,13 +332,13 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                 <div className="form-error">{errors.submit}</div>
               )}
 
-              {/* Brigade Information */}
+              {/* Brigade / Unit Information */}
               <div className="form-section">
-                <h3>Brigade Information</h3>
-                
+                <h3>Brigade / Unit Information</h3>
+
                 <div className="form-group">
                   <label htmlFor="brigadeName">
-                    Brigade Name <span className="required">*</span>
+                    Brigade / Unit Name <span className="required">*</span>
                   </label>
                   <input
                     id="brigadeName"
@@ -349,14 +349,14 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                       handleChange('brigadeId', generateBrigadeId(e.target.value));
                     }}
                     className={errors.brigadeName ? 'error' : ''}
-                    placeholder="e.g., Horsley Park Rural Fire Brigade"
+                    placeholder="e.g., Riverside Fire Brigade or Coastal SES Unit"
                   />
                   {errors.brigadeName && <span className="field-error">{errors.brigadeName}</span>}
                 </div>
 
                 <div className="form-group">
                   <label htmlFor="brigadeId">
-                    Brigade ID <span className="required">*</span>
+                    Brigade / Unit ID <span className="required">*</span>
                   </label>
                   <input
                     id="brigadeId"
@@ -364,24 +364,24 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                     value={formData.brigadeId}
                     onChange={(e) => handleChange('brigadeId', e.target.value)}
                     className={errors.brigadeId || existingStation ? 'error' : ''}
-                    placeholder="e.g., horsley-park-rural-fire-brigade"
+                    placeholder="e.g., riverside-fire-brigade"
                   />
                   {checkingDuplicate && (
                     <span className="field-hint">Checking availability...</span>
                   )}
                   {existingStation && !checkingDuplicate && (
                     <span className="field-error">
-                      ⚠️ Station "{existingStation.name}" already exists with this brigade ID
+                      ⚠️ Station "{existingStation.name}" already exists with this ID
                     </span>
                   )}
                   {!existingStation && !checkingDuplicate && formData.brigadeId.trim() && !errors.brigadeId && (
-                    <span className="field-hint">✓ Brigade ID is available</span>
+                    <span className="field-hint">✓ Brigade / Unit ID is available</span>
                   )}
                   {!existingStation && errors.brigadeId && (
                     <span className="field-error">{errors.brigadeId}</span>
                   )}
                   {!errors.brigadeId && !existingStation && !checkingDuplicate && !formData.brigadeId.trim() && (
-                    <span className="field-hint">Auto-generated from brigade name. Can be customized.</span>
+                    <span className="field-hint">Auto-generated from the brigade / unit name. Can be customized.</span>
                   )}
                 </div>
               </div>
@@ -400,12 +400,12 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                     value={formData.name}
                     onChange={(e) => handleNameChange(e.target.value)}
                     className={errors.name ? 'error' : ''}
-                    placeholder="e.g., Horsley Park Rural Fire Brigade"
+                    placeholder="e.g., Riverside Fire Brigade or Coastal SES Unit"
                   />
                   {errors.name && <span className="field-error">{errors.name}</span>}
                   {!useCustomName && (
                     <span className="field-hint">
-                      Defaults to brigade name. Edit to customize (e.g., add "North", "South").
+                      Defaults to the brigade / unit name. Edit to customize (e.g., add "North", "South").
                     </span>
                   )}
                 </div>
@@ -477,7 +477,7 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                     type="text"
                     value={formData.address}
                     onChange={(e) => handleChange('address', e.target.value)}
-                    placeholder="e.g., 123 Fire Station Road, Horsley Park NSW 2175"
+                    placeholder="e.g., 123 Station Road, Riverside NSW 2000"
                   />
                 </div>
 
@@ -533,7 +533,7 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                     className={errors.email ? 'error' : ''}
-                    placeholder="e.g., station@rfs.nsw.gov.au"
+                    placeholder="e.g., contact@yourstation.org.au"
                   />
                   {errors.email && <span className="field-error">{errors.email}</span>}
                 </div>

@@ -74,7 +74,7 @@ export function SignupPage() {
       <div className="login-page">
         <header className="login-header">
           <Link to="/" className="back-link">← Back to Home</Link>
-          <h1>Create your brigade account</h1>
+          <h1>Create your account</h1>
         </header>
 
         <main className="login-main">
@@ -85,7 +85,7 @@ export function SignupPage() {
               <p className="login-description">
                 {selectedPlan === 'basic' && 'Create your account, then add your payment details for the Basic plan. 14-day free trial — cancel any time.'}
                 {selectedPlan === 'ai' && 'Create your account, then add your payment details for the AI Pro plan. 14-day free trial — cancel any time.'}
-                {!selectedPlan && 'Start free on the Community plan — sign-in book and basic truck checks. Add reports and the AI maintenance agent any time.'}
+                {!selectedPlan && 'Start free on the Community plan — sign-in book and basic vehicle checks. Add reports and the AI maintenance agent any time.'}
               </p>
 
               <form onSubmit={handleSubmit} className="login-form">
@@ -104,7 +104,7 @@ export function SignupPage() {
                     onChange={(e) => setOrganizationName(e.target.value)}
                     required
                     disabled={isLoading}
-                    placeholder="e.g. Bungendore RFS"
+                    placeholder="e.g. Riverside Fire Brigade or Coastal SES Unit"
                   />
                 </div>
 

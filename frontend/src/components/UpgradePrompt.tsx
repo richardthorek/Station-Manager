@@ -34,7 +34,7 @@ export function UpgradePrompt({ feature, requiredPlan, message }: Props) {
         {message ?? `${feature} requires the ${planLabels[requiredPlan]} plan`}
       </h3>
       <p className="upgrade-prompt__price">
-        From {planPrices[requiredPlan]} per brigade · 14-day free trial
+        From {planPrices[requiredPlan]} per crew · 14-day free trial
       </p>
       {error && <p className="upgrade-prompt__error" role="alert">{error}</p>}
       <button

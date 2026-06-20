@@ -194,9 +194,9 @@ export function BrigadeAccessPage() {
             </span>
           </div>
         </div>
-        <h1>Brigade Access Management</h1>
+        <h1>Crew Access Management</h1>
         <p className="page-description">
-          Manage station sign-in URLs and brigade access tokens for kiosk mode.
+          Manage station sign-in URLs and crew access tokens for kiosk mode.
         </p>
       </header>
 
@@ -255,7 +255,7 @@ export function BrigadeAccessPage() {
               <input
                 type="text"
                 className="search-input"
-                placeholder="Search stations by name, brigade, or district..."
+                placeholder="Search stations by name, brigade / unit, or district..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

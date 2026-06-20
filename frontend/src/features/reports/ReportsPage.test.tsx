@@ -181,7 +181,7 @@ describe('ReportsPage', () => {
     await renderReportsPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Truck Check Compliance')).toBeInTheDocument();
+      expect(screen.getByText('Vehicle Check Compliance')).toBeInTheDocument();
       expect(screen.getByText('88%')).toBeInTheDocument(); // Compliance rate
       expect(screen.getByText('25')).toBeInTheDocument(); // Total checks (in stat)
       expect(screen.getByText('23')).toBeInTheDocument(); // Completed checks
