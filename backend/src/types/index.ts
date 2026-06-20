@@ -99,9 +99,20 @@ export interface Entitlements {
   maxStations: number;
   maxDevices: number;
   aiIncludedSessions: number;
+  /** Per-app suite flags — controls which Bushie Tools apps are accessible. */
+  aarStudioEnabled: boolean;
+  santaRunEnabled: boolean;
+  fireBreakEnabled: boolean;
 }
 
-export type EntitlementFeature = 'signInEnabled' | 'truckCheckEnabled' | 'reportsEnabled' | 'aiEnabled';
+export type EntitlementFeature =
+  | 'signInEnabled'
+  | 'truckCheckEnabled'
+  | 'reportsEnabled'
+  | 'aiEnabled'
+  | 'aarStudioEnabled'
+  | 'santaRunEnabled'
+  | 'fireBreakEnabled';
 
 /**
  * Organization — the top-level SaaS billing tenant. Owns one or more

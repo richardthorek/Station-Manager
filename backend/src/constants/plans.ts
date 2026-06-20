@@ -40,6 +40,9 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
       maxStations: 1,
       maxDevices: 2,
       aiIncludedSessions: 0,
+      aarStudioEnabled: false,
+      santaRunEnabled: false,
+      fireBreakEnabled: false,
     },
     description: 'Free for any brigade. Sign-in book and truck checks. Single-station setup.',
   },
@@ -58,6 +61,9 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
       maxStations: 20,
       maxDevices: 10,
       aiIncludedSessions: 0,
+      aarStudioEnabled: false,
+      santaRunEnabled: false,
+      fireBreakEnabled: false,
     },
     description: 'Full manual suite: sign-in, truck checks, reports & CSV export. Unlimited members, up to 10 devices.',
   },
@@ -76,6 +82,9 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
       maxStations: 20,
       maxDevices: 25,
       aiIncludedSessions: 25, // fair-use allowance; overage metering is a future enhancement
+      aarStudioEnabled: true,
+      santaRunEnabled: false,
+      fireBreakEnabled: false,
     },
     description: 'Everything in Basic plus AI-powered After Action Reviews via AAR Studio. ~25 sessions/month included.',
   },
@@ -107,5 +116,8 @@ export function clampEntitlements(planCode: PlanCode, desired: Partial<Entitleme
     maxStations: Math.min(current.maxStations, ceiling.maxStations),
     maxDevices: Math.min(current.maxDevices, ceiling.maxDevices),
     aiIncludedSessions: Math.min(current.aiIncludedSessions, ceiling.aiIncludedSessions),
+    aarStudioEnabled: current.aarStudioEnabled && ceiling.aarStudioEnabled,
+    santaRunEnabled: current.santaRunEnabled && ceiling.santaRunEnabled,
+    fireBreakEnabled: current.fireBreakEnabled && ceiling.fireBreakEnabled,
   };
 }

@@ -202,6 +202,41 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/auth/entitlements
+ * Lightweight entitlement probe for sibling apps (e.g. AAR Studio at /aar).
+ * Verifies the SM JWT and returns the org's current entitlements + plan code.
+ * Same-origin so no extra CORS headers are needed; the standard allowed-origins
+ * list in index.ts covers any cross-origin sibling app scenario.
+ */
+router.get('/entitlements', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!req.user.organizationId) {
+      return res.json({ entitlements: null, planCode: null });
+    }
+
+    const orgDb = ensureOrganizationDatabase();
+    const organization = await orgDb.getOrganizationById(req.user.organizationId);
+
+    if (!organization) {
+      return res.json({ entitlements: null, planCode: null });
+    }
+
+    return res.json({
+      entitlements: organization.entitlements,
+      planCode: organization.planCode,
+      status: organization.status,
+    });
+  } catch (error) {
+    logger.error('Error fetching entitlements', { error });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/auth/config
  * Get authentication configuration (whether auth is required)
  */

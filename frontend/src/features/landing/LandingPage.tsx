@@ -21,7 +21,7 @@ import './LandingPage.css';
 
 export function LandingPage() {
   const { theme, toggleTheme } = useTheme();
-  const { isAuthenticated, user, logout, requireAuth } = useAuth();
+  const { isAuthenticated, user, logout, requireAuth, hasFeature, entitlements } = useAuth();
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -149,7 +149,7 @@ export function LandingPage() {
             </motion.article>
 
             <motion.article
-              className="feature-card"
+              className={`feature-card${entitlements && !hasFeature('aarStudioEnabled') ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
@@ -157,10 +157,17 @@ export function LandingPage() {
               <h3>AAR Studio</h3>
               <p>AI-assisted After Action Reviews: capture the discussion live, build a findings board, and export the report.</p>
               {/* AAR Studio is a self-contained static sub-app served by the backend at /aar, so this is a plain link, not a router route. */}
-              <a href="/aar/" className="feature-link">
-                Go to AAR Studio
-                <span className="arrow" aria-hidden="true">→</span>
-              </a>
+              {entitlements && !hasFeature('aarStudioEnabled') ? (
+                <span className="feature-link feature-link--locked" aria-label="AAR Studio requires AI Pro plan">
+                  Upgrade to AI Pro
+                  <span className="lock-icon" aria-hidden="true">🔒</span>
+                </span>
+              ) : (
+                <a href="/aar/" className="feature-link">
+                  Go to AAR Studio
+                  <span className="arrow" aria-hidden="true">→</span>
+                </a>
+              )}
             </motion.article>
 
             <motion.article
