@@ -171,6 +171,40 @@
 
 .org-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.org-ai-usage-count {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.org-ai-meter {
+  height: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.org-ai-meter-fill {
+  height: 100%;
+  background: var(--rfs-lime, #cbdb2a);
+  transition: width 0.3s ease;
+}
+
+.org-ai-meter-fill.low {
+  background: var(--rfs-core-red);
+}
+
+.org-ai-nudge {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.9rem;
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .org-modules {
   list-style: none;
   padding: 0;

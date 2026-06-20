@@ -15,6 +15,7 @@ module.exports = {
     '!src/services/tableStorageTruckChecksDatabase.ts',
     '!src/services/tableStorageAdminUserDatabase.ts',
     '!src/services/tableStorageOrganizationDatabase.ts',
+    '!src/services/tableStorageUsageDatabase.ts',
     // Azure App Insights: requires live Azure connection
     '!src/services/appInsights.ts',
     // RFS facilities parser: requires 2.2MB CSV that is gitignored
