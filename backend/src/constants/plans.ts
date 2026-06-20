@@ -15,8 +15,12 @@ export interface PlanDefinition {
   name: string;
   /** Display price in AUD per brigade/month. 0 for the free tier. */
   priceMonthlyAud: number;
-  /** Env var holding the Stripe Price ID for this plan (resolved at billing time). */
-  stripePriceEnvVar?: string;
+  /** Display price in AUD per brigade/year (2 months free). 0 for the free tier. */
+  priceAnnualAud: number;
+  /** Env var for the Stripe Price ID used for monthly billing. */
+  stripePriceMonthlyEnvVar?: string;
+  /** Env var for the Stripe Price ID used for annual billing. */
+  stripePriceAnnualEnvVar?: string;
   /** Default entitlements granted by this plan (the ceiling for owner toggles). */
   entitlements: Entitlements;
   description: string;
@@ -27,6 +31,7 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
     code: 'community',
     name: 'Community',
     priceMonthlyAud: 0,
+    priceAnnualAud: 0,
     entitlements: {
       signInEnabled: true,
       truckCheckEnabled: true,
@@ -36,39 +41,43 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
       maxDevices: 2,
       aiIncludedSessions: 0,
     },
-    description: 'Free tier for a single station: sign-in book and basic truck checks.',
+    description: 'Free for any brigade. Sign-in book and truck checks. Single-station setup.',
   },
   basic: {
     code: 'basic',
     name: 'Basic',
     priceMonthlyAud: 10,
-    stripePriceEnvVar: 'STRIPE_PRICE_BASIC',
+    priceAnnualAud: 100,
+    stripePriceMonthlyEnvVar: 'STRIPE_PRICE_BASIC_MONTHLY',
+    stripePriceAnnualEnvVar: 'STRIPE_PRICE_BASIC_ANNUAL',
     entitlements: {
       signInEnabled: true,
       truckCheckEnabled: true,
       reportsEnabled: true,
       aiEnabled: false,
-      maxStations: 5,
-      maxDevices: 25,
+      maxStations: 20,
+      maxDevices: 10,
       aiIncludedSessions: 0,
     },
-    description: 'Full manual suite: sign-in, truck checks, reports, CSV export, unlimited members.',
+    description: 'Full manual suite: sign-in, truck checks, reports & CSV export. Unlimited members, up to 10 devices.',
   },
   ai: {
     code: 'ai',
-    name: 'AI (Pro)',
+    name: 'AI Pro',
     priceMonthlyAud: 19,
-    stripePriceEnvVar: 'STRIPE_PRICE_AI',
+    priceAnnualAud: 190,
+    stripePriceMonthlyEnvVar: 'STRIPE_PRICE_AI_MONTHLY',
+    stripePriceAnnualEnvVar: 'STRIPE_PRICE_AI_ANNUAL',
     entitlements: {
       signInEnabled: true,
       truckCheckEnabled: true,
       reportsEnabled: true,
       aiEnabled: true,
-      maxStations: 10,
-      maxDevices: 50,
-      aiIncludedSessions: 25, // fair-use allowance; overage handled via metering (future)
+      maxStations: 20,
+      maxDevices: 25,
+      aiIncludedSessions: 25, // fair-use allowance; overage metering is a future enhancement
     },
-    description: 'Everything in Basic plus the AI voice maintenance agent (fair-use metered).',
+    description: 'Everything in Basic plus AI-powered After Action Reviews via AAR Studio. ~25 sessions/month included.',
   },
 };
 

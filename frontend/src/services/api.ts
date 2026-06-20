@@ -1271,12 +1271,51 @@ class ApiService {
     }
     return response.json();
   }
+
+  // ============================================
+  // Billing (Stripe)
+  // ============================================
+
+  async createCheckoutSession(planCode: 'basic' | 'ai', billingInterval: 'monthly' | 'annual' = 'monthly'): Promise<{ checkoutUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/billing/checkout`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ planCode, billingInterval }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create checkout session');
+    }
+    return response.json();
+  }
+
+  async createPortalSession(): Promise<{ portalUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/billing/portal`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({}),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create portal session');
+    }
+    return response.json();
+  }
+
+  async getBillingStatus(): Promise<BillingStatus> {
+    const response = await fetch(`${API_BASE_URL}/billing/status`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch billing status');
+    return response.json();
+  }
 }
 
 export interface PlanDefinition {
   code: 'community' | 'basic' | 'ai';
   name: string;
   priceMonthlyAud: number;
+  priceAnnualAud: number;
   description: string;
 }
 
@@ -1287,6 +1326,14 @@ export interface OrganizationUser {
   isActive: boolean;
   lastLoginAt?: string;
   createdAt?: string;
+}
+
+export interface BillingStatus {
+  planCode: 'community' | 'basic' | 'ai';
+  status: 'trialing' | 'active' | 'past_due' | 'canceled';
+  trialEndsAt: string | null;
+  hasPaymentMethod: boolean;
+  stripeConfigured: boolean;
 }
 
 export const api = new ApiService();

@@ -83,6 +83,76 @@
 .org-plan-desc { font-size: 0.85rem; color: var(--text-secondary); flex: 1; }
 .org-plan-current { font-size: 0.85rem; font-weight: 700; color: #008550; }
 
+.org-status { font-weight: 600; }
+.org-status--active { color: #008550; }
+.org-status--trialing { color: #d97706; }
+.org-status--past_due { color: #dc2626; }
+.org-status--canceled { color: var(--text-secondary); }
+
+.org-trial-notice {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.org-link-btn {
+  background: none;
+  border: none;
+  color: var(--rfs-core-red);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-size: inherit;
+}
+
+.org-interval-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.org-interval-btn {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.org-interval-btn.active {
+  background: var(--rfs-core-red);
+  color: white;
+  border-color: var(--rfs-core-red);
+}
+
+.org-interval-badge {
+  background: #cbdb2a;
+  color: #1a1a1a;
+  border-radius: 10px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.org-plan-downgrade-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.org-billing-actions {
+  margin-top: 1rem;
+}
+
 .org-btn {
   padding: 0.5rem 1rem;
   background: var(--rfs-core-red);
@@ -91,6 +161,12 @@
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.org-btn--secondary {
+  background: transparent;
+  color: var(--rfs-core-red);
+  border: 1px solid var(--rfs-core-red);
 }
 
 .org-btn:disabled { opacity: 0.5; cursor: not-allowed; }

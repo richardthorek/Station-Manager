@@ -2,14 +2,15 @@
  * Organization Management Page (/admin/organization)
  *
  * Owner/admin screen to manage the SaaS tenant:
- * - View plan + status; owners can change plan (entitlements re-derive).
+ * - View plan + status; owners upgrade via Stripe Checkout.
  * - Toggle modules on/off (e.g. hide the sign-in book for a maintenance-only
  *   brigade). AI can only be enabled on the AI plan (clamped server-side).
  * - List org users and invite new admin/viewer accounts.
+ * - Manage subscription via Stripe Customer Portal.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth, type EntitlementFeature } from '../../../contexts/AuthContext';
 import { api, type PlanDefinition, type OrganizationUser } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
@@ -26,13 +27,15 @@ export function OrganizationPage() {
   const { organization, user, refreshOrganization } = useAuth();
   const isOwner = user?.role === 'owner';
   const isAdmin = isOwner || user?.role === 'admin';
+  const [searchParams] = useSearchParams();
 
   const [plans, setPlans] = useState<PlanDefinition[]>([]);
   const [users, setUsers] = useState<OrganizationUser[]>([]);
   const [saving, setSaving] = useState(false);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // New-user form
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'viewer'>('viewer');
@@ -54,9 +57,20 @@ export function OrganizationPage() {
     load();
   }, [load]);
 
+  // Show feedback for Stripe redirect outcomes
+  useEffect(() => {
+    const billing = searchParams.get('billing');
+    if (billing === 'success') {
+      flash('success', 'Payment successful! Your plan has been upgraded.');
+      refreshOrganization();
+    } else if (billing === 'cancelled') {
+      flash('error', 'Checkout cancelled — no changes were made.');
+    }
+  }, [searchParams, refreshOrganization]);
+
   function flash(type: 'success' | 'error', text: string) {
     setMessage({ type, text });
-    setTimeout(() => setMessage(null), 4000);
+    setTimeout(() => setMessage(null), 6000);
   }
 
   async function toggleModule(key: EntitlementFeature, value: boolean) {
@@ -73,17 +87,27 @@ export function OrganizationPage() {
     }
   }
 
-  async function changePlan(planCode: PlanDefinition['code']) {
+  async function startCheckout(planCode: 'basic' | 'ai') {
     if (!isOwner) return;
-    setSaving(true);
+    setBillingLoading(true);
     try {
-      await api.updateOrganization({ planCode });
-      await refreshOrganization();
-      flash('success', `Switched to the ${planCode} plan`);
+      const { checkoutUrl } = await api.createCheckoutSession(planCode, billingInterval);
+      window.location.href = checkoutUrl;
     } catch (err) {
-      flash('error', err instanceof Error ? err.message : 'Plan change failed');
-    } finally {
-      setSaving(false);
+      flash('error', err instanceof Error ? err.message : 'Could not start checkout');
+      setBillingLoading(false);
+    }
+  }
+
+  async function openPortal() {
+    if (!isOwner) return;
+    setBillingLoading(true);
+    try {
+      const { portalUrl } = await api.createPortalSession();
+      window.location.href = portalUrl;
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not open billing portal');
+      setBillingLoading(false);
     }
   }
 
@@ -120,6 +144,8 @@ export function OrganizationPage() {
   }
 
   const ent = organization.entitlements;
+  const isPaid = organization.planCode !== 'community';
+  const isTrialing = organization.status === 'trialing';
 
   return (
     <PageTransition variant="fade">
@@ -128,7 +154,9 @@ export function OrganizationPage() {
           <Link to="/" className="back-link">← Back to Home</Link>
           <h1>{organization.name}</h1>
           <p className="org-subtitle">
-            Plan: <strong>{organization.planCode}</strong> · Status: {organization.status}
+            Plan: <strong>{organization.planCode}</strong>
+            {' · '}
+            Status: <span className={`org-status org-status--${organization.status}`}>{organization.status}</span>
           </p>
         </header>
 
@@ -139,32 +167,86 @@ export function OrganizationPage() {
             </div>
           )}
 
+          {isTrialing && (
+            <div className="org-trial-notice" role="status">
+              Your 14-day free trial is active.{' '}
+              {isOwner && (
+                <button className="org-link-btn" onClick={openPortal} disabled={billingLoading}>
+                  Add a payment method
+                </button>
+              )}{' '}
+              to keep access after the trial ends.
+            </div>
+          )}
+
           <section className="org-section">
             <h2>Plan</h2>
+
+            {isOwner && (
+              <div className="org-interval-toggle">
+                <button
+                  className={`org-interval-btn ${billingInterval === 'monthly' ? 'active' : ''}`}
+                  onClick={() => setBillingInterval('monthly')}
+                >
+                  Monthly
+                </button>
+                <button
+                  className={`org-interval-btn ${billingInterval === 'annual' ? 'active' : ''}`}
+                  onClick={() => setBillingInterval('annual')}
+                >
+                  Annual <span className="org-interval-badge">2 months free</span>
+                </button>
+              </div>
+            )}
+
             <div className="org-plans">
-              {plans.map((p) => (
-                <div key={p.code} className={`org-plan ${p.code === organization.planCode ? 'current' : ''}`}>
-                  <div className="org-plan-name">{p.name}</div>
-                  <div className="org-plan-price">{p.priceMonthlyAud === 0 ? 'Free' : `A$${p.priceMonthlyAud}/mo`}</div>
-                  <p className="org-plan-desc">{p.description}</p>
-                  {p.code === organization.planCode ? (
-                    <span className="org-plan-current">Current plan</span>
-                  ) : (
-                    <button className="org-btn" disabled={!isOwner || saving} onClick={() => changePlan(p.code)}>
-                      Switch
-                    </button>
-                  )}
-                </div>
-              ))}
+              {plans.map((p) => {
+                const isCurrent = p.code === organization.planCode;
+                const price = billingInterval === 'annual' && p.priceAnnualAud
+                  ? `A$${p.priceAnnualAud}/yr`
+                  : p.priceMonthlyAud === 0
+                  ? 'Free'
+                  : `A$${p.priceMonthlyAud}/mo`;
+
+                return (
+                  <div key={p.code} className={`org-plan ${isCurrent ? 'current' : ''}`}>
+                    <div className="org-plan-name">{p.name}</div>
+                    <div className="org-plan-price">{price}</div>
+                    <p className="org-plan-desc">{p.description}</p>
+                    {isCurrent ? (
+                      <span className="org-plan-current">Current plan</span>
+                    ) : p.code === 'community' ? (
+                      <span className="org-plan-downgrade-hint">Manage via billing portal</span>
+                    ) : (
+                      <button
+                        className="org-btn"
+                        disabled={!isOwner || billingLoading}
+                        onClick={() => startCheckout(p.code as 'basic' | 'ai')}
+                      >
+                        {billingLoading ? 'Opening…' : `Upgrade to ${p.name}`}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+
+            {isPaid && isOwner && (
+              <div className="org-billing-actions">
+                <button className="org-btn org-btn--secondary" onClick={openPortal} disabled={billingLoading}>
+                  Manage billing & invoices
+                </button>
+              </div>
+            )}
+
             {!isOwner && <p className="org-hint">Only the owner can change the plan.</p>}
           </section>
 
           <section className="org-section">
             <h2>Modules</h2>
             <p className="org-hint">
-              Turn modules on or off for your brigade — e.g. hide the sign-in book on a maintenance-only
-              deployment. The AI agent is only available on the AI plan.
+              Turn modules on or off for your brigade — e.g. hide the sign-in book on a
+              maintenance-only deployment. The AI agent is only available on the AI plan.
             </p>
             <ul className="org-modules">
               {MODULES.map((m) => {

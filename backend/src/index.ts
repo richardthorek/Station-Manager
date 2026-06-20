@@ -55,6 +55,7 @@ import brigadeAccessRouter from './routes/brigadeAccess';
 import exportRouter from './routes/export';
 import authRouter from './routes/auth';
 import organizationsRouter from './routes/organizations';
+import billingRouter from './routes/billing';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -194,6 +195,10 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID'],
 }));
+
+// Stripe webhook needs the raw (unparsed) body to verify its signature.
+// This must be registered before express.json() so the stream is not consumed first.
+app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 
 // Middleware
 app.use(express.json());
@@ -374,6 +379,7 @@ app.get('/api/status', apiRateLimiter, async (req, res) => {
 // have AI gated off.
 app.use('/api/auth', apiRateLimiter, authRouter);
 app.use('/api/organizations', apiRateLimiter, organizationsRouter);
+app.use('/api/billing', apiRateLimiter, billingRouter);
 app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, requireFeature('signInEnabled'), checkinsRouter);

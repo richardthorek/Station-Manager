@@ -1,0 +1,32 @@
+.trial-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: #fff3cd;
+  color: #856404;
+  border-bottom: 1px solid #ffc107;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.trial-banner__text {
+  font-weight: 500;
+}
+
+.trial-banner__cta {
+  padding: 0.35rem 0.9rem;
+  background: #e5281b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.trial-banner__cta:disabled {
+  opacity: 0.6;
+}
