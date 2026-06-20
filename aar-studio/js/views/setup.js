@@ -37,11 +37,13 @@ export function render(container) {
   );
 
   container.append(
-    h('h1', {}, 'Session setup'),
+    h('h1', {}, 'Review details'),
+    h('p', { class: 'muted setup-intro' },
+      'All optional — you can leave any of this blank and the app will fill in the title, location and crews from the discussion. Edit anything here or later.'),
     h('div', { class: 'form-grid' },
       h('fieldset', {},
         h('legend', {}, 'Incident'),
-        field('Title', text(s.incident.title, (sess, v) => { sess.incident.title = v; }, { placeholder: 'e.g. Wamboin Structure Fire — 412 Macs Reef Road' })),
+        field('Title', text(s.incident.title, (sess, v) => { sess.incident.title = v; }, { placeholder: 'e.g. Structure fire — 12 Smith St (or leave blank)' })),
         field('Date', h('input', { type: 'date', value: s.incident.date, ...bind(null, (sess, v) => { sess.incident.date = v; }) })),
         field('Location', text(s.incident.location, (sess, v) => { sess.incident.location = v; })),
         field('Type', h('select', {
@@ -64,13 +66,14 @@ export function render(container) {
       ),
       h('button', { class: 'btn', onclick: () => store.update((sess) => sess.units.push({ unit: '', role: '' })) }, '+ Add unit'),
     ),
-    h('fieldset', {},
-      h('legend', {}, 'Incident phases'),
+    h('details', { class: 'advanced' },
+      h('summary', {}, 'Advanced: incident phases'),
+      h('p', { class: 'muted' }, 'The AI groups findings into these phases automatically — you only need to change them for an unusual job.'),
       phaseList,
       h('button', { class: 'btn', onclick: () => store.update((sess) => sess.phases.push('')) }, '+ Add phase'),
     ),
     h('div', { class: 'page-actions' },
-      h('button', { class: 'btn btn--primary', onclick: () => { toast('Saved'); location.hash = '#/capture'; } }, 'Continue to Capture →'),
+      h('button', { class: 'btn btn--primary btn--big', onclick: () => { toast('Saved'); location.hash = '#/capture'; } }, 'Start recording →'),
     ),
   );
 }
