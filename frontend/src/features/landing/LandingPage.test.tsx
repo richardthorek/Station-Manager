@@ -21,7 +21,7 @@ describe('LandingPage', () => {
   it('renders the landing page', () => {
     render(<LandingPage />)
 
-    expect(screen.getByText('Station Manager')).toBeInTheDocument()
+    expect(screen.getByText('Bushie Tools')).toBeInTheDocument()
     // Verify the main heading is present (text may vary)
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
   })
@@ -30,7 +30,7 @@ describe('LandingPage', () => {
     render(<LandingPage />)
 
     // Verify brand name is present
-    expect(screen.getByText('Station Manager')).toBeInTheDocument()
+    expect(screen.getByText('Bushie Tools')).toBeInTheDocument()
   })
 
   it('displays theme toggle button', () => {

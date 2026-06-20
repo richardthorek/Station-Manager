@@ -1,24 +1,28 @@
 /* AAR Studio — single stylesheet, no build step.
-   Palette follows the report artwork: ink #15212b, red #c8102e, gold #e8b84b. */
+   Brand: NSW RFS palette + Public Sans, shared with the SPA via rfs-tokens.css
+   (loaded before this file in index.html). The local aliases below map AAR's
+   semantic names onto the canonical --rfs-* tokens, so brand changes happen in
+   one place. Dark ink remains a neutral surface colour (hero / present mode). */
 
 :root {
-  --ink: #15212b;
+  --ink: #15212b;        /* dark neutral surface (hero, present mode, toasts) */
   --ink-2: #22313f;
-  --red: #c8102e;
-  --gold: #e8b84b;
-  --good: #1f7a4d;
-  --bg: #f4f6f8;
-  --panel: #ffffff;
+  --red: var(--rfs-core-red);
+  --red-dark: var(--rfs-core-red-dark);
+  --gold: var(--rfs-lime);          /* RFS lime accent (kept the alias name) */
+  --good: var(--ui-green);
+  --bg: var(--rfs-neutral-light);
+  --panel: var(--rfs-white);
   --line: #dde3e8;
   --muted: #5a6570;
-  --radius: 8px;
+  --radius: var(--radius-md);
   --shadow: 0 1px 3px rgb(21 33 43 / 0.12);
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg);
   color: var(--ink);
   font-size: 15px;
@@ -31,8 +35,8 @@ h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
 
 /* ---------- top bar / nav ---------- */
 .topbar {
-  background: var(--ink);
-  color: #fff;
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -44,28 +48,48 @@ h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
   z-index: 10;
 }
 .topbar__brand { display: flex; align-items: baseline; gap: 0.5rem; }
+.topbar__home {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  color: var(--rfs-white);
+  text-decoration: none;
+}
+.topbar__home:hover .topbar__suite { opacity: 1; }
+.topbar__suite {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
 .topbar__name { font-weight: 700; letter-spacing: 1px; }
-.topbar__session { color: var(--gold); font-size: 0.85rem; }
+.topbar__session { color: rgba(255, 255, 255, 0.9); font-size: 0.85rem; }
 .nav { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
 .nav__link {
-  color: #cfd8df;
+  color: rgba(255, 255, 255, 0.88);
   text-decoration: none;
   padding: 0.4rem 0.7rem;
   border-radius: var(--radius);
   font-size: 0.92rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min-sm);
 }
-.nav__link:hover { background: var(--ink-2); color: #fff; }
-.nav__link--active { background: var(--red); color: #fff; }
-.nav__link--disabled { opacity: 0.35; pointer-events: none; }
+.nav__link:hover { background: var(--rfs-core-red-dark); color: var(--rfs-white); }
+.nav__link--active { background: var(--rfs-white); color: var(--rfs-core-red); }
+.nav__link--disabled { opacity: 0.45; pointer-events: none; }
 .nav__settings {
   background: none;
   border: none;
-  color: #cfd8df;
+  color: rgba(255, 255, 255, 0.88);
   font-size: 1.1rem;
   cursor: pointer;
   padding: 0.3rem 0.5rem;
+  min-height: var(--tap-min-sm);
+  min-width: var(--tap-min-sm);
 }
-.nav__settings:hover { color: #fff; }
+.nav__settings:hover { color: var(--rfs-white); }
 
 /* ---------- layout ---------- */
 .view { max-width: 1200px; margin: 0 auto; padding: 1.2rem 1rem 4rem; }
@@ -98,20 +122,26 @@ legend { font-weight: 700; padding: 0 0.4rem; }
   font-size: 0.92rem;
   cursor: pointer;
   color: var(--ink);
-  min-height: 40px;
+  /* WCAG 2.1 AA (44px) minimum for inline controls; primary actions below use 60px. */
+  min-height: var(--tap-min-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn:hover:not(:disabled) { border-color: var(--ink); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn--primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
-.btn--primary:hover:not(:disabled) { background: #a90d27; }
+.btn--primary:hover:not(:disabled) { background: var(--red-dark); }
 .btn--danger { color: var(--red); }
 .btn--danger:hover:not(:disabled) { border-color: var(--red); }
-.btn--small { padding: 0.25rem 0.55rem; min-height: 30px; font-size: 0.82rem; }
-.btn--big { padding: 0.8rem 1.3rem; font-size: 1rem; min-height: 56px; }
+.btn--small { padding: 0.25rem 0.7rem; min-height: var(--tap-min-sm); font-size: 0.82rem; }
+.btn--big { padding: 0.8rem 1.3rem; font-size: 1rem; min-height: var(--tap-min); }
 .btn-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; }
 .icon-btn {
   background: none; border: none; cursor: pointer; color: var(--muted);
   font-size: 0.95rem; padding: 0.15rem 0.35rem; border-radius: 4px;
+  min-height: var(--tap-min-sm); min-width: var(--tap-min-sm);
+  display: inline-flex; align-items: center; justify-content: center;
 }
 .icon-btn:hover { color: var(--red); background: #f6e8ea; }
 
@@ -120,10 +150,12 @@ input[type="text"], input[type="date"], input[type="password"], select, textarea
   width: 100%;
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: #fff;
   color: var(--ink);
+  min-height: var(--tap-min-sm);
 }
+textarea { min-height: calc(var(--tap-min-sm) * 1.6); }
 select { width: auto; }
 textarea { resize: vertical; }
 input:focus, select:focus, textarea:focus, .btn:focus-visible {
@@ -164,7 +196,7 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
 .chip--ai { background: #fdf3d7; color: #7a5c00; }
 .chip--manual { background: #e2f0e8; color: var(--good); }
 .chip--done { background: #e2f0e8; color: var(--good); }
-.chip--filter { cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.8rem; min-height: 34px; }
+.chip--filter { cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.9rem; min-height: var(--tap-min-sm); display: inline-flex; align-items: center; }
 .chip--filter:hover { border-color: var(--ink); }
 .chip--on { background: var(--ink); color: #fff; }
 .phase-filter { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.8rem; }

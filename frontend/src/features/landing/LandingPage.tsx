@@ -42,7 +42,7 @@ export function LandingPage() {
           <div className="brand-row">
             <img
               src="/apple-touch-icon.png"
-              alt="Station Manager logo"
+              alt="Bushie Tools logo"
               className="brand-mark"
               width={72}
               height={72}
@@ -50,9 +50,9 @@ export function LandingPage() {
               decoding="async"
             />
             <div className="brand-block">
-              <p className="eyebrow">Station Manager</p>
-              <h1 className="headline">Digital sign-in for fire stations</h1>
-              <p className="subheadline">Real-time member sign-ins and attendance tracking across every device.</p>
+              <p className="eyebrow">Bushie Tools</p>
+              <h1 className="headline">Your brigade toolkit</h1>
+              <p className="subheadline">Sign-in book, truck checks, reports and AI-facilitated reviews — all in one place.</p>
             </div>
           </div>
           <div className="header-actions">

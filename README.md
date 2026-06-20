@@ -2,6 +2,8 @@
 
 A modern, real-time digital sign-in system for Rural Fire Service (RFS) stations. Track member presence and activities across multiple devices with instant synchronization.
 
+> **Brand:** Station Manager is delivered as part of **Bushie Tools** — the customer-facing suite name for the family of approachable tools (Station Manager, AAR Studio, and more) built *for the average bushie*. The logged-out marketing site and the post-login app picker carry the Bushie Tools identity; "Station Manager" remains the name of this app within the suite.
+
 ![Version](https://img.shields.io/badge/version-1.0--MVP-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 

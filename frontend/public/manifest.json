@@ -1,7 +1,7 @@
 {
-  "name": "Station Manager",
-  "short_name": "Station Manager",
-  "description": "Digital management tools for fire stations - Real-time sign-in, truck checks, and station operations",
+  "name": "Bushie Tools",
+  "short_name": "Bushie Tools",
+  "description": "Simple tools for volunteer fire brigades — sign-in book, truck checks, reports, and AI-facilitated After Action Reviews",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

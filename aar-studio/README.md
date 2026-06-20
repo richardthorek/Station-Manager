@@ -1,13 +1,16 @@
-# AAR Studio
+# AAR Studio — part of Bushie Tools
 
 AI-facilitated After Action Reviews for fire brigade incidents — run the
 session, capture the room, watch findings appear on a live board, then package
-a one-page executive snapshot and full summary.
+a one-page executive snapshot and full summary. AAR Studio is one of the
+**Bushie Tools** — the suite of simple tools built for the average bushie.
 
-Static web app: plain HTML/CSS/ES modules, **no build step, no backend**.
-Speech-to-text and AI analysis call your own Azure resources directly from the
-browser; nothing leaves the machine except those calls, and all session data
-lives in `localStorage`.
+Static web app: plain HTML/CSS/ES modules, **no build step**. By default,
+speech-to-text and AI analysis go through the Station Manager backend's
+**AI gateway** (`/api/ai/*`) so credentials stay server-side and usage is
+metered against your plan — see the main app's `docs/AS_BUILT.md`. For local
+development you can still bring your own Azure resources via the Settings screen
+(the browser then calls Azure directly). Session data lives in `localStorage`.
 
 > Status: Stages 1–4 complete — setup, live listen with real-time
 > transcription, transcript paste ingest, AI extraction, live board, review,
