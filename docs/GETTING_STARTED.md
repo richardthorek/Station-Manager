@@ -4,32 +4,34 @@ This guide will help you set up and run the RFS Station Manager application loca
 
 ## Prerequisites
 
-- **Node.js**: Version 18 or higher ([Download](https://nodejs.org/))
-- **npm**: Comes with Node.js
+- **Node.js**: Version 22.x ([Download](https://nodejs.org/))
+- **npm**: Version 10 or higher (comes with Node.js)
 - **Git**: For version control
 - A code editor (VS Code recommended)
 
 ## Project Structure
 
+This is a **monorepo of three apps** deployed as one (see `CLAUDE.md` for the
+full guide):
+
 ```
 Station-Manager/
-├── frontend/          # React + TypeScript frontend
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── hooks/        # Custom React hooks
-│   │   ├── services/     # API services
-│   │   ├── types/        # TypeScript types
-│   │   └── App.tsx       # Main app component
-│   └── package.json
-├── backend/           # Node.js + Express backend
-│   ├── src/
-│   │   ├── routes/       # API routes
-│   │   ├── services/     # Business logic
-│   │   ├── types/        # TypeScript types
-│   │   └── index.ts      # Server entry point
-│   └── package.json
-├── docs/             # Documentation
-└── PLAN.md          # Project plan
+├── frontend/          # React 19 + Vite SPA (served at /)
+│   └── src/
+│       ├── features/      # Route-level modules (signin, reports, admin, …)
+│       ├── components/    # Shared UI
+│       ├── contexts/      # Auth, Station, Toast
+│       ├── hooks/         # useSocket, useTheme, …
+│       └── services/      # api.ts (all REST calls)
+├── backend/           # Express 5 + Socket.io API (also serves both frontends)
+│   └── src/
+│       ├── routes/        # REST handlers (/api/*)
+│       ├── services/      # Business logic + persistence (dbFactory)
+│       ├── middleware/    # auth, entitlements, rate limiting
+│       └── index.ts       # Server entry point
+├── aar-studio/        # Vanilla no-build AAR Studio sub-app (served at /aar)
+├── docs/              # Documentation
+└── docs/MASTER_PLAN.md  # Roadmap + single source of truth
 ```
 
 ## Quick Start
@@ -40,6 +42,17 @@ Station-Manager/
 git clone https://github.com/richardthorek/Station-Manager.git
 cd Station-Manager
 ```
+
+### Fast path: run everything from the root
+
+```bash
+npm install     # installs backend + frontend
+npm run dev     # runs backend (:3000) + frontend (:5173) concurrently
+```
+
+This uses the **in-memory database** (no Azure needed) and is enough to develop
+sign-in, reports, admin, and most features. For per-app setup or to enable
+authentication/billing/AI, follow the sections below.
 
 ### 2. Set Up the Backend
 
@@ -72,6 +85,19 @@ The backend server will start on `http://localhost:3000`
 3. Set `DEFAULT_ADMIN_PASSWORD=YourSecurePassword123` in `backend/.env`
 4. Restart the backend server
 5. Login at `http://localhost:5173/login` with your configured username and password
+
+**Entitlements Note**: SaaS feature gating (`ENABLE_ENTITLEMENTS`) is **on by
+default**, but requests with no organization context (kiosk/demo/plain JWT) pass
+through unchanged — so single-tenant local dev is unaffected. To exercise plan
+gating, sign up via `/signup` (creates an Organization on the free Community
+plan) and manage the plan at `/admin/organization`. Set `ENABLE_ENTITLEMENTS=false`
+to disable gating entirely for local dev. See
+[AUTHENTICATION_CONFIGURATION.md](./AUTHENTICATION_CONFIGURATION.md).
+
+**Optional integrations**: Stripe billing (`STRIPE_*`) and the AI gateway
+(`AZURE_OPENAI_*` / `AZURE_SPEECH_*`) are off until configured — see
+`backend/.env.example` for the full list. The AAR Studio sub-app is served at
+`http://localhost:3000/aar` and uses the AI gateway when configured.
 
 ### 3. Set Up the Frontend
 
@@ -320,13 +346,15 @@ To test on mobile devices on the same network:
 
 ## Next Steps
 
-- Review [PLAN.md](../PLAN.md) for feature roadmap
+- Review [MASTER_PLAN.md](./MASTER_PLAN.md) for the roadmap and change log
+- Read [FEATURE_DEVELOPMENT_GUIDE.md](./FEATURE_DEVELOPMENT_GUIDE.md) before adding a feature
 - See [AZURE_DEPLOYMENT.md](./AZURE_DEPLOYMENT.md) for production deployment
 - Check [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for API details
+- See [AS_BUILT.md](./AS_BUILT.md) for the current architecture of record
 
 ## Support
 
 For issues or questions:
 1. Check this documentation
-2. Review the PLAN.md for design decisions
+2. Review [MASTER_PLAN.md](./MASTER_PLAN.md) for design decisions
 3. Open an issue on GitHub

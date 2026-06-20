@@ -25,7 +25,9 @@ Unlike the root `/docs/` directory which contains high-level guides and current 
 - **CSV_SETUP_AZURE.md** - Azure configuration for CSV data export feature
 
 ### Database & Performance
-- **COSMOS_DB_OPTIMIZATION_GUIDE.md** - Azure Cosmos DB (Table Storage) optimization strategies
+- _Cosmos DB optimization guide archived June 2026 — the project migrated to
+  Azure Table Storage. See [AS_BUILT.md](../AS_BUILT.md) for current storage and
+  [archive/COSMOS_DB_OPTIMIZATION_GUIDE.md](../archive/COSMOS_DB_OPTIMIZATION_GUIDE.md) for history._
 
 ### Security & Privacy
 - **AUDIT_LOGGING_SECURITY_PRIVACY.md** - Audit logging implementation and privacy considerations

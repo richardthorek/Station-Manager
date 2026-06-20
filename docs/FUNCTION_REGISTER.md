@@ -1,8 +1,15 @@
 # RFS Station Manager - Function Register
 
-**Document Version:** 1.0  
-**Last Updated:** January 2026  
+**Document Version:** 1.1  
+**Last Updated:** 2026-06-20  
 **Purpose:** Comprehensive register of all backend functions, routes, and services
+
+> **Authentication note:** The API uses JWT bearer tokens for authenticated
+> operations and SaaS organization scoping (`organizationId` JWT claim). Feature
+> modules are gated per-organization via `requireFeature(...)` entitlements
+> (on by default; `ENABLE_ENTITLEMENTS=false` disables). Routes marked
+> "Authentication: None" below are the open kiosk/data routes; see the Auth,
+> Organizations, AI Gateway, and Billing sections for authenticated routes.
 
 ---
 
@@ -28,13 +35,152 @@
 **Returns:**
 ```json
 {
-  "status": "ok" | "error",
+  "status": "ok" | "error" | "initializing",
   "timestamp": "ISO 8601 string",
-  "database": "mongodb" | "in-memory",
-  "environment": "development" | "production"
+  "database": "table-storage" | "in-memory",
+  "environment": "development" | "production",
+  "version": "version info object"
 }
 ```
 **Status Codes:** 200, 500
+
+---
+
+### Auth Routes (`/api/auth`)
+
+**File:** `backend/src/routes/auth.ts` — JWT signed with `JWT_SECRET`, expiry `JWT_EXPIRY` (default `24h`). Login/signup use `sensitiveActionRateLimiter`.
+
+#### `POST /api/auth/signup`
+**Purpose:** Create a new Organization (free Community plan) + first owner user; returns a JWT  
+**Authentication:** None  
+**Request Body:** `{ organizationName, billingEmail, username, password }`  
+**Returns:** `{ token, user, organization }`  
+**Status Codes:** 201, 400, 409, 500
+
+#### `POST /api/auth/login`
+**Purpose:** Authenticate and return a JWT (includes `organizationId` claim)  
+**Authentication:** None  
+**Request Body:** `{ username, password }`  
+**Returns:** `{ token, user }`  
+**Status Codes:** 200, 400, 401, 500
+
+#### `POST /api/auth/logout`
+**Purpose:** Client-side logout (audit log only)  
+**Authentication:** None  
+**Status Codes:** 200
+
+#### `GET /api/auth/me`
+**Purpose:** Current user + resolved organization + entitlements  
+**Authentication:** Bearer JWT (`authMiddleware`)  
+**Returns:** `{ id, username, role, organizationId, lastLoginAt, organization, entitlements }`  
+**Status Codes:** 200, 401, 404, 500
+
+#### `GET /api/auth/entitlements`
+**Purpose:** Lightweight entitlements probe for sibling Bushie Tools apps  
+**Authentication:** Bearer JWT (`authMiddleware`)  
+**Returns:** `{ entitlements, planCode, status }` (nulls when no org)  
+**Status Codes:** 200, 401, 500
+
+#### `GET /api/auth/config`
+**Purpose:** Report whether auth is required (`REQUIRE_AUTH`)  
+**Authentication:** None  
+**Returns:** `{ requireAuth: boolean }`  
+**Status Codes:** 200
+
+---
+
+### Organizations Routes (`/api/organizations`)
+
+**File:** `backend/src/routes/organizations.ts` — SaaS tenant + plan management. All require Bearer JWT; `sensitiveActionRateLimiter`.
+
+#### `GET /api/organizations/current`
+**Purpose:** Current org + entitlements + plan catalog  
+**Authentication:** Bearer JWT (any member)  
+**Returns:** `{ organization, plans }`  
+**Status Codes:** 200, 400, 404
+
+#### `PUT /api/organizations/current`
+**Purpose:** Update name/email/plan and narrow module toggles (clamped to plan ceiling)  
+**Authentication:** Bearer JWT + `requireOwner`  
+**Request Body:** `{ name?, billingEmail?, planCode?, moduleToggles? }`  
+**Returns:** `{ organization }`  
+**Status Codes:** 200, 400, 404
+
+#### `GET /api/organizations/current/users`
+**Purpose:** List users in the org  
+**Authentication:** Bearer JWT + `requireAdmin`  
+**Returns:** `{ users }`  
+**Status Codes:** 200, 400
+
+#### `POST /api/organizations/current/users`
+**Purpose:** Create a user in the org (only owners may mint owners)  
+**Authentication:** Bearer JWT + `requireAdmin`  
+**Request Body:** `{ username, password, role }`  
+**Returns:** `{ user }`  
+**Status Codes:** 201, 400, 403, 409, 500
+
+---
+
+### AI Gateway Routes (`/api/ai`)
+
+**File:** `backend/src/routes/ai.ts` — server-side AI proxy (credentials never reach the browser). `attachOrganization` runs on every route; gated by `aiEnabled` when org context present and entitlements enabled. Usage recorded as `UsageRecord` rows.
+
+#### `POST /api/ai/chat`
+**Purpose:** Chat completion (live finding/metadata extraction)  
+**Authentication:** Org context (gated `aiEnabled`)  
+**Request Body:** `{ messages[], responseFormat?, sessionId? }`  
+**Returns:** Azure OpenAI chat-completion body (forwarded verbatim)  
+**Status Codes:** 200, 400, 403, 502, 503
+
+#### `POST /api/ai/report`
+**Purpose:** Chat completion on the heavier report model  
+**Authentication:** Org context (gated `aiEnabled`)  
+**Request Body:** `{ messages[], responseFormat?, sessionId? }`  
+**Status Codes:** 200, 400, 403, 502, 503
+
+#### `POST /api/ai/speech/token`
+**Purpose:** Vend a short-lived Azure Speech token (one token == one AAR session)  
+**Authentication:** Org context (gated `aiEnabled` + monthly allowance)  
+**Returns:** `{ token, region }`  
+**Status Codes:** 200, 402 (allowance exhausted), 403, 503
+
+#### `GET /api/ai/usage`
+**Purpose:** This org's monthly AI session usage vs allowance  
+**Authentication:** Bearer JWT (`authMiddleware`)  
+**Returns:** `{ used, included, remaining, resetAt, aiEnabled }`  
+**Status Codes:** 200, 404
+
+---
+
+### Billing Routes (`/api/billing`) — Stripe
+
+**File:** `backend/src/routes/billing.ts` — return `503` when Stripe is not configured. The webhook receives a raw body (`express.raw()` registered before `express.json()` in `index.ts`).
+
+#### `POST /api/billing/checkout`
+**Purpose:** Create a Stripe Checkout session for a plan upgrade (14-day trial)  
+**Authentication:** Bearer JWT + `requireOwner`  
+**Request Body:** `{ planCode: "basic"|"ai", billingInterval: "monthly"|"annual" }`  
+**Returns:** `{ checkoutUrl }`  
+**Status Codes:** 200, 400, 404, 503
+
+#### `POST /api/billing/portal`
+**Purpose:** Create a Stripe Customer Portal session  
+**Authentication:** Bearer JWT + `requireOwner`  
+**Returns:** `{ portalUrl }`  
+**Status Codes:** 200, 400, 404, 503
+
+#### `GET /api/billing/status`
+**Purpose:** Current billing status for the org  
+**Authentication:** Bearer JWT  
+**Returns:** `{ planCode, status, trialEndsAt, hasPaymentMethod, stripeConfigured }`  
+**Status Codes:** 200, 404
+
+#### `POST /api/billing/webhook`
+**Purpose:** Process Stripe subscription/invoice events; updates plan/status/entitlements  
+**Authentication:** None — verified by `Stripe-Signature` against `STRIPE_WEBHOOK_SECRET`  
+**Handles:** `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`  
+**Returns:** `{ received: true }` (always, after audit)  
+**Status Codes:** 200, 400, 500, 503
 
 ---
 
@@ -485,15 +631,17 @@
 **Line:** 432  
 **Purpose:** Get all participants for event  
 
-### MongoDB Database Service
-**File:** `backend/src/services/mongoDatabase.ts`
+### Azure Table Storage Database Service
+**File:** `backend/src/services/tableStorageDatabase.ts`
 
-Similar methods as in-memory, but with async/await and MongoDB operations.
+Same method surface as the in-memory service, implemented against Azure Table
+Storage (async). Selected by `dbFactory` in production. A schema/method change
+usually needs editing both this twin and the in-memory service plus the shared type.
 
 ### Truck Checks Database Services
 **Files:**
 - `backend/src/services/truckChecksDatabase.ts` (in-memory)
-- `backend/src/services/mongoTruckChecksDatabase.ts` (MongoDB)
+- `backend/src/services/tableStorageTruckChecksDatabase.ts` (Azure Table Storage)
 
 Methods for appliances, templates, check runs, and check results management.
 
@@ -536,11 +684,89 @@ Methods for appliances, templates, check runs, and check results management.
 
 **`ensureDatabase(): Promise<DatabaseService>`**  
 **Purpose:** Get database instance (singleton pattern)  
-**Logic:** Returns in-memory DB for development, MongoDB for production  
+**Logic:** Returns in-memory DB for development, Azure Table Storage for production  
 
 **`initializeDatabase(): Promise<DatabaseService>`**  
 **Purpose:** Initialize database connection  
-**Logic:** Checks environment and MONGODB_URI to determine DB type  
+**Logic:** Selects Azure Table Storage when `AZURE_STORAGE_CONNECTION_STRING` is set (and `USE_TABLE_STORAGE !== 'false'`), otherwise the in-memory store
+
+### Entitlement / Feature-Gating Middleware
+**File:** `backend/src/middleware/entitlements.ts`
+
+**`attachOrganization(req, res, next): Promise<void>`**  
+**Purpose:** Best-effort-load the caller's `Organization` onto `req.organization` (from `req.user.organizationId` or a soft-decoded Bearer token). No-op when no org context.
+
+**`requireFeature(feature: EntitlementFeature)`**  
+**Purpose:** Express middleware gating a route group behind an entitlement flag. No-op when `ENABLE_ENTITLEMENTS=false` or no org context; otherwise `403` (`{ error, feature, planCode, upgradeRequired }`) when the flag is off.  
+**Used by:** `/api/checkins` & `/api/events` (`signInEnabled`), `/api/truck-checks` (`truckCheckEnabled`), `/api/reports` & `/api/export` (`reportsEnabled`), `/api/ai/*` (`aiEnabled`).
+
+**`enforceStationLimit()`**  
+**Purpose:** Middleware enforcing `maxStations` on station creation (`403` when exceeded). Excludes the built-in default/demo stations from the count.
+
+### Plan Catalog
+**File:** `backend/src/constants/plans.ts`
+
+**`PLANS: Record<PlanCode, PlanDefinition>`** — code catalog mapping `community | basic | ai` to default entitlements + price metadata.
+
+**`getDefaultEntitlements(planCode): Entitlements`** — fresh copy of a plan's default entitlements.
+
+**`clampEntitlements(planCode, desired): Entitlements`** — clamp a desired entitlement set to the plan ceiling (owners may disable modules but never enable beyond the plan).
+
+**`isPlanCode(value): value is PlanCode`** — type guard for incoming plan codes.
+
+### AI Gateway Service
+**File:** `backend/src/services/aiGateway.ts`
+
+**`chatCompletion(req: ChatRequest): Promise<ChatResult>`** — proxy a chat completion to Azure OpenAI; returns provider status + body verbatim (+ token usage).
+
+**`issueSpeechToken(fetchImpl?): Promise<SpeechToken>`** — vend a short-lived (~10 min) region-scoped Azure Speech token.
+
+**`isOpenAiConfigured()` / `isSpeechConfigured()` / `isAiConfigured()`** — env-driven capability checks.
+
+**`chatCompletionAnthropic(req)`** — stubbed adapter (capability-routing seam; returns `501`).
+
+**`GatewayError`** — error class carrying an HTTP status for the route layer to forward.
+
+### Usage Database & Factory
+**Files:** `backend/src/services/usageDatabase.ts` (in-memory `UsageDatabase`), `backend/src/services/tableStorageUsageDatabase.ts` (Table Storage twin), `backend/src/services/usageDbFactory.ts`
+
+`IUsageDatabase` methods: **`recordUsage(input)`**, **`countUsage(orgId, type, since?)`**, **`listUsage(orgId, since?)`**, **`listUnreported()`**, **`markReported(ids)`**, **`clear()`**.
+
+Helpers: **`monthlyResetAt(from?)`**, **`monthStart(from?)`** — UTC calendar-month boundaries for the allowance window.
+
+Factory: **`ensureUsageDatabase(): IUsageDatabase`**, **`initializeUsageDatabase(): Promise<void>`**, **`getUsageDb()`**.
+
+### Metered Usage Reporter
+**File:** `backend/src/services/meteredUsageReporter.ts`
+
+**`startMeteredUsageReporter()`** — start the hourly batch reporter (no-op in tests / when metered billing unconfigured).
+
+**`reportMeteredUsageOnce(): Promise<number>`** — report one batch of unreported `speech` usage to Stripe metered billing; returns rows reported.
+
+**`stopMeteredUsageReporter()`** — stop the timer (graceful shutdown / tests).
+
+### Stripe Client Service
+**File:** `backend/src/services/stripeClient.ts`
+
+**`getStripeClient(): Stripe`** — Stripe SDK singleton (throws if `STRIPE_SECRET_KEY` missing).
+
+**`isStripeConfigured(): boolean`** — true when `STRIPE_SECRET_KEY` is present.
+
+**`resolvePriceId(planCode, interval): string | undefined`** — resolve a Stripe Price ID from env (`STRIPE_PRICE_<PLAN>_<INTERVAL>`).
+
+### Organization Database & Factory
+**Files:** `backend/src/services/organizationDatabase.ts` (in-memory), `backend/src/services/tableStorageOrganizationDatabase.ts` (Table Storage twin), `backend/src/services/organizationDbFactory.ts`
+
+Methods: **`createOrganization(input)`**, **`getOrganizationById(id)`**, **`getOrganizationBySlug(slug)`**, **`updateOrganization(id, updates)`**, **`getAllOrganizations()`**.
+
+Factory: **`ensureOrganizationDatabase()`**, **`initializeOrganizationDatabase()`**.
+
+### AAR Collaboration Relay
+**File:** `backend/src/services/aarCollab.ts`
+
+**`registerAarCollabHandlers(io, socket): void`** — register the ephemeral (non-persisted) Socket.io relay for live AAR session notes. Rooms are `aar-<CODE>`; events: `aar:host`, `aar:join`, `aar:note` (server-stamped + fanned out).
+
+Helpers: **`isValidCode`**, **`normalizeCode`**, **`sanitizeLabel`**, **`buildNote`**.
 
 ---
 
@@ -598,6 +824,13 @@ Methods for appliances, templates, check runs, and check results management.
 **Payload:** `{ achievement: Achievement }`  
 **Trigger:** Member unlocks new achievement
 
+### AAR Studio Collaboration Events (room `aar-<CODE>`)
+**Registered by:** `registerAarCollabHandlers` (`backend/src/services/aarCollab.ts`)
+
+**Client → Server:** `aar:host` `{ code }`, `aar:join` `{ code, label? }`, `aar:note` `{ code, text, label?, clientTs?, offsetSec? }` (all with optional ack callback).
+
+**Server → Client:** `aar:participant-joined` `{ label }`, `aar:note` `{ id, text, label, serverTs, clientTs?, offsetSec? }` (server-stamped, fanned out to the room).
+
 ---
 
 ## Utility Functions
@@ -628,20 +861,21 @@ Methods for appliances, templates, check runs, and check results management.
 
 | Category | Count |
 |----------|-------|
-| REST API Routes | 35+ |
+| REST API Routes | 55+ |
 | Database Methods (per implementation) | 30+ |
-| Service Functions | 5+ |
-| Socket.io Events | 10 |
-| **Total Functions** | **80+** |
+| Service Functions | 20+ |
+| Socket.io Events | 12+ |
+| **Total Functions** | **110+** |
 
 ---
 
 ## Notes
 
-- All database methods have both in-memory and MongoDB implementations
+- Most database methods have both in-memory and Azure Table Storage implementations (selected at runtime by the `*DbFactory` services)
+- API routes are JWT-authenticated where noted and feature-gated per-organization via `requireFeature(...)` entitlements
 - All API routes include error handling with appropriate status codes
-- Socket.io events are broadcast to all connected clients
-- Input validation is performed at the route level
+- Station-scoped Socket.io events are broadcast to clients in the same station room; AAR collab events to the `aar-<CODE>` room
+- Input validation is performed at the route level (express-validator)
 - Business logic is in service layer, not routes
 
 ---

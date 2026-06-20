@@ -83,7 +83,6 @@ Only current, actively-maintained documentation belongs in the root `/docs/` dir
   
 - **`/docs/implementation-notes/`**: Detailed implementation references supporting active development
   - Configuration guides (e.g., `KIOSK_MODE_SETUP.md`, `CSV_SETUP_AZURE.md`)
-  - Optimization references (e.g., `COSMOS_DB_OPTIMIZATION_GUIDE.md`)
   - Accessibility standards (e.g., `ACCESSIBILITY.md`, `COLOR_CONTRAST_WCAG_AA.md`)
   - Security guides (e.g., `AUDIT_LOGGING_SECURITY_PRIVACY.md`)
   - Feature implementation details (e.g., `EVENT_MANAGEMENT.md`)

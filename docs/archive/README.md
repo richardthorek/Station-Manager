@@ -60,6 +60,8 @@ Documents are moved here when they are no longer current, have been superseded b
 **Migration Documents:**
 - **TABLE_STORAGE_MIGRATION_PLAN.md** - Azure Table Storage migration plan (completed Jan 2026)
 - **TABLE_STORAGE_MIGRATION_PROGRESS.md** - Historical progress tracking
+- **TABLE_STORAGE_DEPLOYMENT_CHECKLIST.md** - Cosmos→Table Storage cutover checklist (completed; archived June 2026)
+- **COSMOS_DB_OPTIMIZATION_GUIDE.md** - Cosmos DB RU/cost optimization (superseded by the Table Storage migration; archived June 2026)
 
 **Note:** These documents describe analysis and planning for migrating to Azure Table Storage. The migration was successfully completed in January 2026. For current storage implementation, see [AS_BUILT.md](../AS_BUILT.md).
 
@@ -86,6 +88,16 @@ Documents are moved here when they are no longer current, have been superseded b
 **Historical Planning:**
 - **PROJECT_PLAN.md** - Historical project plan (superseded by MASTER_PLAN.md)
 - **REVIEW_REPORT.md** - Historical review report
+
+### Resolved Fixes & Code Audits (archived June 2026)
+
+Point-in-time fix write-ups and code audits whose work is complete and merged:
+- **ADMIN_LOGIN_FIX_DEPLOYMENT_GUIDE.md** - Admin login 401 fix (resolved)
+- **AZURE_DEPLOYMENT_FIX_SUMMARY.md** - Azure deployment startup fixes (resolved)
+- **CI_FIX_SUMMARY.md** - CI/CD pipeline timeout fix (resolved)
+- **VISUAL_FEEDBACK_SUMMARY.md** - Sign in/out visual feedback implementation (completed)
+- **CODE_HYGIENE_REVIEW_2025-11.md** - Point-in-time code hygiene review (Nov 2025)
+- **CODE_QUALITY_AUDIT_SUMMARY.md** - Code quality audit completion report (Jan 2026)
 
 ## Current Documentation
 
@@ -150,7 +162,7 @@ Do not restore documents without updating them first - archived documents may co
 
 ---
 
-**Last Updated:** February 8, 2026  
+**Last Updated:** June 20, 2026  
 **Archive Established:** November 2025  
 **Maintained By:** Development team via AI-assisted development process
 

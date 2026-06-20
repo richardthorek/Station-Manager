@@ -7,31 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- **BREAKING**: Migrated from Azure Cosmos DB (MongoDB API) to Azure Table Storage for production database
-  - 70-95% cost savings achieved ($6-34/year per station)
-  - All MongoDB/Cosmos DB code and dependencies removed from codebase
-  - `MONGODB_URI` environment variable no longer used
-  - Database now selected via `USE_TABLE_STORAGE=true` + `AZURE_STORAGE_CONNECTION_STRING`
-  - In-memory database used for development when no Azure connection string provided
-  - GitHub Actions CI now uses `copilot` environment for accessing Table Storage secrets
+_Detailed change log lives in `docs/MASTER_PLAN.md` (June 2026 Stabilization
+section). Highlights below are grouped by theme; see MASTER_PLAN for the full
+per-PR record._
 
-### Removed
-- MongoDB driver dependency (`mongodb@6.10.0`)
-- MongoDB database service implementations (`mongoDatabase.ts`, `mongoTruckChecksDatabase.ts`)
-- All references to Cosmos DB and MongoDB from documentation
-- `MONGODB_URI` configuration from environment examples
+### Bushie Tools suite (federation — Phase 1)
+- **Shared identity & subscription** (#556): Station Manager's entitlements are
+  now the canonical licensing layer for the suite. Added per-app entitlement
+  flags `aarStudioEnabled`, `santaRunEnabled`, `fireBreakEnabled` alongside the
+  per-feature flags; `GET /api/auth/entitlements` lets sibling apps validate the
+  same JWT and read entitlements. The logged-in landing page is now the suite
+  **app launcher** (apps lock/unlock by entitlement). New
+  `docs/SUITE_TOKEN_VALIDATION.md` documents the contract. SM JWT is retained as
+  the suite IdP (kiosk/device iPads use brigade access tokens).
+- **Bushie Tools rebrand + design-system unification** (#549, #550): canonical
+  RFS design tokens (`aar-studio/css/rfs-tokens.css`) shared by the SPA and AAR
+  Studio; topbar/font/touch-target alignment; suite identity across titles, PWA
+  manifest, and READMEs.
 
-### Fixed
-- TypeScript compilation errors related to database type enums (added `'table-storage'` type)
-- Database factory logic to prevent Table Storage instantiation without connection string
+### AI & AAR Studio
+- **Server-side AI gateway** (#555): new `/api/ai/*` (chat, report, speech token,
+  usage). AI provider credentials live server-side; AAR Studio no longer calls
+  Azure browser-direct. `UsageRecord` metering (in-memory + Table Storage twins);
+  session-based monthly allowance enforced at the speech-token endpoint (402 when
+  exhausted); optional hourly Stripe metered reporting.
+- **AAR Studio collaborative session notes** (#551): the whole room can
+  contribute to a live After Action Review via deterministic join codes and
+  ephemeral Socket.io rooms (`aar:host`/`aar:join`/`aar:note`); notes feed the AI
+  findings extraction.
+
+### Commercialization
+- **Stripe billing** (#553): checkout sessions, customer portal, and
+  signature-verified webhooks driving entitlement sync; upgrade UI.
+- **SaaS foundation** (#552 and earlier): `Organization` billing tenant, plan
+  catalog (`Community`/`Basic`/`AI Pro`), `Entitlements` with `requireFeature`
+  backend gating and `<FeatureRoute>` frontend gating (`ENABLE_ENTITLEMENTS`,
+  default on; passes through for kiosk/demo). Self-service signup; `/auth/me`
+  returns org + entitlements.
+- **Marketing & pricing landing page** (#554): logged-out Bushie Tools front door
+  with plan tiers, monthly/annual toggle, and signup deep-links into Stripe
+  Checkout.
+
+### Database (BREAKING, completed)
+- Migrated from Azure Cosmos DB (MongoDB API) to **Azure Table Storage** for the
+  production database. 70–95% cost savings (~$6–34/year per station). All
+  MongoDB/Cosmos code, dependencies, and `MONGODB_URI` removed. Database selected
+  via `USE_TABLE_STORAGE=true` + `AZURE_STORAGE_CONNECTION_STRING`; in-memory for
+  dev/tests.
 
 ### Documentation
-- Updated all architecture diagrams to reflect Table Storage as sole persistent database
-- Marked Table Storage migration as complete in MASTER_PLAN.md
-- Updated AS_BUILT.md with current production architecture
-- Updated API and function registries to remove MongoDB references
-- Added completion summary to TABLE_STORAGE_MIGRATION_PLAN.md
+- Full README rewrite to reflect the three-app monorepo, SaaS/entitlements,
+  Stripe billing, AI gateway, AAR Studio, and the Bushie Tools suite.
+- API/function references updated for the auth, organizations, AI gateway, and
+  billing endpoint groups; deployment/security/auth docs refreshed with current
+  env vars and Table Storage.
+- Archived completed point-in-time fix/audit summaries to `docs/archive/`.
 
 ## [1.0.0] - 2026-01-01
 

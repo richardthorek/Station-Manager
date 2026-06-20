@@ -2,24 +2,65 @@
 
 ## Overview
 
-Station Manager supports optional authentication to control access to station data and administrative features. When authentication is enabled, unauthenticated users are restricted to viewing only the demo station with sample data.
+Station Manager supports optional authentication to control access to station
+data and administrative features. When authentication is enabled, unauthenticated
+users are restricted to viewing only the demo station with sample data.
+
+The platform layers **two distinct concerns** that are often confused:
+
+- **Authentication (who you are)** — JWT (signed with `JWT_SECRET`, password
+  hashing via bcrypt) plus the optional brigade-access-token / kiosk path.
+  Governed by `REQUIRE_AUTH` and `ENABLE_DATA_PROTECTION`.
+- **Entitlements (what your plan can use)** — per-organization feature gating
+  (`signInEnabled`, `truckCheckEnabled`, `reportsEnabled`, `aiEnabled`, plus the
+  per-app flags `aarStudioEnabled`, `santaRunEnabled`, `fireBreakEnabled`).
+  Governed by `ENABLE_ENTITLEMENTS` (default **on**).
+
+A request must pass **both** layers for a gated feature: authentication proves
+identity; entitlements check the identity's organization plan. They are
+independent — being logged in does not grant a feature your plan lacks, and a
+feature being on-plan does not bypass auth. See **Authentication vs Entitlements**
+below.
+
+### JWT claims and organization scoping
+
+Admin/owner JWTs carry `{ id, username, role, organizationId }`. The
+`organizationId` claim is the tenant boundary: middleware loads the org and reads
+its entitlements from it. Sibling Bushie Tools apps validate this **same** SM JWT
+and read entitlements via `GET /api/auth/entitlements` — see
+[`SUITE_TOKEN_VALIDATION.md`](./SUITE_TOKEN_VALIDATION.md). Station Manager is the
+suite's identity provider and licensing service.
 
 ## Configuration
 
 ### Environment Variables
 
-Authentication is controlled via the `REQUIRE_AUTH` environment variable in the backend `.env` file:
+Authentication is controlled via these environment variables in the backend
+`.env` (or App Service settings):
 
 ```bash
 # Enable authentication (recommended for production)
 REQUIRE_AUTH=true
 
-# JWT Secret (change this in production!)
+# JWT Secret (change this in production! defaults to a known dev secret)
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
 # JWT Token Expiry (default: 24h)
 JWT_EXPIRY=24h
+
+# Seed admin/owner credentials (created on first startup)
+DEFAULT_ADMIN_USERNAME=admin        # optional, defaults to "admin"
+DEFAULT_ADMIN_PASSWORD=change-me     # set a strong value before production
+
+# Data-endpoint protection (independent of REQUIRE_AUTH)
+ENABLE_DATA_PROTECTION=true          # require JWT or brigade token on data routes
+
+# Entitlement / plan gating (default ON; never disable in production)
+ENABLE_ENTITLEMENTS=true
 ```
+
+> `JWT_SECRET` falls back to a hard-coded dev secret if unset — this **must** be
+> overridden in production, or all issued tokens are forgeable.
 
 ### Authentication Modes
 
@@ -81,29 +122,38 @@ This allows users to explore the application with sample data without requiring 
 
 ## User Roles
 
-The system supports two user roles:
+The system supports these admin-user roles:
+
+### Owner
+- Created for the first user of an `Organization` (e.g. via signup).
+- Everything Admin can do, **plus** organization/plan management and billing
+  (Stripe Checkout/Portal — guarded by `requireOwner`).
 
 ### Admin
-- Full access to all features
-- Can create/edit/delete stations
-- Can generate brigade access tokens
-- Can manage users (future feature)
+- Full operational access: create/edit/delete stations, generate brigade access
+  tokens, manage station data.
 
 ### Viewer
-- Read-only access to authenticated endpoints
-- Cannot create/edit/delete stations
-- Cannot generate brigade access tokens
+- Read-only access to authenticated endpoints.
+- Cannot create/edit/delete stations or generate brigade access tokens.
+
+> Roles answer "who you are" (authentication). They do **not** decide which
+> product features are available — that's the entitlement layer (plan). Use
+> `requireOwner`/`requireAdmin` for role gates and `requireFeature(...)` for plan
+> gates; never mix the two.
 
 ## Default Users
 
-For development and initial setup, a default admin user is available:
+On first startup the backend seeds a default admin/owner user from
+`DEFAULT_ADMIN_USERNAME` (default `admin`) and `DEFAULT_ADMIN_PASSWORD`.
 
 ```
-Username: admin
-Password: admin123
+Username: ${DEFAULT_ADMIN_USERNAME:-admin}
+Password: ${DEFAULT_ADMIN_PASSWORD}
 ```
 
-**⚠️ IMPORTANT**: Change the default admin password before deploying to production!
+**⚠️ IMPORTANT**: Set a strong `DEFAULT_ADMIN_PASSWORD` before deploying to
+production. Passwords are hashed with bcrypt before storage.
 
 ## Demo Station
 
@@ -153,6 +203,39 @@ This allows kiosks to function without storing user credentials while still rest
 - Locked to specific station
 - Cannot switch stations
 - Full access to locked station's features
+
+## Authentication vs Entitlements
+
+These are separate gates and must both pass for a plan-gated feature.
+
+| Concern | Question | Mechanism | Env flag |
+|---|---|---|---|
+| Authentication | Who are you? | JWT (bcrypt-hashed passwords) or brigade/kiosk token | `REQUIRE_AUTH`, `ENABLE_DATA_PROTECTION` |
+| Entitlements | What can your plan use? | `Organization.entitlements` checked per feature | `ENABLE_ENTITLEMENTS` (default on) |
+
+**Backend** — plan features are gated with `requireFeature('<flag>')`
+(`middleware/entitlements.ts`) on the matching `/api/*` mount; admin/role routes
+use `requireOwner`/`requireAdmin`. `requireFeature` is a **no-op** when
+entitlements are disabled **or** when there is no organization context (kiosk /
+demo / plain-JWT requests), preserving single-tenant/kiosk back-compat.
+
+**Frontend** — `<FeatureRoute feature="...">` wraps plan-gated routes;
+`<ProtectedRoute>` wraps auth-gated (admin) routes. `AuthContext.hasFeature()`
+reads entitlements from `/api/auth/me`.
+
+**Entitlement flags** (see `backend/src/types/index.ts`, `constants/plans.ts`):
+`signInEnabled`, `truckCheckEnabled`, `reportsEnabled`, `aiEnabled`,
+`aarStudioEnabled`, `santaRunEnabled`, `fireBreakEnabled`, plus limits
+(`maxStations`, `maxDevices`, `aiIncludedSessions`).
+
+**Sibling apps** — Fire Santa Run, Fire Break Calculator, and the AAR Studio
+sub-app validate the SM JWT and gate themselves via `GET /api/auth/entitlements`.
+See [`SUITE_TOKEN_VALIDATION.md`](./SUITE_TOKEN_VALIDATION.md).
+
+> **Never set `ENABLE_ENTITLEMENTS=false` in production** — it disables all
+> plan/billing enforcement. It exists only for local single-tenant dev.
+
+---
 
 ## Security Recommendations
 
