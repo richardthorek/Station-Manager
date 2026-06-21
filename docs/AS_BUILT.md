@@ -760,6 +760,21 @@ recorded only when an org is known. Every billable action writes a `UsageRecord`
 an hourly timer — opt-in (`STRIPE_METERED_USAGE_ENABLED` + `STRIPE_AI_METER_EVENT`)
 and a safe no-op until a meter is configured.
 
+**Stripe billing (Phase B, #553).** `services/stripeClient.ts` lazily initialises
+the `stripe` SDK from `STRIPE_SECRET_KEY` (`isStripeConfigured()` gates every
+route → 503 when unset) and resolves price IDs from `STRIPE_PRICE_{PLAN}_{INTERVAL}`
+env vars. `routes/billing.ts` exposes owner-only `POST /api/billing/checkout`
+(Checkout session, 14-day trial), `POST /api/billing/portal` (Customer Portal),
+`GET /api/billing/status`, owner-only `GET /api/billing/events` (audit trail), and
+a signature-verified `POST /api/billing/webhook` (raw body, registered before
+`express.json()`) that syncs org `planCode`/`status`/`entitlements` on
+`checkout.session.completed`, `customer.subscription.updated`/`deleted`,
+`invoice.paid`, and `invoice.payment_failed`. Each webhook event is written to a
+persisted `BillingEvent` audit store (`services/billingEventDatabase.ts` +
+Table Storage twin `tableStorageBillingEventDatabase.ts` + `billingEventDbFactory.ts`,
+partitioned by org); the handler is idempotent — an already-recorded `stripeEventId`
+is acknowledged without reprocessing.
+
 **AAR Studio** runs in gateway mode by default: `lib/llm.js` posts to
 `/api/ai/chat`|`/report` (Bearer token read from the same-origin SPA's
 `auth_token`) unless the user sets their own Azure endpoint in Settings (the

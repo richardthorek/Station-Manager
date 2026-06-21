@@ -221,14 +221,20 @@ body {
   margin: 0;
   display: flex;
   min-width: 320px;
-  height: 100vh;
-  overflow: hidden; /* Prevent whole page scroll */
+  min-height: 100vh;
+  /* Allow the document to scroll vertically when a page's content exceeds the
+     viewport (e.g. the marketing, signup/login and organization pages, which
+     lay out in normal document flow with min-height: 100vh). The self-contained
+     kiosk pages (.app, .landing-page) are sized to exactly 100vh and manage
+     their own internal scroll regions, so they never trigger a document
+     scrollbar. Horizontal scroll stays disabled. */
+  overflow-x: hidden;
 }
 
 #root {
   width: 100%;
-  height: 100%;
-  overflow: hidden; /* Prevent whole page scroll */
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {

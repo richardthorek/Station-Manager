@@ -4,6 +4,7 @@
  * POST /api/billing/checkout — create Stripe Checkout session (owner-only)
  * POST /api/billing/portal  — create Stripe Customer Portal session (owner-only)
  * GET  /api/billing/status  — current billing status for the org
+ * GET  /api/billing/events  — Stripe webhook audit trail for the org (owner-only)
  * POST /api/billing/webhook — Stripe webhook (no auth, verified by signature)
  *
  * The webhook endpoint must receive a raw (un-parsed) request body.
@@ -12,24 +13,16 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import { getStripeClient, isStripeConfigured, resolvePriceId } from '../services/stripeClient';
 import { authMiddleware, requireOwner } from '../middleware/auth';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
+import { ensureBillingEventDatabase } from '../services/billingEventDbFactory';
 import { getDefaultEntitlements, isPlanCode } from '../constants/plans';
 import { logger } from '../services/logger';
 import type Stripe from 'stripe';
-import type { BillingEvent, PlanCode, OrganizationStatus } from '../types';
+import type { PlanCode, OrganizationStatus } from '../types';
 
 const router = Router();
-
-// In-memory audit log — sufficient for dev/test; replace with Table Storage persistence
-// in a follow-up once the BillingEventStore interface is wired to both DB backends.
-const billingEventLog: BillingEvent[] = [];
-
-function auditBillingEvent(partial: Omit<BillingEvent, 'id' | 'processedAt'>): void {
-  billingEventLog.push({ id: uuidv4(), processedAt: new Date(), ...partial });
-}
 
 function appBaseUrl(): string {
   const urls = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -159,6 +152,21 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// ─── GET /api/billing/events ─────────────────────────────────────────────────
+// Owner-only audit trail of Stripe webhook events processed for this org.
+
+router.get('/events', authMiddleware, requireOwner, async (req: Request, res: Response) => {
+  try {
+    const events = await ensureBillingEventDatabase().listByOrganization(
+      req.user!.organizationId!,
+    );
+    return res.json({ events });
+  } catch (error) {
+    logger.error('Error listing billing events', { error });
+    return res.status(500).json({ error: 'Failed to list billing events' });
+  }
+});
+
 // ─── POST /api/billing/webhook ───────────────────────────────────────────────
 // req.body is a raw Buffer — register express.raw() for this path BEFORE
 // express.json() in index.ts so the stream is not consumed by JSON parsing.
@@ -190,6 +198,17 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
   logger.info('Stripe webhook received', { type: event.type, id: event.id });
 
+  const billingEventDb = ensureBillingEventDatabase();
+
+  // Idempotency: Stripe may re-deliver the same event. If we've already recorded
+  // it without error, acknowledge without reprocessing (the handlers are mostly
+  // idempotent, but skipping avoids duplicate audit rows and redundant writes).
+  const existing = await billingEventDb.findByStripeEventId(event.id);
+  if (existing && !existing.error) {
+    logger.info('Duplicate Stripe webhook ignored', { type: event.type, id: event.id });
+    return res.json({ received: true, duplicate: true });
+  }
+
   let processingError: string | undefined;
   try {
     await processStripeEvent(event);
@@ -198,7 +217,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     logger.error('Error processing Stripe webhook', { type: event.type, eventId: event.id, error });
   }
 
-  auditBillingEvent({
+  await billingEventDb.record({
     organizationId: extractOrgId(event),
     stripeEventId: event.id,
     eventType: event.type,
