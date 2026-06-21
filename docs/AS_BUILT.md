@@ -534,13 +534,22 @@ interface Appliance {
   description?: string;
   photoUrl?: string;
   stationId?: string;
-  vehicleType?: string;  // canonical slug e.g. 'cat7-tanker' (v1.1)
+  vehicleTypeId?: string; // link to a VehicleType supplying the standard checklist (TC-1)
+  vehicleType?: string;   // legacy canonical slug e.g. 'cat7-tanker' (v1.1)
+  agencyId?: string;      // fleet/asset number — tracks a vehicle across brigades (TC-1)
+  registration?: string;  // number plate
+  vin?: string;
+  make?: string; model?: string; year?: number;
   createdAt: string;
   updatedAt?: string;
 }
 ```
 
-`vehicleType` is a lowercase hyphenated slug from the shared vocabulary (see `checklistVocabulary.ts` for the canonical list). Optional for backward compatibility — existing appliances without it continue to work.
+`vehicleType` is the legacy lowercase-hyphenated slug (see `checklistVocabulary.ts`); it is kept in step with the linked type's `code` for report grouping but is superseded by `vehicleTypeId`. The identity fields (`agencyId`/`registration`/`vin`/`make`/`model`/`year`) let a specific vehicle be tracked across brigades and capture the build that varies within one type.
+
+##### Vehicle types & the effective checklist (TC-1, June 2026)
+
+A **VehicleType** owns a *locked standard checklist* (`standardItems`, each with a stable `itemCode` and `isStandard:true`). Brigades adopt a type for a vehicle (`appliance.vehicleTypeId`) and customise via a per-appliance overlay — the repurposed `ChecklistTemplate` stores the brigade's *custom* items plus an `itemOrder` (keys: a standard item's `itemCode` or a custom item's `id`). The **effective checklist** an inspector works through is computed server-side (`GET /api/truck-checks/appliances/:id/checklist`): the type's standard items (pulled live, so type edits propagate) merged with the custom items in the brigade's order, with standard items always present and never editable by the brigade. `isStandard` types are shared across organisations (any owner can author one for now); editing/deleting is restricted to the owning org. Persisted via `vehicleTypeDatabase` + its Table Storage twin + factory. Untyped appliances fall back to the legacy per-appliance template, so existing data keeps working. Truck-check reads are now station-scoped in both DB twins (TC-2), closing a cross-brigade data-leak.
 
 #### 9. **templates**
 Checklist templates for truck checks.
