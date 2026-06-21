@@ -24,6 +24,7 @@ import { CheckStatus, ChecklistItem, EffectiveChecklist, VehicleType, ChecklistT
 import { azureStorageService } from '../services/azureStorage';
 import { authMiddleware, requireAdmin } from '../middleware/auth';
 import { attachOrganization } from '../middleware/entitlements';
+import { slugify } from '../utils/slug';
 import { io } from '../index';
 import {
   validateCreateAppliance,
@@ -228,10 +229,6 @@ function extractApplianceDetails(body: Record<string, unknown>) {
     model: typeof body.model === 'string' ? body.model : undefined,
     year: Number.isFinite(yearNum) ? yearNum : undefined,
   };
-}
-
-function slugify(value: string): string {
-  return (value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 /**

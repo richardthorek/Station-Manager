@@ -14,7 +14,9 @@ import type {
   CheckResult,
   CheckStatus,
   Station,
-  StationLookupResult
+  StationLookupResult,
+  VehicleType,
+  EffectiveChecklist
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 import type { Organization, Entitlements } from '../contexts/AuthContext';

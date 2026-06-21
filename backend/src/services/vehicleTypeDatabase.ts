@@ -11,6 +11,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import type { VehicleType, ChecklistItem } from '../types';
+import { slugify } from '../utils/slug';
 
 export interface VehicleTypeInput {
   organizationId?: string;
@@ -45,10 +46,6 @@ export function normaliseStandardItems(items: ChecklistItem[]): ChecklistItem[] 
     itemCode: item.itemCode || slugify(item.name) || `item-${index + 1}`,
     isStandard: true,
   }));
-}
-
-function slugify(value: string): string {
-  return (value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 export class VehicleTypeDatabase implements IVehicleTypeDatabase {

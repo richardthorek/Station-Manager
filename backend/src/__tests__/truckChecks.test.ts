@@ -968,6 +968,27 @@ describe('Truck Checks API - Vehicle Types (TC-1)', () => {
       .send({ name: 'Hijacked' });
     expect(res.status).toBe(403);
   });
+
+  it('validates the create body and 404s unknown ids', async () => {
+    const tok = adminToken('org-1');
+    expect((await request(app).post('/api/truck-checks/vehicle-types').set('Authorization', `Bearer ${tok}`).send({ standardItems: [] })).status).toBe(400);
+    expect((await request(app).post('/api/truck-checks/vehicle-types').set('Authorization', `Bearer ${tok}`).send({ name: 'X', standardItems: 'nope' })).status).toBe(400);
+    expect((await request(app).put('/api/truck-checks/vehicle-types/missing').set('Authorization', `Bearer ${tok}`).send({ name: 'X' })).status).toBe(404);
+    expect((await request(app).delete('/api/truck-checks/vehicle-types/missing').set('Authorization', `Bearer ${tok}`)).status).toBe(404);
+  });
+
+  it('updates and deletes a type the org owns', async () => {
+    const tok = adminToken('org-1');
+    const created = await request(app).post('/api/truck-checks/vehicle-types').set('Authorization', `Bearer ${tok}`)
+      .send({ name: 'Mine', code: 'Cat 9 Pumper', standardItems: [], category: 'pumper' });
+    expect(created.body.code).toBe('cat-9-pumper');
+
+    const updated = await request(app).put(`/api/truck-checks/vehicle-types/${created.body.id}`).set('Authorization', `Bearer ${tok}`)
+      .send({ name: 'Mine v2', description: 'updated' }).expect(200);
+    expect(updated.body.name).toBe('Mine v2');
+
+    await request(app).delete(`/api/truck-checks/vehicle-types/${created.body.id}`).set('Authorization', `Bearer ${tok}`).expect(204);
+  });
 });
 
 describe('Truck Checks API - Effective checklist (TC-1)', () => {
@@ -1051,6 +1072,22 @@ describe('Truck Checks API - Effective checklist (TC-1)', () => {
     const names = res.body.items.map((i: { name: string }) => i.name);
     expect(names).toContain('Tyres'); // standard item cannot be dropped
     expect(names).toContain('Pump');
+  });
+
+  it('falls back to the legacy template for an appliance with no vehicle type', async () => {
+    const appliance = await request(app).post('/api/truck-checks/appliances').send({ name: 'Legacy Truck' }).expect(201);
+    const res = await request(app).get(`/api/truck-checks/appliances/${appliance.body.id}/checklist`).expect(200);
+    // No type → items come from the auto-seeded legacy template, none marked standard.
+    expect(res.body.vehicleTypeName).toBeUndefined();
+    expect(res.body.items.length).toBeGreaterThan(0);
+    expect(res.body.items.every((i: { isStandard: boolean }) => i.isStandard === false)).toBe(true);
+  });
+
+  it('404s the checklist for an unknown appliance and 400s a bad overlay', async () => {
+    expect((await request(app).get('/api/truck-checks/appliances/missing/checklist')).status).toBe(404);
+    const appliance = await request(app).post('/api/truck-checks/appliances').send({ name: 'Overlay Truck' });
+    expect((await request(app).put(`/api/truck-checks/appliances/${appliance.body.id}/checklist`).send({ customItems: 'nope' })).status).toBe(400);
+    expect((await request(app).put('/api/truck-checks/appliances/missing/checklist').send({ customItems: [] })).status).toBe(404);
   });
 });
 

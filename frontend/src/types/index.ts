@@ -181,14 +181,50 @@ export interface Appliance {
   description?: string;
   photoUrl?: string;
   stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
-  /**
-   * Canonical vehicle-type slug (e.g. 'cat1-pumper', 'cat7-tanker', 'bulk-water',
-   * 'command'). A shared vocabulary lets reports group appliances of the same type
-   * across brigades for cross-brigade trend analysis. Optional.
-   */
+  /** Link to the VehicleType supplying the standard checklist (optional). */
+  vehicleTypeId?: string;
+  /** Legacy free-form vehicle-type slug (superseded by vehicleTypeId). */
   vehicleType?: string;
+  // Vehicle identity (all optional)
+  agencyId?: string;             // agency fleet/asset number (primary tracking id)
+  registration?: string;         // number plate
+  vin?: string;                  // Vehicle Identification Number
+  make?: string;
+  model?: string;
+  year?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * A standard vehicle type owning a locked standard checklist. Brigades adopt a
+ * type for their vehicles and add/reorder custom items, but never edit the
+ * standard items (that locked core is what enables cross-brigade comparison).
+ */
+export interface VehicleType {
+  id: string;
+  organizationId?: string;
+  isStandard: boolean;
+  code: string;
+  name: string;
+  description?: string;
+  category?: string;
+  standardItems: ChecklistItem[];
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * The resolved checklist for an appliance: locked standard items merged with the
+ * brigade's custom items, in saved order. Computed server-side.
+ */
+export interface EffectiveChecklist {
+  applianceId: string;
+  applianceName: string;
+  vehicleTypeId?: string;
+  vehicleTypeName?: string;
+  items: ChecklistItem[];
 }
 
 /**
@@ -213,6 +249,8 @@ export interface ChecklistItem {
   description: string;
   referencePhotoUrl?: string;
   order: number;
+  /** True when this item comes from a VehicleType's locked standard checklist. */
+  isStandard?: boolean;
   /**
    * Canonical item-code slug (e.g. 'tyre-condition', 'fluid-levels'). Stable across
    * brigades and template edits so the same logical check can be aggregated even when
