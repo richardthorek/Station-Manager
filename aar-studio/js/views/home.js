@@ -6,6 +6,7 @@ import { requestAutoStart } from './capture.js';
 import { displayTitle } from '../lib/model.js';
 import { friendlyDate } from '../lib/text.js';
 import { sessionFilename } from '../lib/exports.js';
+import { isAuthed, listServerSessions, fetchServerSession } from '../lib/serverSync.js';
 
 // Quick kick-off: blank review with today's date, jump to capture, start the mic.
 function startRecordingNow() {
@@ -75,8 +76,50 @@ function reviewCard(s) {
   );
 }
 
+/** A cloud review not yet on this device: tap to pull it down and open it. */
+function cloudCard(s) {
+  const subtitle = [friendlyDate(s.incidentDate || s.createdAt), s.createdByName].filter(Boolean).join(' · ');
+  const open = async () => {
+    try {
+      const session = await fetchServerSession(s.id);
+      if (!session) throw new Error('Could not download this review');
+      store.adoptSession(session);
+      location.hash = '#/board';
+    } catch (err) {
+      toast(err.message || 'Could not open that review', 'error');
+    }
+  };
+  return h('article', { class: 'review-card review-card--cloud', onclick: open },
+    h('div', { class: 'review-card__body' },
+      h('h3', { class: 'review-card__title' }, displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })),
+      h('p', { class: 'review-card__meta' }, subtitle || 'From your team'),
+      h('p', { class: 'review-card__stat' }, '☁ Tap to open on this device'),
+    ),
+  );
+}
+
+/**
+ * After the page renders, pull the org's cloud reviews (when signed in) and show
+ * any that aren't already on this device in a "From your team" section. Additive
+ * and best-effort — failures leave the local-only view untouched.
+ */
+async function appendCloudReviews(container, localIds) {
+  if (!isAuthed()) return;
+  const remote = await listServerSessions();
+  const missing = remote.filter((s) => !localIds.has(s.id));
+  if (!missing.length) return;
+  container.append(
+    h('section', { class: 'reviews reviews--cloud' },
+      h('h2', {}, 'From your team'),
+      h('p', { class: 'muted' }, 'Reviews saved to your brigade’s account on another device.'),
+      h('div', { class: 'review-grid' }, missing.map(cloudCard)),
+    ),
+  );
+}
+
 export function render(container) {
   const sessions = store.listSessions();
+  const localIds = new Set(sessions.map((s) => s.id));
 
   container.append(
     h('section', { class: 'hero hero--home' },
@@ -100,4 +143,7 @@ export function render(container) {
       h('button', { class: 'link-btn', onclick: openSavedFile }, 'Open a saved review file'),
     ),
   );
+
+  // Pull in brigade-shared reviews from the server (best-effort, additive).
+  appendCloudReviews(container, localIds).catch(() => {});
 }

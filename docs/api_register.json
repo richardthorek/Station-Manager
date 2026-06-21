@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "lastUpdated": "2026-06-21",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
@@ -160,6 +160,66 @@
           "401": { "description": "Not authenticated" }
         },
         "implementation": "backend/src/routes/ai.ts"
+      }
+    },
+    "aar-sessions": {
+      "description": "Server-side persistence for AAR Studio reviews, scoped to the owning Organization so a review survives device loss and is visible brigade-wide instead of living only in one facilitator's localStorage. AAR Studio remains local-first: it works fully signed-out against localStorage and mirrors to these endpoints best-effort when an SM JWT is present. The session body is stored as an opaque JSON blob (payload) with a few fields lifted out for listing.",
+      "authentication": "JWT bearer (organization context required)",
+      "entitlement": "aarStudioEnabled (mounted behind requireFeature)",
+      "GET /api/aar-sessions": {
+        "method": "GET",
+        "path": "/api/aar-sessions",
+        "description": "List this org's saved reviews as summaries (no payload), newest-updated first.",
+        "authentication": "JWT (org context required)",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "{ sessions: AARSessionSummary[] }" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" }
+        },
+        "implementation": "backend/src/routes/aarSessions.ts"
+      },
+      "GET /api/aar-sessions/:id": {
+        "method": "GET",
+        "path": "/api/aar-sessions/:id",
+        "description": "Fetch one saved review including the full payload, scoped to the caller's org.",
+        "authentication": "JWT (org context required)",
+        "responses": {
+          "200": { "description": "{ session: AARSession }" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
+          "404": { "description": "Review not found in this org" }
+        },
+        "implementation": "backend/src/routes/aarSessions.ts"
+      },
+      "PUT /api/aar-sessions/:id": {
+        "method": "PUT",
+        "path": "/api/aar-sessions/:id",
+        "description": "Create or replace a review (the client owns the id). Org scoping is enforced; creation metadata (createdAt/createdBy) is preserved across updates.",
+        "authentication": "JWT (org context required)",
+        "requestBody": { "title": "string", "incidentDate": "string?", "stationId": "string?", "schemaVersion": "number", "payload": "string (JSON of the AAR Studio session)" },
+        "responses": {
+          "200": { "description": "{ session: AARSession }" },
+          "400": { "description": "payload or schemaVersion missing/invalid" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
+          "413": { "description": "Review payload too large to persist (~900k char cap)" }
+        },
+        "implementation": "backend/src/routes/aarSessions.ts"
+      },
+      "DELETE /api/aar-sessions/:id": {
+        "method": "DELETE",
+        "path": "/api/aar-sessions/:id",
+        "description": "Delete a review, scoped to the caller's org.",
+        "authentication": "JWT (org context required)",
+        "responses": {
+          "200": { "description": "{ success: true }" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
+          "404": { "description": "Review not found in this org" }
+        },
+        "implementation": "backend/src/routes/aarSessions.ts"
       }
     },
     "health": {
@@ -3790,6 +3850,24 @@
         "error": { "type": "string", "description": "Set when processing threw" }
       },
       "required": ["id", "stripeEventId", "eventType", "payload", "processedAt"]
+    },
+    "AARSession": {
+      "type": "object",
+      "description": "A persisted AAR Studio review, scoped to the owning organization. The full client-side session is stored verbatim as a JSON string in payload; the other fields are denormalised for listing and access control. In Table Storage the payload is chunked across payload0..payloadN properties to stay under the per-property/entity size limits; this is an implementation detail not exposed by the API.",
+      "properties": {
+        "id": { "type": "string", "description": "Client-owned review id (AAR Studio generates it)" },
+        "organizationId": { "type": "string" },
+        "stationId": { "type": "string", "description": "Optional brigade/station the review belongs to" },
+        "title": { "type": "string", "description": "Denormalised incident title (or friendly fallback)" },
+        "incidentDate": { "type": "string", "description": "Denormalised incident date (ISO yyyy-mm-dd)" },
+        "schemaVersion": { "type": "number", "description": "AAR Studio session schema version" },
+        "payload": { "type": "string", "description": "JSON of the full AAR Studio session object" },
+        "createdBy": { "type": "string", "description": "userId of the facilitator who first saved it" },
+        "createdByName": { "type": "string", "description": "Display name of the facilitator" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "organizationId", "title", "schemaVersion", "payload", "createdAt", "updatedAt"]
     },
     "Member": {
       "type": "object",

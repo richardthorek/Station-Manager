@@ -794,6 +794,32 @@ route (`/aar/#/join/<CODE>`); the `/aar` CSP allows same-origin `ws:`/`wss:` and
 loads `socket.io-client` from jsDelivr. Joining requires no AI entitlement; only
 the facilitator's analysis does.
 
+### Server-side review persistence (AAR Studio)
+
+Separate from the ephemeral collab relay above, completed reviews are persisted
+**org-scoped** so they survive device loss and are visible brigade-wide (A2
+increment 1, June 2026). AAR Studio stays local-first — `localStorage` is always
+the working source of truth and the app works fully signed-out — but when the
+visitor is signed in to Station Manager (the SPA's `auth_token` JWT is readable
+same-origin), reviews mirror to `/api/aar-sessions` best-effort.
+
+`backend/src/routes/aarSessions.ts` exposes `GET/PUT/DELETE
+/api/aar-sessions[/:id]`, all JWT-required and scoped to the caller's
+organization, mounted behind `requireFeature('aarStudioEnabled')` (AI plan
+only). Persistence follows the standard twin pattern:
+`services/aarSessionDatabase.ts` (in-memory, keyed by `org/id`),
+`services/tableStorageAarSessionDatabase.ts` (Table Storage twin, `PartitionKey
+= organizationId`, `RowKey = id`), and `services/aarSessionDbFactory.ts`. Because
+a single Table Storage property maxes at 64 KiB and an entity at ~1 MiB, the
+review JSON is **chunked** across `payload0..payloadN` properties on write and
+reassembled on read; the route rejects payloads over ~900k chars (413). The full
+session is stored as an opaque `payload` blob with `title`/`incidentDate`/
+`stationId` lifted out for listing. On the client, `aar-studio/js/lib/serverSync.js`
+provides best-effort `pushSession`/`listServerSessions`/`fetchServerSession`/
+`deleteServerSession`; `store.js` debounce-backs-up on save and mirrors deletes,
+and the home view surfaces a "From your team" section of cloud reviews not yet on
+the device (pulled down on tap via `store.adoptSession`).
+
 ---
 
 ## National Fire Service Facilities Dataset

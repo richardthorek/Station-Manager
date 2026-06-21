@@ -57,6 +57,7 @@ import authRouter from './routes/auth';
 import organizationsRouter from './routes/organizations';
 import billingRouter from './routes/billing';
 import aiRouter from './routes/ai';
+import aarSessionsRouter from './routes/aarSessions';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -73,6 +74,7 @@ import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services
 import { initializeOrganizationDatabase } from './services/organizationDbFactory';
 import { initializeUsageDatabase } from './services/usageDbFactory';
 import { initializeBillingEventDatabase } from './services/billingEventDbFactory';
+import { initializeAarSessionDatabase } from './services/aarSessionDbFactory';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
 
@@ -389,6 +391,7 @@ app.use('/api/auth', apiRateLimiter, authRouter);
 app.use('/api/organizations', apiRateLimiter, organizationsRouter);
 app.use('/api/billing', apiRateLimiter, billingRouter);
 app.use('/api/ai', apiRateLimiter, aiRouter);
+app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'), aarSessionsRouter);
 app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, requireFeature('signInEnabled'), checkinsRouter);
@@ -620,6 +623,7 @@ async function initializeDatabasesInBackground() {
     await initializeOrganizationDatabase();
     await initializeUsageDatabase();
     await initializeBillingEventDatabase();
+    await initializeAarSessionDatabase();
     startMeteredUsageReporter();
     ensureAdminUserDatabase();
 

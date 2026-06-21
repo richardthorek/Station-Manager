@@ -1,6 +1,6 @@
 # RFS Station Manager - Master Plan
 
-**Document Version:** 3.2  
+**Document Version:** 3.3  
 **Last Updated:** June 21, 2026  
 **Status:** Living Document — **the single plan** (all other planning docs folded in here)  
 **Purpose:** Single source of truth for planning, roadmap, architecture guidance, and issue tracking
@@ -308,6 +308,7 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
   a backplane). **D5 — Deploy size/time:** shrink the package, target deploy < 10 min.
 
 ### June 2026 Stabilization
+- 2026-06-21: **A2 (increment 1) — AAR Studio server-side persistence + brigade-shared reviews.** AAR reviews were trapped in one facilitator's `localStorage` — lost with the device and invisible to the rest of the brigade. Added org-scoped server persistence following the established DB-twin pattern. **Backend:** new `AARSession` type; `services/aarSessionDatabase.ts` (in-memory + `IAarSessionDatabase`, keyed by `org/id` so two orgs sharing a client id never collide), `services/tableStorageAarSessionDatabase.ts` (Table Storage twin, partition by org; payload **chunked** across `payload0..payloadN` to clear Table Storage's 64 KiB-per-property / ~1 MiB-per-entity limits), `services/aarSessionDbFactory.ts`, init wired into `index.ts`. New `routes/aarSessions.ts` — `GET/PUT/DELETE /api/aar-sessions[/:id]`, JWT-required and org-scoped, mounted behind `requireFeature('aarStudioEnabled')` (AI-plan only); payload capped at ~900k chars (413). **Identity:** reused the SM JWT AAR already reads from same-origin `auth_token` (no new login flow needed). **AAR app:** new `js/lib/serverSync.js` (best-effort `pushSession`/`list`/`fetch`/`deleteServerSession`); `store.js` debounce-backs-up on every save and mirrors deletes when signed in; the home view now shows a "From your team" section of cloud reviews not yet on this device and pulls them down on tap (`store.adoptSession`). Local-first preserved — signed-out AAR works exactly as before. 16 new tests (6 backend route + unit DB, 10 AAR `serverSync`); backend 636 pass, AAR `node --test` 64 pass. `api_register.json` → v1.6.0 with the `aar-sessions` group + `AARSession` definition. **Deferred (A2 increment 2):** station/member roster picker to replace the free-text setup screen, full bidirectional conflict handling, and shrinking the `/aar` CSP once the AI gateway fronts all provider calls.
 - 2026-06-21: **Close out commercialisation track + fix broken page scroll.** Two threads. **(1) Plan reconciliation + billing audit persistence:** discovered C1 (#552) and C2 (#553) had shipped and merged to `main` but were never recorded here — the #575 plan-collapse listed them as still-to-do. Recorded both as shipped and hardened the billing audit trail: the Stripe webhook log was an in-memory array (`billingEventLog` in `routes/billing.ts`) that vanished on restart and gave no idempotency. Added `BillingEvent` persistence following the `UsageRecord` twin pattern — `services/billingEventDatabase.ts` (in-memory + `IBillingEventDatabase`), `services/tableStorageBillingEventDatabase.ts` (Table Storage twin, partition by org), `services/billingEventDbFactory.ts`, wired `initializeBillingEventDatabase()` into the startup sequence in `index.ts`. The webhook now (a) skips reprocessing an already-recorded event id (idempotency) and (b) persists every event via the factory; added an owner-only `GET /api/billing/events` audit endpoint. Registered the billing **and** AI gateway endpoints in `api_register.json` (v1.5.0) — the previously-noted docs follow-up — plus a `BillingEvent` definition. 11 new backend tests (`billing.test.ts` + `billingEventDatabase.test.ts`); backend 623 pass. **(2) Scroll bug:** desktop `body`/`#root` were locked to `height:100vh; overflow:hidden` (kiosk shell model) while the document-flow content pages (marketing, signup/login, organization) lay out with `min-height:100vh` and no inner scroll container — so on desktop their content was clipped and the page could only be moved with the keyboard (focus-into-view). Mobile already relaxed this; desktop didn't. Relaxed the base `body`/`#root` rules to `min-height:100vh` + `overflow-x:hidden` (vertical document scroll allowed); the self-contained 100vh kiosk pages (`.app`, `.landing-page`) are unaffected (exactly viewport height → no document scrollbar). *Frontend lint, typecheck, and 452 Vitest tests green.*
 - 2026-06-20: **C2 — Stripe billing, SaaS Phase B (#553).** Wired live billing on top of the SaaS tenant model. New `services/stripeClient.ts` (lazy `stripe` SDK init from `STRIPE_SECRET_KEY`, `isStripeConfigured()`, `resolvePriceId(plan, interval)` from `STRIPE_PRICE_*` env vars) and `routes/billing.ts`: owner-only `POST /api/billing/checkout` (Checkout session, 14-day trial), `POST /api/billing/portal` (Customer Portal), `GET /api/billing/status`, and a signature-verified `POST /api/billing/webhook` (raw-body, registered before `express.json()`) that syncs org `planCode`/`status`/`entitlements` on `checkout.session.completed`, `customer.subscription.updated/deleted`, `invoice.paid`, and `invoice.payment_failed`. `Organization` gained `stripeCustomerId`/`stripeSubscriptionId`/`trialEndsAt`/`billingEmail`; `BillingEvent` type added. SPA: `/admin/organization` upgrade UI + `TrialBanner`. Endpoints return 503 when Stripe isn't configured, so non-billing deployments are unaffected. *(Audit log was in-memory in this slice — persisted to Table Storage on Jun 21.)*
 - 2026-06-20: **C1 — Entitlement-enforcement hardening (#552).** Flipped `ENABLE_ENTITLEMENTS` to default-on (opt-out `=false` for dev). Added a soft JWT decode in `attachOrganization` so routes without explicit `authMiddleware` (e.g. `/api/export`) still resolve org context; gated `GET /api/export` behind `requireFeature('reportsEnabled')`; added `enforceStationLimit()` on `POST /api/stations` (enforces plan `maxStations`, excludes system stations from the quota). 8 new integration tests covering every gating path; fixed a missing `@testing-library/dom` peer dep broken by prior dependabot bumps.
@@ -354,23 +355,21 @@ billing including persisted `BillingEvent` audit (#553 + Jun 21). The code path 
 plans is complete; going live is now a **config/ops task** (set `STRIPE_SECRET_KEY`,
 `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` in App Service, create products/prices in the
 Stripe dashboard, point a Stripe webhook at `/api/billing/webhook`) plus resolving the D1
-pricing decisions below — not a build task.
+pricing decisions below — not a build task. **A2 increment 1** (AAR server-side persistence
++ brigade-shared reviews via `/api/aar-sessions`) shipped Jun 21 — identity reused the
+same-origin SM JWT, so the original "pass the JWT in" sub-task was already satisfied.
 
-**1. Production deployment restore (OIDC) — top blocker**
-- The GitHub→Azure OIDC app registration was deleted, silently breaking `main` deploys since the IaC PR.
-- The `infra/README.md` documents the one-time bootstrap to restore it.
-- Until this is done, merging to `main` does **not** deploy to production — including all the shipped billing code.
+**1. Production deployment restore (OIDC) — top blocker** *(owner says deploy is currently working; revisit only if `main` deploys fail)*
+- The `infra/README.md` documents the one-time bootstrap if the GitHub→Azure OIDC app registration needs re-creating.
 
-**2. T1 — Shared domain types (increment 2)**
-- Increment 1 (frontend types re-synced to backend) shipped in #575.
-- Increment 2: extract a real shared module (`packages/types/`) with a date-generic `Member<TDate = string>`, consumed by both backend and frontend via npm workspace (= the T6 workspace foundation).
-- Resolves the `Date`-vs-`string` split and prevents future drift.
-
-**3. A2 — AAR identity & server-side persistence**
-- Pass the logged-in SM JWT into AAR Studio on load.
-- Add `/api/aar-sessions` CRUD (Table Storage `AARSessions` partition by org/brigade).
-- Replace AAR's free-text setup screen with a station/member picker from the roster.
+**2. A2 increment 2 — AAR roster integration & CSP shrink**
+- Replace AAR's free-text setup screen with a station/member picker from the SM roster (now that AAR is org-identified).
+- Add bidirectional sync conflict handling (currently last-write-wins, best-effort backup).
 - Shrink the `/aar` CSP: once the AI gateway handles all provider calls, remove direct Azure OpenAI/Speech origins from the scoped policy.
+
+**3. T1 — Shared domain types (increment 2)**
+- Increment 1 (frontend types re-synced to backend) shipped in #575.
+- Increment 2: extract a shared, date-generic domain-type module consumed by both apps. **Note:** the plan's original "npm workspace" mechanism conflicts with the per-app deploy artifact (CI ships `backend/node_modules` verbatim; workspaces would hoist them). Pick a mechanism that leaves the per-app install/deploy untouched, or split the workspace foundation (T6) out as its own decision first.
 
 **4. C3 — Metered AI overage (finish the billing loop)**
 - `meteredUsageReporter.ts` is a safe no-op until a Stripe meter exists; build top-up packs / overage purchase on top of the now-complete billing surface.
@@ -2708,6 +2707,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 3.0 | Jun 2026 | Consolidation | Collapsed all five separate planning docs (CONSOLIDATION_REVIEW, SUITE_INTEGRATION_PLAN, SAAS_COMMERCIALIZATION_DESIGN, AI_MAINTENANCE_AGENT_DESIGN, AAR_STUDIO_PLAN) into this single file. Archived originals in `docs/archive/`. ONE-PLAN RULE enforced. (#575) |
 | 3.1 | Jun 2026 | UI/UX polish | Recorded CSS-var sweep, dark-mode fixes, status tokens, TrialBanner wiring, FeatureRoute upgrade UX, dead-end upgrade-path fix, and Material Design color isolation in truck check. (#576). Added "Prioritised next steps" section and CLAUDE.md progress-update instruction. |
 | 3.2 | Jun 2026 | Commercialisation close-out | Reconciled the plan with `main`: recorded C1 (#552) and C2 (#553) as shipped (they were merged but never logged). Persisted the Stripe `BillingEvent` audit trail to both DB twins with webhook idempotency + an owner-only `GET /api/billing/events`; registered billing & AI gateway endpoints in `api_register.json` (v1.5.0). Fixed a desktop scroll regression (document-flow content pages clipped by the kiosk `overflow:hidden` shell lock). Re-prioritised next steps (OIDC deploy restore now #1). |
+| 3.3 | Jun 2026 | AAR persistence | A2 increment 1: org-scoped server-side persistence for AAR Studio reviews (`/api/aar-sessions` + `AARSession` DB twins, payload chunked for Table Storage) and brigade-shared "From your team" reviews in the AAR home view, reusing the same-origin SM JWT. `api_register.json` → v1.6.0. Re-scoped next steps (A2 inc 2 / T1 inc 2 mechanism caveat; OIDC de-prioritised per owner). |
 
 ---
 

@@ -333,6 +333,29 @@ export interface BillingEvent {
   error?: string;        // set if processing threw
 }
 
+/**
+ * A persisted AAR Studio review, scoped to the owning organization. The full
+ * client-side session object (incident metadata, segments, findings, notes,
+ * report, …) is stored verbatim as a JSON string in `payload` — AAR Studio is a
+ * no-build vanilla app that owns its own session schema, so the backend treats
+ * the body as an opaque blob and only indexes the fields it needs for listing
+ * and access control. A few denormalised fields (title/incidentDate/stationId)
+ * are lifted out for the roster listing without parsing every payload.
+ */
+export interface AARSession {
+  id: string;
+  organizationId: string;
+  stationId?: string;            // optional brigade/station the review belongs to
+  title: string;                 // denormalised incident title (or friendly fallback)
+  incidentDate?: string;         // denormalised incident date (ISO yyyy-mm-dd)
+  schemaVersion: number;         // AAR Studio session schema version
+  payload: string;               // JSON of the full AAR Studio session object
+  createdBy?: string;            // userId of the facilitator who saved it
+  createdByName?: string;        // display name of the facilitator
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ============================================
 // Truck Checks Types
 // ============================================
