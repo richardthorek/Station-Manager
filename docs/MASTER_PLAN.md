@@ -1,14 +1,16 @@
 # RFS Station Manager - Master Plan
 
-**Document Version:** 2.1  
-**Last Updated:** June 20, 2026  
-**Status:** Living Document  
+**Document Version:** 3.0  
+**Last Updated:** June 21, 2026  
+**Status:** Living Document — **the single plan** (all other planning docs folded in here)  
 **Purpose:** Single source of truth for planning, roadmap, architecture guidance, and issue tracking
 
 ---
 
 ### Single Source of Truth
-This document is the **SINGLE SOURCE OF TRUTH** for all planning, roadmap, architecture guidance, and future work tracking for the RFS Station Manager project. All planning must be consolidated here - no duplicate planning documents are permitted.
+This document is the **SINGLE SOURCE OF TRUTH** for all planning, roadmap, architecture guidance, and future work tracking for the RFS Station Manager project — across **all three apps** (`backend/`, `frontend/`, `aar-studio/`) and the wider Bushie Tools suite.
+
+**There is exactly one plan, and this is it.** No other planning, roadmap, design-spike, or "future work" document may exist as a live doc. The previously separate plans — `CONSOLIDATION_REVIEW.md`, `SUITE_INTEGRATION_PLAN.md`, `SAAS_COMMERCIALIZATION_DESIGN.md`, `AI_MAINTENANCE_AGENT_DESIGN.md`, and `aar-studio/docs/PLAN.md` — have been **collapsed into this file** (see "Consolidation & Standardisation Roadmap" below) and moved to `docs/archive/` for historical design reference only. When you need to capture future work, a design decision, or a change of direction, **edit this document** — do not create a new plan. Detailed, still-useful design content (schemas, pricing rationale, tool contracts) lives in the archived spikes and may be cited as reference, but the authoritative status, priority, and sequencing live here.
 
 ### Documentation Organization Policy
 
@@ -53,7 +55,14 @@ Only the following types of documents are allowed in the root `/docs/` directory
 - **API Documentation**: `docs/API_DOCUMENTATION.md` - Human-readable API reference
 - **Feature Guides**: `docs/FEATURE_DEVELOPMENT_GUIDE.md`, `docs/GETTING_STARTED.md`
 - **UI Review**: `docs/current_state/UI_REVIEW_20260207.md` - Comprehensive UI/UX review with iPad screenshots
-- **Suite / Multi-App Strategy**: `docs/SUITE_INTEGRATION_PLAN.md` - Assessment + options for delivering Station Manager, AAR Studio, Fire Break Calculator and Fire Santa Run as one product suite (the **"Bushie Tools"** brand — shared identity, subscription, brand)
+- **Token-validation contract**: `docs/SUITE_TOKEN_VALIDATION.md` - How sibling Bushie Tools apps validate the Station Manager JWT (current contract, reference)
+
+**Archived design spikes** (historical reference — *not* live plans; their forward work is tracked in this file's roadmap below):
+- `docs/archive/CONSOLIDATION_REVIEW.md` - cross-app coherence analysis & AI-gateway direction
+- `docs/archive/SUITE_INTEGRATION_PLAN.md` - Bushie Tools suite federation/monorepo options
+- `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md` - pricing analysis, Stripe surface, tenancy schema deltas
+- `docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md` - voice/vision truck-maintenance agent schema & tool contract
+- `docs/archive/AAR_STUDIO_PLAN.md` - AAR Studio stage plan (architecture of record stays in `aar-studio/docs/ARCHITECTURE.md`)
 
 ### Companion app: AAR Studio (June 2026)
 
@@ -67,9 +76,12 @@ Studio**. The backend applies the extra CSP / `Permissions-Policy` it needs,
 scoped to `/aar` (see `backend/src/index.ts`); the bundle is located via
 `AAR_STUDIO_PATH` (default `../aar-studio`) and must be included in the deploy
 package. `aar-studio.yml` runs the unit tests only; `ci-cd.yml` handles
-deployment. Its plan and architecture live in `aar-studio/docs/PLAN.md` and
-`aar-studio/docs/ARCHITECTURE.md`; the registries and AS_BUILT in this
-directory intentionally do not cover its internals.
+deployment. Its **architecture of record** lives in
+`aar-studio/docs/ARCHITECTURE.md`; its **forward plan** is no longer separate —
+it is folded into the Consolidation & Standardisation Roadmap below (the old
+`aar-studio/docs/PLAN.md` is archived as `docs/archive/AAR_STUDIO_PLAN.md`). The
+registries and AS_BUILT in this directory intentionally do not cover its
+internals.
 
 ---
 
@@ -133,11 +145,14 @@ The Station Manager v1.0 MVP focuses exclusively on **core sign-in functionality
 - Achievement system
 - Additional enhancements based on client feedback
 
-### Commercialization & coherence roadmap (mid-2026, planning)
+## Consolidation & Standardisation Roadmap
 
-Forward plan captured in increments. Cross-app detail in `docs/CONSOLIDATION_REVIEW.md`,
-billing detail in `docs/SAAS_COMMERCIALIZATION_DESIGN.md`, suite integration in
-`docs/SUITE_INTEGRATION_PLAN.md`. Recommended order — each item links to its GitHub issue:
+*This is the consolidated roadmap for commercialisation **and** cross-app coherence.
+It supersedes and folds together the five archived design spikes
+(`CONSOLIDATION_REVIEW`, `SUITE_INTEGRATION_PLAN`, `SAAS_COMMERCIALIZATION_DESIGN`,
+`AI_MAINTENANCE_AGENT_DESIGN`, `AAR_STUDIO_PLAN`). Items reference their GitHub
+issue where one exists; detailed schemas/contracts cited as "(archive: …)" live in
+the corresponding archived spike for reference only.*
 
 > **Guiding ethos — "for the average bushie."** Design for the older, less
 > tech-savvy firefighter as much as the young guns: plain language (no jargon),
@@ -145,50 +160,138 @@ billing detail in `docs/SAAS_COMMERCIALIZATION_DESIGN.md`, suite integration in
 > targets, and "just talk / just tap" flows. If a bushie can't use it cold,
 > it's not done. Apply this lens to every UI/UX point below.
 
-- **[#549] Rebrand to "Bushie Tools"** — adopt *Bushie Tools* as the product-family /
-  suite name (colloquial for bush firefighters), framing Station Manager, AAR
-  Studio, Fire Break Calculator and Fire Santa Run as approachable tools that put
-  advanced capability in ordinary members' hands. This is the customer-facing name
-  for the multi-app suite analysed in `docs/SUITE_INTEGRATION_PLAN.md` — the
-  rebrand and that suite-integration work are the same product story (one brand,
-  one login, one subscription). Naming/branding sweep across landing, app-picker,
-  AAR Studio, and docs; fold into the design-system work below so brand and tokens
-  land together.
-- **[#550] Visual consistency (design-system unification)** — extract one canonical
-  RFS token set (palette `#e5281B`/`#cbdb2a`, Public Sans, spacing, ≥60px touch
-  targets) into a shared CSS file used by both the React SPA and AAR Studio;
-  realign AAR's divergent brand/fonts and fix its sub-60px controls. Low-risk,
-  do first / in parallel with #549.
-- **[#551] Collaborative session notes (AAR Studio)** — recording stays the centre
-  of gravity, but let a room contribute alongside it: timestamped text notes added
-  live by other participants on their own devices, aligned to the recorded
-  discussion timeline. A shared session (URL/code), a lightweight note-taker
-  role, and multi-contributor input (voice + text) so a whole room can feed one
-  review. Notes merge into findings extraction like transcript segments.
-- **[#544 — shipped] AAR Studio UX redesign for non-technical users** — friendly
-  landing, one-tap "quick kick-off" recording, automatic phase + finding-category
-  inference, metadata from the discussion, jargon removed. ✅ Merged Jun 2026.
-- **[#552] Entitlement-enforcement hardening (prerequisite for paid tiers)** — close
-  the gating leaks so every feature/route is controlled by plan: gate `/api/export`,
-  enforce `maxStations`/`maxDevices` limits on creation, audit each route's
-  `requireFeature`/`FeatureRoute` pairing. Must land before billing.
-- **[#553] Stripe billing (SaaS Phase B)** — `stripe` SDK + price env mapping;
-  checkout session endpoint; signature-verified webhook that syncs org `status` +
-  `entitlements` from subscription events; customer-portal link; `BillingEvent`
-  audit; trial flow. Turns the existing plan model into real subscriptions.
-- **[#554] Marketing landing for unauthenticated visitors** — a logged-out front
-  door (what it is, plan/pricing tiers, sign-up CTA → checkout); the current public
-  app-picker becomes the post-login home. See `docs/SAAS_COMMERCIALIZATION_DESIGN.md`
-  §7 for the full pricing model discussion including tier options, per-brigade vs
-  per-user pricing, and AI metering.
-- **[#555] AI tier features** — server-side AI gateway (metered, capability-routed
-  text/voice/image, provider adapters); `UsageRecord` metering; migrate AAR Studio's
-  browser-direct AI behind the gateway. See `CONSOLIDATION_REVIEW.md` and
-  `AI_MAINTENANCE_AGENT_DESIGN.md`.
-- **[#557] Bushie Tools suite — Phase 2: shared packages** — extract `@rfs/ui`,
-  `@rfs/types`, `@rfs/auth-sdk`, `@rfs/data` for adoption by all four apps.
-- **[#558] Bushie Tools suite — Phase 3: monorepo consolidation** — single
-  deployment (pending architecture decisions: auth, real-time transport, CI/CD).
+### The standardisation problem (why this roadmap exists)
+
+The repo ships as **one** Azure App Service deployment but is **three** codebases
+that have diverged in stack, brand, AI architecture, identity, and data:
+
+| | Main backend | Main frontend | AAR Studio |
+|---|---|---|---|
+| Stack | Express 5 + Socket.io + TS | React 19 + Vite + TS | Vanilla HTML/CSS/ES modules, no build |
+| Served at | `/api/*` | `/` (SPA) | `/aar` (static mount) |
+| Auth | JWT/admin + entitlements | `ProtectedRoute` / feature gates | inherits SM JWT (same origin) |
+| Persistence | Table Storage / in-memory (factories) | — | browser `localStorage` |
+| Types | `backend/src/types` (`Date`) | `frontend/src/types` (`string`) — **duplicated, drifting** | `js/model.js` (disjoint) |
+
+They now **deploy** as one app; the work below makes them **coherent** as one
+app. The wider Bushie Tools suite (Fire Break Calculator, Fire Santa Run) adds two
+more separate repos/stacks to converge.
+
+### Shipped (recorded here as done; the archived spikes still framed these "future")
+
+- **Design-system unification + "Bushie Tools" rebrand** (#549 + #550) — canonical
+  `aar-studio/css/rfs-tokens.css`, SPA mirrors it; brand red `#c8102e`, Public Sans,
+  tokens app-wide. *Open caveat:* AAR touch targets are 60px (primary) / 44px
+  (inline/nav) — owner to confirm strict-60 or accept (item S1 below).
+- **Server-side AI gateway** (#555) — `backend/src/services/aiGateway.ts`,
+  `/api/ai/{chat,report,speech/token,usage}`, `UsageRecord` twins, session metering.
+  AAR Studio migrated off browser-direct Azure. *Open within it:* Anthropic adapter
+  is a stub; image/vision + streaming-voice WS not built (items A1, A4 below).
+- **Suite Phase 1 — shared identity/subscription federation** (#556) — SM JWT as the
+  suite IdP, `GET /api/auth/entitlements`, per-app flags, app-launcher landing.
+- **SaaS Phase A — tenant model** (Jun 8) — `Organization`, plan catalog, signup,
+  `requireFeature` gating, `ENABLE_ENTITLEMENTS`.
+- **AAR collaborative session notes — core** (#551). **Marketing/pricing landing +
+  checkout deep-link** (#554). **Free-tier caps** (10 members / 1 vehicle) (#574).
+
+### Now — standardisation track (cross-app coherence; do these next)
+
+Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision first.
+
+- **T1 — Shared domain types** ⬜ *(start here; lowest-risk standardisation win)*.
+  `Station`/`Member` (and the truck-check types) are defined twice and have drifted
+  (`Date` vs `string`; the frontend `Activity` lost `category`/`tagColor`/`stationId`;
+  `Appliance`/`CheckIn` lost `stationId`). **Increment 1 (no build changes):** re-sync
+  `frontend/src/types` to the backend shape and document backend `types/index.ts` as
+  the contract of record. **Increment 2:** extract a real shared module — this is the
+  same work as the suite's `@rfs/types` (#557) and wants the npm-workspace foundation
+  (T6); resolve the `Date`-vs-`string` split with a date-generic (`Member<TDate = string>`)
+  so one definition serves both. (archive: CONSOLIDATION_REVIEW #4)
+- **S1 — Finish the design-system pass** ⬜ — confirm/raise AAR inline controls to
+  strict-60px if the owner wants it; add `prefers-reduced-motion` guards (e.g.
+  `.live__dot`); share the RFS-branded HTML/print **report template** that the three
+  export paths reinvent (piggyback on the tokens). (archive: CONSOLIDATION_REVIEW #2/#5)
+- **A2 — AAR identity & server-side persistence** ⬜ (effort L) — pass the logged-in
+  token into AAR; add `/api/aar-sessions` CRUD on the storage factories (`AARSessions`
+  table, partition by org/brigade); replace AAR's free-text setup with a station/member
+  picker from the roster; **shrink the `/aar` CSP** to gateway-only `connect-src` (drop
+  `*.openai.azure.com` / `*.cognitiveservices.azure.com` / `wss://*.stt.speech.microsoft.com`)
+  and update `aar-studio/docs/ARCHITECTURE.md`. Depends on the shipped gateway + SaaS.
+  (archive: CONSOLIDATION_REVIEW #3)
+
+### Commercialisation track (SaaS billing & metering)
+
+- **C1 — Entitlement-enforcement hardening** 🟡 (#552) — finish gating `/api/export`
+  behind `reportsEnabled`, enforce `maxStations`/`maxDevices` on creation, audit every
+  `requireFeature`/`FeatureRoute` pairing. *Prerequisite for billing.*
+- **C2 — Stripe billing (SaaS Phase B)** ⬜ (#553) — `stripe` SDK + price-ID env mapping;
+  checkout endpoint; signature-verified webhook syncing org `status`+`entitlements`;
+  `BillingEvent` audit; Customer Portal; trial flow. *Live billing is not wired —
+  entitlements are admin-set; `meteredUsageReporter.ts` is a no-op until a meter exists.*
+- **C3 — AI metering completion (Phase D)** 🟡 — session metering + allowance shipped;
+  build top-up packs / overage purchase. **C4 — Device accounts + member activation
+  (Phase C)** ⬜ — formalise `BrigadeAccessToken` → first-class `Device`; member
+  email-invite activation (`authStatus`). (archive: SAAS_COMMERCIALIZATION_DESIGN)
+
+### AI maintenance agent track (truck check by voice/vision)
+
+- **A1 — Phase 1: truck model** ⬜ — new `ApplianceZone` / `ApplianceEquipment` entities
+  (both DB twins + types + factories), `Appliance`/`ChecklistItem` extensions, admin
+  authoring UI, canonical per-`vehicleType` vocabularies. Ships standalone value (no AI).
+- **A3 — Phase 2: voice agent (cloud)** ⬜ — PWA voice mode → agent tool-use loop
+  (`get_appliance_context`/`record_result`/`flag_issue`/`next_unchecked_in_zone`/
+  `complete_run`) → `CheckRun` + `AgentSession`/`AgentTurn` transcript; read-back/confirm;
+  `needsReview`; Blob containers `agent-audio`/`agent-frames`. Needs the streaming-voice
+  WS contract (D3). **A4 — Phase 3/4: offline + vision** ⬜ — on-device speech; camera
+  frames + visual diff vs `referencePhotoUrl`; image capability in the gateway.
+  (archive: AI_MAINTENANCE_AGENT_DESIGN — schemas & tool contract verbatim)
+
+### Suite convergence track (Bushie Tools Phases 2–3)
+
+- **T6 — Phase 2: shared packages** ⬜ (#557) — establish an npm/pnpm workspace and
+  extract `@rfs/ui`, `@rfs/types` (= T1 increment 2), `@rfs/auth-sdk`, `@rfs/data`;
+  sibling repos consume `/api/auth/entitlements`; SSO redirect for cross-origin apps.
+- **T7 — Phase 3: monorepo consolidation** ⬜ (#558) — Turborepo workspace; Fire Break
+  Calculator → embedded feature route; Fire Santa Run → seasonal peer app; converge the
+  backends (port Hono/Azure Functions → Express); single App Service; 3 CI pipelines → 1
+  (preserving SM's ordered gates). (archive: SUITE_INTEGRATION_PLAN — options A/B/C)
+
+### AAR Studio polish (Stage 5)
+
+- **P1** ⬜ — dedupe-threshold tuning + merge-suggestion UI; accessibility pass
+  (keyboard-only board, ARIA live regions for Present mode); print-stylesheet
+  refinements; per-unit finding attribution; optional `?demo` deep link.
+  (archive: AAR_STUDIO_PLAN Stage 5)
+
+### Pricing & plans (reference)
+
+The live plan catalog is code (`backend/src/constants/plans.ts`); this is the
+intended commercial shape (full rationale: archive SAAS_COMMERCIALIZATION_DESIGN §7):
+
+| Tier | Price (AUD) | Members | Vehicles | Includes |
+|---|---|---|---|---|
+| **Community** (free) | $0 | up to 10 | 1 | Manual sign-in + 1 vehicle check, single station |
+| **Basic** | $10/mo · $100/yr | unlimited | unlimited | Full manual suite + reports & CSV export, multiple stations |
+| **AI Pro** | $19/mo · $190/yr | unlimited | unlimited | Basic + AI AAR Studio (~25 sessions/mo), voice agent |
+| **Bushie Suite** *(planned)* | $29/mo · $290/yr | unlimited | unlimited | AI Pro + all Bushie Tools apps (once T6/T7 ship) |
+
+Stripe AU ≈ 1.75% + $0.30; AI ≈ $0.60/AAR session; annual = 2 months free. `maxDevices`
+is retained in the model but **unused/unenforced** (devices dropped from pricing in #574).
+
+### Open decisions (resolve before locking the gated work) 🔵
+
+- **D1 — Pricing details:** pricing unit (flat per-station recommended); confirm tier
+  names/prices; AI metering unit (session for AAR vs audio-minute for voice agent);
+  top-up pack sizes; trial length (14 vs 30 days; AI in trial?); grant/PO Invoicing;
+  per-org vs per-station billing for district orgs; AAR-in-Basic; Fire Break
+  free-on-Community vs suite-only; Santa Run seasonal billing.
+- **D2 — Suite auth standard:** keep SM JWT (current, per #556) vs adopt Entra External
+  ID for authN — Entra adds an existing-user migration runbook. Currently: **keep SM JWT.**
+- **D3 — AI gateway specifics:** initial provider per capability + per-org override;
+  `UsageRecord`↔Stripe-meter mapping; the streaming-voice WebSocket contract (blocks A3).
+- **D4 — Unified real-time transport:** Socket.io vs Azure Web PubSub for a converged
+  backend (current lean: defer SignalR; adopt Web PubSub for Socket.IO when scale needs
+  a backplane). **D5 — Deploy size/time:** shrink the package, target deploy < 10 min.
 
 ### June 2026 Stabilization
 - 2026-06-20: **Bushie Tools suite — Phase 1: shared identity & subscription (#556).** Stood up Station Manager's entitlements as the canonical suite licensing layer (Option A / federation — apps stay in their own repos and validate the same SM JWT). **Per-app flags:** `Entitlements` (and the frontend mirror) gained `aarStudioEnabled` (true on AI Pro), `santaRunEnabled` and `fireBreakEnabled` (reserved — no plan grants them yet); `constants/plans.ts` sets them per tier and `clampEntitlements()` enforces the ceiling. **Cross-app endpoint:** new `GET /api/auth/entitlements` — a lightweight JWT-verified probe returning `{ entitlements, planCode, status }` (null org → null payload) so sibling apps gate features without the larger `/auth/me` shape; same-origin in Phase 1, cross-origin covered by the existing `FRONTEND_URLS`/`allowedOriginsList` CORS seam. **Auth decision:** kept SM JWT as the suite IdP rather than Entra External ID — kiosk/station iPads authenticate with brigade access tokens (not user accounts), a scenario the JWT/brigade-token model already supports; recorded in the new protocol doc. **App-launcher:** the logged-in `LandingPage` now doubles as the suite launcher — the AAR Studio card locks to an "Upgrade to AI Pro" placeholder below the AI plan, and new sibling-app cards (Fire Santa Run — seasonal-badged; Fire Break Calculator) render from a `config/suiteApps.ts` catalog, gated by their flags and linked out via build-time `VITE_SANTA_RUN_URL`/`VITE_FIREBREAK_URL` (unlocked when no org context, for back-compat). New `docs/SUITE_TOKEN_VALIDATION.md` documents the validation contract for sibling apps. Shipped in two slices: entitlements + endpoint (4 backend tests, merged in #571) then launcher + docs (2 frontend tests); backend (608) + frontend (452) + AAR (54) suites, lint, and both typechecks green. `api_register.json` bumped to 1.4.0 with the new endpoint. **Deferred to Phase 2/3:** SSO redirect flow for cross-origin apps, shared `@rfs/*` packages, and coordinating the Santa Run / Fire Break repos to consume the endpoint.
@@ -1633,7 +1736,7 @@ Priority: **MEDIUM** - Long-term enhancements
 
 #### Feature: AI Voice (and Vision) Truck-Maintenance Agent
 **Status**: 📐 **DESIGN / FUTURE RELEASE** (design doc only — not implemented)
-**Design**: `docs/AI_MAINTENANCE_AGENT_DESIGN.md`
+**Design**: `docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md` (roadmap: A1/A3/A4)
 
 **Objective**: A hands-free assistant that walks a volunteer through a truck check by
 voice ("I'm starting the Cat 1 tanker…"), prompting follow-ups in the same physical
@@ -1667,7 +1770,7 @@ the design doc for full detail.
 
 #### Feature: Self-Service Sign-up, Multi-Tenant Billing & Commercialization
 **Status**: 📐 **DESIGN / FUTURE RELEASE** (design doc only — not implemented)
-**Design**: `docs/SAAS_COMMERCIALIZATION_DESIGN.md`
+**Design**: `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md` (roadmap: C1–C4)
 
 **Objective**: Turn Station Manager into a self-service SaaS — a brigade signs up online,
 picks a plan, pays via **Stripe**, enrols device-type accounts (kiosk/tablet/phone/
@@ -1705,15 +1808,15 @@ Stripe Price IDs. Phased A (tenant model) → B (billing+signup) → C (devices+
 #### Feature: "Bushie Tools" Suite — Multi-App Integration (Station Manager + AAR Studio + Fire Break Calculator + Fire Santa Run)
 **GitHub Issues**: [#556](https://github.com/richardthorek/Station-Manager/issues/556) (Phase 1 — federation) · [#557](https://github.com/richardthorek/Station-Manager/issues/557) (Phase 2 — shared packages) · [#558](https://github.com/richardthorek/Station-Manager/issues/558) (Phase 3 — monorepo)
 **Status**: 📐 **DESIGN / FUTURE RELEASE** (assessment + options only — not implemented)
-**Design**: `docs/SUITE_INTEGRATION_PLAN.md`. **Customer-facing name**: *Bushie
-Tools* (see the rebrand item in the Commercialization & coherence roadmap above) —
-this section is the technical integration plan behind that single brand.
+**Design**: `docs/archive/SUITE_INTEGRATION_PLAN.md` (roadmap: T6/T7).
+**Customer-facing name**: *Bushie Tools* (see the Consolidation & Standardisation
+Roadmap above) — this section is the technical integration plan behind that single brand.
 
 **Objective**: Deliver three sibling RFS/NSW apps — Station Manager (this repo),
 `fireBreakCalculator`, and `fire-santa-run` — as **one product suite** with a single
 sign-on, a single subscription, a consistent RFS brand/UX, and lower hosting/maintenance
 cost. Builds directly on the Organization/entitlements/Stripe model in
-`SAAS_COMMERCIALIZATION_DESIGN.md`, extending entitlements with per-app flags
+`archive/SAAS_COMMERCIALIZATION_DESIGN.md`, extending entitlements with per-app flags
 (`santaRunEnabled`, `fireBreakEnabled`, …).
 
 **Options (spectrum)**: A = federation (shared identity + subscription only, 3 deploys);
@@ -1724,7 +1827,7 @@ deployment (all four goals, highest effort). **Recommendation**: phase toward C
 **Auth recommendation**: decouple identity from entitlement — standardise authentication
 on **Microsoft Entra External ID** (already used by Santa Run; removes SM's custom
 password liability) while keeping SM's org+entitlements as the authZ/billing layer. NB:
-this would revise the JWT-retaining assumption in `SAAS_COMMERCIALIZATION_DESIGN.md` §2.
+this would revise the JWT-retaining assumption in `archive/SAAS_COMMERCIALIZATION_DESIGN.md` §2.
 
 **Open decisions**: integration depth (A/B/C); auth direction (Entra vs SM JWT);
 real-time standard for a unified backend (Socket.io vs Azure Web PubSub); plan/SKU shape.

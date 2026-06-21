@@ -1,3 +1,9 @@
+> **⚠️ ARCHIVED — not a live plan.** This design spike has been folded into the
+> single roadmap in `docs/MASTER_PLAN.md` ("Consolidation & Standardisation
+> Roadmap"). Forward status, priority, and sequencing live there. Retained here
+> for its detailed analysis (brand-divergence table, AI-gateway capability
+> registry, opportunity rationale) as historical reference only.
+
 # Cross-App Consolidation Review & Plan
 
 **Status:** Approved direction — implementation not yet started.

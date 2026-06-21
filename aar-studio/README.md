@@ -14,8 +14,9 @@ development you can still bring your own Azure resources via the Settings screen
 
 > Status: Stages 1–4 complete — setup, live listen with real-time
 > transcription, transcript paste ingest, AI extraction, live board, review,
-> AI report generation and all exports. Stage 5 polish remains — see
-> [`docs/PLAN.md`](docs/PLAN.md).
+> AI report generation and all exports. Stage 5 polish remains — tracked in the
+> root [`docs/MASTER_PLAN.md`](../docs/MASTER_PLAN.md) (roadmap item P1); stage
+> history archived at [`docs/archive/AAR_STUDIO_PLAN.md`](../docs/archive/AAR_STUDIO_PLAN.md).
 
 ## The workflow
 
@@ -128,4 +129,6 @@ You can still run it fully standalone for local development with
 ## Repository layout
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module map and data
-model, and [`docs/PLAN.md`](docs/PLAN.md) for the staged roadmap.
+model. The staged roadmap is folded into the root
+[`docs/MASTER_PLAN.md`](../docs/MASTER_PLAN.md) (stage history archived at
+[`docs/archive/AAR_STUDIO_PLAN.md`](../docs/archive/AAR_STUDIO_PLAN.md)).

@@ -6,7 +6,7 @@
  *
  * This is intentionally conservative: it only sends usage when BOTH a Stripe
  * key and a metered price/meter are configured. Until the metered price is wired
- * up (see docs/SAAS_COMMERCIALIZATION_DESIGN.md §7b), it is a safe no-op that
+ * up (see docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md §7b), it is a safe no-op that
  * leaves rows unreported so nothing is lost.
  */
 

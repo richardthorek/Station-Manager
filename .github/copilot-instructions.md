@@ -20,8 +20,8 @@ This repository follows strict documentation discipline to ensure consistency, m
 - **Location**: `/docs/MASTER_PLAN.md`
 - **Purpose**: Single source of truth for ALL planning, roadmap, phases, enhancement tracking, and strategic intent
 - **Requirements**:
-  - ALL feature planning, enhancement backlog, technical debt, and future roadmap MUST be documented here
-  - NO duplicate planning documents allowed
+  - ALL feature planning, enhancement backlog, technical debt, and future roadmap MUST be documented here — across **all three apps** (`backend/`, `frontend/`, `aar-studio/`) and the wider Bushie Tools suite
+  - **NO duplicate planning documents allowed — there is exactly one plan.** Do NOT create new planning, roadmap, design-spike, or "future work" docs. When capturing future work or a design decision, EDIT `MASTER_PLAN.md`. The former separate plans (`CONSOLIDATION_REVIEW`, `SUITE_INTEGRATION_PLAN`, `SAAS_COMMERCIALIZATION_DESIGN`, `AI_MAINTENANCE_AGENT_DESIGN`, `AAR_STUDIO_PLAN`) were folded into MASTER_PLAN's "Consolidation & Standardisation Roadmap" and moved to `docs/archive/` for historical design reference only
   - All major documentation files MUST reference the master plan
   - All PRs that affect project direction MUST update the master plan
   - Version-controlled and living document (updated continuously)

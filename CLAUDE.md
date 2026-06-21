@@ -4,6 +4,28 @@ Guidance for Claude Code (and other AI agents) working in this repo. Optimised
 for fast, token-efficient navigation — **read the indexed file you need instead
 of grepping the whole tree.**
 
+## ⛔ THE ONE-PLAN RULE (non-negotiable)
+
+**There is exactly one plan: `docs/MASTER_PLAN.md`. Do not create any other.**
+
+- **NEVER** create a new planning, roadmap, design-spike, "future work", proposal,
+  strategy, or `*_PLAN.md` / `*_DESIGN.md` / `*_ROADMAP.md` document — not in
+  `docs/`, not in an app folder, not anywhere. This includes splitting a plan
+  "just for this feature" or dropping a design doc next to code.
+- To capture future work, a design decision, a phase, or a change of direction:
+  **edit `docs/MASTER_PLAN.md`** (its "Consolidation & Standardisation Roadmap" is
+  the home for cross-app / SaaS / AI / suite work). That is the single source of
+  truth for *all three apps* (`backend/`, `frontend/`, `aar-studio/`) and the suite.
+- The former separate plans were folded in and moved to `docs/archive/` (banners
+  point back here). They are historical design **reference only — not live plans**;
+  never resurrect one as the place to plan.
+- If a planning doc somehow reappears, treat it as a defect: fold its content into
+  `MASTER_PLAN.md` and archive it. Don't add to it.
+
+(`AS_BUILT.md`, `API_DOCUMENTATION.md`, registries, and the `archive/` /
+`implementation-notes/` reference docs describe what *is* built — they are not
+plans and are unaffected by this rule.)
+
 ## What this is
 
 RFS Station Manager — a real-time digital sign-in system for NSW Rural Fire
@@ -24,7 +46,8 @@ view reports. Changes sync live across kiosks/tablets/phones via WebSockets.
 - **Status**: v1.1 in production — sign-in, truck check, and reports all shipped.
   Features are gated per-organization by SaaS **entitlements** (see "SaaS tenancy
   & entitlements"). AAR Studio is live at `/aar`. Stripe billing is designed
-  (`docs/SAAS_COMMERCIALIZATION_DESIGN.md`) but **not yet wired**.
+  (roadmap in `docs/MASTER_PLAN.md`; design in
+  `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md`) but **not yet wired**.
 - **DB**: Azure Table Storage in prod; in-memory store for local dev/tests.
   Selected at runtime by `dbFactory` (see below).
 - **Deploy**: GitHub Actions → Azure **Linux** App Service (`bungrfs-linux`). The
@@ -139,7 +162,9 @@ Organizations are the billing tenant; features are gated per-org. Default-**off*
   for admin/role — never mix the two.
 - **Not yet built:** Stripe checkout/portal/webhooks, usage metering
   (`UsageRecord`), and gating on a few routes (`export`, station/device limits).
-  See `docs/SAAS_COMMERCIALIZATION_DESIGN.md` and `docs/CONSOLIDATION_REVIEW.md`.
+  See the Consolidation & Standardisation Roadmap in `docs/MASTER_PLAN.md`
+  (commercialisation track C1–C4); detailed design in
+  `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md`.
 
 ## Backend file index (`backend/src/`)
 
@@ -205,8 +230,11 @@ Organizations are the billing tenant; features are gated per-org. Default-**off*
 
 ## Docs you should consult (don't re-derive)
 
-- `docs/MASTER_PLAN.md` — **single source of truth** for roadmap, priorities,
-  technical debt. Update it when changing project direction.
+- `docs/MASTER_PLAN.md` — **the single plan.** Source of truth for roadmap,
+  priorities, technical debt, *and* all cross-app/commercialisation/AI/suite work
+  (see its "Consolidation & Standardisation Roadmap"). **There is no other plan.**
+  When capturing future work or a design decision, edit this file — never create a
+  new planning/design/roadmap doc. Update it when changing project direction.
 - `docs/AS_BUILT.md` — current architecture/implementation of record.
 - `docs/api_register.json` + `docs/function_register.json` — machine-readable
   endpoint/function registries (Draft-7). Update when APIs/signatures change;
@@ -214,13 +242,17 @@ Organizations are the billing tenant; features are gated per-org. Default-**off*
 - `docs/API_DOCUMENTATION.md`, `docs/openapi.yaml` — REST/WS reference.
 - `docs/GETTING_STARTED.md`, `docs/FEATURE_DEVELOPMENT_GUIDE.md` — dev guides.
 - `docs/AZURE_DEPLOYMENT.md`, `docs/ci_pipeline.md` — deploy/CI.
-- `docs/CONSOLIDATION_REVIEW.md` — cross-app coherence roadmap (design-system
-  unification, server-side AI gateway, AAR identity/persistence, shared types).
-- `docs/SAAS_COMMERCIALIZATION_DESIGN.md` — plans/pricing, Stripe billing design,
-  usage metering. `docs/AI_MAINTENANCE_AGENT_DESIGN.md` — server-side AI agent.
+- `docs/SUITE_TOKEN_VALIDATION.md` — current contract for sibling apps validating
+  the SM JWT (reference, not a plan).
+- **Archived design spikes** (`docs/archive/`) — historical detail only, *not* live
+  plans; their forward work is in MASTER_PLAN's roadmap: `CONSOLIDATION_REVIEW.md`
+  (cross-app coherence, AI gateway), `SAAS_COMMERCIALIZATION_DESIGN.md`
+  (pricing/Stripe/tenancy schema), `AI_MAINTENANCE_AGENT_DESIGN.md` (voice/vision
+  agent schema + tool contract), `SUITE_INTEGRATION_PLAN.md` (suite options),
+  `AAR_STUDIO_PLAN.md` (AAR stage history).
 - `.github/copilot-instructions.md` — full conventions (this file is the short form).
-- `docs/archive/` historical; `docs/implementation-notes/` deep dives;
-  `docs/current_state/` dated snapshots + UI screenshots.
+- `docs/implementation-notes/` deep dives; `docs/current_state/` dated snapshots +
+  UI screenshots.
 
 ## Conventions (the ones that bite)
 
