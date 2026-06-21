@@ -126,12 +126,22 @@ export function CheckWorkflowPage() {
   async function loadData() {
     try {
       setLoading(true);
-      const [applianceData, templateData] = await Promise.all([
+      // Use the resolved effective checklist: the vehicle type's locked standard
+      // items merged with the brigade's custom overlay, in saved order. Falls
+      // back to the legacy per-appliance template server-side when untyped.
+      const [applianceData, checklist] = await Promise.all([
         api.getAppliance(applianceId!),
-        api.getTemplate(applianceId!),
+        api.getEffectiveChecklist(applianceId!),
       ]);
       setAppliance(applianceData);
-      setTemplate(templateData);
+      setTemplate({
+        id: applianceId!,
+        applianceId: checklist.applianceId,
+        applianceName: checklist.applianceName,
+        items: checklist.items,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
     } catch (err) {
       setError('Failed to load checklist');
       console.error(err);

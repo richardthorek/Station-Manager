@@ -33,6 +33,7 @@ const CheckWorkflowPage = lazy(() => import('./features/truckcheck/CheckWorkflow
 const CheckSummaryPage = lazy(() => import('./features/truckcheck/CheckSummaryPage').then(m => ({ default: m.CheckSummaryPage })));
 const TemplateSelectionPage = lazy(() => import('./features/truckcheck/TemplateSelectionPage').then(m => ({ default: m.TemplateSelectionPage })));
 const TemplateEditorPage = lazy(() => import('./features/truckcheck/TemplateEditorPage').then(m => ({ default: m.TemplateEditorPage })));
+const VehicleTypesPage = lazy(() => import('./features/truckcheck/VehicleTypesPage').then(m => ({ default: m.VehicleTypesPage })));
 
 // Reports routes (v1.1)
 const ReportsPageEnhanced = lazy(() => import('./features/reports/ReportsPageEnhanced').then(m => ({ default: m.ReportsPageEnhanced })));
@@ -83,6 +84,7 @@ function AnimatedRoutes() {
         <Route path="/truckcheck/summary/:runId" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><CheckSummaryPage /></FeatureRoute>} />
         <Route path="/truckcheck/select" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateSelectionPage /></FeatureRoute>} />
         <Route path="/truckcheck/templates/:applianceId" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateEditorPage /></FeatureRoute>} />
+        <Route path="/truckcheck/vehicle-types" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><VehicleTypesPage /></FeatureRoute>} />
 
         {/* Reports (v1.1) — gated by reportsEnabled */}
         <Route path="/reports" element={<FeatureRoute feature="reportsEnabled" title="Reports"><ReportsPageEnhanced /></FeatureRoute>} />

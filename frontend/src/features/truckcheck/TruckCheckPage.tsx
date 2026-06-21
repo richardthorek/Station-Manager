@@ -148,6 +148,9 @@ export function TruckCheckPage() {
           <Link to="/truckcheck/admin" className="tab-link">
             ⚙️ Admin Dashboard
           </Link>
+          <Link to="/truckcheck/vehicle-types" className="tab-link">
+            🧰 Vehicle Types
+          </Link>
         </div>
 
         <div className="start-view">
