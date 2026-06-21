@@ -26,6 +26,34 @@ of grepping the whole tree.**
 `implementation-notes/` reference docs describe what *is* built — they are not
 plans and are unaffected by this rule.)
 
+## 📝 PROGRESS TRACKING RULE (mandatory at end of every session)
+
+**At the end of every working session, update `docs/MASTER_PLAN.md`** before pushing the final commit. This is not optional — it is part of "done".
+
+### What to record
+
+1. **In the "June 2026 Stabilization" section** (or the matching month/year section), add a dated bullet summarising what shipped: which files changed, what problem was solved, which PR number, and any caveats or known gaps.
+
+2. **Update "Prioritised next steps"** to reflect what remains. Mark items you completed as done. If the priorities have shifted, reorder the list. If a new blocker emerged, add it at the top with a brief explanation.
+
+3. **Update the version history table** at the bottom of the file with a one-line description of what changed.
+
+### Format guidance
+
+```
+- 2026-MM-DD: **Short title (#PR).** One-sentence summary of what problem this solved.
+  **What shipped:** bullet list of concrete changes. *N commits; test suites green.*
+```
+
+### When to also update other docs
+
+- If an API endpoint was added/changed → also update `docs/api_register.json` and `docs/API_DOCUMENTATION.md`.
+- If a backend function/service signature changed → also update `docs/function_register.json`.
+- If the overall architecture changed → also update `docs/AS_BUILT.md`.
+- If the CI pipeline changed → also update `docs/ci_pipeline.md`.
+
+The master plan captures *what* and *why*; the registries and AS_BUILT capture *how*. Keep all four in sync.
+
 ## What this is
 
 RFS Station Manager — a real-time digital sign-in system for NSW Rural Fire
