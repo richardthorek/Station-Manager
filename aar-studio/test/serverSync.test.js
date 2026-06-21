@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   toServerBody,
   isAuthed,
+  isRemoteNewer,
   pushSession,
   listServerSessions,
   fetchServerSession,
@@ -27,6 +28,24 @@ test('toServerBody lifts title/date and serialises the whole session as payload'
 
 test('toServerBody falls back to a friendly title when none is set', () => {
   assert.equal(toServerBody({ id: 's1' }).title, 'Untitled review');
+});
+
+test('toServerBody carries the device edit time as clientUpdatedAt', () => {
+  assert.equal(toServerBody({ id: 's1', updatedAt: '2026-06-21T10:00:00.000Z' }).clientUpdatedAt, '2026-06-21T10:00:00.000Z');
+});
+
+test('isRemoteNewer compares clientUpdatedAt (falling back to updatedAt) against local', () => {
+  assert.equal(isRemoteNewer({ clientUpdatedAt: '2026-06-21T11:00:00Z' }, '2026-06-21T10:00:00Z'), true);
+  assert.equal(isRemoteNewer({ clientUpdatedAt: '2026-06-21T09:00:00Z' }, '2026-06-21T10:00:00Z'), false);
+  assert.equal(isRemoteNewer({ updatedAt: '2026-06-21T11:00:00Z' }, '2026-06-21T10:00:00Z'), true);
+  assert.equal(isRemoteNewer({ clientUpdatedAt: '2026-06-21T11:00:00Z' }, ''), false); // no local copy
+});
+
+test('pushSession flags a 409 as a conflict (no clobber)', async () => {
+  const fetchImpl = async () => ({ ok: false, status: 409 });
+  const res = await pushSession({ id: 's1', updatedAt: '2026-06-21T09:00:00Z' }, { fetchImpl, token: 'jwt' });
+  assert.equal(res.ok, false);
+  assert.equal(res.conflict, true);
 });
 
 test('pushSession PUTs to the id-scoped URL with a bearer header', async () => {

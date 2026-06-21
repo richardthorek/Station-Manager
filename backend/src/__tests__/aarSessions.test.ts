@@ -130,6 +130,27 @@ describe('AAR Sessions', () => {
     expect(res.status).toBe(400);
   });
 
+  it('rejects a stale save with 409 and returns the current server copy', async () => {
+    const token = await signup();
+    const save = (title: string, clientUpdatedAt: string) =>
+      request(app)
+        .put('/api/aar-sessions/sess-1')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title, schemaVersion: 1, payload: samplePayload, clientUpdatedAt });
+
+    const first = await save('Newer', '2026-06-21T10:00:00.000Z');
+    expect(first.status).toBe(200);
+
+    const stale = await save('Stale', '2026-06-21T09:00:00.000Z');
+    expect(stale.status).toBe(409);
+    expect(stale.body.current.title).toBe('Newer');
+    expect(stale.body.current.payload).toBeUndefined(); // conflict body omits payload
+
+    // A newer edit still goes through.
+    const newer = await save('Newest', '2026-06-21T11:00:00.000Z');
+    expect(newer.status).toBe(200);
+  });
+
   it('rejects an oversized payload (413)', async () => {
     const token = await signup();
     const huge = JSON.stringify({ blob: 'x'.repeat(900_001) });

@@ -398,6 +398,8 @@ body.join-mode .nav { display: none; }
 /* Cloud (team-shared) reviews not yet pulled onto this device. */
 .review-card--cloud { border-style: dashed; background: transparent; }
 .review-card--cloud .review-card__stat { color: var(--muted); font-weight: 500; }
+/* Flag on a local card whose cloud copy is newer (edited on another device). */
+.review-card__cloud-flag { margin: 0.2rem 0 0; font-size: 0.78rem; font-weight: 600; color: var(--red); }
 .icon-btn--danger:hover { color: #fff; background: var(--red); }
 
 .home-footer { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); padding: 0.5rem 0 1.5rem; }

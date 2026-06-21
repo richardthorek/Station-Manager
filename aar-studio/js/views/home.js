@@ -6,7 +6,7 @@ import { requestAutoStart } from './capture.js';
 import { displayTitle } from '../lib/model.js';
 import { friendlyDate } from '../lib/text.js';
 import { sessionFilename } from '../lib/exports.js';
-import { isAuthed, listServerSessions, fetchServerSession } from '../lib/serverSync.js';
+import { isAuthed, listServerSessions, fetchServerSession, isRemoteNewer } from '../lib/serverSync.js';
 
 // Quick kick-off: blank review with today's date, jump to capture, start the mic.
 function startRecordingNow() {
@@ -51,7 +51,7 @@ function reviewCard(s) {
   const stat = s.findings
     ? `${s.findings} finding${s.findings === 1 ? '' : 's'}`
     : (s.segments ? 'recorded, not yet summarised' : 'empty');
-  return h('article', { class: 'review-card', onclick: () => { store.openSession(s.id); location.hash = '#/board'; } },
+  return h('article', { class: 'review-card', 'data-session-id': s.id, onclick: () => { store.openSession(s.id); location.hash = '#/board'; } },
     h('div', { class: 'review-card__body' },
       h('h3', { class: 'review-card__title' }, displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })),
       h('p', { class: 'review-card__meta' }, subtitle || 'No details yet'),
@@ -76,20 +76,22 @@ function reviewCard(s) {
   );
 }
 
+/** Pull the server copy of a review onto this device and open it. */
+async function openRemote(id) {
+  try {
+    const session = await fetchServerSession(id);
+    if (!session) throw new Error('Could not download this review');
+    store.adoptSession(session); // overwrites any local copy with the cloud one
+    location.hash = '#/board';
+  } catch (err) {
+    toast(err.message || 'Could not open that review', 'error');
+  }
+}
+
 /** A cloud review not yet on this device: tap to pull it down and open it. */
 function cloudCard(s) {
   const subtitle = [friendlyDate(s.incidentDate || s.createdAt), s.createdByName].filter(Boolean).join(' · ');
-  const open = async () => {
-    try {
-      const session = await fetchServerSession(s.id);
-      if (!session) throw new Error('Could not download this review');
-      store.adoptSession(session);
-      location.hash = '#/board';
-    } catch (err) {
-      toast(err.message || 'Could not open that review', 'error');
-    }
-  };
-  return h('article', { class: 'review-card review-card--cloud', onclick: open },
+  return h('article', { class: 'review-card review-card--cloud', onclick: () => openRemote(s.id) },
     h('div', { class: 'review-card__body' },
       h('h3', { class: 'review-card__title' }, displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })),
       h('p', { class: 'review-card__meta' }, subtitle || 'From your team'),
@@ -99,14 +101,37 @@ function cloudCard(s) {
 }
 
 /**
- * After the page renders, pull the org's cloud reviews (when signed in) and show
- * any that aren't already on this device in a "From your team" section. Additive
- * and best-effort — failures leave the local-only view untouched.
+ * Flag a local review card whose cloud copy is newer (edited on another device),
+ * and add a "Load latest" action that pulls the server version over the local one.
  */
-async function appendCloudReviews(container, localIds) {
+function markCardUpdated(container, summary) {
+  const card = container.querySelector(`.review-card[data-session-id="${summary.id}"]`);
+  if (!card || card.querySelector('.review-card__cloud-flag')) return;
+  card.querySelector('.review-card__body')?.append(
+    h('p', { class: 'review-card__cloud-flag' }, '☁ Newer version from your team'),
+  );
+  card.querySelector('.review-card__actions')?.prepend(
+    h('button', {
+      class: 'icon-btn', title: 'Load latest from your team', 'aria-label': 'Load latest from your team',
+      onclick: () => openRemote(summary.id),
+    }, '⟳'),
+  );
+}
+
+/**
+ * After the page renders, pull the org's cloud reviews (when signed in). Reviews
+ * not on this device get a "From your team" section; reviews that exist locally
+ * but were edited more recently elsewhere get a "newer version" flag on their
+ * card. Additive and best-effort — failures leave the local-only view untouched.
+ */
+async function appendCloudReviews(container, localById) {
   if (!isAuthed()) return;
   const remote = await listServerSessions();
-  const missing = remote.filter((s) => !localIds.has(s.id));
+  const missing = [];
+  for (const s of remote) {
+    if (!localById.has(s.id)) { missing.push(s); continue; }
+    if (isRemoteNewer(s, localById.get(s.id))) markCardUpdated(container, s);
+  }
   if (!missing.length) return;
   container.append(
     h('section', { class: 'reviews reviews--cloud' },
@@ -119,7 +144,7 @@ async function appendCloudReviews(container, localIds) {
 
 export function render(container) {
   const sessions = store.listSessions();
-  const localIds = new Set(sessions.map((s) => s.id));
+  const localById = new Map(sessions.map((s) => [s.id, s.updatedAt]));
 
   container.append(
     h('section', { class: 'hero hero--home' },
@@ -145,5 +170,5 @@ export function render(container) {
   );
 
   // Pull in brigade-shared reviews from the server (best-effort, additive).
-  appendCloudReviews(container, localIds).catch(() => {});
+  appendCloudReviews(container, localById).catch(() => {});
 }

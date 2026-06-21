@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "lastUpdated": "2026-06-21",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
@@ -196,14 +196,15 @@
       "PUT /api/aar-sessions/:id": {
         "method": "PUT",
         "path": "/api/aar-sessions/:id",
-        "description": "Create or replace a review (the client owns the id). Org scoping is enforced; creation metadata (createdAt/createdBy) is preserved across updates.",
+        "description": "Create or replace a review (the client owns the id). Org scoping is enforced; creation metadata (createdAt/createdBy) is preserved across updates. Optimistic concurrency: when clientUpdatedAt is supplied and an existing row was edited more recently, the save is rejected (409) instead of clobbering it; omit clientUpdatedAt to force last-write-wins.",
         "authentication": "JWT (org context required)",
-        "requestBody": { "title": "string", "incidentDate": "string?", "stationId": "string?", "schemaVersion": "number", "payload": "string (JSON of the AAR Studio session)" },
+        "requestBody": { "title": "string", "incidentDate": "string?", "stationId": "string?", "schemaVersion": "number", "payload": "string (JSON of the AAR Studio session)", "clientUpdatedAt": "string? (the saving device's last-edit time, ISO; enables stale-write detection)" },
         "responses": {
           "200": { "description": "{ session: AARSession }" },
           "400": { "description": "payload or schemaVersion missing/invalid" },
           "401": { "description": "Not authenticated" },
           "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
+          "409": { "description": "Stale write — updated more recently on another device; body is { error, current } (current omits payload)" },
           "413": { "description": "Review payload too large to persist (~900k char cap)" }
         },
         "implementation": "backend/src/routes/aarSessions.ts"
@@ -3864,6 +3865,7 @@
         "payload": { "type": "string", "description": "JSON of the full AAR Studio session object" },
         "createdBy": { "type": "string", "description": "userId of the facilitator who first saved it" },
         "createdByName": { "type": "string", "description": "Display name of the facilitator" },
+        "clientUpdatedAt": { "type": "string", "format": "date-time", "description": "The review's last-edit time on the saving device; used for optimistic-concurrency conflict detection (distinct from updatedAt, the server write time)" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },

@@ -830,6 +830,21 @@ fan-out). These are typeaheads, not hard selects, so signed-out use is unchanged
 (no roster → plain free-text) and a name not on the roster can still be typed. No
 CSP change is needed — `/api/*` is same-origin under `connect-src 'self'`.
 
+**Sync conflict handling** uses timestamp-based optimistic concurrency. Each
+review carries `clientUpdatedAt` (the saving device's own last-edit time, distinct
+from the server's `updatedAt`). On `PUT`, if the stored row's `clientUpdatedAt` is
+newer than the incoming one the save is rejected with **409** (`AarSessionConflictError`,
+body `{ error, current }`) rather than clobbering it; omitting `clientUpdatedAt`
+forces last-write-wins (back-compat). The client's debounced backup sends it and
+treats a 409 as a no-op (never clobbers), and the home view reconciles the read
+side: a local review whose cloud copy is newer (`serverSync.isRemoteNewer`) gets a
+"newer version from your team" flag and a *Load latest* action that pulls the
+server copy over the local one (`store.adoptSession`). The `/aar` CSP is
+intentionally **not** shrunk: the Azure Speech SDK still opens a browser-direct
+connection to `*.stt.speech.microsoft.com`/`*.cognitiveservices.azure.com` (the
+gateway only vends a token) and BYO-Azure direct mode is still supported, so those
+`connect-src` hosts remain required until a streaming-audio gateway exists.
+
 ---
 
 ## National Fire Service Facilities Dataset

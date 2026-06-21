@@ -20,6 +20,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import { ensureAarSessionDatabase } from '../services/aarSessionDbFactory';
+import { AarSessionConflictError } from '../services/aarSessionDatabase';
 import { logger } from '../services/logger';
 
 const router = Router();
@@ -78,7 +79,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   const organizationId = requireOrgId(req, res);
   if (!organizationId) return;
 
-  const { title, incidentDate, schemaVersion, payload, stationId } = req.body ?? {};
+  const { title, incidentDate, schemaVersion, payload, stationId, clientUpdatedAt } = req.body ?? {};
 
   if (typeof payload !== 'string' || !payload.trim()) {
     res.status(400).json({ error: 'payload (JSON string) is required' });
@@ -102,11 +103,18 @@ router.put('/:id', async (req: Request, res: Response) => {
       incidentDate: typeof incidentDate === 'string' ? incidentDate : undefined,
       schemaVersion,
       payload,
+      clientUpdatedAt: typeof clientUpdatedAt === 'string' ? clientUpdatedAt : undefined,
       createdBy: req.user?.userId,
       createdByName: req.user?.username,
     });
     res.json({ session });
   } catch (error) {
+    if (error instanceof AarSessionConflictError) {
+      // The server copy was edited more recently on another device.
+      const { payload: _payload, ...current } = error.current;
+      res.status(409).json({ error: 'This review was updated more recently on another device', current });
+      return;
+    }
     logger.error('Failed to save AAR session', { error, organizationId, id: req.params.id });
     res.status(500).json({ error: 'Failed to save review' });
   }

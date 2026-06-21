@@ -352,6 +352,14 @@ export interface AARSession {
   payload: string;               // JSON of the full AAR Studio session object
   createdBy?: string;            // userId of the facilitator who saved it
   createdByName?: string;        // display name of the facilitator
+  /**
+   * The review's last-edit time on the device that saved it (the AAR session's
+   * own `updatedAt`). Used for optimistic-concurrency conflict detection — a save
+   * carrying an older `clientUpdatedAt` than the stored one is a stale overwrite
+   * and is rejected. Distinct from `updatedAt`, which is when the *server* last
+   * wrote the row.
+   */
+  clientUpdatedAt?: string;
   createdAt: Date;
   updatedAt: Date;
 }

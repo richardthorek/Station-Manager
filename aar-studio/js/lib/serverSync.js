@@ -36,8 +36,22 @@ export function toServerBody(session) {
     incidentDate: session?.incident?.date || undefined,
     stationId: session?.stationId || undefined,
     schemaVersion: typeof session?.schemaVersion === 'number' ? session.schemaVersion : 1,
+    // The device's last-edit time — the server uses it for stale-write detection.
+    clientUpdatedAt: session?.updatedAt || undefined,
     payload: JSON.stringify(session),
   };
+}
+
+/**
+ * True when a server review summary is newer than the local copy's last-edit
+ * time — i.e. a teammate (or another device) has edited it since. Compares the
+ * device edit time (`clientUpdatedAt`), falling back to the server write time.
+ */
+export function isRemoteNewer(remoteSummary, localUpdatedAt) {
+  if (!localUpdatedAt) return false;
+  const remote = remoteSummary?.clientUpdatedAt || remoteSummary?.updatedAt;
+  if (!remote) return false;
+  return new Date(remote).getTime() > new Date(localUpdatedAt).getTime();
 }
 
 function authHeaders(token) {
@@ -57,7 +71,8 @@ export async function pushSession(session, { fetchImpl = globalThis.fetch, token
       headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
       body: JSON.stringify(toServerBody(session)),
     });
-    return { ok: res.ok, status: res.status };
+    // 409 = the cloud copy was edited more recently elsewhere; don't clobber.
+    return { ok: res.ok, status: res.status, conflict: res.status === 409 };
   } catch {
     return { ok: false, skipped: 'network' };
   }
@@ -79,6 +94,7 @@ export async function listServerSessions({ fetchImpl = globalThis.fetch, token =
       incidentDate: s.incidentDate || '',
       createdAt: s.createdAt || s.updatedAt || '',
       updatedAt: s.updatedAt || '',
+      clientUpdatedAt: s.clientUpdatedAt || '',
       createdByName: s.createdByName || '',
       remote: true,
     }));

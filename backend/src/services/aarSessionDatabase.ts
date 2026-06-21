@@ -22,6 +22,30 @@ export interface UpsertAarSessionInput {
   payload: string;
   createdBy?: string;
   createdByName?: string;
+  /**
+   * The review's last-edit time on the saving device. When provided and an
+   * existing row has a strictly-newer `clientUpdatedAt`, the save is rejected as
+   * stale (`AarSessionConflictError`). Omit it to force a last-write-wins save.
+   */
+  clientUpdatedAt?: string;
+}
+
+/**
+ * Thrown by `upsert` when the incoming save is older than the stored copy
+ * (optimistic-concurrency conflict). Carries the current server row so the
+ * caller can return it to the client.
+ */
+export class AarSessionConflictError extends Error {
+  constructor(public readonly current: AARSession) {
+    super('AAR session was updated more recently on another device');
+    this.name = 'AarSessionConflictError';
+  }
+}
+
+/** True when `incoming` is strictly older than `stored` (a stale overwrite). */
+export function isStaleWrite(stored: AARSession, incomingClientUpdatedAt?: string): boolean {
+  if (!incomingClientUpdatedAt || !stored.clientUpdatedAt) return false;
+  return new Date(incomingClientUpdatedAt).getTime() < new Date(stored.clientUpdatedAt).getTime();
 }
 
 /** Lightweight row for the roster listing (no payload). */
@@ -56,6 +80,9 @@ export class AarSessionDatabase implements IAarSessionDatabase {
 
   async upsert(input: UpsertAarSessionInput): Promise<AARSession> {
     const existing = this.rows.get(this.key(input.organizationId, input.id));
+    if (existing && isStaleWrite(existing, input.clientUpdatedAt)) {
+      throw new AarSessionConflictError(existing);
+    }
     const now = new Date();
     const row: AARSession = {
       id: input.id,
@@ -65,6 +92,7 @@ export class AarSessionDatabase implements IAarSessionDatabase {
       incidentDate: input.incidentDate,
       schemaVersion: input.schemaVersion,
       payload: input.payload,
+      clientUpdatedAt: input.clientUpdatedAt,
       // Preserve creation metadata when an org updates its own existing review.
       createdBy: existing ? existing.createdBy ?? input.createdBy : input.createdBy,
       createdByName: existing ? existing.createdByName ?? input.createdByName : input.createdByName,

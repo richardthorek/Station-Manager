@@ -12,10 +12,12 @@
 import { TableClient, TableEntity } from '@azure/data-tables';
 import { logger } from './logger';
 import type { AARSession } from '../types';
-import type {
-  IAarSessionDatabase,
-  UpsertAarSessionInput,
-  AarSessionSummary,
+import {
+  AarSessionConflictError,
+  isStaleWrite,
+  type IAarSessionDatabase,
+  type UpsertAarSessionInput,
+  type AarSessionSummary,
 } from './aarSessionDatabase';
 
 function buildTableName(baseName: string): string {
@@ -63,6 +65,7 @@ interface AarSessionEntity extends TableEntity {
   payloadChunks: number;
   createdBy?: string;
   createdByName?: string;
+  clientUpdatedAt?: string;
   createdAt: string;
   updatedAt: string;
   [key: string]: unknown; // payload0..payloadN
@@ -106,6 +109,7 @@ export class TableStorageAarSessionDatabase implements IAarSessionDatabase {
       ...chunks,
       createdBy: row.createdBy,
       createdByName: row.createdByName,
+      clientUpdatedAt: row.clientUpdatedAt,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     };
@@ -122,6 +126,7 @@ export class TableStorageAarSessionDatabase implements IAarSessionDatabase {
       payload: joinPayload(entity),
       createdBy: entity.createdBy,
       createdByName: entity.createdByName,
+      clientUpdatedAt: entity.clientUpdatedAt,
       createdAt: new Date(entity.createdAt),
       updatedAt: new Date(entity.updatedAt),
     };
@@ -129,6 +134,9 @@ export class TableStorageAarSessionDatabase implements IAarSessionDatabase {
 
   async upsert(input: UpsertAarSessionInput): Promise<AARSession> {
     const existing = await this.getById(input.organizationId, input.id);
+    if (existing && isStaleWrite(existing, input.clientUpdatedAt)) {
+      throw new AarSessionConflictError(existing);
+    }
     const now = new Date();
     const row: AARSession = {
       id: input.id,
@@ -138,6 +146,7 @@ export class TableStorageAarSessionDatabase implements IAarSessionDatabase {
       incidentDate: input.incidentDate,
       schemaVersion: input.schemaVersion,
       payload: input.payload,
+      clientUpdatedAt: input.clientUpdatedAt,
       createdBy: existing ? existing.createdBy ?? input.createdBy : input.createdBy,
       createdByName: existing ? existing.createdByName ?? input.createdByName : input.createdByName,
       createdAt: existing ? existing.createdAt : now,
@@ -163,7 +172,7 @@ export class TableStorageAarSessionDatabase implements IAarSessionDatabase {
       queryOptions: {
         filter: `PartitionKey eq '${organizationId.replace(/'/g, "''")}'`,
         // Skip the (potentially large, chunked) payload columns in the listing.
-        select: ['partitionKey', 'rowKey', 'stationId', 'title', 'incidentDate', 'schemaVersion', 'createdBy', 'createdByName', 'createdAt', 'updatedAt'],
+        select: ['partitionKey', 'rowKey', 'stationId', 'title', 'incidentDate', 'schemaVersion', 'createdBy', 'createdByName', 'clientUpdatedAt', 'createdAt', 'updatedAt'],
       },
     });
     const rows: AarSessionSummary[] = [];

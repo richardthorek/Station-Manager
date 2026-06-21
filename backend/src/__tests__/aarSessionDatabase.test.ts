@@ -4,7 +4,7 @@
  * create-vs-update metadata handling, summary projection, and ordering.
  */
 
-import { AarSessionDatabase, type UpsertAarSessionInput } from '../services/aarSessionDatabase';
+import { AarSessionDatabase, AarSessionConflictError, type UpsertAarSessionInput } from '../services/aarSessionDatabase';
 
 function input(overrides: Partial<UpsertAarSessionInput> = {}): UpsertAarSessionInput {
   return {
@@ -84,6 +84,25 @@ describe('AarSessionDatabase', () => {
     expect(await db.delete('org-1', 'sess-1')).toBe(true);
     expect(await db.getById('org-1', 'sess-1')).toBeNull();
     expect(await db.delete('org-1', 'sess-1')).toBe(false); // already gone
+  });
+
+  it('rejects a stale write (older clientUpdatedAt) with a conflict', async () => {
+    await db.upsert(input({ clientUpdatedAt: '2026-06-21T10:00:00.000Z' }));
+    // An older edit from another device must not clobber the newer stored copy.
+    await expect(
+      db.upsert(input({ title: 'Stale', clientUpdatedAt: '2026-06-21T09:00:00.000Z' })),
+    ).rejects.toBeInstanceOf(AarSessionConflictError);
+    const stored = await db.getById('org-1', 'sess-1');
+    expect(stored?.title).toBe('Grass fire AAR'); // unchanged
+  });
+
+  it('accepts a newer write and a write with no clientUpdatedAt (last-write-wins)', async () => {
+    await db.upsert(input({ clientUpdatedAt: '2026-06-21T10:00:00.000Z' }));
+    const newer = await db.upsert(input({ title: 'Newer', clientUpdatedAt: '2026-06-21T11:00:00.000Z' }));
+    expect(newer.title).toBe('Newer');
+    // Omitting clientUpdatedAt opts out of the guard entirely.
+    const forced = await db.upsert(input({ title: 'Forced' }));
+    expect(forced.title).toBe('Forced');
   });
 
   it('clear() empties the store', async () => {
