@@ -99,11 +99,11 @@ export function UserManagement({ members, onClose, onUpdateMember, onAddMember, 
       setIsAdding(true);
       await onAddMember(trimmed, newMemberRank || null);
       setNewMemberName('');
-      setNewMemberRank('Firefighter');
+      setNewMemberRank('Member');
       addInputRef.current?.focus();
     } catch (err) {
       console.error('Failed to add member:', err);
-      alert('Failed to add member');
+      alert(err instanceof Error ? err.message : 'Failed to add member');
     } finally {
       setIsAdding(false);
     }

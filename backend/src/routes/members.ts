@@ -30,6 +30,7 @@ import {
 } from '../middleware/memberValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { enforceMemberLimit } from '../middleware/entitlements';
 import { getEffectiveStationId } from '../constants/stations';
 import { flexibleAuth } from '../middleware/flexibleAuth';
 import { logger } from '../services/logger';
@@ -133,7 +134,7 @@ router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Re
 });
 
 // Create new member (assigns station)
-router.post('/', validateCreateMember, handleValidationErrors, async (req: Request, res: Response) => {
+router.post('/', enforceMemberLimit(), validateCreateMember, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const { name, firstName, lastName, preferredName, rank, membershipStartDate } = req.body || {};

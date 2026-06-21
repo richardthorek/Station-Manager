@@ -26,6 +26,8 @@ export interface Entitlements {
   aiEnabled: boolean;
   maxStations: number;
   maxDevices: number;
+  maxMembers?: number;
+  maxVehicles?: number;
   aiIncludedSessions: number;
   aarStudioEnabled?: boolean;
   santaRunEnabled?: boolean;

@@ -10,6 +10,14 @@
 
 import type { Entitlements, PlanCode } from '../types';
 
+/**
+ * Sentinel for an "effectively unlimited" numeric entitlement. A large finite
+ * value keeps the clamp/compare arithmetic (Math.min, `count >= limit`) simple
+ * and serialises cleanly to JSON / Table Storage. The UI treats any limit at or
+ * above this as "Unlimited".
+ */
+export const UNLIMITED = 100_000;
+
 export interface PlanDefinition {
   code: PlanCode;
   name: string;
@@ -39,12 +47,14 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
       aiEnabled: false,
       maxStations: 1,
       maxDevices: 2,
+      maxMembers: 10,
+      maxVehicles: 1,
       aiIncludedSessions: 0,
       aarStudioEnabled: false,
       santaRunEnabled: false,
       fireBreakEnabled: false,
     },
-    description: 'Free for any brigade. Sign-in book and truck checks. Single-station setup.',
+    description: 'Free for any crew. Sign-in book (up to 10 members) and a vehicle check for 1 vehicle. Single-station setup.',
   },
   basic: {
     code: 'basic',
@@ -60,12 +70,14 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
       aiEnabled: false,
       maxStations: 20,
       maxDevices: 10,
+      maxMembers: UNLIMITED,
+      maxVehicles: UNLIMITED,
       aiIncludedSessions: 0,
       aarStudioEnabled: false,
       santaRunEnabled: false,
       fireBreakEnabled: false,
     },
-    description: 'Full manual suite: sign-in, truck checks, reports & CSV export. Unlimited members, up to 10 devices.',
+    description: 'Full manual suite: sign-in, truck checks, reports & CSV export. Unlimited members & vehicles, multiple stations.',
   },
   ai: {
     code: 'ai',
@@ -81,6 +93,8 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
       aiEnabled: true,
       maxStations: 20,
       maxDevices: 25,
+      maxMembers: UNLIMITED,
+      maxVehicles: UNLIMITED,
       aiIncludedSessions: 25, // fair-use allowance; overage metering is a future enhancement
       aarStudioEnabled: true,
       santaRunEnabled: false,
@@ -115,6 +129,8 @@ export function clampEntitlements(planCode: PlanCode, desired: Partial<Entitleme
     aiEnabled: current.aiEnabled && ceiling.aiEnabled,
     maxStations: Math.min(current.maxStations, ceiling.maxStations),
     maxDevices: Math.min(current.maxDevices, ceiling.maxDevices),
+    maxMembers: Math.min(current.maxMembers, ceiling.maxMembers),
+    maxVehicles: Math.min(current.maxVehicles, ceiling.maxVehicles),
     aiIncludedSessions: Math.min(current.aiIncludedSessions, ceiling.aiIncludedSessions),
     aarStudioEnabled: current.aarStudioEnabled && ceiling.aarStudioEnabled,
     santaRunEnabled: current.santaRunEnabled && ceiling.santaRunEnabled,

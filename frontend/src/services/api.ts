@@ -282,7 +282,11 @@ class ApiService {
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, rank }),
     });
-    if (!response.ok) throw new Error('Failed to create member');
+    if (!response.ok) {
+      // Surface the server message (e.g. plan member-limit reached) rather than a generic error.
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to create member');
+    }
     return response.json();
   }
 
@@ -585,7 +589,11 @@ class ApiService {
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name, description, photoUrl, vehicleType }),
     });
-    if (!response.ok) throw new Error('Failed to create appliance');
+    if (!response.ok) {
+      // Surface the server message (e.g. plan vehicle-limit reached) rather than a generic error.
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to create appliance');
+    }
     return response.json();
   }
 
