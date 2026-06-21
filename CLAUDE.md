@@ -4,6 +4,28 @@ Guidance for Claude Code (and other AI agents) working in this repo. Optimised
 for fast, token-efficient navigation — **read the indexed file you need instead
 of grepping the whole tree.**
 
+## ⛔ THE ONE-PLAN RULE (non-negotiable)
+
+**There is exactly one plan: `docs/MASTER_PLAN.md`. Do not create any other.**
+
+- **NEVER** create a new planning, roadmap, design-spike, "future work", proposal,
+  strategy, or `*_PLAN.md` / `*_DESIGN.md` / `*_ROADMAP.md` document — not in
+  `docs/`, not in an app folder, not anywhere. This includes splitting a plan
+  "just for this feature" or dropping a design doc next to code.
+- To capture future work, a design decision, a phase, or a change of direction:
+  **edit `docs/MASTER_PLAN.md`** (its "Consolidation & Standardisation Roadmap" is
+  the home for cross-app / SaaS / AI / suite work). That is the single source of
+  truth for *all three apps* (`backend/`, `frontend/`, `aar-studio/`) and the suite.
+- The former separate plans were folded in and moved to `docs/archive/` (banners
+  point back here). They are historical design **reference only — not live plans**;
+  never resurrect one as the place to plan.
+- If a planning doc somehow reappears, treat it as a defect: fold its content into
+  `MASTER_PLAN.md` and archive it. Don't add to it.
+
+(`AS_BUILT.md`, `API_DOCUMENTATION.md`, registries, and the `archive/` /
+`implementation-notes/` reference docs describe what *is* built — they are not
+plans and are unaffected by this rule.)
+
 ## What this is
 
 RFS Station Manager — a real-time digital sign-in system for NSW Rural Fire
