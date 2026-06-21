@@ -90,9 +90,9 @@
 .org-status--canceled { color: var(--text-secondary); }
 
 .org-trial-notice {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffc107;
+  background: var(--surface-warning);
+  color: var(--text-warning-strong);
+  border: 1px solid var(--ui-amber);
   border-radius: 6px;
   padding: 0.75rem 1rem;
   margin-bottom: 1.25rem;
@@ -197,9 +197,9 @@
 .org-ai-nudge {
   margin: 0.75rem 0 0;
   padding: 0.6rem 0.9rem;
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffc107;
+  background: var(--surface-warning);
+  color: var(--text-warning-strong);
+  border: 1px solid var(--ui-amber);
   border-radius: 6px;
   font-size: 0.9rem;
   font-weight: 600;

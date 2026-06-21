@@ -552,8 +552,19 @@
   background: transparent;
   color: var(--text-secondary);
   border: 1.5px dashed var(--border-color);
-  cursor: default;
-  opacity: 0.7;
+  cursor: pointer;
+  opacity: 0.85;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.feature-link--locked:hover {
+  background: var(--surface-warning);
+  border-color: var(--ui-amber);
+  color: var(--text-warning-strong);
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
 }
 
 .feature-link--locked .lock-icon {

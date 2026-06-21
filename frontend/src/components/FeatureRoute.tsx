@@ -13,6 +13,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth, type EntitlementFeature } from '../contexts/AuthContext';
 import { LoadingFallback } from './LoadingFallback';
+import './FeatureRoute.css';
 
 interface FeatureRouteProps {
   feature: EntitlementFeature;
@@ -29,17 +30,21 @@ export function FeatureRoute({ feature, title, children }: FeatureRouteProps) {
 
   if (!hasFeature(feature)) {
     return (
-      <div style={{ maxWidth: 560, margin: '4rem auto', padding: '2rem', textAlign: 'center' }}>
-        <div style={{ fontSize: '3rem' }} aria-hidden="true">🔒</div>
-        <h1>{title} isn’t enabled</h1>
-        <p>
-          This module isn’t available on your current plan, or has been turned off for your brigade.
-          An owner can change this on the Organization screen.
+      <div className="feature-gate">
+        <div className="feature-gate__icon" aria-hidden="true">🔒</div>
+        <h1 className="feature-gate__title">{title} isn't on your plan</h1>
+        <p className="feature-gate__body">
+          This module isn't available on your current plan, or has been turned off for your brigade.
+          An owner can enable it on the Organization screen.
         </p>
-        <p style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem' }}>
-          <Link to="/admin/organization" className="feature-link">Manage organization →</Link>
-          <Link to="/" className="feature-link">Back to home</Link>
-        </p>
+        <div className="feature-gate__actions">
+          <Link to="/admin/organization" className="feature-gate__link feature-gate__link--primary">
+            View upgrade options →
+          </Link>
+          <Link to="/" className="feature-gate__link feature-gate__link--secondary">
+            Back to home
+          </Link>
+        </div>
       </div>
     );
   }

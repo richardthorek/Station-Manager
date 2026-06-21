@@ -4,9 +4,9 @@
   justify-content: center;
   gap: 1rem;
   padding: 0.6rem 1rem;
-  background: #fff3cd;
-  color: #856404;
-  border-bottom: 1px solid #ffc107;
+  background: var(--surface-warning);
+  color: var(--text-warning-strong);
+  border-bottom: 1px solid var(--ui-amber);
   font-size: 0.9rem;
   flex-wrap: wrap;
 }
@@ -18,7 +18,7 @@
 .trial-banner__cta {
   padding: 0.35rem 0.9rem;
   background: var(--rfs-core-red);
-  color: #fff;
+  color: var(--rfs-white);
   border: none;
   border-radius: 6px;
   font-size: 0.85rem;

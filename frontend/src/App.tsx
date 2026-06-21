@@ -11,6 +11,7 @@ import { SkipToContent } from './components/SkipToContent';
 import { LiveAnnouncer } from './components/LiveAnnouncer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { FeatureRoute } from './components/FeatureRoute';
+import { TrialBanner } from './components/TrialBanner';
 import { initDB } from './services/offlineStorage';
 
 // Lazy load all route components for better code splitting
@@ -112,6 +113,7 @@ function App() {
           <ToastProvider>
             <SkipToContent />
             <LiveAnnouncer />
+            <TrialBanner />
             <OfflineIndicator />
             <InstallPrompt />
             <Suspense fallback={<LoadingFallback />}>

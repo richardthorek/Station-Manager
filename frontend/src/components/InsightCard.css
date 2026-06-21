@@ -8,7 +8,7 @@
   padding: 1rem 1.25rem;
   border-radius: 8px;
   border-left: 4px solid;
-  background: var(--card-bg);
+  background: var(--bg-card);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
