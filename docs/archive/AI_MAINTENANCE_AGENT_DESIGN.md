@@ -1,3 +1,10 @@
+> **⚠️ ARCHIVED — not a live plan.** Folded into `docs/MASTER_PLAN.md`
+> ("Consolidation & Standardisation Roadmap" → AI maintenance agent track A1/A3/A4).
+> Retained for its load-bearing design detail — the new entity schemas
+> (`ApplianceZone`, `ApplianceEquipment`, `AgentSession`, `AgentTurn`), the additive
+> `Appliance`/`ChecklistItem`/`CheckRun`/`CheckResult` extensions, Table Storage
+> partitioning, and the agent tool contract — quote these verbatim when building.
+
 # Design: AI Voice (and Vision) Truck-Maintenance Agent
 
 **Status:** Draft / future release (design only — not yet implemented)

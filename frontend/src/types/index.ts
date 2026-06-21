@@ -1,6 +1,15 @@
 // ============================================
-// Multi-Station Support Types
+// Domain types (frontend mirror of the backend contract)
 // ============================================
+//
+// `backend/src/types/index.ts` is the **contract of record** for these domain
+// shapes. This file mirrors it for the wire: dates are `string` here (JSON
+// serialises Date → ISO string) where the backend uses `Date`. Keep the two in
+// sync — when the backend adds/changes a domain field, mirror it here.
+//
+// This drift (Date-vs-string + missing fields) is tracked as roadmap item T1 in
+// docs/MASTER_PLAN.md; increment 2 replaces these duplicate definitions with a
+// shared, date-generic module (`@rfs/types`).
 
 /**
  * Represents the hierarchical structure of RFS organization
@@ -33,6 +42,7 @@ export interface Station {
   };
   isActive: boolean;            // Whether station is currently active
   kioskToken?: string;          // Secure token for kiosk mode access (optional)
+  organizationId?: string;      // SaaS tenancy: owning Organization (optional for backward compat)
   createdAt: string;
   updatedAt: string;
 }
@@ -76,7 +86,10 @@ export interface Activity {
   id: string;
   name: string;
   isCustom: boolean;
+  category?: 'training' | 'maintenance' | 'meeting' | 'other';
+  tagColor?: string;             // CSS color or color name for UI tags
   createdBy?: string;
+  stationId?: string;            // Multi-station support (optional, shared activities use 'default')
   createdAt: string;
   isDeleted?: boolean;
 }
@@ -85,6 +98,7 @@ export interface CheckIn {
   id: string;
   memberId: string;
   activityId: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   checkInTime: string;
   checkInMethod: 'kiosk' | 'mobile' | 'qr';
   location?: string;
@@ -104,6 +118,7 @@ export interface CheckInWithDetails extends CheckIn {
 export interface ActiveActivity {
   id: string;
   activityId: string;
+  stationId?: string;            // Multi-station support (optional, each station has its own active activity)
   setAt: string;
   setBy?: string;
   activity?: Activity;
@@ -118,6 +133,7 @@ export interface Event {
   id: string;
   activityId: string;
   activityName: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   startTime: string;
   endTime?: string;
   isActive: boolean;
@@ -136,6 +152,7 @@ export interface EventParticipant {
   memberId: string;
   memberName: string;
   memberRank?: string | null;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   checkInTime: string;
   checkInMethod: 'kiosk' | 'mobile' | 'qr';
   location?: string;
@@ -163,6 +180,7 @@ export interface Appliance {
   name: string;
   description?: string;
   photoUrl?: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   /**
    * Canonical vehicle-type slug (e.g. 'cat1-pumper', 'cat7-tanker', 'bulk-water',
    * 'command'). A shared vocabulary lets reports group appliances of the same type
@@ -180,6 +198,7 @@ export interface ChecklistTemplate {
   id: string;
   applianceId: string;
   applianceName: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   items: ChecklistItem[];
   createdAt: string;
   updatedAt: string;
@@ -220,6 +239,7 @@ export interface CheckRun {
   id: string;
   applianceId: string;
   applianceName: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   startTime: string;
   endTime?: string;
   completedBy: string;
@@ -241,6 +261,7 @@ export interface CheckResult {
   itemId: string;
   itemName: string;
   itemDescription: string;
+  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   /**
    * Canonical item-code copied from the checklist item at the time of the check.
    * Denormalised here so historical results stay comparable across brigades for trend

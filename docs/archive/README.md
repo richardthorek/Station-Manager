@@ -14,6 +14,19 @@ Documents are moved here when they are no longer current, have been superseded b
 
 ## Contents
 
+### Superseded Planning & Design Spikes (folded into MASTER_PLAN, June 2026)
+
+These were standalone planning/design documents. Per the "one plan" policy, their
+forward work was consolidated into the **Consolidation & Standardisation Roadmap**
+in [`docs/MASTER_PLAN.md`](../MASTER_PLAN.md). They remain here for their detailed
+design content (schemas, pricing analysis, tool contracts) as reference only — they
+are **not** live plans.
+- **CONSOLIDATION_REVIEW.md** - cross-app coherence analysis, AI-gateway direction
+- **SUITE_INTEGRATION_PLAN.md** - "Bushie Tools" suite federation/monorepo options
+- **SAAS_COMMERCIALIZATION_DESIGN.md** - pricing analysis, Stripe surface, tenancy schema deltas
+- **AI_MAINTENANCE_AGENT_DESIGN.md** - voice/vision truck-maintenance agent schema & tool contract
+- **AAR_STUDIO_PLAN.md** - AAR Studio stage plan (architecture of record stays in `aar-studio/docs/ARCHITECTURE.md`)
+
 ### Completed Feature Implementation Summaries (2024-2026)
 
 **Admin & User Management:**

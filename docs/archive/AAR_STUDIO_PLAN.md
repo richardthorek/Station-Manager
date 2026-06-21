@@ -1,3 +1,10 @@
+> **⚠️ ARCHIVED — not a live plan.** AAR Studio's forward work (Stage 5 polish) is
+> tracked in `docs/MASTER_PLAN.md` ("Consolidation & Standardisation Roadmap" → AAR
+> Studio polish P1). Its **architecture of record** is `aar-studio/docs/ARCHITECTURE.md`.
+> Retained here for the stage history and data-model reference. Note: decision #2
+> ("browser → Azure direct, keys in localStorage; no server logic") is **superseded**
+> — #555 moved AAR's AI behind the server-side `/api/ai/*` gateway.
+
 # AAR Studio — Plan
 
 **Status:** Living document — update when scope or priorities change.

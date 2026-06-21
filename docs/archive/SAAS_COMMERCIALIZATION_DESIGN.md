@@ -1,3 +1,9 @@
+> **⚠️ ARCHIVED — not a live plan.** Folded into `docs/MASTER_PLAN.md`
+> ("Consolidation & Standardisation Roadmap" → Commercialisation track + Pricing &
+> plans reference). Retained for its full pricing analysis (§7), Stripe surface,
+> cost model, and tenancy schema deltas — historical reference only. The live plan
+> catalog is `backend/src/constants/plans.ts`.
+
 # Design: Self-Service Sign-up, Multi-Tenant Billing & Commercialization
 
 **Status:** Partially shipped — see Implementation status below. The full

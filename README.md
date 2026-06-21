@@ -220,10 +220,10 @@ Reference:
 - **[docs/AZURE_DEPLOYMENT.md](docs/AZURE_DEPLOYMENT.md)** — production deployment
 - **[docs/AUTHENTICATION_CONFIGURATION.md](docs/AUTHENTICATION_CONFIGURATION.md)** — auth & entitlements config
 
-SaaS & suite:
-- **[docs/SAAS_COMMERCIALIZATION_DESIGN.md](docs/SAAS_COMMERCIALIZATION_DESIGN.md)** — plans, pricing, billing model
-- **[docs/SUITE_INTEGRATION_PLAN.md](docs/SUITE_INTEGRATION_PLAN.md)** — multi-app suite strategy
+Planning & SaaS/suite:
+- **[docs/MASTER_PLAN.md](docs/MASTER_PLAN.md)** — the single plan: roadmap, pricing, and the Consolidation & Standardisation Roadmap (cross-app, SaaS, AI, suite). No other planning doc exists.
 - **[docs/SUITE_TOKEN_VALIDATION.md](docs/SUITE_TOKEN_VALIDATION.md)** — sibling-app token/entitlement contract
+- Design history (reference only): [docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md](docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md), [docs/archive/SUITE_INTEGRATION_PLAN.md](docs/archive/SUITE_INTEGRATION_PLAN.md)
 
 Historical material lives in [docs/archive/](docs/archive/); dated snapshots and
 UI screenshots in [docs/current_state/](docs/current_state/); deep dives in
@@ -247,8 +247,8 @@ security section of [docs/AS_BUILT.md](docs/AS_BUILT.md).
 foundation (organizations, plans, entitlements) and Stripe billing are wired in
 test mode. AAR Studio is live at `/aar`. The Bushie Tools suite is at Phase 1
 (shared identity + subscription + app launcher); shared packages (Phase 2) and
-monorepo consolidation (Phase 3) are planned — see
-[docs/SUITE_INTEGRATION_PLAN.md](docs/SUITE_INTEGRATION_PLAN.md).
+monorepo consolidation (Phase 3) are planned — see the Consolidation &
+Standardisation Roadmap in [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md).
 
 ## Contributing
 

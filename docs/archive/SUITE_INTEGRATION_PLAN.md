@@ -1,3 +1,9 @@
+> **⚠️ ARCHIVED — not a live plan.** Folded into `docs/MASTER_PLAN.md`
+> ("Consolidation & Standardisation Roadmap" → Suite convergence track T6/T7).
+> Retained for its option analysis (A: federation / B: shared packages /
+> C: monorepo), the three-app comparison table, and the `@rfs/*` package layout —
+> historical reference only.
+
 # Design: "Bushie Tools" Suite — Integrating Station Manager, AAR Studio, Fire Break Calculator & Fire Santa Run
 
 **Status:** Draft / strategic design (assessment + options — not implemented)

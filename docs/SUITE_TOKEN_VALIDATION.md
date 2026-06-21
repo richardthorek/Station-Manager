@@ -1,7 +1,9 @@
 # Bushie Tools — Suite Token Validation Protocol (Phase 1)
 
-**Status:** Implemented (suite Phase 1 — federation). See issue #556 and
-`docs/SUITE_INTEGRATION_PLAN.md` (Option A / Phase 1).
+**Status:** Implemented (suite Phase 1 — federation). See issue #556 and the
+Consolidation & Standardisation Roadmap (Suite convergence track) in
+`docs/MASTER_PLAN.md`; design history in `docs/archive/SUITE_INTEGRATION_PLAN.md`
+(Option A / Phase 1).
 
 This document is the contract sibling Bushie Tools apps (Fire Santa Run, Fire
 Break Calculator, and the AAR Studio sub-app) follow to authenticate a user and
@@ -11,7 +13,7 @@ read their entitlements against Station Manager, which acts as the canonical
 The model: **Station Manager's JWT is the suite identity provider (IdP).** A
 single sign-in mints a token; every app validates that same token and reads the
 same entitlements. (Microsoft Entra External ID was considered for authN — see
-`SUITE_INTEGRATION_PLAN.md` §5 — but SM JWT is retained because kiosk/station
+`archive/SUITE_INTEGRATION_PLAN.md` §5 — but SM JWT is retained because kiosk/station
 iPad devices authenticate with brigade access tokens rather than user accounts,
 a scenario the existing JWT/brigade-token model already supports without an
 external IdP.)
@@ -166,8 +168,9 @@ Sibling app ◀──token─────────────┘
 
 ## 6. Related
 
-- `docs/SUITE_INTEGRATION_PLAN.md` — full options analysis and phased roadmap.
-- `docs/SAAS_COMMERCIALIZATION_DESIGN.md` — Organization / plan / Stripe model.
+- `docs/MASTER_PLAN.md` — the single plan (Consolidation & Standardisation Roadmap).
+- `docs/archive/SUITE_INTEGRATION_PLAN.md` — full options analysis (design history).
+- `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md` — Organization / plan / Stripe model (design history).
 - `backend/src/routes/auth.ts` — `GET /api/auth/entitlements` implementation.
 - `backend/src/constants/plans.ts` — plan → entitlement mapping.
 - `frontend/src/config/suiteApps.ts` — the launcher's sibling-app catalog.

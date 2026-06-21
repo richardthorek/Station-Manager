@@ -33,7 +33,7 @@ aar-studio/
 ├── data/sample-session.json    # Wamboin structure fire example session
 ├── test/                       # node:test suites for js/lib (zero deps)
 ├── package.json                # {"type":"module"} + npm test (node --test)
-└── docs/ (PLAN.md, ARCHITECTURE.md)
+└── docs/ (ARCHITECTURE.md — the forward plan lives in root docs/MASTER_PLAN.md)
 ```
 
 Served by the Station Manager Express backend at `/aar` (see "Security /
