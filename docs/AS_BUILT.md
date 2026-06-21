@@ -820,6 +820,16 @@ provides best-effort `pushSession`/`listServerSessions`/`fetchServerSession`/
 and the home view surfaces a "From your team" section of cloud reviews not yet on
 the device (pulled down on tap via `store.adoptSession`).
 
+Once a review is org-identified, the **setup screen** also offers roster-backed
+typeaheads: `aar-studio/js/lib/roster.js` (`fetchStations`/`fetchMembers`/
+`loadRoster`) reads the org's `/api/stations` and `/api/members` with the same
+JWT, and `views/setup.js` fills two `<datalist>`s so the meeting/incident
+**Location** autocompletes from station names and the **Facilitator** from member
+names (de-duplicated across the org's stations, capped at 8 to bound the request
+fan-out). These are typeaheads, not hard selects, so signed-out use is unchanged
+(no roster → plain free-text) and a name not on the roster can still be typed. No
+CSP change is needed — `/api/*` is same-origin under `connect-src 'self'`.
+
 ---
 
 ## National Fire Service Facilities Dataset
