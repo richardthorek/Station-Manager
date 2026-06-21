@@ -1,6 +1,6 @@
 # RFS Station Manager - Master Plan
 
-**Document Version:** 3.0  
+**Document Version:** 3.2  
 **Last Updated:** June 21, 2026  
 **Status:** Living Document — **the single plan** (all other planning docs folded in here)  
 **Purpose:** Single source of truth for planning, roadmap, architecture guidance, and issue tracking
@@ -193,6 +193,15 @@ more separate repos/stacks to converge.
   `requireFeature` gating, `ENABLE_ENTITLEMENTS`.
 - **AAR collaborative session notes — core** (#551). **Marketing/pricing landing +
   checkout deep-link** (#554). **Free-tier caps** (10 members / 1 vehicle) (#574).
+- **C1 — Entitlement-enforcement hardening** (#552) — `ENABLE_ENTITLEMENTS` default-on,
+  `/api/export` gated behind `reportsEnabled`, `enforceStationLimit()` on `POST /api/stations`,
+  soft-JWT org context for unauthenticated-middleware routes.
+- **C2 — Stripe billing (SaaS Phase B)** (#553, audit persistence Jun 21) — `stripe` SDK +
+  price-ID env mapping, owner-only Checkout + Customer Portal, `GET /api/billing/status`,
+  signature-verified webhook syncing org `status`/`plan`/`entitlements`, 14-day trial,
+  idempotent `BillingEvent` audit persisted to both DB twins with an owner-only
+  `GET /api/billing/events` trail. *Open:* live keys/price IDs are env-config (not committed);
+  metered overage (`meteredUsageReporter.ts`) is a no-op until a Stripe meter is configured.
 
 ### Now — standardisation track (cross-app coherence; do these next)
 
@@ -221,13 +230,18 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
 
 ### Commercialisation track (SaaS billing & metering)
 
-- **C1 — Entitlement-enforcement hardening** 🟡 (#552) — finish gating `/api/export`
-  behind `reportsEnabled`, enforce `maxStations`/`maxDevices` on creation, audit every
-  `requireFeature`/`FeatureRoute` pairing. *Prerequisite for billing.*
-- **C2 — Stripe billing (SaaS Phase B)** ⬜ (#553) — `stripe` SDK + price-ID env mapping;
-  checkout endpoint; signature-verified webhook syncing org `status`+`entitlements`;
-  `BillingEvent` audit; Customer Portal; trial flow. *Live billing is not wired —
-  entitlements are admin-set; `meteredUsageReporter.ts` is a no-op until a meter exists.*
+- **C1 — Entitlement-enforcement hardening** ✅ (#552) — `/api/export` gated behind
+  `reportsEnabled`; `enforceStationLimit()` enforces `maxStations` on `POST /api/stations`
+  (system stations excluded); `ENABLE_ENTITLEMENTS` default-on; soft-JWT org context so
+  middleware-light routes still resolve a tenant. *Remaining:* `maxDevices` is retained in
+  the model but unenforced (devices dropped from pricing in #574).
+- **C2 — Stripe billing (SaaS Phase B)** ✅ (#553 + audit persistence Jun 21) — `stripe` SDK
+  + price-ID env mapping; owner-only Checkout + Customer Portal; `GET /api/billing/status`;
+  signature-verified webhook syncing org `status`/`plan`/`entitlements`; 14-day trial;
+  idempotent `BillingEvent` audit on both DB twins + owner-only `GET /api/billing/events`.
+  *To go live:* set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the `STRIPE_PRICE_*`
+  env vars in App Service. Metered overage (`meteredUsageReporter.ts`) stays a no-op until a
+  Stripe meter is configured (track C3).
 - **C3 — AI metering completion (Phase D)** 🟡 — session metering + allowance shipped;
   build top-up packs / overage purchase. **C4 — Device accounts + member activation
   (Phase C)** ⬜ — formalise `BrigadeAccessToken` → first-class `Device`; member
@@ -294,6 +308,9 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
   a backplane). **D5 — Deploy size/time:** shrink the package, target deploy < 10 min.
 
 ### June 2026 Stabilization
+- 2026-06-21: **Close out commercialisation track + fix broken page scroll.** Two threads. **(1) Plan reconciliation + billing audit persistence:** discovered C1 (#552) and C2 (#553) had shipped and merged to `main` but were never recorded here — the #575 plan-collapse listed them as still-to-do. Recorded both as shipped and hardened the billing audit trail: the Stripe webhook log was an in-memory array (`billingEventLog` in `routes/billing.ts`) that vanished on restart and gave no idempotency. Added `BillingEvent` persistence following the `UsageRecord` twin pattern — `services/billingEventDatabase.ts` (in-memory + `IBillingEventDatabase`), `services/tableStorageBillingEventDatabase.ts` (Table Storage twin, partition by org), `services/billingEventDbFactory.ts`, wired `initializeBillingEventDatabase()` into the startup sequence in `index.ts`. The webhook now (a) skips reprocessing an already-recorded event id (idempotency) and (b) persists every event via the factory; added an owner-only `GET /api/billing/events` audit endpoint. Registered the billing **and** AI gateway endpoints in `api_register.json` (v1.5.0) — the previously-noted docs follow-up — plus a `BillingEvent` definition. 11 new backend tests (`billing.test.ts` + `billingEventDatabase.test.ts`); backend 623 pass. **(2) Scroll bug:** desktop `body`/`#root` were locked to `height:100vh; overflow:hidden` (kiosk shell model) while the document-flow content pages (marketing, signup/login, organization) lay out with `min-height:100vh` and no inner scroll container — so on desktop their content was clipped and the page could only be moved with the keyboard (focus-into-view). Mobile already relaxed this; desktop didn't. Relaxed the base `body`/`#root` rules to `min-height:100vh` + `overflow-x:hidden` (vertical document scroll allowed); the self-contained 100vh kiosk pages (`.app`, `.landing-page`) are unaffected (exactly viewport height → no document scrollbar). *Frontend lint, typecheck, and 452 Vitest tests green.*
+- 2026-06-20: **C2 — Stripe billing, SaaS Phase B (#553).** Wired live billing on top of the SaaS tenant model. New `services/stripeClient.ts` (lazy `stripe` SDK init from `STRIPE_SECRET_KEY`, `isStripeConfigured()`, `resolvePriceId(plan, interval)` from `STRIPE_PRICE_*` env vars) and `routes/billing.ts`: owner-only `POST /api/billing/checkout` (Checkout session, 14-day trial), `POST /api/billing/portal` (Customer Portal), `GET /api/billing/status`, and a signature-verified `POST /api/billing/webhook` (raw-body, registered before `express.json()`) that syncs org `planCode`/`status`/`entitlements` on `checkout.session.completed`, `customer.subscription.updated/deleted`, `invoice.paid`, and `invoice.payment_failed`. `Organization` gained `stripeCustomerId`/`stripeSubscriptionId`/`trialEndsAt`/`billingEmail`; `BillingEvent` type added. SPA: `/admin/organization` upgrade UI + `TrialBanner`. Endpoints return 503 when Stripe isn't configured, so non-billing deployments are unaffected. *(Audit log was in-memory in this slice — persisted to Table Storage on Jun 21.)*
+- 2026-06-20: **C1 — Entitlement-enforcement hardening (#552).** Flipped `ENABLE_ENTITLEMENTS` to default-on (opt-out `=false` for dev). Added a soft JWT decode in `attachOrganization` so routes without explicit `authMiddleware` (e.g. `/api/export`) still resolve org context; gated `GET /api/export` behind `requireFeature('reportsEnabled')`; added `enforceStationLimit()` on `POST /api/stations` (enforces plan `maxStations`, excludes system stations from the quota). 8 new integration tests covering every gating path; fixed a missing `@testing-library/dom` peer dep broken by prior dependabot bumps.
 - 2026-06-21: **UI/UX polish — CSS-var sweep, dark-mode fixes, status tokens, entitlement UX (#576).** A systematic pass to harden the frontend design system and eliminate silent style regressions.
 
   **What shipped:**
@@ -332,36 +349,31 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
 
 These are the highest-leverage items to act on next, in order. Read each track section above for full detail; this is the executive summary for picking up where we left off.
 
-**1. C1 — Entitlement enforcement hardening (prerequisite for billing)**
-- Gate `GET /api/export` behind `reportsEnabled` (currently unguarded).
-- Enforce `maxStations` on `POST /api/stations` (currently unchecked).
-- Audit every `requireFeature`/`FeatureRoute` pair for completeness.
-- This is the last blocker before Stripe can go live — entitlements must be airtight before customers pay.
+**✅ Done (do not re-do):** C1 — entitlement-enforcement hardening (#552) and C2 — Stripe
+billing including persisted `BillingEvent` audit (#553 + Jun 21). The code path for paid
+plans is complete; going live is now a **config/ops task** (set `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` in App Service, create products/prices in the
+Stripe dashboard, point a Stripe webhook at `/api/billing/webhook`) plus resolving the D1
+pricing decisions below — not a build task.
 
-**2. C2 — Stripe billing (SaaS Phase B) — the primary ship-blocker**
-- Install `stripe` SDK; map price IDs from env vars.
-- Wire `POST /api/billing/checkout` → Stripe Checkout for the plan the user chose.
-- Implement signature-verified webhook handler (`/api/billing/webhook`) that syncs `org.status` + `org.entitlements` after payment, cancellation, or trial expiry.
-- Add Customer Portal link on `/admin/organization`.
-- Trial flow: on signup, set `status: 'trialing'` with `trialEndsAt`; webhook transitions to `active` or `past_due`.
-- Reference: `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md` has full schema and Stripe surface detail.
-- **No revenue can be collected until this ships.**
+**1. Production deployment restore (OIDC) — top blocker**
+- The GitHub→Azure OIDC app registration was deleted, silently breaking `main` deploys since the IaC PR.
+- The `infra/README.md` documents the one-time bootstrap to restore it.
+- Until this is done, merging to `main` does **not** deploy to production — including all the shipped billing code.
 
-**3. T1 — Shared domain types (increment 2)**
+**2. T1 — Shared domain types (increment 2)**
 - Increment 1 (frontend types re-synced to backend) shipped in #575.
-- Increment 2: extract a real shared module (`packages/types/`) with a date-generic `Member<TDate = string>`, consumed by both backend and frontend via npm workspace.
+- Increment 2: extract a real shared module (`packages/types/`) with a date-generic `Member<TDate = string>`, consumed by both backend and frontend via npm workspace (= the T6 workspace foundation).
 - Resolves the `Date`-vs-`string` split and prevents future drift.
 
-**4. A2 — AAR identity & server-side persistence**
+**3. A2 — AAR identity & server-side persistence**
 - Pass the logged-in SM JWT into AAR Studio on load.
 - Add `/api/aar-sessions` CRUD (Table Storage `AARSessions` partition by org/brigade).
 - Replace AAR's free-text setup screen with a station/member picker from the roster.
 - Shrink the `/aar` CSP: once the AI gateway handles all provider calls, remove direct Azure OpenAI/Speech origins from the scoped policy.
 
-**5. Production deployment restore (OIDC)**
-- The GitHub→Azure OIDC app registration was deleted, silently breaking `main` deploys since the IaC PR.
-- The `infra/README.md` documents the one-time bootstrap to restore it.
-- Until this is done, merging to `main` does **not** deploy to production.
+**4. C3 — Metered AI overage (finish the billing loop)**
+- `meteredUsageReporter.ts` is a safe no-op until a Stripe meter exists; build top-up packs / overage purchase on top of the now-complete billing surface.
 
 **Design decisions to resolve before billing goes live (🔵 D1–D3):**
 - D1: Confirm pricing details (trial length, AI metering unit, top-up pack sizes).
@@ -2695,6 +2707,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 2.3 | Feb 2026 | Bug Fix | Fixed participant removal failures across all UI entry points. Root cause: Table Storage implementation of `removeEventParticipant` always returned false because it lacked the partition key (eventId). Updated database interface and implementations to accept optional eventId parameter, enabling efficient single-partition deletion. Backward compatible with fallback to search. All tests pass (498 backend + 386 frontend). |
 | 3.0 | Jun 2026 | Consolidation | Collapsed all five separate planning docs (CONSOLIDATION_REVIEW, SUITE_INTEGRATION_PLAN, SAAS_COMMERCIALIZATION_DESIGN, AI_MAINTENANCE_AGENT_DESIGN, AAR_STUDIO_PLAN) into this single file. Archived originals in `docs/archive/`. ONE-PLAN RULE enforced. (#575) |
 | 3.1 | Jun 2026 | UI/UX polish | Recorded CSS-var sweep, dark-mode fixes, status tokens, TrialBanner wiring, FeatureRoute upgrade UX, dead-end upgrade-path fix, and Material Design color isolation in truck check. (#576). Added "Prioritised next steps" section and CLAUDE.md progress-update instruction. |
+| 3.2 | Jun 2026 | Commercialisation close-out | Reconciled the plan with `main`: recorded C1 (#552) and C2 (#553) as shipped (they were merged but never logged). Persisted the Stripe `BillingEvent` audit trail to both DB twins with webhook idempotency + an owner-only `GET /api/billing/events`; registered billing & AI gateway endpoints in `api_register.json` (v1.5.0). Fixed a desktop scroll regression (document-flow content pages clipped by the kiosk `overflow:hidden` shell lock). Re-prioritised next steps (OIDC deploy restore now #1). |
 
 ---
 

@@ -16,6 +16,7 @@ import organizationsRouter from '../routes/organizations';
 import billingRouter from '../routes/billing';
 import { ensureOrganizationDatabase, initializeOrganizationDatabase } from '../services/organizationDbFactory';
 import { ensureAdminUserDatabase, initializeAdminUserDatabase, getAdminDb } from '../services/adminUserDbFactory';
+import { ensureBillingEventDatabase, initializeBillingEventDatabase } from '../services/billingEventDbFactory';
 
 function buildApp() {
   const app = express();
@@ -33,6 +34,7 @@ describe('Billing', () => {
 
   beforeAll(async () => {
     await initializeOrganizationDatabase();
+    await initializeBillingEventDatabase();
     ensureAdminUserDatabase();
     await initializeAdminUserDatabase();
   });
@@ -40,6 +42,7 @@ describe('Billing', () => {
   beforeEach(async () => {
     await (ensureOrganizationDatabase() as unknown as { clear: () => Promise<void> }).clear();
     await (getAdminDb() as unknown as { clear: () => Promise<void> }).clear();
+    await ensureBillingEventDatabase().clear();
     delete process.env.STRIPE_SECRET_KEY;
     delete process.env.STRIPE_WEBHOOK_SECRET;
     delete process.env.STRIPE_PRICE_BASIC_MONTHLY;
@@ -238,6 +241,53 @@ describe('Billing', () => {
         .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(400);
       expect(res.body.error).toMatch(/billing account/i);
+    });
+  });
+
+  // ── GET /api/billing/events ────────────────────────────────────────────────
+
+  describe('GET /api/billing/events', () => {
+    it('returns 401 when not authenticated', async () => {
+      const res = await request(app).get('/api/billing/events');
+      expect(res.status).toBe(401);
+    });
+
+    it('returns the org-scoped audit trail for the owner, newest first', async () => {
+      const token = await signup();
+      const orgs = await ensureOrganizationDatabase().getAllOrganizations();
+      const orgId = orgs[0].id;
+
+      const db = ensureBillingEventDatabase();
+      await db.record({
+        organizationId: orgId,
+        stripeEventId: 'evt_1',
+        eventType: 'checkout.session.completed',
+        payload: '{}',
+      });
+      await db.record({
+        organizationId: orgId,
+        stripeEventId: 'evt_2',
+        eventType: 'invoice.paid',
+        payload: '{}',
+      });
+      // An event for a different org must not leak into this org's trail.
+      await db.record({
+        organizationId: 'someone-else',
+        stripeEventId: 'evt_other',
+        eventType: 'invoice.paid',
+        payload: '{}',
+      });
+
+      const res = await request(app)
+        .get('/api/billing/events')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.events).toHaveLength(2);
+      const ids = res.body.events.map((e: { stripeEventId: string }) => e.stripeEventId);
+      expect(ids).toContain('evt_1');
+      expect(ids).toContain('evt_2');
+      expect(ids).not.toContain('evt_other');
     });
   });
 

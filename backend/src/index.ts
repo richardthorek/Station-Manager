@@ -72,6 +72,7 @@ import { logger } from './services/logger';
 import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services/adminUserDbFactory';
 import { initializeOrganizationDatabase } from './services/organizationDbFactory';
 import { initializeUsageDatabase } from './services/usageDbFactory';
+import { initializeBillingEventDatabase } from './services/billingEventDbFactory';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
 
@@ -618,6 +619,7 @@ async function initializeDatabasesInBackground() {
     // self-service signup, regardless of whether a default admin is configured.
     await initializeOrganizationDatabase();
     await initializeUsageDatabase();
+    await initializeBillingEventDatabase();
     startMeteredUsageReporter();
     ensureAdminUserDatabase();
 
