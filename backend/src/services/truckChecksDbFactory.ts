@@ -21,19 +21,34 @@ import {
   CheckStatus,
 } from '../types';
 
+/**
+ * Optional vehicle identity + type-link fields for an appliance, carried as a
+ * trailing object so the positional createAppliance/updateAppliance signatures
+ * stay back-compatible.
+ */
+export interface ApplianceDetails {
+  vehicleTypeId?: string;
+  agencyId?: string;
+  registration?: string;
+  vin?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+}
+
 // Interface shared by truck checks database implementations
 export interface ITruckChecksDatabase {
   // Appliances
   getAllAppliances(stationId?: string): Promise<Appliance[]> | Appliance[];
   getApplianceById(id: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
-  createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string, vehicleType?: string): Promise<Appliance> | Appliance;
-  updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string): Promise<Appliance | null | undefined> | Appliance | null | undefined;
+  createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string, vehicleType?: string, details?: ApplianceDetails): Promise<Appliance> | Appliance;
+  updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string, details?: ApplianceDetails): Promise<Appliance | null | undefined> | Appliance | null | undefined;
   deleteAppliance(id: string): Promise<boolean> | boolean;
 
   // Templates
   getTemplateByApplianceId(applianceId: string): Promise<ChecklistTemplate | null | undefined> | ChecklistTemplate | null | undefined;
   getTemplateById(id: string): Promise<ChecklistTemplate | null | undefined> | ChecklistTemplate | null | undefined;
-  updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[], stationId?: string): Promise<ChecklistTemplate> | ChecklistTemplate;
+  updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[], stationId?: string, itemOrder?: string[]): Promise<ChecklistTemplate> | ChecklistTemplate;
 
   // Check Runs
   createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string): Promise<CheckRun> | CheckRun;

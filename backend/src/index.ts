@@ -75,6 +75,7 @@ import { initializeOrganizationDatabase } from './services/organizationDbFactory
 import { initializeUsageDatabase } from './services/usageDbFactory';
 import { initializeBillingEventDatabase } from './services/billingEventDbFactory';
 import { initializeAarSessionDatabase } from './services/aarSessionDbFactory';
+import { initializeVehicleTypeDatabase } from './services/vehicleTypeDbFactory';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
 
@@ -624,6 +625,7 @@ async function initializeDatabasesInBackground() {
     await initializeUsageDatabase();
     await initializeBillingEventDatabase();
     await initializeAarSessionDatabase();
+    await initializeVehicleTypeDatabase();
     startMeteredUsageReporter();
     ensureAdminUserDatabase();
 

@@ -7,6 +7,7 @@ import {
   CheckRunWithResults,
   CheckStatus
 } from '../types';
+import type { ApplianceDetails } from './truckChecksDbFactory';
 import { getEffectiveStationId } from '../constants/stations';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -124,7 +125,7 @@ class TruckChecksDatabase {
     return this.appliances.get(id);
   }
 
-  createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string, vehicleType?: string): Appliance {
+  createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string, vehicleType?: string, details?: ApplianceDetails): Appliance {
     const appliance: Appliance = {
       id: uuidv4(),
       name,
@@ -132,25 +133,45 @@ class TruckChecksDatabase {
       photoUrl,
       stationId,
       vehicleType,
+      vehicleTypeId: details?.vehicleTypeId,
+      agencyId: details?.agencyId,
+      registration: details?.registration,
+      vin: details?.vin,
+      make: details?.make,
+      model: details?.model,
+      year: details?.year,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     this.appliances.set(appliance.id, appliance);
 
-    // Create a default template for the new appliance
-    const template = this.createDefaultTemplate(appliance);
-    this.templates.set(template.id, template);
+    // Legacy convenience: only auto-seed a generic template when the appliance is
+    // NOT linked to a vehicle type. Type-linked appliances get their checklist
+    // from the type's standard items + a (initially empty) custom overlay.
+    if (!appliance.vehicleTypeId) {
+      const template = this.createDefaultTemplate(appliance);
+      this.templates.set(template.id, template);
+    }
 
     return appliance;
   }
 
-  updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string): Appliance | undefined {
+  updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string, details?: ApplianceDetails): Appliance | undefined {
     const appliance = this.appliances.get(id);
     if (appliance) {
       appliance.name = name;
       appliance.description = description;
       appliance.photoUrl = photoUrl;
       appliance.vehicleType = vehicleType;
+      if (details) {
+        appliance.vehicleTypeId = details.vehicleTypeId;
+        appliance.agencyId = details.agencyId;
+        appliance.registration = details.registration;
+        appliance.vin = details.vin;
+        appliance.make = details.make;
+        appliance.model = details.model;
+        appliance.year = details.year;
+      }
       appliance.updatedAt = new Date();
       return appliance;
     }
@@ -178,7 +199,8 @@ class TruckChecksDatabase {
   updateTemplate(
     applianceId: string,
     items: Omit<ChecklistItem, 'id'>[],
-    stationId?: string
+    stationId?: string,
+    itemOrder?: string[]
   ): ChecklistTemplate {
     const appliance = this.appliances.get(applianceId);
     if (!appliance) {
@@ -190,7 +212,7 @@ class TruckChecksDatabase {
     const existing = this.getTemplateByApplianceId(applianceId);
     const previous = existing?.items ?? [];
     const reuseId = (item: Omit<ChecklistItem, 'id'> & { id?: string }): string => {
-      if (item.id && previous.some((p) => p.id === item.id)) return item.id;
+      if (item.id) return item.id; // client-owned id (overlay items, existing items) — keep it stable
       const byName = previous.find((p) => p.name === item.name);
       return byName ? byName.id : uuidv4();
     };
@@ -199,6 +221,7 @@ class TruckChecksDatabase {
     if (existing) {
       existing.items = mappedItems;
       existing.stationId = stationId ?? existing.stationId;
+      if (itemOrder !== undefined) existing.itemOrder = itemOrder;
       existing.updatedAt = new Date();
       return existing;
     }
@@ -209,6 +232,7 @@ class TruckChecksDatabase {
       applianceName: appliance.name,
       stationId,
       items: mappedItems,
+      itemOrder,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

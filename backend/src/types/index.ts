@@ -369,7 +369,39 @@ export interface AARSession {
 // ============================================
 
 /**
- * Represents an appliance/vehicle that needs checking
+ * A standard vehicle type (e.g. "NSW RFS Cat 1 Tanker"). Owns the canonical
+ * **standard checklist** whose items are immutable for brigades — this locked
+ * core is what makes outcomes comparable across brigades running the same type.
+ * A brigade adopts a type for its vehicles and may add its own custom items and
+ * reorder, but never edit/remove the standard items (see EffectiveChecklist).
+ *
+ * Scoping: org-scoped by default; `isStandard` marks a type published as a
+ * shared standard that any org can adopt. (Curation is open to any owner for
+ * now; tighter validation/roles are a later step — see MASTER_PLAN TC-D3.)
+ */
+export interface VehicleType {
+  id: string;
+  organizationId?: string;       // owning org; absent for a global/standard type
+  isStandard: boolean;           // published as a shared standard for other orgs to adopt
+  code: string;                  // canonical slug, e.g. 'cat1-tanker' (stable, used for grouping)
+  name: string;                  // human label, e.g. 'Cat 1 Tanker'
+  description?: string;
+  category?: string;             // optional grouping, e.g. 'tanker' | 'pumper' | 'support'
+  /** Locked canonical checklist. Each item carries a stable itemCode for comparison. */
+  standardItems: ChecklistItem[];
+  createdBy?: string;            // userId of the author
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Represents an appliance/vehicle that needs checking.
+ *
+ * Identity fields let a specific vehicle be tracked across brigades if it moves
+ * (agency fleet number / registration / VIN) and capture the make/model/year
+ * that vary within a single vehicle type (there have been many "Cat 1" builds
+ * from different manufacturers). `vehicleTypeId` links to the VehicleType whose
+ * standard checklist this vehicle inherits.
  */
 export interface Appliance {
   id: string;
@@ -377,18 +409,35 @@ export interface Appliance {
   description?: string;
   photoUrl?: string;
   stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
+  /** Link to the VehicleType supplying the standard checklist (optional, back-compat). */
+  vehicleTypeId?: string;
   /**
-   * Canonical vehicle-type slug (e.g. 'cat1-pumper', 'cat7-tanker', 'bulk-water',
-   * 'command'). Optional and free-form, but a shared vocabulary lets reports group
-   * appliances of the same type across brigades for cross-brigade trend analysis.
+   * Legacy free-form vehicle-type slug (e.g. 'cat1-pumper'). Superseded by
+   * `vehicleTypeId`; retained for back-compat and existing report grouping.
    */
   vehicleType?: string;
+  // ─── Vehicle identity (all optional) ───
+  agencyId?: string;             // agency fleet/asset number (e.g. NSW RFS fleet no.) — primary tracking id
+  registration?: string;         // number plate
+  vin?: string;                  // Vehicle Identification Number (optional standard unique id)
+  make?: string;                 // manufacturer, e.g. 'Isuzu'
+  model?: string;                // model, e.g. 'FTS 800'
+  year?: number;                 // build/registration year
   createdAt: Date;
   updatedAt: Date;
 }
 
 /**
- * Template defining the checklist for an appliance
+ * Per-appliance checklist.
+ *
+ * Two roles depending on whether the appliance is linked to a VehicleType:
+ *  - **Legacy / no type:** `items` is the full editable checklist (original behaviour).
+ *  - **Type-linked (customisation overlay):** `items` holds only the brigade's
+ *    *custom* items; the standard items come live from the VehicleType (so type
+ *    updates propagate). `itemOrder` is the brigade's preferred ordering as a
+ *    list of keys — a standard item's `itemCode` or a custom item's `id` — used
+ *    to interleave standard and custom items. The resolved, locked-and-merged
+ *    view is an EffectiveChecklist.
  */
 export interface ChecklistTemplate {
   id: string;
@@ -396,8 +445,23 @@ export interface ChecklistTemplate {
   applianceName: string;
   stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
   items: ChecklistItem[];
+  /** Brigade ordering keys (standard item `itemCode` or custom item `id`); type-linked only. */
+  itemOrder?: string[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * The resolved checklist an inspector actually works through for one appliance:
+ * the VehicleType's standard items (locked) merged with the brigade's custom
+ * items, in the brigade's chosen order. Computed, not stored.
+ */
+export interface EffectiveChecklist {
+  applianceId: string;
+  applianceName: string;
+  vehicleTypeId?: string;
+  vehicleTypeName?: string;
+  items: ChecklistItem[];        // each carries isStandard so the UI can lock standard rows
 }
 
 /**
@@ -409,6 +473,13 @@ export interface ChecklistItem {
   description: string;
   referencePhotoUrl?: string;
   order: number;
+  /**
+   * True when this item comes from a VehicleType's locked standard checklist
+   * (content owned by the type, immutable for the brigade). Custom items added
+   * by a brigade are false/absent. Set by the server when resolving an
+   * EffectiveChecklist; persisted on a VehicleType's standardItems.
+   */
+  isStandard?: boolean;
   /**
    * Canonical item-code slug (e.g. 'tyre-condition', 'fluid-levels',
    * 'pump-operation'). Stable across brigades and template edits, so the same

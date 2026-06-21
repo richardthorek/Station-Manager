@@ -10,7 +10,7 @@ import {
   CheckRunWithResults,
   CheckStatus
 } from '../types';
-import { ITruckChecksDatabase } from './truckChecksDbFactory';
+import { ITruckChecksDatabase, ApplianceDetails } from './truckChecksDbFactory';
 import { getEffectiveStationId } from '../constants/stations';
 
 /** True when two (possibly undefined/blank) station ids resolve to the same station. */
@@ -191,7 +191,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     }
   }
 
-  async createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string, vehicleType?: string): Promise<Appliance> {
+  async createAppliance(name: string, description?: string, photoUrl?: string, stationId?: string, vehicleType?: string, details?: ApplianceDetails): Promise<Appliance> {
     const appliance: Appliance = {
       id: uuidv4(),
       name,
@@ -199,6 +199,13 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       photoUrl,
       stationId,
       vehicleType,
+      vehicleTypeId: details?.vehicleTypeId,
+      agencyId: details?.agencyId,
+      registration: details?.registration,
+      vin: details?.vin,
+      make: details?.make,
+      model: details?.model,
+      year: details?.year,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -211,6 +218,13 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       photoUrl: appliance.photoUrl || '',
       stationId: appliance.stationId || '',
       vehicleType: appliance.vehicleType || '',
+      vehicleTypeId: appliance.vehicleTypeId || '',
+      agencyId: appliance.agencyId || '',
+      registration: appliance.registration || '',
+      vin: appliance.vin || '',
+      make: appliance.make || '',
+      model: appliance.model || '',
+      year: appliance.year ?? 0,
       createdAt: appliance.createdAt.toISOString(),
       updatedAt: appliance.updatedAt.toISOString(),
     };
@@ -219,7 +233,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     return appliance;
   }
 
-  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string): Promise<Appliance | null> {
+  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string, details?: ApplianceDetails): Promise<Appliance | null> {
     try {
       const entity = await this.appliancesTable.getEntity<TableEntity>('Appliance', id);
 
@@ -227,10 +241,19 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       entity.description = description || '';
       entity.photoUrl = photoUrl || '';
       entity.vehicleType = vehicleType || '';
+      if (details) {
+        entity.vehicleTypeId = details.vehicleTypeId || '';
+        entity.agencyId = details.agencyId || '';
+        entity.registration = details.registration || '';
+        entity.vin = details.vin || '';
+        entity.make = details.make || '';
+        entity.model = details.model || '';
+        entity.year = details.year ?? 0;
+      }
       entity.updatedAt = new Date().toISOString();
 
       await this.appliancesTable.updateEntity(entity, 'Replace');
-      
+
       return this.entityToAppliance(entity);
     } catch (error: any) {
       if (error.statusCode === 404) return null;
@@ -256,6 +279,13 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       photoUrl: (entity.photoUrl as string) || undefined,
       stationId: (entity.stationId as string) || undefined,
       vehicleType: (entity.vehicleType as string) || undefined,
+      vehicleTypeId: (entity.vehicleTypeId as string) || undefined,
+      agencyId: (entity.agencyId as string) || undefined,
+      registration: (entity.registration as string) || undefined,
+      vin: (entity.vin as string) || undefined,
+      make: (entity.make as string) || undefined,
+      model: (entity.model as string) || undefined,
+      year: (entity.year as number) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };
@@ -285,7 +315,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     }
   }
 
-  async updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[], stationId?: string): Promise<ChecklistTemplate> {
+  async updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[], stationId?: string, itemOrder?: string[]): Promise<ChecklistTemplate> {
     const appliance = await this.getApplianceById(applianceId);
     if (!appliance) {
       throw new Error('Appliance not found');
@@ -298,7 +328,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     // Preserve item ids across edits (match by supplied id, else by name) so
     // itemCode/history references stay stable instead of churning a new uuid each save.
     const reuseId = (item: Omit<ChecklistItem, 'id'> & { id?: string }): string => {
-      if (item.id && previous.some((p) => p.id === item.id)) return item.id;
+      if (item.id) return item.id; // client-owned id (overlay items, existing items) — keep it stable
       const byName = previous.find((p) => p.name === item.name);
       return byName ? byName.id : uuidv4();
     };
@@ -319,6 +349,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       applianceName: appliance.name,
       stationId: stationId ?? existingTemplate?.stationId ?? appliance.stationId,
       items: templateItems,
+      itemOrder: itemOrder ?? existingTemplate?.itemOrder,
       createdAt: existingTemplate?.createdAt || new Date(),
       updatedAt: new Date(),
     };
@@ -330,6 +361,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       applianceName: template.applianceName,
       stationId: template.stationId || '',
       items: JSON.stringify(template.items), // Store as JSON string
+      itemOrder: JSON.stringify(template.itemOrder ?? []),
       createdAt: template.createdAt.toISOString(),
       updatedAt: template.updatedAt.toISOString(),
     };
@@ -350,6 +382,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       applianceName: entity.applianceName as string,
       stationId: (entity.stationId as string) || undefined,
       items: JSON.parse(entity.items as string),
+      itemOrder: entity.itemOrder ? JSON.parse(entity.itemOrder as string) : undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };
