@@ -356,3 +356,13 @@
     align-self: flex-start;
   }
 }
+
+/* Side-by-side fields in the vehicle form (identity: fleet/rego, make/model/year). */
+.form-row {
+  display: flex;
+  gap: var(--space-3, 0.75rem);
+  flex-wrap: wrap;
+}
+.form-row .form-group {
+  flex: 1 1 8rem;
+}

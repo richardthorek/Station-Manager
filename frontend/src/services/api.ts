@@ -19,6 +19,17 @@ import type {
   EffectiveChecklist
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
+
+/** Optional vehicle identity + type-link fields for an appliance. */
+export interface ApplianceDetails {
+  vehicleTypeId?: string;
+  agencyId?: string;
+  registration?: string;
+  vin?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+}
 import type { Organization, Entitlements } from '../contexts/AuthContext';
 
 // Use relative URL in production, localhost in development; ensure trailing /api
@@ -585,11 +596,11 @@ class ApiService {
     return response.json();
   }
 
-  async createAppliance(name: string, description?: string, photoUrl?: string, vehicleType?: string): Promise<Appliance> {
+  async createAppliance(name: string, description?: string, photoUrl?: string, vehicleType?: string, details?: ApplianceDetails): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`, {
       method: 'POST',
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ name, description, photoUrl, vehicleType }),
+      body: JSON.stringify({ name, description, photoUrl, vehicleType, ...details }),
     });
     if (!response.ok) {
       // Surface the server message (e.g. plan vehicle-limit reached) rather than a generic error.
@@ -599,11 +610,11 @@ class ApiService {
     return response.json();
   }
 
-  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string): Promise<Appliance> {
+  async updateAppliance(id: string, name: string, description?: string, photoUrl?: string, vehicleType?: string, details?: ApplianceDetails): Promise<Appliance> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
       method: 'PUT',
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ name, description, photoUrl, vehicleType }),
+      body: JSON.stringify({ name, description, photoUrl, vehicleType, ...details }),
     });
     if (!response.ok) throw new Error('Failed to update appliance');
     return response.json();
@@ -646,6 +657,68 @@ class ApiService {
       body: JSON.stringify({ items }),
     });
     if (!response.ok) throw new Error('Failed to update template');
+    return response.json();
+  }
+
+  // Vehicle Types (standard checklists, org-scoped + shared standards)
+  async getVehicleTypes(): Promise<VehicleType[]> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/vehicle-types`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch vehicle types');
+    return response.json();
+  }
+
+  async createVehicleType(input: Partial<VehicleType>): Promise<VehicleType> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/vehicle-types`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to create vehicle type');
+    }
+    return response.json();
+  }
+
+  async updateVehicleType(id: string, input: Partial<VehicleType>): Promise<VehicleType> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/vehicle-types/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to update vehicle type');
+    }
+    return response.json();
+  }
+
+  async deleteVehicleType(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/vehicle-types/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to delete vehicle type');
+  }
+
+  // Effective checklist (standard + custom overlay, resolved)
+  async getEffectiveChecklist(applianceId: string): Promise<EffectiveChecklist> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${applianceId}/checklist`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch checklist');
+    return response.json();
+  }
+
+  async saveChecklistOverlay(applianceId: string, customItems: ChecklistItem[], itemOrder: string[]): Promise<EffectiveChecklist> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${applianceId}/checklist`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ customItems, itemOrder }),
+    });
+    if (!response.ok) throw new Error('Failed to save checklist');
     return response.json();
   }
 
