@@ -2616,22 +2616,44 @@ Returns:
 
 ### A. Environment Variables
 
-**Backend Required:**
-```
-MONGODB_URI=<cosmos-db-connection-string>
-FRONTEND_URL=http://localhost:5173
-```
+The production database is **Azure Table Storage** (the project migrated off
+Cosmos DB / MongoDB — `MONGODB_URI` is no longer used). The full, authoritative
+list lives in `backend/.env.example` and is documented by group in
+`docs/AZURE_DEPLOYMENT.md`; the essentials:
 
-**Backend Optional:**
+**Backend — core:**
 ```
 PORT=3000
 NODE_ENV=production|development
+FRONTEND_URLS=https://your-domain            # CORS allow-list (comma-separated)
+```
+
+**Backend — database (production):**
+```
+USE_TABLE_STORAGE=true
 AZURE_STORAGE_CONNECTION_STRING=<storage-connection-string>
 ```
+(omit / set USE_TABLE_STORAGE=false to use the in-memory store for dev/tests)
+
+**Backend — auth & SaaS:**
+```
+REQUIRE_AUTH=true
+JWT_SECRET=<secret>
+DEFAULT_ADMIN_USERNAME=<admin>
+DEFAULT_ADMIN_PASSWORD=<password>
+ENABLE_ENTITLEMENTS=true                      # default on; never disable in prod
+```
+
+**Backend — optional integrations:** Stripe (`STRIPE_*`), AI gateway
+(`AZURE_OPENAI_*`, `AZURE_SPEECH_*`), AAR Studio (`AAR_STUDIO_PATH`),
+App Insights (`AZURE_APP_INSIGHTS_CONNECTION_STRING`). See `backend/.env.example`.
 
 **Frontend:**
 ```
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:3000/api
+VITE_SOCKET_URL=http://localhost:3000
+VITE_SANTA_RUN_URL=<suite sibling app>       # optional (app launcher)
+VITE_FIREBREAK_URL=<suite sibling app>       # optional (app launcher)
 ```
 
 ### B. Browser Compatibility

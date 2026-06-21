@@ -1,472 +1,273 @@
-# RFS Station Manager (MVP Launch)
+# Station Manager — part of Bushie Tools
 
-A modern, real-time digital sign-in system for Rural Fire Service (RFS) stations. Track member presence and activities across multiple devices with instant synchronization.
+A real-time digital sign-in and brigade-operations platform for NSW Rural Fire
+Service stations. Members check in and out, track activities, run truck checks,
+review reports, and facilitate AI-assisted After Action Reviews — all syncing
+live across kiosks, tablets, and phones via WebSockets.
 
-> **Brand:** Station Manager is delivered as part of **Bushie Tools** — the customer-facing suite name for the family of approachable tools (Station Manager, AAR Studio, and more) built *for the average bushie*. The logged-out marketing site and the post-login app picker carry the Bushie Tools identity; "Station Manager" remains the name of this app within the suite.
+> **Brand:** Station Manager ships as part of **Bushie Tools** — the
+> customer-facing suite of approachable tools built *for the average bushie*
+> (Station Manager, AAR Studio, and more to come). The logged-out marketing site
+> and the post-login app launcher carry the Bushie Tools identity; "Station
+> Manager" is the name of this app within the suite.
 
-![Version](https://img.shields.io/badge/version-1.0--MVP-blue)
+![Version](https://img.shields.io/badge/version-1.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-## 🚀 MVP Launch - Sign-In Only
+## What's in the box
 
-**This is the MVP (Minimum Viable Product) launch** focused exclusively on the core sign-in functionality. Additional features will be rolled out in version 1.1 and beyond.
+Station Manager is a **monorepo of three apps, deployed as one**:
 
-### Available Now (v1.0 MVP)
-- ✅ **Member Sign-In System**: Quick and easy check-in/out with activity tracking
-- ✅ **Real-Time Sync**: Changes appear instantly across all connected devices
-- ✅ **Event Management**: Create and manage events with participant tracking
-- ✅ **Multi-Device Support**: Works on kiosks, tablets, mobile phones
-- ✅ **QR Code Sign-In**: Personal sign-in links and QR codes for each member
-- ✅ **Admin Portal**: Station management and brigade access control (authenticated)
+| App | Stack | Served at | Purpose |
+|-----|-------|-----------|---------|
+| **backend/** | Express 5 + Socket.io + TypeScript | API + WS server | REST API, real-time events; also serves the two frontends in prod |
+| **frontend/** | React 19 + Vite 7 + TypeScript | `/` | The main SPA (sign-in, truck checks, reports, admin, billing) |
+| **aar-studio/** | Vanilla HTML/CSS/ES-modules (no build) | `/aar` | AI-facilitated After Action Reviews (its own `node --test` suite) |
 
-### Coming in v1.1
-- 🚧 **Truck Check**: Vehicle maintenance tracking and inspection checklists
-- 🚧 **Reports & Analytics**: Historical reporting and data export capabilities
+The backend serves `frontend/dist` at `/` and the `aar-studio/` bundle at `/aar`;
+CI packages all three into a single Azure App Service deploy.
 
-## ✨ Features
+## Features
 
-### Core Functionality
-- 🔥 **One-Tap Sign-In**: Quick and easy member check-in/out
-- 📱 **Multi-Device Support**: Works on kiosks, mobile phones, and via QR codes
-- ⚡ **Real-Time Sync**: Changes appear instantly across all connected devices
-- 📋 **Activity Tracking**: Monitor what members are working on
-- 👥 **Self-Registration**: New members can register themselves
-- 🎨 **Modern UI**: Clean, responsive interface following emergency services branding
+### Brigade operations
+- 🔥 **Station Sign-In** — one-tap member check-in/out with activity tracking and
+  real-time sync across every connected device. QR codes and personal sign-in
+  links per member. Self-registration.
+- 🚛 **Truck Check** — vehicle inspection checklists with reference/result photos.
+- 📊 **Reports & Analytics** — historical reporting, heat maps, KPIs, CSV export.
+- 🎙️ **AAR Studio** — capture an After Action Review discussion live (speech-to-text),
+  collaborate with the whole room via join codes, build a findings board, and
+  export the report. AI features run through a server-side gateway (no
+  browser-held API keys).
+- ⚙️ **Admin** — station management, brigade access tokens (kiosk locking),
+  organization & plan management.
 
-### Technical Highlights
-- Built with React + TypeScript for type safety
-- Node.js backend with Express and Socket.io
-- Real-time WebSocket communication
-- Responsive design for all screen sizes
-- Optimized for low-bandwidth environments
-- NSW RFS brand colors and styling
+### SaaS platform (Bushie Tools)
+- 🏢 **Organizations & plans** — the billing tenant. Plans (`Community` / `Basic` /
+  `AI Pro`) map to **entitlements** that gate features per organization.
+- 🎛️ **Per-feature & per-app gating** — `signInEnabled`, `truckCheckEnabled`,
+  `reportsEnabled`, `aiEnabled`, plus per-app suite flags `aarStudioEnabled`,
+  `santaRunEnabled`, `fireBreakEnabled`. Gated on both the backend
+  (`requireFeature`) and frontend (`<FeatureRoute>`).
+- 💳 **Stripe billing** — self-service checkout, customer portal, and webhook-driven
+  entitlement sync (test-mode wired; see config below).
+- 🔐 **Suite federation** — Station Manager's JWT is the suite identity provider;
+  sibling apps validate the same token and read entitlements via
+  `GET /api/auth/entitlements`. See [docs/SUITE_TOKEN_VALIDATION.md](docs/SUITE_TOKEN_VALIDATION.md).
 
-## 🚀 Quick Start
+### Platform
+- ⚡ Real-time WebSocket sync (no polling)
+- 📱 PWA: installable, offline-capable, kiosk-friendly (60px+ touch targets)
+- ♿ WCAG 2.1 AA; NSW RFS brand (red `#e5281B`, lime `#cbdb2a`, Public Sans)
+
+## Quick start
 
 ### Prerequisites
-- Node.js 18+ and npm
+- Node.js 22.x and npm ≥ 10
 - Git
 
-### Installation
+### Install & run (in-memory DB, no Azure needed)
 
 ```bash
-# Clone the repository
 git clone https://github.com/richardthorek/Station-Manager.git
 cd Station-Manager
 
-# Install and run backend
-cd backend
+# Install everything (root orchestrates backend + frontend)
 npm install
-cp .env.example .env
-npm run dev
 
-# In a new terminal, install and run frontend
-cd frontend
-npm install
-cp .env.example .env
+# Run backend + frontend together
 npm run dev
 ```
 
-Visit `http://localhost:5173` to see the application landing page.
+- Frontend (Vite dev server): http://localhost:5173
+- Backend (API + Socket.io): http://localhost:3000
+- AAR Studio (served by the backend in prod): http://localhost:3000/aar
 
-**📖 For detailed setup instructions, see [Getting Started Guide](docs/GETTING_STARTED.md)**
+Local development uses an **in-memory database** by default — no Azure connection
+string required. Entitlement gating is on by default; set
+`ENABLE_ENTITLEMENTS=false` to disable it for single-tenant/kiosk dev.
 
-## 🗺️ Application Routes
+**📖 Full setup:** [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
 
-The application uses a feature-based routing structure for scalability:
+## Commands
 
-- **`/`** - Landing page with overview of available features
-- **`/signin`** - Station member sign-in system (✅ MVP feature)
-- **`/profile/:memberId`** - Member profile with QR code and stats (✅ MVP feature)
-- **`/admin/stations`** - Station management (✅ MVP feature, requires authentication)
-- **`/admin/brigade-access`** - Brigade access token management (✅ MVP feature, requires authentication)
-- **`/truckcheck`** - Vehicle maintenance tracking (🚧 Coming in v1.1)
-- **`/reports`** - Reports and analytics (🚧 Coming in v1.1)
-
-Additional features can be easily added as new routes following this pattern.
-
-## 📱 Usage
-
-### Sign In
-1. Search or scroll to find your name
-2. Tap your name to check in
-3. See yourself appear in "Currently Signed In"
-4. Tap again to undo check-in
-
-### Change Activity
-1. Click on an activity button (Training, Maintenance, Meeting)
-2. Or create a custom activity
-3. All new check-ins will use the selected activity
-
-### Add New Members
-1. Click "+ Add New Member"
-2. Enter the member's name
-3. They'll appear in the member list with a unique QR code
-
-## 📊 Screenshots (MVP Features)
-
-Comprehensive UI screenshots for MVP features have been captured at iPad resolution (landscape & portrait). See the full UI review with screenshots:
-
-**📸 [View Complete UI Review](docs/current_state/UI_REVIEW_20260207.md)**
-
-### Key Screenshots (MVP)
-- **Landing Page**: Main dashboard with feature navigation (✅ MVP)
-- **Sign-In System**: Member check-in/out with real-time updates (✅ MVP)
-- **Admin Pages**: Station management and brigade access control (✅ MVP)
-
-### Coming in v1.1
-- **Truck Checks**: Vehicle maintenance tracking interface (🚧 Coming soon)
-- **Reports & Analytics**: Dashboard with charts and metrics (🚧 Coming soon)
-
-All screenshots demonstrate:
-- ✅ Responsive design (iPad landscape 1024×768 & portrait 768×1024)
-- ✅ NSW RFS brand styling (red #e5281B, lime #cbdb2a)
-- ✅ Touch-friendly interfaces (60px+ touch targets)
-- ✅ WCAG 2.1 Level AA accessibility compliance
-- ✅ Real-time updates and visual feedback
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐
-│  React Frontend │  ← User Interface
-│   (TypeScript)  │
-└────────┬────────┘
-         │ HTTP + WebSocket
-┌────────▼────────┐
-│  Node.js Backend│  ← API + Real-time
-│   (Express +    │
-│    Socket.io)   │
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│ Azure Table     │  ← Data Storage
-│ Storage         │    (Production)
-└─────────────────┘
-```
-
-### Tech Stack
-
-**Frontend:**
-- React 19
-- TypeScript
-- Vite (build tool)
-- Socket.io Client
-- Framer Motion (animations)
-
-**Backend:**
-- Node.js 22
-- Express 5
-- Socket.io (WebSocket)
-- TypeScript
-- Azure Table Storage (production)
-- In-memory storage (dev)
-
-## 📚 Documentation
-
-- **[Getting Started Guide](docs/GETTING_STARTED.md)** - Local development setup
-- **[Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md)** - Production deployment to Azure
-- **[API Documentation](docs/API_DOCUMENTATION.md)** - REST API and WebSocket reference
-- **[Truck Checks Guide](docs/archive/TRUCK_CHECKS_IMPLEMENTATION.md)** - Vehicle inspection feature documentation (archived)
-- **[Storage Migration History](docs/archive/TABLE_STORAGE_MIGRATION_PLAN.md)** - Migration from Cosmos DB to Table Storage (completed, archived)
-- **[Storage Decision](docs/archive/FINAL_STORAGE_DECISION.md)** - Decision rationale: Azure Table Storage (archived)
-- **[Project Plan](docs/archive/PROJECT_PLAN.md)** - Original project requirements and planning (historical, archived)
-
-## 🚢 Deployment
-
-### Azure Deployment
-
-Deploy to Azure for a production-ready setup:
-
-- **Frontend:** Azure Static Web Apps (Free tier)
-- **Backend:** Azure App Service B1 tier (~$13 AUD/month) - e.g., `bungrfsstation`
-- **Database:** Azure Cosmos DB (Document DB) with MongoDB API (Free tier available)
-- **Real-time:** Socket.io with native WebSocket support
-
-**Estimated cost:** ~$13-25 AUD/month for a volunteer organization
-
-> **Note:** Azure Cosmos DB with MongoDB API is also known as Azure Document DB. They are the same service.
-
-See [Azure Deployment Guide](docs/AZURE_DEPLOYMENT.md) for step-by-step instructions.
-
-### Other Options
-
-- Heroku
-- Railway
-- Any Node.js hosting platform with WebSocket support
-
-## 🎨 Design
-
-### NSW RFS Brand Colors
-- **Primary Red**: #E2231A
-- **Black**: #000000
-- **White**: #FFFFFF
-- **Lime Green Accent**: #C6D931
-
-### Typography
-- **Font**: Public Sans (Google Fonts)
-
-### UI Principles
-- Large touch targets (60px minimum)
-- High contrast for visibility
-- Subtle animations for feedback
-- Responsive across all devices
-- Accessibility-focused
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-Station-Manager/
-├── frontend/           # React application
-│   ├── src/
-│   │   ├── features/   # Feature-based modules
-│   │   │   ├── landing/      # Landing page (/)
-│   │   │   ├── signin/       # Sign-in feature (/signin)
-│   │   │   └── truckcheck/   # Truck check (placeholder)
-│   │   ├── components/ # Shared UI components
-│   │   ├── hooks/      # Custom React hooks
-│   │   ├── services/   # API services
-│   │   └── types/      # TypeScript definitions
-│   └── dist/           # Build output
-├── backend/            # Node.js server
-│   ├── src/
-│   │   ├── routes/     # Express routes
-│   │   ├── services/   # Business logic
-│   │   └── types/      # TypeScript definitions
-│   └── dist/           # Build output
-└── docs/               # Documentation
-```
-
-### Feature-Based Routing
-
-The application follows a scalable feature-based routing pattern:
-
-1. **Landing Page (`/`)**: Central hub displaying all available features
-2. **Feature Routes (`/feature-name`)**: Each major feature has its own route
-3. **Feature Modules**: Self-contained feature directories with components and styles
-
-**Adding a New Feature:**
-1. Create a new directory in `frontend/src/features/your-feature`
-2. Add `YourFeaturePage.tsx` and `YourFeaturePage.css`
-3. Register the route in `App.tsx`
-4. Add a feature card to the landing page
-
-### Scripts
-
-**Development with Sample Data (In-Memory Database):**
 ```bash
-# Terminal 1 - Backend
-cd backend
-npm run dev
+# Root
+npm run dev      # backend + frontend concurrently
+npm run build    # build backend then frontend
+npm start        # run prod build (node backend/dist/index.js)
 
-# Terminal 2 - Frontend  
-cd frontend
-npm run dev
+# Backend (cd backend)
+npm run dev          # in-memory DB, development, port 3000
+npm run dev:prod     # production DB (needs AZURE_STORAGE_CONNECTION_STRING)
+npm run build        # tsc → dist/
+npm test             # Jest + Supertest (in-memory DB)
+npx tsc --noEmit     # typecheck (CI gate)
+
+# Frontend (cd frontend)
+npm run dev          # Vite dev server, port 5173
+npm run build        # tsc -b && vite build
+npm run lint         # ESLint (CI gate — zero warnings)
+npm test             # Vitest + React Testing Library
+npx tsc -b --noEmit  # typecheck (CI gate)
+
+# AAR Studio (cd aar-studio)
+node --test          # its own test suite (no build step)
 ```
 
-**Development with Production Database:**
+## Application routes (SPA)
+
+| Route | Feature | Gating |
+|-------|---------|--------|
+| `/` | Marketing page (logged-out) / app launcher (logged-in) | — |
+| `/signin` | Station member sign-in | `signInEnabled` |
+| `/profile/:memberId` | Member profile + QR code | — |
+| `/truckcheck` | Vehicle maintenance tracking | `truckCheckEnabled` |
+| `/reports` | Reports and analytics | `reportsEnabled` |
+| `/aar/` | AAR Studio (separate sub-app) | `aarStudioEnabled` |
+| `/login`, `/signup` | Auth | — |
+| `/admin/stations` | Station management | admin |
+| `/admin/brigade-access` | Brigade access tokens | admin |
+| `/admin/organization` | Plan, users, billing | owner/admin |
+
+## Architecture
+
+```
+┌──────────────────────┐        ┌─────────────────────┐
+│  React SPA (/)        │        │  AAR Studio (/aar)  │
+│  React 19 + Vite      │        │  vanilla ES modules │
+└──────────┬───────────┘        └──────────┬──────────┘
+           │  HTTP + WebSocket              │  HTTP (AI gateway)
+           └───────────────┬────────────────┘
+                  ┌─────────▼──────────┐
+                  │  Express 5 backend │  REST + Socket.io + AI gateway
+                  │  + entitlements    │  serves both frontends in prod
+                  └─────────┬──────────┘
+                  ┌─────────▼──────────┐
+                  │  Azure Table       │  in-memory store for dev/tests
+                  │  Storage (+ Blob)  │  selected at runtime by dbFactory
+                  └────────────────────┘
+```
+
+**Data flow:** React UI → `services/api.ts` → backend REST route → DB service
+(via a `dbFactory`) → persists → backend emits a Socket.io event → all clients
+update via the `useSocket` hook. No polling.
+
+**Tech stack:** React 19, TypeScript, Vite 7, Socket.io, Framer Motion (frontend);
+Node 22, Express 5, Socket.io, TypeScript (backend); Azure Table Storage + Blob
+(production), in-memory (dev); Stripe (billing); Azure OpenAI + Azure Speech
+(AI gateway).
+
+## Configuration
+
+Copy `backend/.env.example` → `backend/.env` and `frontend/.env.example` →
+`frontend/.env`. Key environment variables:
+
+| Group | Vars |
+|-------|------|
+| **Core** | `PORT`, `NODE_ENV`, `FRONTEND_URLS` (CORS allow-list) |
+| **Auth** | `REQUIRE_AUTH`, `JWT_SECRET`, `JWT_EXPIRY`, `DEFAULT_ADMIN_USERNAME`, `DEFAULT_ADMIN_PASSWORD` |
+| **Database** | `USE_TABLE_STORAGE`, `AZURE_STORAGE_CONNECTION_STRING` |
+| **Entitlements** | `ENABLE_ENTITLEMENTS` (default on; never disable in prod) |
+| **Stripe** | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*`, `APP_URL` |
+| **AI gateway** | `AZURE_OPENAI_*`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` |
+| **Frontend** | `VITE_API_URL`, `VITE_SOCKET_URL`, `VITE_SANTA_RUN_URL`, `VITE_FIREBREAK_URL` |
+
+Full reference: [docs/AZURE_DEPLOYMENT.md](docs/AZURE_DEPLOYMENT.md) and
+[docs/AUTHENTICATION_CONFIGURATION.md](docs/AUTHENTICATION_CONFIGURATION.md).
+
+## Testing
+
 ```bash
-# Terminal 1 - Backend
-cd backend
-npm run dev:prod
-
-# Terminal 2 - Frontend
-cd frontend
-npm run dev
+cd backend && npm test     # Jest + Supertest (in-memory DB)
+cd frontend && npm test    # Vitest + React Testing Library
+cd aar-studio && node --test
 ```
 
-**Backend:**
-```bash
-npm run dev       # Development with sample data (in-memory)
-npm run dev:prod  # Development with production database
-npm run build     # Build TypeScript
-npm start         # Run production build
-```
+**CI gates** (`.github/workflows/ci-cd.yml`), in order: backend typecheck →
+backend tests → frontend lint → frontend typecheck → frontend tests → AAR Studio
+tests → build. Deploy runs only on `main`. Docs-only changes (`docs/**`, `*.md`)
+skip the pipeline.
 
-**Frontend:**
-```bash
-npm run dev          # Development server
-npm run build        # Production build
-npm run preview      # Preview production build
-npm run lint         # Run ESLint
-npm run test         # Run tests
-npm run test:watch   # Run tests in watch mode
-npm run test:ui      # Run tests with UI
-npm run test:coverage # Run tests with coverage report
-```
+## Deployment
 
-**Backend:**
-```bash
-npm run test         # Run tests
-npm run test:watch   # Run tests in watch mode
-npm run test:coverage # Run tests with coverage report
-```
+GitHub Actions → Azure **Linux** App Service (`bungrfs-linux`). The backend serves
+`frontend/dist` at `/` and the `aar-studio/` bundle at `/aar`; the CI "Create
+deployment package" step bundles `backend/dist` + `frontend/dist` + `aar-studio/`
+into one deploy zip.
 
-## 🧪 Testing
+- **Database:** Azure Table Storage (production) — selected via
+  `USE_TABLE_STORAGE=true` + `AZURE_STORAGE_CONNECTION_STRING`. ~$6–34/year per
+  station. (The project migrated off Cosmos DB / MongoDB; see CHANGELOG.)
+- **Images:** Azure Blob Storage (truck-check photos).
+- **Real-time:** Socket.io over native WebSocket (WSS in prod).
 
-### Automated Tests
+See [docs/AZURE_DEPLOYMENT.md](docs/AZURE_DEPLOYMENT.md) for step-by-step
+instructions.
 
-The application includes comprehensive automated test coverage:
+## Documentation
 
-**Frontend Tests (Vitest + React Testing Library):**
-- 80+ tests covering components, hooks, and pages
-- 93%+ code coverage (statements, branches, functions)
-- Tests for:
-  - Core components (ActivitySelector, MemberList, ActiveCheckIns, Header, EventCard)
-  - Feature pages (LandingPage)
-  - Custom hooks (useSocket, useTheme)
-  - User interactions and state management
+Start here:
+- **[docs/MASTER_PLAN.md](docs/MASTER_PLAN.md)** — single source of truth for
+  roadmap, priorities, and the change log
+- **[docs/AS_BUILT.md](docs/AS_BUILT.md)** — current architecture of record
+- **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** — local dev setup
+- **[docs/FEATURE_DEVELOPMENT_GUIDE.md](docs/FEATURE_DEVELOPMENT_GUIDE.md)** — how to add a feature
+- **[CLAUDE.md](CLAUDE.md)** — fast, token-efficient repo guide for AI agents
 
-**Backend Tests (Jest + Supertest):**
-- 45+ integration tests covering all API endpoints
-- Tests for members, activities, check-ins, events, truck checks, and achievements
-- In-memory database for fast, isolated tests
+Reference:
+- **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)** + [docs/openapi.yaml](docs/openapi.yaml) — REST/WS reference
+- **[docs/AZURE_DEPLOYMENT.md](docs/AZURE_DEPLOYMENT.md)** — production deployment
+- **[docs/AUTHENTICATION_CONFIGURATION.md](docs/AUTHENTICATION_CONFIGURATION.md)** — auth & entitlements config
 
-**Running Tests:**
-```bash
-# Frontend
-cd frontend
-npm test              # Run all tests once
-npm run test:watch    # Watch mode for development
-npm run test:coverage # Generate coverage report
+SaaS & suite:
+- **[docs/SAAS_COMMERCIALIZATION_DESIGN.md](docs/SAAS_COMMERCIALIZATION_DESIGN.md)** — plans, pricing, billing model
+- **[docs/SUITE_INTEGRATION_PLAN.md](docs/SUITE_INTEGRATION_PLAN.md)** — multi-app suite strategy
+- **[docs/SUITE_TOKEN_VALIDATION.md](docs/SUITE_TOKEN_VALIDATION.md)** — sibling-app token/entitlement contract
 
-# Backend
-cd backend
-npm test              # Run all tests once
-npm run test:watch    # Watch mode for development
-npm run test:coverage # Generate coverage report
-```
+Historical material lives in [docs/archive/](docs/archive/); dated snapshots and
+UI screenshots in [docs/current_state/](docs/current_state/); deep dives in
+[docs/implementation-notes/](docs/implementation-notes/).
 
-**CI/CD Testing:**
-- All tests run automatically in GitHub Actions on every PR
-- Frontend and backend tests run in parallel
-- Build only proceeds if all tests pass
-- Coverage reports uploaded as artifacts
+## Security
 
-### Manual Testing
+Multiple layers: Helmet security headers (CSP — global plus a scoped `/aar`
+override, X-Frame-Options, HSTS, etc.), HTTPS/WSS, a single CORS allow-list
+(`FRONTEND_URLS`) shared by Express and Socket.io, express-validator input
+validation, rate limiting (~1,000 req/hr/IP on the API; 5/15min on auth), JWT +
+bcrypt auth, and organization-scoped entitlement gating. Secrets are configured
+via environment variables / Azure Key Vault, never committed.
 
-Open multiple browser windows to `http://localhost:5173` and test real-time synchronization:
-- Check in on one device, see update on others
-- Change activity, see it reflected everywhere
-- Add a member, appears for all users
+See [docs/SECURITY_DEPLOYMENT_GUIDE.md](docs/SECURITY_DEPLOYMENT_GUIDE.md) and the
+security section of [docs/AS_BUILT.md](docs/AS_BUILT.md).
 
-## 🔒 Security
+## Project status
 
-The Station Manager implements multiple layers of security protection:
+**v1.1 in production.** Sign-in, truck check, and reports are shipped. SaaS
+foundation (organizations, plans, entitlements) and Stripe billing are wired in
+test mode. AAR Studio is live at `/aar`. The Bushie Tools suite is at Phase 1
+(shared identity + subscription + app launcher); shared packages (Phase 2) and
+monorepo consolidation (Phase 3) are planned — see
+[docs/SUITE_INTEGRATION_PLAN.md](docs/SUITE_INTEGRATION_PLAN.md).
 
-### Security Headers (Helmet)
-- **Content-Security-Policy (CSP)**: Protects against XSS and injection attacks
-  - Restricts resource loading to same-origin by default
-  - Allows WebSocket connections for real-time features
-  - Permits inline styles required by React
-- **X-Frame-Options: DENY**: Prevents clickjacking attacks
-- **X-Content-Type-Options: nosniff**: Prevents MIME type sniffing
-- **Referrer-Policy**: Privacy-focused referrer control
-- **Permissions-Policy**: Blocks camera, microphone, geolocation, payment APIs
-- **HSTS**: Enforces HTTPS in production (1 year max-age)
-- **X-Powered-By**: Hidden to avoid revealing server technology
+## Contributing
 
-### Network Security
-- **HTTPS Required**: All production traffic uses HTTPS
-- **WSS (WebSocket Secure)**: Encrypted WebSocket connections in production
-- **CORS Configuration**: Restricted to specific frontend URL
-- **Trust Proxy**: Configured for Azure App Service
+1. Branch from `main`
+2. Make your changes (TypeScript strict, no `any`; lazy-loaded route components;
+   component-scoped CSS using vars from `index.css`)
+3. Keep the CI gates green; UI changes need iPad portrait + landscape screenshots
+4. Update `MASTER_PLAN.md`, `AS_BUILT.md`, and the JSON registers when a change
+   affects roadmap, API, or function signatures
+5. Open a PR
 
-### Input Security
-- **Input Validation**: express-validator on all POST/PUT/DELETE endpoints
-- **XSS Protection**: HTML entity escaping for user input
-- **Type & Length Validation**: Enforced on all fields
-- **Pattern Validation**: Name fields restricted to safe characters
-- **Whitespace Trimming**: Automatic sanitization
+## License
 
-### Rate Limiting
-- **API Routes**: ≈1,000 requests per hour per IP (≈84 per 5-minute window so usage resets every 5 minutes)
-- **Auth Routes**: 5 requests per 15 minutes per IP (reserved for future)
-- **SPA Fallback**: ≈1,000 requests per hour per IP (aligned with the API limiter)
-- **Standard Headers**: RateLimit-* headers for client feedback
+MIT.
 
-### Data Protection
-- **No Sensitive Data**: QR codes contain only member IDs
-- **Environment Variables**: Secrets not committed to version control
-- **Azure Key Vault**: For production secrets (recommended)
-
-### Testing
-- **27 Security Header Tests**: Comprehensive validation of all headers
-- **25 Input Validation Tests**: Coverage of all validation rules
-- **100% Test Pass Rate**: All security tests passing
-
-For detailed security configuration, see [Security & Authentication](docs/AS_BUILT.md#security--authentication) in the as-built documentation.
-
-Future enhancements may include optional authentication for admin functions.
-
-## 📈 Performance
-
-- Page load: < 2 seconds on 3G
-- Real-time sync: < 2 seconds
-- Check-in response: < 500ms
-- Supports 50+ concurrent users
-
-## 🗺️ Roadmap
-
-### Version 1.0 (Current)
-- ✅ Digital sign-in system
-- ✅ Real-time synchronization
-- ✅ Activity tracking
-- ✅ Multi-device support
-- ✅ Self-registration
-
-### Future Versions
-- QR code scanning for quick check-in
-- Historical reporting and analytics
-- Midnight rollover automation
-- Admin dashboard
-- Mobile app (PWA enhancement)
-- Offline support
-- Export data to CSV
-- Custom notifications
-
-See [PLAN.md](PLAN.md) for detailed feature planning.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - NSW Rural Fire Service for design guidelines
 - The volunteer RFS community
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/richardthorek/Station-Manager/issues)
-- **Documentation**: See `/docs` folder
-- **Questions**: Open a discussion on GitHub
-
-## 🎯 Project Status
-
-**Status**: ✅ Version 1.0 Complete - Ready for Local Testing
-
-The first iteration is complete with all core features implemented:
-- Frontend with modern, responsive UI
-- Backend API with real-time WebSocket support
-- Complete documentation
-- Ready for local development and testing
-
-Next steps:
-1. Local testing and feedback
-2. Azure deployment setup
-3. Production testing
-4. Station rollout
 
 ---
 

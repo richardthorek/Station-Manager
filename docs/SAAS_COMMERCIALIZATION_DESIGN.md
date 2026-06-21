@@ -1,9 +1,62 @@
 # Design: Self-Service Sign-up, Multi-Tenant Billing & Commercialization
 
-**Status:** Draft / future release (design only — not implemented)
+**Status:** Partially shipped — see Implementation status below. The full
+self-service vision remains a mix of shipped and design-only pieces.
 **Author:** Design spike, June 2026
 **Related:** `docs/AI_MAINTENANCE_AGENT_DESIGN.md`, `docs/AS_BUILT.md` (Multi-Station,
 Auth), `docs/MASTER_PLAN.md`
+
+---
+
+## Implementation status (as of 2026-06-20)
+
+This section is the quick truth-check; the rest of the document is the original
+design and may describe pieces not yet built. Verify against
+`backend/src/routes/` and `backend/src/services/` if in doubt.
+
+### ✅ Shipped
+
+- **Organizations + plans + entitlements.** `Organization` is the billing tenant
+  (`organizationDatabase` + Table Storage twin). `planCode`
+  (`community|basic|ai`) maps to entitlements via `constants/plans.ts`, which
+  clamps owner overrides to the plan ceiling.
+- **Per-feature + per-app entitlement flags.** `signInEnabled`,
+  `truckCheckEnabled`, `reportsEnabled`, `aiEnabled`, plus the suite/app flags
+  `aarStudioEnabled`, `santaRunEnabled`, `fireBreakEnabled`, and limits
+  (`maxStations`, `maxDevices`, `aiIncludedSessions`). Gated on both sides
+  (`requireFeature` backend, `FeatureRoute` frontend).
+- **Stripe billing.** Checkout, Customer Portal, and webhook are live
+  (`routes/billing.ts`, `services/stripeClient.ts`): `POST /api/billing/checkout`
+  and `/portal` (owner-only), `POST /api/billing/webhook` (signature-verified,
+  raw body), `GET /api/billing/status`.
+- **Server-side AI gateway with session-based usage metering.** `routes/ai.ts` +
+  `services/aiGateway.ts` proxy Azure OpenAI/Speech; one Speech-token vend == one
+  AAR session. Usage is recorded (`usageDatabase` + Table Storage twin via
+  `usageDbFactory`) and the monthly `aiIncludedSessions` allowance is enforced at
+  the speech-token gate. Metered usage can be reported to Stripe
+  (`services/meteredUsageReporter.ts`, gated by `STRIPE_METERED_USAGE_ENABLED`).
+- **Entitlements probe.** `GET /api/auth/entitlements` returns the org's
+  entitlements + plan code for sibling apps (see `SUITE_TOKEN_VALIDATION.md`);
+  `GET /api/auth/me` returns the full identity + org payload.
+- **Owner role.** First org user is an `owner`; billing routes are `requireOwner`.
+
+### 🚧 Design-only / future
+
+- **First-class `Device` accounts** (§4). Today this is still the existing
+  `BrigadeAccessToken` / kiosk-token model; there is no `Device` entity, no
+  per-type device caps enforced, and `maxDevices` is not yet enforced on
+  enrolment.
+- **Member account activation / personal logins** (§5). `Member` records have no
+  login; the email/SMS claim-link invite flow is not built.
+- **Full self-service onboarding wizard** (§3) — Stripe Checkout exists, but the
+  guided sign-up → station → plan → device-enrol → member-invite flow is not the
+  shipped UX end-to-end.
+- **Usage-overage billing** beyond the monthly session allowance — overage
+  charging is designed but not fully wired; the current behaviour hard-gates new
+  sessions at the allowance rather than billing overage.
+- **`UsageRecord`-driven overage caps / station & device limit enforcement** on
+  every route — partially present (`maxStations` is enforced on station
+  creation); other limits remain to be enforced.
 
 ---
 

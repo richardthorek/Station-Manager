@@ -15,6 +15,73 @@ The Station Manager now includes two independent security layers:
 
 Both features are **optional** and **backward compatible** - they can be enabled independently via environment variables.
 
+Beyond these auth layers, the platform now carries **SaaS, billing, and AI**
+features that introduce additional secrets that must be configured securely (see
+the Secrets Checklist below).
+
+---
+
+## Secrets Checklist (current env vars)
+
+Configure these as App Service settings or, preferably, references to **Azure Key
+Vault**. Never commit them. Rotate them periodically and per-environment.
+
+### Must be set securely in production
+
+| Secret | Purpose | Notes |
+|---|---|---|
+| `JWT_SECRET` | Signs all admin/owner JWTs | Falls back to a known dev secret if unset — **always** override. Rotating it invalidates all issued tokens. |
+| `DEFAULT_ADMIN_PASSWORD` | Seed admin/owner password | bcrypt-hashed at rest; set a strong value before first boot. |
+| `AZURE_STORAGE_CONNECTION_STRING` | Table + Blob Storage access | Long-lived account key; treat as a high-value secret. |
+
+### Required only when the corresponding feature is enabled
+
+| Secret | Feature | Notes |
+|---|---|---|
+| `STRIPE_SECRET_KEY` | Stripe billing | Live/secret API key. |
+| `STRIPE_WEBHOOK_SECRET` | Stripe billing | Verifies `POST /api/billing/webhook` signatures; the webhook handler consumes a **raw** request body. |
+| `AZURE_OPENAI_KEY` | AI gateway | Server-side Azure OpenAI key (never exposed to the browser). |
+| `AZURE_SPEECH_KEY` | AI speech | Used to vend short-lived Speech tokens; the long-lived key stays server-side. |
+
+### Non-secret but security-relevant config
+
+- `FRONTEND_URLS` — exact allowed CORS origins. A wrong value silently falls back
+  to `localhost` and blocks everything (the origin callback **denies without
+  throwing**, see the seam note below).
+- `ENABLE_ENTITLEMENTS` — default on; **never** `false` in production (removes
+  all plan/billing enforcement).
+- `REQUIRE_AUTH`, `ENABLE_DATA_PROTECTION` — the two auth layers documented below.
+- Stripe price IDs (`STRIPE_PRICE_*`), `STRIPE_METERED_USAGE_ENABLED`,
+  `STRIPE_AI_METER_EVENT`, `APP_URL` — billing configuration (not secrets, but
+  environment-specific).
+
+> **Storage tip:** Prefer Key Vault references over plaintext App Service
+> settings for everything in the first two tables. Rotate `JWT_SECRET`,
+> `AZURE_STORAGE_CONNECTION_STRING`, and the Stripe/OpenAI/Speech keys on a
+> schedule.
+
+---
+
+## Multi-app integration seams (security-relevant)
+
+This single App Service serves the React SPA at `/`, AAR Studio at `/aar`, and
+the API at `/api` — all from **one origin**. Two seams matter for security:
+
+- **Scoped `/aar` CSP override.** The main app keeps Helmet's strict global CSP.
+  A *looser* CSP is applied only on `/aar` (it needs jsDelivr scripts and Azure
+  OpenAI/Speech `connect-src`, plus mic/display-capture). Keep AAR-only hosts in
+  the `/aar` override, **not** the global policy — widening the global CSP weakens
+  the main app. Note `connect-src` also governs `fetch()` made by the service
+  worker.
+- **CORS denies without throwing.** A single `allowedOriginsList` (from
+  `FRONTEND_URLS`) is shared by Express and Socket.io. The origin callback returns
+  `callback(null, false)` for disallowed origins rather than throwing — throwing
+  would 500 every same-origin asset request. Keep `FRONTEND_URLS` accurate.
+
+See `CLAUDE.md` ("Multi-app structure & integration seams") for the full list of
+co-dependent places (service-worker denylist, SPA-fallback regex, CSP, CORS,
+static mounts, deploy packaging).
+
 ---
 
 ## Security Layers
@@ -338,15 +405,21 @@ When a token doesn't have sufficient scope:
 
 ### Production Deployment Checklist
 
-- [ ] Set unique `JWT_SECRET` (64+ random characters)
+- [ ] Set unique `JWT_SECRET` (64+ random characters) — never use the dev default
 - [ ] Use strong `DEFAULT_ADMIN_PASSWORD` (12+ characters, mixed case, numbers, symbols)
+- [ ] Set `AZURE_STORAGE_CONNECTION_STRING` (and keep it out of source control)
+- [ ] If billing is enabled: set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
+- [ ] If AI is enabled: set `AZURE_OPENAI_KEY` (and `AZURE_SPEECH_KEY` for speech)
+- [ ] Keep `ENABLE_ENTITLEMENTS` on (default) — never `false` in production
+- [ ] Set `FRONTEND_URLS` to the exact prod origin(s)
+- [ ] Prefer Azure Key Vault references for all of the above
 - [ ] Enable both `REQUIRE_AUTH` and `ENABLE_DATA_PROTECTION`
 - [ ] Use HTTPS/TLS for all connections
 - [ ] Generate brigade tokens with descriptions
 - [ ] Set token expiration dates (1 year recommended)
 - [ ] Store tokens securely on kiosk devices
 - [ ] Monitor logs for unauthorized access
-- [ ] Regular token rotation (annually)
+- [ ] Regular token/secret rotation (annually)
 - [ ] Backup token list before regeneration
 - [ ] Test kiosk access after token changes
 

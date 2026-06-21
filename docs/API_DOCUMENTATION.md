@@ -11,7 +11,70 @@ All API endpoints are prefixed with `/api`.
 
 ## Authentication
 
-Currently, the API does not require authentication. This is by design for kiosk access. Future versions may add optional authentication for administrative functions.
+The API uses **JWT bearer tokens** for authenticated operations. A token is
+obtained from `POST /api/auth/login` (or `POST /api/auth/signup`) and presented
+on subsequent requests via the `Authorization: Bearer <token>` header.
+
+```http
+Authorization: Bearer <JWT>
+```
+
+### What the token carries
+
+JWTs are signed with `JWT_SECRET` and include the following claims: `userId`,
+`username`, `role` (`owner | admin | viewer`) and `organizationId`. The
+`organizationId` claim scopes the caller to a SaaS **organization** (the billing
+tenant) and drives feature gating.
+
+### Auth modes (environment-driven)
+
+- **`REQUIRE_AUTH`** — when `true`, admin/management endpoints require a valid
+  token (and a default admin must be provisioned via `DEFAULT_ADMIN_USERNAME` /
+  `DEFAULT_ADMIN_PASSWORD`). When unset/`false`, kiosk and single-tenant flows
+  remain open for backward compatibility. `GET /api/auth/config` reports the
+  current value to clients.
+- **`ENABLE_ENTITLEMENTS`** — feature gating is **on by default**; set to
+  `false` only for local dev/test. When enabled, the authenticated org's plan
+  and module toggles decide which feature modules are reachable (see *Feature
+  Entitlements & Gating* below). **Requests with no organization context**
+  (kiosk, demo station, plain JWT with no `organizationId`) always pass the gate
+  — those paths rely on the existing auth/data-protection layers instead.
+
+### Roles
+
+- `owner` — full control of the organization, including plan/billing and user
+  management.
+- `admin` — manage users within the organization.
+- `viewer` — read-oriented access.
+
+Kiosk devices authenticate with **brigade access tokens** rather than user
+accounts (handled by `kioskModeMiddleware` / `brigadeAccess` routes), which is
+why the JWT/brigade-token model is retained rather than an external IdP.
+
+## Feature Entitlements & Gating
+
+Organizations carry an `Entitlements` object derived from their plan
+(`community | basic | ai`). Feature-gated route groups are wrapped with the
+`requireFeature(<flag>)` middleware in `index.ts`; when entitlements are enabled
+and the caller has org context, a missing flag returns **`403`** with
+`{ error, feature, planCode, upgradeRequired: true }`.
+
+| Route group | Required entitlement |
+|---|---|
+| `/api/checkins`, `/api/events` | `signInEnabled` |
+| `/api/truck-checks` | `truckCheckEnabled` |
+| `/api/reports`, `/api/export` | `reportsEnabled` |
+| `/api/ai/*` | `aiEnabled` |
+
+`/api/members`, `/api/activities`, `/api/stations`, `/api/brigade-access`,
+`/api/achievements`, `/api/auth`, `/api/organizations` and `/api/billing` are
+**not** feature-gated (auth/role checks apply where noted on individual
+endpoints).
+
+The `Entitlements` shape also includes limits (`maxStations`, `maxDevices`,
+`aiIncludedSessions`) and per-app suite flags (`aarStudioEnabled`,
+`santaRunEnabled`, `fireBreakEnabled`) used by sibling Bushie Tools apps. See
+`docs/SUITE_TOKEN_VALIDATION.md` for the entitlements-probe contract.
 
 ## Input Validation and Security
 
@@ -78,6 +141,180 @@ Check if the server is running.
   "timestamp": "2024-11-14T12:00:00.000Z"
 }
 ```
+
+---
+
+## Authentication & Account
+
+JWT-based authentication and self-service SaaS sign-up. Tokens are signed with
+`JWT_SECRET` and expire per `JWT_EXPIRY` (default `24h`). All requests are
+rate-limited; login/signup additionally use `sensitiveActionRateLimiter`.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/auth/signup` | none | Create a new organization (free Community plan) + its first owner; returns a JWT. |
+| `POST` | `/api/auth/login` | none | Exchange username/password for a JWT. |
+| `POST` | `/api/auth/logout` | none | Client-side logout (token discarded by client; logged for audit). |
+| `GET` | `/api/auth/me` | Bearer | Current user + resolved organization + entitlements. |
+| `GET` | `/api/auth/entitlements` | Bearer | Lightweight entitlements probe for sibling apps. |
+| `GET` | `/api/auth/config` | none | Reports `{ requireAuth }` (whether `REQUIRE_AUTH=true`). |
+
+### `POST /api/auth/signup`
+
+**Request Body**:
+```json
+{
+  "organizationName": "Bungendore RFS",
+  "billingEmail": "captain@example.org",
+  "username": "captain",
+  "password": "min-8-chars"
+}
+```
+**Response** (201 Created): `{ "token": "...", "user": { id, username, role, organizationId }, "organization": { ... } }`
+
+**Errors**: `400` (missing fields / password < 8 chars), `409` (username taken).
+
+### `POST /api/auth/login`
+
+**Request Body**: `{ "username": "captain", "password": "..." }`
+
+**Response** (200 OK): `{ "token": "...", "user": { id, username, role, organizationId, lastLoginAt } }`
+
+**Errors**: `400` (missing fields), `401` (invalid credentials).
+
+### `GET /api/auth/me`
+
+**Auth**: Bearer JWT.
+**Response** (200 OK): `{ id, username, role, organizationId, lastLoginAt, organization, entitlements }`
+(`organization`/`entitlements` are `null` when the user has no org context.)
+
+### `GET /api/auth/entitlements`
+
+**Auth**: Bearer JWT.
+**Response** (200 OK): `{ entitlements, planCode, status }`
+(`entitlements`/`planCode` are `null` for users with no organization.) See
+`docs/SUITE_TOKEN_VALIDATION.md` for the full sibling-app contract.
+
+---
+
+## Organizations (SaaS Tenant Management)
+
+Manage the organization (billing tenant), its plan/module toggles, and its
+users. All endpoints require a Bearer JWT and use `sensitiveActionRateLimiter`.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/api/organizations/current` | any member | Current org + entitlements + plan catalog. |
+| `PUT` | `/api/organizations/current` | owner | Update name/email/plan and narrow module toggles. |
+| `GET` | `/api/organizations/current/users` | admin/owner | List users in the org. |
+| `POST` | `/api/organizations/current/users` | admin/owner | Create a user in the org. |
+
+### `GET /api/organizations/current`
+
+**Response** (200 OK): `{ "organization": { ... }, "plans": [PlanDefinition, ...] }`
+**Errors**: `400` (no org on account), `404` (org not found).
+
+### `PUT /api/organizations/current` (owner)
+
+**Request Body** (all optional):
+```json
+{
+  "name": "New Name",
+  "billingEmail": "billing@example.org",
+  "planCode": "basic",
+  "moduleToggles": {
+    "signInEnabled": true,
+    "truckCheckEnabled": true,
+    "reportsEnabled": false,
+    "aiEnabled": false
+  }
+}
+```
+Changing `planCode` resets entitlements to the plan defaults. `moduleToggles`
+may only **disable** modules; values are clamped to the plan ceiling
+(`clampEntitlements`). **Response**: `{ "organization": { ... } }`.
+**Errors**: `400` (invalid `planCode`), `404` (org not found).
+
+### `POST /api/organizations/current/users` (admin/owner)
+
+**Request Body**: `{ "username": "...", "password": "min-8-chars", "role": "admin|viewer|owner" }`
+Only an `owner` may create another `owner`. **Response** (201): `{ "user": { id, username, role, organizationId } }`.
+**Errors**: `400` (missing fields / short password), `403` (non-owner creating owner), `409` (username taken).
+
+---
+
+## AI Gateway (`/api/ai`)
+
+Server-side proxy for AI features so the browser never holds Azure credentials.
+Gated behind the **`aiEnabled`** entitlement when org context is present and
+entitlements are enabled (`403` otherwise). The monthly AI **session** allowance
+(`aiIncludedSessions`) is enforced at the speech-token endpoint — one speech
+token == one AAR session. Usage is recorded as `UsageRecord` rows for metered
+billing; requests with no org context pass through but are not metered.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/ai/chat` | org context (gated `aiEnabled`) | Chat completion (live finding/metadata extraction). |
+| `POST` | `/api/ai/report` | org context (gated `aiEnabled`) | Chat completion on the heavier report model. |
+| `POST` | `/api/ai/speech/token` | org context (gated `aiEnabled` + allowance) | Vend a short-lived Azure Speech token (starts a session). |
+| `GET` | `/api/ai/usage` | Bearer | This org's monthly AI session usage vs allowance. |
+
+### `POST /api/ai/chat` and `POST /api/ai/report`
+
+**Request Body**: `{ "messages": [ { "role": "...", "content": "..." } ], "responseFormat"?: {...}, "sessionId"?: "..." }`
+**Response**: the Azure OpenAI chat-completion body, forwarded verbatim with the provider's status.
+**Errors**: `400` (`messages` not an array), `403` (`aiEnabled` not on plan), `503` (AI not configured), `502` (provider unreachable).
+
+### `POST /api/ai/speech/token`
+
+**Response** (200 OK): `{ "token": "...", "region": "..." }`
+**Errors**: `402` (monthly session allowance exhausted — includes `included`, `used`, `remaining`, `resetAt`, `upgradeRequired`), `403` (`aiEnabled` not on plan), `503` (Speech not configured).
+
+### `GET /api/ai/usage`
+
+**Auth**: Bearer JWT.
+**Response** (200 OK): `{ used, included, remaining, resetAt, aiEnabled }`
+**Errors**: `404` (no organization).
+
+---
+
+## Billing (`/api/billing`) — Stripe
+
+Stripe subscription management. Configured via `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET` and per-plan price env vars; endpoints return `503` when
+Stripe is not configured. The webhook receives a **raw** request body
+(`express.raw()` is registered for this path before `express.json()`).
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/billing/checkout` | owner | Create a Stripe Checkout session for a plan upgrade. |
+| `POST` | `/api/billing/portal` | owner | Create a Stripe Customer Portal session. |
+| `GET` | `/api/billing/status` | Bearer | Current billing status for the org. |
+| `POST` | `/api/billing/webhook` | none (Stripe signature) | Receive and process Stripe subscription/invoice events. |
+
+### `POST /api/billing/checkout` (owner)
+
+**Request Body**: `{ "planCode": "basic" | "ai", "billingInterval": "monthly" | "annual" }`
+**Response** (200 OK): `{ "checkoutUrl": "https://checkout.stripe.com/..." }` (14-day trial applied).
+**Errors**: `400` (invalid `planCode`/interval or no price configured), `404` (org not found), `503` (billing not configured).
+
+### `POST /api/billing/portal` (owner)
+
+**Response** (200 OK): `{ "portalUrl": "..." }`
+**Errors**: `400` (no billing account yet), `404` (org not found), `503` (not configured).
+
+### `GET /api/billing/status`
+
+**Response** (200 OK): `{ planCode, status, trialEndsAt, hasPaymentMethod, stripeConfigured }`
+
+### `POST /api/billing/webhook`
+
+Verified by the `Stripe-Signature` header against `STRIPE_WEBHOOK_SECRET`.
+Handles `checkout.session.completed`, `customer.subscription.updated`,
+`customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed` —
+updating the org's `planCode`/`status`/entitlements accordingly. Always returns
+`{ "received": true }` after auditing, to prevent re-delivery. `400` on a failed
+signature check.
 
 ---
 
@@ -640,17 +877,25 @@ All error responses follow this format:
 
 ## Rate Limiting
 
-Currently, there are no rate limits. For production, consider implementing:
-- 100 requests per minute per IP
-- 1000 requests per hour per IP
+Rate limiting is enforced via `express-rate-limit` (the app trusts the first
+proxy for correct client IPs behind Azure App Service):
+
+- **`apiRateLimiter`** — applied to all `/api/*` routes.
+- **`spaRateLimiter`** — applied to the SPA fallback route.
+- **`sensitiveActionRateLimiter`** — applied to sensitive auth/organization
+  actions (login, signup, organization/user management).
 
 ---
 
 ## CORS
 
-The backend allows requests from:
-- Development: `http://localhost:5173`
-- Production: Configured via `FRONTEND_URL` environment variable
+The backend builds a single allowed-origins list from `FRONTEND_URLS`
+(comma-separated; falls back to the legacy `FRONTEND_URL`, then
+`http://localhost:5173`). The same list is shared by Express and Socket.io.
+Unknown origins are denied **without throwing** (`callback(null, false)`) so
+that same-origin asset requests are never turned into 500s. Allowed request
+headers include `Content-Type`, `Authorization`, `X-Station-Id` and
+`X-Request-ID`.
 
 ---
 
@@ -660,10 +905,9 @@ Planned for future versions:
 - Pagination for large member lists
 - Filtering and sorting options
 - Historical check-in data endpoints
-- Export data to CSV/JSON
 - QR code generation endpoint
-- Authentication endpoints (optional)
-- Admin-only endpoints
+- Persisted billing-event audit log (currently in-memory)
+- Stripe metered-usage overage billing (reporter is wired but gated behind config)
 
 ---
 

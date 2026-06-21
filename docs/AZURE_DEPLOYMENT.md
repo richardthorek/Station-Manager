@@ -1,46 +1,62 @@
 # Azure Deployment Guide
 
-This guide provides step-by-step instructions for deploying the RFS Station Manager application to Azure using **Azure App Service** and **Azure Cosmos DB (Document DB) with MongoDB API**.
+This guide provides step-by-step instructions for deploying the RFS Station
+Manager application to Azure using **Azure App Service** (Linux) and **Azure
+Table Storage**.
 
-> **Note:** Azure Cosmos DB with MongoDB API is also known as Azure Document DB. They are the same service - "Document DB" was the original name, now officially called "Cosmos DB". This guide uses both terms interchangeably.
+> **Database note (June 2026):** The application uses **Azure Table Storage**
+> for persistence in production — **not** Cosmos DB or MongoDB. Table Storage is
+> selected at runtime when `USE_TABLE_STORAGE=true` and
+> `AZURE_STORAGE_CONNECTION_STRING` is set; otherwise the backend falls back to
+> an **in-memory** store (used for local dev and the test suite). Earlier
+> revisions of this guide recommended Cosmos DB / MongoDB — that guidance is
+> obsolete and has been removed.
 
 ## Architecture Overview
 
 ```
-┌──────────────────────────┐
-│  Azure Static Web Apps   │  ← React Frontend (Free tier)
-│     (Frontend)           │
-└────────────┬─────────────┘
-             │ HTTP + WebSocket
-┌────────────▼─────────────┐
-│  Azure App Service (B1)  │  ← Node.js + Express + Socket.io
-│   bungrfsstation         │    (Backend API & Real-time)
-│   - WebSocket Enabled    │
-│   - Always On            │
-└────────────┬─────────────┘
-             │
-┌────────────▼─────────────┐
-│ Azure Cosmos DB          │  ← Data Persistence
-│ (Document DB)            │    (Members, Activities, Check-ins)
-│ with MongoDB API         │
-│ - Free tier available    │
-└──────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  Azure App Service (B1, Linux)              │  ← Single deployment
+│  bungrfs-linux                              │
+│   - Express 5 + Socket.io (API + real-time) │
+│   - Serves React SPA            at  /        │
+│   - Serves AAR Studio bundle    at  /aar     │
+│   - WebSocket Enabled, Always On            │
+└───────────────────────┬─────────────────────┘
+                        │
+┌───────────────────────▼─────────────────────┐
+│ Azure Storage Account                       │  ← Data Persistence
+│  - Table Storage (members, activities,      │
+│    check-ins, events, stations, truck       │
+│    checks, admin users, organizations,      │
+│    usage records)                           │
+│  - Blob Storage (truck-check photos)        │
+└─────────────────────────────────────────────┘
 ```
 
+The backend is a **single App Service** that serves both frontends from one
+origin: the React SPA at `/` and the no-build AAR Studio sub-app at `/aar`. There
+is no separate Static Web App in the current architecture.
+
 ### Components
-- **Azure Static Web Apps** - Hosts the React frontend (Free tier)
-- **Azure App Service (B1 tier)** - Hosts Node.js backend with WebSocket support (deployed as `bungrfsstation`)
-- **Azure Cosmos DB (Document DB) with MongoDB API** - NoSQL database with MongoDB compatibility
-- **Azure Application Insights** - Monitoring and diagnostics (Optional)
+- **Azure App Service (B1 tier, Linux)** - Hosts the Node.js backend (Express +
+  Socket.io) **and** serves both frontends (`frontend/dist` at `/`, `aar-studio/`
+  at `/aar`). Deployed as `bungrfs-linux`.
+- **Azure Storage Account** - Provides both **Table Storage** (all application
+  data) and **Blob Storage** (truck-check / appliance photos). One account
+  serves both.
+- **Azure Application Insights** - Monitoring and diagnostics (optional).
 
 ### Monthly Cost Estimate
-- **Static Web Apps:** $0 (Free tier - 100GB bandwidth/month)
 - **App Service B1:** ~$13 AUD/month (1 core, 1.75GB RAM, always-on)
-- **Azure Table Storage:** $0.10-2/month typical usage (recommended)
-  - *Alternative: Cosmos DB Serverless: $0.50-3/month (if free tier available: $0)*
-- **TOTAL:** **~$13.10-15 AUD/month**
+- **Azure Storage (Table + Blob):** ~$0.10-2/month typical usage
+- **Application Insights:** $0 within free ingestion quota (optional)
+- **TOTAL:** **~$13-15 AUD/month**
 
-> **💰 UPDATED RECOMMENDATION (Jan 2026)**: Migrate to **Azure Table Storage** for 70-95% cost savings on database costs. When considering only Azure infrastructure costs (excluding personnel), Table Storage is clearly more cost-effective at $0.10-2/month vs Cosmos DB Serverless at $0.50-3/month. Migration is minimal (re-seed member list only). See [FINAL Storage Decision](FINAL_STORAGE_DECISION.md) for complete analysis and implementation plan.
+> **💰 Why Table Storage:** No RU management, straightforward per-transaction
+> pricing, reuses the same storage account as blob photos, and costs
+> $0.10-2/month vs $0.50-3/month for Cosmos DB Serverless. This is the shipped
+> production database.
 
 ---
 
@@ -48,23 +64,146 @@ This guide provides step-by-step instructions for deploying the RFS Station Mana
 
 1. Azure account with an active subscription ([Create free account](https://azure.microsoft.com/free/))
 2. Azure CLI installed locally ([Install guide](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
-3. Node.js 18+ and npm installed
+3. Node.js 22.x and npm ≥ 10 installed
 4. Git installed
 
 ---
 
-## 🆕 Table Storage Deployment (RECOMMENDED)
+## Environment Variable Reference
 
-**Status:** ✅ Available (January 2026)  
-**Cost Savings:** 70-95% vs Cosmos DB ($0.10-2/month vs $0.50-3/month)
+These are the **real** environment variables read by `backend/src/`. Set the
+required ones on the App Service; the rest are optional and feature-dependent.
+Frontend (`VITE_*`) vars are build-time only — they are baked into
+`frontend/dist` at build time, not read by the running App Service.
+
+### Core (app + auth)
+
+| Variable | Required | Notes |
+|---|---|---|
+| `PORT` | yes (prod) | App Service expects `8080`. |
+| `NODE_ENV` | yes (prod) | Set to `production`. |
+| `FRONTEND_URL` | — | Single allowed origin (legacy; superseded by `FRONTEND_URLS`). |
+| `FRONTEND_URLS` | yes (prod) | Comma-separated allowed CORS origins. **Must include the prod origin** or CORS falls back to `localhost` and blocks everything. Used by both Express and Socket.io. |
+| `REQUIRE_AUTH` | — | `true` to require admin JWT for protected routes. |
+| `JWT_SECRET` | yes (prod) | Signing secret for JWTs. Defaults to a dev secret — **must** be overridden in production. |
+| `JWT_EXPIRY` | — | Token lifetime (default `24h`). |
+| `DEFAULT_ADMIN_USERNAME` | — | Seed admin username (default `admin`). |
+| `DEFAULT_ADMIN_PASSWORD` | recommended | Seed admin password. Change before going live. |
+
+### Database (Table Storage)
+
+| Variable | Required | Notes |
+|---|---|---|
+| `USE_TABLE_STORAGE` | yes (prod) | `true` selects Table Storage; otherwise in-memory. |
+| `AZURE_STORAGE_CONNECTION_STRING` | yes (prod) | Storage account connection string (Table + Blob). |
+| `AZURE_STORAGE_REFERENCE_CONTAINER` | — | Blob container for reference images. |
+| `AZURE_STORAGE_RESULT_CONTAINER` | — | Blob container for result/photo uploads. |
+| `TABLE_STORAGE_TABLE_PREFIX` | — | Prefix for table names (multi-env separation). |
+| `TABLE_STORAGE_TABLE_SUFFIX` | — | Suffix for table names (test isolation, e.g. `Test`). |
+| `DEMO_USE_TABLE_STORAGE` | — | Persist the demo station in Table Storage instead of memory. |
+
+### SaaS / entitlements
+
+| Variable | Required | Notes |
+|---|---|---|
+| `ENABLE_ENTITLEMENTS` | — | Default **ON**. Set `false` only for local dev. Never disable in production. |
+| `ENABLE_DATA_PROTECTION` | — | `true` requires a JWT or brigade token on data endpoints. |
+
+### Stripe billing
+
+| Variable | Required | Notes |
+|---|---|---|
+| `STRIPE_SECRET_KEY` | for billing | Stripe API secret key. |
+| `STRIPE_WEBHOOK_SECRET` | for billing | Verifies `POST /api/billing/webhook` signatures. |
+| `STRIPE_PRICE_BASIC_MONTHLY` | for billing | Stripe price ID. |
+| `STRIPE_PRICE_BASIC_ANNUAL` | for billing | Stripe price ID. |
+| `STRIPE_PRICE_AI_MONTHLY` | for billing | Stripe price ID. |
+| `STRIPE_PRICE_AI_ANNUAL` | for billing | Stripe price ID. |
+| `STRIPE_METERED_USAGE_ENABLED` | — | Toggle metered AI-usage reporting to Stripe. |
+| `STRIPE_AI_METER_EVENT` | — | Stripe billing-meter event name for AI usage. |
+| `APP_URL` | for billing | Public app URL (used for Checkout/Portal return URLs). |
+
+### AI gateway (server-side AI)
+
+| Variable | Required | Notes |
+|---|---|---|
+| `AZURE_OPENAI_ENDPOINT` | for AI | Azure OpenAI resource endpoint. |
+| `AZURE_OPENAI_KEY` | for AI | Azure OpenAI API key. |
+| `AZURE_OPENAI_DEPLOYMENT_CHAT` | for AI | Deployment name for chat completions. |
+| `AZURE_OPENAI_DEPLOYMENT_REPORT` | for AI | Deployment name for report generation. |
+| `AZURE_OPENAI_API_VERSION` | for AI | Azure OpenAI API version. |
+| `AZURE_SPEECH_KEY` | for AI speech | Azure Speech key (short-lived token vending). |
+| `AZURE_SPEECH_REGION` | for AI speech | Azure Speech region. |
+
+### AAR Studio
+
+| Variable | Required | Notes |
+|---|---|---|
+| `AAR_STUDIO_PATH` | — | Override path to the `aar-studio/` bundle. Defaults to the bundled copy beside `dist`. |
+
+### Rate limiting
+
+| Variable | Required | Notes |
+|---|---|---|
+| `RATE_LIMIT_WINDOW_MS` | — | Rate-limit window in ms. |
+| `RATE_LIMIT_API_MAX` | — | Max API requests per window. |
+| `RATE_LIMIT_AUTH_MAX` | — | Max auth requests per window. |
+
+### Monitoring / other
+
+| Variable | Required | Notes |
+|---|---|---|
+| `AZURE_APP_INSIGHTS_CONNECTION_STRING` | — | Application Insights connection string. |
+| `EVENT_EXPIRY_HOURS` | — | Hours before events auto-expire / roll over. |
+
+### Frontend (Vite, build-time only)
+
+| Variable | Notes |
+|---|---|
+| `VITE_API_URL` | Backend API base URL. |
+| `VITE_SOCKET_URL` | Socket.io URL. |
+| `VITE_SANTA_RUN_URL` | Link target for the Fire Santa Run sibling app. |
+| `VITE_FIREBREAK_URL` | Link target for the Fire Break Calculator sibling app. |
+
+---
+
+## Dual-Frontend Serving & Deployment Packaging
+
+This is a **monorepo deployed as a single App Service**. The backend serves
+everything from one origin:
+
+- **React SPA** mounted at `/` from `frontend/dist`.
+- **AAR Studio** (no-build vanilla HTML/ES modules) mounted at `/aar` from the
+  `aar-studio/` bundle (path overridable via `AAR_STUDIO_PATH`, guarded by
+  `fs.existsSync`).
+- **API + Socket.io** under `/api` and the WebSocket upgrade path.
+
+The CI/CD deployment package (`.github/workflows/ci-cd.yml`, "Create deployment
+package" step) bundles **three directories** into one deploy zip:
+
+1. `backend/dist` — compiled server.
+2. `frontend/dist` — built React SPA.
+3. `aar-studio/` — the AAR Studio sub-app (served as-is, no build step).
+
+The SPA-fallback route in `backend/src/index.ts` excludes `/api`, `/assets`, and
+`/aar` so those paths are not swallowed by the React shell. See the "Multi-app
+structure & integration seams" section of `CLAUDE.md` for the matching
+service-worker denylist and scoped `/aar` CSP override.
+
+---
+
+## Table Storage Deployment
+
+**Status:** ✅ Shipped (production database)
 
 ### Why Table Storage?
 
-- **Lower Cost:** $0.10-2/month per station vs $0.50-3/month for Cosmos DB
-- **Same Storage Account:** Uses existing blob storage account (no new resource)
-- **Performance:** Comparable or better for this use case
-- **Simplicity:** No RU management, straightforward pricing
-- **Easy Rollback:** Can switch back to Cosmos DB with environment variable
+- **Lower Cost:** $0.10-2/month per station.
+- **Same Storage Account:** Reuses the existing blob storage account (truck-check
+  photos) — no new resource.
+- **Simplicity:** No RU management, straightforward per-transaction pricing.
+- **Dev parity:** Omitting `USE_TABLE_STORAGE` falls back to the in-memory store
+  for local dev and tests.
 
 ### Table Storage Setup
 
@@ -126,26 +265,13 @@ az webapp config appsettings set \
     NODE_ENV=production \
     USE_TABLE_STORAGE=true \
     AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CONNECTION_STRING" \
-    FRONTEND_URL="$FRONTEND_URL"
+    FRONTEND_URLS="$FRONTEND_URL" \
+    JWT_SECRET="$(openssl rand -base64 32)"
 ```
 
-**Optional: Keep Cosmos DB as Fallback (Recommended for 2 weeks)**
-
-```bash
-# Keep both connection strings during migration period
-az webapp config appsettings set \
-  --name $APP_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --settings \
-    PORT=8080 \
-    NODE_ENV=production \
-    USE_TABLE_STORAGE=true \
-    AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CONNECTION_STRING" \
-    MONGODB_URI="$COSMOS_CONNECTION_STRING" \
-    FRONTEND_URL="$FRONTEND_URL"
-```
-
-This allows easy rollback by setting `USE_TABLE_STORAGE=false` if issues occur.
+> Set `FRONTEND_URLS` to the **comma-separated** list of allowed origins (the
+> public app origin must be present). `FRONTEND_URL` is still read as a
+> single-origin fallback but `FRONTEND_URLS` is preferred.
 
 #### Verify Table Storage Connection
 
@@ -182,17 +308,17 @@ Expected costs:
 - **Transactions:** $0.00045 per 10K transactions (typically 100-500K/month = $0.05-0.23)
 - **Total:** $0.08-0.26/month per station
 
-### Rollback to Cosmos DB
+### Fall Back to In-Memory (dev only)
 
-If you need to switch back to Cosmos DB:
+To run without Table Storage (for example, a throwaway test instance), unset
+`USE_TABLE_STORAGE` (or set it to `false`). The backend then uses the in-memory
+store. **Do not** do this in production — data will not persist across restarts.
 
 ```bash
 az webapp config appsettings set \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
-  --settings \
-    USE_TABLE_STORAGE=false \
-    MONGODB_URI="$COSMOS_CONNECTION_STRING"
+  --settings USE_TABLE_STORAGE=false
 
 # Restart app
 az webapp restart --name $APP_NAME --resource-group $RESOURCE_GROUP
@@ -206,39 +332,36 @@ If you've already deployed Azure resources, you can configure this application t
 
 ### Environment Variables to Set
 
-For the **Backend App Service** (e.g., `bungrfsstation`), configure these settings:
+For the **App Service** (e.g., `bungrfs-linux`), configure at minimum:
 
 ```bash
-# Required Environment Variables
 PORT=8080
 NODE_ENV=production
-MONGODB_URI=<your-cosmos-db-connection-string>
-FRONTEND_URL=<your-frontend-url>
+USE_TABLE_STORAGE=true
+AZURE_STORAGE_CONNECTION_STRING=<your-storage-connection-string>
+FRONTEND_URLS=<comma-separated-allowed-origins>
+JWT_SECRET=<random-secret>
+DEFAULT_ADMIN_PASSWORD=<strong-password>
 ```
 
-**How to get your Cosmos DB (Document DB) connection string:**
+See the **Environment Variable Reference** section above for the full set
+(SaaS, Stripe, AI gateway, rate limiting, monitoring).
+
+**How to get your storage connection string:**
 
 ```bash
-# List your Cosmos DB accounts
-az cosmosdb list --resource-group <your-resource-group> --output table
-
-# Get connection string (replace with your actual names)
-az cosmosdb keys list \
-  --name <your-cosmos-db-name> \
+az storage account show-connection-string \
+  --name <your-storage-account-name> \
   --resource-group <your-resource-group> \
-  --type connection-strings \
-  --query "connectionStrings[0].connectionString" \
   --output tsv
 ```
 
 **How to set environment variables in your App Service:**
 
 ```bash
-# Replace with your actual resource names
-APP_NAME="bungrfsstation"
+APP_NAME="bungrfs-linux"
 RESOURCE_GROUP="<your-resource-group>"
-COSMOS_CONNECTION_STRING="<your-connection-string>"
-FRONTEND_URL="<your-frontend-url>"
+STORAGE_CONNECTION_STRING="<your-storage-connection-string>"
 
 az webapp config appsettings set \
   --name $APP_NAME \
@@ -246,8 +369,10 @@ az webapp config appsettings set \
   --settings \
     PORT=8080 \
     NODE_ENV=production \
-    MONGODB_URI="$COSMOS_CONNECTION_STRING" \
-    FRONTEND_URL="$FRONTEND_URL"
+    USE_TABLE_STORAGE=true \
+    AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CONNECTION_STRING" \
+    FRONTEND_URLS="https://your-app.azurewebsites.net" \
+    JWT_SECRET="$(openssl rand -base64 32)"
 ```
 
 ---
@@ -278,52 +403,40 @@ az group create \
 
 ---
 
-## Step 2: Create Azure Cosmos DB (Document DB) with MongoDB API
+## Step 2: Create the Azure Storage Account (Table + Blob)
 
-### 2.1 Create Cosmos DB Account
-
-> **Important:** Azure Cosmos DB with MongoDB API is also referred to as "Azure Document DB". This is the same service.
+### 2.1 Create Storage Account
 
 ```bash
-# Create Azure Cosmos DB (Document DB) account with MongoDB API
-az cosmosdb create \
-  --name rfs-station-db \
+# One Standard_LRS StorageV2 account serves both Table Storage (data)
+# and Blob Storage (truck-check photos).
+az storage account create \
+  --name stationstorageXXXXX \
   --resource-group rfs-station-manager \
-  --kind MongoDB \
-  --locations regionName=australiaeast failoverPriority=0 \
-  --default-consistency-level Session \
-  --enable-free-tier true \
-  --server-version 4.2
+  --location australiaeast \
+  --sku Standard_LRS \
+  --kind StorageV2
 ```
 
-**Note:** 
-- Free tier provides 1000 RU/s and 25GB storage at no cost
-- Only one free tier Cosmos DB account is allowed per Azure subscription
-- If you've already deployed your Cosmos DB, you can skip this step and use your existing resource name
+**Note:**
+- The storage account name must be globally unique, lowercase, no hyphens.
+- If you already have a storage account (e.g. for blob photos), reuse it.
 
 ### 2.2 Get Connection String
 
 ```bash
-# Get connection string (save this for later)
-az cosmosdb keys list \
-  --name rfs-station-db \
+# Store in a variable for later use
+STORAGE_CONNECTION_STRING=$(az storage account show-connection-string \
+  --name stationstorageXXXXX \
   --resource-group rfs-station-manager \
-  --type connection-strings \
-  --query "connectionStrings[0].connectionString" \
-  --output tsv
-
-# Store in variable for later use
-COSMOS_CONNECTION_STRING=$(az cosmosdb keys list \
-  --name rfs-station-db \
-  --resource-group rfs-station-manager \
-  --type connection-strings \
-  --query "connectionStrings[0].connectionString" \
   --output tsv)
 
-echo "Connection string saved to COSMOS_CONNECTION_STRING"
+echo "Connection string captured."
 ```
 
-**Collections will be created automatically** by the backend application on first run.
+**Tables are created automatically** by the backend on first run (members,
+activities, check-ins, events, stations, truck checks, admin users,
+organizations, usage records).
 
 ---
 
@@ -378,12 +491,12 @@ az webapp config set \
   --web-sockets-enabled true \
   --always-on true
 
-# Set Node.js version
+# Set Node.js version (Node 22.x required)
 az webapp config appsettings set \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --settings \
-    WEBSITE_NODE_DEFAULT_VERSION=18-lts
+    WEBSITE_NODE_DEFAULT_VERSION=22-lts
 ```
 
 ### 3.4 Configure Environment Variables
@@ -400,33 +513,41 @@ az webapp config appsettings set \
   --resource-group $RESOURCE_GROUP \
   --settings \
     PORT=8080 \
-    MONGODB_URI="$COSMOS_CONNECTION_STRING" \
-    FRONTEND_URL="https://rfs-station-frontend.azurestaticapps.net" \
-    NODE_ENV=production
+    NODE_ENV=production \
+    USE_TABLE_STORAGE=true \
+    AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CONNECTION_STRING" \
+    FRONTEND_URLS="https://${APP_NAME}.azurewebsites.net" \
+    JWT_SECRET="$(openssl rand -base64 32)" \
+    DEFAULT_ADMIN_PASSWORD="<strong-password>"
 ```
 
-**Important:** 
-- Replace `APP_NAME` and `RESOURCE_GROUP` with your actual deployed resource names
-- The `FRONTEND_URL` will be updated after deploying the frontend in Step 4
-- The `MONGODB_URI` should be your Azure Cosmos DB (Document DB) connection string
+**Important:**
+- Replace `APP_NAME` and `RESOURCE_GROUP` with your actual deployed resource names.
+- Because the backend serves the frontend from the **same origin**, `FRONTEND_URLS`
+  is the App Service origin itself.
+- `AZURE_STORAGE_CONNECTION_STRING` is your storage account connection string from Step 2.
 
-### 3.5 Build and Deploy Backend Code
+### 3.5 Build and Deploy the App (backend + both frontends)
+
+Because the single App Service serves both frontends, the deployment package must
+bundle **all three** directories: `backend/dist`, `frontend/dist`, and
+`aar-studio/`.
 
 ```bash
-# Navigate to backend directory
-cd backend
+# From the repo root: build backend and frontend
+npm run build           # builds backend → backend/dist, then frontend → frontend/dist
 
-# Install dependencies
-npm install
+# Assemble the deploy zip (mirrors the CI "Create deployment package" step)
+zip -r deploy.zip \
+  backend/dist \
+  backend/node_modules \
+  backend/package.json \
+  backend/package-lock.json \
+  frontend/dist \
+  aar-studio
 
-# Build TypeScript
-npm run build
-
-# Create deployment package (excluding dev files)
-zip -r deploy.zip dist node_modules package.json package-lock.json
-
-# Deploy to App Service (replace with your actual App Service name)
-APP_NAME="bungrfsstation"
+# Deploy to App Service
+APP_NAME="bungrfs-linux"
 RESOURCE_GROUP="rfs-station-manager"
 
 az webapp deployment source config-zip \
@@ -434,11 +555,11 @@ az webapp deployment source config-zip \
   --resource-group $RESOURCE_GROUP \
   --src deploy.zip
 
-# Clean up
 rm deploy.zip
 ```
 
-**Note:** If you're using GitHub Actions (recommended), this step is automated. See the CI/CD section below.
+**Note:** Using GitHub Actions (recommended) automates this — `ci-cd.yml` builds
+all three and packages them into one zip. See the CI/CD section below.
 
 ### 3.6 Get Backend URL
 
@@ -470,94 +591,41 @@ curl https://bungrfsstation.azurewebsites.net/health
 
 ---
 
-## Step 4: Deploy Frontend to Azure Static Web Apps
+## Step 4: Frontends (served by the App Service)
 
-### 4.1 Create Static Web App
+There is **no separate Azure Static Web App**. The same App Service serves the
+React SPA at `/` and AAR Studio at `/aar` from the deploy zip built in Step 3.5.
+The frontends are built as part of that zip — you do not deploy them separately.
 
-```bash
-# Navigate back to root
-cd ..
+### 4.1 Frontend build-time configuration
 
-# Create Static Web App
-az staticwebapp create \
-  --name rfs-station-frontend \
-  --resource-group rfs-station-manager \
-  --location australiaeast
-```
-
-### 4.2 Build Frontend
+The SPA's API/Socket targets are baked in at **build time** via `VITE_*` vars.
+Because the backend serves the SPA from the same origin, these can point at the
+App Service origin (or be left relative). If you build manually:
 
 ```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install dependencies
-npm install
-
-# Create environment file for production
-# Replace with your actual App Service name
 cat > .env.production << EOF
-VITE_API_URL=https://bungrfsstation.azurewebsites.net/api
-VITE_SOCKET_URL=https://bungrfsstation.azurewebsites.net
+VITE_API_URL=https://bungrfs-linux.azurewebsites.net/api
+VITE_SOCKET_URL=https://bungrfs-linux.azurewebsites.net
+VITE_SANTA_RUN_URL=<fire-santa-run-url>
+VITE_FIREBREAK_URL=<fire-break-calculator-url>
 EOF
-
-# Build production bundle
 npm run build
 ```
 
-**Important:** Replace `bungrfsstation` with your actual App Service name.
+(In CI this is handled automatically; `VITE_*` vars are set as build env, not as
+App Service settings.)
 
-### 4.3 Deploy Frontend
+### 4.2 CORS / same-origin note
 
-```bash
-# Get deployment token
-DEPLOYMENT_TOKEN=$(az staticwebapp secrets list \
-  --name rfs-station-frontend \
-  --resource-group rfs-station-manager \
-  --query "properties.apiKey" \
-  --output tsv)
-
-# Install Azure Static Web Apps CLI
-npm install -g @azure/static-web-apps-cli
-
-# Deploy
-swa deploy ./dist \
-  --deployment-token $DEPLOYMENT_TOKEN \
-  --env production
-```
-
-### 4.4 Get Frontend URL
+Because everything is served from one origin, `FRONTEND_URLS` should include that
+origin. The CORS origin callback **denies without throwing**
+(`callback(null, false)`) — if `FRONTEND_URLS` is wrong it falls back to
+`localhost` and blocks every same-origin asset request. After changing it:
 
 ```bash
-# Get the frontend URL
-az staticwebapp show \
-  --name rfs-station-frontend \
-  --resource-group rfs-station-manager \
-  --query defaultHostname \
-  --output tsv
-```
-
-Your frontend will be available at: `https://rfs-station-frontend.azurestaticapps.net`
-
-### 4.5 Update Backend CORS Settings
-
-```bash
-# Update backend with actual frontend URL
-# Replace with your actual resource names
-APP_NAME="bungrfsstation"
-RESOURCE_GROUP="rfs-station-manager"
-FRONTEND_URL="https://rfs-station-frontend.azurestaticapps.net"
-
-az webapp config appsettings set \
-  --name $APP_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --settings \
-    FRONTEND_URL="$FRONTEND_URL"
-
-# Restart backend to apply settings
-az webapp restart \
-  --name $APP_NAME \
-  --resource-group $RESOURCE_GROUP
+az webapp restart --name bungrfs-linux --resource-group rfs-station-manager
 ```
 
 ---
@@ -589,11 +657,18 @@ INSTRUMENTATION_KEY=$(az monitor app-insights component show \
 APP_NAME="bungrfsstation"
 RESOURCE_GROUP="rfs-station-manager"
 
+CONNECTION_STRING=$(az monitor app-insights component show \
+  --app rfs-station-insights \
+  --resource-group rfs-station-manager \
+  --query connectionString \
+  --output tsv)
+
+# The backend reads AZURE_APP_INSIGHTS_CONNECTION_STRING
 az webapp config appsettings set \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --settings \
-    APPINSIGHTS_INSTRUMENTATIONKEY=$INSTRUMENTATION_KEY
+    AZURE_APP_INSIGHTS_CONNECTION_STRING="$CONNECTION_STRING"
 
 # Restart to apply
 az webapp restart \
@@ -621,13 +696,15 @@ curl https://${APP_NAME}.azurewebsites.net/api/members
 curl https://${APP_NAME}.azurewebsites.net/api/activities
 ```
 
-### 6.2 Test Frontend
+### 6.2 Test Frontends
 
-1. Open your browser to `https://rfs-station-frontend.azurestaticapps.net`
-2. Verify the UI loads correctly
-3. Check browser console for WebSocket connection
-4. Test check-in functionality
-5. Open in multiple browser windows/tabs to verify real-time sync
+1. Open your browser to `https://<your-app-name>.azurewebsites.net/` — the React SPA.
+2. Open `https://<your-app-name>.azurewebsites.net/aar` — AAR Studio. A blank
+   `/aar` page means the service worker served the React shell (denylist
+   regression) — see `CLAUDE.md` integration seams.
+3. Check browser console for the WebSocket connection.
+4. Test check-in functionality.
+5. Open in multiple browser windows/tabs to verify real-time sync.
 
 ### 6.3 Test Real-Time Sync
 
@@ -659,28 +736,27 @@ az webapp log download \
   --log-file logs.zip
 ```
 
-### View Azure Cosmos DB (Document DB) Metrics
+### View Storage Account Metrics
 
 ```bash
-# View Cosmos DB metrics
-# Replace YOUR_SUB with your subscription ID
-# Replace resource names with your actual deployed resources
+# View storage account capacity/transaction metrics
 SUBSCRIPTION_ID="YOUR_SUB"
 RESOURCE_GROUP="rfs-station-manager"
-COSMOS_DB_NAME="rfs-station-db"
+STORAGE_ACCOUNT_NAME="stationstorageXXXXX"
 
 az monitor metrics list \
-  --resource /subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.DocumentDB/databaseAccounts/$COSMOS_DB_NAME \
-  --metric TotalRequests \
+  --resource /subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME \
+  --metric "Transactions" \
   --interval PT1H
 ```
 
-### Access Azure Cosmos DB (Document DB) Data Explorer
+### Browse Table Storage Data
 
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to your Cosmos DB (Document DB) account (e.g., `rfs-station-db`)
-3. Click **Data Explorer** in the left menu
-4. Browse your collections: Members, Activities, CheckIns, ActiveActivity
+1. Go to [Azure Portal](https://portal.azure.com).
+2. Navigate to your **Storage Account** → **Tables** (under Data storage).
+3. Browse the tables: Members, Activities, CheckIns, Events, Stations, TruckChecks,
+   AdminUsers, Organizations, Usage, etc. (table names may carry your configured
+   `TABLE_STORAGE_TABLE_PREFIX`/`TABLE_STORAGE_TABLE_SUFFIX`).
 
 ---
 
@@ -734,72 +810,21 @@ swa deploy ./dist \
 
 ## CI/CD with GitHub Actions
 
-The repository includes a GitHub Actions workflow at `.github/workflows/main_bungrfsstation.yml` that automatically deploys the backend to Azure App Service on every push to main.
+The repository deploys via a single workflow, `.github/workflows/ci-cd.yml`. It
+runs the full CI gate chain — backend typecheck → backend tests → frontend lint →
+frontend typecheck → frontend tests → AAR Studio tests (`node --test`) → build —
+and, on `main`, packages **all three** bundles (`backend/dist`, `frontend/dist`,
+`aar-studio/`) into one zip and deploys it to the `bungrfs-linux` App Service.
 
-**Current Setup:**
-- Backend is automatically deployed to `bungrfsstation` App Service
-- Uses Azure federated credentials for authentication
-- Builds and deploys on every push to main branch
-
-**To set up frontend CI/CD**, create `.github/workflows/azure-frontend-deploy.yml`:
-
-```yaml
-name: Deploy to Azure
-
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-jobs:
-  deploy-backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      
-      - name: Install and Build Backend
-        run: |
-          cd backend
-          npm ci
-          npm run build
-      
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: bungrfsstation  # Replace with your App Service name
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: backend
-  
-  deploy-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      
-      - name: Build Frontend
-        run: |
-          cd frontend
-          npm ci
-          npm run build
-      
-      - name: Deploy to Static Web Apps
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
-          app_location: "frontend"
-          output_location: "dist"
-```
+**Key points:**
+- One workflow deploys the backend **and** both frontends; there is no separate
+  frontend deploy job and no Static Web App.
+- Uses Azure OIDC (Workload Identity Federation), not publish profiles.
+- The "Create deployment package" step **must** copy `aar-studio/` into the zip —
+  if it is dropped, `/aar` 404s. See `CLAUDE.md` integration seams.
+- Docs-only changes (`docs/**`, `*.md`) skip the pipeline.
+- Post-deployment smoke tests are **disabled** in CI (they need `ts-node`, which
+  prod dependencies don't include). See `docs/POST_DEPLOYMENT_TESTING.md`.
 
 ---
 
@@ -816,17 +841,20 @@ jobs:
 ### Database Connection Errors
 
 **Solutions:**
-1. Verify `MONGODB_URI` connection string is correct
-2. Check Cosmos DB firewall settings (should allow Azure services)
-3. Verify Cosmos DB is using MongoDB API (not SQL API)
-4. Check backend logs for MongoDB connection errors
+1. Verify `USE_TABLE_STORAGE=true` is set.
+2. Verify `AZURE_STORAGE_CONNECTION_STRING` is correct and not expired.
+3. Check the storage account firewall (should allow Azure services / your App Service).
+4. Check backend logs for `✅ Connected to Azure Table Storage`. If absent, the
+   app silently fell back to the in-memory store (missing/invalid connection string).
 
 ### Frontend Shows CORS Errors
 
 **Solutions:**
-1. Update backend `FRONTEND_URL` setting to match your actual frontend URL
-2. Restart backend after changing settings
-3. Clear browser cache and reload
+1. Update `FRONTEND_URLS` (comma-separated) to include the app origin.
+2. Restart the App Service after changing settings.
+3. Clear browser cache and reload.
+4. Remember the CORS origin callback denies without throwing — a wrong
+   `FRONTEND_URLS` silently falls back to `localhost` and blocks everything.
 
 ### 502 Bad Gateway
 
@@ -840,37 +868,41 @@ jobs:
 
 ## Security Best Practices
 
-1. **Use HTTPS only** - Both services use HTTPS by default
-2. **Enable CORS properly** - Only allow your frontend URL
-3. **Store secrets in Key Vault** - For production deployments
-4. **Enable Azure DDoS Protection** - For public-facing apps
-5. **Regular updates** - Keep Node.js and npm packages updated
+1. **Use HTTPS only** - The App Service uses HTTPS by default.
+2. **Set `FRONTEND_URLS` precisely** - Only allow the real app origin(s).
+3. **Store secrets in Key Vault** - For production, reference Key Vault from App
+   Service settings (`JWT_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+   `AZURE_OPENAI_KEY`, `AZURE_SPEECH_KEY`, `DEFAULT_ADMIN_PASSWORD`,
+   `AZURE_STORAGE_CONNECTION_STRING`). See `docs/SECURITY_DEPLOYMENT_GUIDE.md`.
+4. **Keep `ENABLE_ENTITLEMENTS` on in production** - It is default-on; never set
+   it `false` in prod (removes all plan/billing enforcement).
+5. **Regular updates** - Keep Node.js 22.x and npm packages current.
 
 ---
 
 ## Cost Optimization
 
-1. **Use Cosmos DB free tier** - 1000 RU/s and 25GB storage at no cost
-2. **Monitor RU consumption** - Optimize queries if approaching limit
-3. **Use B1 App Service tier** - Lowest cost for production WebSocket support
-4. **Set up budget alerts** - Get notified if costs exceed expectations
+1. **Standard_LRS storage** - Cheapest redundancy tier; sufficient for this workload.
+2. **Monitor storage transactions** - The bulk of Table Storage cost is per-transaction.
+3. **Use B1 App Service tier** - Lowest cost for production WebSocket support.
+4. **Set up budget alerts** - Get notified if costs exceed expectations.
 
 ---
 
 ## Support and Resources
 
 - **Azure App Service:** https://docs.microsoft.com/en-us/azure/app-service/
-- **Cosmos DB MongoDB API:** https://docs.microsoft.com/en-us/azure/cosmos-db/mongodb/
-- **Static Web Apps:** https://docs.microsoft.com/en-us/azure/static-web-apps/
+- **Azure Table Storage:** https://learn.microsoft.com/en-us/azure/storage/tables/
+- **Azure Blob Storage:** https://learn.microsoft.com/en-us/azure/storage/blobs/
 - **Socket.io:** https://socket.io/docs/
 
 ---
 
 ## Summary
 
-You now have a production-ready deployment with:
-- ✅ React frontend on Azure Static Web Apps (Free)
-- ✅ Node.js backend on Azure App Service with WebSocket support
-- ✅ Cosmos DB with MongoDB API for data persistence
-- ✅ Real-time synchronization via Socket.io
-- ✅ Monthly cost: ~$13-25 AUD
+You now have a production-ready single-App-Service deployment with:
+- ✅ Node.js backend (Express + Socket.io) on Azure App Service (Linux, B1).
+- ✅ React SPA served at `/` and AAR Studio served at `/aar` from the same origin.
+- ✅ Azure Table Storage for data persistence (Blob Storage for photos).
+- ✅ Real-time synchronization via Socket.io (WebSockets enabled).
+- ✅ Monthly cost: ~$13-15 AUD.

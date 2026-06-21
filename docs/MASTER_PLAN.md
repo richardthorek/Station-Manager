@@ -1,7 +1,7 @@
 # RFS Station Manager - Master Plan
 
-**Document Version:** 2.0  
-**Last Updated:** February 2026  
+**Document Version:** 2.1  
+**Last Updated:** June 20, 2026  
 **Status:** Living Document  
 **Purpose:** Single source of truth for planning, roadmap, architecture guidance, and issue tracking
 

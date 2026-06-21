@@ -1,12 +1,31 @@
 # Post-Deployment Testing Strategy
 
-**Document Version:** 1.0  
-**Last Updated:** January 2026  
-**Status:** ⚠️ **TEMPORARILY DISABLED** (February 2026)
+**Document Version:** 1.1
+**Last Updated:** June 2026
+**Status:** ⚠️ **DISABLED IN CI — DO NOT RELY ON THESE TESTS**
 
-> **Note:** Post-deployment tests are currently disabled in the CI/CD pipeline due to a dependency issue.  
-> The tests require `ts-node` (a dev dependency), but the deployment environment only has production dependencies.  
-> See `.github/workflows/ci-cd.yml` for details and TODO items for re-enabling these tests.
+> ## ⚠️ Current status (as of 2026-06-20): post-deployment smoke tests are DISABLED
+>
+> The post-deployment smoke tests described below are **not run by the CI/CD
+> pipeline** and must not be relied upon as a deployment gate.
+>
+> **Why:** the tests are written in TypeScript and require `ts-node` (a **dev**
+> dependency) to execute. The production deploy package ships **production
+> dependencies only**, so `ts-node` is unavailable in the deployed environment
+> and the job cannot run.
+>
+> **What this means in practice:**
+> - A green pipeline does **not** imply post-deploy smoke tests passed — they
+>   were skipped.
+> - Verify production health manually after deploy (e.g. `curl /health`, load
+>   `/` and `/aar`) until the tests are re-enabled.
+> - Re-enabling requires either compiling these tests to plain JS as part of the
+>   build, or otherwise making them runnable without dev dependencies.
+>
+> See `.github/workflows/ci-cd.yml` for the disabled job and TODO items.
+>
+> Everything below documents the **intended design** for when the tests are
+> re-enabled; it does not describe currently-active CI behavior.
 
 ---
 
