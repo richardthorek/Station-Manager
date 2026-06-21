@@ -337,7 +337,7 @@ export function StationManagementPage() {
               </button>
             </div>
             <Link to="/admin/brigade-access" className="secondary-button-compact">
-              🔑 Brigade Access
+              🔑 Crew Access
             </Link>
             <button
               onClick={() => setIsCreateModalOpen(true)}
@@ -375,7 +375,7 @@ export function StationManagementPage() {
                   
                   <div className="station-card-body">
                     <div className="station-card-detail">
-                      <span className="detail-icon">🔥</span>
+                      <span className="detail-icon">👥</span>
                       <span className="detail-text">{station.brigadeName}</span>
                     </div>
                     <div className="station-card-detail">
@@ -458,7 +458,7 @@ export function StationManagementPage() {
                       onClick={() => handleSort('brigade')}
                       className={`sortable ${sortField === 'brigade' ? 'sorted' : ''}`}
                     >
-                      Brigade {sortField === 'brigade' && (sortDirection === 'asc' ? '↑' : '↓')}
+                      Brigade / Unit {sortField === 'brigade' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
                     <th 
                       onClick={() => handleSort('district')}

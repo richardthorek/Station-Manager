@@ -344,23 +344,23 @@
 }
 
 .helmet-red {
-  background: #E2231A;
+  background: var(--rfs-core-red);
   border-color: #a51912;
 }
 
 .helmet-red-white-stripes {
   background: linear-gradient(
     to bottom,
-    #E2231A 0%,
-    #E2231A 30%,
+    var(--rfs-core-red) 0%,
+    var(--rfs-core-red) 30%,
     white 30%,
     white 35%,
-    #E2231A 35%,
-    #E2231A 50%,
+    var(--rfs-core-red) 35%,
+    var(--rfs-core-red) 50%,
     white 50%,
     white 55%,
-    #E2231A 55%,
-    #E2231A 100%
+    var(--rfs-core-red) 55%,
+    var(--rfs-core-red) 100%
   );
   border-color: #a51912;
 }
@@ -370,8 +370,8 @@
     to bottom,
     white 0%,
     white 42%,
-    #E2231A 42%,
-    #E2231A 58%,
+    var(--rfs-core-red) 42%,
+    var(--rfs-core-red) 58%,
     white 58%,
     white 100%
   );

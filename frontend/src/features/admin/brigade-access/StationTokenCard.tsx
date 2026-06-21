@@ -82,7 +82,7 @@ export function StationTokenCard({
         <h3 className="station-name">{station.name}</h3>
         <div className="station-meta">
           {station.brigadeName && (
-            <span className="station-brigade">🔥 {station.brigadeName}</span>
+            <span className="station-brigade">👥 {station.brigadeName}</span>
           )}
           {station.hierarchy?.district && (
             <span className="station-district">📍 {station.hierarchy.district}</span>

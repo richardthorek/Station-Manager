@@ -35,7 +35,7 @@ const DIRECT_HINTS = {
 
 // Gateway-mode (browser → /api/ai → Azure) error hints, in plain language.
 const GATEWAY_HINTS = {
-  401: 'Please sign in to your brigade account to use the AI features.',
+  401: 'Please sign in to your team account to use the AI features.',
   402: 'You’ve used all your AI sessions for this month. Upgrade your plan or top up to keep going.',
   403: 'AI features aren’t included in your current plan. Upgrade to AI Pro to turn them on.',
   503: 'The AI service isn’t set up on the server yet. Ask your administrator to configure it.',

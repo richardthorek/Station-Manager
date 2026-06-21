@@ -139,7 +139,7 @@
   color: #999;
   margin: 0 0 1rem 0;
   padding-left: 0.5rem;
-  border-left: 3px solid #C6D931;
+  border-left: 3px solid var(--rfs-lime);
 }
 
 .loading-more {
@@ -155,7 +155,7 @@
   width: 20px;
   height: 20px;
   border: 2px solid #333;
-  border-top-color: #C6D931;
+  border-top-color: var(--rfs-lime);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -181,7 +181,7 @@
   height: 44px;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: #C6D931;
+  background: var(--rfs-lime);
   color: #000;
   border: 2px solid var(--border-color);
   font-size: 1.2rem;

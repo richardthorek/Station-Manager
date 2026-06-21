@@ -104,11 +104,11 @@ export function StationDetailsView({ station, onClose, onEdit }: StationDetailsV
                 <span className="detail-value">{station.name}</span>
               </div>
               <div className="detail-item">
-                <span className="detail-label">Brigade Name</span>
+                <span className="detail-label">Brigade / Unit Name</span>
                 <span className="detail-value">{station.brigadeName}</span>
               </div>
               <div className="detail-item">
-                <span className="detail-label">Brigade ID</span>
+                <span className="detail-label">Brigade / Unit ID</span>
                 <span className="detail-value">{station.brigadeId}</span>
               </div>
               <div className="detail-item">
@@ -137,7 +137,7 @@ export function StationDetailsView({ station, onClose, onEdit }: StationDetailsV
                 <span className="detail-value">{station.hierarchy.district}</span>
               </div>
               <div className="detail-item">
-                <span className="detail-label">Brigade</span>
+                <span className="detail-label">Brigade / Unit</span>
                 <span className="detail-value">{station.hierarchy.brigade}</span>
               </div>
             </div>

@@ -146,7 +146,9 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
       setShowVehicleModal(false);
       onUpdate();
     } catch (err) {
-      alert(`Failed to ${isEditMode ? 'update' : 'create'} vehicle`);
+      // Surface the server message (e.g. plan vehicle-limit reached) when present.
+      const fallback = `Failed to ${isEditMode ? 'update' : 'create'} vehicle`;
+      alert(err instanceof Error && err.message ? err.message : fallback);
       console.error(err);
     } finally {
       setUploading(false);

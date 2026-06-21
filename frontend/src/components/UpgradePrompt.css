@@ -35,7 +35,7 @@
 
 .upgrade-prompt__cta {
   padding: 0.75rem 2rem;
-  background: var(--color-primary, #e5281b);
+  background: var(--color-primary, var(--rfs-core-red));
   color: #fff;
   border: none;
   border-radius: 8px;

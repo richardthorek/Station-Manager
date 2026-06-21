@@ -12,6 +12,8 @@ import jwt from 'jsonwebtoken';
 import { logger } from '../services/logger';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { ensureDatabase } from '../services/dbFactory';
+import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
+import { getDefaultEntitlements } from '../constants/plans';
 import { DEFAULT_STATION_ID, DEMO_STATION_ID } from '../constants/stations';
 import type { EntitlementFeature } from '../types';
 
@@ -143,4 +145,94 @@ export function enforceStationLimit() {
 
     next();
   };
+}
+
+/**
+ * Shared count-based limit gate. No-op when entitlements are disabled or there
+ * is no org context (kiosk/demo/back-compat). Falls back to the plan default
+ * when a persisted org predates the limit field, so existing free orgs still
+ * get the cap without needing their entitlements re-saved.
+ */
+function enforceCountLimit(opts: {
+  limitKey: 'maxMembers' | 'maxVehicles';
+  errorMessage: string;
+  label: string;
+  count: (req: Request) => Promise<number>;
+}) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!entitlementsEnabled()) {
+      next();
+      return;
+    }
+
+    await attachOrganization(req, res, () => undefined);
+
+    if (!req.organization) {
+      next();
+      return;
+    }
+
+    const entitlements = req.organization.entitlements;
+    const limit =
+      (entitlements[opts.limitKey] as number | undefined) ??
+      getDefaultEntitlements(req.organization.planCode)[opts.limitKey];
+
+    try {
+      const current = await opts.count(req);
+      if (current >= limit) {
+        logger.info(`${opts.label} limit reached`, {
+          organizationId: req.organization.id,
+          planCode: req.organization.planCode,
+          limit,
+          current,
+        });
+        res.status(403).json({
+          error: opts.errorMessage,
+          upgradeRequired: true,
+          planCode: req.organization.planCode,
+          limit,
+          current,
+        });
+        return;
+      }
+    } catch (error) {
+      logger.warn(`enforce ${opts.limitKey}: count check failed (continuing)`, { error });
+    }
+
+    next();
+  };
+}
+
+/**
+ * Enforce the maxMembers entitlement on member creation.
+ * Place on POST /api/members before the route handler.
+ */
+export function enforceMemberLimit() {
+  return enforceCountLimit({
+    limitKey: 'maxMembers',
+    errorMessage: 'Member limit reached for your plan',
+    label: 'Member',
+    count: async (req) => {
+      const db = await ensureDatabase(req.isDemoMode);
+      const members = await db.getAllMembers();
+      return members.length;
+    },
+  });
+}
+
+/**
+ * Enforce the maxVehicles entitlement on appliance (vehicle) creation.
+ * Place on POST /api/truck-checks/appliances before the route handler.
+ */
+export function enforceVehicleLimit() {
+  return enforceCountLimit({
+    limitKey: 'maxVehicles',
+    errorMessage: 'Vehicle limit reached for your plan',
+    label: 'Vehicle',
+    count: async (req) => {
+      const db = await ensureTruckChecksDatabase(req.isDemoMode);
+      const appliances = await db.getAllAppliances();
+      return appliances.length;
+    },
+  });
 }

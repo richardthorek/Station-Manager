@@ -164,7 +164,7 @@ export function TemplateEditorPage() {
   return (
     <div className="template-editor">
       <header className="template-editor-header">
-        <Link to="/truckcheck" className="back-link">← Back to Truck Checks</Link>
+        <Link to="/truckcheck" className="back-link">← Back to Vehicle Checks</Link>
         <div className="header-content">
           <h1>Edit Checklist Template</h1>
           <h2>{template.applianceName}</h2>

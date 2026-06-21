@@ -51,7 +51,7 @@
 }
 
 .status-icon.success {
-  background: #C6D931;
+  background: var(--rfs-lime);
   color: #000;
 }
 
@@ -61,7 +61,7 @@
 }
 
 .status-icon.error {
-  background: #E2231A;
+  background: var(--rfs-core-red);
   color: white;
 }
 
@@ -80,7 +80,7 @@
 }
 
 .status-title.error {
-  color: #E2231A;
+  color: var(--rfs-core-red);
 }
 
 .status-message {

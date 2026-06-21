@@ -38,6 +38,7 @@ import {
 } from '../middleware/truckCheckValidation';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
+import { enforceVehicleLimit } from '../middleware/entitlements';
 import { logger } from '../services/logger';
 
 const router = Router();
@@ -103,7 +104,7 @@ router.get('/appliances/:id', validateApplianceId, handleValidationErrors, async
  * POST /api/truck-checks/appliances
  * Create a new appliance (assigns station)
  */
-router.post('/appliances', validateCreateAppliance, handleValidationErrors, async (req: Request, res: Response) => {
+router.post('/appliances', enforceVehicleLimit(), validateCreateAppliance, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const { name, description, photoUrl, vehicleType } = req.body;
     const stationId = getStationIdFromRequest(req);

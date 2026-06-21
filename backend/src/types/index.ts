@@ -98,6 +98,10 @@ export interface Entitlements {
   aiEnabled: boolean;
   maxStations: number;
   maxDevices: number;
+  /** Max members in the sign-in book (free tier is capped; paid is effectively unlimited). */
+  maxMembers: number;
+  /** Max vehicles/appliances for truck checks (free tier is capped). */
+  maxVehicles: number;
   aiIncludedSessions: number;
   /** Per-app suite flags — controls which Bushie Tools apps are accessible. */
   aarStudioEnabled: boolean;

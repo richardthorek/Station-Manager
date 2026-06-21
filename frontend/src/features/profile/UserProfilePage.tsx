@@ -132,9 +132,13 @@ export function UserProfilePage() {
     }
   };
 
+  // Generic ranks first (work for any service), then common fire-brigade ranks.
   const rankOptions = [
+    { value: 'Member', label: 'Member' },
     { value: 'Visitor', label: 'Visitor' },
     { value: 'Trainee', label: 'Trainee' },
+    { value: 'Crew Leader', label: 'Crew Leader' },
+    { value: 'Team Leader', label: 'Team Leader' },
     { value: 'Firefighter', label: 'Firefighter' },
     { value: 'Captain', label: 'Captain' },
     { value: 'Senior Deputy Captain', label: 'Senior Deputy Captain' },

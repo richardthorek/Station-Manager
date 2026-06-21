@@ -50,8 +50,8 @@ export function LandingPage() {
             />
             <div className="brand-block">
               <p className="eyebrow">Bushie Tools</p>
-              <h1 className="headline">Your brigade toolkit</h1>
-              <p className="subheadline">Sign-in book, truck checks, reports and AI-facilitated reviews — all in one place.</p>
+              <h1 className="headline">Your crew toolkit</h1>
+              <p className="subheadline">Sign-in book, vehicle checks, reports and AI-facilitated reviews — all in one place.</p>
             </div>
           </div>
           <div className="header-actions">
@@ -125,10 +125,10 @@ export function LandingPage() {
               transition={itemTransition}
             >
               <div className="feature-icon" aria-hidden="true">🚛</div>
-              <h3>Truck Check</h3>
-              <p>Vehicle maintenance tracking and inspection checklist system.</p>
+              <h3>Vehicle Check</h3>
+              <p>Vehicle and equipment maintenance tracking with inspection checklists.</p>
               <Link to="/truckcheck" className="feature-link">
-                Go to Truck Check
+                Go to Vehicle Check
                 <span className="arrow" aria-hidden="true">→</span>
               </Link>
             </motion.article>
@@ -184,7 +184,7 @@ export function LandingPage() {
                     <span className="arrow" aria-hidden="true">→</span>
                   </Link>
                   <Link to="/admin/brigade-access" className="feature-link">
-                    Brigade Access
+                    Crew Access
                     <span className="arrow" aria-hidden="true">→</span>
                   </Link>
                 </div>

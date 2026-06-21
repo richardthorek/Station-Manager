@@ -7,7 +7,8 @@
  * (LandingPage) becomes their home instead — see HomeRoute in App.tsx.
  *
  * Copy follows the "bushie ethos": plain, warm, direct language aimed at the
- * station captain, not the IT manager. No jargon (SaaS / multi-tenant / API).
+ * crew on the ground — fire brigades, SES units, and other volunteer services —
+ * not the IT manager. No jargon (SaaS / multi-tenant / API).
  */
 
 import { useState } from 'react';
@@ -35,12 +36,12 @@ const PLAN_CARDS: PlanCard[] = [
   {
     code: 'community',
     name: 'Community',
-    tagline: 'For any brigade getting started',
+    tagline: 'For any crew getting started',
     monthly: 0,
     annual: 0,
     features: [
-      'Digital sign-in book',
-      'Basic truck checks',
+      'Sign-in book — up to 10 members',
+      'Vehicle checks for 1 vehicle',
       'Real-time on every device',
       'No card required',
     ],
@@ -54,9 +55,9 @@ const PLAN_CARDS: PlanCard[] = [
     annual: 100,
     features: [
       'Everything in Community',
-      'Reports & history',
-      'CSV export',
-      'Up to 10 devices',
+      'Unlimited members & vehicles',
+      'Reports & history + CSV export',
+      'Multiple stations',
     ],
     cta: 'Get Basic',
     highlighted: true,
@@ -71,7 +72,7 @@ const PLAN_CARDS: PlanCard[] = [
       'Everything in Basic',
       'AI-facilitated After Action Reviews',
       '~25 AI sessions a month',
-      'Up to 25 devices',
+      'Live collaborative review notes',
     ],
     cta: 'Get AI Pro',
   },
@@ -84,11 +85,11 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Do I need to be good with computers?',
-    a: 'No. If you can tap a big button on a tablet, you can run the sign-in book and a truck check. We built this for the average bushie, not for an IT department.',
+    a: 'No. If you can tap a big button on a tablet, you can run the sign-in book and a vehicle check. We built this for volunteers on the ground, not for an IT department.',
   },
   {
-    q: 'Is our brigade’s data safe?',
-    a: 'Yes. Your members and records are kept private to your brigade and only your signed-in people can see them. The public only ever sees a demo with made-up data.',
+    q: 'Is our crew’s data safe?',
+    a: 'Yes. Your members and records are kept private to your crew and only your signed-in people can see them. The public only ever sees a demo with made-up data.',
   },
   {
     q: 'What does the AI actually do?',
@@ -96,7 +97,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Can we pay by invoice?',
-    a: 'Many brigades are grant or council funded and budget yearly. Choose annual billing for a single invoice (two months free), or get in touch and we’ll sort out a bank-transfer invoice.',
+    a: 'Many crews are grant or council funded and budget yearly. Choose annual billing for a single invoice (two months free), or get in touch and we’ll sort out a bank-transfer invoice.',
   },
 ];
 
@@ -155,14 +156,15 @@ export function MarketingPage() {
         <main id="main-content" className="mkt-main" tabIndex={-1}>
           {/* Hero */}
           <section className="mkt-hero">
-            <p className="mkt-eyebrow">Made for volunteer firefighters</p>
+            <p className="mkt-eyebrow">Made for volunteer emergency crews</p>
             <h1 className="mkt-hero-title">
               Run your station the easy way
             </h1>
             <p className="mkt-hero-sub">
-              Bushie Tools is a simple set of tools for fire brigades — a digital
-              sign-in book, truck checks, and an AI helper that writes up your
-              After Action Reviews. Built for the shed, not the office.
+              Bushie Tools is a simple set of tools for volunteer brigades and
+              units — a digital sign-in book, vehicle checks, and an AI helper
+              that writes up your After Action Reviews. Built for the shed, not
+              the office.
             </p>
             <div className="mkt-hero-actions">
               <Link to="/signup" className="mkt-btn mkt-btn--primary mkt-btn--lg">
@@ -183,8 +185,9 @@ export function MarketingPage() {
                 <div className="mkt-app-icon" aria-hidden="true">🔥</div>
                 <h3>Station Manager</h3>
                 <p>
-                  Sign members in and out, see who’s on the truck, and run your
-                  vehicle checks — all updating live on every tablet and phone.
+                  Sign members in and out, see who’s out on the job, and run
+                  your vehicle checks — all updating live on every tablet and
+                  phone.
                 </p>
               </article>
               <article className="mkt-app-card">
@@ -212,9 +215,9 @@ export function MarketingPage() {
 
           {/* Pricing */}
           <section id="pricing" className="mkt-pricing" aria-labelledby="pricing-heading">
-            <h2 id="pricing-heading" className="mkt-section-title">Simple, brigade-friendly pricing</h2>
+            <h2 id="pricing-heading" className="mkt-section-title">Simple, crew-friendly pricing</h2>
             <p className="mkt-section-sub">
-              One price per brigade. No per-member charges, no surprises.
+              One price per brigade or unit. No per-member charges, no surprises.
             </p>
 
             <div className="mkt-interval-toggle" role="group" aria-label="Billing period">
@@ -273,7 +276,7 @@ export function MarketingPage() {
                 <ul className="mkt-plan-features">
                   <li>Every Bushie tool together</li>
                   <li>One login, one subscription</li>
-                  <li>Best value for active brigades</li>
+                  <li>Best value for active crews</li>
                 </ul>
                 <a href="mailto:hello@bushietools.au?subject=Bushie%20Suite%20waitlist" className="mkt-btn mkt-btn--ghost mkt-plan-cta">
                   Join the waitlist
@@ -302,7 +305,7 @@ export function MarketingPage() {
 
           {/* Final CTA */}
           <section className="mkt-final-cta">
-            <h2>Ready to give your brigade a hand?</h2>
+            <h2>Ready to give your crew a hand?</h2>
             <p>Start free in a couple of minutes. Upgrade whenever you’re ready.</p>
             <Link to="/signup" className="mkt-btn mkt-btn--primary mkt-btn--lg">
               Create your free account

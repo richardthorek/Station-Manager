@@ -224,7 +224,7 @@
 }
 
 .real-btn:hover {
-  background: #C21F17;
+  background: var(--rfs-core-red-dark);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(229, 40, 27, 0.4);
 }

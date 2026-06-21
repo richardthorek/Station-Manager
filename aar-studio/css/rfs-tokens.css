@@ -6,28 +6,30 @@
  * consumes them here and in css/app.css. Keep the two in sync — changing a
  * brand value means changing it in both places.
  *
- * NSW RFS Style Guide (Sept 2024): red #e5281B, lime #cbdb2a, Public Sans.
+ * Emergency-services heritage, refined for a modern, professional,
+ * service-agnostic feel: deeper brand red #c8102e (white-on-red ~5.9:1),
+ * cool-slate neutrals, Public Sans.
  */
 
 :root {
   /* Brand palette */
-  --rfs-core-red: #e5281B;
-  --rfs-core-red-dark: #c21f17;
-  --rfs-core-red-light: #ff3d2e;
+  --rfs-core-red: #c8102e;
+  --rfs-core-red-dark: #a50d26;
+  --rfs-core-red-light: #e0394f;
   --rfs-lime: #cbdb2a;
   --rfs-lime-dark: #b0c020;
 
-  /* Neutrals */
-  --rfs-black: #000000;
+  /* Neutrals — cool slate */
+  --rfs-black: #0b0e14;
   --rfs-white: #ffffff;
-  --rfs-dark-grey: #4d4d4f;
-  --rfs-light-grey: #bcbec0;
-  --rfs-neutral-light: #f4f4f4;
+  --rfs-dark-grey: #3f4654;
+  --rfs-light-grey: #cbd2dc;
+  --rfs-neutral-light: #f7f8fa;
 
   /* Semantic UI */
-  --ui-green: #008550;   /* success / "what went well" */
-  --ui-amber: #fbb034;   /* watch & act */
-  --ui-blue: #215e9e;    /* advice / links */
+  --ui-green: #047857;   /* success / "what went well" */
+  --ui-amber: #f59e0b;   /* watch & act */
+  --ui-blue: #2563eb;    /* advice / links */
 
   /* Typography — Public Sans, matching the SPA */
   --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;

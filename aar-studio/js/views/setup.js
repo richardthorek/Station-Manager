@@ -23,8 +23,8 @@ export function render(container) {
     h('input', { type: 'text', value, ...attrs, ...bind(() => value, apply) });
 
   const unitsBody = h('tbody', {}, s.units.map((u, i) => h('tr', {},
-    h('td', {}, text(u.unit, (sess, v) => { sess.units[i].unit = v; }, { placeholder: 'Brigade / agency' })),
-    h('td', {}, text(u.role, (sess, v) => { sess.units[i].role = v; }, { placeholder: 'Role on the fireground' })),
+    h('td', {}, text(u.unit, (sess, v) => { sess.units[i].unit = v; }, { placeholder: 'Unit / agency' })),
+    h('td', {}, text(u.role, (sess, v) => { sess.units[i].role = v; }, { placeholder: 'Role on the ground' })),
     h('td', {}, h('button', { class: 'btn btn--small btn--danger', onclick: () => store.update((sess) => sess.units.splice(i, 1)) }, '✕')),
   )));
 

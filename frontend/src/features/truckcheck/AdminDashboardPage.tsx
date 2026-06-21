@@ -131,7 +131,7 @@ export function AdminDashboardPage() {
     <div className="admin-dashboard">
       <header className="dashboard-header">
         <div className="header-top">
-          <Link to="/truckcheck" className="back-link">← Back to Truck Checks</Link>
+          <Link to="/truckcheck" className="back-link">← Back to Vehicle Checks</Link>
           <button className="theme-toggle-btn" onClick={toggleTheme}>
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
