@@ -20,7 +20,7 @@
   font-size: 1rem;
   border: 2px solid var(--rfs-light-grey);
   border-radius: 8px;
-  background: var(--input-bg, rgba(255, 255, 255, 0.05));
+  background: var(--bg-secondary);
   color: var(--text-primary);
   transition: border-color 0.2s;
 }
@@ -46,7 +46,7 @@
   font-size: 0.9rem;
   border: 2px solid var(--rfs-light-grey);
   border-radius: 6px;
-  background: var(--input-bg, rgba(255, 255, 255, 0.05));
+  background: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
   transition: border-color 0.2s;
@@ -66,7 +66,7 @@
 .data-table__table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--card-bg);
+  background: var(--bg-card);
 }
 
 .data-table__table thead {
@@ -117,7 +117,7 @@
 }
 
 .data-table__table tbody tr:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+  background: var(--surface-hover);
 }
 
 .data-table__table tbody tr:nth-child(even) {
@@ -125,7 +125,7 @@
 }
 
 .data-table__table tbody tr:nth-child(even):hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+  background: var(--surface-hover);
 }
 
 .data-table__row--clickable {
@@ -164,7 +164,7 @@
   min-height: 44px;
   font-size: 1rem;
   border: 2px solid var(--rfs-light-grey);
-  background: var(--card-bg);
+  background: var(--bg-card);
   color: var(--text-primary);
   border-radius: 6px;
   cursor: pointer;

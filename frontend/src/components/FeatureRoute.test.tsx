@@ -35,8 +35,8 @@ describe('FeatureRoute', () => {
     authState.hasFeature.mockReturnValue(false)
     renderGated()
     expect(screen.queryByText('Protected content')).not.toBeInTheDocument()
-    expect(screen.getByText(/isn’t enabled/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /manage organization/i })).toHaveAttribute(
+    expect(screen.getByText(/isn't on your plan/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /view upgrade options/i })).toHaveAttribute(
       'href',
       '/admin/organization',
     )

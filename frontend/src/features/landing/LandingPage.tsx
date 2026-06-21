@@ -157,10 +157,10 @@ export function LandingPage() {
               <p>AI-assisted After Action Reviews: capture the discussion live, build a findings board, and export the report.</p>
               {/* AAR Studio is a self-contained static sub-app served by the backend at /aar, so this is a plain link, not a router route. */}
               {entitlements && !hasFeature('aarStudioEnabled') ? (
-                <span className="feature-link feature-link--locked" aria-label="AAR Studio requires AI Pro plan">
+                <Link to="/admin/organization" className="feature-link feature-link--locked" aria-label="AAR Studio requires AI Pro plan — click to view upgrade options">
                   Upgrade to AI Pro
                   <span className="lock-icon" aria-hidden="true">🔒</span>
-                </span>
+                </Link>
               ) : (
                 <a href="/aar/" className="feature-link">
                   Go to AAR Studio
@@ -210,10 +210,10 @@ export function LandingPage() {
                   <h3>{suiteApp.name}</h3>
                   <p>{suiteApp.description}</p>
                   {locked ? (
-                    <span className="feature-link feature-link--locked" aria-label={`${suiteApp.name} is not included in your plan`}>
+                    <Link to="/admin/organization" className="feature-link feature-link--locked" aria-label={`${suiteApp.name} is not included in your plan — click to view upgrade options`}>
                       Not in your plan
                       <span className="lock-icon" aria-hidden="true">🔒</span>
-                    </span>
+                    </Link>
                   ) : (
                     <a href={suiteApp.href} className="feature-link" target="_blank" rel="noopener noreferrer">
                       Open {suiteApp.name}

@@ -39,6 +39,17 @@
   --text-success-strong: #0b5c3b;
   --text-on-amber: #1f1400;
 
+  /* Truck-check / inspection status tokens (themed below for dark mode) */
+  --status-done-border: #4caf50;
+  --status-done-bg:     #e8f5ee;
+  --status-done-text:   #1b5e20;
+  --status-issue-border: #f59e0b;
+  --status-issue-bg:    var(--surface-warning);
+  --status-issue-text:  var(--text-warning-strong);
+  --status-skip-border: #9e9e9e;
+  --status-skip-bg:     var(--bg-secondary);
+  --status-skip-text:   #757575;
+
   /* Design System - Spacing Scale */
   --spacing-xs: 0.25rem;   /* 4px */
   --spacing-sm: 0.5rem;    /* 8px */
@@ -184,6 +195,16 @@
   --surface-success: #0f2a1f;
   --text-success-strong: #8be4b5;
   --text-on-amber: #1f1400;
+
+  /* Truck-check status tokens — dark mode overrides */
+  --status-done-border: #66bb6a;
+  --status-done-bg:     #0f2a1f;
+  --status-done-text:   #8be4b5;
+  --status-issue-border: #ffa726;
+  --status-issue-bg:    var(--surface-warning);
+  --status-issue-text:  var(--text-warning-strong);
+  --status-skip-border: #9e9e9e;
+  --status-skip-text:   #9e9e9e;
 
   color-scheme: dark;
   color: var(--text-primary);

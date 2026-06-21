@@ -76,7 +76,7 @@
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   border: 2px solid var(--rfs-light-grey);
-  background: var(--card-bg);
+  background: var(--bg-card);
   color: var(--text-primary);
   border-radius: 8px;
   cursor: pointer;
@@ -85,7 +85,7 @@
 }
 
 .date-range-buttons button:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.1));
+  background: var(--surface-hover);
   border-color: var(--rfs-lime);
   transform: translateY(-2px);
 }
@@ -103,7 +103,7 @@
   flex-wrap: wrap;
   margin-top: 1rem;
   padding: 1rem;
-  background: var(--card-bg);
+  background: var(--bg-card);
   border-radius: 8px;
 }
 
@@ -124,7 +124,7 @@
   font-size: 1rem;
   border: 2px solid var(--rfs-light-grey);
   border-radius: 8px;
-  background: var(--input-bg, rgba(255, 255, 255, 0.05));
+  background: var(--bg-secondary);
   color: var(--text-primary);
   min-height: 50px;
 }
@@ -139,7 +139,7 @@
   align-items: center;
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  background: var(--card-bg);
+  background: var(--bg-card);
   border-radius: 8px;
 }
 
@@ -282,7 +282,7 @@
 }
 
 .stat-card {
-  background: var(--card-bg);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 1.5rem;
   text-align: center;
@@ -310,7 +310,7 @@
 
 /* Chart Sections */
 .chart-section {
-  background: var(--card-bg);
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -373,7 +373,7 @@
 }
 
 .leaderboard-table tr:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+  background: var(--surface-hover);
 }
 
 .leaderboard-table .rank {
@@ -430,7 +430,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+  background: var(--surface-hover);
   border-radius: 8px;
 }
 
@@ -473,7 +473,7 @@
 }
 
 .appliance-table tr:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+  background: var(--surface-hover);
 }
 
 /* Responsive Design */

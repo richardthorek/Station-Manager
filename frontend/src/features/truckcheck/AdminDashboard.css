@@ -47,7 +47,7 @@
 }
 
 .tab.active {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   color: var(--rfs-core-red);
 }
 
@@ -99,7 +99,7 @@
 }
 
 .filters-section {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   color: var(--rfs-black);
   padding: 1.5rem;
   border-radius: 8px;
@@ -127,7 +127,7 @@
   font-size: 1rem;
   border: 2px solid var(--rfs-neutral-light);
   border-radius: 4px;
-  background: white;
+  background: var(--bg-card);
   cursor: pointer;
 }
 
@@ -158,7 +158,7 @@
 }
 
 .stat-card {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   color: var(--rfs-black);
   padding: 1.5rem;
   border-radius: 8px;
@@ -167,7 +167,7 @@
 }
 
 .stat-card.issues {
-  border: 2px solid #ff9800;
+  border: 2px solid var(--status-issue-border);
 }
 
 .stat-number {
@@ -179,7 +179,7 @@
 }
 
 .stat-card.issues .stat-number {
-  color: #ff9800;
+  color: var(--status-issue-border);
 }
 
 .stat-label {
@@ -196,7 +196,7 @@
 }
 
 .no-results {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   color: var(--rfs-black);
   padding: 3rem;
   border-radius: 8px;
@@ -210,12 +210,12 @@
 }
 
 .run-card {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   color: var(--rfs-black);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #4caf50;
+  border-left: 4px solid var(--status-done-border);
   transition: box-shadow 0.2s;
 }
 
@@ -224,7 +224,7 @@
 }
 
 .run-card.has-issues {
-  border-left-color: #ff9800;
+  border-left-color: var(--status-issue-border);
 }
 
 .run-header {
@@ -265,8 +265,8 @@
 }
 
 .issue-badge {
-  background: #ff9800;
-  color: white;
+  background: var(--status-issue-border);
+  color: var(--rfs-white);
   padding: 0.5rem 1rem;
   border-radius: 4px;
   font-weight: 600;
@@ -280,7 +280,7 @@
 
 .run-details {
   padding: 1.5rem;
-  background: var(--rfs-neutral-light);
+  background: var(--bg-secondary);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
@@ -295,19 +295,19 @@
   padding: 1rem;
   border-radius: 4px;
   border-left: 4px solid;
-  background: white;
+  background: var(--bg-card);
 }
 
 .result-item.done {
-  border-left-color: #4caf50;
+  border-left-color: var(--status-done-border);
 }
 
 .result-item.issue {
-  border-left-color: #ff9800;
+  border-left-color: var(--status-issue-border);
 }
 
 .result-item.skipped {
-  border-left-color: #757575;
+  border-left-color: var(--status-skip-text);
 }
 
 .result-info {
@@ -331,18 +331,18 @@
 }
 
 .status-badge.done {
-  background: #4caf50;
-  color: white;
+  background: var(--status-done-border);
+  color: var(--rfs-white);
 }
 
 .status-badge.issue {
-  background: #ff9800;
-  color: white;
+  background: var(--status-issue-border);
+  color: var(--rfs-white);
 }
 
 .status-badge.skipped {
-  background: #757575;
-  color: white;
+  background: var(--status-skip-border);
+  color: var(--rfs-white);
 }
 
 .result-comment {
@@ -353,7 +353,7 @@
 }
 
 .additional-comments {
-  background: white;
+  background: var(--bg-card);
   padding: 1rem;
   border-radius: 4px;
   margin-top: 1rem;
@@ -379,7 +379,7 @@
 }
 
 .export-section {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   color: var(--rfs-black);
   padding: 1.25rem 1.5rem;
   border-radius: 8px;
@@ -417,7 +417,7 @@
   border: 2px solid var(--rfs-neutral-light);
   border-radius: 4px;
   font-size: 0.95rem;
-  background: white;
+  background: var(--bg-card);
 }
 
 .export-date-input input[type="date"]:focus {
@@ -428,7 +428,7 @@
 .btn-export-csv {
   padding: 0.55rem 1.25rem;
   background: var(--rfs-core-red);
-  color: white;
+  color: var(--rfs-white);
   border: none;
   border-radius: 4px;
   font-size: 0.95rem;
@@ -454,7 +454,7 @@
 }
 
 .export-feedback--success {
-  color: #2e7d32;
+  color: var(--status-done-text);
 }
 
 .export-feedback--error {
