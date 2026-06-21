@@ -847,3 +847,89 @@ describe('Truck Checks API - Cross-brigade schema fields', () => {
     });
   });
 });
+
+describe('Truck Checks API - Station isolation (TC-2)', () => {
+  // Two brigades on the same deployment must not see each other's vehicles or runs.
+  const STATION_A = 'station-iso-a';
+  const STATION_B = 'station-iso-b';
+
+  it('scopes appliances to the requesting station', async () => {
+    const a = await request(app)
+      .post('/api/truck-checks/appliances')
+      .set('X-Station-Id', STATION_A)
+      .send({ name: 'Iso Tanker A' })
+      .expect(201);
+    const b = await request(app)
+      .post('/api/truck-checks/appliances')
+      .set('X-Station-Id', STATION_B)
+      .send({ name: 'Iso Tanker B' })
+      .expect(201);
+
+    const listA = await request(app)
+      .get('/api/truck-checks/appliances')
+      .set('X-Station-Id', STATION_A)
+      .expect(200);
+    const idsA = listA.body.map((x: { id: string }) => x.id);
+    expect(idsA).toContain(a.body.id);
+    expect(idsA).not.toContain(b.body.id); // B's vehicle must not leak into A
+  });
+
+  it('scopes check runs (and issues) to the requesting station', async () => {
+    const appA = await request(app)
+      .post('/api/truck-checks/appliances')
+      .set('X-Station-Id', STATION_A)
+      .send({ name: 'Iso Run Vehicle A' });
+
+    const run = await request(app)
+      .post('/api/truck-checks/runs')
+      .set('X-Station-Id', STATION_A)
+      .send({ applianceId: appA.body.id, completedBy: 'Alice', completedByName: 'Alice' })
+      .expect(201);
+
+    // Station B must not see station A's run.
+    const runsB = await request(app)
+      .get('/api/truck-checks/runs')
+      .set('X-Station-Id', STATION_B)
+      .expect(200);
+    expect(runsB.body.map((r: { id: string }) => r.id)).not.toContain(run.body.id);
+
+    // Station A does see it.
+    const runsA = await request(app)
+      .get('/api/truck-checks/runs')
+      .set('X-Station-Id', STATION_A)
+      .expect(200);
+    expect(runsA.body.map((r: { id: string }) => r.id)).toContain(run.body.id);
+  });
+});
+
+describe('Truck Checks API - Template item id stability (TC-5)', () => {
+  it('keeps an item id stable when re-saving with that id (old code regenerated it)', async () => {
+    const appliance = await request(app)
+      .post('/api/truck-checks/appliances')
+      .send({ name: 'Stable Items Vehicle' })
+      .expect(201);
+
+    const first = await request(app)
+      .put(`/api/truck-checks/templates/${appliance.body.id}`)
+      .send({ items: [
+        { id: 'seed-tyres', name: 'Tyres', description: 'Check tread', order: 0 },
+        { id: 'seed-lights', name: 'Lights', description: 'Check lights', order: 1 },
+      ] })
+      .expect(200);
+    const tyreId = first.body.items.find((i: { name: string }) => i.name === 'Tyres').id;
+
+    // Re-save using the server-assigned ids (+ one new item). Existing ids must
+    // be retained rather than churned to fresh uuids on every edit.
+    const second = await request(app)
+      .put(`/api/truck-checks/templates/${appliance.body.id}`)
+      .send({ items: [
+        { id: tyreId, name: 'Tyres', description: 'Check tread and pressure', order: 0 },
+        { id: first.body.items[1].id, name: 'Lights', description: 'Check lights', order: 1 },
+        { id: 'new-radio', name: 'Radio', description: 'Check radio', order: 2 },
+      ] })
+      .expect(200);
+    const tyreIdAfter = second.body.items.find((i: { name: string }) => i.name === 'Tyres').id;
+
+    expect(tyreIdAfter).toBe(tyreId); // stable across edits
+  });
+});

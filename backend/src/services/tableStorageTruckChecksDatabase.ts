@@ -11,6 +11,12 @@ import {
   CheckStatus
 } from '../types';
 import { ITruckChecksDatabase } from './truckChecksDbFactory';
+import { getEffectiveStationId } from '../constants/stations';
+
+/** True when two (possibly undefined/blank) station ids resolve to the same station. */
+function sameStation(a: string | undefined, b: string | undefined): boolean {
+  return getEffectiveStationId(a || undefined) === getEffectiveStationId(b || undefined);
+}
 
 // Build table names with optional prefix/suffix so dev/test can share prod storage without mixing tables
 function buildTableName(baseName: string, overrideSuffix?: string): string {
@@ -158,14 +164,17 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
 
   // ===== APPLIANCE METHODS =====
 
-  async getAllAppliances(): Promise<Appliance[]> {
+  async getAllAppliances(stationId?: string): Promise<Appliance[]> {
     const entities = this.appliancesTable.listEntities<TableEntity>({
       queryOptions: { filter: odata`PartitionKey eq 'Appliance'` }
     });
 
     const appliances: Appliance[] = [];
     for await (const entity of entities) {
-      appliances.push(this.entityToAppliance(entity));
+      const appliance = this.entityToAppliance(entity);
+      if (stationId === undefined || sameStation(appliance.stationId, stationId)) {
+        appliances.push(appliance);
+      }
     }
 
     appliances.sort((a, b) => a.name.localeCompare(b.name));
@@ -276,17 +285,26 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     }
   }
 
-  async updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[]): Promise<ChecklistTemplate> {
+  async updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[], stationId?: string): Promise<ChecklistTemplate> {
     const appliance = await this.getApplianceById(applianceId);
     if (!appliance) {
       throw new Error('Appliance not found');
     }
 
     // Check if template exists
-    let existingTemplate = await this.getTemplateByApplianceId(applianceId);
-    
+    const existingTemplate = await this.getTemplateByApplianceId(applianceId);
+    const previous = existingTemplate?.items ?? [];
+
+    // Preserve item ids across edits (match by supplied id, else by name) so
+    // itemCode/history references stay stable instead of churning a new uuid each save.
+    const reuseId = (item: Omit<ChecklistItem, 'id'> & { id?: string }): string => {
+      if (item.id && previous.some((p) => p.id === item.id)) return item.id;
+      const byName = previous.find((p) => p.name === item.name);
+      return byName ? byName.id : uuidv4();
+    };
+
     const templateItems: ChecklistItem[] = items.map((item, index) => ({
-      id: uuidv4(),
+      id: reuseId(item as Omit<ChecklistItem, 'id'> & { id?: string }),
       name: item.name,
       description: item.description,
       referencePhotoUrl: item.referencePhotoUrl,
@@ -299,6 +317,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       id: existingTemplate?.id || uuidv4(),
       applianceId,
       applianceName: appliance.name,
+      stationId: stationId ?? existingTemplate?.stationId ?? appliance.stationId,
       items: templateItems,
       createdAt: existingTemplate?.createdAt || new Date(),
       updatedAt: new Date(),
@@ -309,6 +328,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       rowKey: template.id,
       applianceId: template.applianceId,
       applianceName: template.applianceName,
+      stationId: template.stationId || '',
       items: JSON.stringify(template.items), // Store as JSON string
       createdAt: template.createdAt.toISOString(),
       updatedAt: template.updatedAt.toISOString(),
@@ -328,6 +348,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       id: entity.rowKey as string,
       applianceId: entity.applianceId as string,
       applianceName: entity.applianceName as string,
+      stationId: (entity.stationId as string) || undefined,
       items: JSON.parse(entity.items as string),
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
@@ -336,7 +357,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
 
   // ===== CHECK RUN METHODS =====
 
-  async createCheckRun(applianceId: string, completedBy: string, completedByName?: string): Promise<CheckRun> {
+  async createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string): Promise<CheckRun> {
     const appliance = await this.getApplianceById(applianceId);
     if (!appliance) {
       throw new Error('Appliance not found');
@@ -346,6 +367,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       id: uuidv4(),
       applianceId,
       applianceName: appliance.name,
+      stationId: stationId ?? appliance.stationId,
       startTime: new Date(),
       completedBy,
       completedByName,
@@ -364,6 +386,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       rowKey: checkRun.id,
       applianceId: checkRun.applianceId,
       applianceName: checkRun.applianceName,
+      stationId: checkRun.stationId || '',
       startTime: checkRun.startTime.toISOString(),
       endTime: checkRun.endTime?.toISOString() || '',
       completedBy: checkRun.completedBy,
@@ -399,22 +422,25 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     return null;
   }
 
-  async getAllCheckRuns(): Promise<CheckRun[]> {
+  async getAllCheckRuns(stationId?: string): Promise<CheckRun[]> {
     // Query recent months
     const now = new Date();
     const allRuns: CheckRun[] = [];
-    
+
     for (let i = 0; i < 3; i++) { // Last 3 months
       const date = new Date(now);
       date.setMonth(date.getMonth() - i);
       const monthKey = date.toISOString().slice(0, 7);
-      
+
       const entities = this.checkRunsTable.listEntities<TableEntity>({
         queryOptions: { filter: odata`PartitionKey eq ${'CheckRun_' + monthKey}` }
       });
 
       for await (const entity of entities) {
-        allRuns.push(this.entityToCheckRun(entity));
+        const run = this.entityToCheckRun(entity);
+        if (stationId === undefined || sameStation(run.stationId, stationId)) {
+          allRuns.push(run);
+        }
       }
     }
 
@@ -429,9 +455,9 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     return allRuns.filter(run => run.applianceId === applianceId);
   }
 
-  async getCheckRunsByDateRange(startDate: Date, endDate: Date): Promise<CheckRun[]> {
-    const allRuns = await this.getAllCheckRuns();
-    return allRuns.filter(run => 
+  async getCheckRunsByDateRange(startDate: Date, endDate: Date, stationId?: string): Promise<CheckRun[]> {
+    const allRuns = await this.getAllCheckRuns(stationId);
+    return allRuns.filter(run =>
       run.startTime >= startDate && run.startTime <= endDate
     );
   }
@@ -491,6 +517,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       id: entity.rowKey as string,
       applianceId: entity.applianceId as string,
       applianceName: entity.applianceName as string,
+      stationId: (entity.stationId as string) || undefined,
       startTime: new Date(entity.startTime as string),
       endTime: entity.endTime ? new Date(entity.endTime as string) : undefined,
       completedBy: entity.completedBy as string,
@@ -636,8 +663,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
 
   // ===== QUERY METHODS =====
 
-  async getRunsWithIssues(): Promise<CheckRunWithResults[]> {
-    const allRuns = await this.getAllCheckRuns();
+  async getRunsWithIssues(stationId?: string): Promise<CheckRunWithResults[]> {
+    const allRuns = await this.getAllCheckRuns(stationId);
     const runsWithIssues = allRuns.filter(run => run.hasIssues);
     
     const runsWithResults = await Promise.all(
@@ -653,9 +680,9 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     return runsWithResults;
   }
 
-  async getAllRunsWithResults(): Promise<CheckRunWithResults[]> {
-    const allRuns = await this.getAllCheckRuns();
-    
+  async getAllRunsWithResults(stationId?: string): Promise<CheckRunWithResults[]> {
+    const allRuns = await this.getAllCheckRuns(stationId);
+
     const runsWithResults = await Promise.all(
       allRuns.map(async (run) => {
         const results = await this.getResultsByRunId(run.id);
@@ -672,7 +699,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
   /**
    * Get truck check compliance statistics
    */
-  async getTruckCheckCompliance(startDate: Date, endDate: Date): Promise<{
+  async getTruckCheckCompliance(startDate: Date, endDate: Date, stationId?: string): Promise<{
     totalChecks: number;
     completedChecks: number;
     inProgressChecks: number;
@@ -685,7 +712,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       lastCheckDate: string | null;
     }>;
   }> {
-    const runs = await this.getCheckRunsByDateRange(startDate, endDate);
+    const runs = await this.getCheckRunsByDateRange(startDate, endDate, stationId);
 
     const completedChecks = runs.filter(r => r.status === 'completed').length;
     const inProgressChecks = runs.filter(r => r.status === 'in-progress').length;

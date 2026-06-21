@@ -1,13 +1,19 @@
-import { 
-  Appliance, 
-  ChecklistTemplate, 
-  ChecklistItem, 
-  CheckRun, 
+import {
+  Appliance,
+  ChecklistTemplate,
+  ChecklistItem,
+  CheckRun,
   CheckResult,
   CheckRunWithResults,
   CheckStatus
 } from '../types';
+import { getEffectiveStationId } from '../constants/stations';
 import { v4 as uuidv4 } from 'uuid';
+
+/** True when two (possibly undefined) station ids resolve to the same station. */
+function sameStation(a: string | undefined, b: string | undefined): boolean {
+  return getEffectiveStationId(a) === getEffectiveStationId(b);
+}
 
 class TruckChecksDatabase {
   private appliances: Map<string, Appliance> = new Map();
@@ -108,10 +114,10 @@ class TruckChecksDatabase {
   // Appliance Methods
   // ============================================
 
-  getAllAppliances(): Appliance[] {
-    return Array.from(this.appliances.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
+  getAllAppliances(stationId?: string): Appliance[] {
+    return Array.from(this.appliances.values())
+      .filter((a) => stationId === undefined || sameStation(a.stationId, stationId))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   getApplianceById(id: string): Appliance | undefined {
@@ -170,40 +176,43 @@ class TruckChecksDatabase {
   }
 
   updateTemplate(
-    applianceId: string, 
-    items: Omit<ChecklistItem, 'id'>[]
+    applianceId: string,
+    items: Omit<ChecklistItem, 'id'>[],
+    stationId?: string
   ): ChecklistTemplate {
     const appliance = this.appliances.get(applianceId);
     if (!appliance) {
       throw new Error('Appliance not found');
     }
 
-    // Find existing template or create new one
-    let template = this.getTemplateByApplianceId(applianceId);
-    
-    if (template) {
-      // Update existing template
-      template.items = items.map(item => ({
-        ...item,
-        id: uuidv4(),
-      }));
-      template.updatedAt = new Date();
-    } else {
-      // Create new template
-      template = {
-        id: uuidv4(),
-        applianceId,
-        applianceName: appliance.name,
-        items: items.map(item => ({
-          ...item,
-          id: uuidv4(),
-        })),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      this.templates.set(template.id, template);
+    // Preserve item ids across edits so itemCode/history references stay stable:
+    // match incoming items to existing ones by id when supplied, else by name.
+    const existing = this.getTemplateByApplianceId(applianceId);
+    const previous = existing?.items ?? [];
+    const reuseId = (item: Omit<ChecklistItem, 'id'> & { id?: string }): string => {
+      if (item.id && previous.some((p) => p.id === item.id)) return item.id;
+      const byName = previous.find((p) => p.name === item.name);
+      return byName ? byName.id : uuidv4();
+    };
+    const mappedItems: ChecklistItem[] = items.map((item) => ({ ...item, id: reuseId(item) }));
+
+    if (existing) {
+      existing.items = mappedItems;
+      existing.stationId = stationId ?? existing.stationId;
+      existing.updatedAt = new Date();
+      return existing;
     }
 
+    const template: ChecklistTemplate = {
+      id: uuidv4(),
+      applianceId,
+      applianceName: appliance.name,
+      stationId,
+      items: mappedItems,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.templates.set(template.id, template);
     return template;
   }
 
@@ -211,7 +220,7 @@ class TruckChecksDatabase {
   // Check Run Methods
   // ============================================
 
-  createCheckRun(applianceId: string, completedBy: string, completedByName?: string): CheckRun {
+  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string): CheckRun {
     const appliance = this.appliances.get(applianceId);
     if (!appliance) {
       throw new Error('Appliance not found');
@@ -221,6 +230,7 @@ class TruckChecksDatabase {
       id: uuidv4(),
       applianceId,
       applianceName: appliance.name,
+      stationId: stationId ?? appliance.stationId,
       startTime: new Date(),
       completedBy,
       completedByName,
@@ -257,10 +267,10 @@ class TruckChecksDatabase {
     return this.checkRuns.get(id);
   }
 
-  getAllCheckRuns(): CheckRun[] {
-    return Array.from(this.checkRuns.values()).sort((a, b) =>
-      b.startTime.getTime() - a.startTime.getTime()
-    );
+  getAllCheckRuns(stationId?: string): CheckRun[] {
+    return Array.from(this.checkRuns.values())
+      .filter((run) => stationId === undefined || sameStation(run.stationId, stationId))
+      .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }
 
   getCheckRunsByAppliance(applianceId: string): CheckRun[] {
@@ -269,11 +279,12 @@ class TruckChecksDatabase {
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }
 
-  getCheckRunsByDateRange(startDate: Date, endDate: Date): CheckRun[] {
+  getCheckRunsByDateRange(startDate: Date, endDate: Date, stationId?: string): CheckRun[] {
     return Array.from(this.checkRuns.values())
       .filter(run => {
         const runDate = run.startTime.getTime();
-        return runDate >= startDate.getTime() && runDate <= endDate.getTime();
+        const inRange = runDate >= startDate.getTime() && runDate <= endDate.getTime();
+        return inRange && (stationId === undefined || sameStation(run.stationId, stationId));
       })
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }
@@ -390,9 +401,9 @@ class TruckChecksDatabase {
   // Query Methods for Admin Dashboard
   // ============================================
 
-  getRunsWithIssues(): CheckRunWithResults[] {
+  getRunsWithIssues(stationId?: string): CheckRunWithResults[] {
     return Array.from(this.checkRuns.values())
-      .filter(run => run.hasIssues)
+      .filter(run => run.hasIssues && (stationId === undefined || sameStation(run.stationId, stationId)))
       .map(run => ({
         ...run,
         results: this.getResultsByRunId(run.id),
@@ -400,8 +411,9 @@ class TruckChecksDatabase {
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }
 
-  getAllRunsWithResults(): CheckRunWithResults[] {
+  getAllRunsWithResults(stationId?: string): CheckRunWithResults[] {
     return Array.from(this.checkRuns.values())
+      .filter(run => stationId === undefined || sameStation(run.stationId, stationId))
       .map(run => ({
         ...run,
         results: this.getResultsByRunId(run.id),
@@ -416,7 +428,7 @@ class TruckChecksDatabase {
   /**
    * Get truck check compliance statistics
    */
-  getTruckCheckCompliance(startDate: Date, endDate: Date): {
+  getTruckCheckCompliance(startDate: Date, endDate: Date, stationId?: string): {
     totalChecks: number;
     completedChecks: number;
     inProgressChecks: number;
@@ -430,7 +442,8 @@ class TruckChecksDatabase {
     }>;
   } {
     const runs = Array.from(this.checkRuns.values())
-      .filter(run => run.startTime >= startDate && run.startTime <= endDate);
+      .filter(run => run.startTime >= startDate && run.startTime <= endDate)
+      .filter(run => stationId === undefined || sameStation(run.stationId, stationId));
 
     const completedChecks = runs.filter(r => r.status === 'completed').length;
     const inProgressChecks = runs.filter(r => r.status === 'in-progress').length;
