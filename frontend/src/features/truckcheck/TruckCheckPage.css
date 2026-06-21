@@ -281,7 +281,7 @@
 }
 
 .btn-primary:hover {
-  background-color: #c21e18;
+  background-color: var(--rfs-core-red-dark);
   transform: translateY(-1px);
 }
 

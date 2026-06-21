@@ -122,8 +122,8 @@
 }
 
 .milestone.completed {
-  background: #4caf50;
-  border-color: #4caf50;
+  background: var(--status-done-border);
+  border-color: var(--status-done-border);
 }
 
 .milestone-number {
@@ -134,8 +134,8 @@
   position: absolute;
   top: -4px;
   right: -4px;
-  background: white;
-  color: #4caf50;
+  background: var(--bg-card);
+  color: var(--status-done-border);
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -163,7 +163,7 @@
 
 .joined-check-notice {
   background: rgba(76, 175, 80, 0.2);
-  color: #4CAF50;
+  color: var(--status-done-border);
   padding: 0.25rem 0.5rem;
   border-radius: 8px;
   font-size: 0.7rem;
@@ -312,16 +312,16 @@
 }
 
 .sidebar-milestone.completed {
-  background: #4caf50;
-  border-color: #4caf50;
+  background: var(--status-done-border);
+  border-color: var(--status-done-border);
 }
 
 .sidebar-milestone-check {
   position: absolute;
   top: -4px;
   right: -4px;
-  background: white;
-  color: #4caf50;
+  background: var(--bg-card);
+  color: var(--status-done-border);
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -458,7 +458,7 @@
 }
 
 .btn-complete {
-  background: linear-gradient(135deg, var(--rfs-core-red) 0%, #c21e18 100%);
+  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
   color: var(--rfs-white);
   border: none;
   padding: 1rem 2.5rem;
@@ -531,7 +531,7 @@
 }
 
 .check-item-card.has-issue.active {
-  border-color: #ff9800;
+  border-color: var(--status-issue-border);
   box-shadow: 0 8px 24px rgba(255, 152, 0, 0.5);
 }
 
@@ -621,18 +621,18 @@
 }
 
 .result-badge.done {
-  background: #4caf50;
-  color: white;
+  background: var(--status-done-border);
+  color: var(--rfs-white);
 }
 
 .result-badge.issue {
-  background: #ff9800;
-  color: white;
+  background: var(--status-issue-border);
+  color: var(--rfs-white);
 }
 
 .result-badge.skipped {
-  background: #757575;
-  color: white;
+  background: var(--status-skip-border);
+  color: var(--rfs-white);
 }
 
 .completed-by {
@@ -717,10 +717,10 @@
 }
 
 .btn-done {
-  background: linear-gradient(135deg,#2e7d32 0%, #43a047 100%);
+  background: linear-gradient(135deg,var(--status-done-text) 0%, #43a047 100%);
 }
 .btn-done:hover {
-  background: linear-gradient(135deg,#388e3c 0%, #4caf50 100%);
+  background: linear-gradient(135deg,#388e3c 0%, var(--status-done-border) 100%);
   box-shadow: 0 4px 12px rgba(67,160,71,0.4);
   transform: translateY(-2px);
 }
@@ -735,7 +735,7 @@
 }
 
 .btn-skip {
-  background: linear-gradient(135deg,#616161 0%, #757575 100%);
+  background: linear-gradient(135deg,var(--status-skip-text) 0%, var(--status-skip-text) 100%);
 }
 .btn-skip:hover {
   background: linear-gradient(135deg,#6d6d6d 0%, #8d8d8d 100%);
@@ -814,11 +814,11 @@
 }
 
 .btn-primary:hover {
-  background-color: #c21e18;
+  background-color: var(--rfs-core-red-dark);
 }
 
 .btn-primary:disabled {
-  background-color: #ccc;
+  background-color: var(--border-color);
   cursor: not-allowed;
 }
 
@@ -835,7 +835,7 @@
 }
 
 .btn-secondary:hover {
-  background-color: #d0d0d0;
+  background-color: var(--rfs-light-grey);
 }
 
 .btn-secondary:disabled {
@@ -1081,8 +1081,8 @@
 }
 
 .remove-photo-btn {
-  background: #d32f2f;
-  color: white;
+  background: var(--rfs-core-red-dark);
+  color: var(--rfs-white);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -1094,7 +1094,7 @@
 }
 
 .remove-photo-btn:hover {
-  background: #f44336;
+  background: var(--rfs-core-red);
 }
 
 @media (max-width: 768px) {

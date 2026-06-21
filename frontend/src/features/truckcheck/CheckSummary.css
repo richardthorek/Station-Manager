@@ -97,17 +97,17 @@
 
 .stat.done {
   background: rgba(76, 175, 80, 0.1);
-  border: 2px solid #4caf50;
+  border: 2px solid var(--status-done-border);
 }
 
 .stat.issue {
   background: rgba(255, 152, 0, 0.1);
-  border: 2px solid #ff9800;
+  border: 2px solid var(--status-issue-border);
 }
 
 .stat.skipped {
   background: rgba(117, 117, 117, 0.1);
-  border: 2px solid #757575;
+  border: 2px solid var(--status-skip-border);
 }
 
 .stat-number {
@@ -118,15 +118,15 @@
 }
 
 .stat.done .stat-number {
-  color: #4caf50;
+  color: var(--status-done-border);
 }
 
 .stat.issue .stat-number {
-  color: #ff9800;
+  color: var(--status-issue-border);
 }
 
 .stat.skipped .stat-number {
-  color: #757575;
+  color: var(--status-skip-text);
 }
 
 .stat-label {
@@ -155,17 +155,17 @@
 
 .result-item.done {
   background: rgba(76, 175, 80, 0.05);
-  border-left-color: #4caf50;
+  border-left-color: var(--status-done-border);
 }
 
 .result-item.issue {
   background: rgba(255, 152, 0, 0.05);
-  border-left-color: #ff9800;
+  border-left-color: var(--status-issue-border);
 }
 
 .result-item.skipped {
   background: rgba(117, 117, 117, 0.05);
-  border-left-color: #757575;
+  border-left-color: var(--status-skip-border);
 }
 
 .result-header {
@@ -189,18 +189,18 @@
 }
 
 .status-badge.done {
-  background: #4caf50;
-  color: white;
+  background: var(--status-done-border);
+  color: var(--rfs-white);
 }
 
 .status-badge.issue {
-  background: #ff9800;
-  color: white;
+  background: var(--status-issue-border);
+  color: var(--rfs-white);
 }
 
 .status-badge.skipped {
-  background: #757575;
-  color: white;
+  background: var(--status-skip-border);
+  color: var(--rfs-white);
 }
 
 .result-comment {
@@ -332,7 +332,7 @@
 }
 
 .btn-submit:hover {
-  background-color: #c21e18;
+  background-color: var(--rfs-core-red-dark);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(226, 35, 26, 0.4);
 }
@@ -342,7 +342,7 @@
 }
 
 .btn-submit:disabled {
-  background-color: #ccc;
+  background-color: var(--border-color);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -361,7 +361,7 @@
 }
 
 .btn-secondary:hover {
-  background-color: #d0d0d0;
+  background-color: var(--rfs-light-grey);
   border-color: var(--rfs-dark-grey);
 }
 
@@ -392,7 +392,7 @@
   display: flex;
   justify-content: center;
   padding: 1rem;
-  background: white;
+  background: var(--bg-card);
   border-radius: 8px;
   margin: 1rem 0;
 }

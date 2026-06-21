@@ -55,8 +55,8 @@
   font-weight: 600;
 }
 
-.org-message--success { background: rgba(0, 133, 80, 0.12); color: #008550; }
-.org-message--error { background: rgba(229, 40, 27, 0.12); color: var(--rfs-core-red); }
+.org-message--success { background: var(--surface-success); color: var(--text-success-strong); }
+.org-message--error { background: var(--surface-error); color: var(--text-error-strong); }
 
 .org-plans {
   display: grid;
@@ -81,12 +81,12 @@
 .org-plan-name { font-weight: 700; }
 .org-plan-price { font-size: 1.4rem; font-weight: 800; color: var(--rfs-core-red); }
 .org-plan-desc { font-size: 0.85rem; color: var(--text-secondary); flex: 1; }
-.org-plan-current { font-size: 0.85rem; font-weight: 700; color: #008550; }
+.org-plan-current { font-size: 0.85rem; font-weight: 700; color: var(--text-success-strong); }
 
 .org-status { font-weight: 600; }
-.org-status--active { color: #008550; }
-.org-status--trialing { color: #d97706; }
-.org-status--past_due { color: #dc2626; }
+.org-status--active { color: var(--text-success-strong); }
+.org-status--trialing { color: var(--ui-amber); }
+.org-status--past_due { color: var(--text-error-strong); }
 .org-status--canceled { color: var(--text-secondary); }
 
 .org-trial-notice {
@@ -131,13 +131,13 @@
 
 .org-interval-btn.active {
   background: var(--rfs-core-red);
-  color: white;
+  color: var(--rfs-white);
   border-color: var(--rfs-core-red);
 }
 
 .org-interval-badge {
-  background: #cbdb2a;
-  color: #1a1a1a;
+  background: var(--rfs-lime);
+  color: var(--rfs-black);
   border-radius: 10px;
   padding: 0.1rem 0.45rem;
   font-size: 0.7rem;
@@ -156,7 +156,7 @@
 .org-btn {
   padding: 0.5rem 1rem;
   background: var(--rfs-core-red);
-  color: white;
+  color: var(--rfs-white);
   border: none;
   border-radius: 6px;
   font-weight: 600;
