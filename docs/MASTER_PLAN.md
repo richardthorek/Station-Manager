@@ -211,15 +211,17 @@ more separate repos/stacks to converge.
 
 Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision first.
 
-- **T1 — Shared domain types** ⬜ *(start here; lowest-risk standardisation win)*.
-  `Station`/`Member` (and the truck-check types) are defined twice and have drifted
-  (`Date` vs `string`; the frontend `Activity` lost `category`/`tagColor`/`stationId`;
-  `Appliance`/`CheckIn` lost `stationId`). **Increment 1 (no build changes):** re-sync
-  `frontend/src/types` to the backend shape and document backend `types/index.ts` as
-  the contract of record. **Increment 2:** extract a real shared module — this is the
-  same work as the suite's `@rfs/types` (#557) and wants the npm-workspace foundation
-  (T6); resolve the `Date`-vs-`string` split with a date-generic (`Member<TDate = string>`)
-  so one definition serves both. (archive: CONSOLIDATION_REVIEW #4)
+- **T1 — Shared domain types** ✅ (increments 1 & 2 done 2026-06-22).
+  `Station`/`Member` were defined twice and had drifted (`Date` vs `string`; missing
+  fields). **Increment 1:** re-synced `frontend/src/types` to the backend shape.
+  **Increment 2:** extracted the core sign-in domain shapes into a single date-generic
+  declaration-only module `shared/domain-types.d.ts` (`Member<TDate = string>` etc.).
+  Backend re-exports them specialised with `Date`; frontend with the default `string`.
+  Mechanism deliberately avoids the npm-workspace foundation (T6) that conflicts with the
+  per-app deploy: the `.d.ts` is type-only so it is never emitted/bundled and touches
+  neither `package.json`, `node_modules`, nor CI packaging. *Remaining (future increment):*
+  truck-check types (`Appliance`/`VehicleType`/`ChecklistItem`/`CheckRun`/`CheckResult`)
+  are still frontend-only and could fold into the shared module next. (archive: CONSOLIDATION_REVIEW #4)
 - **S1 — Finish the design-system pass** ⬜ — confirm/raise AAR inline controls to
   strict-60px if the owner wants it; add `prefers-reduced-motion` guards (e.g.
   `.live__dot`); share the RFS-branded HTML/print **report template** that the three
@@ -417,13 +419,14 @@ same-origin SM JWT, so the original "pass the JWT in" sub-task was already satis
 
 **1b. ✅ A2 — AAR identity & server-side persistence — DONE (Jun 21).** Inc 1: org-scoped `/api/aar-sessions` persistence + brigade-shared reviews. Inc 2: roster typeaheads on setup, and sync conflict handling (optimistic concurrency / 409 + read-side reconciliation). The `/aar` CSP shrink sub-item is blocked on a streaming-audio gateway (the Speech SDK still connects browser-direct) and was re-filed under D3.
 
-**2. T1 — Shared domain types (increment 2)** ← *next up*
-- Increment 1 (frontend types re-synced to backend) shipped in #575.
-- Increment 2: extract a shared, date-generic domain-type module consumed by both apps. **Note:** the plan's original "npm workspace" mechanism conflicts with the per-app deploy artifact (CI ships `backend/node_modules` verbatim; workspaces would hoist them). Pick a mechanism that leaves the per-app install/deploy untouched, or split the workspace foundation (T6) out as its own decision first.
+**2. ✅ T1 — Shared domain types (increment 2) — DONE (2026-06-22).**
+- Core sign-in domain shapes now live once in `shared/domain-types.d.ts` (date-generic). Backend re-exports specialised with `Date`, frontend with `string`. Declaration-only `.d.ts` → never emitted/bundled, so install/deploy/CI packaging untouched (sidesteps the T6 workspace conflict). All CI gates green (680 backend + 453 frontend + 85 AAR tests; both builds emit unchanged).
+- *Next increment (optional):* fold the truck-check types into the shared module the same way.
 
 **3. ✅ C3 — Metered AI overage (closed 2026-06-22).** Top-up pack (one-time Stripe payment) credits `aiBonusSessions`; speech-token gate now consumes bonus after monthly allowance; `GET /api/ai/usage` exposes `bonus`; OrganizationPage shows bonus meter + "Buy more sessions" button when low/exhausted. `meteredUsageReporter.ts` remains a safe no-op (Stripe meter not yet configured); set `STRIPE_PRICE_AI_TOPUP` + `AI_TOPUP_PACK_SIZE` to activate.
 
 - 2026-06-22: **C4 member invite/activation + limit upgrade UX.** `Member.authStatus/inviteToken/inviteEmail` in both DB twins; `POST /api/members/:id/invite` (admin, JWT) returns one-time URL; public `GET/POST /api/members/activate/:token` (in `memberActivation.ts`, mounted before `requireSession`) creates `AdminUser(role=viewer)` and marks member active. Frontend: `/activate/:token` page (`ActivatePage.tsx`), invite button on profile (admin-gated). `ApiLimitError` surfaced as upgrade CTA on member/station/vehicle plan-cap 403s. `api_register.json` → v1.9.0.
+- 2026-06-22: **T1 increment 2 — shared domain types.** Extracted the core sign-in domain shapes (`Station`/`Member`/`Activity`/`CheckIn`/`ActiveActivity`/`Event`/`EventParticipant`/`EventWithParticipants` + `CheckInMethod`/`StationHierarchy`) into a single date-generic, declaration-only module `shared/domain-types.d.ts`. **What shipped:** backend `types/index.ts` and frontend `types/index.ts` now re-export the shared definitions specialised with `Date` and `string` respectively (app-specific extensions — `StationLookupResult`, `CheckInWithDetails.tagColor`, `ActiveActivity.activity`, the truck-check types — stay app-local). Mechanism chosen to leave install/deploy untouched: a type-only `.d.ts` is never emitted, so `backend/dist` and `frontend/dist` are byte-identical in structure and the CI deploy zip is unaffected (no workspace/`node_modules` changes). *Verified: backend build emits `dist/index.js` unchanged with no `shared/` leak; all CI gates green.*
 
 **3b. ✅ C4 — Member invite & activation (closed 2026-06-22).**
 - `Member.authStatus/inviteToken/inviteEmail` added to both DB twins and `IDatabase`.
@@ -2815,6 +2818,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.1 | Jun 2026 | Admin UX rough edges | Rate-limiter fix (org GETs off sensitiveActionRateLimiter), module-toggle plan-ceiling honest error, vehicle-create inline error (replaces alert), template-404 fallback to empty editor. AI gateway keys set in production (ops). |
 | 4.2 | Jun 2026 | AAR Studio plan gate | Closed the direct-nav entitlement bypass: AAR Studio boots behind a fail-open entitlement gate (`entitlement.js` probes `/api/auth/entitlements`; signed-in-but-unentitled orgs see an upgrade screen, signed-out/local-first use proceeds). 13 new node --test tests. |
 | 4.3 | Jun 2026 | C3 AI top-up + C4 member invite/activation + limit upgrade UX | C3: one-time Stripe top-up pack credited as `aiBonusSessions`; speech-token gate consumes bonus after monthly allowance; OrganizationPage shows bonus meter + buy button. Limit upgrade UX: `ApiLimitError` on 403+`upgradeRequired`; SignInPage/CreateStationModal/VehicleManagement surface "Upgrade plan" CTA. C4: `Member.authStatus/inviteToken/inviteEmail` in both DB twins + `IDatabase`; `POST /api/members/:id/invite` (admin-only, generates token); public `GET/POST /api/members/activate/:token` (in `memberActivation.ts` mounted before `requireSession`); frontend activation page at `/activate/:token`; invite button on member profile page (admin-only). `api_register.json` → v1.9.0. |
+| 4.4 | Jun 2026 | T1 inc 2 — shared domain types | Extracted the core sign-in domain shapes into a single date-generic, declaration-only `shared/domain-types.d.ts` (`Member<TDate = string>` etc.). Backend re-exports specialised with `Date`, frontend with `string`. Type-only `.d.ts` is never emitted/bundled, so install, both `dist` outputs, and CI deploy packaging are untouched (deliberately avoids the T6 npm-workspace conflict). All CI gates green. |
 
 ---
 
