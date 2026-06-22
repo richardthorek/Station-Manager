@@ -534,13 +534,24 @@ interface Appliance {
   description?: string;
   photoUrl?: string;
   stationId?: string;
-  vehicleType?: string;  // canonical slug e.g. 'cat7-tanker' (v1.1)
+  vehicleTypeId?: string; // link to a VehicleType supplying the standard checklist (TC-1)
+  vehicleType?: string;   // legacy canonical slug e.g. 'cat7-tanker' (v1.1)
+  agencyId?: string;      // fleet/asset number — tracks a vehicle across brigades (TC-1)
+  registration?: string;  // number plate
+  vin?: string;
+  make?: string; model?: string; year?: number;
   createdAt: string;
   updatedAt?: string;
 }
 ```
 
-`vehicleType` is a lowercase hyphenated slug from the shared vocabulary (see `checklistVocabulary.ts` for the canonical list). Optional for backward compatibility — existing appliances without it continue to work.
+`vehicleType` is the legacy lowercase-hyphenated slug (see `checklistVocabulary.ts`); it is kept in step with the linked type's `code` for report grouping but is superseded by `vehicleTypeId`. The identity fields (`agencyId`/`registration`/`vin`/`make`/`model`/`year`) let a specific vehicle be tracked across brigades and capture the build that varies within one type.
+
+##### Vehicle types & the effective checklist (TC-1, June 2026)
+
+A **VehicleType** owns a *locked standard checklist* (`standardItems`, each with a stable `itemCode` and `isStandard:true`). Brigades adopt a type for a vehicle (`appliance.vehicleTypeId`) and customise via a per-appliance overlay — the repurposed `ChecklistTemplate` stores the brigade's *custom* items plus an `itemOrder` (keys: a standard item's `itemCode` or a custom item's `id`). The **effective checklist** an inspector works through is computed server-side (`GET /api/truck-checks/appliances/:id/checklist`): the type's standard items (pulled live, so type edits propagate) merged with the custom items in the brigade's order, with standard items always present and never editable by the brigade. `isStandard` types are shared across organisations (any owner can author one for now); editing/deleting is restricted to the owning org. Persisted via `vehicleTypeDatabase` + its Table Storage twin + factory. Untyped appliances fall back to the legacy per-appliance template, so existing data keeps working. Truck-check reads are now station-scoped in both DB twins (TC-2), closing a cross-brigade data-leak.
+
+**Member attribution & issue follow-up (TC-3/TC-4).** A check run is attributed to a roster member: the check-start screen offers a typeahead from `/api/members` and stores the `memberId` in `CheckRun.completedBy` when matched (free-text fallback for kiosks; `completedByName` always holds the display name). A `CheckResult` with status `issue` carries a follow-up lifecycle — `issueStatus` (`open`→`acknowledged`→`resolved`), `issueNote`, `assignedTo`, `resolvedBy`, `resolvedAt` — defaulting to `open` when recorded. Equipment officers work issues from a "Follow-ups" tab in the admin dashboard backed by `GET /api/truck-checks/issues` (station-scoped flat feed, `?status=` filter, outstanding by default) and `PATCH /api/truck-checks/results/:id/issue` (the body includes `runId` so the Table Storage twin can point-update its run-partitioned result); updates emit an `issue-updated` `truck-check-update` socket event. Admin-gated — no separate equipment-officer role.
 
 #### 9. **templates**
 Checklist templates for truck checks.
@@ -760,6 +771,21 @@ recorded only when an org is known. Every billable action writes a `UsageRecord`
 an hourly timer — opt-in (`STRIPE_METERED_USAGE_ENABLED` + `STRIPE_AI_METER_EVENT`)
 and a safe no-op until a meter is configured.
 
+**Stripe billing (Phase B, #553).** `services/stripeClient.ts` lazily initialises
+the `stripe` SDK from `STRIPE_SECRET_KEY` (`isStripeConfigured()` gates every
+route → 503 when unset) and resolves price IDs from `STRIPE_PRICE_{PLAN}_{INTERVAL}`
+env vars. `routes/billing.ts` exposes owner-only `POST /api/billing/checkout`
+(Checkout session, 14-day trial), `POST /api/billing/portal` (Customer Portal),
+`GET /api/billing/status`, owner-only `GET /api/billing/events` (audit trail), and
+a signature-verified `POST /api/billing/webhook` (raw body, registered before
+`express.json()`) that syncs org `planCode`/`status`/`entitlements` on
+`checkout.session.completed`, `customer.subscription.updated`/`deleted`,
+`invoice.paid`, and `invoice.payment_failed`. Each webhook event is written to a
+persisted `BillingEvent` audit store (`services/billingEventDatabase.ts` +
+Table Storage twin `tableStorageBillingEventDatabase.ts` + `billingEventDbFactory.ts`,
+partitioned by org); the handler is idempotent — an already-recorded `stripeEventId`
+is acknowledged without reprocessing.
+
 **AAR Studio** runs in gateway mode by default: `lib/llm.js` posts to
 `/api/ai/chat`|`/report` (Bearer token read from the same-origin SPA's
 `auth_token`) unless the user sets their own Azure endpoint in Settings (the
@@ -778,6 +804,57 @@ extraction pass as attributed evidence. The participant page is a static AAR
 route (`/aar/#/join/<CODE>`); the `/aar` CSP allows same-origin `ws:`/`wss:` and
 loads `socket.io-client` from jsDelivr. Joining requires no AI entitlement; only
 the facilitator's analysis does.
+
+### Server-side review persistence (AAR Studio)
+
+Separate from the ephemeral collab relay above, completed reviews are persisted
+**org-scoped** so they survive device loss and are visible brigade-wide (A2
+increment 1, June 2026). AAR Studio stays local-first — `localStorage` is always
+the working source of truth and the app works fully signed-out — but when the
+visitor is signed in to Station Manager (the SPA's `auth_token` JWT is readable
+same-origin), reviews mirror to `/api/aar-sessions` best-effort.
+
+`backend/src/routes/aarSessions.ts` exposes `GET/PUT/DELETE
+/api/aar-sessions[/:id]`, all JWT-required and scoped to the caller's
+organization, mounted behind `requireFeature('aarStudioEnabled')` (AI plan
+only). Persistence follows the standard twin pattern:
+`services/aarSessionDatabase.ts` (in-memory, keyed by `org/id`),
+`services/tableStorageAarSessionDatabase.ts` (Table Storage twin, `PartitionKey
+= organizationId`, `RowKey = id`), and `services/aarSessionDbFactory.ts`. Because
+a single Table Storage property maxes at 64 KiB and an entity at ~1 MiB, the
+review JSON is **chunked** across `payload0..payloadN` properties on write and
+reassembled on read; the route rejects payloads over ~900k chars (413). The full
+session is stored as an opaque `payload` blob with `title`/`incidentDate`/
+`stationId` lifted out for listing. On the client, `aar-studio/js/lib/serverSync.js`
+provides best-effort `pushSession`/`listServerSessions`/`fetchServerSession`/
+`deleteServerSession`; `store.js` debounce-backs-up on save and mirrors deletes,
+and the home view surfaces a "From your team" section of cloud reviews not yet on
+the device (pulled down on tap via `store.adoptSession`).
+
+Once a review is org-identified, the **setup screen** also offers roster-backed
+typeaheads: `aar-studio/js/lib/roster.js` (`fetchStations`/`fetchMembers`/
+`loadRoster`) reads the org's `/api/stations` and `/api/members` with the same
+JWT, and `views/setup.js` fills two `<datalist>`s so the meeting/incident
+**Location** autocompletes from station names and the **Facilitator** from member
+names (de-duplicated across the org's stations, capped at 8 to bound the request
+fan-out). These are typeaheads, not hard selects, so signed-out use is unchanged
+(no roster → plain free-text) and a name not on the roster can still be typed. No
+CSP change is needed — `/api/*` is same-origin under `connect-src 'self'`.
+
+**Sync conflict handling** uses timestamp-based optimistic concurrency. Each
+review carries `clientUpdatedAt` (the saving device's own last-edit time, distinct
+from the server's `updatedAt`). On `PUT`, if the stored row's `clientUpdatedAt` is
+newer than the incoming one the save is rejected with **409** (`AarSessionConflictError`,
+body `{ error, current }`) rather than clobbering it; omitting `clientUpdatedAt`
+forces last-write-wins (back-compat). The client's debounced backup sends it and
+treats a 409 as a no-op (never clobbers), and the home view reconciles the read
+side: a local review whose cloud copy is newer (`serverSync.isRemoteNewer`) gets a
+"newer version from your team" flag and a *Load latest* action that pulls the
+server copy over the local one (`store.adoptSession`). The `/aar` CSP is
+intentionally **not** shrunk: the Azure Speech SDK still opens a browser-direct
+connection to `*.stt.speech.microsoft.com`/`*.cognitiveservices.azure.com` (the
+gateway only vends a token) and BYO-Azure direct mode is still supported, so those
+`connect-src` hosts remain required until a streaming-audio gateway exists.
 
 ---
 

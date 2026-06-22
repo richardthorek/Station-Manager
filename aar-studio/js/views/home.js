@@ -6,6 +6,7 @@ import { requestAutoStart } from './capture.js';
 import { displayTitle } from '../lib/model.js';
 import { friendlyDate } from '../lib/text.js';
 import { sessionFilename } from '../lib/exports.js';
+import { isAuthed, listServerSessions, fetchServerSession, isRemoteNewer } from '../lib/serverSync.js';
 
 // Quick kick-off: blank review with today's date, jump to capture, start the mic.
 function startRecordingNow() {
@@ -50,7 +51,7 @@ function reviewCard(s) {
   const stat = s.findings
     ? `${s.findings} finding${s.findings === 1 ? '' : 's'}`
     : (s.segments ? 'recorded, not yet summarised' : 'empty');
-  return h('article', { class: 'review-card', onclick: () => { store.openSession(s.id); location.hash = '#/board'; } },
+  return h('article', { class: 'review-card', 'data-session-id': s.id, onclick: () => { store.openSession(s.id); location.hash = '#/board'; } },
     h('div', { class: 'review-card__body' },
       h('h3', { class: 'review-card__title' }, displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })),
       h('p', { class: 'review-card__meta' }, subtitle || 'No details yet'),
@@ -75,8 +76,78 @@ function reviewCard(s) {
   );
 }
 
+/** Pull the server copy of a review onto this device and open it. */
+async function openRemote(id, triggerEl) {
+  const card = triggerEl?.closest('.review-card') ?? null;
+  if (card) card.classList.add('review-card--loading');
+  try {
+    const session = await fetchServerSession(id);
+    if (!session) throw new Error('Could not download this review');
+    store.adoptSession(session); // overwrites any local copy with the cloud one
+    location.hash = '#/board';
+  } catch (err) {
+    if (card) card.classList.remove('review-card--loading');
+    toast(err.message || 'Could not open that review', 'error');
+  }
+}
+
+/** A cloud review not yet on this device: tap to pull it down and open it. */
+function cloudCard(s) {
+  const subtitle = [friendlyDate(s.incidentDate || s.createdAt), s.createdByName].filter(Boolean).join(' · ');
+  return h('article', { class: 'review-card review-card--cloud', 'data-session-id': s.id, onclick: (e) => openRemote(s.id, e.currentTarget) },
+    h('div', { class: 'review-card__body' },
+      h('h3', { class: 'review-card__title' }, displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })),
+      h('p', { class: 'review-card__meta' }, subtitle || 'From your team'),
+      h('p', { class: 'review-card__stat' }, '☁ Tap to open on this device'),
+    ),
+  );
+}
+
+/**
+ * Flag a local review card whose cloud copy is newer (edited on another device),
+ * and add a "Load latest" action that pulls the server version over the local one.
+ */
+function markCardUpdated(container, summary) {
+  const card = container.querySelector(`.review-card[data-session-id="${summary.id}"]`);
+  if (!card || card.querySelector('.review-card__cloud-flag')) return;
+  card.querySelector('.review-card__body')?.append(
+    h('p', { class: 'review-card__cloud-flag' }, '☁ Newer version from your team'),
+  );
+  card.querySelector('.review-card__actions')?.prepend(
+    h('button', {
+      class: 'icon-btn', title: 'Load latest from your team', 'aria-label': 'Load latest from your team',
+      onclick: (e) => openRemote(summary.id, e.currentTarget),
+    }, '⟳'),
+  );
+}
+
+/**
+ * After the page renders, pull the org's cloud reviews (when signed in). Reviews
+ * not on this device get a "From your team" section; reviews that exist locally
+ * but were edited more recently elsewhere get a "newer version" flag on their
+ * card. Additive and best-effort — failures leave the local-only view untouched.
+ */
+async function appendCloudReviews(container, localById) {
+  if (!isAuthed()) return;
+  const remote = await listServerSessions();
+  const missing = [];
+  for (const s of remote) {
+    if (!localById.has(s.id)) { missing.push(s); continue; }
+    if (isRemoteNewer(s, localById.get(s.id))) markCardUpdated(container, s);
+  }
+  if (!missing.length) return;
+  container.append(
+    h('section', { class: 'reviews reviews--cloud' },
+      h('h2', {}, 'From your team'),
+      h('p', { class: 'muted' }, 'Reviews saved to your brigade’s account on another device.'),
+      h('div', { class: 'review-grid' }, missing.map(cloudCard)),
+    ),
+  );
+}
+
 export function render(container) {
   const sessions = store.listSessions();
+  const localById = new Map(sessions.map((s) => [s.id, s.updatedAt]));
 
   container.append(
     h('section', { class: 'hero hero--home' },
@@ -100,4 +171,7 @@ export function render(container) {
       h('button', { class: 'link-btn', onclick: openSavedFile }, 'Open a saved review file'),
     ),
   );
+
+  // Pull in brigade-shared reviews from the server (best-effort, additive).
+  appendCloudReviews(container, localById).catch(() => {});
 }

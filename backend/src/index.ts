@@ -57,6 +57,7 @@ import authRouter from './routes/auth';
 import organizationsRouter from './routes/organizations';
 import billingRouter from './routes/billing';
 import aiRouter from './routes/ai';
+import aarSessionsRouter from './routes/aarSessions';
 import { createAchievementRoutes } from './routes/achievements';
 import { ensureDatabase } from './services/dbFactory';
 import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
@@ -72,6 +73,9 @@ import { logger } from './services/logger';
 import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services/adminUserDbFactory';
 import { initializeOrganizationDatabase } from './services/organizationDbFactory';
 import { initializeUsageDatabase } from './services/usageDbFactory';
+import { initializeBillingEventDatabase } from './services/billingEventDbFactory';
+import { initializeAarSessionDatabase } from './services/aarSessionDbFactory';
+import { initializeVehicleTypeDatabase } from './services/vehicleTypeDbFactory';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
 
@@ -388,6 +392,7 @@ app.use('/api/auth', apiRateLimiter, authRouter);
 app.use('/api/organizations', apiRateLimiter, organizationsRouter);
 app.use('/api/billing', apiRateLimiter, billingRouter);
 app.use('/api/ai', apiRateLimiter, aiRouter);
+app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'), aarSessionsRouter);
 app.use('/api/members', apiRateLimiter, membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, requireFeature('signInEnabled'), checkinsRouter);
@@ -618,6 +623,9 @@ async function initializeDatabasesInBackground() {
     // self-service signup, regardless of whether a default admin is configured.
     await initializeOrganizationDatabase();
     await initializeUsageDatabase();
+    await initializeBillingEventDatabase();
+    await initializeAarSessionDatabase();
+    await initializeVehicleTypeDatabase();
     startMeteredUsageReporter();
     ensureAdminUserDatabase();
 

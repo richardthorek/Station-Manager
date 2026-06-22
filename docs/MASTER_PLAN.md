@@ -1,6 +1,6 @@
 # RFS Station Manager - Master Plan
 
-**Document Version:** 3.2  
+**Document Version:** 3.8
 **Last Updated:** June 22, 2026  
 **Status:** Living Document — **the single plan** (all other planning docs folded in here)  
 **Purpose:** Single source of truth for planning, roadmap, architecture guidance, and issue tracking
@@ -194,6 +194,15 @@ more separate repos/stacks to converge.
   `requireFeature` gating, `ENABLE_ENTITLEMENTS`.
 - **AAR collaborative session notes — core** (#551). **Marketing/pricing landing +
   checkout deep-link** (#554). **Free-tier caps** (10 members / 1 vehicle) (#574).
+- **C1 — Entitlement-enforcement hardening** (#552) — `ENABLE_ENTITLEMENTS` default-on,
+  `/api/export` gated behind `reportsEnabled`, `enforceStationLimit()` on `POST /api/stations`,
+  soft-JWT org context for unauthenticated-middleware routes.
+- **C2 — Stripe billing (SaaS Phase B)** (#553, audit persistence Jun 21) — `stripe` SDK +
+  price-ID env mapping, owner-only Checkout + Customer Portal, `GET /api/billing/status`,
+  signature-verified webhook syncing org `status`/`plan`/`entitlements`, 14-day trial,
+  idempotent `BillingEvent` audit persisted to both DB twins with an owner-only
+  `GET /api/billing/events` trail. *Open:* live keys/price IDs are env-config (not committed);
+  metered overage (`meteredUsageReporter.ts`) is a no-op until a Stripe meter is configured.
 
 ### Now — standardisation track (cross-app coherence; do these next)
 
@@ -222,13 +231,18 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
 
 ### Commercialisation track (SaaS billing & metering)
 
-- **C1 — Entitlement-enforcement hardening** 🟡 (#552) — finish gating `/api/export`
-  behind `reportsEnabled`, enforce `maxStations`/`maxDevices` on creation, audit every
-  `requireFeature`/`FeatureRoute` pairing. *Prerequisite for billing.*
-- **C2 — Stripe billing (SaaS Phase B)** ⬜ (#553) — `stripe` SDK + price-ID env mapping;
-  checkout endpoint; signature-verified webhook syncing org `status`+`entitlements`;
-  `BillingEvent` audit; Customer Portal; trial flow. *Live billing is not wired —
-  entitlements are admin-set; `meteredUsageReporter.ts` is a no-op until a meter exists.*
+- **C1 — Entitlement-enforcement hardening** ✅ (#552) — `/api/export` gated behind
+  `reportsEnabled`; `enforceStationLimit()` enforces `maxStations` on `POST /api/stations`
+  (system stations excluded); `ENABLE_ENTITLEMENTS` default-on; soft-JWT org context so
+  middleware-light routes still resolve a tenant. *Remaining:* `maxDevices` is retained in
+  the model but unenforced (devices dropped from pricing in #574).
+- **C2 — Stripe billing (SaaS Phase B)** ✅ (#553 + audit persistence Jun 21) — `stripe` SDK
+  + price-ID env mapping; owner-only Checkout + Customer Portal; `GET /api/billing/status`;
+  signature-verified webhook syncing org `status`/`plan`/`entitlements`; 14-day trial;
+  idempotent `BillingEvent` audit on both DB twins + owner-only `GET /api/billing/events`.
+  *To go live:* set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the `STRIPE_PRICE_*`
+  env vars in App Service. Metered overage (`meteredUsageReporter.ts`) stays a no-op until a
+  Stripe meter is configured (track C3).
 - **C3 — AI metering completion (Phase D)** 🟡 — session metering + allowance shipped;
   build top-up packs / overage purchase. **C4 — Device accounts + member activation
   (Phase C)** ⬜ — formalise `BrigadeAccessToken` → first-class `Device`; member
@@ -312,6 +326,16 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
 
   *No code changed — this is a UAT/findings-logging session only.*
 
+- 2026-06-22: **TC polish — UX integration review (closes out the TC feature track).** Systematic pass to eliminate rough edges across the full truck-check feature surface. **What shipped:** (1) *Resolution modal:* replaced both `window.prompt()` calls in the issue Follow-ups tab with an inline modal (`resolve-modal`) — resolvedBy name + resolution note fields, cancel/submit, Escape to dismiss, saving state, backdrop-click-to-close; (2) *VehicleTypesPage backdrop close:* modal overlay gained the same `role="button"` + `onKeyDown`/`onClick` pattern as VehicleManagement so Escape and backdrop-click both close the dialog; (3) *Template editor — locked standard items:* when a vehicle is linked to a VehicleType, `handleEditTemplate` now also calls `getEffectiveChecklist()` and extracts items where `isStandard === true`; the modal renders them as a read-only section ("🔒 Standard items — inherited from vehicle type") above the editable custom-items section so admins can see what's locked without needing to navigate to the Vehicle Types page; (4) *Vehicle identity on cards:* `VehicleManagement` admin cards and `TruckCheckPage` hub cards now display a subtitle line combining agencyId / make-model-year / registration where set; (5) *Open issues badge on hub cards:* `TruckCheckPage.loadAppliances()` now fetches outstanding issues in parallel and renders a "⚠ Open issues" badge (red, top-left) on any appliance card that has unresolved issues — and a subtle red border on the card itself; (6) *AAR cloud-review loading state:* `openRemote()` now adds `review-card--loading` (opacity + pointer-events-none) to the card while `fetchServerSession` is in flight, removing it on error so the user gets clear feedback instead of an unresponsive tap. All lint/typecheck/452-frontend/671-backend tests green.
+- 2026-06-22: **TC-3/TC-4 — Truck-check member attribution + issue follow-up lifecycle (completes the TC uplift).** **TC-3:** the check-start screen now offers a roster typeahead (from `/api/members`) so a run is attributed to a `memberId` when the inspector is on the roster, with a free-text fallback for kiosks/non-members; `completedByName` keeps the display name in both cases (no per-item display regression). **TC-4:** `CheckResult` gained an issue lifecycle (`issueStatus` open→acknowledged→resolved, plus `issueNote`/`assignedTo`/`resolvedBy`/`resolvedAt`); recording an `issue` defaults to `open`. New `PATCH /api/truck-checks/results/:id/issue` (runId in body so the Table twin can point-update its run-partitioned result) and a station-scoped `GET /api/truck-checks/issues` flat feed enriched with appliance/run context (defaults to outstanding; `?status=` filter). A new **"Follow-ups" tab** in the admin dashboard lists outstanding issues with acknowledge/resolve/assign actions and emits a `truck-check-update` (`issue-updated`) socket event; admin-gated, no separate equipment-officer role per the owner's call. Both DB twins updated (in-memory + Table Storage). 6 new backend tests (issue lifecycle + member attribution paths); backend 671 pass, coverage over gate; frontend lint/typecheck/452 tests green. `api_register.json` → v1.8.0. **This closes the truck-check rebuild (TC-1…TC-5).** Remaining polish: a dedicated locked-standard + interleave overlay editor (custom items currently append after standard ones).
+- 2026-06-21: **TC-1 — Truck-check vehicle types + locked standard checklists + vehicle identity.** The core of the truck-check rebuild. New first-class `VehicleType` (org-scoped, `isStandard` publishes a shared standard; `standardItems` are immutable for adopters and carry stable `itemCode`s for cross-brigade comparison) with in-memory + Table Storage twins (`vehicleTypeDatabase`/`tableStorageVehicleTypeDatabase`/`vehicleTypeDbFactory`, init in `index.ts`). Appliances gained `vehicleTypeId` + identity fields (`agencyId` fleet no., `registration`, `vin`, `make`, `model`, `year`) — carried via an `ApplianceDetails` object so positional create/update stayed back-compatible. New routes: vehicle-type CRUD (admin, org-owned edits; standards listed to all) and `GET/PUT /api/truck-checks/appliances/:id/checklist` computing the **effective checklist** (locked standard items live from the type — so edits propagate — merged with the brigade's custom overlay in saved order; standard items can never be dropped). Frontend: identity fields + a real standard-type `<select>` on the vehicle form, a Vehicle Types authoring page (`/truckcheck/vehicle-types`, add/reorder/remove standard checks + publish toggle), and the check workflow now consumes the effective checklist. Also fixed a CodeQL ReDoS in `slugify` (shared `utils/slug.ts`, split-based, linear) and restored backend coverage over the 73/64 gate. Backend 667 pass; frontend lint/typecheck/452 tests green; `api_register.json` → v1.7.0 (vehicle-types + checklist endpoints, `VehicleType`/`EffectiveChecklist`/`ChecklistItem` defs). **Follow-ups:** TC-3 roster-member attribution and TC-4 issue lifecycle (both owner-approved); the per-vehicle overlay editor still uses the legacy template modal (custom items append after standard) pending a dedicated locked-standard + interleave UI.
+- 2026-06-21: **TC-2/TC-5 — Truck-check station isolation + stable template item ids.** First slice of the truck-check rebuild (full review recorded in the "TC — Truck Check feature" section above). **Station isolation was broken:** the route computed `stationId` and passed it, but **both** DB twins dropped it on every read — so every brigade saw every other's vehicles, runs and issues, and the Table twin never even persisted `stationId` on check runs. Made `getAllAppliances`/`getAllCheckRuns`/`getCheckRunsByDateRange`/`getRunsWithIssues`/`getAllRunsWithResults`/`getTruckCheckCompliance` honour `stationId` in both twins (via a shared `getEffectiveStationId` match, so existing single-station/undefined-station data still resolves to the default station — back-compatible), and persisted `stationId` on Table-twin check runs. **TC-5:** template edits now preserve item ids (match by supplied id, else by name) instead of regenerating a uuid per item per save, which had been breaking `itemCode`/history continuity. 3 new route tests (station isolation ×2, id stability ×1); backend 642 pass, typecheck clean. **Next (TC-1):** first-class `VehicleType` with a locked standard checklist + brigade custom items, per-vehicle agency id, and clone-to-customise.
+- 2026-06-21: **A2 (increment 2, complete) — AAR sync conflict handling + CSP-shrink resolution.** Closed out A2 increment 2. **(1) Conflict handling:** the cloud backup was last-write-wins, so a second device could silently clobber a teammate's newer edit. Added timestamp-based **optimistic concurrency** end-to-end: `AARSession` gained `clientUpdatedAt` (the saving device's edit time), the route + both DB twins reject a stale save with **409** (`AarSessionConflictError`, returning the current row) when an incoming `clientUpdatedAt` is older than the stored one (omitting it keeps last-write-wins for back-compat). On the client, `serverSync.pushSession` sends `clientUpdatedAt` and flags a 409 as `conflict` (best-effort backup never clobbers); the home view now reconciles on the **read** side too — a local review whose cloud copy is newer (`isRemoteNewer`) gets a "☁ Newer version from your team" flag and a "Load latest" action (`openRemote` → `adoptSession`). 6 new tests (3 backend conflict + 3 AAR serverSync); backend 639 pass, AAR 72 pass; `api_register.json` → v1.6.1. **(2) `/aar` CSP shrink — resolved as not-yet-actionable:** the original aim was to drop the direct Azure OpenAI/Speech `connect-src` hosts once the gateway fronts all provider calls. Verified it can't be done yet — the Azure **Speech SDK still connects browser-direct** to `*.stt.speech.microsoft.com`/`*.cognitiveservices.azure.com` (the gateway only vends a short-lived token; the audio stream is browser→Azure), and BYO-Azure direct mode (`*.openai.azure.com`) is still supported in Settings. Removing those hosts would break live transcription. Left the CSP unchanged; the shrink is blocked on a streaming-audio gateway (roadmap D3/voice agent) and re-filed there.
+- 2026-06-21: **A2 (increment 2, part 1) — AAR setup roster typeaheads.** Now that AAR Studio is org-identified (inc 1), the free-text setup fields are backed by the Station Manager roster. New `aar-studio/js/lib/roster.js` (`fetchStations`/`fetchMembers`/`loadRoster`) reads `/api/stations` and `/api/members` with the same-origin SM JWT; `views/setup.js` fills two `<datalist>`s so the **meeting/incident Location** fields autocomplete from station names and the **Facilitator** field from member names (de-duplicated across the org's stations, capped at 8 to bound the fan-out). Implemented as typeaheads, not hard `<select>`s, deliberately — this keeps AAR local-first and fully usable signed-out (no roster → plain text, exactly as before) and lets facilitators still type a name that isn't on the roster. No CSP change (`/api/*` is same-origin, covered by `connect-src 'self'`). 5 new AAR tests; AAR `node --test` 69 pass. **Still deferred (A2 inc 2):** bidirectional sync conflict handling (currently last-write-wins) and shrinking the `/aar` CSP once the AI gateway fronts all provider calls.
+- 2026-06-21: **A2 (increment 1) — AAR Studio server-side persistence + brigade-shared reviews.** AAR reviews were trapped in one facilitator's `localStorage` — lost with the device and invisible to the rest of the brigade. Added org-scoped server persistence following the established DB-twin pattern. **Backend:** new `AARSession` type; `services/aarSessionDatabase.ts` (in-memory + `IAarSessionDatabase`, keyed by `org/id` so two orgs sharing a client id never collide), `services/tableStorageAarSessionDatabase.ts` (Table Storage twin, partition by org; payload **chunked** across `payload0..payloadN` to clear Table Storage's 64 KiB-per-property / ~1 MiB-per-entity limits), `services/aarSessionDbFactory.ts`, init wired into `index.ts`. New `routes/aarSessions.ts` — `GET/PUT/DELETE /api/aar-sessions[/:id]`, JWT-required and org-scoped, mounted behind `requireFeature('aarStudioEnabled')` (AI-plan only); payload capped at ~900k chars (413). **Identity:** reused the SM JWT AAR already reads from same-origin `auth_token` (no new login flow needed). **AAR app:** new `js/lib/serverSync.js` (best-effort `pushSession`/`list`/`fetch`/`deleteServerSession`); `store.js` debounce-backs-up on every save and mirrors deletes when signed in; the home view now shows a "From your team" section of cloud reviews not yet on this device and pulls them down on tap (`store.adoptSession`). Local-first preserved — signed-out AAR works exactly as before. 16 new tests (6 backend route + unit DB, 10 AAR `serverSync`); backend 636 pass, AAR `node --test` 64 pass. `api_register.json` → v1.6.0 with the `aar-sessions` group + `AARSession` definition. **Deferred (A2 increment 2):** station/member roster picker to replace the free-text setup screen, full bidirectional conflict handling, and shrinking the `/aar` CSP once the AI gateway fronts all provider calls.
+- 2026-06-21: **Close out commercialisation track + fix broken page scroll.** Two threads. **(1) Plan reconciliation + billing audit persistence:** discovered C1 (#552) and C2 (#553) had shipped and merged to `main` but were never recorded here — the #575 plan-collapse listed them as still-to-do. Recorded both as shipped and hardened the billing audit trail: the Stripe webhook log was an in-memory array (`billingEventLog` in `routes/billing.ts`) that vanished on restart and gave no idempotency. Added `BillingEvent` persistence following the `UsageRecord` twin pattern — `services/billingEventDatabase.ts` (in-memory + `IBillingEventDatabase`), `services/tableStorageBillingEventDatabase.ts` (Table Storage twin, partition by org), `services/billingEventDbFactory.ts`, wired `initializeBillingEventDatabase()` into the startup sequence in `index.ts`. The webhook now (a) skips reprocessing an already-recorded event id (idempotency) and (b) persists every event via the factory; added an owner-only `GET /api/billing/events` audit endpoint. Registered the billing **and** AI gateway endpoints in `api_register.json` (v1.5.0) — the previously-noted docs follow-up — plus a `BillingEvent` definition. 11 new backend tests (`billing.test.ts` + `billingEventDatabase.test.ts`); backend 623 pass. **(2) Scroll bug:** desktop `body`/`#root` were locked to `height:100vh; overflow:hidden` (kiosk shell model) while the document-flow content pages (marketing, signup/login, organization) lay out with `min-height:100vh` and no inner scroll container — so on desktop their content was clipped and the page could only be moved with the keyboard (focus-into-view). Mobile already relaxed this; desktop didn't. Relaxed the base `body`/`#root` rules to `min-height:100vh` + `overflow-x:hidden` (vertical document scroll allowed); the self-contained 100vh kiosk pages (`.app`, `.landing-page`) are unaffected (exactly viewport height → no document scrollbar). *Frontend lint, typecheck, and 452 Vitest tests green.*
+- 2026-06-20: **C2 — Stripe billing, SaaS Phase B (#553).** Wired live billing on top of the SaaS tenant model. New `services/stripeClient.ts` (lazy `stripe` SDK init from `STRIPE_SECRET_KEY`, `isStripeConfigured()`, `resolvePriceId(plan, interval)` from `STRIPE_PRICE_*` env vars) and `routes/billing.ts`: owner-only `POST /api/billing/checkout` (Checkout session, 14-day trial), `POST /api/billing/portal` (Customer Portal), `GET /api/billing/status`, and a signature-verified `POST /api/billing/webhook` (raw-body, registered before `express.json()`) that syncs org `planCode`/`status`/`entitlements` on `checkout.session.completed`, `customer.subscription.updated/deleted`, `invoice.paid`, and `invoice.payment_failed`. `Organization` gained `stripeCustomerId`/`stripeSubscriptionId`/`trialEndsAt`/`billingEmail`; `BillingEvent` type added. SPA: `/admin/organization` upgrade UI + `TrialBanner`. Endpoints return 503 when Stripe isn't configured, so non-billing deployments are unaffected. *(Audit log was in-memory in this slice — persisted to Table Storage on Jun 21.)*
+- 2026-06-20: **C1 — Entitlement-enforcement hardening (#552).** Flipped `ENABLE_ENTITLEMENTS` to default-on (opt-out `=false` for dev). Added a soft JWT decode in `attachOrganization` so routes without explicit `authMiddleware` (e.g. `/api/export`) still resolve org context; gated `GET /api/export` behind `requireFeature('reportsEnabled')`; added `enforceStationLimit()` on `POST /api/stations` (enforces plan `maxStations`, excludes system stations from the quota). 8 new integration tests covering every gating path; fixed a missing `@testing-library/dom` peer dep broken by prior dependabot bumps.
 - 2026-06-21: **UI/UX polish — CSS-var sweep, dark-mode fixes, status tokens, entitlement UX (#576).** A systematic pass to harden the frontend design system and eliminate silent style regressions.
 
   **What shipped:**
@@ -350,62 +374,34 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
 
 These are the highest-leverage items to act on next, in order. Read each track section above for full detail; this is the executive summary for picking up where we left off.
 
-**CRITICAL SEQUENCING:**
-1. **Item 5 (OIDC)** must be done first — nothing ships to production without it.
-2. **Items 1–4** are the security/feature/billing blockers; order of work within these is flexible, but all must be done before launch or charging begins.
-3. **Item 8** is polish; do after the blockers are addressed.
+**✅ Done (do not re-do):** C1 — entitlement-enforcement hardening (#552) and C2 — Stripe
+billing including persisted `BillingEvent` audit (#553 + Jun 21). The code path for paid
+plans is complete; going live is now a **config/ops task** (set `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` in App Service, create products/prices in the
+Stripe dashboard, point a Stripe webhook at `/api/billing/webhook`) plus resolving the D1
+pricing decisions below — not a build task. **A2 increment 1** (AAR server-side persistence
++ brigade-shared reviews via `/api/aar-sessions`) shipped Jun 21 — identity reused the
+same-origin SM JWT, so the original "pass the JWT in" sub-task was already satisfied.
+**✅ TC track closed (Jun 22).** All five TC items (TC-1 vehicle types + identity, TC-2 station isolation, TC-3 member attribution, TC-4 issue lifecycle, TC-5 stable item IDs) plus a full UX polish pass are complete and in PR #579. The truck-check feature is production-ready.
 
-**What's currently broken in production (from UAT 2026-06-22):**
-- Anonymous users can read real brigade data (reports, members, truck checks) — security risk
-- Truck Check feature doesn't work in any configuration (0-item fake-pass or 400 errors)
-- No org can upgrade off the free plan (Stripe not configured on App Service; both buttons return "Billing is not configured")
-- No production deploys reach the live server (OIDC registration deleted)
+**UAT findings from 2026-06-22 (see `docs/current_state/UAT_REVIEW_20260622.md`):**
+- **Anonymous data exposure:** `GET /api/reports/*`, `GET /api/truck-checks/appliances`, `GET /api/members` return real data to fully credential-less requests. Needs authentication/station-token gating on read endpoints. User encountered this while testing.
+- **Billing configuration:** Both "Upgrade to Basic" and "Upgrade to AI Pro" buttons return "Billing is not configured on this server." User attempted upgrade during UAT and hit this message. Code is ready; the ops task (setting Stripe keys in App Service) is the blocker.
+- **Admin UX rough edges:** `/admin/organization` rate-limiter fires too aggressively (~5 loads in 4 min); module-toggle shows false "Updated" success; "Add New Vehicle" 403 with no error toast; template 404 hangs dashboard.
 
-**1. Anonymous data exposure on reports/members endpoints — blocker, fix before anything else below**
-- `GET /api/reports/*`, `GET /api/truck-checks/appliances`, and `GET /api/members` return real data to fully credential-less requests (confirmed live in production UAT, 2026-06-22 — see `docs/current_state/UAT_REVIEW_20260622.md`).
-- Require an authenticated session (or a valid station/kiosk token) before these routes return data. The existing "no org context → pass through" behaviour should stay scoped to sign-in/truck-check *write* actions, not extend to analytics/PII *read* routes.
-- This is real organizational data (member names, attendance, compliance %) reachable by anyone with the URL, no account required — promoted ahead of the Stripe gap because it's an active disclosure risk, not a revenue gap.
+**1. Production deployment restore (OIDC) — top blocker** *(owner says deploy is currently working; revisit only if `main` deploys fail)*
+- The `infra/README.md` documents the one-time bootstrap if the GitHub→Azure OIDC app registration needs re-creating.
 
-**2. Truck Check has no working configuration — blocker**
-- Unlinked appliances produce a fake "0 of 0 items (NaN%)" 100%-complete result instead of blocking the start or falling back sensibly.
-- Appliances linked to a Vehicle Type 400 on `POST /api/truck-checks/results` for the very first item — reproduced on both Done and Skip, 3× each.
-- Net effect: no appliance configuration on this deployment can currently complete a check. Trace the results-endpoint validation against a Vehicle-Type-derived checklist shape first.
+**1b. ✅ A2 — AAR identity & server-side persistence — DONE (Jun 21).** Inc 1: org-scoped `/api/aar-sessions` persistence + brigade-shared reviews. Inc 2: roster typeaheads on setup, and sync conflict handling (optimistic concurrency / 409 + read-side reconciliation). The `/aar` CSP shrink sub-item is blocked on a streaming-audio gateway (the Speech SDK still connects browser-direct) and was re-filed under D3.
 
-**3. C1 — Entitlement enforcement hardening (prerequisite for billing)**
-- Gate `GET /api/export` behind `reportsEnabled` (currently unguarded).
-- Enforce `maxStations` on `POST /api/stations` (currently unchecked — confirmed live in UAT, created a 2nd station on Community with no ceiling).
-- Add an entitlement check inside `aar-studio/` on load — direct navigation to `/aar/` currently bypasses the plan gate entirely (confirmed live in UAT).
-- Audit every `requireFeature`/`FeatureRoute` pair for completeness.
-- This is the last blocker before Stripe can go live — entitlements must be airtight before customers pay.
-
-**4. C2 — Stripe billing (SaaS Phase B) — the primary revenue-ship-blocker**
-- Install `stripe` SDK; map price IDs from env vars.
-- Wire `POST /api/billing/checkout` → Stripe Checkout for the plan the user chose.
-- Implement signature-verified webhook handler (`/api/billing/webhook`) that syncs `org.status` + `org.entitlements` after payment, cancellation, or trial expiry.
-- Add Customer Portal link on `/admin/organization`.
-- Trial flow: on signup, set `status: 'trialing'` with `trialEndsAt`; webhook transitions to `active` or `past_due`.
-- **Configuration required on App Service to make upgrades reachable:** Set `STRIPE_SECRET_KEY` (live or test key) and price IDs for each plan/interval in the Azure App Service config (`STRIPE_PRICE_BASIC_MONTHLY`, `STRIPE_PRICE_AI_MONTHLY`, etc.; see `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md` for full mapping).
-- Confirmed live in UAT (2026-06-22): both "Upgrade to Basic" and "Upgrade to AI Pro" buttons return "Billing is not configured on this server" — no org can leave the free plan today. **No revenue can be collected until this ships.** User attempted upgrade in session and hit this message. Also fix `README.md`'s "Stripe billing wired in test mode" claim, which contradicts both CLAUDE.md and live behaviour.
-- Reference: `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md` has full schema and Stripe surface detail.
-
-**5. Production deployment restore (OIDC) — BLOCKING all main branch deploys**
-- The GitHub→Azure OIDC app registration was deleted, silently breaking `main` deploys since the IaC PR.
-- The `infra/README.md` documents the one-time bootstrap to restore it.
-- **Nothing can ship to production until this is restored** — must fix before attempting to deploy any of items 1–4 above.
-- Until this is done, merging to `main` does **not** reach the live deployment.
-
-**6. T1 — Shared domain types (increment 2)**
+**2. T1 — Shared domain types (increment 2)** ← *next up*
 - Increment 1 (frontend types re-synced to backend) shipped in #575.
-- Increment 2: extract a real shared module (`packages/types/`) with a date-generic `Member<TDate = string>`, consumed by both backend and frontend via npm workspace.
-- Resolves the `Date`-vs-`string` split and prevents future drift.
+- Increment 2: extract a shared, date-generic domain-type module consumed by both apps. **Note:** the plan's original "npm workspace" mechanism conflicts with the per-app deploy artifact (CI ships `backend/node_modules` verbatim; workspaces would hoist them). Pick a mechanism that leaves the per-app install/deploy untouched, or split the workspace foundation (T6) out as its own decision first.
 
-**7. A2 — AAR identity & server-side persistence**
-- Pass the logged-in SM JWT into AAR Studio on load.
-- Add `/api/aar-sessions` CRUD (Table Storage `AARSessions` partition by org/brigade).
-- Replace AAR's free-text setup screen with a station/member picker from the roster.
-- Shrink the `/aar` CSP: once the AI gateway handles all provider calls, remove direct Azure OpenAI/Speech origins from the scoped policy.
+**3. C3 — Metered AI overage (finish the billing loop)**
+- `meteredUsageReporter.ts` is a safe no-op until a Stripe meter exists; build top-up packs / overage purchase on top of the now-complete billing surface.
 
-**8. Admin-area UX rough edges from UAT (2026-06-22)** — lower priority, batch with other frontend polish:
+**4. Admin-area UX rough edges from UAT (2026-06-22)** — lower priority, batch with other frontend polish:
 - `/admin/organization`'s 5-req/15-min rate limiter fires after ~5 normal loads in 4 minutes; scope it away from idempotent GETs or raise the threshold, and add a retry-after message to the 429 banner.
 - Module-toggle past the plan ceiling shows a false "Updated" success banner while silently reverting — surface the clamp/rejection instead.
 - "Add New Vehicle" past the plan's vehicle ceiling 403s with no error toast (infinite spinner); "Template" on a vehicle with no saved override hangs the dashboard on a 404 instead of falling back to Vehicle Type defaults.
@@ -414,6 +410,36 @@ These are the highest-leverage items to act on next, in order. Read each track s
 - D1: Confirm pricing details (trial length, AI metering unit, top-up pack sizes).
 - D2: Suite auth standard — currently SM JWT (confirmed). Revisit only if cross-origin SSO is needed in Phase 2.
 - D3: AI gateway specifics (streaming-voice WebSocket contract blocks A3/voice agent).
+
+---
+
+### TC — Truck Check feature: end-to-end review & rebuild (June 21, 2026)
+
+**Premise (owner).** Vehicle *types* have defined checks; a *member* carries them out with in-app guidance; outcomes are recorded; failures/follow-ups are visible to brigade/unit equipment officers. Vehicle types can be shared **across organisations** as standard templates (e.g. an NSW RFS Cat 1 tanker is fairly standard within a spec/age range); brigades then **customise** to their own layout/fit-out.
+
+**Current state (as built) — findings:**
+
+- **TC-1 — No vehicle-type templates or cross-org sharing (core gap).** A `ChecklistTemplate` is bound 1:1 to a single `Appliance` and is auto-created from one hardcoded generic 8-item list (Tyres, Lights, Fluids, …) for *every* appliance. `Appliance.vehicleType` is just a reporting slug — it does **not** drive the checklist. There is no template library, no "standard"/shared template, no clone-and-customise, and no way to author a vehicle type. Both DB twins also seed five generic appliances ("Cat 1"…"Command Vehicle") — **including in production**.
+- **TC-2 — Station/org isolation is broken (correctness bug).** The route computes `stationId` and passes it, but **both** twins' read/query methods (`getAllAppliances`, `getAllCheckRuns`, `getCheckRunsByDateRange`, `getRunsWithIssues`, `getAllRunsWithResults`, `updateTemplate`, `getTruckCheckCompliance`) ignore it — the factory interface declares the param optional, the implementations drop it. Result: every station/brigade sees **every other's** appliances, templates, runs and issues. There is no organisation scoping at all.
+- **TC-3 — Member attribution is free-text.** A check is started by typing a name ("Please enter your name to begin the check"); `completedBy`/`contributors` are strings, not roster `memberId`s. No link to the sign-in roster, no validation, no reliable way to attribute or notify.
+- **TC-4 — Equipment-officer follow-up loop is thin.** The admin dashboard lists runs-with-issues, but there is no issue *lifecycle* (open → acknowledged → resolved), no assignment/owner, no distinct equipment-officer role/permission, and no notification.
+- **TC-5 — Template item identity churns.** `updateTemplate` regenerates a fresh `uuid` for every item on every save, breaking `itemCode`/historical comparison continuity and any per-item references.
+- **TC-6 — Vehicle CRUD is buried / minor UX.** `VehicleManagement` is only reachable inside the Admin Dashboard; emoji-by-keyword icon guessing stands in for real per-item guidance imagery.
+
+**Decisions (owner, 2026-06-21):**
+- **TC-D1 — Sharing = global standards with a locked core.** A `VehicleType` carries a **standard** checklist whose items are **immutable** (the comparable core). Brigades adopt a type for their vehicles and may **add custom items and reorder**, but cannot edit/remove standard items. Keeping the standard set identical per type is what enables **cross-brigade comparative data** for the same vehicle type. Standard items need stable `itemCode`s to support that comparison.
+- **TC-D1b — Per-vehicle agency id.** Each vehicle has a unique **agency id** (e.g. RFS fleet number) so a specific vehicle can be tracked across brigades if it moves.
+- **TC-D2 — Type owns the checklist; appliance inherits + overrides** (adds/reorder only; standard items locked).
+- **TC-D3 — Any owner can author a standard vehicle type for now;** stronger curation/validation deferred.
+- **TC-D4 — Build (a) roster-member attribution** (memberId + free-text kiosk fallback) **and (b) an issue lifecycle** (open → acknowledged → resolved, optional assignee, equipment-officer follow-up view). **No separate equipment-officer role** for now — gate the view on existing admin.
+
+**Prioritised actions (staged):**
+1. ✅ **TC-2 (DONE Jun 21) + TC-5:** both twins now honour `stationId` on every read/query (`getAllAppliances`, `getAllCheckRuns`, `getCheckRunsByDateRange`, `getRunsWithIssues`, `getAllRunsWithResults`, `getTruckCheckCompliance`); the Table twin now persists `stationId` on check runs (it didn't before). Template edits preserve item ids instead of churning a fresh uuid per save (TC-5).
+2. ✅ **TC-1 rebuild (DONE Jun 21).** First-class `VehicleType` (org-scoped, `isStandard` flag, immutable standard items with stable `itemCode`s) with in-memory + Table Storage twins + factory; appliance gained `vehicleTypeId` + identity fields (`agencyId`, `registration`, `vin`, `make`, `model`, `year`); effective-checklist endpoints (`GET/PUT /api/truck-checks/appliances/:id/checklist`) resolve locked-standard + brigade-custom-overlay in saved order, with type edits propagating. Vehicle-type CRUD routes (admin, org-owned-edit). Frontend: identity fields + standard-type selector on the vehicle form, a Vehicle Types authoring page (`/truckcheck/vehicle-types`), and the check workflow now runs the effective checklist. `api_register.json` v1.7.0. **Agency/identity format settled:** `agencyId` = free-text fleet/asset number (suits NSW RFS), `registration` = plate, `vin` optional unique id, and `make`/`model`/`year` per vehicle (since a "Cat 1" varies by manufacturer/age). Type stays generic; the make/model build-up happens per vehicle.
+3. ✅ **TC-3 (DONE Jun 22):** check-start screen attributes the run to a roster `memberId` (typeahead from `/api/members`, free-text kiosk fallback); `completedBy` carries the memberId when matched.
+4. ✅ **TC-4 (DONE Jun 22):** issue lifecycle on `CheckResult` (`issueStatus` open→acknowledged→resolved + `issueNote`/`assignedTo`/`resolvedBy`/`resolvedAt`); `PATCH /results/:id/issue` and a station-scoped `GET /issues` feed; a "Follow-ups" tab in the admin dashboard (acknowledge/resolve/assign), admin-gated (no separate equipment-officer role).
+5. **TC-5/TC-6:** stable item ids on edit (subsumed by TC-1); surface vehicle management on the hub.
+6. **Comparative reporting:** aggregate standard-item outcomes across brigades by vehicle type + `itemCode` (enabled by the locked standard core).
 
 ### February 2026 Stabilization
 - 2026-02-10: Admin portal color-contrast remediation completed. Added accessible status/alert tokens (`--surface-error/warning/info/success`, `--text-error-strong`, `--text-warning-strong`, `--text-on-amber`) and applied them across admin alerts and badges. Before/after iPad screenshots captured in `docs/current_state/ADMIN_CONTRAST_REVIEW_20260210.md`.
@@ -2742,7 +2768,13 @@ curl -H "Origin: https://malicious-site.com" \
 | 2.3 | Feb 2026 | Bug Fix | Fixed participant removal failures across all UI entry points. Root cause: Table Storage implementation of `removeEventParticipant` always returned false because it lacked the partition key (eventId). Updated database interface and implementations to accept optional eventId parameter, enabling efficient single-partition deletion. Backward compatible with fallback to search. All tests pass (498 backend + 386 frontend). |
 | 3.0 | Jun 2026 | Consolidation | Collapsed all five separate planning docs (CONSOLIDATION_REVIEW, SUITE_INTEGRATION_PLAN, SAAS_COMMERCIALIZATION_DESIGN, AI_MAINTENANCE_AGENT_DESIGN, AAR_STUDIO_PLAN) into this single file. Archived originals in `docs/archive/`. ONE-PLAN RULE enforced. (#575) |
 | 3.1 | Jun 2026 | UI/UX polish | Recorded CSS-var sweep, dark-mode fixes, status tokens, TrialBanner wiring, FeatureRoute upgrade UX, dead-end upgrade-path fix, and Material Design color isolation in truck check. (#576). Added "Prioritised next steps" section and CLAUDE.md progress-update instruction. |
-| 3.2 | Jun 2026 | Production UAT | Logged full UAT pass against `bungrfs-linux.azurewebsites.net` (new signup through logged-out API probe). Added critical finding: `reports`/`members`/`appliances` read endpoints return real data to fully anonymous requests. Added blocker: Truck Check has no working configuration (0-item fake-pass + 400 on Vehicle-Type-linked results). Confirmed live: Stripe billing not configured, AAR Studio gating bypass, `maxStations` unenforced, admin rate-limiter too aggressive. New backing doc: `docs/current_state/UAT_REVIEW_20260622.md`. Re-ordered "Prioritised next steps" with the data-exposure fix at #1. |
+| 3.2 | Jun 2026 | Commercialisation close-out | Reconciled the plan with `main`: recorded C1 (#552) and C2 (#553) as shipped (they were merged but never logged). Persisted the Stripe `BillingEvent` audit trail to both DB twins with webhook idempotency + an owner-only `GET /api/billing/events`; registered billing & AI gateway endpoints in `api_register.json` (v1.5.0). Fixed a desktop scroll regression (document-flow content pages clipped by the kiosk `overflow:hidden` shell lock). Re-prioritised next steps (OIDC deploy restore now #1). Also logged full UAT pass against `bungrfs-linux.azurewebsites.net` with critical findings (anonymous data access to reports/members/appliances, Truck Check configuration broken, Stripe billing not configured). Documented in `docs/current_state/UAT_REVIEW_20260622.md`. |
+| 3.3 | Jun 2026 | AAR persistence | A2 increment 1: org-scoped server-side persistence for AAR Studio reviews (`/api/aar-sessions` + `AARSession` DB twins, payload chunked for Table Storage) and brigade-shared "From your team" reviews in the AAR home view, reusing the same-origin SM JWT. `api_register.json` → v1.6.0. Re-scoped next steps (A2 inc 2 / T1 inc 2 mechanism caveat; OIDC de-prioritised per owner). |
+| 3.4 | Jun 2026 | AAR roster typeaheads | A2 increment 2 (part 1): AAR setup Location/Facilitator fields autocomplete from the SM roster via `roster.js` + `<datalist>` (reusing `/api/stations` + `/api/members`, no new endpoints). Kept as typeaheads to preserve local-first/signed-out use. Remaining inc-2 work: bidirectional conflict handling and `/aar` CSP shrink. |
+| 3.5 | Jun 2026 | AAR conflict handling | A2 increment 2 complete: timestamp-based optimistic concurrency for AAR sync (`clientUpdatedAt` + 409 across route/twins; client sends it and reconciles newer cloud copies on the home view via `isRemoteNewer`/"Load latest"). `api_register.json` → v1.6.1. `/aar` CSP shrink resolved as blocked (Speech SDK connects browser-direct), re-filed under D3. A2 done; next focus returns to T1. |
+| 3.6 | Jun 2026 | Truck-check rebuild (TC-1/2/5) | End-to-end review of truck checks (findings TC-1…TC-6) + first-class `VehicleType` with locked standard checklists, per-vehicle identity (agency no./rego/VIN/make/model/year), effective-checklist resolution, vehicle-type authoring UI, station-isolation fix, stable template item ids, and a CodeQL ReDoS fix. `api_register.json` → v1.7.0. Remaining: TC-3 (member attribution), TC-4 (issue lifecycle). |
+| 3.7 | Jun 2026 | Truck-check TC-3/TC-4 | Completed the TC uplift: roster-member attribution on the check-start screen, and an issue follow-up lifecycle (open→acknowledged→resolved, assignee/notes) with `GET /issues` + `PATCH /results/:id/issue` and an admin "Follow-ups" tab. `api_register.json` → v1.8.0. |
+| 3.8 | Jun 2026 | TC UX polish | Integration review pass closing the TC track: inline resolution modal (replaces browser `prompt()`), VehicleTypesPage backdrop close, template editor shows locked standard items read-only, vehicle identity on hub + admin cards, open-issues badge on hub cards, AAR cloud-review loading state. TC track complete. |
 
 ---
 

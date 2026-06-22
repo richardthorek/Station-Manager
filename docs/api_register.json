@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.4.0",
-  "lastUpdated": "2026-06-20",
+  "version": "1.8.0",
+  "lastUpdated": "2026-06-22",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -25,6 +25,271 @@
   },
   "apiPrefix": "/api",
   "endpoints": {
+    "billing": {
+      "description": "Stripe billing — Checkout, Customer Portal, status, webhook and audit trail. Owner-only except the signature-verified webhook. Returns 503 when STRIPE_SECRET_KEY is not configured.",
+      "authentication": "JWT (owner) except POST /api/billing/webhook (Stripe signature)",
+      "POST /api/billing/checkout": {
+        "method": "POST",
+        "path": "/api/billing/checkout",
+        "description": "Create a Stripe Checkout session for the org's chosen plan and billing interval (14-day trial). Owner-only.",
+        "authentication": "JWT (owner)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "planCode": { "type": "string", "enum": ["basic", "ai"] },
+            "billingInterval": { "type": "string", "enum": ["monthly", "annual"], "default": "monthly" }
+          },
+          "required": ["planCode"]
+        },
+        "responses": {
+          "200": { "description": "{ checkoutUrl } — redirect the browser to complete payment" },
+          "400": { "description": "Invalid planCode/interval or no Stripe price configured for the combination" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "Not an org owner" },
+          "503": { "description": "Billing not configured (STRIPE_SECRET_KEY missing)" }
+        },
+        "implementation": "backend/src/routes/billing.ts:40"
+      },
+      "POST /api/billing/portal": {
+        "method": "POST",
+        "path": "/api/billing/portal",
+        "description": "Create a Stripe Customer Portal session so the owner can manage their subscription/payment method. Owner-only.",
+        "authentication": "JWT (owner)",
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "{ portalUrl }" },
+          "400": { "description": "Org has no Stripe customer yet (subscribe first)" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "Not an org owner" },
+          "503": { "description": "Billing not configured" }
+        },
+        "implementation": "backend/src/routes/billing.ts:113"
+      },
+      "GET /api/billing/status": {
+        "method": "GET",
+        "path": "/api/billing/status",
+        "description": "Current billing summary for the authenticated user's org.",
+        "authentication": "JWT",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "{ planCode, status, trialEndsAt, hasPaymentMethod, stripeConfigured }" },
+          "401": { "description": "Not authenticated" },
+          "404": { "description": "Organization not found" }
+        },
+        "implementation": "backend/src/routes/billing.ts:135"
+      },
+      "GET /api/billing/events": {
+        "method": "GET",
+        "path": "/api/billing/events",
+        "description": "Owner-only audit trail of Stripe webhook events processed for this org (newest first).",
+        "authentication": "JWT (owner)",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "{ events: BillingEvent[] }" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "Not an org owner" }
+        },
+        "implementation": "backend/src/routes/billing.ts:155"
+      },
+      "POST /api/billing/webhook": {
+        "method": "POST",
+        "path": "/api/billing/webhook",
+        "description": "Stripe webhook receiver. Verifies the Stripe-Signature against STRIPE_WEBHOOK_SECRET, syncs org plan/status/entitlements (checkout.session.completed, customer.subscription.updated/deleted, invoice.paid, invoice.payment_failed), and writes an idempotent audit row. Requires the raw request body (express.raw registered before express.json).",
+        "authentication": "Stripe signature (no JWT)",
+        "requestBody": { "type": "string", "description": "Raw JSON event body (Buffer)" },
+        "responses": {
+          "200": { "description": "{ received: true } — always returned after audit; { duplicate: true } when the event was already processed" },
+          "400": { "description": "Missing or invalid Stripe-Signature" },
+          "500": { "description": "STRIPE_WEBHOOK_SECRET not configured" },
+          "503": { "description": "Billing not configured" }
+        },
+        "implementation": "backend/src/routes/billing.ts:172"
+      }
+    },
+    "ai": {
+      "description": "Server-side AI gateway. Provider credentials live server-side; AAR Studio and the SPA call these instead of Azure browser-direct. When org context is present the aiEnabled entitlement is required; the monthly allowance (aiIncludedSessions) is metered in sessions and enforced at the speech-token endpoint.",
+      "authentication": "JWT bearer (org context optional — no org context passes through, consistent with entitlement back-compat)",
+      "POST /api/ai/chat": {
+        "method": "POST",
+        "path": "/api/ai/chat",
+        "description": "Proxy a chat/completion request to the configured AI provider (Azure OpenAI; Anthropic adapter stubbed). Requires aiEnabled when org context is present.",
+        "authentication": "JWT (aiEnabled when org context present)",
+        "responses": {
+          "200": { "description": "Provider chat completion payload" },
+          "403": { "description": "aiEnabled entitlement required" },
+          "503": { "description": "AI provider not configured" }
+        },
+        "implementation": "backend/src/routes/ai.ts"
+      },
+      "POST /api/ai/report": {
+        "method": "POST",
+        "path": "/api/ai/report",
+        "description": "Generate an AI report/summary via the gateway. Requires aiEnabled when org context is present.",
+        "authentication": "JWT (aiEnabled when org context present)",
+        "responses": {
+          "200": { "description": "Generated report payload" },
+          "403": { "description": "aiEnabled entitlement required" },
+          "503": { "description": "AI provider not configured" }
+        },
+        "implementation": "backend/src/routes/ai.ts"
+      },
+      "POST /api/ai/speech/token": {
+        "method": "POST",
+        "path": "/api/ai/speech/token",
+        "description": "Vend a short-lived Azure Speech authorization token for browser SDK use. Counts as one metered AI session and enforces the monthly allowance.",
+        "authentication": "JWT (aiEnabled when org context present)",
+        "responses": {
+          "200": { "description": "{ token, region } — short-lived Speech auth token" },
+          "402": { "description": "Monthly AI session allowance exhausted — { remaining, resetAt }" },
+          "403": { "description": "aiEnabled entitlement required" },
+          "503": { "description": "Speech provider not configured" }
+        },
+        "implementation": "backend/src/routes/ai.ts"
+      },
+      "GET /api/ai/usage": {
+        "method": "GET",
+        "path": "/api/ai/usage",
+        "description": "AI sessions used this month and the remaining monthly allowance for the org (drives the /admin/organization meter).",
+        "authentication": "JWT",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "{ used, included, remaining, resetAt }" },
+          "401": { "description": "Not authenticated" }
+        },
+        "implementation": "backend/src/routes/ai.ts"
+      }
+    },
+    "aar-sessions": {
+      "description": "Server-side persistence for AAR Studio reviews, scoped to the owning Organization so a review survives device loss and is visible brigade-wide instead of living only in one facilitator's localStorage. AAR Studio remains local-first: it works fully signed-out against localStorage and mirrors to these endpoints best-effort when an SM JWT is present. The session body is stored as an opaque JSON blob (payload) with a few fields lifted out for listing.",
+      "authentication": "JWT bearer (organization context required)",
+      "entitlement": "aarStudioEnabled (mounted behind requireFeature)",
+      "GET /api/aar-sessions": {
+        "method": "GET",
+        "path": "/api/aar-sessions",
+        "description": "List this org's saved reviews as summaries (no payload), newest-updated first.",
+        "authentication": "JWT (org context required)",
+        "parameters": {},
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "{ sessions: AARSessionSummary[] }" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" }
+        },
+        "implementation": "backend/src/routes/aarSessions.ts"
+      },
+      "GET /api/aar-sessions/:id": {
+        "method": "GET",
+        "path": "/api/aar-sessions/:id",
+        "description": "Fetch one saved review including the full payload, scoped to the caller's org.",
+        "authentication": "JWT (org context required)",
+        "responses": {
+          "200": { "description": "{ session: AARSession }" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
+          "404": { "description": "Review not found in this org" }
+        },
+        "implementation": "backend/src/routes/aarSessions.ts"
+      },
+      "PUT /api/aar-sessions/:id": {
+        "method": "PUT",
+        "path": "/api/aar-sessions/:id",
+        "description": "Create or replace a review (the client owns the id). Org scoping is enforced; creation metadata (createdAt/createdBy) is preserved across updates. Optimistic concurrency: when clientUpdatedAt is supplied and an existing row was edited more recently, the save is rejected (409) instead of clobbering it; omit clientUpdatedAt to force last-write-wins.",
+        "authentication": "JWT (org context required)",
+        "requestBody": { "title": "string", "incidentDate": "string?", "stationId": "string?", "schemaVersion": "number", "payload": "string (JSON of the AAR Studio session)", "clientUpdatedAt": "string? (the saving device's last-edit time, ISO; enables stale-write detection)" },
+        "responses": {
+          "200": { "description": "{ session: AARSession }" },
+          "400": { "description": "payload or schemaVersion missing/invalid" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
+          "409": { "description": "Stale write — updated more recently on another device; body is { error, current } (current omits payload)" },
+          "413": { "description": "Review payload too large to persist (~900k char cap)" }
+        },
+        "implementation": "backend/src/routes/aarSessions.ts"
+      },
+      "DELETE /api/aar-sessions/:id": {
+        "method": "DELETE",
+        "path": "/api/aar-sessions/:id",
+        "description": "Delete a review, scoped to the caller's org.",
+        "authentication": "JWT (org context required)",
+        "responses": {
+          "200": { "description": "{ success: true }" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
+          "404": { "description": "Review not found in this org" }
+        },
+        "implementation": "backend/src/routes/aarSessions.ts"
+      }
+    },
+    "truck-check-vehicle-types": {
+      "description": "TC-1 vehicle types + resolved checklists. A VehicleType owns a locked standard checklist (immutable for adopting brigades, stable itemCodes for cross-brigade comparison); isStandard publishes it for other orgs to adopt. An appliance links to a type via vehicleTypeId and the effective checklist = the type's standard items + the brigade's custom overlay, in saved order.",
+      "authentication": "JWT (vehicle-type writes require admin + org ownership; the effective-checklist endpoints are kiosk-friendly)",
+      "entitlement": "truckCheckEnabled (parent /api/truck-checks mount)",
+      "GET /api/truck-checks/vehicle-types": {
+        "method": "GET", "path": "/api/truck-checks/vehicle-types",
+        "description": "List the org's vehicle types plus all published standards.",
+        "authentication": "JWT",
+        "responses": { "200": { "description": "VehicleType[]" }, "401": { "description": "Not authenticated" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "POST /api/truck-checks/vehicle-types": {
+        "method": "POST", "path": "/api/truck-checks/vehicle-types",
+        "description": "Create a vehicle type owned by the caller's org (isStandard publishes it).",
+        "authentication": "JWT (admin)",
+        "requestBody": { "name": "string", "code": "string?", "category": "string?", "description": "string?", "isStandard": "boolean?", "standardItems": "ChecklistItem[]" },
+        "responses": { "201": { "description": "VehicleType" }, "400": { "description": "name/standardItems invalid" }, "403": { "description": "Admin required" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "PUT /api/truck-checks/vehicle-types/:id": {
+        "method": "PUT", "path": "/api/truck-checks/vehicle-types/:id",
+        "description": "Update a vehicle type the org owns (re-normalises standard item codes).",
+        "authentication": "JWT (admin, org-owned only)",
+        "responses": { "200": { "description": "VehicleType" }, "403": { "description": "Not your org's type" }, "404": { "description": "Not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "DELETE /api/truck-checks/vehicle-types/:id": {
+        "method": "DELETE", "path": "/api/truck-checks/vehicle-types/:id",
+        "description": "Delete a vehicle type the org owns.",
+        "authentication": "JWT (admin, org-owned only)",
+        "responses": { "204": { "description": "Deleted" }, "403": { "description": "Not your org's type" }, "404": { "description": "Not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "GET /api/truck-checks/appliances/:id/checklist": {
+        "method": "GET", "path": "/api/truck-checks/appliances/:id/checklist",
+        "description": "The resolved effective checklist for an appliance (locked standard items + brigade custom overlay, in saved order). What the check workflow renders.",
+        "authentication": "JWT/optional (kiosk-friendly)",
+        "responses": { "200": { "description": "EffectiveChecklist" }, "404": { "description": "Appliance not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "PUT /api/truck-checks/appliances/:id/checklist": {
+        "method": "PUT", "path": "/api/truck-checks/appliances/:id/checklist",
+        "description": "Save the brigade's custom overlay (custom items + preferred order). Standard items are never sent here; they live on the type.",
+        "authentication": "JWT/optional",
+        "requestBody": { "customItems": "ChecklistItem[]", "itemOrder": "string[] (standard item itemCode or custom item id)" },
+        "responses": { "200": { "description": "EffectiveChecklist" }, "400": { "description": "customItems must be an array" }, "404": { "description": "Appliance not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      }
+    },
+    "truck-check-issues": {
+      "description": "TC-4 issue follow-up. A CheckResult with status 'issue' starts an 'open' lifecycle; an equipment officer moves it open → acknowledged → resolved (admin-gated via the parent mount; no separate role). Member attribution (TC-3): a check run's completedBy holds the roster memberId when the inspector is picked from the roster, else the free-text name (kiosk).",
+      "GET /api/truck-checks/issues": {
+        "method": "GET", "path": "/api/truck-checks/issues",
+        "description": "Station-scoped flat feed of issue results enriched with appliance/run context for the equipment-officer follow-up view. ?status=open|acknowledged|resolved; defaults to outstanding (open+acknowledged).",
+        "authentication": "JWT/optional",
+        "responses": { "200": { "description": "IssueResult[] (CheckResult + applianceId/applianceName/runStartTime)" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "PATCH /api/truck-checks/results/:id/issue": {
+        "method": "PATCH", "path": "/api/truck-checks/results/:id/issue",
+        "description": "Update an issue result's lifecycle (issueStatus/issueNote/assignedTo/resolvedBy). Resolving stamps resolvedAt. Body must include runId (Table Storage locates the result by run partition).",
+        "authentication": "JWT/optional",
+        "requestBody": { "runId": "string", "issueStatus": "'open'|'acknowledged'|'resolved'?", "issueNote": "string?", "assignedTo": "string?", "resolvedBy": "string?" },
+        "responses": { "200": { "description": "CheckResult" }, "400": { "description": "Invalid issueStatus" }, "404": { "description": "Issue result not found (include runId)" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      }
+    },
     "health": {
       "GET /health": {
         "method": "GET",
@@ -3640,6 +3905,84 @@
     }
   },
   "definitions": {
+    "BillingEvent": {
+      "type": "object",
+      "description": "Audit row for a received Stripe webhook event (including failures), used for idempotency and troubleshooting.",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "organizationId": { "type": "string", "description": "Org the event applies to; absent when the event carries no org metadata" },
+        "stripeEventId": { "type": "string" },
+        "eventType": { "type": "string", "description": "Stripe event type, e.g. checkout.session.completed" },
+        "payload": { "type": "string", "description": "JSON string of event.data.object" },
+        "processedAt": { "type": "string", "format": "date-time" },
+        "error": { "type": "string", "description": "Set when processing threw" }
+      },
+      "required": ["id", "stripeEventId", "eventType", "payload", "processedAt"]
+    },
+    "AARSession": {
+      "type": "object",
+      "description": "A persisted AAR Studio review, scoped to the owning organization. The full client-side session is stored verbatim as a JSON string in payload; the other fields are denormalised for listing and access control. In Table Storage the payload is chunked across payload0..payloadN properties to stay under the per-property/entity size limits; this is an implementation detail not exposed by the API.",
+      "properties": {
+        "id": { "type": "string", "description": "Client-owned review id (AAR Studio generates it)" },
+        "organizationId": { "type": "string" },
+        "stationId": { "type": "string", "description": "Optional brigade/station the review belongs to" },
+        "title": { "type": "string", "description": "Denormalised incident title (or friendly fallback)" },
+        "incidentDate": { "type": "string", "description": "Denormalised incident date (ISO yyyy-mm-dd)" },
+        "schemaVersion": { "type": "number", "description": "AAR Studio session schema version" },
+        "payload": { "type": "string", "description": "JSON of the full AAR Studio session object" },
+        "createdBy": { "type": "string", "description": "userId of the facilitator who first saved it" },
+        "createdByName": { "type": "string", "description": "Display name of the facilitator" },
+        "clientUpdatedAt": { "type": "string", "format": "date-time", "description": "The review's last-edit time on the saving device; used for optimistic-concurrency conflict detection (distinct from updatedAt, the server write time)" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "organizationId", "title", "schemaVersion", "payload", "createdAt", "updatedAt"]
+    },
+    "ChecklistItem": {
+      "type": "object",
+      "description": "One check on a checklist. itemCode is a stable slug enabling cross-brigade aggregation; isStandard marks an item that comes from a VehicleType's locked standard checklist.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "referencePhotoUrl": { "type": "string" },
+        "order": { "type": "number" },
+        "itemCode": { "type": "string" },
+        "section": { "type": "string" },
+        "isStandard": { "type": "boolean" }
+      },
+      "required": ["id", "name", "description", "order"]
+    },
+    "VehicleType": {
+      "type": "object",
+      "description": "A standard vehicle type owning a locked standard checklist. Brigades adopt a type for their vehicles and add/reorder custom items but never edit the standard items (the locked core that enables cross-brigade comparison). isStandard publishes it for other orgs to adopt.",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string", "description": "Owning org; absent for a global/standard type" },
+        "isStandard": { "type": "boolean" },
+        "code": { "type": "string", "description": "Canonical slug, e.g. 'cat1-tanker'" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "standardItems": { "type": "array", "items": { "$ref": "#/definitions/ChecklistItem" }, "description": "Locked standard checks, each with a stable itemCode and isStandard:true" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "isStandard", "code", "name", "standardItems", "createdAt", "updatedAt"]
+    },
+    "EffectiveChecklist": {
+      "type": "object",
+      "description": "The resolved checklist for an appliance: the vehicle type's locked standard items merged with the brigade's custom overlay, in saved order. Computed, not stored.",
+      "properties": {
+        "applianceId": { "type": "string" },
+        "applianceName": { "type": "string" },
+        "vehicleTypeId": { "type": "string" },
+        "vehicleTypeName": { "type": "string" },
+        "items": { "type": "array", "items": { "$ref": "#/definitions/ChecklistItem" }, "description": "Each carries isStandard so the UI can lock standard rows" }
+      },
+      "required": ["applianceId", "applianceName", "items"]
+    },
     "Member": {
       "type": "object",
       "properties": {

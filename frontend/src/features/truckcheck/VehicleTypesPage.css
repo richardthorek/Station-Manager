@@ -1,0 +1,112 @@
+.vehicle-types-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.vt-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.vt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.vt-card {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vt-card__body h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vt-card__meta {
+  margin: 0;
+  color: var(--color-text-secondary, #666);
+  font-size: 0.85rem;
+}
+
+.vt-card__stat {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.vt-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--rfs-lime, #cbdb2a);
+  color: #1a1a1a;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+.vt-card__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
+.vt-items-title {
+  font-size: 0.95rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.vt-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.vt-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  border: 1px solid var(--color-border, #eee);
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+.vt-item__num {
+  font-weight: 700;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.vt-item__fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.vt-item__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.vt-checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+}

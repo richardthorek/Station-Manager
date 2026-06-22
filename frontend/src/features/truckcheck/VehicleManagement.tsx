@@ -1,8 +1,8 @@
 import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
 import { api } from '../../services/api';
-import type { Appliance, ChecklistTemplate, ChecklistItem } from '../../types';
+import type { Appliance, ChecklistTemplate, ChecklistItem, VehicleType } from '../../types';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
-import { VEHICLE_TYPES, ITEM_CODES, SECTIONS, resolveVocabSlug, vocabLabel } from './checklistVocabulary';
+import { ITEM_CODES, SECTIONS, resolveVocabSlug } from './checklistVocabulary';
 import './VehicleManagement.css';
 
 interface VehicleManagementProps {
@@ -17,13 +17,28 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
   const [vehicleName, setVehicleName] = useState('');
   const [vehicleDescription, setVehicleDescription] = useState('');
-  const [vehicleType, setVehicleType] = useState('');
+  const [vehicleTypeId, setVehicleTypeId] = useState('');
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
+  const [agencyId, setAgencyId] = useState('');
+  const [registration, setRegistration] = useState('');
+  const [vin, setVin] = useState('');
+  const [make, setMake] = useState('');
+  const [model, setModel] = useState('');
+  const [year, setYear] = useState('');
   const [vehiclePhotoUrl, setVehiclePhotoUrl] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  // Standard items from the linked VehicleType, shown read-only in the template editor.
+  const [standardItemsForEditor, setStandardItemsForEditor] = useState<ChecklistItem[]>([]);
   const modalRef = useFocusTrap<HTMLDivElement>(showVehicleModal);
   const modalIdSuffix = selectedVehicle?.id ?? 'new';
+
+  // Load the vehicle types this org can use (its own + shared standards) so a
+  // vehicle can be linked to a standard checklist.
+  useEffect(() => {
+    api.getVehicleTypes().then(setVehicleTypes).catch(() => setVehicleTypes([]));
+  }, []);
 
   const handleVehicleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;
@@ -69,13 +84,23 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showVehicleModal, uploading]);
 
-  function handleNewVehicle() {
-    setSelectedVehicle(null);
+  function resetVehicleForm() {
     setVehicleName('');
     setVehicleDescription('');
-    setVehicleType('');
+    setVehicleTypeId('');
+    setAgencyId('');
+    setRegistration('');
+    setVin('');
+    setMake('');
+    setModel('');
+    setYear('');
     setVehiclePhotoUrl('');
     setPhotoFile(null);
+  }
+
+  function handleNewVehicle() {
+    setSelectedVehicle(null);
+    resetVehicleForm();
     setIsEditMode(false);
     setShowVehicleModal(true);
   }
@@ -84,7 +109,13 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     setSelectedVehicle(vehicle);
     setVehicleName(vehicle.name);
     setVehicleDescription(vehicle.description || '');
-    setVehicleType(vocabLabel(vehicle.vehicleType, VEHICLE_TYPES));
+    setVehicleTypeId(vehicle.vehicleTypeId || '');
+    setAgencyId(vehicle.agencyId || '');
+    setRegistration(vehicle.registration || '');
+    setVin(vehicle.vin || '');
+    setMake(vehicle.make || '');
+    setModel(vehicle.model || '');
+    setYear(vehicle.year ? String(vehicle.year) : '');
     setVehiclePhotoUrl(vehicle.photoUrl || '');
     setPhotoFile(null);
     setIsEditMode(true);
@@ -93,8 +124,14 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
 
   async function handleEditTemplate(vehicle: Appliance) {
     try {
-      const templateData = await api.getTemplate(vehicle.id);
+      const [templateData, effectiveChecklist] = await Promise.all([
+        api.getTemplate(vehicle.id),
+        vehicle.vehicleTypeId ? api.getEffectiveChecklist(vehicle.id) : Promise.resolve(null),
+      ]);
       setTemplate(templateData);
+      setStandardItemsForEditor(
+        effectiveChecklist ? effectiveChecklist.items.filter((i) => i.isStandard) : [],
+      );
       setSelectedVehicle(vehicle);
       setShowTemplateEditor(true);
     } catch (err) {
@@ -135,12 +172,24 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
         photoUrl = uploadResponse.photoUrl;
       }
 
-      const typeSlug = resolveVocabSlug(vehicleType, VEHICLE_TYPES);
+      // Keep the legacy vehicleType slug in step with the chosen type's code so
+      // existing report grouping keeps working alongside the new vehicleTypeId link.
+      const chosenType = vehicleTypes.find((t) => t.id === vehicleTypeId);
+      const legacySlug = chosenType?.code || undefined;
+      const details = {
+        vehicleTypeId: vehicleTypeId || undefined,
+        agencyId: agencyId.trim() || undefined,
+        registration: registration.trim() || undefined,
+        vin: vin.trim() || undefined,
+        make: make.trim() || undefined,
+        model: model.trim() || undefined,
+        year: year.trim() ? Number(year) : undefined,
+      };
 
       if (isEditMode && selectedVehicle) {
-        await api.updateAppliance(selectedVehicle.id, vehicleName, vehicleDescription || undefined, photoUrl || undefined, typeSlug);
+        await api.updateAppliance(selectedVehicle.id, vehicleName, vehicleDescription || undefined, photoUrl || undefined, legacySlug, details);
       } else {
-        await api.createAppliance(vehicleName, vehicleDescription || undefined, photoUrl || undefined, typeSlug);
+        await api.createAppliance(vehicleName, vehicleDescription || undefined, photoUrl || undefined, legacySlug, details);
       }
 
       setShowVehicleModal(false);
@@ -261,6 +310,15 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
             <div className="vehicle-info">
               <h3>{vehicle.name}</h3>
               {vehicle.description && <p>{vehicle.description}</p>}
+              {(vehicle.make || vehicle.model || vehicle.year || vehicle.registration || vehicle.agencyId) && (
+                <p className="vehicle-identity">
+                  {[
+                    vehicle.agencyId,
+                    [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' '),
+                    vehicle.registration,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              )}
             </div>
             <div className="vehicle-actions">
               <button className="btn-edit" onClick={() => handleEditVehicle(vehicle)}>
@@ -320,23 +378,66 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
 
             <div className="form-group">
               <label htmlFor={`vehicle-type-${modalIdSuffix}`}>Vehicle Type</label>
-              <input
+              <select
                 id={`vehicle-type-${modalIdSuffix}`}
-                list={`vehicle-type-options-${modalIdSuffix}`}
-                type="text"
-                value={vehicleType}
-                onChange={(e) => setVehicleType(e.target.value)}
-                placeholder="e.g., Category 7 — Medium Tanker"
-              />
-              <datalist id={`vehicle-type-options-${modalIdSuffix}`}>
-                {VEHICLE_TYPES.map((vt) => (
-                  <option key={vt.value} value={vt.label} />
+                value={vehicleTypeId}
+                onChange={(e) => setVehicleTypeId(e.target.value)}
+              >
+                <option value="">— No standard type (custom checklist only) —</option>
+                {vehicleTypes.map((vt) => (
+                  <option key={vt.id} value={vt.id}>
+                    {vt.name}{vt.isStandard ? ' (standard)' : ''}
+                  </option>
                 ))}
-              </datalist>
+              </select>
               <small>
-                Pick a standard type so this vehicle&apos;s checks can be compared with the
-                same type at other brigades.
+                Link to a standard type so this vehicle inherits its locked checklist and
+                its checks can be compared with the same type at other brigades. Manage
+                types under “Vehicle Types”.
               </small>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor={`vehicle-agency-${modalIdSuffix}`}>Fleet / agency no.</label>
+                <input
+                  id={`vehicle-agency-${modalIdSuffix}`}
+                  type="text"
+                  value={agencyId}
+                  onChange={(e) => setAgencyId(e.target.value)}
+                  placeholder="e.g., RFS fleet number"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor={`vehicle-rego-${modalIdSuffix}`}>Registration</label>
+                <input
+                  id={`vehicle-rego-${modalIdSuffix}`}
+                  type="text"
+                  value={registration}
+                  onChange={(e) => setRegistration(e.target.value)}
+                  placeholder="Number plate"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor={`vehicle-make-${modalIdSuffix}`}>Make</label>
+                <input id={`vehicle-make-${modalIdSuffix}`} type="text" value={make} onChange={(e) => setMake(e.target.value)} placeholder="e.g., Isuzu" />
+              </div>
+              <div className="form-group">
+                <label htmlFor={`vehicle-model-${modalIdSuffix}`}>Model</label>
+                <input id={`vehicle-model-${modalIdSuffix}`} type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g., FTS 800" />
+              </div>
+              <div className="form-group">
+                <label htmlFor={`vehicle-year-${modalIdSuffix}`}>Year</label>
+                <input id={`vehicle-year-${modalIdSuffix}`} type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g., 2019" min={1950} max={2100} />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor={`vehicle-vin-${modalIdSuffix}`}>VIN</label>
+              <input id={`vehicle-vin-${modalIdSuffix}`} type="text" value={vin} onChange={(e) => setVin(e.target.value)} placeholder="Vehicle Identification Number (optional)" />
             </div>
 
             <div className="form-group">
@@ -393,11 +494,34 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
           aria-label="Close template editor"
         >
           <div className="modal-content template-editor">
-            <h2>Edit Checklist Template: {template.applianceName}</h2>
+            <h2>Edit Checklist: {template.applianceName}</h2>
             <p className="template-editor-hint">
               Tag items with a standard code so the same check trends across brigades,
               and group them into sections to match how you walk around the vehicle.
             </p>
+
+            {standardItemsForEditor.length > 0 && (
+              <div className="template-standard-items">
+                <h3 className="template-section-title">
+                  🔒 Standard items <span className="template-locked-note">(inherited from vehicle type — not editable here)</span>
+                </h3>
+                {standardItemsForEditor.map((item, idx) => (
+                  <div key={item.id} className="template-item template-item--locked">
+                    <div className="item-number">{idx + 1}</div>
+                    <div className="item-fields">
+                      <p className="template-item-name">{item.name}</p>
+                      {item.description && <p className="template-item-desc">{item.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {standardItemsForEditor.length > 0 && (
+              <h3 className="template-section-title template-section-title--custom">
+                ✏️ Custom items <span className="template-locked-note">(add, edit or remove)</span>
+              </h3>
+            )}
 
             <datalist id="template-item-code-options">
               {ITEM_CODES.map((ic) => (
