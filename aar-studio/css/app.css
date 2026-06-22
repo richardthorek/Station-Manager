@@ -420,3 +420,35 @@ body.join-mode .nav { display: none; }
 .paste-section { margin-top: 1rem; }
 .paste-section .paste-box { margin-top: 0.5rem; }
 .advanced { border-top: 1px solid var(--line); padding-top: 0.6rem; margin-top: 1rem; }
+
+/* ---------- entitlement / plan gate ---------- */
+.gate {
+  max-width: 56ch;
+  margin: 3rem auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  text-align: center;
+}
+.gate__title { color: var(--red); }
+.gate__lead { color: var(--ink); margin: 0 0 1.4rem; }
+.gate__actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
+.gate__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  padding: 0.8rem 1.3rem;
+  border-radius: var(--radius);
+  background: var(--red);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--red);
+}
+.gate__btn:hover { background: var(--red-dark); }
+.gate__btn--secondary { background: var(--ink-2); border-color: var(--ink-2); }
+.gate__btn--secondary:hover { background: var(--ink); }
+.gate__hint { color: var(--muted); font-size: 0.85rem; margin: 1.4rem 0 0; }

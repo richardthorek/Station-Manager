@@ -3,6 +3,7 @@
 import { h, clear } from './ui.js';
 import * as store from './store.js';
 import { displayTitle } from './lib/model.js';
+import { checkAccess } from './lib/entitlement.js';
 import { openSettingsDialog } from './settings.js';
 import * as home from './views/home.js';
 import * as setup from './views/setup.js';
@@ -65,6 +66,32 @@ function render() {
   route.view.render(main);
 }
 
+/**
+ * Plan-gate screen shown when a signed-in user's Station Manager org is not on a
+ * plan that includes AAR Studio. Replaces the app rather than booting it, so the
+ * cloud-sync / AI features (which the backend 403s for this org) aren't reached
+ * through a UI that looks fully functional. Signed-out local-first use is never
+ * gated — this only fires on a positive "not entitled" signal.
+ */
+function renderGate() {
+  clear(nav);
+  sessionLabel.textContent = '';
+  document.body.classList.remove('join-mode');
+  clear(main);
+  main.append(
+    h('section', { class: 'gate' },
+      h('h1', { class: 'gate__title' }, 'AAR Studio needs the AI plan'),
+      h('p', { class: 'gate__lead' },
+        'After Action Reviews — AI-assisted transcript analysis, the findings board, and shared cloud reviews — are part of the AI plan. Your organisation is on a plan that doesn’t include AAR Studio yet.'),
+      h('div', { class: 'gate__actions' },
+        h('a', { class: 'gate__btn', href: '/admin/organization' }, 'View plans & upgrade'),
+        h('a', { class: 'gate__btn gate__btn--secondary', href: '/' }, 'Back to Bushie Tools')),
+      h('p', { class: 'gate__hint' },
+        'Already upgraded? Make sure AAR Studio is switched on under your organisation’s modules, then reload.'),
+    ),
+  );
+}
+
 window.addEventListener('hashchange', render);
 
 store.subscribe((reason) => {
@@ -73,6 +100,20 @@ store.subscribe((reason) => {
   render();
 });
 
-store.resumeLastSession();
-if (!location.hash) location.hash = store.getSession() ? '#/board' : '#/home';
-render();
+/**
+ * Boot the app behind the entitlement gate. The check fails open (signed-out,
+ * no org, or a transient probe failure all proceed), so the only outcome that
+ * blocks is a positive "org not entitled" signal.
+ */
+async function boot() {
+  const access = await checkAccess();
+  if (!access.allowed) {
+    renderGate();
+    return;
+  }
+  store.resumeLastSession();
+  if (!location.hash) location.hash = store.getSession() ? '#/board' : '#/home';
+  render();
+}
+
+boot();
