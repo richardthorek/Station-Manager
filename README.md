@@ -229,6 +229,10 @@ Historical material lives in [docs/archive/](docs/archive/); dated snapshots and
 UI screenshots in [docs/current_state/](docs/current_state/); deep dives in
 [docs/implementation-notes/](docs/implementation-notes/).
 
+Most recent UAT pass: **[docs/current_state/UAT_REVIEW_20260622.md](docs/current_state/UAT_REVIEW_20260622.md)**
+— full production walkthrough including a logged-out/anonymous API probe. Findings are tracked
+in `docs/MASTER_PLAN.md`'s "Prioritised next steps."
+
 ## Security
 
 Multiple layers: Helmet security headers (CSP — global plus a scoped `/aar`
@@ -243,9 +247,13 @@ security section of [docs/AS_BUILT.md](docs/AS_BUILT.md).
 
 ## Project status
 
-**v1.1 in production.** Sign-in, truck check, and reports are shipped. SaaS
-foundation (organizations, plans, entitlements) and Stripe billing are wired in
-test mode. AAR Studio is live at `/aar`. The Bushie Tools suite is at Phase 1
+**v1.1 in production.** Sign-in is fully functional. Truck check and reports are
+deployed but have open issues — see the latest UAT
+([docs/current_state/UAT_REVIEW_20260622.md](docs/current_state/UAT_REVIEW_20260622.md))
+and `docs/MASTER_PLAN.md`'s "Prioritised next steps." SaaS foundation
+(organizations, plans, entitlements) is wired; **Stripe billing is not yet
+configured in production** — there is currently no live upgrade path off the
+free plan. AAR Studio is live at `/aar`. The Bushie Tools suite is at Phase 1
 (shared identity + subscription + app launcher); shared packages (Phase 2) and
 monorepo consolidation (Phase 3) are planned — see the Consolidation &
 Standardisation Roadmap in [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md).
