@@ -226,9 +226,11 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   2026-06-22:* AAR Studio's `app.css` now carries the same global reduce-motion guard
   as the SPA (`*`/`::before`/`::after` near-instant durations), replacing the narrow
   `.live__dot`-only rule so toasts/meters/all animations honour the OS setting.
-  *Remaining:* (a) confirm/raise AAR inline controls to strict-60px **if the owner wants
-  it** (decision-gated); (b) share the RFS-branded HTML/print **report template** that
-  the three export paths reinvent (`backend/src/services/csvExportService.ts`,
+  *Decision 2026-06-22 (owner):* AAR inline controls **stay at their current sizing** —
+  the strict-60px kiosk target does not apply because AAR is a desktop/laptop
+  facilitator tool, not a kiosk surface. Sub-item closed (won't-do).
+  *Remaining:* share the RFS-branded HTML/print **report template** that the three
+  export paths reinvent (`backend/src/services/csvExportService.ts`,
   `frontend/src/utils/exportUtils.ts`, `aar-studio/js/lib/exports.js`) — note
   CONSOLIDATION_REVIEW #5 marks this "lower priority than it looks" since the overlap is
   only the branded header/section template, not the data. (archive: CONSOLIDATION_REVIEW #2/#5)
