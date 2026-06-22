@@ -19,8 +19,12 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
-import { CheckStatus } from '../types';
+import { ensureVehicleTypeDatabase } from '../services/vehicleTypeDbFactory';
+import { CheckStatus, ChecklistItem, EffectiveChecklist, VehicleType, ChecklistTemplate, Appliance } from '../types';
 import { azureStorageService } from '../services/azureStorage';
+import { authMiddleware, requireAdmin } from '../middleware/auth';
+import { attachOrganization } from '../middleware/entitlements';
+import { slugify } from '../utils/slug';
 import { io } from '../index';
 import {
   validateCreateAppliance,
@@ -114,7 +118,7 @@ router.post('/appliances', enforceVehicleLimit(), validateCreateAppliance, handl
     }
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.createAppliance(name, description, photoUrl, stationId, vehicleType);
+    const appliance = await db.createAppliance(name, description, photoUrl, stationId, vehicleType, extractApplianceDetails(req.body));
     res.status(201).json(appliance);
   } catch (error) {
     logger.error('Error creating appliance:', error);
@@ -135,11 +139,11 @@ router.put('/appliances/:id', validateUpdateAppliance, handleValidationErrors, a
     }
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.updateAppliance(req.params.id, name, description, photoUrl, vehicleType);
+    const appliance = await db.updateAppliance(req.params.id, name, description, photoUrl, vehicleType, extractApplianceDetails(req.body));
     if (!appliance) {
       return res.status(404).json({ error: 'Appliance not found' });
     }
-    
+
     res.json(appliance);
   } catch (error) {
     logger.error('Error updating appliance:', error);
@@ -206,6 +210,243 @@ router.put('/templates/:applianceId', validateUpdateTemplate, handleValidationEr
   } catch (error) {
     logger.error('Error updating template:', error);
     res.status(500).json({ error: 'Failed to update template' });
+  }
+});
+
+// ============================================
+// Vehicle Type Routes (standard checklists, org-scoped + shared standards)
+// ============================================
+
+/** Pull the optional vehicle identity / type-link fields off a request body. */
+function extractApplianceDetails(body: Record<string, unknown>) {
+  const yearNum = body.year !== undefined && body.year !== null && body.year !== '' ? Number(body.year) : undefined;
+  return {
+    vehicleTypeId: typeof body.vehicleTypeId === 'string' ? body.vehicleTypeId : undefined,
+    agencyId: typeof body.agencyId === 'string' ? body.agencyId : undefined,
+    registration: typeof body.registration === 'string' ? body.registration : undefined,
+    vin: typeof body.vin === 'string' ? body.vin : undefined,
+    make: typeof body.make === 'string' ? body.make : undefined,
+    model: typeof body.model === 'string' ? body.model : undefined,
+    year: Number.isFinite(yearNum) ? yearNum : undefined,
+  };
+}
+
+/**
+ * Resolve the checklist an inspector actually works through for an appliance:
+ * the VehicleType's locked standard items merged with the brigade's custom
+ * overlay items, in the brigade's saved order. Standard items are always present
+ * and immutable; type edits propagate. Falls back to the legacy per-appliance
+ * template when the appliance has no vehicle type.
+ */
+function resolveEffectiveChecklist(
+  appliance: Appliance,
+  template: ChecklistTemplate | null | undefined,
+  vehicleType: VehicleType | null | undefined,
+): EffectiveChecklist {
+  const base = {
+    applianceId: appliance.id,
+    applianceName: appliance.name,
+    vehicleTypeId: appliance.vehicleTypeId,
+    vehicleTypeName: vehicleType?.name,
+  };
+
+  // Legacy / no type → the template items are the whole checklist.
+  if (!appliance.vehicleTypeId || !vehicleType) {
+    const items = (template?.items ?? []).map((i, idx) => ({ ...i, order: idx, isStandard: i.isStandard ?? false }));
+    return { ...base, items };
+  }
+
+  const standard: ChecklistItem[] = (vehicleType.standardItems ?? []).map((i) => ({ ...i, isStandard: true }));
+  const custom: ChecklistItem[] = (template?.items ?? []).map((i) => ({ ...i, isStandard: false }));
+  const order = template?.itemOrder ?? [];
+
+  const standardByCode = new Map(standard.map((i) => [i.itemCode || i.id, i]));
+  const customById = new Map(custom.map((i) => [i.id, i]));
+
+  const merged: ChecklistItem[] = [];
+  const usedStandard = new Set<string>();
+  const usedCustom = new Set<string>();
+  for (const key of order) {
+    if (standardByCode.has(key) && !usedStandard.has(key)) {
+      merged.push(standardByCode.get(key)!);
+      usedStandard.add(key);
+    } else if (customById.has(key) && !usedCustom.has(key)) {
+      merged.push(customById.get(key)!);
+      usedCustom.add(key);
+    }
+  }
+  // Standard items are always present (locked) — append any not referenced by the saved order.
+  for (const s of standard) {
+    const key = s.itemCode || s.id;
+    if (!usedStandard.has(key)) merged.push(s);
+  }
+  // Then any custom items not referenced.
+  for (const c of custom) {
+    if (!usedCustom.has(c.id)) merged.push(c);
+  }
+
+  return { ...base, items: merged.map((i, idx) => ({ ...i, order: idx })) };
+}
+
+// All vehicle-type management requires an authenticated org admin.
+const vehicleTypeAuth = [authMiddleware, attachOrganization, requireAdmin];
+
+/**
+ * GET /api/truck-checks/vehicle-types
+ * List the vehicle types this org may use: its own + all published standards.
+ */
+router.get('/vehicle-types', authMiddleware, attachOrganization, async (req: Request, res: Response) => {
+  try {
+    const types = await ensureVehicleTypeDatabase().listForOrganization(req.user?.organizationId);
+    res.json(types);
+  } catch (error) {
+    logger.error('Error listing vehicle types:', error);
+    res.status(500).json({ error: 'Failed to list vehicle types' });
+  }
+});
+
+/**
+ * POST /api/truck-checks/vehicle-types
+ * Create a vehicle type (owned by the caller's org; isStandard publishes it).
+ */
+router.post('/vehicle-types', vehicleTypeAuth, async (req: Request, res: Response) => {
+  try {
+    const { name, code, description, category, standardItems, isStandard } = req.body ?? {};
+    if (typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    if (!Array.isArray(standardItems)) {
+      return res.status(400).json({ error: 'standardItems must be an array' });
+    }
+    const type = await ensureVehicleTypeDatabase().create({
+      organizationId: req.user?.organizationId,
+      isStandard: Boolean(isStandard),
+      code: typeof code === 'string' && code.trim() ? slugify(code) : slugify(name),
+      name: name.trim(),
+      description: typeof description === 'string' ? description : undefined,
+      category: typeof category === 'string' ? category : undefined,
+      standardItems,
+      createdBy: req.user?.userId,
+    });
+    res.status(201).json(type);
+  } catch (error) {
+    logger.error('Error creating vehicle type:', error);
+    res.status(500).json({ error: 'Failed to create vehicle type' });
+  }
+});
+
+/**
+ * PUT /api/truck-checks/vehicle-types/:id
+ * Update a vehicle type. You may only edit a type your org owns (standards
+ * published by other orgs are read-only to you, but adoptable).
+ */
+router.put('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: Response) => {
+  try {
+    const db = ensureVehicleTypeDatabase();
+    const existing = await db.getById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Vehicle type not found' });
+    if (existing.organizationId && existing.organizationId !== req.user?.organizationId) {
+      return res.status(403).json({ error: 'You can only edit vehicle types your organisation owns' });
+    }
+    const { name, code, description, category, standardItems, isStandard } = req.body ?? {};
+    const updated = await db.update(req.params.id, {
+      ...(name !== undefined ? { name } : {}),
+      ...(code !== undefined ? { code: slugify(code) } : {}),
+      ...(description !== undefined ? { description } : {}),
+      ...(category !== undefined ? { category } : {}),
+      ...(isStandard !== undefined ? { isStandard: Boolean(isStandard) } : {}),
+      ...(standardItems !== undefined ? { standardItems } : {}),
+    });
+    res.json(updated);
+  } catch (error) {
+    logger.error('Error updating vehicle type:', error);
+    res.status(500).json({ error: 'Failed to update vehicle type' });
+  }
+});
+
+/**
+ * DELETE /api/truck-checks/vehicle-types/:id
+ * Delete a vehicle type your org owns.
+ */
+router.delete('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: Response) => {
+  try {
+    const db = ensureVehicleTypeDatabase();
+    const existing = await db.getById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Vehicle type not found' });
+    if (existing.organizationId && existing.organizationId !== req.user?.organizationId) {
+      return res.status(403).json({ error: 'You can only delete vehicle types your organisation owns' });
+    }
+    await db.delete(req.params.id);
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Error deleting vehicle type:', error);
+    res.status(500).json({ error: 'Failed to delete vehicle type' });
+  }
+});
+
+// ============================================
+// Effective Checklist (standard + custom, resolved) — kiosk-friendly
+// ============================================
+
+/**
+ * GET /api/truck-checks/appliances/:id/checklist
+ * The resolved checklist for an appliance (standard items from its vehicle type,
+ * locked, + the brigade's custom overlay, in saved order). What the check
+ * workflow renders.
+ */
+router.get('/appliances/:id/checklist', validateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
+    const appliance = await db.getApplianceById(req.params.id);
+    if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
+
+    const template = await db.getTemplateByApplianceId(req.params.id);
+    const vehicleType = appliance.vehicleTypeId
+      ? await ensureVehicleTypeDatabase().getById(appliance.vehicleTypeId)
+      : null;
+
+    res.json(resolveEffectiveChecklist(appliance, template, vehicleType));
+  } catch (error) {
+    logger.error('Error resolving effective checklist:', error);
+    res.status(500).json({ error: 'Failed to resolve checklist' });
+  }
+});
+
+/**
+ * PUT /api/truck-checks/appliances/:id/checklist
+ * Save the brigade's custom overlay for a type-linked appliance: custom items
+ * (standard items are never sent here — they live on the type) and the preferred
+ * order (keys: standard item itemCode or custom item id).
+ */
+router.put('/appliances/:id/checklist', validateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const { customItems, itemOrder } = req.body ?? {};
+    if (!Array.isArray(customItems)) {
+      return res.status(400).json({ error: 'customItems must be an array' });
+    }
+    const stationId = getStationIdFromRequest(req);
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
+    const appliance = await db.getApplianceById(req.params.id);
+    if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
+
+    // Persist custom items (forced isStandard:false) + order via the template overlay.
+    const overlayItems: ChecklistItem[] = customItems.map((i: ChecklistItem, idx: number) => ({
+      ...i,
+      order: typeof i.order === 'number' ? i.order : idx,
+      isStandard: false,
+    }));
+    const cleanOrder = Array.isArray(itemOrder)
+      ? itemOrder.filter((k: unknown): k is string => typeof k === 'string')
+      : undefined;
+    const template = await db.updateTemplate(req.params.id, overlayItems, stationId, cleanOrder);
+
+    const vehicleType = appliance.vehicleTypeId
+      ? await ensureVehicleTypeDatabase().getById(appliance.vehicleTypeId)
+      : null;
+    res.json(resolveEffectiveChecklist(appliance, template, vehicleType));
+  } catch (error) {
+    logger.error('Error saving checklist overlay:', error);
+    res.status(500).json({ error: 'Failed to save checklist' });
   }
 });
 
@@ -470,6 +711,87 @@ router.delete('/results/:id', validateCheckResultId, handleValidationErrors, asy
   } catch (error) {
     logger.error('Error deleting check result:', error);
     res.status(500).json({ error: 'Failed to delete check result' });
+  }
+});
+
+// ============================================
+// Issue Follow-up Routes (TC-4)
+// ============================================
+
+const ISSUE_STATUSES = ['open', 'acknowledged', 'resolved'] as const;
+
+/**
+ * GET /api/truck-checks/issues
+ * Flat, station-scoped feed of issue results for an equipment-officer follow-up
+ * view, enriched with appliance/run context. Optional ?status= filter
+ * (open|acknowledged|resolved); defaults to all open + acknowledged (outstanding).
+ */
+router.get('/issues', async (req: Request, res: Response) => {
+  try {
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const statusFilter = typeof req.query.status === 'string' ? req.query.status : undefined;
+
+    const runs = await db.getAllRunsWithResults(stationId);
+    const issues = runs.flatMap((run) =>
+      run.results
+        .filter((r) => r.status === 'issue')
+        .map((r) => ({
+          ...r,
+          applianceId: run.applianceId,
+          applianceName: run.applianceName,
+          runStartTime: run.startTime,
+          issueStatus: r.issueStatus ?? 'open',
+        })),
+    );
+
+    const filtered = statusFilter
+      ? issues.filter((i) => i.issueStatus === statusFilter)
+      : issues.filter((i) => i.issueStatus !== 'resolved'); // outstanding by default
+
+    filtered.sort((a, b) => new Date(b.runStartTime).getTime() - new Date(a.runStartTime).getTime());
+    res.json(filtered);
+  } catch (error) {
+    logger.error('Error fetching issues:', error);
+    res.status(500).json({ error: 'Failed to fetch issues' });
+  }
+});
+
+/**
+ * PATCH /api/truck-checks/results/:id/issue
+ * Update an issue result's follow-up lifecycle (open → acknowledged → resolved),
+ * optional assignee and note. Requires runId in the body (Table Storage locates
+ * the result by run partition).
+ */
+router.patch('/results/:id/issue', async (req: Request, res: Response) => {
+  try {
+    const { issueStatus, issueNote, assignedTo, resolvedBy, runId } = req.body ?? {};
+    if (issueStatus !== undefined && !ISSUE_STATUSES.includes(issueStatus)) {
+      return res.status(400).json({ error: 'Invalid issueStatus' });
+    }
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
+    const result = await db.updateIssueStatus(
+      req.params.id,
+      { issueStatus, issueNote, assignedTo, resolvedBy },
+      typeof runId === 'string' ? runId : undefined,
+    );
+    if (!result) {
+      return res.status(404).json({ error: 'Issue result not found (include runId in the body)' });
+    }
+
+    // Notify the room so an open follow-up view stays current.
+    if (result.stationId) {
+      io.to(`station-${result.stationId}`).emit('truck-check-update', {
+        type: 'issue-updated',
+        runId: result.runId,
+        result,
+        timestamp: new Date(),
+      });
+    }
+    res.json(result);
+  } catch (error) {
+    logger.error('Error updating issue status:', error);
+    res.status(500).json({ error: 'Failed to update issue' });
   }
 });
 

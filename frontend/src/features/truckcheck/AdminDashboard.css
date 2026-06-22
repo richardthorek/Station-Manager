@@ -513,3 +513,121 @@
     text-align: center;
   }
 }
+
+/* ---- Modal overlay (resolution modal) ---- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: var(--bg-card, #fff);
+  border-radius: 10px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.modal-content h2 {
+  margin: 0 0 1rem;
+  font-size: 1.35rem;
+  color: var(--rfs-black, #1a1a1a);
+}
+
+.resolve-modal__context {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--rfs-dark-grey, #555);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--rfs-black, #1a1a1a);
+}
+
+.form-group .optional {
+  font-weight: 400;
+  color: var(--rfs-dark-grey, #666);
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 0.6rem 0.85rem;
+  border: 2px solid var(--rfs-neutral-light, #ddd);
+  border-radius: 6px;
+  font-size: 1rem;
+  background: var(--bg-card, #fff);
+  color: var(--rfs-black, #1a1a1a);
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--rfs-core-red, #e5281b);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.65rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-primary {
+  background: var(--rfs-core-red, #e5281b);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) { opacity: 0.88; }
+
+.btn-secondary {
+  background: var(--bg-secondary, #f0f0f0);
+  color: var(--rfs-black, #1a1a1a);
+}
+
+.btn-secondary:hover:not(:disabled) { opacity: 0.8; }
+
+.btn-primary:disabled,
+.btn-secondary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* TC-4 issue follow-up cards */
+.issue-card { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.issue-actions { display: flex; flex-direction: column; gap: 0.4rem; flex-shrink: 0; }
+.issue-meta { font-size: 0.85rem; color: var(--color-text-secondary, #666); margin: 0.25rem 0; }
+.issue-status--open { background: var(--surface-error, #fde8e8); }
+.issue-status--acknowledged { background: var(--surface-warning, #fef3cd); }
+.issue-status--resolved { background: var(--surface-success, #e6f4ea); }
+.issue-card--resolved { opacity: 0.7; }

@@ -13,8 +13,15 @@ jest.mock('../index');
 
 import request from 'supertest';
 import express, { Express } from 'express';
+import jwt from 'jsonwebtoken';
 import truckChecksRouter from '../routes/truckChecks';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
+import { ensureVehicleTypeDatabase } from '../services/vehicleTypeDbFactory';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+function adminToken(organizationId: string, userId = 'u-' + organizationId): string {
+  return jwt.sign({ userId, username: userId, role: 'admin', organizationId }, JWT_SECRET);
+}
 
 let app: Express;
 let testApplianceId: string;
@@ -845,5 +852,328 @@ describe('Truck Checks API - Cross-brigade schema fields', () => {
 
       expect(response.body.itemCode).toBeUndefined();
     });
+  });
+});
+
+describe('Truck Checks API - Station isolation (TC-2)', () => {
+  // Two brigades on the same deployment must not see each other's vehicles or runs.
+  const STATION_A = 'station-iso-a';
+  const STATION_B = 'station-iso-b';
+
+  it('scopes appliances to the requesting station', async () => {
+    const a = await request(app)
+      .post('/api/truck-checks/appliances')
+      .set('X-Station-Id', STATION_A)
+      .send({ name: 'Iso Tanker A' })
+      .expect(201);
+    const b = await request(app)
+      .post('/api/truck-checks/appliances')
+      .set('X-Station-Id', STATION_B)
+      .send({ name: 'Iso Tanker B' })
+      .expect(201);
+
+    const listA = await request(app)
+      .get('/api/truck-checks/appliances')
+      .set('X-Station-Id', STATION_A)
+      .expect(200);
+    const idsA = listA.body.map((x: { id: string }) => x.id);
+    expect(idsA).toContain(a.body.id);
+    expect(idsA).not.toContain(b.body.id); // B's vehicle must not leak into A
+  });
+
+  it('scopes check runs (and issues) to the requesting station', async () => {
+    const appA = await request(app)
+      .post('/api/truck-checks/appliances')
+      .set('X-Station-Id', STATION_A)
+      .send({ name: 'Iso Run Vehicle A' });
+
+    const run = await request(app)
+      .post('/api/truck-checks/runs')
+      .set('X-Station-Id', STATION_A)
+      .send({ applianceId: appA.body.id, completedBy: 'Alice', completedByName: 'Alice' })
+      .expect(201);
+
+    // Station B must not see station A's run.
+    const runsB = await request(app)
+      .get('/api/truck-checks/runs')
+      .set('X-Station-Id', STATION_B)
+      .expect(200);
+    expect(runsB.body.map((r: { id: string }) => r.id)).not.toContain(run.body.id);
+
+    // Station A does see it.
+    const runsA = await request(app)
+      .get('/api/truck-checks/runs')
+      .set('X-Station-Id', STATION_A)
+      .expect(200);
+    expect(runsA.body.map((r: { id: string }) => r.id)).toContain(run.body.id);
+  });
+});
+
+describe('Truck Checks API - Vehicle Types (TC-1)', () => {
+  beforeEach(async () => {
+    await ensureVehicleTypeDatabase().clear();
+  });
+
+  const standardItems = [
+    { id: '', name: 'Tyre Condition', description: 'Check tread + pressure', order: 0 },
+    { id: '', name: 'Pump Operation', description: 'Test pump', order: 1 },
+  ];
+
+  it('requires authentication to create a vehicle type', async () => {
+    const res = await request(app)
+      .post('/api/truck-checks/vehicle-types')
+      .send({ name: 'Cat 1 Tanker', standardItems });
+    expect(res.status).toBe(401);
+  });
+
+  it('creates a type with normalised, locked standard items', async () => {
+    const res = await request(app)
+      .post('/api/truck-checks/vehicle-types')
+      .set('Authorization', `Bearer ${adminToken('org-1')}`)
+      .send({ name: 'Cat 1 Tanker', standardItems, isStandard: true })
+      .expect(201);
+    expect(res.body.code).toBe('cat-1-tanker');
+    expect(res.body.standardItems[0].itemCode).toBe('tyre-condition');
+    expect(res.body.standardItems[0].isStandard).toBe(true);
+    expect(res.body.isStandard).toBe(true);
+  });
+
+  it('lists the org’s own types plus shared standards', async () => {
+    await request(app).post('/api/truck-checks/vehicle-types')
+      .set('Authorization', `Bearer ${adminToken('org-1')}`)
+      .send({ name: 'Org1 Private', standardItems: [] });
+    await request(app).post('/api/truck-checks/vehicle-types')
+      .set('Authorization', `Bearer ${adminToken('org-2')}`)
+      .send({ name: 'Shared Std', standardItems: [], isStandard: true });
+    await request(app).post('/api/truck-checks/vehicle-types')
+      .set('Authorization', `Bearer ${adminToken('org-2')}`)
+      .send({ name: 'Org2 Private', standardItems: [] });
+
+    const res = await request(app)
+      .get('/api/truck-checks/vehicle-types')
+      .set('Authorization', `Bearer ${adminToken('org-1')}`)
+      .expect(200);
+    const names = res.body.map((t: { name: string }) => t.name).sort();
+    expect(names).toEqual(['Org1 Private', 'Shared Std']); // not org-2's private type
+  });
+
+  it('blocks editing a vehicle type owned by another org (403)', async () => {
+    const created = await request(app).post('/api/truck-checks/vehicle-types')
+      .set('Authorization', `Bearer ${adminToken('org-1')}`)
+      .send({ name: 'Owned by 1', standardItems: [], isStandard: true });
+
+    const res = await request(app)
+      .put(`/api/truck-checks/vehicle-types/${created.body.id}`)
+      .set('Authorization', `Bearer ${adminToken('org-2')}`)
+      .send({ name: 'Hijacked' });
+    expect(res.status).toBe(403);
+  });
+
+  it('validates the create body and 404s unknown ids', async () => {
+    const tok = adminToken('org-1');
+    expect((await request(app).post('/api/truck-checks/vehicle-types').set('Authorization', `Bearer ${tok}`).send({ standardItems: [] })).status).toBe(400);
+    expect((await request(app).post('/api/truck-checks/vehicle-types').set('Authorization', `Bearer ${tok}`).send({ name: 'X', standardItems: 'nope' })).status).toBe(400);
+    expect((await request(app).put('/api/truck-checks/vehicle-types/missing').set('Authorization', `Bearer ${tok}`).send({ name: 'X' })).status).toBe(404);
+    expect((await request(app).delete('/api/truck-checks/vehicle-types/missing').set('Authorization', `Bearer ${tok}`)).status).toBe(404);
+  });
+
+  it('updates and deletes a type the org owns', async () => {
+    const tok = adminToken('org-1');
+    const created = await request(app).post('/api/truck-checks/vehicle-types').set('Authorization', `Bearer ${tok}`)
+      .send({ name: 'Mine', code: 'Cat 9 Pumper', standardItems: [], category: 'pumper' });
+    expect(created.body.code).toBe('cat-9-pumper');
+
+    const updated = await request(app).put(`/api/truck-checks/vehicle-types/${created.body.id}`).set('Authorization', `Bearer ${tok}`)
+      .send({ name: 'Mine v2', description: 'updated' }).expect(200);
+    expect(updated.body.name).toBe('Mine v2');
+
+    await request(app).delete(`/api/truck-checks/vehicle-types/${created.body.id}`).set('Authorization', `Bearer ${tok}`).expect(204);
+  });
+});
+
+describe('Truck Checks API - Effective checklist (TC-1)', () => {
+  beforeEach(async () => {
+    await ensureVehicleTypeDatabase().clear();
+  });
+
+  async function setupTypedAppliance() {
+    const type = await request(app).post('/api/truck-checks/vehicle-types')
+      .set('Authorization', `Bearer ${adminToken('org-1')}`)
+      .send({ name: 'Cat 1', standardItems: [
+        { id: '', name: 'Tyres', description: 'Check tyres', order: 0 },
+        { id: '', name: 'Pump', description: 'Check pump', order: 1 },
+      ] })
+      .expect(201);
+
+    const appliance = await request(app).post('/api/truck-checks/appliances')
+      .send({ name: 'Tanker 7', vehicleTypeId: type.body.id, agencyId: 'RFS-1234', registration: 'AB12CD', make: 'Isuzu', model: 'FTS', year: 2019 })
+      .expect(201);
+
+    return { typeId: type.body.id, appliance: appliance.body };
+  }
+
+  it('persists vehicle identity fields on the appliance', async () => {
+    const { appliance } = await setupTypedAppliance();
+    expect(appliance.vehicleTypeId).toBeTruthy();
+    expect(appliance.agencyId).toBe('RFS-1234');
+    expect(appliance.registration).toBe('AB12CD');
+    expect(appliance.make).toBe('Isuzu');
+    expect(appliance.year).toBe(2019);
+  });
+
+  it('resolves the standard checklist (locked) for a typed appliance', async () => {
+    const { appliance } = await setupTypedAppliance();
+    const res = await request(app)
+      .get(`/api/truck-checks/appliances/${appliance.id}/checklist`)
+      .expect(200);
+    expect(res.body.vehicleTypeName).toBe('Cat 1');
+    expect(res.body.items.map((i: { name: string }) => i.name)).toEqual(['Tyres', 'Pump']);
+    expect(res.body.items.every((i: { isStandard: boolean }) => i.isStandard)).toBe(true);
+  });
+
+  it('merges brigade custom items with the locked standard, in saved order', async () => {
+    const { appliance } = await setupTypedAppliance();
+
+    const save = await request(app)
+      .put(`/api/truck-checks/appliances/${appliance.id}/checklist`)
+      .send({
+        customItems: [{ id: 'custom-hose', name: 'Brigade Hose Reel', description: 'Local fit-out', order: 0 }],
+        // Put the custom item between the two standard items (keys: standard itemCode, custom id).
+        itemOrder: ['tyres', 'custom-hose', 'pump'],
+      })
+      .expect(200);
+
+    const names = save.body.items.map((i: { name: string }) => i.name);
+    expect(names).toEqual(['Tyres', 'Brigade Hose Reel', 'Pump']);
+
+    // Standard items remain flagged locked; the custom one is not.
+    const hose = save.body.items.find((i: { name: string }) => i.name === 'Brigade Hose Reel');
+    expect(hose.isStandard).toBe(false);
+    const tyres = save.body.items.find((i: { name: string }) => i.name === 'Tyres');
+    expect(tyres.isStandard).toBe(true);
+
+    // Re-fetching returns the same merged, ordered checklist (persisted).
+    const refetched = await request(app)
+      .get(`/api/truck-checks/appliances/${appliance.id}/checklist`)
+      .expect(200);
+    expect(refetched.body.items.map((i: { name: string }) => i.name)).toEqual(['Tyres', 'Brigade Hose Reel', 'Pump']);
+  });
+
+  it('always includes standard items even if the saved order omits them (locked core)', async () => {
+    const { appliance } = await setupTypedAppliance();
+    await request(app)
+      .put(`/api/truck-checks/appliances/${appliance.id}/checklist`)
+      .send({ customItems: [], itemOrder: ['pump'] }) // omits 'tyres'
+      .expect(200);
+
+    const res = await request(app)
+      .get(`/api/truck-checks/appliances/${appliance.id}/checklist`)
+      .expect(200);
+    const names = res.body.items.map((i: { name: string }) => i.name);
+    expect(names).toContain('Tyres'); // standard item cannot be dropped
+    expect(names).toContain('Pump');
+  });
+
+  it('falls back to the legacy template for an appliance with no vehicle type', async () => {
+    const appliance = await request(app).post('/api/truck-checks/appliances').send({ name: 'Legacy Truck' }).expect(201);
+    const res = await request(app).get(`/api/truck-checks/appliances/${appliance.body.id}/checklist`).expect(200);
+    // No type → items come from the auto-seeded legacy template, none marked standard.
+    expect(res.body.vehicleTypeName).toBeUndefined();
+    expect(res.body.items.length).toBeGreaterThan(0);
+    expect(res.body.items.every((i: { isStandard: boolean }) => i.isStandard === false)).toBe(true);
+  });
+
+  it('404s the checklist for an unknown appliance and 400s a bad overlay', async () => {
+    expect((await request(app).get('/api/truck-checks/appliances/missing/checklist')).status).toBe(404);
+    const appliance = await request(app).post('/api/truck-checks/appliances').send({ name: 'Overlay Truck' });
+    expect((await request(app).put(`/api/truck-checks/appliances/${appliance.body.id}/checklist`).send({ customItems: 'nope' })).status).toBe(400);
+    expect((await request(app).put('/api/truck-checks/appliances/missing/checklist').send({ customItems: [] })).status).toBe(404);
+  });
+});
+
+describe('Truck Checks API - Template item id stability (TC-5)', () => {
+  it('keeps an item id stable when re-saving with that id (old code regenerated it)', async () => {
+    const appliance = await request(app)
+      .post('/api/truck-checks/appliances')
+      .send({ name: 'Stable Items Vehicle' })
+      .expect(201);
+
+    const first = await request(app)
+      .put(`/api/truck-checks/templates/${appliance.body.id}`)
+      .send({ items: [
+        { id: 'seed-tyres', name: 'Tyres', description: 'Check tread', order: 0 },
+        { id: 'seed-lights', name: 'Lights', description: 'Check lights', order: 1 },
+      ] })
+      .expect(200);
+    const tyreId = first.body.items.find((i: { name: string }) => i.name === 'Tyres').id;
+
+    // Re-save using the server-assigned ids (+ one new item). Existing ids must
+    // be retained rather than churned to fresh uuids on every edit.
+    const second = await request(app)
+      .put(`/api/truck-checks/templates/${appliance.body.id}`)
+      .send({ items: [
+        { id: tyreId, name: 'Tyres', description: 'Check tread and pressure', order: 0 },
+        { id: first.body.items[1].id, name: 'Lights', description: 'Check lights', order: 1 },
+        { id: 'new-radio', name: 'Radio', description: 'Check radio', order: 2 },
+      ] })
+      .expect(200);
+    const tyreIdAfter = second.body.items.find((i: { name: string }) => i.name === 'Tyres').id;
+
+    expect(tyreIdAfter).toBe(tyreId); // stable across edits
+  });
+});
+
+describe('Truck Checks API - Issue lifecycle (TC-4)', () => {
+  async function recordIssue() {
+    const appliance = await request(app).post('/api/truck-checks/appliances').send({ name: 'Issue Truck' }).expect(201);
+    const run = await request(app).post('/api/truck-checks/runs')
+      .send({ applianceId: appliance.body.id, completedBy: 'Alice', completedByName: 'Alice' }).expect(201);
+    const result = await request(app).post('/api/truck-checks/results').send({
+      runId: run.body.id, itemId: 'i1', itemName: 'Brakes', itemDescription: 'Check brakes',
+      status: 'issue', comment: 'Spongy pedal',
+    }).expect(201);
+    return { applianceId: appliance.body.id, runId: run.body.id, resultId: result.body.id, result: result.body };
+  }
+
+  it('defaults a recorded issue to issueStatus "open"', async () => {
+    const { result } = await recordIssue();
+    expect(result.status).toBe('issue');
+    expect(result.issueStatus).toBe('open');
+  });
+
+  it('lists outstanding issues with appliance context and filters by status', async () => {
+    const { resultId } = await recordIssue();
+    const open = await request(app).get('/api/truck-checks/issues').expect(200);
+    const found = open.body.find((i: { id: string }) => i.id === resultId);
+    expect(found).toBeTruthy();
+    expect(found.applianceName).toBe('Issue Truck');
+    expect(found.issueStatus).toBe('open');
+  });
+
+  it('moves an issue open → acknowledged → resolved and drops it from the outstanding feed', async () => {
+    const { runId, resultId } = await recordIssue();
+
+    const ack = await request(app).patch(`/api/truck-checks/results/${resultId}/issue`)
+      .send({ runId, issueStatus: 'acknowledged', assignedTo: 'Equipment Officer' }).expect(200);
+    expect(ack.body.issueStatus).toBe('acknowledged');
+    expect(ack.body.assignedTo).toBe('Equipment Officer');
+
+    const resolved = await request(app).patch(`/api/truck-checks/results/${resultId}/issue`)
+      .send({ runId, issueStatus: 'resolved', issueNote: 'Bled brakes', resolvedBy: 'Mechanic' }).expect(200);
+    expect(resolved.body.issueStatus).toBe('resolved');
+    expect(resolved.body.resolvedBy).toBe('Mechanic');
+    expect(resolved.body.resolvedAt).toBeTruthy();
+
+    // Default feed (outstanding) excludes resolved; status=resolved includes it.
+    const outstanding = await request(app).get('/api/truck-checks/issues').expect(200);
+    expect(outstanding.body.find((i: { id: string }) => i.id === resultId)).toBeFalsy();
+    const resolvedFeed = await request(app).get('/api/truck-checks/issues?status=resolved').expect(200);
+    expect(resolvedFeed.body.find((i: { id: string }) => i.id === resultId)).toBeTruthy();
+  });
+
+  it('rejects an invalid issueStatus (400) and unknown result (404)', async () => {
+    const { runId, resultId } = await recordIssue();
+    expect((await request(app).patch(`/api/truck-checks/results/${resultId}/issue`).send({ runId, issueStatus: 'nope' })).status).toBe(400);
+    expect((await request(app).patch(`/api/truck-checks/results/missing/issue`).send({ runId, issueStatus: 'resolved' })).status).toBe(404);
   });
 });

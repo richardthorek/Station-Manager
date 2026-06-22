@@ -3,6 +3,29 @@
 import { h, toast } from '../ui.js';
 import * as store from '../store.js';
 import { INCIDENT_TYPES, GENERAL_PHASE } from '../lib/model.js';
+import { isAuthed } from '../lib/serverSync.js';
+import { loadRoster } from '../lib/roster.js';
+
+const STATION_LIST_ID = 'roster-stations';
+const MEMBER_LIST_ID = 'roster-members';
+
+/**
+ * When signed in, turn the free-text location/facilitator fields into
+ * roster-backed typeaheads by filling the page's <datalist> elements. Additive
+ * and best-effort: the inputs stay plain free text if the roster can't load, so
+ * the signed-out flow is unchanged.
+ */
+async function populateRoster(container) {
+  if (!isAuthed()) return;
+  const { stations, members } = await loadRoster();
+  const fill = (id, values) => {
+    const list = container.querySelector(`#${id}`);
+    if (!list || !values.length) return;
+    list.replaceChildren(...values.map((v) => h('option', { value: v })));
+  };
+  fill(STATION_LIST_ID, stations.map((s) => s.name));
+  fill(MEMBER_LIST_ID, members);
+}
 
 function field(labelText, input) {
   return h('label', { class: 'field' }, h('span', { class: 'field__label' }, labelText), input);
@@ -45,7 +68,7 @@ export function render(container) {
         h('legend', {}, 'Incident'),
         field('Title', text(s.incident.title, (sess, v) => { sess.incident.title = v; }, { placeholder: 'e.g. Structure fire — 12 Smith St (or leave blank)' })),
         field('Date', h('input', { type: 'date', value: s.incident.date, ...bind(null, (sess, v) => { sess.incident.date = v; }) })),
-        field('Location', text(s.incident.location, (sess, v) => { sess.incident.location = v; })),
+        field('Location', text(s.incident.location, (sess, v) => { sess.incident.location = v; }, { list: STATION_LIST_ID })),
         field('Type', h('select', {
           onchange: (e) => store.update((sess) => { sess.incident.type = e.target.value; }, { silent: true }),
         }, [h('option', { value: '', selected: !s.incident.type }, '—'),
@@ -54,8 +77,8 @@ export function render(container) {
       h('fieldset', {},
         h('legend', {}, 'AAR meeting'),
         field('Date', h('input', { type: 'date', value: s.aar.date, ...bind(null, (sess, v) => { sess.aar.date = v; }) })),
-        field('Location', text(s.aar.location, (sess, v) => { sess.aar.location = v; }, { placeholder: 'e.g. Bungendore Station' })),
-        field('Facilitator', text(s.aar.facilitator, (sess, v) => { sess.aar.facilitator = v; })),
+        field('Location', text(s.aar.location, (sess, v) => { sess.aar.location = v; }, { placeholder: 'e.g. Bungendore Station', list: STATION_LIST_ID })),
+        field('Facilitator', text(s.aar.facilitator, (sess, v) => { sess.aar.facilitator = v; }, { list: MEMBER_LIST_ID })),
       ),
     ),
     h('fieldset', {},
@@ -72,8 +95,14 @@ export function render(container) {
       phaseList,
       h('button', { class: 'btn', onclick: () => store.update((sess) => sess.phases.push('')) }, '+ Add phase'),
     ),
+    // Roster typeaheads (filled async when signed in; harmless when empty).
+    h('datalist', { id: STATION_LIST_ID }),
+    h('datalist', { id: MEMBER_LIST_ID }),
     h('div', { class: 'page-actions' },
       h('button', { class: 'btn btn--primary btn--big', onclick: () => { toast('Saved'); location.hash = '#/capture'; } }, 'Start recording →'),
     ),
   );
+
+  // Pull station/member names from the SM roster to back the typeaheads.
+  populateRoster(container).catch(() => {});
 }

@@ -230,10 +230,34 @@
   color: var(--rfs-black);
 }
 
+.appliance-identity {
+  margin: 0 0 0.5rem 0;
+  color: var(--rfs-dark-grey);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .appliance-description {
   margin: 0 0 1.5rem 0;
   color: var(--rfs-dark-grey);
   font-size: 0.9rem;
+}
+
+.appliance-card--has-issues {
+  border: 2px solid var(--status-issue-border, #e57373);
+}
+
+.open-issues-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: var(--status-issue-border, #e57373);
+  color: #fff;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Admin View */
@@ -264,6 +288,17 @@
 .action-card p {
   margin: 0 0 1.5rem 0;
   color: var(--rfs-dark-grey);
+}
+
+.appliance-last-checked {
+  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  color: var(--rfs-dark-grey);
+}
+
+.appliance-last-checked.never {
+  color: var(--status-issue-border, #e57373);
+  font-weight: 600;
 }
 
 /* Buttons */

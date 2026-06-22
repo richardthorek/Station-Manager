@@ -3,12 +3,27 @@
 
 import { createSession, normaliseSession } from './lib/model.js';
 import { toDateInput } from './lib/text.js';
+import { isAuthed, pushSession, deleteServerSession } from './lib/serverSync.js';
 
 const SESSION_PREFIX = 'aarstudio.session.';
 const LAST_KEY = 'aarstudio.lastSession';
+const CLOUD_BACKUP_DELAY_MS = 4000;
 
 let current = null;
 const listeners = new Set();
+let cloudBackupTimer = null;
+
+/**
+ * Mirror the current session to the server, debounced, when signed in. Saves
+ * happen on every edit (incl. per-keystroke), so we coalesce them into one PUT a
+ * few seconds after activity settles. Best-effort: failures never surface.
+ */
+function scheduleCloudBackup() {
+  if (!current || !isAuthed()) return;
+  const session = current;
+  clearTimeout(cloudBackupTimer);
+  cloudBackupTimer = setTimeout(() => { pushSession(session).catch(() => {}); }, CLOUD_BACKUP_DELAY_MS);
+}
 
 export function getSession() {
   return current;
@@ -29,6 +44,7 @@ function persist() {
   try {
     localStorage.setItem(SESSION_PREFIX + current.id, JSON.stringify(current));
     localStorage.setItem(LAST_KEY, current.id);
+    scheduleCloudBackup();
   } catch (err) {
     console.error('autosave failed', err);
     notify('save-error');
@@ -146,7 +162,21 @@ export function deleteSession(id) {
     current = null;
     localStorage.removeItem(LAST_KEY);
   }
+  // Best-effort cloud removal so a delete on one device propagates to the team.
+  if (isAuthed()) deleteServerSession(id).catch(() => {});
   notify('session-loaded');
+}
+
+/**
+ * Adopt a session object fetched from the server: normalise, store locally, and
+ * open it as current. Used to pull a brigade-mate's cloud review onto this
+ * device. Persisting locally also re-mirrors it (idempotent).
+ */
+export function adoptSession(obj) {
+  current = normaliseSession(obj);
+  persist();
+  notify('session-loaded');
+  return current;
 }
 
 /** Import a session from exported JSON text; opens it as current. */

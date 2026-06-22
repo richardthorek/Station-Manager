@@ -6,7 +6,7 @@ import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import { Lightbox } from '../../components/Lightbox';
 import { Confetti } from '../../components/Confetti';
-import type { Appliance, ChecklistTemplate, CheckRun, CheckResult, CheckStatus } from '../../types';
+import type { Appliance, ChecklistTemplate, CheckRun, CheckResult, CheckStatus, Member } from '../../types';
 import './CheckWorkflow.css';
 
 export function CheckWorkflowPage() {
@@ -21,6 +21,8 @@ export function CheckWorkflowPage() {
   const [results, setResults] = useState<Map<string, CheckResult>>(new Map());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedBy, setCompletedBy] = useState('');
+  const [completedByMemberId, setCompletedByMemberId] = useState('');
+  const [members, setMembers] = useState<Member[]>([]);
   const [showNamePrompt, setShowNamePrompt] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,12 +128,24 @@ export function CheckWorkflowPage() {
   async function loadData() {
     try {
       setLoading(true);
-      const [applianceData, templateData] = await Promise.all([
+      // Use the resolved effective checklist: the vehicle type's locked standard
+      // items merged with the brigade's custom overlay, in saved order. Falls
+      // back to the legacy per-appliance template server-side when untyped.
+      const [applianceData, checklist] = await Promise.all([
         api.getAppliance(applianceId!),
-        api.getTemplate(applianceId!),
+        api.getEffectiveChecklist(applianceId!),
       ]);
       setAppliance(applianceData);
-      setTemplate(templateData);
+      // Roster for member attribution (best-effort; free-text fallback if it fails).
+      api.getMembers().then(setMembers).catch(() => setMembers([]));
+      setTemplate({
+        id: applianceId!,
+        applianceId: checklist.applianceId,
+        applianceName: checklist.applianceName,
+        items: checklist.items,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
     } catch (err) {
       setError('Failed to load checklist');
       console.error(err);
@@ -144,7 +158,10 @@ export function CheckWorkflowPage() {
     if (!completedBy.trim() || !applianceId) return;
     
     try {
-      const response = await api.createCheckRun(applianceId, completedBy, completedBy);
+      // Attribute the run to a roster member when the name matches one; otherwise
+      // fall back to the free-text name (kiosk / non-member). completedByName keeps
+      // the display name in both cases.
+      const response = await api.createCheckRun(applianceId, completedByMemberId || completedBy, completedBy);
       setCheckRun(response);
       const joined = typeof response === 'object' && 'joined' in response ? Boolean(response.joined) : false;
       setIsJoinedCheck(joined);
@@ -386,18 +403,30 @@ export function CheckWorkflowPage() {
         </header>
         <main className="workflow-main">
           <div className="name-prompt">
-            <h2>Enter Your Name</h2>
-            <p>Please enter your name to begin the check</p>
+            <h2>Who's doing this check?</h2>
+            <p>Pick your name from the roster, or type it in.</p>
             <input
               type="text"
+              list="check-member-options"
               value={completedBy}
-              onChange={(e) => setCompletedBy(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCompletedBy(value);
+                // Resolve to a roster member id when the name matches (for attribution).
+                const match = members.find((m) => m.name === value);
+                setCompletedByMemberId(match?.id ?? '');
+              }}
               placeholder="Your name"
               className="name-input"
               ref={nameInputRef}
             />
-            <button 
-              className="btn-primary" 
+            <datalist id="check-member-options">
+              {members.map((m) => (
+                <option key={m.id} value={m.name} />
+              ))}
+            </datalist>
+            <button
+              className="btn-primary"
               onClick={handleStartCheck}
               disabled={!completedBy.trim()}
             >

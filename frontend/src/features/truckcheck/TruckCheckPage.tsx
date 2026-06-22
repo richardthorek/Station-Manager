@@ -19,7 +19,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { PageTransition } from '../../components/PageTransition';
 import { api } from '../../services/api';
-import type { Appliance, CheckRun } from '../../types';
+import type { Appliance, CheckRun, IssueResult } from '../../types';
 import './TruckCheckPage.css';
 
 export function TruckCheckPage() {
@@ -28,6 +28,7 @@ export function TruckCheckPage() {
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [activeChecks, setActiveChecks] = useState<Map<string, CheckRun>>(new Map());
   const [lastChecked, setLastChecked] = useState<Map<string, string>>(new Map());
+  const [openIssues, setOpenIssues] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,9 +39,10 @@ export function TruckCheckPage() {
   async function loadAppliances() {
     try {
       setLoading(true);
-      const [appliancesData, checkRunsData] = await Promise.all([
+      const [appliancesData, checkRunsData, issuesData] = await Promise.all([
         api.getAppliances(),
-        api.getCheckRuns()
+        api.getCheckRuns(),
+        api.getIssues().catch(() => [] as IssueResult[]),
       ]);
       // Defensive checks: ensure data is an array
       setAppliances(Array.isArray(appliancesData) ? appliancesData : []);
@@ -54,6 +56,13 @@ export function TruckCheckPage() {
           activeMap.set(run.applianceId, run);
         });
       setActiveChecks(activeMap);
+
+      // Build a set of appliance IDs that have outstanding (open or acknowledged) issues.
+      const issueSet = new Set<string>();
+      (Array.isArray(issuesData) ? issuesData : []).forEach((issue: IssueResult) => {
+        if (issue.issueStatus !== 'resolved') issueSet.add(issue.applianceId);
+      });
+      setOpenIssues(issueSet);
 
       // Track the most recent completed check per appliance for an "at a glance"
       // overdue indicator — the digital equivalent of the last dated line on a
@@ -148,6 +157,9 @@ export function TruckCheckPage() {
           <Link to="/truckcheck/admin" className="tab-link">
             ⚙️ Admin Dashboard
           </Link>
+          <Link to="/truckcheck/vehicle-types" className="tab-link">
+            🧰 Vehicle Types
+          </Link>
         </div>
 
         <div className="start-view">
@@ -160,7 +172,7 @@ export function TruckCheckPage() {
             {appliances.map((appliance) => {
               const activeCheck = activeChecks.get(appliance.id);
               return (
-                <div key={appliance.id} className="appliance-card">
+                <div key={appliance.id} className={`appliance-card${openIssues.has(appliance.id) ? ' appliance-card--has-issues' : ''}`}>
                   {activeCheck && (
                     <div className="active-check-badge">
                       🔄 Check in progress
@@ -169,12 +181,23 @@ export function TruckCheckPage() {
                       </span>
                     </div>
                   )}
+                  {openIssues.has(appliance.id) && !activeCheck && (
+                    <div className="open-issues-badge">⚠ Open issues</div>
+                  )}
                   {appliance.photoUrl ? (
                     <img src={appliance.photoUrl} alt={appliance.name} className="appliance-photo" />
                   ) : (
                     <div className="appliance-icon">🚛</div>
                   )}
                   <h3>{appliance.name}</h3>
+                  {(appliance.make || appliance.model || appliance.year || appliance.registration) && (
+                    <p className="appliance-identity">
+                      {[
+                        [appliance.make, appliance.model, appliance.year].filter(Boolean).join(' '),
+                        appliance.registration,
+                      ].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
                   {appliance.description && (
                     <p className="appliance-description">{appliance.description}</p>
                   )}
