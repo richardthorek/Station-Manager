@@ -286,10 +286,17 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
 
 ### AAR Studio polish (Stage 5)
 
-- **P1** ⬜ — dedupe-threshold tuning + merge-suggestion UI; accessibility pass
-  (keyboard-only board, ARIA live regions for Present mode); print-stylesheet
-  refinements; per-unit finding attribution; optional `?demo` deep link.
-  (archive: AAR_STUDIO_PLAN Stage 5)
+- **P1** 🟡 — *merge-suggestion UI + dedupe tuning + a11y pass done 2026-06-22:*
+  the dedupe now has a two-band model — auto-skip stays at similarity ≥ 0.72, and
+  the new "soft band" [0.5, 0.72) is surfaced on the findings board as a "Possible
+  duplicates" panel (`dedupe.findMergeSuggestions()`, greedy/non-overlapping) with
+  **Merge** (`dedupe.mergeFindings()` — longer text wins, quote/segment ids unioned,
+  identity kept) and **Keep both** (session-dismissed) actions. A11y: board columns
+  are `role=group` labelled by category, cards are a `role=list`/`listitem`
+  structure, the analyse status is an `aria-live` region, and the merge panel is a
+  labelled region with accessible buttons. 4 new pure-function tests (AAR suite 89).
+  *Remaining:* print-stylesheet refinements; per-unit finding attribution; optional
+  `?demo` deep link. (archive: AAR_STUDIO_PLAN Stage 5)
 
 ### Pricing & plans (reference)
 
@@ -2833,6 +2840,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.2 | Jun 2026 | AAR Studio plan gate | Closed the direct-nav entitlement bypass: AAR Studio boots behind a fail-open entitlement gate (`entitlement.js` probes `/api/auth/entitlements`; signed-in-but-unentitled orgs see an upgrade screen, signed-out/local-first use proceeds). 13 new node --test tests. |
 | 4.3 | Jun 2026 | C3 AI top-up + C4 member invite/activation + limit upgrade UX | C3: one-time Stripe top-up pack credited as `aiBonusSessions`; speech-token gate consumes bonus after monthly allowance; OrganizationPage shows bonus meter + buy button. Limit upgrade UX: `ApiLimitError` on 403+`upgradeRequired`; SignInPage/CreateStationModal/VehicleManagement surface "Upgrade plan" CTA. C4: `Member.authStatus/inviteToken/inviteEmail` in both DB twins + `IDatabase`; `POST /api/members/:id/invite` (admin-only, generates token); public `GET/POST /api/members/activate/:token` (in `memberActivation.ts` mounted before `requireSession`); frontend activation page at `/activate/:token`; invite button on member profile page (admin-only). `api_register.json` → v1.9.0. |
 | 4.4 | Jun 2026 | T1 inc 2 — shared domain types | Extracted the core sign-in domain shapes into a single date-generic, declaration-only `shared/domain-types.d.ts` (`Member<TDate = string>` etc.). Backend re-exports specialised with `Date`, frontend with `string`. Type-only `.d.ts` is never emitted/bundled, so install, both `dist` outputs, and CI deploy packaging are untouched (deliberately avoids the T6 npm-workspace conflict). All CI gates green. |
+| 4.6 | Jun 2026 | AAR P1 (merge UI) | AAR findings board gained a "Possible duplicates" merge-suggestion panel: dedupe now has a two-band model (auto-skip ≥0.72; soft-band [0.5,0.72) surfaced for human merge via `findMergeSuggestions`/`mergeFindings`), with Merge / Keep-both actions and an accessibility pass (role=group/list columns, aria-live status, labelled merge region). 4 new pure tests; AAR suite 89. |
 
 ---
 

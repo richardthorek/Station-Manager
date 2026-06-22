@@ -4,12 +4,63 @@
 import { h, toast } from '../ui.js';
 import * as store from '../store.js';
 import { CATEGORIES, sessionPhases, createFinding } from '../lib/model.js';
+import { findMergeSuggestions, mergeFindings } from '../lib/dedupe.js';
 import { analyseNow } from '../analyse.js';
 
 let phaseFilter = null; // null = all
+// Pairs the facilitator chose to "keep both", keyed by sorted finding-id pair.
+// Session-local (resets on reload) so dismissed suggestions don't reappear.
+const dismissedPairs = new Set();
+
+const pairKey = (a, b) => [a.id, b.id].sort().join('|');
+
+function mergeSuggestionsPanel(session) {
+  const suggestions = findMergeSuggestions(session.findings)
+    .filter((p) => !dismissedPairs.has(pairKey(p.a, p.b)));
+  if (!suggestions.length) return null;
+
+  const catLabel = (id) => (CATEGORIES.find((c) => c.id === id)?.label ?? id);
+
+  return h('section', { class: 'merge-panel', role: 'region', 'aria-label': 'Possible duplicate findings' },
+    h('div', { class: 'merge-panel__head' },
+      h('span', { class: 'merge-panel__title' }, `⚠ ${suggestions.length} possible duplicate${suggestions.length > 1 ? 's' : ''}`),
+      h('span', { class: 'muted' }, 'Merge to combine, or keep both.'),
+    ),
+    h('ul', { class: 'merge-panel__list', role: 'list' }, suggestions.map((p) => {
+      const item = h('li', { class: 'merge-suggestion', role: 'listitem', 'aria-label': `Possible duplicate in ${catLabel(p.a.category)}` },
+        h('div', { class: 'merge-suggestion__texts' },
+          h('p', { class: 'merge-suggestion__text' }, p.a.text),
+          h('p', { class: 'merge-suggestion__text' }, p.b.text),
+        ),
+        h('div', { class: 'merge-suggestion__actions btn-row' },
+          h('button', {
+            class: 'btn btn--small btn--primary',
+            'aria-label': 'Merge these two findings into one',
+            onclick: () => {
+              store.update((s) => {
+                const a = s.findings.find((x) => x.id === p.a.id);
+                const b = s.findings.find((x) => x.id === p.b.id);
+                if (!a || !b) return;
+                Object.assign(a, mergeFindings(a, b));
+                s.findings = s.findings.filter((x) => x.id !== b.id);
+              }, { reason: 'findings' });
+              toast('Findings merged');
+            },
+          }, 'Merge'),
+          h('button', {
+            class: 'btn btn--small',
+            'aria-label': 'Keep both findings',
+            onclick: () => { dismissedPairs.add(pairKey(p.a, p.b)); store.update(() => {}, { reason: 'findings' }); },
+          }, 'Keep both'),
+        ),
+      );
+      return item;
+    })),
+  );
+}
 
 function findingCard(f, phases) {
-  const card = h('div', { class: `finding finding--${f.category}` });
+  const card = h('div', { class: `finding finding--${f.category}`, role: 'listitem' });
   const body = h('div', { class: 'finding__text' }, f.text);
   card.append(
     body,
@@ -73,7 +124,7 @@ export function render(container) {
   const session = store.getSession();
   const phases = sessionPhases(session);
   if (phaseFilter && !phases.includes(phaseFilter)) phaseFilter = null;
-  const status = h('span', { class: 'muted' });
+  const status = h('span', { class: 'muted', role: 'status', 'aria-live': 'polite' });
 
   const visible = session.findings.filter((f) => !phaseFilter || f.phase === phaseFilter);
 
@@ -87,9 +138,9 @@ export function render(container) {
 
   const columns = h('div', { class: 'board' }, CATEGORIES.map((cat) => {
     const items = visible.filter((f) => f.category === cat.id);
-    return h('div', { class: `board__col board__col--${cat.id}` },
-      h('div', { class: 'board__head' }, h('span', {}, cat.label), h('span', { class: 'board__count' }, String(items.length))),
-      h('div', { class: 'board__cards' },
+    return h('div', { class: `board__col board__col--${cat.id}`, role: 'group', 'aria-label': `${cat.label} (${items.length})` },
+      h('div', { class: 'board__head' }, h('span', {}, cat.label), h('span', { class: 'board__count', 'aria-hidden': 'true' }, String(items.length))),
+      h('div', { class: 'board__cards', role: 'list' },
         items.length ? items.map((f) => findingCard(f, phases)) : h('p', { class: 'muted board__empty' }, '—'),
       ),
     );
@@ -111,6 +162,7 @@ export function render(container) {
       ),
     ),
     filterChips,
+    mergeSuggestionsPanel(session),
     quickAdd(phases),
     columns,
     h('button', { class: 'present-exit btn', onclick: togglePresent }, 'Exit present mode (Esc)'),
