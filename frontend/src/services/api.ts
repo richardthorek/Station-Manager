@@ -651,10 +651,11 @@ class ApiService {
   }
 
   // Templates
-  async getTemplate(applianceId: string): Promise<ChecklistTemplate> {
+  async getTemplate(applianceId: string): Promise<ChecklistTemplate | null> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/templates/${applianceId}`, {
       headers: this.getHeaders(),
     });
+    if (response.status === 404) return null;
     if (!response.ok) throw new Error('Failed to fetch template');
     return response.json();
   }

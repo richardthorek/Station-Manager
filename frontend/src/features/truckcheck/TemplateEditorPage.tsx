@@ -36,8 +36,10 @@ export function TemplateEditorPage() {
     try {
       setLoading(true);
       const templateData = await api.getTemplate(applianceId);
-      setTemplate(templateData);
-      setItems(templateData.items);
+      if (templateData) {
+        setTemplate(templateData);
+        setItems(templateData.items);
+      }
     } catch (err) {
       setError('Failed to load template');
       console.error(err);

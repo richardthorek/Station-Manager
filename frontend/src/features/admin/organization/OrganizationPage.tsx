@@ -88,9 +88,13 @@ export function OrganizationPage() {
     if (!isOwner) return;
     setSaving(true);
     try {
-      await api.updateOrganization({ moduleToggles: { [key]: value } });
+      const { organization: updated } = await api.updateOrganization({ moduleToggles: { [key]: value } });
       await refreshOrganization();
-      flash('success', 'Updated');
+      if (Boolean(updated.entitlements[key]) !== value) {
+        flash('error', 'This module is not available on your current plan. Upgrade to enable it.');
+      } else {
+        flash('success', 'Updated');
+      }
     } catch (err) {
       flash('error', err instanceof Error ? err.message : 'Update failed');
     } finally {

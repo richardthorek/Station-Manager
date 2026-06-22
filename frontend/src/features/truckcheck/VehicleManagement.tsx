@@ -28,6 +28,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   const [vehiclePhotoUrl, setVehiclePhotoUrl] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [vehicleModalError, setVehicleModalError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   // Standard items from the linked VehicleType, shown read-only in the template editor.
   const [standardItemsForEditor, setStandardItemsForEditor] = useState<ChecklistItem[]>([]);
@@ -101,6 +102,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   function handleNewVehicle() {
     setSelectedVehicle(null);
     resetVehicleForm();
+    setVehicleModalError(null);
     setIsEditMode(false);
     setShowVehicleModal(true);
   }
@@ -118,6 +120,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     setYear(vehicle.year ? String(vehicle.year) : '');
     setVehiclePhotoUrl(vehicle.photoUrl || '');
     setPhotoFile(null);
+    setVehicleModalError(null);
     setIsEditMode(true);
     setShowVehicleModal(true);
   }
@@ -128,7 +131,17 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
         api.getTemplate(vehicle.id),
         vehicle.vehicleTypeId ? api.getEffectiveChecklist(vehicle.id) : Promise.resolve(null),
       ]);
-      setTemplate(templateData);
+      // If no custom template exists yet (404 → null), start with an empty item list so the
+      // editor opens and the user can add custom items. Standard items still show read-only.
+      const resolvedTemplate: ChecklistTemplate = templateData ?? {
+        id: '',
+        applianceId: vehicle.id,
+        applianceName: vehicle.name,
+        items: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setTemplate(resolvedTemplate);
       setStandardItemsForEditor(
         effectiveChecklist ? effectiveChecklist.items.filter((i) => i.isStandard) : [],
       );
@@ -159,10 +172,11 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
 
   async function handleSaveVehicle() {
     if (!vehicleName.trim()) {
-      alert('Vehicle name is required');
+      setVehicleModalError('Vehicle name is required');
       return;
     }
 
+    setVehicleModalError(null);
     try {
       setUploading(true);
       
@@ -195,10 +209,8 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
       setShowVehicleModal(false);
       onUpdate();
     } catch (err) {
-      // Surface the server message (e.g. plan vehicle-limit reached) when present.
       const fallback = `Failed to ${isEditMode ? 'update' : 'create'} vehicle`;
-      alert(err instanceof Error && err.message ? err.message : fallback);
-      console.error(err);
+      setVehicleModalError(err instanceof Error && err.message ? err.message : fallback);
     } finally {
       setUploading(false);
     }
@@ -461,19 +473,22 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
               <small>Optional: Upload a photo to display instead of the default icon</small>
             </div>
 
+            {vehicleModalError && (
+              <p className="vehicle-modal-error" role="alert">{vehicleModalError}</p>
+            )}
             <div className="modal-actions">
-              <button 
-                type="button" 
-                className="btn-secondary" 
+              <button
+                type="button"
+                className="btn-secondary"
                 onClick={() => setShowVehicleModal(false)}
                 disabled={uploading}
               >
                 Cancel
               </button>
-              <button 
-                type="button" 
-                className="btn-primary" 
-                onClick={handleSaveVehicle} 
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleSaveVehicle}
                 disabled={uploading}
               >
                 {uploading ? 'Saving...' : isEditMode ? 'Update' : 'Create'}
