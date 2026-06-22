@@ -32,6 +32,7 @@ export interface ApplianceDetails {
   year?: number;
 }
 import type { Organization, Entitlements } from '../contexts/AuthContext';
+import { getKioskToken } from '../utils/kioskMode';
 
 // Use relative URL in production, localhost in development; ensure trailing /api
 const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
@@ -97,7 +98,14 @@ class ApiService {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
+    // In kiosk mode, forward the brigade access token so read endpoints
+    // (members, appliances, reports) authenticate a logged-out kiosk device.
+    const kioskToken = getKioskToken();
+    if (kioskToken) {
+      headers['X-Brigade-Token'] = kioskToken;
+    }
+
     // Merge with additional headers
     if (additionalHeaders) {
       Object.assign(headers, additionalHeaders);

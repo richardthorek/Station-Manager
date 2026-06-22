@@ -239,6 +239,76 @@ export function flexibleAuth(options: FlexibleAuthOptions = {}) {
 }
 
 /**
+ * Require an authenticated session to READ data — always on (not gated by
+ * ENABLE_DATA_PROTECTION, unlike flexibleAuth above).
+ *
+ * Closes the anonymous data-exposure hole found in UAT (2026-06-22): the
+ * reports, members and truck-check appliance read endpoints returned real
+ * organisational data and member PII to fully credential-less requests.
+ *
+ * A request is allowed through when ANY of these holds:
+ *   1. It targets the public demo station (kept intentionally open — see
+ *      CLAUDE.md "demo station auth is intentionally bypassed").
+ *   2. It carries a valid admin JWT — ANY role (owner/admin/viewer). The old
+ *      flexibleAuth scope check only accepted role==='admin', which would have
+ *      403'd owners; reads only need a valid session, not a specific role.
+ *   3. It carries a valid brigade/kiosk access token (station-scoped). Kiosks
+ *      forward this as the X-Brigade-Token header (see frontend api.ts).
+ *
+ * Otherwise it is rejected with 401. Mounted in index.ts on the read routers;
+ * write-path kiosk actions (check-ins, truck-check results) are deliberately
+ * left on their existing pass-through behaviour.
+ */
+export function requireSession(options: { readsOnly?: boolean } = {}) {
+  const { readsOnly = false } = options;
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    // When readsOnly, only gate safe (read) methods — write-path kiosk actions
+    // (e.g. truck-check results, member self-add) keep their pass-through.
+    if (readsOnly && req.method !== 'GET' && req.method !== 'HEAD') {
+      next();
+      return;
+    }
+
+    // 1. Public demo station stays open.
+    if (resolveRequestedStationId(req) === DEMO_STATION_ID) {
+      next();
+      return;
+    }
+
+    // 2. Valid admin JWT (any role).
+    const jwtResult = validateJWT(req);
+    if (jwtResult) {
+      req.auth = jwtResult;
+      next();
+      return;
+    }
+
+    // 3. Valid brigade/kiosk token (station-scoped).
+    const brigadeResult = await validateBrigadeToken(req);
+    if (brigadeResult) {
+      // Lock the request to the token's station when none was explicitly asked for.
+      if (brigadeResult.stationId && !resolveRequestedStationId(req)) {
+        req.stationId = brigadeResult.stationId;
+        req.isDemoMode = false;
+      }
+      req.auth = brigadeResult;
+      next();
+      return;
+    }
+
+    logger.warn('Anonymous read blocked — authentication required', {
+      path: req.originalUrl,
+      method: req.method,
+      ip: req.ip,
+    });
+    res.status(401).json({
+      error: 'Authentication required',
+      message: 'This data requires a signed-in session or a valid kiosk access token.',
+    });
+  };
+}
+
+/**
  * Extend Express Request to include auth result
  */
 declare global {

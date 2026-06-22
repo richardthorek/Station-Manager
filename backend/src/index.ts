@@ -66,6 +66,7 @@ import { getVersionInfo } from './services/version';
 import { seedDemoStationIfNeeded } from './services/demoStationSeeder';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 import { requireFeature } from './middleware/entitlements';
+import { requireSession } from './middleware/flexibleAuth';
 import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
 import { requestIdMiddleware } from './middleware/requestId';
 import { requestLoggingMiddleware } from './middleware/requestLogging';
@@ -393,13 +394,17 @@ app.use('/api/organizations', apiRateLimiter, organizationsRouter);
 app.use('/api/billing', apiRateLimiter, billingRouter);
 app.use('/api/ai', apiRateLimiter, aiRouter);
 app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'), aarSessionsRouter);
-app.use('/api/members', apiRateLimiter, membersRouter);
+// requireSession({ readsOnly:true }) closes the anonymous data-exposure hole
+// (UAT 2026-06-22): reads on members/truck-checks/reports now require a signed-in
+// session, a valid kiosk token, or the public demo station. Write-path kiosk
+// actions (check-ins, truck-check results) keep their existing pass-through.
+app.use('/api/members', apiRateLimiter, requireSession({ readsOnly: true }), membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, requireFeature('signInEnabled'), checkinsRouter);
 app.use('/api/events', apiRateLimiter, requireFeature('signInEnabled'), eventsRouter);
 app.use('/api/stations', apiRateLimiter, stationsRouter);
-app.use('/api/truck-checks', apiRateLimiter, requireFeature('truckCheckEnabled'), truckChecksRouter);
-app.use('/api/reports', apiRateLimiter, requireFeature('reportsEnabled'), reportsRouter);
+app.use('/api/truck-checks', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('truckCheckEnabled'), truckChecksRouter);
+app.use('/api/reports', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('reportsEnabled'), reportsRouter);
 app.use('/api/brigade-access', apiRateLimiter, brigadeAccessRouter);
 app.use('/api/export', apiRateLimiter, requireFeature('reportsEnabled'), exportRouter);
 
