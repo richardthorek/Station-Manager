@@ -222,18 +222,26 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   neither `package.json`, `node_modules`, nor CI packaging. *Remaining (future increment):*
   truck-check types (`Appliance`/`VehicleType`/`ChecklistItem`/`CheckRun`/`CheckResult`)
   are still frontend-only and could fold into the shared module next. (archive: CONSOLIDATION_REVIEW #4)
-- **S1 — Finish the design-system pass** 🟡 — *`prefers-reduced-motion` guard done
-  2026-06-22:* AAR Studio's `app.css` now carries the same global reduce-motion guard
-  as the SPA (`*`/`::before`/`::after` near-instant durations), replacing the narrow
-  `.live__dot`-only rule so toasts/meters/all animations honour the OS setting.
-  *Decision 2026-06-22 (owner):* AAR inline controls **stay at their current sizing** —
-  the strict-60px kiosk target does not apply because AAR is a desktop/laptop
-  facilitator tool, not a kiosk surface. Sub-item closed (won't-do).
-  *Remaining:* share the RFS-branded HTML/print **report template** that the three
-  export paths reinvent (`backend/src/services/csvExportService.ts`,
-  `frontend/src/utils/exportUtils.ts`, `aar-studio/js/lib/exports.js`) — note
-  CONSOLIDATION_REVIEW #5 marks this "lower priority than it looks" since the overlap is
-  only the branded header/section template, not the data. (archive: CONSOLIDATION_REVIEW #2/#5)
+- **S1 — Finish the design-system pass** ✅ (closed 2026-06-22).
+  *`prefers-reduced-motion` guard done:* AAR Studio's `app.css` now carries the same
+  global reduce-motion guard as the SPA (`*`/`::before`/`::after` near-instant durations),
+  replacing the narrow `.live__dot`-only rule so toasts/meters/all animations honour the
+  OS setting.
+  *Strict-60px (owner decision):* AAR inline controls **stay at their current sizing** —
+  the kiosk target does not apply because AAR is a desktop/laptop facilitator tool, not a
+  kiosk surface. Won't-do.
+  *Shared report template — investigated, not actionable as scoped (2026-06-22):* the
+  premise that "three export paths reinvent the same RFS-branded HTML/print template" does
+  not hold on inspection. The three paths use three different mechanisms for three
+  different outputs: `backend/src/services/csvExportService.ts` emits **CSV only**;
+  `frontend/src/utils/exportUtils.ts` produces a **binary PDF/PNG via jsPDF + html2canvas**
+  (it screenshots the live DOM — there is no HTML report string to share); only
+  `aar-studio/js/lib/exports.js` renders branded **HTML** reports, and that is already a
+  single bespoke implementation. There is no duplicated template to extract — building a
+  "shared template" would mean inventing HTML report output for the backend/frontend that
+  doesn't exist today (scope creep, not consolidation). Confirms CONSOLIDATION_REVIEW #5's
+  "lower priority than it looks." Closed; revisit only if a genuine second HTML-report
+  producer appears. (archive: CONSOLIDATION_REVIEW #2/#5)
 - **A2 — AAR identity & server-side persistence** ⬜ (effort L) — pass the logged-in
   token into AAR; add `/api/aar-sessions` CRUD on the storage factories (`AARSessions`
   table, partition by org/brigade); replace AAR's free-text setup with a station/member
@@ -2833,6 +2841,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.2 | Jun 2026 | AAR Studio plan gate | Closed the direct-nav entitlement bypass: AAR Studio boots behind a fail-open entitlement gate (`entitlement.js` probes `/api/auth/entitlements`; signed-in-but-unentitled orgs see an upgrade screen, signed-out/local-first use proceeds). 13 new node --test tests. |
 | 4.3 | Jun 2026 | C3 AI top-up + C4 member invite/activation + limit upgrade UX | C3: one-time Stripe top-up pack credited as `aiBonusSessions`; speech-token gate consumes bonus after monthly allowance; OrganizationPage shows bonus meter + buy button. Limit upgrade UX: `ApiLimitError` on 403+`upgradeRequired`; SignInPage/CreateStationModal/VehicleManagement surface "Upgrade plan" CTA. C4: `Member.authStatus/inviteToken/inviteEmail` in both DB twins + `IDatabase`; `POST /api/members/:id/invite` (admin-only, generates token); public `GET/POST /api/members/activate/:token` (in `memberActivation.ts` mounted before `requireSession`); frontend activation page at `/activate/:token`; invite button on member profile page (admin-only). `api_register.json` → v1.9.0. |
 | 4.4 | Jun 2026 | T1 inc 2 — shared domain types | Extracted the core sign-in domain shapes into a single date-generic, declaration-only `shared/domain-types.d.ts` (`Member<TDate = string>` etc.). Backend re-exports specialised with `Date`, frontend with `string`. Type-only `.d.ts` is never emitted/bundled, so install, both `dist` outputs, and CI deploy packaging are untouched (deliberately avoids the T6 npm-workspace conflict). All CI gates green. |
+| 4.5 | Jun 2026 | S1 closed | Design-system pass closed: AAR Studio global `prefers-reduced-motion` guard shipped (#587); strict-60px declined by owner (AAR is a desktop facilitator tool); shared report-template sub-item investigated and closed as not-actionable — the three "export paths" use three different mechanisms (CSV / jsPDF+html2canvas / HTML) with no duplicated template to extract. |
 
 ---
 
