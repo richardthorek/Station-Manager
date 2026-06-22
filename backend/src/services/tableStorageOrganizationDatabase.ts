@@ -38,6 +38,7 @@ interface OrganizationEntity extends TableEntity {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   trialEndsAt?: string;
+  aiBonusSessions?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -80,6 +81,7 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       stripeCustomerId: org.stripeCustomerId,
       stripeSubscriptionId: org.stripeSubscriptionId,
       trialEndsAt: org.trialEndsAt?.toISOString(),
+      aiBonusSessions: org.aiBonusSessions,
       createdAt: org.createdAt.toISOString(),
       updatedAt: org.updatedAt.toISOString(),
     };
@@ -97,6 +99,7 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       stripeCustomerId: entity.stripeCustomerId,
       stripeSubscriptionId: entity.stripeSubscriptionId,
       trialEndsAt: entity.trialEndsAt ? new Date(entity.trialEndsAt) : undefined,
+      aiBonusSessions: entity.aiBonusSessions,
       createdAt: new Date(entity.createdAt),
       updatedAt: new Date(entity.updatedAt),
     };
@@ -153,7 +156,7 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
 
   async updateOrganization(
     id: string,
-    updates: Partial<Pick<Organization, 'name' | 'billingEmail' | 'planCode' | 'status' | 'entitlements' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'trialEndsAt'>>,
+    updates: Partial<Pick<Organization, 'name' | 'billingEmail' | 'planCode' | 'status' | 'entitlements' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'trialEndsAt' | 'aiBonusSessions'>>,
   ): Promise<Organization | null> {
     const existing = await this.getOrganizationById(id);
     if (!existing) return null;

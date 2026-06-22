@@ -138,6 +138,27 @@ The RFS Station Manager is a modern, real-time digital sign-in system designed f
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### Shared Domain Types
+
+The core sign-in domain shapes (`Station`, `Member`, `Activity`, `CheckIn`,
+`ActiveActivity`, `Event`, `EventParticipant`, `EventWithParticipants`, plus
+`CheckInMethod`/`StationHierarchy`) are defined **once** in the date-generic,
+declaration-only module `shared/domain-types.d.ts` at the repo root
+(e.g. `Member<TDate = string>`):
+
+- `backend/src/types/index.ts` re-exports them specialised with `Date` (the
+  persistence representation used by both DB twins).
+- `frontend/src/types/index.ts` re-exports them with the default `string` (the
+  JSON-over-the-wire representation — `Date` serialises to an ISO string).
+
+Because the module is a type-only `.d.ts`, TypeScript never emits it: it does
+not appear in `backend/dist` or `frontend/dist`, requires no `package.json` /
+`node_modules` / workspace changes, and leaves the CI deploy packaging
+untouched. App-specific composites (`StationLookupResult`, the truck-check
+types, and the frontend-only `CheckInWithDetails.tagColor` /
+`ActiveActivity.activity` extensions) stay in each app's own `types/index.ts`.
+This is roadmap item **T1 increment 2** (see `docs/MASTER_PLAN.md`).
+
 ### Application Flow
 
 1. **User Access**: Users access via browser (kiosk, mobile, desktop)

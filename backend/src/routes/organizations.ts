@@ -34,7 +34,7 @@ function orgId(req: Request, res: Response): string | null {
 }
 
 /** GET current organization (+ plan catalog for the UI). */
-router.get('/current', sensitiveActionRateLimiter, authMiddleware, async (req: Request, res: Response) => {
+router.get('/current', authMiddleware, async (req: Request, res: Response) => {
   const id = orgId(req, res);
   if (!id) return;
   const db = ensureOrganizationDatabase();
@@ -93,7 +93,7 @@ router.put('/current', sensitiveActionRateLimiter, authMiddleware, requireOwner,
 });
 
 /** GET users in the current organization — admin/owner. */
-router.get('/current/users', sensitiveActionRateLimiter, authMiddleware, requireAdmin, async (req: Request, res: Response) => {
+router.get('/current/users', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   const id = orgId(req, res);
   if (!id) return;
   const adminDb = getAdminDb();

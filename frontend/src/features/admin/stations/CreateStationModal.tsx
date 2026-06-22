@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
-import { api } from '../../../services/api';
+import { api, ApiLimitError } from '../../../services/api';
 import type { Station, StationLookupResult } from '../../../types';
 import { StationLookup } from './StationLookup';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
@@ -41,6 +41,7 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitUpgrade, setSubmitUpgrade] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showLookup, setShowLookup] = useState(true);
   const [useCustomName, setUseCustomName] = useState(false);
@@ -243,9 +244,13 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
       await api.createStation(stationData);
       onCreated();
     } catch (err) {
-      setErrors({
-        submit: err instanceof Error ? err.message : 'Failed to create station',
-      });
+      if (err instanceof ApiLimitError) {
+        setErrors({ submit: err.message });
+        setSubmitUpgrade(true);
+      } else {
+        setErrors({ submit: err instanceof Error ? err.message : 'Failed to create station' });
+        setSubmitUpgrade(false);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -329,7 +334,12 @@ export function CreateStationModal({ onClose, onCreated }: CreateStationModalPro
           {!showLookup && (
             <form onSubmit={handleSubmit} className="station-form">
               {errors.submit && (
-                <div className="form-error">{errors.submit}</div>
+                <div className="form-error">
+                  {errors.submit}
+                  {submitUpgrade && (
+                    <> <a href="/admin/organization" className="form-error-upgrade-link">Upgrade plan →</a></>
+                  )}
+                </div>
               )}
 
               {/* Brigade / Unit Information */}

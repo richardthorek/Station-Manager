@@ -21,6 +21,20 @@ import type {
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 
+/**
+ * Thrown when a create operation fails because it has hit a plan limit.
+ * Callers can check instanceof and show an upgrade prompt.
+ */
+export class ApiLimitError extends Error {
+  readonly upgradeRequired = true;
+  readonly planCode?: string;
+  constructor(message: string, planCode?: string) {
+    super(message);
+    this.name = 'ApiLimitError';
+    this.planCode = planCode;
+  }
+}
+
 /** Optional vehicle identity + type-link fields for an appliance. */
 export interface ApplianceDetails {
   vehicleTypeId?: string;
@@ -32,6 +46,7 @@ export interface ApplianceDetails {
   year?: number;
 }
 import type { Organization, Entitlements } from '../contexts/AuthContext';
+import { getKioskToken } from '../utils/kioskMode';
 
 // Use relative URL in production, localhost in development; ensure trailing /api
 const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
@@ -97,7 +112,14 @@ class ApiService {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
+    // In kiosk mode, forward the brigade access token so read endpoints
+    // (members, appliances, reports) authenticate a logged-out kiosk device.
+    const kioskToken = getKioskToken();
+    if (kioskToken) {
+      headers['X-Brigade-Token'] = kioskToken;
+    }
+
     // Merge with additional headers
     if (additionalHeaders) {
       Object.assign(headers, additionalHeaders);
@@ -142,7 +164,10 @@ class ApiService {
       body: JSON.stringify(stationData),
     });
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 403 && errorData.upgradeRequired) {
+        throw new ApiLimitError(errorData.error || 'Station limit reached', errorData.planCode);
+      }
       throw new Error(errorData.error || 'Failed to create station');
     }
     return response.json();
@@ -297,8 +322,10 @@ class ApiService {
       body: JSON.stringify({ name, rank }),
     });
     if (!response.ok) {
-      // Surface the server message (e.g. plan member-limit reached) rather than a generic error.
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 403 && errorData.upgradeRequired) {
+        throw new ApiLimitError(errorData.error || 'Member limit reached', errorData.planCode);
+      }
       throw new Error(errorData.error || 'Failed to create member');
     }
     return response.json();
@@ -325,6 +352,19 @@ class ApiService {
       throw new Error(errorText || 'Failed to delete member');
     }
 
+    return response.json();
+  }
+
+  async generateMemberInvite(id: string, email?: string): Promise<{ inviteUrl: string; token: string }> {
+    const response = await fetch(`${API_BASE_URL}/members/${id}/invite`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(email ? { email } : {}),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to generate invite');
+    }
     return response.json();
   }
 
@@ -604,8 +644,10 @@ class ApiService {
       body: JSON.stringify({ name, description, photoUrl, vehicleType, ...details }),
     });
     if (!response.ok) {
-      // Surface the server message (e.g. plan vehicle-limit reached) rather than a generic error.
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 403 && errorData.upgradeRequired) {
+        throw new ApiLimitError(errorData.error || 'Vehicle limit reached', errorData.planCode);
+      }
       throw new Error(errorData.error || 'Failed to create appliance');
     }
     return response.json();
@@ -643,10 +685,11 @@ class ApiService {
   }
 
   // Templates
-  async getTemplate(applianceId: string): Promise<ChecklistTemplate> {
+  async getTemplate(applianceId: string): Promise<ChecklistTemplate | null> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/templates/${applianceId}`, {
       headers: this.getHeaders(),
     });
+    if (response.status === 404) return null;
     if (!response.ok) throw new Error('Failed to fetch template');
     return response.json();
   }
@@ -1421,6 +1464,18 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to fetch AI usage');
     return response.json();
   }
+
+  async createTopupSession(): Promise<{ checkoutUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/billing/topup`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create top-up session');
+    }
+    return response.json();
+  }
 }
 
 export interface PlanDefinition {
@@ -1446,11 +1501,14 @@ export interface BillingStatus {
   trialEndsAt: string | null;
   hasPaymentMethod: boolean;
   stripeConfigured: boolean;
+  topupAvailable?: boolean;
+  topupPackSize?: number;
 }
 
 export interface AiUsage {
   used: number;
   included: number;
+  bonus: number;
   remaining: number;
   resetAt: string;
   aiEnabled: boolean;

@@ -37,6 +37,7 @@ import {
 } from '../services/aiGateway';
 import { ensureUsageDatabase } from '../services/usageDbFactory';
 import { monthlyResetAt } from '../services/usageDatabase';
+import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { logger } from '../services/logger';
 import type { Organization, UsageType } from '../types';
 
@@ -113,19 +114,31 @@ router.post('/speech/token', async (req: Request, res: Response) => {
 
   const org = req.organization;
   // Allowance gate: a speech token == one AAR session.
+  // Total allowance = monthly included + purchased bonus (bonus doesn't reset).
   if (org && entitlementsEnabled()) {
     const used = await ensureUsageDatabase().countUsage(org.id, 'speech');
     const included = org.entitlements.aiIncludedSessions;
-    if (used >= included) {
+    const bonus = org.aiBonusSessions ?? 0;
+    const total = included + bonus;
+    if (used >= total) {
       res.status(402).json({
         error: 'AI session limit reached for this month',
         remaining: 0,
         included,
+        bonus,
         used,
         resetAt: monthlyResetAt().toISOString(),
         upgradeRequired: true,
+        topupAvailable: true,
       });
       return;
+    }
+    // Monthly allowance exhausted but bonus remains — deduct one bonus session now,
+    // before issuing the token, so a crash after issue doesn't leak a free session.
+    if (used >= included && bonus > 0) {
+      await ensureOrganizationDatabase().updateOrganization(org.id, {
+        aiBonusSessions: bonus - 1,
+      });
     }
   }
 
@@ -150,10 +163,13 @@ router.get('/usage', authMiddleware, async (req: Request, res: Response) => {
   const org = req.organization;
   const used = await ensureUsageDatabase().countUsage(org.id, 'speech');
   const included = org.entitlements.aiIncludedSessions;
+  const bonus = org.aiBonusSessions ?? 0;
+  const total = included + bonus;
   res.json({
     used,
     included,
-    remaining: Math.max(0, included - used),
+    bonus,
+    remaining: Math.max(0, total - used),
     resetAt: monthlyResetAt().toISOString(),
     aiEnabled: org.entitlements.aiEnabled,
   });

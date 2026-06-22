@@ -195,6 +195,22 @@
   border: 1px solid var(--border-color);
 }
 
+.vehicle-modal-error {
+  color: var(--color-error, #c0392b);
+  background: var(--color-error-bg, #fdecea);
+  border: 1px solid var(--color-error-border, #f5c6cb);
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+}
+
+.vehicle-modal-upgrade-link {
+  color: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .modal-actions {
   display: flex;
   gap: 1rem;

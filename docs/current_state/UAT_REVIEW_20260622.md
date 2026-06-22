@@ -18,7 +18,7 @@ Hands-on user acceptance test of the production deployment (`bungrfs-linux.azure
 | Should-fix | 6 | AAR Studio direct-nav bypasses plan gate; vehicle create 403 with no error toast; template-fetch 404 hangs the dashboard; org-admin page rate-limits after ~5 normal loads; module-toggle clamp reports false "Updated"; 5-vehicle ceiling not enforced/communicated on Community plan |
 | Minor | 5 | App-picker Reports card inconsistent with other locked cards; stale PWA double service-worker registration log; Join Check doesn't resume; Cancel leaves a phantom "completed" history entry; `/login` and `/profile/:memberId` noticeably slower to settle than other routes |
 
-Full narrative detail for every row below, ordered by section walked.
+Full narrative detail for every row below, ordered by section walked. *Table reflects the initial AM pass; see "Re-test — June 22, 2026 (PM)" near the end of this document — Stripe billing is now resolved, and a new AI-gateway-not-configured blocker was found in AAR Studio.*
 
 ## Findings by area
 
@@ -60,7 +60,22 @@ Logout returned cleanly to the marketing page with no console errors. `/login` t
 ## Recommendations, in priority order
 1. Require authentication (or a valid station/kiosk token) on the reports and members read endpoints — currently the single highest-risk item in production.
 2. Fix `POST /api/truck-checks/results` against Vehicle-Type-linked appliances (400 on every item), and stop the empty-checklist fake-pass on unlinked appliances — Truck Check does not currently work in any configuration.
-3. Wire Stripe (or pull the Upgrade buttons and correct the README) — no revenue path exists today.
-4. Add an entitlement check inside `aar-studio/` on load.
-5. Loosen or scope the rate limiter away from idempotent org-admin GETs, and give the 429 banner a retry-after message.
-6. Surface the vehicle-create 403 and the module-toggle clamp as honest UI feedback instead of silence/false-success.
+3. ~~Wire Stripe (or pull the Upgrade buttons and correct the README) — no revenue path exists today.~~ **Resolved 2026-06-22 PM** — see re-test below.
+4. **Configure the AI gateway (`AZURE_OPENAI_*`/`AZURE_SPEECH_*`) in App Service** — promoted to top open item; see re-test below. AAR Studio's AI features don't function on a fully-entitled AI-plan org without this.
+5. Add an entitlement check inside `aar-studio/` on load.
+6. Loosen or scope the rate limiter away from idempotent org-admin GETs, and give the 429 banner a retry-after message.
+7. Surface the vehicle-create 403 and the module-toggle clamp as honest UI feedback instead of silence/false-success.
+
+## Re-test — June 22, 2026 (PM): Stripe live, AAR Studio AI-gateway pass
+
+Following the owner setting `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_*` in App Service, re-tested billing end-to-end and ran a deeper AAR Studio pass against a second test org ("Bushie UAT Brigade 2"), still via live browser automation against production.
+
+**Resolved — Stripe billing.** A real Checkout session completed in test mode end-to-end: the org landed on plan `ai`, status `trialing`, 14-day trial, "0 of 25 AI review sessions used" quota visible, AI maintenance agent module shown enabled. Recommendation #3 above is closed.
+
+**New blocker — AI gateway not configured.** Created a real AAR review, added a unit, and pasted a 6-line speaker-attributed transcript via "Add a typed or pasted transcript instead" — it parsed correctly into "What was said (6)" with correct speaker attribution. The auto-triggered AI processing then failed: toast "The AI service returned 503 — The AI service isn't set up on the server yet. Ask your administrator to configure it." Confirmed via network inspection that `POST /api/ai/chat` returns 503; reproduced identically via the manual "Update findings now" button. The Findings board (0 findings, all categories) and Report tab ("No report yet for this session") both correctly show empty states — that's the expected downstream effect of the 503, not a separate bug. Root cause is server-side: the `AZURE_OPENAI_*`/`AZURE_SPEECH_*` env vars `aiGateway.ts` reads are not set in App Service, independent of the now-working Stripe/entitlement wiring. **AAR Studio's core AI features (transcript-to-findings, report generation) do not work on production today, even on a fully-entitled AI-plan org.**
+
+**Note on the built-in "See an example" demo (test-process clarification, not a product defect).** AAR Studio ships a static example review ("Wamboin Structure Fire — 412 Macs Reef Road," 16 findings, a finished one-page report) reachable from Reviews → "See an example." This is hardcoded demo content, not AI output, and is entirely decoupled from the 503 above. It exists as a separate review record alongside the real test session — confirmed both still appear distinctly in "Your reviews," with the real test session correctly still showing "recorded, not yet summarised" and no findings count. The example is genuinely useful for confirming the Findings board and Report editor/live-preview render well once content exists (findings correctly categorised by phase with quotes; a clean executive-snapshot report layout) — but that UI-quality observation must not be read as evidence the AI gateway works. Minor hygiene note: loading the example persists a second demo record into the test org's review list; both it and "Test AAR - UAT walkthrough" are test artifacts the owner should remove from "Bushie UAT Brigade 2" when convenient. Separately, two findings in the example data render the literal string `null` in place of a blank quote line — a small cosmetic bug in the quote-rendering path worth a look whenever findings-board work is next touched.
+
+**Re-confirmed, unfixed.** AAR Studio still makes no `GET /api/auth/entitlements` call on load (zero matches across the session's network log) — recommendation #5 above is still open; it's currently masked only because this test org happens to be properly entitled. The `/api/organizations/current` / `.../users` 429 rate-limiting (recommendation #6) recurred, now also observed on a plain page load/navigation rather than only after repeated toggling — slightly more frequent than first documented.
+
+*No code changed in this re-test pass — findings-logging only.*

@@ -50,6 +50,21 @@
         },
         "implementation": "backend/src/routes/billing.ts:40"
       },
+      "POST /api/billing/topup": {
+        "method": "POST",
+        "path": "/api/billing/topup",
+        "description": "Create a Stripe Checkout session (mode: payment) to purchase an AI session top-up pack. Credits aiBonusSessions on the org after webhook confirmation. Owner-only; only available when aiEnabled and STRIPE_PRICE_AI_TOPUP is configured.",
+        "authentication": "JWT (owner)",
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "{ checkoutUrl, packSize } — redirect to complete payment" },
+          "400": { "description": "AI not enabled on this org" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "Not an org owner" },
+          "503": { "description": "Top-up not configured (STRIPE_PRICE_AI_TOPUP or STRIPE_SECRET_KEY missing)" }
+        },
+        "implementation": "backend/src/routes/billing.ts:148"
+      },
       "POST /api/billing/portal": {
         "method": "POST",
         "path": "/api/billing/portal",
@@ -142,7 +157,7 @@
         "authentication": "JWT (aiEnabled when org context present)",
         "responses": {
           "200": { "description": "{ token, region } — short-lived Speech auth token" },
-          "402": { "description": "Monthly AI session allowance exhausted — { remaining, resetAt }" },
+          "402": { "description": "Monthly AI session allowance (included + bonus) exhausted — { remaining, included, bonus, resetAt, topupAvailable }" },
           "403": { "description": "aiEnabled entitlement required" },
           "503": { "description": "Speech provider not configured" }
         },
@@ -156,7 +171,7 @@
         "parameters": {},
         "requestBody": null,
         "responses": {
-          "200": { "description": "{ used, included, remaining, resetAt }" },
+          "200": { "description": "{ used, included, bonus, remaining, resetAt, aiEnabled } — bonus is purchased top-up sessions not yet consumed" },
           "401": { "description": "Not authenticated" }
         },
         "implementation": "backend/src/routes/ai.ts"
@@ -542,6 +557,134 @@
           ]
         }
       }
+    },
+    "POST /api/members/:id/invite": {
+      "method": "POST",
+      "path": "/api/members/:id/invite",
+      "description": "Generate a one-time activation invite URL for a member (admin-only). Sets authStatus='invited' and inviteToken on the member. The returned inviteUrl points to /activate/:token. Token is consumed on first successful activation.",
+      "authentication": "JWT (admin or owner)",
+      "parameters": {
+        "path": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Member UUID"
+          }
+        }
+      },
+      "requestBody": {
+        "required": false,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Optional email to record on the member for reference"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Invite generated",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "inviteUrl": { "type": "string", "format": "uri" },
+              "token": { "type": "string", "format": "uuid" }
+            }
+          }
+        },
+        "404": { "description": "Member not found" },
+        "500": { "description": "Server error" }
+      },
+      "implementation": "backend/src/routes/members.ts"
+    },
+    "GET /api/members/activate/:token": {
+      "method": "GET",
+      "path": "/api/members/activate/:token",
+      "description": "Public endpoint. Validate an invite token and return member name and org name for the activation form. No authentication required.",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "One-time invite token"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Token valid",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "memberName": { "type": "string" },
+              "orgName": { "type": "string" }
+            }
+          }
+        },
+        "404": { "description": "Token not found or already used" },
+        "409": { "description": "Invite already used" }
+      },
+      "implementation": "backend/src/routes/memberActivation.ts"
+    },
+    "POST /api/members/activate/:token": {
+      "method": "POST",
+      "path": "/api/members/activate/:token",
+      "description": "Public endpoint. Complete member activation: creates an AdminUser with role=viewer, marks Member.authStatus=active, clears inviteToken. No authentication required.",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "token": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "One-time invite token"
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["username", "password"],
+              "properties": {
+                "username": { "type": "string", "minLength": 3 },
+                "password": { "type": "string", "minLength": 8 }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Account created",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean" },
+              "message": { "type": "string" }
+            }
+          }
+        },
+        "400": { "description": "Validation error" },
+        "404": { "description": "Token not found or already used" },
+        "409": { "description": "Already activated or username taken" },
+        "500": { "description": "Server error" }
+      },
+      "implementation": "backend/src/routes/memberActivation.ts"
     },
     "DELETE /api/members/:id": {
       "method": "DELETE",

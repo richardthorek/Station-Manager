@@ -1,49 +1,28 @@
 // ============================================
 // Multi-Station Support Types
 // ============================================
+//
+// The core sign-in domain shapes (Station, Member, Activity, CheckIn,
+// ActiveActivity, Event, EventParticipant, …) are defined ONCE in the
+// date-generic module `shared/domain-types.d.ts` and re-exported here
+// specialised with `Date` (the persistence representation). The frontend
+// re-exports the same module with the default `string` (the wire
+// representation). See T1 increment 2 in docs/MASTER_PLAN.md.
 
-/**
- * Represents the hierarchical structure of RFS organization
- * 
- * Note: Most brigades have 1 station (brigade name = station name).
- * Only a few brigades have multiple stations (e.g., "Bungendore North" and "Bungendore South").
- */
-export interface StationHierarchy {
-  jurisdiction: string;     // State level (e.g., "NSW")
-  area: string;             // Area/Region level
-  district: string;         // District level
-  brigade: string;          // Brigade name (typically same as station name for 1:1 brigades)
-  station: string;          // Station name (same as brigade for most stations)
-}
+import type {
+  StationHierarchy as SharedStationHierarchy,
+  Station as SharedStation,
+  Member as SharedMember,
+  Activity as SharedActivity,
+  CheckIn as SharedCheckIn,
+  ActiveActivity as SharedActiveActivity,
+  Event as SharedEvent,
+  EventParticipant as SharedEventParticipant,
+  EventWithParticipants as SharedEventWithParticipants,
+} from '../../../shared/domain-types';
 
-/**
- * Represents an RFS station
- * 
- * Design: Brigade-to-station is typically 1:1, so station name usually matches brigade name.
- * For brigades with multiple stations, brigade name is shared (e.g., brigade: "Bungendore",
- * stations: "Bungendore North", "Bungendore South").
- */
-export interface Station {
-  id: string;                   // Unique station ID
-  name: string;                 // Station name (defaults to brigade name for 1:1 relationship)
-  brigadeId: string;            // Brigade ID (for cross-station visibility within same brigade)
-  brigadeName: string;          // Brigade name (typically same as station name)
-  hierarchy: StationHierarchy;  // Full organizational hierarchy
-  location?: {
-    address?: string;
-    latitude?: number;
-    longitude?: number;
-  };
-  contactInfo?: {
-    phone?: string;
-    email?: string;
-  };
-  isActive: boolean;            // Whether station is currently active
-  kioskToken?: string;          // Secure, unguessable token for kiosk mode access (optional)
-  organizationId?: string;      // SaaS tenancy: owning Organization (optional for backward compat)
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type StationHierarchy = SharedStationHierarchy;
+export type Station = SharedStation<Date>;
 
 export type StationCreationPayload = Omit<Station, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
 
@@ -134,6 +113,12 @@ export interface Organization {
   stripeCustomerId?: string;     // reserved for Stripe Billing (not yet wired)
   stripeSubscriptionId?: string;
   trialEndsAt?: Date;
+  /**
+   * Purchased AI top-up sessions that carry over month-to-month (they do not
+   * reset). Consumed only after the monthly `aiIncludedSessions` allowance is
+   * exhausted. See the C3 commercialisation track in docs/MASTER_PLAN.md.
+   */
+  aiBonusSessions?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -157,56 +142,13 @@ export interface UsageRecord {
   reportedToStripe?: boolean;    // set once batched metered usage is sent to Stripe
 }
 
-export interface Member {
-  id: string;
-  name: string;
-  qrCode: string;
-  memberNumber?: string;
-  rank?: string | null;
-  firstName?: string;
-  lastName?: string;
-  membershipStartDate?: Date | null;  // When member joined the brigade (can differ from createdAt)
-  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
-  lastSignIn?: Date | null;      // Last time member participated in an event
-  isActive?: boolean;            // Whether member is active/visible in UI
-  isDeleted?: boolean;           // Soft-delete flag to retain history
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type Member = SharedMember<Date>;
 
-export interface Activity {
-  id: string;
-  name: string;
-  isCustom: boolean;
-  category?: 'training' | 'maintenance' | 'meeting' | 'other';
-  tagColor?: string; // CSS color or color name for UI tags
-  createdBy?: string;
-  stationId?: string;            // Multi-station support (optional, shared activities use 'default')
-  createdAt: Date;
-  isDeleted?: boolean; // Soft delete flag - hides from UI but retains in backend
-}
+export type Activity = SharedActivity<Date>;
 
-export interface CheckIn {
-  id: string;
-  memberId: string;
-  activityId: string;
-  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
-  checkInTime: Date;
-  checkInMethod: 'kiosk' | 'mobile' | 'qr';
-  location?: string;
-  isOffsite: boolean;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type CheckIn = SharedCheckIn<Date>;
 
-export interface ActiveActivity {
-  id: string;
-  activityId: string;
-  stationId?: string;            // Multi-station support (optional, each station has its own active activity)
-  setAt: Date;
-  setBy?: string;
-}
+export type ActiveActivity = SharedActiveActivity<Date>;
 
 export interface CheckInWithDetails extends CheckIn {
   memberName: string;
@@ -220,48 +162,11 @@ export enum CheckInMethod {
   QR = 'qr'
 }
 
-/**
- * Represents a discrete instance of an activity with its own lifecycle
- * An event is created from an activity type and can have multiple participants
- */
-export interface Event {
-  id: string;
-  activityId: string;
-  activityName: string;
-  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
-  startTime: Date;
-  endTime?: Date;
-  isActive: boolean;
-  createdBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  isDeleted?: boolean; // Soft delete flag - hides from UI but retains in backend
-}
+export type Event = SharedEvent<Date>;
 
-/**
- * Represents a participant's check-in to a specific event
- */
-export interface EventParticipant {
-  id: string;
-  eventId: string;
-  memberId: string;
-  memberName: string;
-  memberRank?: string | null;
-  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
-  checkInTime: Date;
-  checkInMethod: 'kiosk' | 'mobile' | 'qr';
-  location?: string;
-  isOffsite: boolean;
-  createdAt: Date;
-}
+export type EventParticipant = SharedEventParticipant<Date>;
 
-/**
- * Event with all participant details for UI display
- */
-export interface EventWithParticipants extends Event {
-  participants: EventParticipant[];
-  participantCount: number;
-}
+export type EventWithParticipants = SharedEventWithParticipants<Date>;
 
 /**
  * Device information for audit logging

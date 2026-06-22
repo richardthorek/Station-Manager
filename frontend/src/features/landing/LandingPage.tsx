@@ -33,6 +33,33 @@ export function LandingPage() {
     // Optionally show a toast notification
   };
 
+  // A core module is "locked" only when we have entitlement context AND the org
+  // lacks the feature. With no entitlements (single-tenant / kiosk back-compat)
+  // everything stays unlocked, matching the AAR Studio + suite-app cards below.
+  const signInLocked = Boolean(entitlements && !hasFeature('signInEnabled'));
+  const truckCheckLocked = Boolean(entitlements && !hasFeature('truckCheckEnabled'));
+  const reportsLocked = Boolean(entitlements && !hasFeature('reportsEnabled'));
+
+  // Render a core-module card link: the live route when unlocked, or the
+  // upgrade prompt (linking to the plan page) when the org isn't entitled — so
+  // every gated card carries the same lock affordance instead of looking active.
+  const moduleLink = (locked: boolean, to: string, label: string, moduleName: string) =>
+    locked ? (
+      <Link
+        to="/admin/organization"
+        className="feature-link feature-link--locked"
+        aria-label={`${moduleName} is not included in your plan — click to view upgrade options`}
+      >
+        Not in your plan
+        <span className="lock-icon" aria-hidden="true">🔒</span>
+      </Link>
+    ) : (
+      <Link to={to} className="feature-link">
+        {label}
+        <span className="arrow" aria-hidden="true">→</span>
+      </Link>
+    );
+
   return (
     <PageTransition variant="fade">
       <div className="landing-page">
@@ -106,45 +133,36 @@ export function LandingPage() {
             animate="animate"
           >
             <motion.article
-              className="feature-card"
+              className={`feature-card${signInLocked ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
               <div className="feature-icon" aria-hidden="true">🔥</div>
               <h3>Station Sign-In</h3>
               <p>Quick and easy member check-in/out with activity tracking. Real-time updates across all devices.</p>
-              <Link to="/signin" className="feature-link">
-                Go to Sign-In
-                <span className="arrow" aria-hidden="true">→</span>
-              </Link>
+              {moduleLink(signInLocked, '/signin', 'Go to Sign-In', 'Station Sign-In')}
             </motion.article>
 
             <motion.article
-              className="feature-card"
+              className={`feature-card${truckCheckLocked ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
               <div className="feature-icon" aria-hidden="true">🚛</div>
               <h3>Vehicle Check</h3>
               <p>Vehicle and equipment maintenance tracking with inspection checklists.</p>
-              <Link to="/truckcheck" className="feature-link">
-                Go to Vehicle Check
-                <span className="arrow" aria-hidden="true">→</span>
-              </Link>
+              {moduleLink(truckCheckLocked, '/truckcheck', 'Go to Vehicle Check', 'Vehicle Check')}
             </motion.article>
 
             <motion.article
-              className="feature-card"
+              className={`feature-card${reportsLocked ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
               <div className="feature-icon" aria-hidden="true">📊</div>
               <h3>Reports & Analytics</h3>
               <p>Historical reporting, analytics, and data export capabilities.</p>
-              <Link to="/reports" className="feature-link">
-                Go to Reports
-                <span className="arrow" aria-hidden="true">→</span>
-              </Link>
+              {moduleLink(reportsLocked, '/reports', 'Go to Reports', 'Reports & Analytics')}
             </motion.article>
 
             <motion.article

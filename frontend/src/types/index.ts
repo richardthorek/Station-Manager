@@ -1,54 +1,43 @@
 // ============================================
-// Domain types (frontend mirror of the backend contract)
+// Domain types (frontend view of the shared contract)
 // ============================================
 //
-// `backend/src/types/index.ts` is the **contract of record** for these domain
-// shapes. This file mirrors it for the wire: dates are `string` here (JSON
-// serialises Date → ISO string) where the backend uses `Date`. Keep the two in
-// sync — when the backend adds/changes a domain field, mirror it here.
+// The core sign-in domain shapes are defined ONCE in the date-generic module
+// `shared/domain-types.d.ts` and re-exported here specialised with `string`
+// (the JSON-over-the-wire representation — the backend serialises Date → ISO
+// string). The backend re-exports the same module specialised with `Date`.
+// Add or change a shared field there ONCE and both apps see it. See T1
+// increment 2 in docs/MASTER_PLAN.md.
 //
-// This drift (Date-vs-string + missing fields) is tracked as roadmap item T1 in
-// docs/MASTER_PLAN.md; increment 2 replaces these duplicate definitions with a
-// shared, date-generic module (`@rfs/types`).
+// App-specific composites (StationLookupResult, the truck-check types below)
+// and the frontend-only extensions on CheckInWithDetails / ActiveActivity stay
+// in this file.
+
+import type {
+  StationHierarchy as SharedStationHierarchy,
+  Station as SharedStation,
+  Member as SharedMember,
+  Activity as SharedActivity,
+  CheckIn as SharedCheckIn,
+  ActiveActivity as SharedActiveActivity,
+  Event as SharedEvent,
+  EventParticipant as SharedEventParticipant,
+  EventWithParticipants as SharedEventWithParticipants,
+} from '../../../shared/domain-types';
+
+export type { CheckInMethod } from '../../../shared/domain-types';
+
+export type StationHierarchy = SharedStationHierarchy;
+export type Station = SharedStation<string>;
+export type Member = SharedMember<string>;
+export type Activity = SharedActivity<string>;
+export type CheckIn = SharedCheckIn<string>;
+export type Event = SharedEvent<string>;
+export type EventParticipant = SharedEventParticipant<string>;
+export type EventWithParticipants = SharedEventWithParticipants<string>;
 
 /**
- * Represents the hierarchical structure of RFS organization
- */
-export interface StationHierarchy {
-  jurisdiction: string;     // State level (e.g., "NSW")
-  area: string;             // Area/Region level
-  district: string;         // District level
-  brigade: string;          // Brigade name (typically same as station name for 1:1 brigades)
-  station: string;          // Station name (same as brigade for most stations)
-}
-
-/**
- * Represents an RFS station
- */
-export interface Station {
-  id: string;                   // Unique station ID
-  name: string;                 // Station name (defaults to brigade name for 1:1 relationship)
-  brigadeId: string;            // Brigade ID (for cross-station visibility within same brigade)
-  brigadeName: string;          // Brigade name (typically same as station name)
-  hierarchy: StationHierarchy;  // Full organizational hierarchy
-  location?: {
-    address?: string;
-    latitude?: number;
-    longitude?: number;
-  };
-  contactInfo?: {
-    phone?: string;
-    email?: string;
-  };
-  isActive: boolean;            // Whether station is currently active
-  kioskToken?: string;          // Secure token for kiosk mode access (optional)
-  organizationId?: string;      // SaaS tenancy: owning Organization (optional for backward compat)
-  createdAt: string;
-  updatedAt: string;
-}
-
-/**
- * Station lookup result from national dataset
+ * Station lookup result from national dataset (frontend-only)
  */
 export interface StationLookupResult {
   id: string;
@@ -65,49 +54,7 @@ export interface StationLookupResult {
   existsInSystem?: boolean; // True if this brigade already exists in the system
 }
 
-export interface Member {
-  id: string;
-  name: string;
-  qrCode: string;
-  memberNumber?: string;
-  rank?: string | null;
-  firstName?: string;
-  lastName?: string;
-  membershipStartDate?: string | null;  // When member joined the brigade (ISO string, can differ from createdAt)
-  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
-  lastSignIn?: string | null;    // Last time member participated in an event (ISO string)
-  isActive?: boolean;            // Whether member is active/visible
-  isDeleted?: boolean;           // Soft delete flag to retain history
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Activity {
-  id: string;
-  name: string;
-  isCustom: boolean;
-  category?: 'training' | 'maintenance' | 'meeting' | 'other';
-  tagColor?: string;             // CSS color or color name for UI tags
-  createdBy?: string;
-  stationId?: string;            // Multi-station support (optional, shared activities use 'default')
-  createdAt: string;
-  isDeleted?: boolean;
-}
-
-export interface CheckIn {
-  id: string;
-  memberId: string;
-  activityId: string;
-  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
-  checkInTime: string;
-  checkInMethod: 'kiosk' | 'mobile' | 'qr';
-  location?: string;
-  isOffsite: boolean;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
+/** CheckIn enriched with member/activity display fields (frontend view). */
 export interface CheckInWithDetails extends CheckIn {
   memberName: string;
   activityName: string;
@@ -115,58 +62,10 @@ export interface CheckInWithDetails extends CheckIn {
   tagColor?: string; // Legacy field, same as activityTagColor
 }
 
-export interface ActiveActivity {
-  id: string;
-  activityId: string;
-  stationId?: string;            // Multi-station support (optional, each station has its own active activity)
-  setAt: string;
-  setBy?: string;
+/** Active activity with the resolved Activity attached (frontend view). */
+export type ActiveActivity = SharedActiveActivity<string> & {
   activity?: Activity;
-}
-
-export type CheckInMethod = 'kiosk' | 'mobile' | 'qr';
-
-/**
- * Represents a discrete instance of an activity with its own lifecycle
- */
-export interface Event {
-  id: string;
-  activityId: string;
-  activityName: string;
-  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
-  startTime: string;
-  endTime?: string;
-  isActive: boolean;
-  createdBy?: string;
-  createdAt: string;
-  updatedAt: string;
-  isDeleted?: boolean;
-}
-
-/**
- * Represents a participant's check-in to a specific event
- */
-export interface EventParticipant {
-  id: string;
-  eventId: string;
-  memberId: string;
-  memberName: string;
-  memberRank?: string | null;
-  stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
-  checkInTime: string;
-  checkInMethod: 'kiosk' | 'mobile' | 'qr';
-  location?: string;
-  isOffsite: boolean;
-  createdAt: string;
-}
-
-/**
- * Event with all participant details for UI display
- */
-export interface EventWithParticipants extends Event {
-  participants: EventParticipant[];
-  participantCount: number;
-}
+};
 
 // ============================================
 // Truck Checks Types

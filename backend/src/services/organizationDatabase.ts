@@ -34,7 +34,7 @@ export interface IOrganizationDatabase {
   getOrganizationBySlug(slug: string): Promise<Organization | null>;
   updateOrganization(
     id: string,
-    updates: Partial<Pick<Organization, 'name' | 'billingEmail' | 'planCode' | 'status' | 'entitlements' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'trialEndsAt'>>,
+    updates: Partial<Pick<Organization, 'name' | 'billingEmail' | 'planCode' | 'status' | 'entitlements' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'trialEndsAt' | 'aiBonusSessions'>>,
   ): Promise<Organization | null>;
   getAllOrganizations(): Promise<Organization[]>;
   clear(): Promise<void>;
@@ -82,7 +82,7 @@ export class OrganizationDatabase implements IOrganizationDatabase {
 
   async updateOrganization(
     id: string,
-    updates: Partial<Pick<Organization, 'name' | 'billingEmail' | 'planCode' | 'status' | 'entitlements' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'trialEndsAt'>>,
+    updates: Partial<Pick<Organization, 'name' | 'billingEmail' | 'planCode' | 'status' | 'entitlements' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'trialEndsAt' | 'aiBonusSessions'>>,
   ): Promise<Organization | null> {
     const org = this.orgs.get(id);
     if (!org) return null;

@@ -33,6 +33,9 @@ import { stationMiddleware, getStationIdFromRequest } from '../middleware/statio
 import { enforceMemberLimit } from '../middleware/entitlements';
 import { getEffectiveStationId } from '../constants/stations';
 import { flexibleAuth } from '../middleware/flexibleAuth';
+import { authMiddleware, requireAdmin } from '../middleware/auth';
+import { ensureAdminUserDatabase } from '../services/adminUserDbFactory';
+import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../services/logger';
 
 const router = Router();
@@ -439,6 +442,32 @@ router.post('/import/execute', async (req: Request, res: Response) => {
       stationId: getStationIdFromRequest(req),
     });
     res.status(500).json({ error: 'Failed to execute bulk import' });
+  }
+});
+
+// Generate an invite token for a member (admin-only)
+router.post('/:id/invite', authMiddleware, requireAdmin, validateMemberId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const member = await db.getMemberById(req.params.id);
+    if (!member || !memberMatchesStation(member, stationId)) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    const token = uuidv4();
+    const { email } = (req.body as { email?: string }) ?? {};
+    await db.updateMemberAuth(req.params.id, {
+      authStatus: 'invited',
+      inviteToken: token,
+      ...(email ? { inviteEmail: email } : {}),
+    });
+    const base = (process.env.FRONTEND_URLS || 'http://localhost:5173').split(',')[0].trim().replace(/\/$/, '');
+    const inviteUrl = `${base}/activate/${token}`;
+    logger.info('Member invite generated', { memberId: member.id, stationId });
+    res.json({ inviteUrl, token });
+  } catch (error) {
+    logger.error('Error generating member invite', { error, memberId: req.params.id, requestId: req.id });
+    res.status(500).json({ error: 'Failed to generate invite' });
   }
 });
 

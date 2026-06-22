@@ -24,6 +24,7 @@ const StationManagementPage = lazy(() => import('./features/admin/stations/Stati
 const BrigadeAccessPage = lazy(() => import('./features/admin/brigade-access/BrigadeAccessPage').then(m => ({ default: m.BrigadeAccessPage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage').then(m => ({ default: m.LoginPage })));
 const SignupPage = lazy(() => import('./features/auth/SignupPage').then(m => ({ default: m.SignupPage })));
+const ActivatePage = lazy(() => import('./features/auth/ActivatePage').then(m => ({ default: m.ActivatePage })));
 const OrganizationPage = lazy(() => import('./features/admin/organization/OrganizationPage').then(m => ({ default: m.OrganizationPage })));
 
 // Truck Check routes (v1.1)
@@ -71,6 +72,7 @@ function AnimatedRoutes() {
         <Route path="/apps" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/activate/:token" element={<ActivatePage />} />
 
         {/* Sign-In — gated by the signInEnabled entitlement (maintenance-only brigades can hide it) */}
         <Route path="/signin" element={<FeatureRoute feature="signInEnabled" title="Sign-in book"><SignInPage /></FeatureRoute>} />

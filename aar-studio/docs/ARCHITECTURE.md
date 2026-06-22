@@ -11,7 +11,7 @@ aar-studio/
 ├── index.html                  # shell: nav, view container, settings <dialog>
 ├── css/app.css                 # theme (CSS vars), board, present mode, print
 ├── js/
-│   ├── main.js                 # boot, hash router, nav state, re-render policy
+│   ├── main.js                 # boot (entitlement gate), hash router, nav state, re-render policy
 │   ├── store.js                # current session + localStorage persistence, pub/sub
 │   ├── settings.js             # Azure config (localStorage), settings dialog, test connection
 │   ├── ui.js                   # DOM helpers (h, toasts, download, dialogs) — browser only
@@ -29,6 +29,8 @@ aar-studio/
 │       ├── dedupe.js           # near-duplicate finding detection
 │       ├── llm.js              # Azure OpenAI chat completions + fallback chain
 │       ├── extraction.js       # prompts, schema, chunking, trigger policy
+│       ├── serverSync.js       # best-effort mirror of reviews to /api/aar-sessions (SM JWT)
+│       ├── entitlement.js      # plan gate: probe /api/auth/entitlements, fail-open decision
 │       └── exports.js          # snapshot HTML, Markdown summary, report template
 ├── data/sample-session.json    # Wamboin structure fire example session
 ├── test/                       # node:test suites for js/lib (zero deps)
@@ -153,3 +155,13 @@ pass on stop. Pure helpers (resampling, RMS, speaker labels) live in
   no server-side logic of its own — calls go browser → Azure directly, nothing
   is proxied or logged. Use scoped, rotatable keys; see README for the
   trade-offs.
+- **Plan gate (entitlements).** AAR Studio is part of the AI plan. On boot,
+  `main.js` runs `lib/entitlement.js#checkAccess`: if a Station Manager JWT is
+  present (`auth_token` in same-origin `localStorage`), it probes
+  `GET /api/auth/entitlements` and, on a positive "org lacks `aarStudioEnabled`"
+  signal, replaces the app with an upgrade screen linking to
+  `/admin/organization`. The check is deliberately **fail-open** — signed-out
+  visitors (local-first use), orgs with no entitlement context, and transient
+  probe failures all proceed. This is a UX gate only; the security boundary is
+  the backend `requireFeature('aarStudioEnabled')` already on `/api/aar-sessions`
+  and the AI-gateway routes, which 403/503 an unentitled org regardless.

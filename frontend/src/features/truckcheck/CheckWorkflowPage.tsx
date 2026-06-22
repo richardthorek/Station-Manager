@@ -167,7 +167,8 @@ export function CheckWorkflowPage() {
       setIsJoinedCheck(joined);
       setShowNamePrompt(false);
       
-      // Load existing results if joining an active check
+      // Load existing results if joining an active check so the joiner resumes
+      // the crew's shared progress rather than starting from a blank checklist.
       if (joined) {
         const existingResults = await api.getCheckRun(response.id);
         if (existingResults && 'results' in existingResults) {
@@ -176,6 +177,15 @@ export function CheckWorkflowPage() {
             resultsMap.set(result.itemId, result);
           });
           setResults(resultsMap);
+          // Land on the first item the crew hasn't done yet (not item 0), so
+          // resuming a shared check picks up where it was left off.
+          if (template) {
+            const firstUndone = template.items.findIndex((it) => !resultsMap.has(it.id));
+            if (firstUndone > 0) {
+              setCurrentIndex(firstUndone);
+              scrollToItem(firstUndone);
+            }
+          }
         }
       }
     } catch (err) {

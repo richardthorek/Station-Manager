@@ -393,6 +393,11 @@ class DatabaseService {
       .find(m => m.qrCode === qrCode && m.isDeleted !== true && m.isActive !== false);
   }
 
+  getMemberByInviteToken(token: string): Member | undefined {
+    return Array.from(this.members.values())
+      .find(m => m.inviteToken === token && m.isDeleted !== true);
+  }
+
   createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; membershipStartDate?: Date | null; stationId?: string }): Member {
     const member: Member = {
       id: uuidv4(),
@@ -425,6 +430,19 @@ class DatabaseService {
       return member;
     }
     return undefined;
+  }
+
+  updateMemberAuth(
+    id: string,
+    updates: { authStatus?: Member['authStatus']; inviteToken?: string | null; inviteEmail?: string },
+  ): Member | undefined {
+    const member = this.members.get(id);
+    if (!member) return undefined;
+    if (updates.authStatus !== undefined) member.authStatus = updates.authStatus;
+    if (updates.inviteToken !== undefined) member.inviteToken = updates.inviteToken ?? undefined;
+    if (updates.inviteEmail !== undefined) member.inviteEmail = updates.inviteEmail;
+    member.updatedAt = new Date();
+    return member;
   }
 
   deleteMember(id: string): Member | null {

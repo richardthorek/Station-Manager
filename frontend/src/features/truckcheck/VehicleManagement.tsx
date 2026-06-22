@@ -1,5 +1,5 @@
 import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
-import { api } from '../../services/api';
+import { api, ApiLimitError } from '../../services/api';
 import type { Appliance, ChecklistTemplate, ChecklistItem, VehicleType } from '../../types';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { ITEM_CODES, SECTIONS, resolveVocabSlug } from './checklistVocabulary';
@@ -28,6 +28,8 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   const [vehiclePhotoUrl, setVehiclePhotoUrl] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [vehicleModalError, setVehicleModalError] = useState<string | null>(null);
+  const [vehicleModalUpgrade, setVehicleModalUpgrade] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   // Standard items from the linked VehicleType, shown read-only in the template editor.
   const [standardItemsForEditor, setStandardItemsForEditor] = useState<ChecklistItem[]>([]);
@@ -101,6 +103,8 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   function handleNewVehicle() {
     setSelectedVehicle(null);
     resetVehicleForm();
+    setVehicleModalError(null);
+    setVehicleModalUpgrade(false);
     setIsEditMode(false);
     setShowVehicleModal(true);
   }
@@ -118,6 +122,8 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     setYear(vehicle.year ? String(vehicle.year) : '');
     setVehiclePhotoUrl(vehicle.photoUrl || '');
     setPhotoFile(null);
+    setVehicleModalError(null);
+    setVehicleModalUpgrade(false);
     setIsEditMode(true);
     setShowVehicleModal(true);
   }
@@ -128,7 +134,17 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
         api.getTemplate(vehicle.id),
         vehicle.vehicleTypeId ? api.getEffectiveChecklist(vehicle.id) : Promise.resolve(null),
       ]);
-      setTemplate(templateData);
+      // If no custom template exists yet (404 → null), start with an empty item list so the
+      // editor opens and the user can add custom items. Standard items still show read-only.
+      const resolvedTemplate: ChecklistTemplate = templateData ?? {
+        id: '',
+        applianceId: vehicle.id,
+        applianceName: vehicle.name,
+        items: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setTemplate(resolvedTemplate);
       setStandardItemsForEditor(
         effectiveChecklist ? effectiveChecklist.items.filter((i) => i.isStandard) : [],
       );
@@ -159,10 +175,11 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
 
   async function handleSaveVehicle() {
     if (!vehicleName.trim()) {
-      alert('Vehicle name is required');
+      setVehicleModalError('Vehicle name is required');
       return;
     }
 
+    setVehicleModalError(null);
     try {
       setUploading(true);
       
@@ -195,10 +212,14 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
       setShowVehicleModal(false);
       onUpdate();
     } catch (err) {
-      // Surface the server message (e.g. plan vehicle-limit reached) when present.
       const fallback = `Failed to ${isEditMode ? 'update' : 'create'} vehicle`;
-      alert(err instanceof Error && err.message ? err.message : fallback);
-      console.error(err);
+      if (err instanceof ApiLimitError) {
+        setVehicleModalError(err.message);
+        setVehicleModalUpgrade(true);
+      } else {
+        setVehicleModalError(err instanceof Error && err.message ? err.message : fallback);
+        setVehicleModalUpgrade(false);
+      }
     } finally {
       setUploading(false);
     }
@@ -461,19 +482,27 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
               <small>Optional: Upload a photo to display instead of the default icon</small>
             </div>
 
+            {vehicleModalError && (
+              <p className="vehicle-modal-error" role="alert">
+                {vehicleModalError}
+                {vehicleModalUpgrade && (
+                  <> <a href="/admin/organization" className="vehicle-modal-upgrade-link">Upgrade plan →</a></>
+                )}
+              </p>
+            )}
             <div className="modal-actions">
-              <button 
-                type="button" 
-                className="btn-secondary" 
+              <button
+                type="button"
+                className="btn-secondary"
                 onClick={() => setShowVehicleModal(false)}
                 disabled={uploading}
               >
                 Cancel
               </button>
-              <button 
-                type="button" 
-                className="btn-primary" 
-                onClick={handleSaveVehicle} 
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleSaveVehicle}
                 disabled={uploading}
               >
                 {uploading ? 'Saving...' : isEditMode ? 'Update' : 'Create'}

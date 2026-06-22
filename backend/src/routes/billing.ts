@@ -13,7 +13,14 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { getStripeClient, isStripeConfigured, resolvePriceId } from '../services/stripeClient';
+import {
+  getStripeClient,
+  isStripeConfigured,
+  resolvePriceId,
+  resolveTopupPriceId,
+  isTopupConfigured,
+  topupPackSize,
+} from '../services/stripeClient';
 import { authMiddleware, requireOwner } from '../middleware/auth';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { ensureBillingEventDatabase } from '../services/billingEventDbFactory';
@@ -133,6 +140,62 @@ router.post('/portal', authMiddleware, requireOwner, async (req: Request, res: R
   }
 });
 
+// ─── POST /api/billing/topup ─────────────────────────────────────────────────
+// One-time purchase of an AI session top-up pack (mode: 'payment'). The pack is
+// credited to org.aiBonusSessions by the webhook and consumed only after the
+// monthly included allowance is used up. Owner-only.
+
+router.post('/topup', authMiddleware, requireOwner, async (req: Request, res: Response) => {
+  if (!isTopupConfigured()) {
+    return res.status(503).json({ error: 'AI top-ups are not configured on this server' });
+  }
+
+  try {
+    const orgDb = ensureOrganizationDatabase();
+    const org = await orgDb.getOrganizationById(req.user!.organizationId!);
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+    // Top-ups only make sense on the AI plan (where sessions are metered).
+    if (!org.entitlements.aiEnabled) {
+      return res.status(400).json({ error: 'AI top-ups are only available on the AI plan' });
+    }
+
+    const stripe = getStripeClient();
+    const priceId = resolveTopupPriceId()!;
+    const packSize = topupPackSize();
+
+    let customerId = org.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: org.billingEmail,
+        name: org.name,
+        metadata: { organizationId: org.id, slug: org.slug },
+      });
+      customerId = customer.id;
+      await orgDb.updateOrganization(org.id, { stripeCustomerId: customerId });
+    }
+
+    const base = appBaseUrl();
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${base}/admin/organization?topup=success`,
+      cancel_url: `${base}/admin/organization?topup=cancelled`,
+      // `kind` lets the webhook tell a top-up payment apart from a subscription
+      // checkout; `sessions` is the credit to apply.
+      metadata: { organizationId: org.id, kind: 'ai_topup', sessions: String(packSize) },
+    });
+
+    logger.info('AI top-up Checkout session created', { organizationId: org.id, packSize, sessionId: session.id });
+    return res.json({ checkoutUrl: session.url, packSize });
+  } catch (error) {
+    const stripeMsg = (error as { message?: string })?.message ?? String(error);
+    logger.error('Error creating top-up session', { error, stripeMsg });
+    return res.status(500).json({ error: 'Failed to create top-up session', detail: stripeMsg });
+  }
+});
+
 // ─── GET /api/billing/status ─────────────────────────────────────────────────
 
 router.get('/status', authMiddleware, async (req: Request, res: Response) => {
@@ -147,6 +210,8 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
       trialEndsAt: org.trialEndsAt ?? null,
       hasPaymentMethod: Boolean(org.stripeCustomerId && org.stripeSubscriptionId),
       stripeConfigured: isStripeConfigured(),
+      topupAvailable: isTopupConfigured(),
+      topupPackSize: topupPackSize(),
     });
   } catch (error) {
     logger.error('Error fetching billing status', { error });
@@ -264,6 +329,26 @@ async function processStripeEvent(event: Stripe.Event): Promise<void> {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
       const organizationId = session.metadata?.['organizationId'];
+
+      // A one-time AI top-up purchase (mode: 'payment') credits bonus sessions
+      // rather than changing the plan/subscription.
+      if (session.metadata?.['kind'] === 'ai_topup') {
+        const sessions = parseInt(session.metadata?.['sessions'] ?? '0', 10);
+        if (!organizationId || !Number.isFinite(sessions) || sessions <= 0) {
+          logger.warn('ai_topup checkout missing org/sessions metadata', { sessionId: session.id });
+          break;
+        }
+        const org = await orgDb.getOrganizationById(organizationId);
+        if (!org) {
+          logger.warn('ai_topup checkout for unknown org', { organizationId });
+          break;
+        }
+        const newBalance = (org.aiBonusSessions ?? 0) + sessions;
+        await orgDb.updateOrganization(organizationId, { aiBonusSessions: newBalance });
+        logger.info('AI top-up credited', { organizationId, sessions, newBalance });
+        break;
+      }
+
       const planCode = session.metadata?.['planCode'] as PlanCode | undefined;
       if (!organizationId || !planCode || !isPlanCode(planCode)) {
         logger.warn('checkout.session.completed missing org/plan metadata', { sessionId: session.id });
