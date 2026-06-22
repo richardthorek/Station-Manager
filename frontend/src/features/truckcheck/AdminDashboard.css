@@ -273,6 +273,24 @@
   font-size: 0.9rem;
 }
 
+/* An abandoned or still-live (in-progress) run, distinguished from completed
+   history so a cancelled check doesn't read as "Completed by". */
+.run-status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.run-status-badge--in-progress {
+  background: var(--surface-warning);
+  color: var(--text-warning-strong);
+  border: 1px solid var(--ui-amber);
+}
+.run-card--in-progress {
+  opacity: 0.9;
+  border-left: 3px solid var(--ui-amber);
+}
+
 .expand-icon {
   font-size: 1.2rem;
   color: var(--rfs-dark-grey);

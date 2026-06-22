@@ -369,8 +369,15 @@ export function AdminDashboardPage() {
               <p>No check runs found matching the selected filters.</p>
             </div>
           ) : (
-            checkRuns.map((run) => (
-              <div key={run.id} className={`run-card ${run.hasIssues ? 'has-issues' : ''}`}>
+            checkRuns.map((run) => {
+              // A run is only a real history record once it's been completed. An
+              // in-progress run is either live or was abandoned (the workflow's
+              // "Cancel" just navigates away, leaving the run open) — label it
+              // honestly instead of showing it as "Completed by" (UAT: phantom
+              // completed history entry).
+              const inProgress = run.status === 'in-progress';
+              return (
+              <div key={run.id} className={`run-card ${run.hasIssues ? 'has-issues' : ''} ${inProgress ? 'run-card--in-progress' : ''}`}>
                 <div
                   className="run-header"
                   onClick={() => toggleExpand(run.id)}
@@ -389,10 +396,13 @@ export function AdminDashboardPage() {
                     <h3>{run.applianceName}</h3>
                     <p className="run-date">{formatDate(run.startTime)}</p>
                     <p className="run-completed-by">
-                      Completed by: {run.completedByName || run.completedBy}
+                      {inProgress ? 'Started by' : 'Completed by'}: {run.completedByName || run.completedBy}
                     </p>
                   </div>
                   <div className="run-summary">
+                    {inProgress && (
+                      <span className="run-status-badge run-status-badge--in-progress">In progress</span>
+                    )}
                     {run.hasIssues && (
                       <span className="issue-badge">
                         ⚠ {run.results.filter(r => r.status === 'issue').length} Issue(s)
@@ -433,7 +443,8 @@ export function AdminDashboardPage() {
                   </div>
                 )}
               </div>
-            ))
+              );
+            })
           )}
         </div>
         </>
