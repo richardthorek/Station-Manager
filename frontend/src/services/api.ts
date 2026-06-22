@@ -16,7 +16,8 @@ import type {
   Station,
   StationLookupResult,
   VehicleType,
-  EffectiveChecklist
+  EffectiveChecklist,
+  IssueResult
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 
@@ -701,6 +702,26 @@ class ApiService {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to delete vehicle type');
+  }
+
+  // Issue follow-up (TC-4)
+  async getIssues(status?: 'open' | 'acknowledged' | 'resolved'): Promise<IssueResult[]> {
+    const qs = status ? `?status=${status}` : '';
+    const response = await fetch(`${API_BASE_URL}/truck-checks/issues${qs}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch issues');
+    return response.json();
+  }
+
+  async updateIssueStatus(resultId: string, runId: string, update: { issueStatus?: 'open' | 'acknowledged' | 'resolved'; issueNote?: string; assignedTo?: string; resolvedBy?: string }): Promise<CheckResult> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/results/${resultId}/issue`, {
+      method: 'PATCH',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ runId, ...update }),
+    });
+    if (!response.ok) throw new Error('Failed to update issue');
+    return response.json();
   }
 
   // Effective checklist (standard + custom overlay, resolved)

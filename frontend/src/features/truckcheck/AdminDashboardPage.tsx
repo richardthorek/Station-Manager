@@ -4,10 +4,11 @@ import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { downloadCSV, getTodayFormatted } from '../../utils/csvUtils';
 import { VehicleManagement } from './VehicleManagement';
-import type { CheckRunWithResults, Appliance } from '../../types';
+import type { CheckRunWithResults, Appliance, IssueResult } from '../../types';
 import './AdminDashboard.css';
 
-type ActiveTab = 'history' | 'vehicles';
+type ActiveTab = 'history' | 'followups' | 'vehicles';
+type IssueFilter = 'outstanding' | 'open' | 'acknowledged' | 'resolved';
 
 export function AdminDashboardPage() {
   const { theme, toggleTheme } = useTheme();
@@ -23,11 +24,43 @@ export function AdminDashboardPage() {
   const [exportEndDate, setExportEndDate] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
   const [exportFeedback, setExportFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [issues, setIssues] = useState<IssueResult[]>([]);
+  const [issueFilter, setIssueFilter] = useState<IssueFilter>('outstanding');
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'followups') loadIssues();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, issueFilter]);
+
+  async function loadIssues() {
+    try {
+      const status = issueFilter === 'outstanding' ? undefined : issueFilter;
+      const data = await api.getIssues(status);
+      setIssues(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleIssueAction(
+    issue: IssueResult,
+    issueStatus: 'acknowledged' | 'resolved',
+  ) {
+    try {
+      const resolvedBy = issueStatus === 'resolved' ? (prompt('Resolved by (name)?') || undefined) : undefined;
+      const issueNote = issueStatus === 'resolved' ? (prompt('Resolution note (optional):') || undefined) : undefined;
+      await api.updateIssueStatus(issue.id, issue.runId, { issueStatus, resolvedBy, issueNote });
+      await loadIssues();
+    } catch (err) {
+      alert('Failed to update issue');
+      console.error(err);
+    }
+  }
 
   useEffect(() => {
     loadCheckRuns();
@@ -138,11 +171,17 @@ export function AdminDashboardPage() {
         </div>
         <h1>Admin Dashboard</h1>
         <div className="tabs">
-          <button 
+          <button
             className={`tab ${activeTab === 'history' ? 'active' : ''}`}
             onClick={() => setActiveTab('history')}
           >
             📊 Check History
+          </button>
+          <button
+            className={`tab ${activeTab === 'followups' ? 'active' : ''}`}
+            onClick={() => setActiveTab('followups')}
+          >
+            🔧 Follow-ups
           </button>
           <button 
             className={`tab ${activeTab === 'vehicles' ? 'active' : ''}`}
@@ -156,6 +195,59 @@ export function AdminDashboardPage() {
       <main className="dashboard-main" id="main-content" tabIndex={-1}>
         {activeTab === 'vehicles' ? (
           <VehicleManagement appliances={appliances} onUpdate={loadData} />
+        ) : activeTab === 'followups' ? (
+          <div className="followups">
+            <div className="filters-section">
+              <div className="filter-group">
+                <label htmlFor="issue-filter">Show:</label>
+                <select
+                  id="issue-filter"
+                  value={issueFilter}
+                  onChange={(e) => setIssueFilter(e.target.value as IssueFilter)}
+                  className="filter-select"
+                >
+                  <option value="outstanding">Outstanding (open + acknowledged)</option>
+                  <option value="open">Open</option>
+                  <option value="acknowledged">Acknowledged</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
+            </div>
+
+            {issues.length === 0 ? (
+              <div className="no-results"><p>No issues to follow up. 🎉</p></div>
+            ) : (
+              <div className="runs-list">
+                {issues.map((issue) => (
+                  <div key={issue.id} className={`run-card has-issues issue-card issue-card--${issue.issueStatus}`}>
+                    <div className="run-info">
+                      <h3>{issue.applianceName} — {issue.itemName}</h3>
+                      <p className="run-date">{formatDate(issue.runStartTime)}</p>
+                      {issue.comment && <p className="result-comment">“{issue.comment}”</p>}
+                      <p className="issue-meta">
+                        <span className={`status-badge issue-status--${issue.issueStatus}`}>{issue.issueStatus}</span>
+                        {issue.assignedTo && <span> · assigned to {issue.assignedTo}</span>}
+                        {issue.issueStatus === 'resolved' && issue.resolvedBy && <span> · resolved by {issue.resolvedBy}</span>}
+                      </p>
+                      {issue.issueNote && <p className="result-comment">Resolution: {issue.issueNote}</p>}
+                    </div>
+                    {issue.issueStatus !== 'resolved' && (
+                      <div className="issue-actions">
+                        {issue.issueStatus === 'open' && (
+                          <button className="btn-secondary" onClick={() => handleIssueAction(issue, 'acknowledged')}>
+                            Acknowledge
+                          </button>
+                        )}
+                        <button className="btn-primary" onClick={() => handleIssueAction(issue, 'resolved')}>
+                          Mark resolved
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
           <>
         <div className="filters-section">

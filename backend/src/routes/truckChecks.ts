@@ -715,6 +715,87 @@ router.delete('/results/:id', validateCheckResultId, handleValidationErrors, asy
 });
 
 // ============================================
+// Issue Follow-up Routes (TC-4)
+// ============================================
+
+const ISSUE_STATUSES = ['open', 'acknowledged', 'resolved'] as const;
+
+/**
+ * GET /api/truck-checks/issues
+ * Flat, station-scoped feed of issue results for an equipment-officer follow-up
+ * view, enriched with appliance/run context. Optional ?status= filter
+ * (open|acknowledged|resolved); defaults to all open + acknowledged (outstanding).
+ */
+router.get('/issues', async (req: Request, res: Response) => {
+  try {
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
+    const stationId = getStationIdFromRequest(req);
+    const statusFilter = typeof req.query.status === 'string' ? req.query.status : undefined;
+
+    const runs = await db.getAllRunsWithResults(stationId);
+    const issues = runs.flatMap((run) =>
+      run.results
+        .filter((r) => r.status === 'issue')
+        .map((r) => ({
+          ...r,
+          applianceId: run.applianceId,
+          applianceName: run.applianceName,
+          runStartTime: run.startTime,
+          issueStatus: r.issueStatus ?? 'open',
+        })),
+    );
+
+    const filtered = statusFilter
+      ? issues.filter((i) => i.issueStatus === statusFilter)
+      : issues.filter((i) => i.issueStatus !== 'resolved'); // outstanding by default
+
+    filtered.sort((a, b) => new Date(b.runStartTime).getTime() - new Date(a.runStartTime).getTime());
+    res.json(filtered);
+  } catch (error) {
+    logger.error('Error fetching issues:', error);
+    res.status(500).json({ error: 'Failed to fetch issues' });
+  }
+});
+
+/**
+ * PATCH /api/truck-checks/results/:id/issue
+ * Update an issue result's follow-up lifecycle (open → acknowledged → resolved),
+ * optional assignee and note. Requires runId in the body (Table Storage locates
+ * the result by run partition).
+ */
+router.patch('/results/:id/issue', async (req: Request, res: Response) => {
+  try {
+    const { issueStatus, issueNote, assignedTo, resolvedBy, runId } = req.body ?? {};
+    if (issueStatus !== undefined && !ISSUE_STATUSES.includes(issueStatus)) {
+      return res.status(400).json({ error: 'Invalid issueStatus' });
+    }
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
+    const result = await db.updateIssueStatus(
+      req.params.id,
+      { issueStatus, issueNote, assignedTo, resolvedBy },
+      typeof runId === 'string' ? runId : undefined,
+    );
+    if (!result) {
+      return res.status(404).json({ error: 'Issue result not found (include runId in the body)' });
+    }
+
+    // Notify the room so an open follow-up view stays current.
+    if (result.stationId) {
+      io.to(`station-${result.stationId}`).emit('truck-check-update', {
+        type: 'issue-updated',
+        runId: result.runId,
+        result,
+        timestamp: new Date(),
+      });
+    }
+    res.json(result);
+  } catch (error) {
+    logger.error('Error updating issue status:', error);
+    res.status(500).json({ error: 'Failed to update issue' });
+  }
+});
+
+// ============================================
 // Photo Upload Routes
 // ============================================
 

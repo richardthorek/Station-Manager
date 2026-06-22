@@ -542,8 +542,26 @@ export interface CheckResult {
   comment?: string;
   photoUrl?: string;
   completedBy?: string; // Who completed this specific item
+  /**
+   * Follow-up lifecycle for a result whose status is 'issue' (TC-4). Defaults to
+   * 'open' when an issue is recorded; an equipment officer moves it to
+   * 'acknowledged' then 'resolved'. Non-issue results leave these unset.
+   */
+  issueStatus?: 'open' | 'acknowledged' | 'resolved';
+  issueNote?: string;       // follow-up / resolution note
+  assignedTo?: string;      // optional owner (memberId or name)
+  resolvedBy?: string;      // who resolved it
+  resolvedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Lifecycle fields an equipment officer can update on an issue result (TC-4). */
+export interface IssueUpdate {
+  issueStatus?: 'open' | 'acknowledged' | 'resolved';
+  issueNote?: string;
+  assignedTo?: string;
+  resolvedBy?: string;
 }
 
 /**

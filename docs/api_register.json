@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.7.0",
-  "lastUpdated": "2026-06-21",
+  "version": "1.8.0",
+  "lastUpdated": "2026-06-22",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -269,6 +269,24 @@
         "authentication": "JWT/optional",
         "requestBody": { "customItems": "ChecklistItem[]", "itemOrder": "string[] (standard item itemCode or custom item id)" },
         "responses": { "200": { "description": "EffectiveChecklist" }, "400": { "description": "customItems must be an array" }, "404": { "description": "Appliance not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      }
+    },
+    "truck-check-issues": {
+      "description": "TC-4 issue follow-up. A CheckResult with status 'issue' starts an 'open' lifecycle; an equipment officer moves it open → acknowledged → resolved (admin-gated via the parent mount; no separate role). Member attribution (TC-3): a check run's completedBy holds the roster memberId when the inspector is picked from the roster, else the free-text name (kiosk).",
+      "GET /api/truck-checks/issues": {
+        "method": "GET", "path": "/api/truck-checks/issues",
+        "description": "Station-scoped flat feed of issue results enriched with appliance/run context for the equipment-officer follow-up view. ?status=open|acknowledged|resolved; defaults to outstanding (open+acknowledged).",
+        "authentication": "JWT/optional",
+        "responses": { "200": { "description": "IssueResult[] (CheckResult + applianceId/applianceName/runStartTime)" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "PATCH /api/truck-checks/results/:id/issue": {
+        "method": "PATCH", "path": "/api/truck-checks/results/:id/issue",
+        "description": "Update an issue result's lifecycle (issueStatus/issueNote/assignedTo/resolvedBy). Resolving stamps resolvedAt. Body must include runId (Table Storage locates the result by run partition).",
+        "authentication": "JWT/optional",
+        "requestBody": { "runId": "string", "issueStatus": "'open'|'acknowledged'|'resolved'?", "issueNote": "string?", "assignedTo": "string?", "resolvedBy": "string?" },
+        "responses": { "200": { "description": "CheckResult" }, "400": { "description": "Invalid issueStatus" }, "404": { "description": "Issue result not found (include runId)" } },
         "implementation": "backend/src/routes/truckChecks.ts"
       }
     },

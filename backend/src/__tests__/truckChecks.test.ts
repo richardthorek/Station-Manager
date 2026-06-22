@@ -1122,3 +1122,58 @@ describe('Truck Checks API - Template item id stability (TC-5)', () => {
     expect(tyreIdAfter).toBe(tyreId); // stable across edits
   });
 });
+
+describe('Truck Checks API - Issue lifecycle (TC-4)', () => {
+  async function recordIssue() {
+    const appliance = await request(app).post('/api/truck-checks/appliances').send({ name: 'Issue Truck' }).expect(201);
+    const run = await request(app).post('/api/truck-checks/runs')
+      .send({ applianceId: appliance.body.id, completedBy: 'Alice', completedByName: 'Alice' }).expect(201);
+    const result = await request(app).post('/api/truck-checks/results').send({
+      runId: run.body.id, itemId: 'i1', itemName: 'Brakes', itemDescription: 'Check brakes',
+      status: 'issue', comment: 'Spongy pedal',
+    }).expect(201);
+    return { applianceId: appliance.body.id, runId: run.body.id, resultId: result.body.id, result: result.body };
+  }
+
+  it('defaults a recorded issue to issueStatus "open"', async () => {
+    const { result } = await recordIssue();
+    expect(result.status).toBe('issue');
+    expect(result.issueStatus).toBe('open');
+  });
+
+  it('lists outstanding issues with appliance context and filters by status', async () => {
+    const { resultId } = await recordIssue();
+    const open = await request(app).get('/api/truck-checks/issues').expect(200);
+    const found = open.body.find((i: { id: string }) => i.id === resultId);
+    expect(found).toBeTruthy();
+    expect(found.applianceName).toBe('Issue Truck');
+    expect(found.issueStatus).toBe('open');
+  });
+
+  it('moves an issue open → acknowledged → resolved and drops it from the outstanding feed', async () => {
+    const { runId, resultId } = await recordIssue();
+
+    const ack = await request(app).patch(`/api/truck-checks/results/${resultId}/issue`)
+      .send({ runId, issueStatus: 'acknowledged', assignedTo: 'Equipment Officer' }).expect(200);
+    expect(ack.body.issueStatus).toBe('acknowledged');
+    expect(ack.body.assignedTo).toBe('Equipment Officer');
+
+    const resolved = await request(app).patch(`/api/truck-checks/results/${resultId}/issue`)
+      .send({ runId, issueStatus: 'resolved', issueNote: 'Bled brakes', resolvedBy: 'Mechanic' }).expect(200);
+    expect(resolved.body.issueStatus).toBe('resolved');
+    expect(resolved.body.resolvedBy).toBe('Mechanic');
+    expect(resolved.body.resolvedAt).toBeTruthy();
+
+    // Default feed (outstanding) excludes resolved; status=resolved includes it.
+    const outstanding = await request(app).get('/api/truck-checks/issues').expect(200);
+    expect(outstanding.body.find((i: { id: string }) => i.id === resultId)).toBeFalsy();
+    const resolvedFeed = await request(app).get('/api/truck-checks/issues?status=resolved').expect(200);
+    expect(resolvedFeed.body.find((i: { id: string }) => i.id === resultId)).toBeTruthy();
+  });
+
+  it('rejects an invalid issueStatus (400) and unknown result (404)', async () => {
+    const { runId, resultId } = await recordIssue();
+    expect((await request(app).patch(`/api/truck-checks/results/${resultId}/issue`).send({ runId, issueStatus: 'nope' })).status).toBe(400);
+    expect((await request(app).patch(`/api/truck-checks/results/missing/issue`).send({ runId, issueStatus: 'resolved' })).status).toBe(404);
+  });
+});

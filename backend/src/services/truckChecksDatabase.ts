@@ -5,7 +5,8 @@ import {
   CheckRun,
   CheckResult,
   CheckRunWithResults,
-  CheckStatus
+  CheckStatus,
+  IssueUpdate
 } from '../types';
 import type { ApplianceDetails } from './truckChecksDbFactory';
 import { getEffectiveStationId } from '../constants/stations';
@@ -365,6 +366,8 @@ class TruckChecksDatabase {
       comment,
       photoUrl,
       completedBy,
+      // An issue starts its follow-up lifecycle as 'open' (TC-4).
+      issueStatus: status === 'issue' ? 'open' : undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -415,6 +418,20 @@ class TruckChecksDatabase {
       return result;
     }
     return undefined;
+  }
+
+  updateIssueStatus(id: string, update: IssueUpdate, _runId?: string): CheckResult | undefined {
+    const result = this.checkResults.get(id);
+    if (!result) return undefined;
+    if (update.issueStatus !== undefined) result.issueStatus = update.issueStatus;
+    if (update.issueNote !== undefined) result.issueNote = update.issueNote;
+    if (update.assignedTo !== undefined) result.assignedTo = update.assignedTo;
+    if (update.issueStatus === 'resolved') {
+      result.resolvedBy = update.resolvedBy;
+      result.resolvedAt = new Date();
+    }
+    result.updatedAt = new Date();
+    return result;
   }
 
   deleteCheckResult(id: string): boolean {

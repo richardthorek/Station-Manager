@@ -513,3 +513,12 @@
     text-align: center;
   }
 }
+
+/* TC-4 issue follow-up cards */
+.issue-card { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.issue-actions { display: flex; flex-direction: column; gap: 0.4rem; flex-shrink: 0; }
+.issue-meta { font-size: 0.85rem; color: var(--color-text-secondary, #666); margin: 0.25rem 0; }
+.issue-status--open { background: var(--surface-error, #fde8e8); }
+.issue-status--acknowledged { background: var(--surface-warning, #fef3cd); }
+.issue-status--resolved { background: var(--surface-success, #e6f4ea); }
+.issue-card--resolved { opacity: 0.7; }

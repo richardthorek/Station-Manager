@@ -8,7 +8,8 @@ import {
   CheckRun,
   CheckResult,
   CheckRunWithResults,
-  CheckStatus
+  CheckStatus,
+  IssueUpdate
 } from '../types';
 import { ITruckChecksDatabase, ApplianceDetails } from './truckChecksDbFactory';
 import { getEffectiveStationId } from '../constants/stations';
@@ -592,6 +593,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       comment,
       photoUrl,
       completedBy,
+      issueStatus: status === 'issue' ? 'open' : undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -610,6 +612,11 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       comment: checkResult.comment || '',
       photoUrl: checkResult.photoUrl || '',
       completedBy: checkResult.completedBy || '',
+      issueStatus: checkResult.issueStatus || '',
+      issueNote: '',
+      assignedTo: '',
+      resolvedBy: '',
+      resolvedAt: '',
       createdAt: checkResult.createdAt.toISOString(),
       updatedAt: checkResult.updatedAt.toISOString(),
     };
@@ -675,6 +682,29 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     return false;
   }
 
+  async updateIssueStatus(id: string, update: IssueUpdate, runId?: string): Promise<CheckResult | null> {
+    if (!runId) {
+      logger.warn('updateIssueStatus: runId is required in Table Storage');
+      return null;
+    }
+    try {
+      const entity = await this.checkResultsTable.getEntity<TableEntity>(runId, id);
+      if (update.issueStatus !== undefined) entity.issueStatus = update.issueStatus;
+      if (update.issueNote !== undefined) entity.issueNote = update.issueNote;
+      if (update.assignedTo !== undefined) entity.assignedTo = update.assignedTo;
+      if (update.issueStatus === 'resolved') {
+        entity.resolvedBy = update.resolvedBy || '';
+        entity.resolvedAt = new Date().toISOString();
+      }
+      entity.updatedAt = new Date().toISOString();
+      await this.checkResultsTable.updateEntity(entity, 'Replace');
+      return this.entityToCheckResult(entity, runId);
+    } catch (error: any) {
+      if (error.statusCode === 404) return null;
+      throw error;
+    }
+  }
+
   private entityToCheckResult(entity: TableEntity, runId: string): CheckResult {
     return {
       id: entity.rowKey as string,
@@ -689,6 +719,11 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       comment: (entity.comment as string) || undefined,
       photoUrl: (entity.photoUrl as string) || undefined,
       completedBy: (entity.completedBy as string) || undefined,
+      issueStatus: (entity.issueStatus as CheckResult['issueStatus']) || undefined,
+      issueNote: (entity.issueNote as string) || undefined,
+      assignedTo: (entity.assignedTo as string) || undefined,
+      resolvedBy: (entity.resolvedBy as string) || undefined,
+      resolvedAt: entity.resolvedAt ? new Date(entity.resolvedAt as string) : undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };

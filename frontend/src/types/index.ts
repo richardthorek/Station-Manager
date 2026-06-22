@@ -312,6 +312,12 @@ export interface CheckResult {
   comment?: string;
   photoUrl?: string;
   completedBy?: string; // Who completed this specific item
+  // Issue follow-up lifecycle (TC-4) — set when status === 'issue'.
+  issueStatus?: 'open' | 'acknowledged' | 'resolved';
+  issueNote?: string;
+  assignedTo?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -321,4 +327,14 @@ export interface CheckResult {
  */
 export interface CheckRunWithResults extends CheckRun {
   results: CheckResult[];
+}
+
+/**
+ * An issue result enriched with appliance/run context for the equipment-officer
+ * follow-up feed (GET /api/truck-checks/issues).
+ */
+export interface IssueResult extends CheckResult {
+  applianceId: string;
+  applianceName: string;
+  runStartTime: string;
 }

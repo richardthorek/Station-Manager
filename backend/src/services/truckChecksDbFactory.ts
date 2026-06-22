@@ -19,6 +19,7 @@ import {
   CheckResult,
   CheckRunWithResults,
   CheckStatus,
+  IssueUpdate,
 } from '../types';
 
 /**
@@ -77,6 +78,12 @@ export interface ITruckChecksDatabase {
   getResultsByRunId(runId: string): Promise<CheckResult[]> | CheckResult[];
   getCheckRunWithResults(runId: string): Promise<CheckRunWithResults | null> | CheckRunWithResults | null;
   updateCheckResult(id: string, status: CheckStatus, comment?: string, photoUrl?: string): Promise<CheckResult | null | undefined> | CheckResult | null | undefined;
+  /**
+   * Update an issue result's follow-up lifecycle (TC-4). `runId` is required by
+   * the Table Storage twin (results are partitioned by run); the in-memory twin
+   * ignores it.
+   */
+  updateIssueStatus(id: string, update: IssueUpdate, runId?: string): Promise<CheckResult | null | undefined> | CheckResult | null | undefined;
   deleteCheckResult(id: string): Promise<boolean> | boolean;
 
   // Query Methods
