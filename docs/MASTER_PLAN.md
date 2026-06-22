@@ -1,7 +1,7 @@
 # RFS Station Manager - Master Plan
 
-**Document Version:** 3.0  
-**Last Updated:** June 21, 2026  
+**Document Version:** 3.2  
+**Last Updated:** June 22, 2026  
 **Status:** Living Document — **the single plan** (all other planning docs folded in here)  
 **Purpose:** Single source of truth for planning, roadmap, architecture guidance, and issue tracking
 
@@ -55,6 +55,7 @@ Only the following types of documents are allowed in the root `/docs/` directory
 - **API Documentation**: `docs/API_DOCUMENTATION.md` - Human-readable API reference
 - **Feature Guides**: `docs/FEATURE_DEVELOPMENT_GUIDE.md`, `docs/GETTING_STARTED.md`
 - **UI Review**: `docs/current_state/UI_REVIEW_20260207.md` - Comprehensive UI/UX review with iPad screenshots
+- **UAT Review**: `docs/current_state/UAT_REVIEW_20260622.md` - Full production UAT pass (new signup → sign-in → truck check → reports → admin → AAR Studio → logged-out/anonymous API probe). Source of the critical data-exposure finding and the Truck Check blocker below.
 - **Token-validation contract**: `docs/SUITE_TOKEN_VALIDATION.md` - How sibling Bushie Tools apps validate the Station Manager JWT (current contract, reference)
 
 **Archived design spikes** (historical reference — *not* live plans; their forward work is tracked in this file's roadmap below):
@@ -294,6 +295,23 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
   a backplane). **D5 — Deploy size/time:** shrink the package, target deploy < 10 min.
 
 ### June 2026 Stabilization
+- 2026-06-22: **Production UAT pass — full walkthrough, new signup to logged-out API probe.** Hands-on UAT against the live `bungrfs-linux.azurewebsites.net` deployment via browser automation; full results in `docs/current_state/UAT_REVIEW_20260622.md`.
+
+  **Blockers found:**
+  - **Anonymous data exposure (security):** `GET /api/reports/*`, `GET /api/truck-checks/appliances`, and `GET /api/members` all return real organizational data (attendance, member-participation, truck-check compliance %, real member names) to fully credential-less requests — verified with `fetch(url, {credentials:'omit'})` from a brand-new browser tab with no cookie/token/station context. By contrast `/api/auth/me`, `/api/organizations/current`, and `/api/billing/status` correctly 401 the same request, so the auth layer works generally — it's specifically missing on these read routes. CLAUDE.md's documented kiosk/demo pass-through ("requests with no org context always pass through") is reasonable for sign-in/truck-check *write* actions at a station kiosk; it should not extend to analytics/PII *read* routes. **This is now the single highest-priority fix in this document, ahead of Stripe.**
+  - **Truck Check has no working configuration.** Seeded demo appliances ship with no Vehicle Type/template, so running a check on any of them skips to "0 of 0 items completed (NaN%)" — a fake 100%-complete result with an empty checklist (reproduced on 3 of the 5 seeded appliances). Linking a vehicle to a Vehicle Type fixes the empty-checklist problem but then `POST /api/truck-checks/results` 400s on the very first item (reproduced 3×, both Done and Skip) — so no path currently completes a check successfully. Truck Check is marketed as shipped in v1.1; it does not function on production today.
+  - **Stripe billing confirmed not configured in production** (both "Upgrade to Basic" and "Upgrade to AI Pro" return "Billing is not configured on this server") — no path exists for any org to leave the free Community plan. This was already tracked as a roadmap item (C2 below); UAT confirms it's blocking real users today, not just a backlog gap. Also confirms `README.md`'s "Stripe billing wired in test mode" claim is inaccurate — matches CLAUDE.md, not the README.
+
+  **Should-fix found:** AAR Studio (`/aar/`) has no entitlement check on load and is fully reachable by direct navigation on a Community-plan org with `aiEnabled` off (the app-picker's locked card is cosmetic only, since AAR Studio sits outside the SPA router). The `/admin/organization` page's 5-requests/15-minute rate limiter fires after ~5 normal page loads in 4 minutes, locking a brand-new owner out of their own settings for up to 15 minutes with no retry-after messaging. Toggling a module past its plan ceiling shows a green "Updated" success banner while silently reverting the checkbox — the server-side clamp is correct, the success messaging is not. "Add New Vehicle" past the 5th appliance on Community 403s with no error toast (infinite spinner instead). "Template" on any vehicle without a saved per-vehicle override hangs the dashboard indefinitely (404 treated as a thrown error instead of "use Vehicle Type defaults").
+
+  **Confirmed-live (already-tracked) gaps:** `maxStations` is unenforced — created a 2nd station on Community with no ceiling/warning (matches existing C1 item below).
+
+  **Minor:** App-picker's Reports card looks active when off-plan (other locked cards show a pill instead); double PWA service-worker registration log; `/login` and `/profile/:memberId` take 3.5–5s to settle vs near-instant elsewhere; Cancel leaves a phantom "completed" history entry; Join Check doesn't resume shared progress.
+
+  **Not completed:** re-login smoke test at the end of the session (test password not retained across a context boundary — a testing-process gap, not a product finding). Screenshots were captured live during the session but were not placed into `docs/current_state/images/` — the capture tool's save target wasn't reachable from the environment this review was written in; revisit once there's a path to move them into the repo.
+
+  *No code changed — this is a UAT/findings-logging session only.*
+
 - 2026-06-21: **UI/UX polish — CSS-var sweep, dark-mode fixes, status tokens, entitlement UX (#576).** A systematic pass to harden the frontend design system and eliminate silent style regressions.
 
   **What shipped:**
@@ -328,40 +346,69 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
 - 2026-06-07: **Infrastructure-as-Code introduced (Issue #513).** Added `infra/` (Bicep) — the project's first IaC. Codifies the Table Storage data tier and provides a **dual-host comparison** (Linux B1 always-warm vs Azure Container Apps scale-to-zero) running the current Socket.io app unchanged, side-by-side with prod (prod untouched). Includes a multi-stage `Dockerfile`, a manual `infra-deploy.yml` workflow, and `infra/README.md`. **Critical finding:** the GitHub→Azure OIDC app registration was deleted from the tenant, silently breaking the last several `main` deploys (`AADSTS700016` at `Login to Azure`) — so the v1.1 merge did not reach production. The IaC README documents the one-time OIDC bootstrap that restores prod deploys. Real-time decision: **defer SignalR**; when multi-brigade scale needs a backplane, adopt **Azure Web PubSub for Socket.IO** (keeps the code, free tier) rather than a SignalR SDK rewrite. Follow-ups to raise: Windows→Linux prod migration, App Insights daily cap, managed-identity storage auth.
 - 2026-06-08: **SaaS foundation implemented** (first slice of the commercialization design). New top-level `Organization` billing tenant (in-memory + Table Storage twins + factory + `constants/plans.ts` catalog: Community/Basic/AI). Self-service `POST /api/auth/signup` creates an org (free Community plan) + owner; JWT now carries `organizationId`; `/auth/me` returns org + entitlements. New `/api/organizations/current` management routes (get/update plan + module toggles, list/create users) with `owner`/`admin` RBAC (`requireOwner` added). Feature gating via `requireFeature` middleware + `ENABLE_ENTITLEMENTS` flag (default off → backward compatible; the 525 existing tests untouched), applied to checkins/events (signInEnabled), truck-checks (truckCheckEnabled), reports (reportsEnabled). Owners can **disable the sign-in book for maintenance-only brigades** and AI is gated off below the AI plan (`clampEntitlements` prevents exceeding the plan ceiling). Frontend: `SignupPage` (`/signup`), `OrganizationPage` (`/admin/organization`), `AuthContext` extended with org/entitlements + `hasFeature`, and `FeatureRoute` guards on the gated routes. 12 new backend + 6 new frontend tests; all suites + coverage + build green. **Not yet wired:** live Stripe billing (entitlements are admin-set; Stripe Checkout/webhooks are the next slice), device accounts, and member logins — all per `docs/SAAS_COMMERCIALIZATION_DESIGN.md`.
 
-### Prioritised next steps (as of June 21, 2026)
+### Prioritised next steps (as of June 22, 2026)
 
 These are the highest-leverage items to act on next, in order. Read each track section above for full detail; this is the executive summary for picking up where we left off.
 
-**1. C1 — Entitlement enforcement hardening (prerequisite for billing)**
+**CRITICAL SEQUENCING:**
+1. **Item 5 (OIDC)** must be done first — nothing ships to production without it.
+2. **Items 1–4** are the security/feature/billing blockers; order of work within these is flexible, but all must be done before launch or charging begins.
+3. **Item 8** is polish; do after the blockers are addressed.
+
+**What's currently broken in production (from UAT 2026-06-22):**
+- Anonymous users can read real brigade data (reports, members, truck checks) — security risk
+- Truck Check feature doesn't work in any configuration (0-item fake-pass or 400 errors)
+- No org can upgrade off the free plan (Stripe not configured on App Service; both buttons return "Billing is not configured")
+- No production deploys reach the live server (OIDC registration deleted)
+
+**1. Anonymous data exposure on reports/members endpoints — blocker, fix before anything else below**
+- `GET /api/reports/*`, `GET /api/truck-checks/appliances`, and `GET /api/members` return real data to fully credential-less requests (confirmed live in production UAT, 2026-06-22 — see `docs/current_state/UAT_REVIEW_20260622.md`).
+- Require an authenticated session (or a valid station/kiosk token) before these routes return data. The existing "no org context → pass through" behaviour should stay scoped to sign-in/truck-check *write* actions, not extend to analytics/PII *read* routes.
+- This is real organizational data (member names, attendance, compliance %) reachable by anyone with the URL, no account required — promoted ahead of the Stripe gap because it's an active disclosure risk, not a revenue gap.
+
+**2. Truck Check has no working configuration — blocker**
+- Unlinked appliances produce a fake "0 of 0 items (NaN%)" 100%-complete result instead of blocking the start or falling back sensibly.
+- Appliances linked to a Vehicle Type 400 on `POST /api/truck-checks/results` for the very first item — reproduced on both Done and Skip, 3× each.
+- Net effect: no appliance configuration on this deployment can currently complete a check. Trace the results-endpoint validation against a Vehicle-Type-derived checklist shape first.
+
+**3. C1 — Entitlement enforcement hardening (prerequisite for billing)**
 - Gate `GET /api/export` behind `reportsEnabled` (currently unguarded).
-- Enforce `maxStations` on `POST /api/stations` (currently unchecked).
+- Enforce `maxStations` on `POST /api/stations` (currently unchecked — confirmed live in UAT, created a 2nd station on Community with no ceiling).
+- Add an entitlement check inside `aar-studio/` on load — direct navigation to `/aar/` currently bypasses the plan gate entirely (confirmed live in UAT).
 - Audit every `requireFeature`/`FeatureRoute` pair for completeness.
 - This is the last blocker before Stripe can go live — entitlements must be airtight before customers pay.
 
-**2. C2 — Stripe billing (SaaS Phase B) — the primary ship-blocker**
+**4. C2 — Stripe billing (SaaS Phase B) — the primary revenue-ship-blocker**
 - Install `stripe` SDK; map price IDs from env vars.
 - Wire `POST /api/billing/checkout` → Stripe Checkout for the plan the user chose.
 - Implement signature-verified webhook handler (`/api/billing/webhook`) that syncs `org.status` + `org.entitlements` after payment, cancellation, or trial expiry.
 - Add Customer Portal link on `/admin/organization`.
 - Trial flow: on signup, set `status: 'trialing'` with `trialEndsAt`; webhook transitions to `active` or `past_due`.
+- **Configuration required on App Service to make upgrades reachable:** Set `STRIPE_SECRET_KEY` (live or test key) and price IDs for each plan/interval in the Azure App Service config (`STRIPE_PRICE_BASIC_MONTHLY`, `STRIPE_PRICE_AI_MONTHLY`, etc.; see `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md` for full mapping).
+- Confirmed live in UAT (2026-06-22): both "Upgrade to Basic" and "Upgrade to AI Pro" buttons return "Billing is not configured on this server" — no org can leave the free plan today. **No revenue can be collected until this ships.** User attempted upgrade in session and hit this message. Also fix `README.md`'s "Stripe billing wired in test mode" claim, which contradicts both CLAUDE.md and live behaviour.
 - Reference: `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md` has full schema and Stripe surface detail.
-- **No revenue can be collected until this ships.**
 
-**3. T1 — Shared domain types (increment 2)**
+**5. Production deployment restore (OIDC) — BLOCKING all main branch deploys**
+- The GitHub→Azure OIDC app registration was deleted, silently breaking `main` deploys since the IaC PR.
+- The `infra/README.md` documents the one-time bootstrap to restore it.
+- **Nothing can ship to production until this is restored** — must fix before attempting to deploy any of items 1–4 above.
+- Until this is done, merging to `main` does **not** reach the live deployment.
+
+**6. T1 — Shared domain types (increment 2)**
 - Increment 1 (frontend types re-synced to backend) shipped in #575.
 - Increment 2: extract a real shared module (`packages/types/`) with a date-generic `Member<TDate = string>`, consumed by both backend and frontend via npm workspace.
 - Resolves the `Date`-vs-`string` split and prevents future drift.
 
-**4. A2 — AAR identity & server-side persistence**
+**7. A2 — AAR identity & server-side persistence**
 - Pass the logged-in SM JWT into AAR Studio on load.
 - Add `/api/aar-sessions` CRUD (Table Storage `AARSessions` partition by org/brigade).
 - Replace AAR's free-text setup screen with a station/member picker from the roster.
 - Shrink the `/aar` CSP: once the AI gateway handles all provider calls, remove direct Azure OpenAI/Speech origins from the scoped policy.
 
-**5. Production deployment restore (OIDC)**
-- The GitHub→Azure OIDC app registration was deleted, silently breaking `main` deploys since the IaC PR.
-- The `infra/README.md` documents the one-time bootstrap to restore it.
-- Until this is done, merging to `main` does **not** deploy to production.
+**8. Admin-area UX rough edges from UAT (2026-06-22)** — lower priority, batch with other frontend polish:
+- `/admin/organization`'s 5-req/15-min rate limiter fires after ~5 normal loads in 4 minutes; scope it away from idempotent GETs or raise the threshold, and add a retry-after message to the 429 banner.
+- Module-toggle past the plan ceiling shows a false "Updated" success banner while silently reverting — surface the clamp/rejection instead.
+- "Add New Vehicle" past the plan's vehicle ceiling 403s with no error toast (infinite spinner); "Template" on a vehicle with no saved override hangs the dashboard on a 404 instead of falling back to Vehicle Type defaults.
 
 **Design decisions to resolve before billing goes live (🔵 D1–D3):**
 - D1: Confirm pricing details (trial length, AI metering unit, top-up pack sizes).
@@ -2695,6 +2742,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 2.3 | Feb 2026 | Bug Fix | Fixed participant removal failures across all UI entry points. Root cause: Table Storage implementation of `removeEventParticipant` always returned false because it lacked the partition key (eventId). Updated database interface and implementations to accept optional eventId parameter, enabling efficient single-partition deletion. Backward compatible with fallback to search. All tests pass (498 backend + 386 frontend). |
 | 3.0 | Jun 2026 | Consolidation | Collapsed all five separate planning docs (CONSOLIDATION_REVIEW, SUITE_INTEGRATION_PLAN, SAAS_COMMERCIALIZATION_DESIGN, AI_MAINTENANCE_AGENT_DESIGN, AAR_STUDIO_PLAN) into this single file. Archived originals in `docs/archive/`. ONE-PLAN RULE enforced. (#575) |
 | 3.1 | Jun 2026 | UI/UX polish | Recorded CSS-var sweep, dark-mode fixes, status tokens, TrialBanner wiring, FeatureRoute upgrade UX, dead-end upgrade-path fix, and Material Design color isolation in truck check. (#576). Added "Prioritised next steps" section and CLAUDE.md progress-update instruction. |
+| 3.2 | Jun 2026 | Production UAT | Logged full UAT pass against `bungrfs-linux.azurewebsites.net` (new signup through logged-out API probe). Added critical finding: `reports`/`members`/`appliances` read endpoints return real data to fully anonymous requests. Added blocker: Truck Check has no working configuration (0-item fake-pass + 400 on Vehicle-Type-linked results). Confirmed live: Stripe billing not configured, AAR Studio gating bypass, `maxStations` unenforced, admin rate-limiter too aggressive. New backing doc: `docs/current_state/UAT_REVIEW_20260622.md`. Re-ordered "Prioritised next steps" with the data-exposure fix at #1. |
 
 ---
 
