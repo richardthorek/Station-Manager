@@ -29,6 +29,8 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  // Standard items from the linked VehicleType, shown read-only in the template editor.
+  const [standardItemsForEditor, setStandardItemsForEditor] = useState<ChecklistItem[]>([]);
   const modalRef = useFocusTrap<HTMLDivElement>(showVehicleModal);
   const modalIdSuffix = selectedVehicle?.id ?? 'new';
 
@@ -122,8 +124,14 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
 
   async function handleEditTemplate(vehicle: Appliance) {
     try {
-      const templateData = await api.getTemplate(vehicle.id);
+      const [templateData, effectiveChecklist] = await Promise.all([
+        api.getTemplate(vehicle.id),
+        vehicle.vehicleTypeId ? api.getEffectiveChecklist(vehicle.id) : Promise.resolve(null),
+      ]);
       setTemplate(templateData);
+      setStandardItemsForEditor(
+        effectiveChecklist ? effectiveChecklist.items.filter((i) => i.isStandard) : [],
+      );
       setSelectedVehicle(vehicle);
       setShowTemplateEditor(true);
     } catch (err) {
@@ -302,6 +310,15 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
             <div className="vehicle-info">
               <h3>{vehicle.name}</h3>
               {vehicle.description && <p>{vehicle.description}</p>}
+              {(vehicle.make || vehicle.model || vehicle.year || vehicle.registration || vehicle.agencyId) && (
+                <p className="vehicle-identity">
+                  {[
+                    vehicle.agencyId,
+                    [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' '),
+                    vehicle.registration,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              )}
             </div>
             <div className="vehicle-actions">
               <button className="btn-edit" onClick={() => handleEditVehicle(vehicle)}>
@@ -477,11 +494,34 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
           aria-label="Close template editor"
         >
           <div className="modal-content template-editor">
-            <h2>Edit Checklist Template: {template.applianceName}</h2>
+            <h2>Edit Checklist: {template.applianceName}</h2>
             <p className="template-editor-hint">
               Tag items with a standard code so the same check trends across brigades,
               and group them into sections to match how you walk around the vehicle.
             </p>
+
+            {standardItemsForEditor.length > 0 && (
+              <div className="template-standard-items">
+                <h3 className="template-section-title">
+                  🔒 Standard items <span className="template-locked-note">(inherited from vehicle type — not editable here)</span>
+                </h3>
+                {standardItemsForEditor.map((item, idx) => (
+                  <div key={item.id} className="template-item template-item--locked">
+                    <div className="item-number">{idx + 1}</div>
+                    <div className="item-fields">
+                      <p className="template-item-name">{item.name}</p>
+                      {item.description && <p className="template-item-desc">{item.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {standardItemsForEditor.length > 0 && (
+              <h3 className="template-section-title template-section-title--custom">
+                ✏️ Custom items <span className="template-locked-note">(add, edit or remove)</span>
+              </h3>
+            )}
 
             <datalist id="template-item-code-options">
               {ITEM_CODES.map((ic) => (

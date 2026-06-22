@@ -77,13 +77,16 @@ function reviewCard(s) {
 }
 
 /** Pull the server copy of a review onto this device and open it. */
-async function openRemote(id) {
+async function openRemote(id, triggerEl) {
+  const card = triggerEl?.closest('.review-card') ?? null;
+  if (card) card.classList.add('review-card--loading');
   try {
     const session = await fetchServerSession(id);
     if (!session) throw new Error('Could not download this review');
     store.adoptSession(session); // overwrites any local copy with the cloud one
     location.hash = '#/board';
   } catch (err) {
+    if (card) card.classList.remove('review-card--loading');
     toast(err.message || 'Could not open that review', 'error');
   }
 }
@@ -91,7 +94,7 @@ async function openRemote(id) {
 /** A cloud review not yet on this device: tap to pull it down and open it. */
 function cloudCard(s) {
   const subtitle = [friendlyDate(s.incidentDate || s.createdAt), s.createdByName].filter(Boolean).join(' · ');
-  return h('article', { class: 'review-card review-card--cloud', onclick: () => openRemote(s.id) },
+  return h('article', { class: 'review-card review-card--cloud', 'data-session-id': s.id, onclick: (e) => openRemote(s.id, e.currentTarget) },
     h('div', { class: 'review-card__body' },
       h('h3', { class: 'review-card__title' }, displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })),
       h('p', { class: 'review-card__meta' }, subtitle || 'From your team'),
@@ -113,7 +116,7 @@ function markCardUpdated(container, summary) {
   card.querySelector('.review-card__actions')?.prepend(
     h('button', {
       class: 'icon-btn', title: 'Load latest from your team', 'aria-label': 'Load latest from your team',
-      onclick: () => openRemote(summary.id),
+      onclick: (e) => openRemote(summary.id, e.currentTarget),
     }, '⟳'),
   );
 }

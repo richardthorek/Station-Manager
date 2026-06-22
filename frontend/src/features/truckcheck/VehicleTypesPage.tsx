@@ -169,8 +169,15 @@ export function VehicleTypesPage() {
       </main>
 
       {showModal && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="vt-modal-title">
-          <div className="modal-content">
+        <div
+          className="modal-overlay"
+          role="button"
+          tabIndex={0}
+          aria-label="Close vehicle type dialog"
+          onClick={(e) => { if (e.target === e.currentTarget && !saving) setShowModal(false); }}
+          onKeyDown={(e) => { if ((e.key === 'Escape' || e.key === 'Enter') && !saving) setShowModal(false); }}
+        >
+          <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="vt-modal-title">
             <h2 id="vt-modal-title">{editing ? 'Edit Vehicle Type' : 'New Vehicle Type'}</h2>
 
             <div className="form-group">

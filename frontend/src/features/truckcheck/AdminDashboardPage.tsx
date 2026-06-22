@@ -26,6 +26,12 @@ export function AdminDashboardPage() {
   const [exportFeedback, setExportFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [issues, setIssues] = useState<IssueResult[]>([]);
   const [issueFilter, setIssueFilter] = useState<IssueFilter>('outstanding');
+  // Resolution modal (replaces browser prompt)
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [resolveTarget, setResolveTarget] = useState<IssueResult | null>(null);
+  const [resolveBy, setResolveBy] = useState('');
+  const [resolveNote, setResolveNote] = useState('');
+  const [resolveSaving, setResolveSaving] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -47,18 +53,39 @@ export function AdminDashboardPage() {
     }
   }
 
-  async function handleIssueAction(
-    issue: IssueResult,
-    issueStatus: 'acknowledged' | 'resolved',
-  ) {
+  async function handleIssueAction(issue: IssueResult, issueStatus: 'acknowledged' | 'resolved') {
+    if (issueStatus === 'resolved') {
+      setResolveTarget(issue);
+      setResolveBy('');
+      setResolveNote('');
+      setShowResolveModal(true);
+      return;
+    }
     try {
-      const resolvedBy = issueStatus === 'resolved' ? (prompt('Resolved by (name)?') || undefined) : undefined;
-      const issueNote = issueStatus === 'resolved' ? (prompt('Resolution note (optional):') || undefined) : undefined;
-      await api.updateIssueStatus(issue.id, issue.runId, { issueStatus, resolvedBy, issueNote });
+      await api.updateIssueStatus(issue.id, issue.runId, { issueStatus });
       await loadIssues();
     } catch (err) {
       alert('Failed to update issue');
       console.error(err);
+    }
+  }
+
+  async function handleResolveSubmit() {
+    if (!resolveTarget) return;
+    try {
+      setResolveSaving(true);
+      await api.updateIssueStatus(resolveTarget.id, resolveTarget.runId, {
+        issueStatus: 'resolved',
+        resolvedBy: resolveBy.trim() || undefined,
+        issueNote: resolveNote.trim() || undefined,
+      });
+      setShowResolveModal(false);
+      await loadIssues();
+    } catch (err) {
+      alert('Failed to resolve issue');
+      console.error(err);
+    } finally {
+      setResolveSaving(false);
     }
   }
 
@@ -412,6 +439,54 @@ export function AdminDashboardPage() {
         </>
         )}
       </main>
+
+      {showResolveModal && resolveTarget && (
+        <div
+          className="modal-overlay"
+          role="button"
+          tabIndex={0}
+          aria-label="Close resolve dialog"
+          onClick={(e) => { if (e.target === e.currentTarget && !resolveSaving) setShowResolveModal(false); }}
+          onKeyDown={(e) => { if ((e.key === 'Escape' || e.key === 'Enter') && !resolveSaving) setShowResolveModal(false); }}
+        >
+          <div className="modal-content resolve-modal" role="dialog" aria-modal="true" aria-labelledby="resolve-modal-title">
+            <h2 id="resolve-modal-title">Mark issue resolved</h2>
+            <p className="resolve-modal__context">
+              <strong>{resolveTarget.applianceName}</strong> — {resolveTarget.itemName}
+            </p>
+            <div className="form-group">
+              <label htmlFor="resolve-by">Resolved by</label>
+              <input
+                id="resolve-by"
+                type="text"
+                value={resolveBy}
+                onChange={(e) => setResolveBy(e.target.value)}
+                placeholder="Name of person who resolved this"
+                disabled={resolveSaving}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="resolve-note">Resolution note <span className="optional">(optional)</span></label>
+              <textarea
+                id="resolve-note"
+                value={resolveNote}
+                onChange={(e) => setResolveNote(e.target.value)}
+                placeholder="What was done to fix this issue?"
+                rows={3}
+                disabled={resolveSaving}
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowResolveModal(false)} disabled={resolveSaving}>
+                Cancel
+              </button>
+              <button className="btn-primary" onClick={handleResolveSubmit} disabled={resolveSaving}>
+                {resolveSaving ? 'Saving…' : 'Mark resolved'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

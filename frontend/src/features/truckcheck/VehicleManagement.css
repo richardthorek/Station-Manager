@@ -64,6 +64,13 @@
   font-size: 0.9rem;
 }
 
+.vehicle-identity {
+  margin-top: 0.35rem !important;
+  font-size: 0.8rem !important;
+  color: var(--text-secondary) !important;
+  font-variant-numeric: tabular-nums;
+}
+
 .vehicle-actions {
   padding: 1rem;
   border-top: 1px solid var(--border-color);
@@ -198,6 +205,52 @@
 /* Template Editor Styles */
 .modal-content.template-editor {
   max-width: 800px;
+}
+
+.template-standard-items {
+  margin: 1rem 0 1.5rem;
+}
+
+.template-section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin: 0 0 0.6rem;
+}
+
+.template-section-title--custom {
+  margin-top: 1.5rem;
+}
+
+.template-locked-note {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.template-item--locked {
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  opacity: 0.75;
+  cursor: default;
+}
+
+.template-item-name {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.template-item-desc {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .template-items {
