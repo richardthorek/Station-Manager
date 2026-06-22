@@ -4,10 +4,11 @@
  * Tests for the main landing page with feature navigation.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import { render } from '../../test/utils/test-utils'
 import { LandingPage } from './LandingPage'
+import type { EntitlementFeature } from '../../contexts/AuthContext'
 
 // Mock the useTheme hook
 vi.mock('../../hooks/useTheme', () => ({
@@ -16,6 +17,39 @@ vi.mock('../../hooks/useTheme', () => ({
     toggleTheme: vi.fn(),
   }),
 }))
+
+// Controllable auth context. Default mirrors the real "no org context"
+// (single-tenant / kiosk back-compat) state so the existing un-gated
+// expectations hold; individual tests override it to exercise entitlement
+// gating on the app-picker cards.
+type AuthOverrides = {
+  entitlements: Record<string, boolean> | null
+  hasFeature: (f: EntitlementFeature) => boolean
+}
+const defaultAuth: AuthOverrides = {
+  entitlements: null,
+  hasFeature: () => true,
+}
+let authState: AuthOverrides = { ...defaultAuth }
+
+vi.mock('../../contexts/AuthContext', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../contexts/AuthContext')>()
+  return {
+    ...actual,
+    useAuth: () => ({
+      isAuthenticated: false,
+      user: null,
+      logout: vi.fn(),
+      requireAuth: false,
+      entitlements: authState.entitlements,
+      hasFeature: authState.hasFeature,
+    }),
+  }
+})
+
+afterEach(() => {
+  authState = { ...defaultAuth }
+})
 
 describe('LandingPage', () => {
   it('renders the landing page', () => {
@@ -86,5 +120,28 @@ describe('LandingPage', () => {
     const santaLink = screen.getByRole('link', { name: /open fire santa run/i })
     expect(santaLink).toHaveAttribute('target', '_blank')
     expect(santaLink).toHaveAttribute('href', expect.stringMatching(/santa/i))
+  })
+
+  it('gates a core module card with a lock affordance when the org lacks the feature', () => {
+    // Org present but Reports not entitled — the Reports card should show the
+    // same "Not in your plan" lock prompt as the AAR Studio / suite cards
+    // instead of a live "Go to Reports" link.
+    authState = {
+      entitlements: { signInEnabled: true, truckCheckEnabled: true, reportsEnabled: false },
+      hasFeature: (f) => f !== 'reportsEnabled',
+    }
+    render(<LandingPage />)
+
+    // The active Reports link is gone…
+    expect(screen.queryByRole('link', { name: /go to reports/i })).not.toBeInTheDocument()
+    // …replaced by an upgrade prompt that routes to the plan page.
+    const lockedLink = screen.getByRole('link', {
+      name: /reports & analytics is not included in your plan/i,
+    })
+    expect(lockedLink).toHaveAttribute('href', '/admin/organization')
+
+    // Entitled modules keep their live links.
+    expect(screen.getByRole('link', { name: /go to sign-in/i })).toHaveAttribute('href', '/signin')
+    expect(screen.getByRole('link', { name: /go to vehicle check/i })).toHaveAttribute('href', '/truckcheck')
   })
 })

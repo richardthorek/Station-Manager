@@ -325,7 +325,7 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
 
   **Confirmed-live (already-tracked) gaps:** `maxStations` is unenforced — created a 2nd station on Community with no ceiling/warning (matches existing C1 item below).
 
-  **Minor:** App-picker's Reports card looks active when off-plan (other locked cards show a pill instead); double PWA service-worker registration log; `/login` and `/profile/:memberId` take 3.5–5s to settle vs near-instant elsewhere; Cancel leaves a phantom "completed" history entry; Join Check doesn't resume shared progress.
+  **Minor:** ~~App-picker's Reports card looks active when off-plan (other locked cards show a pill instead)~~ **Fixed 2026-06-22** — Sign-In, Vehicle Check, and Reports cards now use the same entitlement-locked treatment as AAR Studio / suite apps (`feature-card--locked` + a "Not in your plan" → `/admin/organization` link) when the org lacks the feature; unchanged with no entitlement context (back-compat). Remaining minor: double PWA service-worker registration log; `/login` and `/profile/:memberId` take 3.5–5s to settle vs near-instant elsewhere; Cancel leaves a phantom "completed" history entry; Join Check doesn't resume shared progress.
 
   **Not completed:** re-login smoke test at the end of the session (test password not retained across a context boundary — a testing-process gap, not a product finding). Screenshots were captured live during the session but were not placed into `docs/current_state/images/` — the capture tool's save target wasn't reachable from the environment this review was written in; revisit once there's a path to move them into the repo.
 
