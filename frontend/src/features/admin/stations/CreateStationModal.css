@@ -123,6 +123,12 @@
   margin-bottom: 1.5rem;
 }
 
+.form-error-upgrade-link {
+  color: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .form-section {
   margin-bottom: 2rem;
 }

@@ -205,6 +205,12 @@
   font-size: 0.9rem;
 }
 
+.vehicle-modal-upgrade-link {
+  color: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .modal-actions {
   display: flex;
   gap: 1rem;

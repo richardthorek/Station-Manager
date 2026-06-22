@@ -36,7 +36,7 @@ import { useSocket } from '../../hooks/useSocket';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { useToast } from '../../hooks/useToast';
 import { useStation } from '../../contexts/StationContext';
-import { api } from '../../services/api';
+import { api, ApiLimitError } from '../../services/api';
 import { announce } from '../../utils/announcer';
 import { formatErrorMessage } from '../../utils/errorHandler';
 import type { Member, Activity, EventWithParticipants } from '../../types';
@@ -384,9 +384,17 @@ export function SignInPage() {
       emit('member-added', member);
     } catch (err) {
       console.error('Error adding member:', err);
-      const errorMessage = formatErrorMessage(err);
-      announce(`Error: ${errorMessage}`, 'assertive');
-      showError(errorMessage);
+      if (err instanceof ApiLimitError) {
+        announce(`Error: ${err.message}`, 'assertive');
+        showError(err.message, {
+          duration: 0,
+          action: { label: 'Upgrade plan', onClick: () => { window.location.href = '/admin/organization'; } },
+        });
+      } else {
+        const errorMessage = formatErrorMessage(err);
+        announce(`Error: ${errorMessage}`, 'assertive');
+        showError(errorMessage);
+      }
     }
   };
 

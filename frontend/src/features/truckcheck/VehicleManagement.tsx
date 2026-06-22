@@ -1,5 +1,5 @@
 import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
-import { api } from '../../services/api';
+import { api, ApiLimitError } from '../../services/api';
 import type { Appliance, ChecklistTemplate, ChecklistItem, VehicleType } from '../../types';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { ITEM_CODES, SECTIONS, resolveVocabSlug } from './checklistVocabulary';
@@ -29,6 +29,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [vehicleModalError, setVehicleModalError] = useState<string | null>(null);
+  const [vehicleModalUpgrade, setVehicleModalUpgrade] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   // Standard items from the linked VehicleType, shown read-only in the template editor.
   const [standardItemsForEditor, setStandardItemsForEditor] = useState<ChecklistItem[]>([]);
@@ -103,6 +104,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     setSelectedVehicle(null);
     resetVehicleForm();
     setVehicleModalError(null);
+    setVehicleModalUpgrade(false);
     setIsEditMode(false);
     setShowVehicleModal(true);
   }
@@ -121,6 +123,7 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     setVehiclePhotoUrl(vehicle.photoUrl || '');
     setPhotoFile(null);
     setVehicleModalError(null);
+    setVehicleModalUpgrade(false);
     setIsEditMode(true);
     setShowVehicleModal(true);
   }
@@ -210,7 +213,13 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
       onUpdate();
     } catch (err) {
       const fallback = `Failed to ${isEditMode ? 'update' : 'create'} vehicle`;
-      setVehicleModalError(err instanceof Error && err.message ? err.message : fallback);
+      if (err instanceof ApiLimitError) {
+        setVehicleModalError(err.message);
+        setVehicleModalUpgrade(true);
+      } else {
+        setVehicleModalError(err instanceof Error && err.message ? err.message : fallback);
+        setVehicleModalUpgrade(false);
+      }
     } finally {
       setUploading(false);
     }
@@ -474,7 +483,12 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
             </div>
 
             {vehicleModalError && (
-              <p className="vehicle-modal-error" role="alert">{vehicleModalError}</p>
+              <p className="vehicle-modal-error" role="alert">
+                {vehicleModalError}
+                {vehicleModalUpgrade && (
+                  <> <a href="/admin/organization" className="vehicle-modal-upgrade-link">Upgrade plan →</a></>
+                )}
+              </p>
             )}
             <div className="modal-actions">
               <button

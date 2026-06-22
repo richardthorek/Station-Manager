@@ -21,6 +21,20 @@ import type {
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 
+/**
+ * Thrown when a create operation fails because it has hit a plan limit.
+ * Callers can check instanceof and show an upgrade prompt.
+ */
+export class ApiLimitError extends Error {
+  readonly upgradeRequired = true;
+  readonly planCode?: string;
+  constructor(message: string, planCode?: string) {
+    super(message);
+    this.name = 'ApiLimitError';
+    this.planCode = planCode;
+  }
+}
+
 /** Optional vehicle identity + type-link fields for an appliance. */
 export interface ApplianceDetails {
   vehicleTypeId?: string;
@@ -150,7 +164,10 @@ class ApiService {
       body: JSON.stringify(stationData),
     });
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 403 && errorData.upgradeRequired) {
+        throw new ApiLimitError(errorData.error || 'Station limit reached', errorData.planCode);
+      }
       throw new Error(errorData.error || 'Failed to create station');
     }
     return response.json();
@@ -305,8 +322,10 @@ class ApiService {
       body: JSON.stringify({ name, rank }),
     });
     if (!response.ok) {
-      // Surface the server message (e.g. plan member-limit reached) rather than a generic error.
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 403 && errorData.upgradeRequired) {
+        throw new ApiLimitError(errorData.error || 'Member limit reached', errorData.planCode);
+      }
       throw new Error(errorData.error || 'Failed to create member');
     }
     return response.json();
@@ -612,8 +631,10 @@ class ApiService {
       body: JSON.stringify({ name, description, photoUrl, vehicleType, ...details }),
     });
     if (!response.ok) {
-      // Surface the server message (e.g. plan vehicle-limit reached) rather than a generic error.
       const errorData = await response.json().catch(() => ({}));
+      if (response.status === 403 && errorData.upgradeRequired) {
+        throw new ApiLimitError(errorData.error || 'Vehicle limit reached', errorData.planCode);
+      }
       throw new Error(errorData.error || 'Failed to create appliance');
     }
     return response.json();
