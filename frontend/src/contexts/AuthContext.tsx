@@ -42,6 +42,7 @@ export interface Organization {
   planCode: 'community' | 'basic' | 'ai';
   status: 'trialing' | 'active' | 'past_due' | 'canceled';
   entitlements: Entitlements;
+  aiBonusSessions?: number;
 }
 
 interface User {

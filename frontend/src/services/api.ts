@@ -1430,6 +1430,18 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to fetch AI usage');
     return response.json();
   }
+
+  async createTopupSession(): Promise<{ checkoutUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/billing/topup`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create top-up session');
+    }
+    return response.json();
+  }
 }
 
 export interface PlanDefinition {
@@ -1455,11 +1467,14 @@ export interface BillingStatus {
   trialEndsAt: string | null;
   hasPaymentMethod: boolean;
   stripeConfigured: boolean;
+  topupAvailable?: boolean;
+  topupPackSize?: number;
 }
 
 export interface AiUsage {
   used: number;
   included: number;
+  bonus: number;
   remaining: number;
   resetAt: string;
   aiEnabled: boolean;

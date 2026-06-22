@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth, type EntitlementFeature } from '../../../contexts/AuthContext';
-import { api, type PlanDefinition, type OrganizationUser, type AiUsage } from '../../../services/api';
+import { api, type PlanDefinition, type OrganizationUser, type AiUsage, type BillingStatus } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
 import './OrganizationPage.css';
 
@@ -32,8 +32,10 @@ export function OrganizationPage() {
   const [plans, setPlans] = useState<PlanDefinition[]>([]);
   const [users, setUsers] = useState<OrganizationUser[]>([]);
   const [aiUsage, setAiUsage] = useState<AiUsage | null>(null);
+  const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
   const [saving, setSaving] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [topupLoading, setTopupLoading] = useState(false);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -58,14 +60,16 @@ export function OrganizationPage() {
     load();
   }, [load]);
 
-  // AI session usage — only relevant when the AI module is on for this org.
+  // AI session usage + billing status — only relevant when AI module is on.
   const aiEnabled = organization?.entitlements.aiEnabled ?? false;
   useEffect(() => {
     if (!aiEnabled) {
       setAiUsage(null);
+      setBillingStatus(null);
       return;
     }
     api.getAiUsage().then(setAiUsage).catch(() => setAiUsage(null));
+    api.getBillingStatus().then(setBillingStatus).catch(() => setBillingStatus(null));
   }, [aiEnabled]);
 
   // Show feedback for Stripe redirect outcomes
@@ -76,6 +80,14 @@ export function OrganizationPage() {
       refreshOrganization();
     } else if (billing === 'cancelled') {
       flash('error', 'Checkout cancelled — no changes were made.');
+    }
+    const topup = searchParams.get('topup');
+    if (topup === 'success') {
+      flash('success', 'Top-up purchased! Your bonus sessions have been credited.');
+      refreshOrganization();
+      api.getAiUsage().then(setAiUsage).catch(() => undefined);
+    } else if (topup === 'cancelled') {
+      flash('error', 'Top-up checkout cancelled — no sessions were added.');
     }
   }, [searchParams, refreshOrganization]);
 
@@ -123,6 +135,18 @@ export function OrganizationPage() {
     } catch (err) {
       flash('error', err instanceof Error ? err.message : 'Could not open billing portal');
       setBillingLoading(false);
+    }
+  }
+
+  async function startTopup() {
+    if (!isOwner) return;
+    setTopupLoading(true);
+    try {
+      const { checkoutUrl } = await api.createTopupSession();
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not start top-up checkout');
+      setTopupLoading(false);
     }
   }
 
@@ -261,30 +285,54 @@ export function OrganizationPage() {
             <section className="org-section">
               <h2>AI usage this month</h2>
               {(() => {
-                const pct = aiUsage.included > 0
-                  ? Math.min(100, Math.round((aiUsage.used / aiUsage.included) * 100))
+                const bonus = aiUsage.bonus ?? 0;
+                const total = aiUsage.included + bonus;
+                const pct = total > 0
+                  ? Math.min(100, Math.round((aiUsage.used / total) * 100))
                   : 100;
-                const low = aiUsage.remaining <= Math.max(1, Math.ceil(aiUsage.included * 0.1));
+                const low = aiUsage.remaining <= Math.max(1, Math.ceil(total * 0.1));
+                const exhausted = aiUsage.remaining === 0;
                 const resetDate = new Date(aiUsage.resetAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+                const showTopup = isOwner && billingStatus?.topupAvailable;
                 return (
                   <>
                     <p className="org-ai-usage-count">
-                      <strong>{aiUsage.used}</strong> of <strong>{aiUsage.included}</strong> AI review sessions used
+                      <strong>{aiUsage.used}</strong> of <strong>{aiUsage.included}</strong> monthly sessions used
+                      {bonus > 0 && (
+                        <> · <strong>{bonus}</strong> bonus session{bonus === 1 ? '' : 's'} remaining</>
+                      )}
                       {' · '}<span className="org-hint">resets {resetDate}</span>
                     </p>
-                    <div className="org-ai-meter" role="img" aria-label={`${aiUsage.used} of ${aiUsage.included} sessions used`}>
-                      <div className={`org-ai-meter-fill ${low ? 'low' : ''}`} style={{ width: `${pct}%` }} />
+                    <div
+                      className="org-ai-meter"
+                      role="img"
+                      aria-label={`${aiUsage.used} of ${total} sessions used`}
+                    >
+                      <div className={`org-ai-meter-fill ${exhausted ? 'low' : low ? 'low' : ''}`} style={{ width: `${pct}%` }} />
                     </div>
-                    {aiUsage.remaining === 0 ? (
+                    {exhausted ? (
                       <p className="org-ai-nudge">
-                        You’ve used all your AI sessions for this month.{' '}
-                        {isOwner ? 'Upgrade or top up to keep using AAR Studio.' : 'Ask your owner to upgrade or top up.'}
+                        You've used all your AI sessions for this month.{' '}
+                        {isOwner
+                          ? 'Top up for more sessions, or upgrade your plan.'
+                          : 'Ask your owner to top up or upgrade your plan.'}
                       </p>
                     ) : low ? (
                       <p className="org-ai-nudge">
-                        Only {aiUsage.remaining} AI session{aiUsage.remaining === 1 ? '' : 's'} left this month.
+                        Only {aiUsage.remaining} AI session{aiUsage.remaining === 1 ? '' : 's'} remaining.
                       </p>
                     ) : null}
+                    {showTopup && (exhausted || low) && (
+                      <button
+                        className="org-btn org-btn--secondary"
+                        onClick={startTopup}
+                        disabled={topupLoading}
+                      >
+                        {topupLoading
+                          ? 'Opening…'
+                          : `Buy ${billingStatus.topupPackSize ?? 25} more sessions`}
+                      </button>
+                    )}
                   </>
                 );
               })()}

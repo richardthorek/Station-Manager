@@ -50,6 +50,21 @@
         },
         "implementation": "backend/src/routes/billing.ts:40"
       },
+      "POST /api/billing/topup": {
+        "method": "POST",
+        "path": "/api/billing/topup",
+        "description": "Create a Stripe Checkout session (mode: payment) to purchase an AI session top-up pack. Credits aiBonusSessions on the org after webhook confirmation. Owner-only; only available when aiEnabled and STRIPE_PRICE_AI_TOPUP is configured.",
+        "authentication": "JWT (owner)",
+        "requestBody": null,
+        "responses": {
+          "200": { "description": "{ checkoutUrl, packSize } — redirect to complete payment" },
+          "400": { "description": "AI not enabled on this org" },
+          "401": { "description": "Not authenticated" },
+          "403": { "description": "Not an org owner" },
+          "503": { "description": "Top-up not configured (STRIPE_PRICE_AI_TOPUP or STRIPE_SECRET_KEY missing)" }
+        },
+        "implementation": "backend/src/routes/billing.ts:148"
+      },
       "POST /api/billing/portal": {
         "method": "POST",
         "path": "/api/billing/portal",
@@ -142,7 +157,7 @@
         "authentication": "JWT (aiEnabled when org context present)",
         "responses": {
           "200": { "description": "{ token, region } — short-lived Speech auth token" },
-          "402": { "description": "Monthly AI session allowance exhausted — { remaining, resetAt }" },
+          "402": { "description": "Monthly AI session allowance (included + bonus) exhausted — { remaining, included, bonus, resetAt, topupAvailable }" },
           "403": { "description": "aiEnabled entitlement required" },
           "503": { "description": "Speech provider not configured" }
         },
@@ -156,7 +171,7 @@
         "parameters": {},
         "requestBody": null,
         "responses": {
-          "200": { "description": "{ used, included, remaining, resetAt }" },
+          "200": { "description": "{ used, included, bonus, remaining, resetAt, aiEnabled } — bonus is purchased top-up sessions not yet consumed" },
           "401": { "description": "Not authenticated" }
         },
         "implementation": "backend/src/routes/ai.ts"

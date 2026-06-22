@@ -134,6 +134,12 @@ export interface Organization {
   stripeCustomerId?: string;     // reserved for Stripe Billing (not yet wired)
   stripeSubscriptionId?: string;
   trialEndsAt?: Date;
+  /**
+   * Purchased AI top-up sessions that carry over month-to-month (they do not
+   * reset). Consumed only after the monthly `aiIncludedSessions` allowance is
+   * exhausted. See the C3 commercialisation track in docs/MASTER_PLAN.md.
+   */
+  aiBonusSessions?: number;
   createdAt: Date;
   updatedAt: Date;
 }

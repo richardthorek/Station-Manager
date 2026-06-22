@@ -52,3 +52,25 @@ export function resolvePriceId(planCode: 'basic' | 'ai', interval: BillingInterv
   const envVar = PRICE_ENV_VARS[`${planCode}:${interval}`];
   return envVar ? process.env[envVar] : undefined;
 }
+
+/**
+ * Resolve the one-time AI top-up pack's Stripe Price ID (a `mode: 'payment'`
+ * price, not a subscription). Returns undefined when no top-up is configured.
+ */
+export function resolveTopupPriceId(): string | undefined {
+  return process.env.STRIPE_PRICE_AI_TOPUP || undefined;
+}
+
+/**
+ * Number of AI sessions granted per top-up pack purchase. Configurable so the
+ * pack size matches whatever the Stripe price represents; defaults to 25.
+ */
+export function topupPackSize(): number {
+  const n = parseInt(process.env.AI_TOPUP_PACK_SIZE || '25', 10);
+  return Number.isFinite(n) && n > 0 ? n : 25;
+}
+
+/** True when AI top-up purchases are available (Stripe + a top-up price set). */
+export function isTopupConfigured(): boolean {
+  return isStripeConfigured() && Boolean(resolveTopupPriceId());
+}
