@@ -106,7 +106,15 @@ from context, mark uncertain names/figures "(unclear)", keep Australian fire
 service terminology (BA, BACO, Cat 1, 38/65 mm, OCC, FRNSW, appliance), skip
 small talk and facilitation chatter, every finding carries a short verbatim
 quote and its source segment ids. Returned findings pass through
-`dedupe.dedupeFindings()` before being added to the board.
+`dedupe.dedupeFindings()` before being added to the board (auto-skip at
+similarity ≥ 0.72, same category).
+
+Pairs that fall *below* the auto-skip line but are still plausibly the same
+finding (the "soft band", similarity in [0.5, 0.72)) are surfaced on the board
+by `dedupe.findMergeSuggestions()` as a "Possible duplicates" panel. The
+facilitator can **Merge** them (`dedupe.mergeFindings()` — longer text wins,
+quote/segment ids unioned, identity kept) or **Keep both** (dismissed for the
+session). Both helpers are pure and covered by `test/dedupe.test.js`.
 
 Live trigger policy (`extraction.shouldAutoExtract`): run when ≥45 s elapsed
 since the last pass **and** ≥70 new words are pending, plus immediately on

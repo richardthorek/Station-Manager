@@ -293,12 +293,35 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
 .finding__quote { font-size: 0.78rem; color: var(--muted); font-style: italic; margin-top: 0.3rem; }
 .finding__editor textarea { margin-bottom: 0.3rem; }
 
+/* ---------- merge suggestions ---------- */
+.merge-panel {
+  border: 1px solid var(--gold);
+  border-left: 4px solid var(--gold);
+  background: rgb(203 219 42 / 0.10);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 1rem;
+}
+.merge-panel__head { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.merge-panel__title { font-weight: 700; }
+.merge-panel__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.merge-suggestion {
+  display: flex; gap: 0.75rem; align-items: center; justify-content: space-between;
+  flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 0.5rem 0.6rem;
+}
+.merge-suggestion__texts { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 0.25rem; }
+.merge-suggestion__text { margin: 0; font-size: 0.9rem; }
+.merge-suggestion__text + .merge-suggestion__text { padding-top: 0.25rem; border-top: 1px dashed var(--line); }
+.merge-suggestion__actions { white-space: nowrap; }
+
 /* ---------- present mode ---------- */
 .present-exit { display: none; }
 body.present { background: var(--ink); }
 body.present .topbar,
 body.present .board-toolbar,
 body.present .quick-add,
+body.present .merge-panel,
 body.present .phase-filter { display: none; }
 body.present .view { max-width: none; padding: 1.2rem 1.5rem; }
 body.present .present-exit {

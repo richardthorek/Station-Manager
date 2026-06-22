@@ -56,3 +56,57 @@ export function dedupeFindings(existing, incoming, threshold = 0.72) {
   }
   return { added, skipped };
 }
+
+/**
+ * Find pairs of findings already on the board that look like possible
+ * duplicates but fell *below* the auto-skip line — so they coexist and a human
+ * should decide. This is the "soft band": similarity in
+ * [suggestThreshold, autoThreshold). Pairs at/above autoThreshold were already
+ * dropped at extraction time; pairs below suggestThreshold are left alone.
+ *
+ * Greedy and non-overlapping: each finding appears in at most one suggested
+ * pair (highest-scoring wins), so the UI never shows confusing chains.
+ *
+ * @returns {Array<{ a: object, b: object, score: number }>} sorted by score desc
+ */
+export function findMergeSuggestions(findings, { suggestThreshold = 0.5, autoThreshold = 0.72 } = {}) {
+  const list = Array.isArray(findings) ? findings : [];
+  const pairs = [];
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const a = list[i];
+      const b = list[j];
+      if (a.category !== b.category) continue;
+      const score = similarity(a.text, b.text);
+      if (score >= suggestThreshold && score < autoThreshold) pairs.push({ a, b, score });
+    }
+  }
+  pairs.sort((p, q) => q.score - p.score);
+  const used = new Set();
+  const out = [];
+  for (const p of pairs) {
+    if (used.has(p.a.id) || used.has(p.b.id)) continue;
+    used.add(p.a.id);
+    used.add(p.b.id);
+    out.push(p);
+  }
+  return out;
+}
+
+/**
+ * Merge two findings into one. Pure — returns a new object, mutates nothing.
+ * Keeps `keep`'s identity (id/category/phase/createdAt); the longer text wins
+ * (it usually carries more detail); a quote and segmentIds are unioned so no
+ * evidence is lost. Source becomes 'merged'.
+ */
+export function mergeFindings(keep, drop) {
+  const text = (drop.text ?? '').length > (keep.text ?? '').length ? drop.text : keep.text;
+  const segmentIds = Array.from(new Set([...(keep.segmentIds ?? []), ...(drop.segmentIds ?? [])]));
+  return {
+    ...keep,
+    text,
+    quote: keep.quote || drop.quote || '',
+    segmentIds,
+    source: 'merged',
+  };
+}
