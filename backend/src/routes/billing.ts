@@ -84,6 +84,7 @@ router.post('/checkout', authMiddleware, requireOwner, async (req: Request, res:
       cancel_url: `${base}/admin/organization?billing=cancelled`,
       metadata: { organizationId: org.id, planCode },
       allow_promotion_codes: true,
+      customer_update: { name: 'auto', address: 'auto' },
       tax_id_collection: { enabled: true },
       automatic_tax: { enabled: false },
     });
@@ -97,8 +98,9 @@ router.post('/checkout', authMiddleware, requireOwner, async (req: Request, res:
 
     return res.json({ checkoutUrl: session.url });
   } catch (error) {
-    logger.error('Error creating checkout session', { error });
-    return res.status(500).json({ error: 'Failed to create checkout session' });
+    const stripeMsg = (error as { message?: string })?.message ?? String(error);
+    logger.error('Error creating checkout session', { error, stripeMsg });
+    return res.status(500).json({ error: 'Failed to create checkout session', detail: stripeMsg });
   }
 });
 
