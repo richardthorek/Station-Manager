@@ -35,6 +35,8 @@
  */
 
 import winston from 'winston';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Azure App Insights integration (optional)
 // Note: For full Application Insights integration, see docs/AZURE_APP_INSIGHTS.md
@@ -102,21 +104,35 @@ const transports: winston.transport[] = [
   }),
 ];
 
-// Add file transports in production
+// Add file transports in production.
+//
+// The deployed filesystem (Azure App Service wwwroot) is READ-ONLY when the app
+// runs from a mounted package (WEBSITE_RUN_FROM_PACKAGE=1 — used to make zip
+// deploys fast). Writing logs into the app directory would throw EROFS, so the
+// files live under a writable, persisted location. On Linux App Service that's
+// /home/LogFiles (also surfaced in the log stream / Kudu). Override with LOG_DIR.
 if (isProduction) {
-  transports.push(
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    new winston.transports.File({
-      filename: 'logs/combined.log',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    })
-  );
+  const logDir = process.env.LOG_DIR || '/home/LogFiles/app';
+  try {
+    fs.mkdirSync(logDir, { recursive: true });
+    transports.push(
+      new winston.transports.File({
+        filename: path.join(logDir, 'error.log'),
+        level: 'error',
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+      }),
+      new winston.transports.File({
+        filename: path.join(logDir, 'combined.log'),
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+      })
+    );
+  } catch (err) {
+    // Never let logging setup take down the app — the Console transport still
+    // feeds the Azure log stream / Application Insights if file logging fails.
+    console.warn(`Log directory ${logDir} not writable; file logging disabled.`, err);
+  }
 }
 
 // Add Azure Application Insights transport if configured
