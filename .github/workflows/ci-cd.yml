@@ -428,6 +428,12 @@ jobs:
             BUILD_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           fi
           
+          # WEBSITE_RUN_FROM_PACKAGE=1 makes Azure mount the deployment zip
+          # read-only instead of extracting backend/node_modules (tens of
+          # thousands of files) onto the /home Azure Files share — that
+          # extraction was taking ~8 min per deploy. Set here (idempotent) so it
+          # takes effect from the NEXT deploy onward, by which point the
+          # writable-log-path fix (logger.ts → /home/LogFiles) is already live.
           az webapp config appsettings set \
             --resource-group bungrfsstation_group \
             --name bungrfs-linux \
@@ -435,6 +441,7 @@ jobs:
               GIT_COMMIT_SHA="${{ github.sha }}" \
               GIT_COMMIT_SHORT="$(echo "${{ github.sha }}" | cut -c1-7)" \
               BUILD_TIMESTAMP="$BUILD_TS" \
+              WEBSITE_RUN_FROM_PACKAGE="1" \
             --output none
           echo "✅ Environment variables set in Azure App Service"
           echo "   - GIT_COMMIT_SHA: ${{ github.sha }}"

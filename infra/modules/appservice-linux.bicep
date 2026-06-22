@@ -84,6 +84,15 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
           value: 'false' // dependencies are pre-installed and shipped in the zip
         }
         {
+          name: 'WEBSITE_RUN_FROM_PACKAGE'
+          // Mount the deployment zip read-only instead of extracting it into the
+          // /home Azure Files share. Extracting backend/node_modules (tens of
+          // thousands of small files) onto the network share was taking ~8 min
+          // per deploy; mounting drops it to under a minute. Requires app writes
+          // (winston logs) to target a writable path — see logger.ts (LOG_DIR).
+          value: '1'
+        }
+        {
           name: 'USE_TABLE_STORAGE'
           value: 'true'
         }
