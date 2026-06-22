@@ -176,6 +176,15 @@ export interface Member {
   lastSignIn?: Date | null;      // Last time member participated in an event
   isActive?: boolean;            // Whether member is active/visible in UI
   isDeleted?: boolean;           // Soft-delete flag to retain history
+  /**
+   * C4 member activation. 'invited' = invite email sent, token set;
+   * 'active' = member has set a password and has a linked AdminUser account.
+   */
+  authStatus?: 'invited' | 'active';
+  /** One-time activation token (cleared after use). */
+  inviteToken?: string;
+  /** Email address the invite was sent to. */
+  inviteEmail?: string;
   createdAt: Date;
   updatedAt: Date;
 }

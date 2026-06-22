@@ -45,6 +45,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import membersRouter from './routes/members';
+import memberActivationRouter from './routes/memberActivation';
 import activitiesRouter from './routes/activities';
 import checkinsRouter from './routes/checkins';
 import eventsRouter from './routes/events';
@@ -398,6 +399,8 @@ app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'),
 // (UAT 2026-06-22): reads on members/truck-checks/reports now require a signed-in
 // session, a valid kiosk token, or the public demo station. Write-path kiosk
 // actions (check-ins, truck-check results) keep their existing pass-through.
+// Public activation routes must be mounted before requireSession so no token is required
+app.use('/api/members', apiRateLimiter, memberActivationRouter);
 app.use('/api/members', apiRateLimiter, requireSession({ readsOnly: true }), membersRouter);
 app.use('/api/activities', apiRateLimiter, activitiesRouter);
 app.use('/api/checkins', apiRateLimiter, requireFeature('signInEnabled'), checkinsRouter);

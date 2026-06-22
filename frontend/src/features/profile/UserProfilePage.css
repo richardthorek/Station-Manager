@@ -1156,3 +1156,46 @@
     transform: translateY(0);
   }
 }
+
+.profile-invite-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rfs-border-color, #e5e7eb);
+}
+
+.profile-invite-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.invite-description {
+  font-size: 0.9rem;
+  color: var(--rfs-dark-grey, #555);
+  margin: 0 0 0.75rem;
+}
+
+.invite-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  margin-left: 0.4rem;
+}
+
+.invite-badge--active { background: #d1fae5; color: #065f46; }
+.invite-badge--pending { background: #fef3c7; color: #92400e; }
+
+.invite-error {
+  color: var(--rfs-danger, #e5281b);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+.invite-url-box {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  align-items: center;
+}

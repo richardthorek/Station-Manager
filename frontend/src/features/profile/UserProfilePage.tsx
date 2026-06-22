@@ -6,6 +6,7 @@ import { AchievementGrid } from '../../components/AchievementBadge';
 import { PageTransition } from '../../components/PageTransition';
 import { api } from '../../services/api';
 import { useSocket } from '../../hooks/useSocket';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatMembershipDuration } from './membershipUtils';
 import type { Member, CheckIn, Activity } from '../../types';
 import type { MemberAchievementSummary } from '../../types/achievements';
@@ -34,6 +35,11 @@ export function UserProfilePage() {
   const rankSelectId = 'profile-rank';
 
   const { isConnected } = useSocket();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner';
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   useEffect(() => {
     loadDatabaseStatus();
@@ -129,6 +135,21 @@ export function UserProfilePage() {
       alert('Failed to delete member');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleGenerateInvite = async () => {
+    if (!member) return;
+    setInviteLoading(true);
+    setInviteError(null);
+    setInviteUrl(null);
+    try {
+      const result = await api.generateMemberInvite(member.id);
+      setInviteUrl(result.inviteUrl);
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : 'Failed to generate invite');
+    } finally {
+      setInviteLoading(false);
     }
   };
 
@@ -441,6 +462,41 @@ export function UserProfilePage() {
                     )}
                   </div>
                 </div>
+
+                {isAdmin && (
+                  <div className="profile-invite-section">
+                    <h3>Member Account Invite</h3>
+                    <p className="invite-description">
+                      Generate a one-time link for {member.name} to create a login account.
+                      {member.authStatus === 'active' && <span className="invite-badge invite-badge--active"> Account active</span>}
+                      {member.authStatus === 'invited' && <span className="invite-badge invite-badge--pending"> Invite pending</span>}
+                    </p>
+                    <button
+                      className="btn-secondary"
+                      onClick={handleGenerateInvite}
+                      disabled={inviteLoading}
+                    >
+                      {inviteLoading ? 'Generating...' : 'Generate Invite Link'}
+                    </button>
+                    {inviteError && <p className="invite-error">{inviteError}</p>}
+                    {inviteUrl && (
+                      <div className="invite-url-box">
+                        <input
+                          type="text"
+                          value={inviteUrl}
+                          readOnly
+                          className="signin-link-input"
+                        />
+                        <button
+                          className="btn-primary"
+                          onClick={() => { navigator.clipboard.writeText(inviteUrl); }}
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="profile-right">

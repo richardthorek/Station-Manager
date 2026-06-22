@@ -447,7 +447,19 @@ export class TableStorageDatabase {
       if (member.isDeleted || member.isActive === false) return null;
       return member;
     }
-    
+
+    return null;
+  }
+
+  async getMemberByInviteToken(token: string): Promise<Member | null> {
+    const entities = this.membersTable.listEntities<TableEntity>({
+      queryOptions: { filter: odata`PartitionKey eq 'Member' and inviteToken eq ${token}` }
+    });
+    for await (const entity of entities) {
+      const member = this.entityToMember(entity);
+      if (member.isDeleted) return null;
+      return member;
+    }
     return null;
   }
 
@@ -516,6 +528,24 @@ export class TableStorageDatabase {
     }
   }
 
+  async updateMemberAuth(
+    id: string,
+    updates: { authStatus?: Member['authStatus']; inviteToken?: string | null; inviteEmail?: string },
+  ): Promise<Member | null> {
+    try {
+      const entity = await this.membersTable.getEntity<TableEntity>('Member', id);
+      if (updates.authStatus !== undefined) entity.authStatus = updates.authStatus;
+      if (updates.inviteToken !== undefined) entity.inviteToken = updates.inviteToken ?? '';
+      if (updates.inviteEmail !== undefined) entity.inviteEmail = updates.inviteEmail;
+      entity.updatedAt = new Date().toISOString();
+      await this.membersTable.updateEntity(entity, 'Replace');
+      return this.entityToMember(entity);
+    } catch (error: any) {
+      if (error.statusCode === 404) return null;
+      throw error;
+    }
+  }
+
   async deleteMember(id: string): Promise<Member | null> {
     try {
       const entity = await this.membersTable.getEntity<TableEntity>('Member', id);
@@ -550,6 +580,9 @@ export class TableStorageDatabase {
       stationId: (entity.stationId as string) || undefined,
       isActive: entity.isActive !== undefined ? Boolean(entity.isActive) : true,
       isDeleted: entity.isDeleted !== undefined ? Boolean(entity.isDeleted) : false,
+      authStatus: (entity.authStatus as Member['authStatus']) || undefined,
+      inviteToken: (entity.inviteToken as string) || undefined,
+      inviteEmail: (entity.inviteEmail as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };

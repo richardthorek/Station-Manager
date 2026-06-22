@@ -78,6 +78,9 @@ export interface Member {
   lastSignIn?: string | null;    // Last time member participated in an event (ISO string)
   isActive?: boolean;            // Whether member is active/visible
   isDeleted?: boolean;           // Soft delete flag to retain history
+  authStatus?: 'invited' | 'active';
+  inviteToken?: string;
+  inviteEmail?: string;
   createdAt: string;
   updatedAt: string;
 }

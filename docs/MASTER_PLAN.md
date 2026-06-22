@@ -423,14 +423,18 @@ same-origin SM JWT, so the original "pass the JWT in" sub-task was already satis
 
 **3. ✅ C3 — Metered AI overage (closed 2026-06-22).** Top-up pack (one-time Stripe payment) credits `aiBonusSessions`; speech-token gate now consumes bonus after monthly allowance; `GET /api/ai/usage` exposes `bonus`; OrganizationPage shows bonus meter + "Buy more sessions" button when low/exhausted. `meteredUsageReporter.ts` remains a safe no-op (Stripe meter not yet configured); set `STRIPE_PRICE_AI_TOPUP` + `AI_TOPUP_PACK_SIZE` to activate.
 
-**3b. C4 — Member invite & activation (next commercialisation item)**
-- Add `authStatus?: 'invited' | 'active'` and `inviteToken?: string` to `Member` type (both DB twins).
-- `POST /api/members/:id/invite` — generates a token, sends email (nodemailer / SES), sets `authStatus = 'invited'`.
-- `GET /api/members/activate/:token` — public route to set password + activate.
-- Frontend: invite button on member profile, activation landing page.
+- 2026-06-22: **C4 member invite/activation + limit upgrade UX.** `Member.authStatus/inviteToken/inviteEmail` in both DB twins; `POST /api/members/:id/invite` (admin, JWT) returns one-time URL; public `GET/POST /api/members/activate/:token` (in `memberActivation.ts`, mounted before `requireSession`) creates `AdminUser(role=viewer)` and marks member active. Frontend: `/activate/:token` page (`ActivatePage.tsx`), invite button on profile (admin-gated). `ApiLimitError` surfaced as upgrade CTA on member/station/vehicle plan-cap 403s. `api_register.json` → v1.9.0.
 
-**3c. Limit upgrade UX (next frontend polish item)**
-- Member-create, vehicle-create, station-create 403 responses already carry `upgradeRequired: true`; surface a plan-specific "Not on your plan — upgrade to X" inline prompt with a link to `/admin/organization` instead of the current silent spinner or raw error toast.
+**3b. ✅ C4 — Member invite & activation (closed 2026-06-22).**
+- `Member.authStatus/inviteToken/inviteEmail` added to both DB twins and `IDatabase`.
+- `POST /api/members/:id/invite` (admin-only) generates UUID token, sets `authStatus='invited'`, returns `inviteUrl`.
+- Public `GET/POST /api/members/activate/:token` in `memberActivation.ts` (mounted before `requireSession`): validates token, creates `AdminUser` with `role='viewer'`, marks member active, clears token.
+- Frontend: invite button on member profile (admin-gated), `/activate/:token` page.
+
+**3c. ✅ Limit upgrade UX (closed 2026-06-22).**
+- `ApiLimitError` class in `api.ts` thrown on 403+`upgradeRequired:true`.
+- SignInPage catches it — persistent toast with "Upgrade plan" action.
+- CreateStationModal + VehicleManagement catch it — inline upgrade link in form error.
 
 **4. Admin-area UX rough edges from UAT (2026-06-22)** — lower priority, batch with other frontend polish:
 - `/admin/organization`'s 5-req/15-min rate limiter fires after ~5 normal loads in 4 minutes; scope it away from idempotent GETs or raise the threshold, and add a retry-after message to the 429 banner.
@@ -2810,6 +2814,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.0 | Jun 2026 | Security — anonymous data exposure | Closed the top UAT blocker: reports/members/truck-check **read** endpoints leaked real analytics + member PII to credential-less requests. Added always-on `requireSession({ readsOnly })` (JWT any-role / kiosk token / demo bypass → else 401) on the three read routers, and made the frontend actually forward the kiosk brigade token (`X-Brigade-Token`) so logged-out kiosks keep working. Write-path kiosk actions keep pass-through. 9 new tests; backend 680 pass. |
 | 4.1 | Jun 2026 | Admin UX rough edges | Rate-limiter fix (org GETs off sensitiveActionRateLimiter), module-toggle plan-ceiling honest error, vehicle-create inline error (replaces alert), template-404 fallback to empty editor. AI gateway keys set in production (ops). |
 | 4.2 | Jun 2026 | AAR Studio plan gate | Closed the direct-nav entitlement bypass: AAR Studio boots behind a fail-open entitlement gate (`entitlement.js` probes `/api/auth/entitlements`; signed-in-but-unentitled orgs see an upgrade screen, signed-out/local-first use proceeds). 13 new node --test tests. |
+| 4.3 | Jun 2026 | C3 AI top-up + C4 member invite/activation + limit upgrade UX | C3: one-time Stripe top-up pack credited as `aiBonusSessions`; speech-token gate consumes bonus after monthly allowance; OrganizationPage shows bonus meter + buy button. Limit upgrade UX: `ApiLimitError` on 403+`upgradeRequired`; SignInPage/CreateStationModal/VehicleManagement surface "Upgrade plan" CTA. C4: `Member.authStatus/inviteToken/inviteEmail` in both DB twins + `IDatabase`; `POST /api/members/:id/invite` (admin-only, generates token); public `GET/POST /api/members/activate/:token` (in `memberActivation.ts` mounted before `requireSession`); frontend activation page at `/activate/:token`; invite button on member profile page (admin-only). `api_register.json` → v1.9.0. |
 
 ---
 

@@ -355,6 +355,19 @@ class ApiService {
     return response.json();
   }
 
+  async generateMemberInvite(id: string, email?: string): Promise<{ inviteUrl: string; token: string }> {
+    const response = await fetch(`${API_BASE_URL}/members/${id}/invite`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(email ? { email } : {}),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to generate invite');
+    }
+    return response.json();
+  }
+
   async getMemberHistory(id: string): Promise<CheckIn[]> {
     const response = await fetch(`${API_BASE_URL}/members/${id}/history`, {
       headers: this.getHeaders(),
