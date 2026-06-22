@@ -21,6 +21,21 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+
+/* Accessibility: honour the OS "reduce motion" setting. Mirrors the SPA's
+   global guard (frontend/src/animations.css) so AAR Studio behaves the same.
+   Near-instant durations (not 0) keep transitionend/animationend handlers
+   firing. Covers every animation/transition, including .live__dot and toasts. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 body {
   font-family: var(--font-sans);
   background: var(--bg);
@@ -247,7 +262,7 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
 }
 .live__interim { min-height: 1.5em; margin-top: 0.6rem; color: var(--muted); font-style: italic; }
 .live__error { color: var(--red); font-weight: 600; }
-@media (prefers-reduced-motion: reduce) { .live__dot { animation: none; } }
+/* .live__dot pulse is covered by the global prefers-reduced-motion guard near the top of this file. */
 
 /* ---------- board ---------- */
 .board-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.6rem; }

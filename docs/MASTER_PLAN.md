@@ -222,10 +222,16 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   neither `package.json`, `node_modules`, nor CI packaging. *Remaining (future increment):*
   truck-check types (`Appliance`/`VehicleType`/`ChecklistItem`/`CheckRun`/`CheckResult`)
   are still frontend-only and could fold into the shared module next. (archive: CONSOLIDATION_REVIEW #4)
-- **S1 — Finish the design-system pass** ⬜ — confirm/raise AAR inline controls to
-  strict-60px if the owner wants it; add `prefers-reduced-motion` guards (e.g.
-  `.live__dot`); share the RFS-branded HTML/print **report template** that the three
-  export paths reinvent (piggyback on the tokens). (archive: CONSOLIDATION_REVIEW #2/#5)
+- **S1 — Finish the design-system pass** 🟡 — *`prefers-reduced-motion` guard done
+  2026-06-22:* AAR Studio's `app.css` now carries the same global reduce-motion guard
+  as the SPA (`*`/`::before`/`::after` near-instant durations), replacing the narrow
+  `.live__dot`-only rule so toasts/meters/all animations honour the OS setting.
+  *Remaining:* (a) confirm/raise AAR inline controls to strict-60px **if the owner wants
+  it** (decision-gated); (b) share the RFS-branded HTML/print **report template** that
+  the three export paths reinvent (`backend/src/services/csvExportService.ts`,
+  `frontend/src/utils/exportUtils.ts`, `aar-studio/js/lib/exports.js`) — note
+  CONSOLIDATION_REVIEW #5 marks this "lower priority than it looks" since the overlap is
+  only the branded header/section template, not the data. (archive: CONSOLIDATION_REVIEW #2/#5)
 - **A2 — AAR identity & server-side persistence** ⬜ (effort L) — pass the logged-in
   token into AAR; add `/api/aar-sessions` CRUD on the storage factories (`AARSessions`
   table, partition by org/brigade); replace AAR's free-text setup with a station/member
