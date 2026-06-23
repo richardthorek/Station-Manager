@@ -21,6 +21,7 @@ import multer from 'multer';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { ensureVehicleTypeDatabase } from '../services/vehicleTypeDbFactory';
 import { ensureApplianceZoneDatabase } from '../services/applianceZoneDbFactory';
+import { ensureApplianceEquipmentDatabase } from '../services/applianceEquipmentDbFactory';
 import type { ApplianceZoneSide } from '../types';
 import { CheckStatus, ChecklistItem, EffectiveChecklist, VehicleType, ChecklistTemplate, Appliance } from '../types';
 import { azureStorageService } from '../services/azureStorage';
@@ -483,6 +484,100 @@ router.delete('/zones/:id', zoneAuth, async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error deleting appliance zone:', error);
     res.status(500).json({ error: 'Failed to delete appliance zone' });
+  }
+});
+
+// ─── A1: per-truck appliance equipment (inventory) ───
+// Equipment is admin-authored config for one appliance. Writes require an
+// authenticated org admin; reads require an authenticated session.
+const equipmentAuth = [authMiddleware, attachOrganization, requireAdmin];
+
+/**
+ * GET /api/truck-checks/appliances/:applianceId/equipment
+ * List one appliance's equipment (active only by default; ?includeInactive=true for retired).
+ */
+router.get('/appliances/:applianceId/equipment', authMiddleware, attachOrganization, async (req: Request, res: Response) => {
+  try {
+    const includeInactive = req.query.includeInactive === 'true';
+    const items = await ensureApplianceEquipmentDatabase().listForAppliance(req.params.applianceId, includeInactive);
+    res.json(items);
+  } catch (error) {
+    logger.error('Error listing appliance equipment:', error);
+    res.status(500).json({ error: 'Failed to list appliance equipment' });
+  }
+});
+
+/**
+ * POST /api/truck-checks/appliances/:applianceId/equipment
+ * Add equipment to an appliance (admin). stationId is inherited from the truck.
+ */
+router.post('/appliances/:applianceId/equipment', equipmentAuth, async (req: Request, res: Response) => {
+  try {
+    const truckDb = await ensureTruckChecksDatabase(req.isDemoMode);
+    const appliance = await truckDb.getApplianceById(req.params.applianceId);
+    if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
+
+    const { name, equipmentCode, zoneId, serialNumber, notes, active } = req.body ?? {};
+    if (typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    const item = await ensureApplianceEquipmentDatabase().create({
+      applianceId: req.params.applianceId,
+      stationId: appliance.stationId,
+      name: name.trim(),
+      equipmentCode: typeof equipmentCode === 'string' && equipmentCode.trim() ? slugify(equipmentCode) : undefined,
+      zoneId: typeof zoneId === 'string' ? zoneId : undefined,
+      serialNumber: typeof serialNumber === 'string' ? serialNumber : undefined,
+      notes: typeof notes === 'string' ? notes : undefined,
+      active: typeof active === 'boolean' ? active : undefined,
+    });
+    res.status(201).json(item);
+  } catch (error) {
+    logger.error('Error creating appliance equipment:', error);
+    res.status(500).json({ error: 'Failed to create appliance equipment' });
+  }
+});
+
+/**
+ * PUT /api/truck-checks/equipment/:id
+ * Update an equipment item (admin). Set active:false to retire without losing history.
+ */
+router.put('/equipment/:id', equipmentAuth, async (req: Request, res: Response) => {
+  try {
+    const db = ensureApplianceEquipmentDatabase();
+    const existing = await db.getById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Equipment not found' });
+
+    const { name, equipmentCode, zoneId, serialNumber, notes, active } = req.body ?? {};
+    const updated = await db.update(req.params.id, {
+      ...(name !== undefined ? { name } : {}),
+      ...(equipmentCode !== undefined ? { equipmentCode: typeof equipmentCode === 'string' && equipmentCode.trim() ? slugify(equipmentCode) : undefined } : {}),
+      ...(zoneId !== undefined ? { zoneId: typeof zoneId === 'string' ? zoneId : undefined } : {}),
+      ...(serialNumber !== undefined ? { serialNumber: typeof serialNumber === 'string' ? serialNumber : undefined } : {}),
+      ...(notes !== undefined ? { notes: typeof notes === 'string' ? notes : undefined } : {}),
+      ...(active !== undefined ? { active: Boolean(active) } : {}),
+    });
+    res.json(updated);
+  } catch (error) {
+    logger.error('Error updating appliance equipment:', error);
+    res.status(500).json({ error: 'Failed to update appliance equipment' });
+  }
+});
+
+/**
+ * DELETE /api/truck-checks/equipment/:id
+ * Delete an equipment item (admin). Prefer active:false to retain history.
+ */
+router.delete('/equipment/:id', equipmentAuth, async (req: Request, res: Response) => {
+  try {
+    const db = ensureApplianceEquipmentDatabase();
+    const existing = await db.getById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Equipment not found' });
+    await db.delete(req.params.id);
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Error deleting appliance equipment:', error);
+    res.status(500).json({ error: 'Failed to delete appliance equipment' });
   }
 });
 

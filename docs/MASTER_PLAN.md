@@ -279,10 +279,20 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   (`GET/POST /api/truck-checks/appliances/:applianceId/zones`, `PUT/DELETE
   /api/truck-checks/zones/:id`). Zones carry a walk-around `order` (defaults to end)
   and a canonical `zoneCode` slug. 15 route + DB tests; coverage gate green;
-  `api_register.json` → v1.10.0. *Remaining increments:* `ApplianceEquipment` entity
-  (same twin pattern), the `Appliance`/`ChecklistItem` extensions (`quirksNotes`,
-  `zoneId`/`equipmentId`/`expectedResponseType`), the per-`vehicleType` starter
-  zone-vocabulary seed, and the admin authoring UI. Ships standalone value (no AI).
+  `api_register.json` → v1.10.0.
+  *Increment 2 done 2026-06-23:* `ApplianceEquipment` (per-truck inventory) shipped
+  the same way — `ApplianceEquipment` type, in-memory DB + Table Storage twin
+  (partition by `applianceId`) + `applianceEquipmentDbFactory`, admin-gated CRUD
+  (`GET/POST /api/truck-checks/appliances/:applianceId/equipment`, `PUT/DELETE
+  /api/truck-checks/equipment/:id`). Items carry an optional `zoneId`, a
+  `equipmentCode` slug, and an `active` flag (`active:false` retires without losing
+  history; list hides retired unless `?includeInactive=true`). Also added a reusable
+  mock-`TableClient` test harness that now covers **both** appliance Table twins
+  (~92%, previously ~8%), lifting overall backend coverage. 17 new tests (731 pass);
+  `api_register.json` → v1.11.0. *Remaining increments:* the `Appliance`/`ChecklistItem`
+  extensions (`quirksNotes`, `zoneId`/`equipmentId`/`expectedResponseType`), the
+  per-`vehicleType` starter zone-vocabulary seed, and the admin authoring UI.
+  Ships standalone value (no AI).
 - **A3 — Phase 2: voice agent (cloud)** ⬜ — PWA voice mode → agent tool-use loop
   (`get_appliance_context`/`record_result`/`flag_issue`/`next_unchecked_in_zone`/
   `complete_run`) → `CheckRun` + `AgentSession`/`AgentTurn` transcript; read-back/confirm;
@@ -2873,6 +2883,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.7 | Jun 2026 | AAR P1 (unit attribution) | AAR findings can be attributed to an attending unit: optional `unit` on the finding model (`createFinding`/`normaliseSession` + `sessionUnitNames`), a unit `<select>` on board quick-add + inline edit, a `chip--unit` on cards, and a conditional **Unit** column in the report's findings register. 4 new tests; AAR suite 93. |
 | 4.8 | Jun 2026 | AAR P1 (`?demo` deep link) | `/aar/?demo` loads the bundled example review straight onto the findings board (shareable walkthrough link); `main.js` strips the query after loading, fails open if the example can't be fetched, and reuses the home view's `loadExampleSession()` loader. Only print-stylesheet refinements remain in P1. |
 | 4.9 | Jun 2026 | A1 inc 1 (appliance zones) | First slice of the AI maintenance-agent truck model: `ApplianceZone` per-truck spatial entity end-to-end on the backend — types, in-memory DB + Table Storage twin (partition by applianceId) + factory, and admin-gated CRUD routes on the truck-checks router. Walk-around `order` + canonical `zoneCode` slug. 15 tests; `api_register.json` → v1.10.0. Remaining A1: ApplianceEquipment, Appliance/ChecklistItem extensions, zone-vocabulary seed, admin UI. |
+| 4.10 | Jun 2026 | A1 inc 2 (appliance equipment) | `ApplianceEquipment` per-truck inventory end-to-end (type, in-memory DB + Table Storage twin + factory, admin-gated CRUD `…/appliances/:id/equipment` + `…/equipment/:id`), with optional `zoneId`, `equipmentCode` slug, and an `active` retire flag (`?includeInactive`). Added a reusable mock-`TableClient` test harness covering both appliance Table twins (~8% → ~92%). 17 new tests; `api_register.json` → v1.11.0. |
 
 ---
 
