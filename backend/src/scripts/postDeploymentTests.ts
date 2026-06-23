@@ -375,19 +375,18 @@ async function testGetActivities(): Promise<void> {
 }
 
 /**
- * Functional Test 4: Get Members Endpoint
+ * Functional Test 4: Members endpoint is auth-gated (data-protection gate).
+ *
+ * `GET /api/members` is protected by `requireSession({ readsOnly })` (the
+ * anonymous data-exposure fix). An unauthenticated request must be rejected with
+ * 401 — so this smoke test verifies the gate is actually live in production
+ * (a 200 here would mean member PII is exposed to anonymous callers again).
  */
 async function testGetMembers(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/members`);
-  
-  if (response.statusCode !== 200) {
-    throw new Error(`Expected status 200, got ${response.statusCode}`);
-  }
 
-  const data = JSON.parse(response.data);
-  
-  if (!Array.isArray(data)) {
-    throw new Error('Expected members to be an array');
+  if (response.statusCode !== 401) {
+    throw new Error(`Expected 401 (auth-gated), got ${response.statusCode} — member data must not be readable anonymously`);
   }
 }
 
