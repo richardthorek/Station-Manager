@@ -57,9 +57,15 @@ export function createSegment({ t = null, speaker = '', text = '', phase = GENER
   return { id: uid(), t, speaker, text, phase, source, analysed: false };
 }
 
-export function createFinding({ category, phase = GENERAL_PHASE, text = '', quote = '', segmentIds = [], source = 'manual' }) {
+export function createFinding({ category, phase = GENERAL_PHASE, text = '', quote = '', unit = '', segmentIds = [], source = 'manual' }) {
   if (!CATEGORY_IDS.includes(category)) category = 'happened';
-  return { id: uid(), category, phase, text, quote, segmentIds, source, createdAt: new Date().toISOString() };
+  return { id: uid(), category, phase, unit: String(unit ?? ''), text, quote, segmentIds, source, createdAt: new Date().toISOString() };
+}
+
+/** Distinct, non-empty attending-unit names — the options for tagging a finding to a unit. */
+export function sessionUnitNames(session) {
+  const names = (session?.units ?? []).map((u) => String(u.unit ?? '').trim()).filter(Boolean);
+  return [...new Set(names)];
 }
 
 /**
@@ -117,6 +123,7 @@ export function normaliseSession(obj) {
     ...createFinding({ category: f.category }), ...f,
     id: f.id || uid(),
     category: CATEGORY_IDS.includes(f.category) ? f.category : 'happened',
+    unit: String(f.unit ?? ''),
     segmentIds: Array.isArray(f.segmentIds) ? f.segmentIds : [],
   }));
   s.notes = (Array.isArray(obj.notes) ? obj.notes : []).map((n) => ({

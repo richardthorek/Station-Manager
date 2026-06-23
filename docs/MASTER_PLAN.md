@@ -303,8 +303,14 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   are `role=group` labelled by category, cards are a `role=list`/`listitem`
   structure, the analyse status is an `aria-live` region, and the merge panel is a
   labelled region with accessible buttons. 4 new pure-function tests (AAR suite 89).
-  *Remaining:* print-stylesheet refinements; per-unit finding attribution; optional
-  `?demo` deep link. (archive: AAR_STUDIO_PLAN Stage 5)
+  *Per-unit finding attribution done 2026-06-23:* findings now carry an optional
+  `unit` (model `createFinding`/`normaliseSession` + `sessionUnitNames` helper);
+  the board quick-add and inline editor expose a unit `<select>` (populated from the
+  session's attending units), the card shows a `chip--unit`, and the report's findings
+  register adds a **Unit** column when any finding is attributed (omitted otherwise).
+  4 new tests (AAR suite 93).
+  *Remaining:* print-stylesheet refinements; optional `?demo` deep link.
+  (archive: AAR_STUDIO_PLAN Stage 5)
 
 ### Pricing & plans (reference)
 
@@ -2850,6 +2856,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.4 | Jun 2026 | T1 inc 2 — shared domain types | Extracted the core sign-in domain shapes into a single date-generic, declaration-only `shared/domain-types.d.ts` (`Member<TDate = string>` etc.). Backend re-exports specialised with `Date`, frontend with `string`. Type-only `.d.ts` is never emitted/bundled, so install, both `dist` outputs, and CI deploy packaging are untouched (deliberately avoids the T6 npm-workspace conflict). All CI gates green. |
 | 4.5 | Jun 2026 | S1 closed | Design-system pass closed: AAR Studio global `prefers-reduced-motion` guard shipped (#587); strict-60px declined by owner (AAR is a desktop facilitator tool); shared report-template sub-item investigated and closed as not-actionable — the three "export paths" use three different mechanisms (CSV / jsPDF+html2canvas / HTML) with no duplicated template to extract. |
 | 4.6 | Jun 2026 | AAR P1 (merge UI) | AAR findings board gained a "Possible duplicates" merge-suggestion panel: dedupe now has a two-band model (auto-skip ≥0.72; soft-band [0.5,0.72) surfaced for human merge via `findMergeSuggestions`/`mergeFindings`), with Merge / Keep-both actions and an accessibility pass (role=group/list columns, aria-live status, labelled merge region). 4 new pure tests; AAR suite 89. |
+| 4.7 | Jun 2026 | AAR P1 (unit attribution) | AAR findings can be attributed to an attending unit: optional `unit` on the finding model (`createFinding`/`normaliseSession` + `sessionUnitNames`), a unit `<select>` on board quick-add + inline edit, a `chip--unit` on cards, and a conditional **Unit** column in the report's findings register. 4 new tests; AAR suite 93. |
 
 ---
 

@@ -67,9 +67,10 @@ uses only `fetch`, so it is loadable under node for tests.
     "id": "uuid",
     "category": "happened" | "well" | "didnt" | "next",
     "phase": "Suppression",            // any session phase or "General"
+    "unit": "",                        // optional attending-unit attribution (sessionUnitNames)
     "text": "", "quote": "",          // short verbatim quote
     "segmentIds": ["..."],
-    "source": "ai" | "manual",
+    "source": "ai" | "manual" | "merged",
     "createdAt": "ISO"
   } ],
   "speakers": { "Speaker 1": "Dave (Wamboin captain)" },  // rename map
