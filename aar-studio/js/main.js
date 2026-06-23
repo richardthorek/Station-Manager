@@ -111,6 +111,19 @@ async function boot() {
     renderGate();
     return;
   }
+  // `?demo` deep link: load the bundled example review straight onto the board
+  // (for sharing a walkthrough link). Strip the query afterwards so a later
+  // reload returns to the normal home rather than clobbering the session again.
+  // Fails open — if the example can't be fetched, fall through to a normal boot.
+  if (new URLSearchParams(location.search).has('demo')) {
+    try {
+      await home.loadExampleSession();
+      history.replaceState(null, '', location.pathname + location.hash);
+      return;
+    } catch {
+      // ignore and boot normally
+    }
+  }
   store.resumeLastSession();
   if (!location.hash) location.hash = store.getSession() ? '#/board' : '#/home';
   render();
