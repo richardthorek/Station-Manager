@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "lastUpdated": "2026-06-23",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
@@ -318,6 +318,14 @@
         "description": "Delete a zone.",
         "authentication": "JWT (admin)",
         "responses": { "204": { "description": "Deleted" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "POST /api/truck-checks/appliances/:id/seed-zones": {
+        "method": "POST", "path": "/api/truck-checks/appliances/:id/seed-zones",
+        "description": "Seed an appliance's zones from the starter vocabulary for its VehicleType.code (zoneVocabulary.ts). Idempotent by default — returns existing zones unchanged. Pass ?replace=true to delete and re-seed. Returns { seeded: number, zones: ApplianceZone[], message?: string }. Also triggered automatically (non-fatal) on POST /appliances when vehicleTypeId is supplied.",
+        "authentication": "JWT (admin)",
+        "queryParams": { "replace": "boolean? — if true, deletes existing zones before seeding" },
+        "responses": { "200": { "description": "{ seeded: number, zones: ApplianceZone[], message?: string }" }, "401": { "description": "Not authenticated" }, "403": { "description": "Admin required" }, "404": { "description": "Appliance not found" }, "422": { "description": "No vehicleTypeId set on appliance, or vehicle type record not found" } },
         "implementation": "backend/src/routes/truckChecks.ts"
       }
     },
