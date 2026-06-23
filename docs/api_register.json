@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "lastUpdated": "2026-06-23",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
@@ -316,6 +316,40 @@
       "DELETE /api/truck-checks/zones/:id": {
         "method": "DELETE", "path": "/api/truck-checks/zones/:id",
         "description": "Delete a zone.",
+        "authentication": "JWT (admin)",
+        "responses": { "204": { "description": "Deleted" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      }
+    },
+    "truck-check-appliance-equipment": {
+      "description": "A1 per-truck inventory. An ApplianceEquipment is a piece of equipment on exactly ONE appliance (Holmatro spreader, BA set #2, Akron branch), optionally located in a zone (zoneId). active:false retires an item without losing history. Admin-authored config; reads require an authenticated session. See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.2.",
+      "authentication": "JWT (equipment writes require admin; list requires an authenticated session)",
+      "entitlement": "truckCheckEnabled (parent /api/truck-checks mount)",
+      "GET /api/truck-checks/appliances/:applianceId/equipment": {
+        "method": "GET", "path": "/api/truck-checks/appliances/:applianceId/equipment",
+        "description": "List one appliance's equipment (active only by default; ?includeInactive=true to include retired).",
+        "authentication": "JWT",
+        "responses": { "200": { "description": "ApplianceEquipment[]" }, "401": { "description": "Not authenticated" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "POST /api/truck-checks/appliances/:applianceId/equipment": {
+        "method": "POST", "path": "/api/truck-checks/appliances/:applianceId/equipment",
+        "description": "Add equipment to an appliance (stationId inherited from the truck; equipmentCode derived from the name when not given; active defaults true).",
+        "authentication": "JWT (admin)",
+        "requestBody": { "name": "string", "equipmentCode": "string?", "zoneId": "string?", "serialNumber": "string?", "notes": "string?", "active": "boolean?" },
+        "responses": { "201": { "description": "ApplianceEquipment" }, "400": { "description": "name required" }, "403": { "description": "Admin required" }, "404": { "description": "Appliance not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "PUT /api/truck-checks/equipment/:id": {
+        "method": "PUT", "path": "/api/truck-checks/equipment/:id",
+        "description": "Update an equipment item (partial patch; set active:false to retire while keeping history).",
+        "authentication": "JWT (admin)",
+        "responses": { "200": { "description": "ApplianceEquipment" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "DELETE /api/truck-checks/equipment/:id": {
+        "method": "DELETE", "path": "/api/truck-checks/equipment/:id",
+        "description": "Delete an equipment item (prefer active:false to retain history).",
         "authentication": "JWT (admin)",
         "responses": { "204": { "description": "Deleted" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
         "implementation": "backend/src/routes/truckChecks.ts"

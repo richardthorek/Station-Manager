@@ -326,6 +326,27 @@ export interface ApplianceZone {
 }
 
 /**
+ * A1 — per-truck inventory. A piece of equipment that lives on ONE appliance
+ * ("Holmatro spreader", "BA set #2", "Akron branch"), optionally located in a
+ * zone. Captures the equipment differences between trucks so the maintenance
+ * agent knows what's actually on *this* vehicle (and where). `equipmentCode` is
+ * a canonical slug for analytics. See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.2.
+ */
+export interface ApplianceEquipment {
+  id: string;
+  applianceId: string;           // belongs to exactly ONE truck
+  stationId?: string;            // multi-station scoping (optional)
+  name: string;                  // human label, e.g. 'Holmatro spreader'
+  equipmentCode?: string;        // canonical slug for analytics
+  zoneId?: string;               // where it lives on the truck (ApplianceZone)
+  serialNumber?: string;
+  notes?: string;
+  active: boolean;               // false = retired/removed but kept for history
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
  * Represents an appliance/vehicle that needs checking.
  *
  * Identity fields let a specific vehicle be tracked across brigades if it moves
