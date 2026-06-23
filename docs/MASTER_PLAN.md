@@ -297,9 +297,15 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   locked standard items — both spread item fields and the Table twin stores them as JSON,
   so no persistence changes were needed). This is the bridge that lets a checklist item
   reference a physical zone/equipment piece for the agent walk-around. 2 round-trip tests
-  (733 pass). *Remaining increments:* the `Appliance` extensions (`variant`,
-  `inServiceDate`, `quirksNotes` — agent context), the per-`vehicleType` starter
-  zone-vocabulary seed, and the admin authoring UI. Ships standalone value (no AI).
+  (733 pass).
+  *Increment 4 done 2026-06-23:* `Appliance` gained the agent-context fields `variant`,
+  `inServiceDate`, and `quirksNotes` (free-text brigade knowledge fed to the LLM —
+  "hatch sticks in cold", "secondary pump primes slowly"). Wired through
+  `extractApplianceDetails` (string-validated) → `ApplianceDetails` → `createAppliance`/
+  `updateAppliance` in **both** DB twins (in-memory + Table Storage entity columns).
+  3 round-trip tests (736 pass). *Remaining increments:* the per-`vehicleType` starter
+  zone-vocabulary seed, and the admin authoring UI (the first user-facing surface).
+  Ships standalone value (no AI).
 - **A3 — Phase 2: voice agent (cloud)** ⬜ — PWA voice mode → agent tool-use loop
   (`get_appliance_context`/`record_result`/`flag_issue`/`next_unchecked_in_zone`/
   `complete_run`) → `CheckRun` + `AgentSession`/`AgentTurn` transcript; read-back/confirm;
@@ -2892,6 +2898,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.9 | Jun 2026 | A1 inc 1 (appliance zones) | First slice of the AI maintenance-agent truck model: `ApplianceZone` per-truck spatial entity end-to-end on the backend — types, in-memory DB + Table Storage twin (partition by applianceId) + factory, and admin-gated CRUD routes on the truck-checks router. Walk-around `order` + canonical `zoneCode` slug. 15 tests; `api_register.json` → v1.10.0. Remaining A1: ApplianceEquipment, Appliance/ChecklistItem extensions, zone-vocabulary seed, admin UI. |
 | 4.10 | Jun 2026 | A1 inc 2 (appliance equipment) | `ApplianceEquipment` per-truck inventory end-to-end (type, in-memory DB + Table Storage twin + factory, admin-gated CRUD `…/appliances/:id/equipment` + `…/equipment/:id`), with optional `zoneId`, `equipmentCode` slug, and an `active` retire flag (`?includeInactive`). Added a reusable mock-`TableClient` test harness covering both appliance Table twins (~8% → ~92%). 17 new tests; `api_register.json` → v1.11.0. |
 | 4.11 | Jun 2026 | A1 inc 3 (checklist links) | `ChecklistItem` gained the zone/equipment link fields (`zoneId`, `equipmentId`, `expectedResponseType`, `unit`, `promptHint`) — additive/optional, round-tripping through both the per-appliance custom overlay and `VehicleType` standard items with no persistence changes (items are spread + stored as JSON). The bridge that lets a checklist item reference a physical zone/equipment piece. 2 round-trip tests; 733 pass. |
+| 4.12 | Jun 2026 | A1 inc 4 (appliance agent context) | `Appliance` gained `variant`, `inServiceDate`, `quirksNotes` (free-text brigade knowledge for the agent), wired through `extractApplianceDetails` + `ApplianceDetails` + create/update in both DB twins (in-memory + Table Storage columns). 3 round-trip tests; 736 pass. |
 
 ---
 

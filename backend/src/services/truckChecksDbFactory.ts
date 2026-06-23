@@ -35,6 +35,9 @@ export interface ApplianceDetails {
   make?: string;
   model?: string;
   year?: number;
+  variant?: string;
+  inServiceDate?: string;
+  quirksNotes?: string;
 }
 
 // Interface shared by truck checks database implementations

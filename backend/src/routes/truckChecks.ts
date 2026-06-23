@@ -231,6 +231,9 @@ function extractApplianceDetails(body: Record<string, unknown>) {
     make: typeof body.make === 'string' ? body.make : undefined,
     model: typeof body.model === 'string' ? body.model : undefined,
     year: Number.isFinite(yearNum) ? yearNum : undefined,
+    variant: typeof body.variant === 'string' ? body.variant : undefined,
+    inServiceDate: typeof body.inServiceDate === 'string' ? body.inServiceDate : undefined,
+    quirksNotes: typeof body.quirksNotes === 'string' ? body.quirksNotes : undefined,
   };
 }
 
