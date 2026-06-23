@@ -207,6 +207,9 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       make: details?.make,
       model: details?.model,
       year: details?.year,
+      variant: details?.variant,
+      inServiceDate: details?.inServiceDate,
+      quirksNotes: details?.quirksNotes,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -226,6 +229,9 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       make: appliance.make || '',
       model: appliance.model || '',
       year: appliance.year ?? 0,
+      variant: appliance.variant || '',
+      inServiceDate: appliance.inServiceDate || '',
+      quirksNotes: appliance.quirksNotes || '',
       createdAt: appliance.createdAt.toISOString(),
       updatedAt: appliance.updatedAt.toISOString(),
     };
@@ -250,6 +256,9 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
         entity.make = details.make || '';
         entity.model = details.model || '';
         entity.year = details.year ?? 0;
+        entity.variant = details.variant || '';
+        entity.inServiceDate = details.inServiceDate || '';
+        entity.quirksNotes = details.quirksNotes || '';
       }
       entity.updatedAt = new Date().toISOString();
 
@@ -287,6 +296,9 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       make: (entity.make as string) || undefined,
       model: (entity.model as string) || undefined,
       year: (entity.year as number) || undefined,
+      variant: (entity.variant as string) || undefined,
+      inServiceDate: (entity.inServiceDate as string) || undefined,
+      quirksNotes: (entity.quirksNotes as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };

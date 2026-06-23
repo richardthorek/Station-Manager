@@ -141,6 +141,9 @@ class TruckChecksDatabase {
       make: details?.make,
       model: details?.model,
       year: details?.year,
+      variant: details?.variant,
+      inServiceDate: details?.inServiceDate,
+      quirksNotes: details?.quirksNotes,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -172,6 +175,9 @@ class TruckChecksDatabase {
         appliance.make = details.make;
         appliance.model = details.model;
         appliance.year = details.year;
+        appliance.variant = details.variant;
+        appliance.inServiceDate = details.inServiceDate;
+        appliance.quirksNotes = details.quirksNotes;
       }
       appliance.updatedAt = new Date();
       return appliance;

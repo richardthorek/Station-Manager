@@ -375,6 +375,11 @@ export interface Appliance {
   make?: string;                 // manufacturer, e.g. 'Isuzu'
   model?: string;                // model, e.g. 'FTS 800'
   year?: number;                 // build/registration year
+  // ─── A1 agent context (all optional) ───
+  variant?: string;              // build/body variant, e.g. 'Isuzu FTS', 'BTM body'
+  inServiceDate?: string;        // ISO date the appliance entered service (age nuance)
+  quirksNotes?: string;          // free-text brigade knowledge fed to the agent,
+                                 // e.g. 'hatch sticks in cold', 'secondary pump primes slowly'
   createdAt: Date;
   updatedAt: Date;
 }
