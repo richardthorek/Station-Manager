@@ -299,6 +299,32 @@ export interface VehicleType {
   updatedAt: Date;
 }
 
+/** Physical side/face of a truck a zone sits on (drives the agent walk-around). */
+export type ApplianceZoneSide = 'driver' | 'passenger' | 'front' | 'rear' | 'top' | 'interior' | 'na';
+
+/**
+ * A1 — per-truck spatial model. A named physical area on ONE appliance ("Pump
+ * Panel", "Driver-side Locker 1", "Cab"), giving every truck its own ordered,
+ * optionally hierarchical set of zones. Replaces the flat `ChecklistItem.section`
+ * string with real, per-appliance areas the maintenance agent can walk in order
+ * and prompt "same area" within. `zoneCode` is a canonical slug for
+ * cross-brigade analytics (seeded from a per-vehicleType starter taxonomy, then
+ * edited by the brigade). See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.1.
+ */
+export interface ApplianceZone {
+  id: string;
+  applianceId: string;           // belongs to exactly ONE truck → uniqueness
+  stationId?: string;            // multi-station scoping (optional)
+  name: string;                  // human label, e.g. 'Pump Panel'
+  zoneCode?: string;             // canonical slug for analytics, e.g. 'pump-panel'
+  parentZoneId?: string;         // optional hierarchy (Locker 1 under Driver-side lockers)
+  side?: ApplianceZoneSide;      // which face of the truck
+  order: number;                 // natural walk-around order (drives agent flow)
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 /**
  * Represents an appliance/vehicle that needs checking.
  *

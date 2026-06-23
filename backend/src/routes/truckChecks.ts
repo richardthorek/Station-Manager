@@ -20,6 +20,8 @@ import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { ensureVehicleTypeDatabase } from '../services/vehicleTypeDbFactory';
+import { ensureApplianceZoneDatabase } from '../services/applianceZoneDbFactory';
+import type { ApplianceZoneSide } from '../types';
 import { CheckStatus, ChecklistItem, EffectiveChecklist, VehicleType, ChecklistTemplate, Appliance } from '../types';
 import { azureStorageService } from '../services/azureStorage';
 import { authMiddleware, requireAdmin } from '../middleware/auth';
@@ -381,6 +383,106 @@ router.delete('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: R
   } catch (error) {
     logger.error('Error deleting vehicle type:', error);
     res.status(500).json({ error: 'Failed to delete vehicle type' });
+  }
+});
+
+// ─── A1: per-truck appliance zones (spatial model) ───
+// Zones are admin-authored config for one appliance. All writes require an
+// authenticated org admin; reads require an authenticated session.
+const zoneAuth = [authMiddleware, attachOrganization, requireAdmin];
+
+const VALID_SIDES: ApplianceZoneSide[] = ['driver', 'passenger', 'front', 'rear', 'top', 'interior', 'na'];
+function parseSide(value: unknown): ApplianceZoneSide | undefined {
+  return typeof value === 'string' && (VALID_SIDES as string[]).includes(value)
+    ? (value as ApplianceZoneSide)
+    : undefined;
+}
+
+/**
+ * GET /api/truck-checks/appliances/:applianceId/zones
+ * List one appliance's zones in walk-around order.
+ */
+router.get('/appliances/:applianceId/zones', authMiddleware, attachOrganization, async (req: Request, res: Response) => {
+  try {
+    const zones = await ensureApplianceZoneDatabase().listForAppliance(req.params.applianceId);
+    res.json(zones);
+  } catch (error) {
+    logger.error('Error listing appliance zones:', error);
+    res.status(500).json({ error: 'Failed to list appliance zones' });
+  }
+});
+
+/**
+ * POST /api/truck-checks/appliances/:applianceId/zones
+ * Create a zone on an appliance (admin). stationId is inherited from the truck.
+ */
+router.post('/appliances/:applianceId/zones', zoneAuth, async (req: Request, res: Response) => {
+  try {
+    const truckDb = await ensureTruckChecksDatabase(req.isDemoMode);
+    const appliance = await truckDb.getApplianceById(req.params.applianceId);
+    if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
+
+    const { name, zoneCode, parentZoneId, side, order, description } = req.body ?? {};
+    if (typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    const zone = await ensureApplianceZoneDatabase().create({
+      applianceId: req.params.applianceId,
+      stationId: appliance.stationId,
+      name: name.trim(),
+      zoneCode: typeof zoneCode === 'string' && zoneCode.trim() ? slugify(zoneCode) : undefined,
+      parentZoneId: typeof parentZoneId === 'string' ? parentZoneId : undefined,
+      side: parseSide(side),
+      order: typeof order === 'number' ? order : undefined,
+      description: typeof description === 'string' ? description : undefined,
+    });
+    res.status(201).json(zone);
+  } catch (error) {
+    logger.error('Error creating appliance zone:', error);
+    res.status(500).json({ error: 'Failed to create appliance zone' });
+  }
+});
+
+/**
+ * PUT /api/truck-checks/zones/:id
+ * Update a zone (admin).
+ */
+router.put('/zones/:id', zoneAuth, async (req: Request, res: Response) => {
+  try {
+    const db = ensureApplianceZoneDatabase();
+    const existing = await db.getById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Zone not found' });
+
+    const { name, zoneCode, parentZoneId, side, order, description } = req.body ?? {};
+    const updated = await db.update(req.params.id, {
+      ...(name !== undefined ? { name } : {}),
+      ...(zoneCode !== undefined ? { zoneCode: typeof zoneCode === 'string' && zoneCode.trim() ? slugify(zoneCode) : undefined } : {}),
+      ...(parentZoneId !== undefined ? { parentZoneId: typeof parentZoneId === 'string' ? parentZoneId : undefined } : {}),
+      ...(side !== undefined ? { side: parseSide(side) } : {}),
+      ...(order !== undefined ? { order: typeof order === 'number' ? order : existing.order } : {}),
+      ...(description !== undefined ? { description: typeof description === 'string' ? description : undefined } : {}),
+    });
+    res.json(updated);
+  } catch (error) {
+    logger.error('Error updating appliance zone:', error);
+    res.status(500).json({ error: 'Failed to update appliance zone' });
+  }
+});
+
+/**
+ * DELETE /api/truck-checks/zones/:id
+ * Delete a zone (admin).
+ */
+router.delete('/zones/:id', zoneAuth, async (req: Request, res: Response) => {
+  try {
+    const db = ensureApplianceZoneDatabase();
+    const existing = await db.getById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Zone not found' });
+    await db.delete(req.params.id);
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Error deleting appliance zone:', error);
+    res.status(500).json({ error: 'Failed to delete appliance zone' });
   }
 });
 
