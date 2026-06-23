@@ -26,7 +26,11 @@ function setUpFirst() {
   location.hash = '#/setup';
 }
 
-async function loadExample() {
+/**
+ * Load the bundled example review and land on the findings board. Reused by the
+ * "See an example" button and the `?demo` deep link (main.js boot).
+ */
+export async function loadExampleSession() {
   const res = await fetch('./data/sample-session.json');
   if (!res.ok) throw new Error(`Example not available (${res.status})`);
   store.importSessionJson(await res.text());
@@ -166,7 +170,7 @@ export function render(container) {
         : h('p', { class: 'muted' }, 'No reviews yet. Hit “Start recording now” at the end of your next job.'),
     ),
     h('section', { class: 'home-footer' },
-      h('button', { class: 'link-btn', onclick: () => loadExample().catch((e) => toast(e.message, 'error')) }, 'See an example'),
+      h('button', { class: 'link-btn', onclick: () => loadExampleSession().catch((e) => toast(e.message, 'error')) }, 'See an example'),
       h('span', { class: 'home-footer__sep' }, '·'),
       h('button', { class: 'link-btn', onclick: openSavedFile }, 'Open a saved review file'),
     ),

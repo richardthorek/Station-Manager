@@ -174,3 +174,11 @@ pass on stop. Pure helpers (resampling, RMS, speaker labels) live in
   probe failures all proceed. This is a UX gate only; the security boundary is
   the backend `requireFeature('aarStudioEnabled')` already on `/api/aar-sessions`
   and the AI-gateway routes, which 403/503 an unentitled org regardless.
+
+- **`?demo` deep link.** Loading `/aar/?demo` (after the plan gate passes) loads
+  the bundled `data/sample-session.json` example straight onto the findings board
+  — a shareable walkthrough link. `main.js` strips the query with
+  `history.replaceState` once loaded, so a later reload returns to the normal home
+  rather than re-clobbering the session. Fails open: if the example can't be
+  fetched it falls through to a normal boot. Shares the `loadExampleSession()`
+  loader with the home view's "See an example" button.

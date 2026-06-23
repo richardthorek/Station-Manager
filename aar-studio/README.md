@@ -48,7 +48,8 @@ heavy lifting.** You can fill in details if you want to, but you never have to.
    report, Markdown summary, a backup file, or print to PDF.
 
 Choose **See an example** on the home screen to explore a finished review
-without any Azure setup.
+without any Azure setup — or open the app with `?demo` (e.g. `/aar/?demo`) to
+jump straight into that example, handy for sharing a walkthrough link.
 
 ## Local development
 
