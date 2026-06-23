@@ -303,9 +303,15 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   "hatch sticks in cold", "secondary pump primes slowly"). Wired through
   `extractApplianceDetails` (string-validated) → `ApplianceDetails` → `createAppliance`/
   `updateAppliance` in **both** DB twins (in-memory + Table Storage entity columns).
-  3 round-trip tests (736 pass). *Remaining increments:* the per-`vehicleType` starter
-  zone-vocabulary seed, and the admin authoring UI (the first user-facing surface).
-  Ships standalone value (no AI).
+  3 round-trip tests (736 pass).
+  *Increment 5 done 2026-06-23:* `backend/src/constants/zoneVocabulary.ts` — a
+  code-level taxonomy mapping `VehicleType.code` to canonical walk-around `ZoneSpec[]`
+  for standard NSW RFS appliance classes (Cat 1 tanker, heavy tanker, pumper, bulk water
+  tender, rescue tender, command/support). Zones auto-seed on `POST /appliances` when a
+  `vehicleTypeId` is supplied (non-fatal catch if seed fails). New admin endpoint
+  `POST /appliances/:id/seed-zones` supports explicit/idempotent seeding and
+  `?replace=true` re-seed. 18 new tests (754 pass); all coverage gates green.
+  *Remaining:* admin authoring UI (the first user-facing surface). Ships standalone value (no AI).
 - **A3 — Phase 2: voice agent (cloud)** ⬜ — PWA voice mode → agent tool-use loop
   (`get_appliance_context`/`record_result`/`flag_issue`/`next_unchecked_in_zone`/
   `complete_run`) → `CheckRun` + `AgentSession`/`AgentTurn` transcript; read-back/confirm;
@@ -460,7 +466,7 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
 - 2026-06-07: **Infrastructure-as-Code introduced (Issue #513).** Added `infra/` (Bicep) — the project's first IaC. Codifies the Table Storage data tier and provides a **dual-host comparison** (Linux B1 always-warm vs Azure Container Apps scale-to-zero) running the current Socket.io app unchanged, side-by-side with prod (prod untouched). Includes a multi-stage `Dockerfile`, a manual `infra-deploy.yml` workflow, and `infra/README.md`. **Critical finding:** the GitHub→Azure OIDC app registration was deleted from the tenant, silently breaking the last several `main` deploys (`AADSTS700016` at `Login to Azure`) — so the v1.1 merge did not reach production. The IaC README documents the one-time OIDC bootstrap that restores prod deploys. Real-time decision: **defer SignalR**; when multi-brigade scale needs a backplane, adopt **Azure Web PubSub for Socket.IO** (keeps the code, free tier) rather than a SignalR SDK rewrite. Follow-ups to raise: Windows→Linux prod migration, App Insights daily cap, managed-identity storage auth.
 - 2026-06-08: **SaaS foundation implemented** (first slice of the commercialization design). New top-level `Organization` billing tenant (in-memory + Table Storage twins + factory + `constants/plans.ts` catalog: Community/Basic/AI). Self-service `POST /api/auth/signup` creates an org (free Community plan) + owner; JWT now carries `organizationId`; `/auth/me` returns org + entitlements. New `/api/organizations/current` management routes (get/update plan + module toggles, list/create users) with `owner`/`admin` RBAC (`requireOwner` added). Feature gating via `requireFeature` middleware + `ENABLE_ENTITLEMENTS` flag (default off → backward compatible; the 525 existing tests untouched), applied to checkins/events (signInEnabled), truck-checks (truckCheckEnabled), reports (reportsEnabled). Owners can **disable the sign-in book for maintenance-only brigades** and AI is gated off below the AI plan (`clampEntitlements` prevents exceeding the plan ceiling). Frontend: `SignupPage` (`/signup`), `OrganizationPage` (`/admin/organization`), `AuthContext` extended with org/entitlements + `hasFeature`, and `FeatureRoute` guards on the gated routes. 12 new backend + 6 new frontend tests; all suites + coverage + build green. **Not yet wired:** live Stripe billing (entitlements are admin-set; Stripe Checkout/webhooks are the next slice), device accounts, and member logins — all per `docs/SAAS_COMMERCIALIZATION_DESIGN.md`.
 
-### Prioritised next steps (as of June 22, 2026)
+### Prioritised next steps (as of June 23, 2026)
 
 These are the highest-leverage items to act on next, in order. Read each track section above for full detail; this is the executive summary for picking up where we left off.
 
@@ -2899,6 +2905,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.10 | Jun 2026 | A1 inc 2 (appliance equipment) | `ApplianceEquipment` per-truck inventory end-to-end (type, in-memory DB + Table Storage twin + factory, admin-gated CRUD `…/appliances/:id/equipment` + `…/equipment/:id`), with optional `zoneId`, `equipmentCode` slug, and an `active` retire flag (`?includeInactive`). Added a reusable mock-`TableClient` test harness covering both appliance Table twins (~8% → ~92%). 17 new tests; `api_register.json` → v1.11.0. |
 | 4.11 | Jun 2026 | A1 inc 3 (checklist links) | `ChecklistItem` gained the zone/equipment link fields (`zoneId`, `equipmentId`, `expectedResponseType`, `unit`, `promptHint`) — additive/optional, round-tripping through both the per-appliance custom overlay and `VehicleType` standard items with no persistence changes (items are spread + stored as JSON). The bridge that lets a checklist item reference a physical zone/equipment piece. 2 round-trip tests; 733 pass. |
 | 4.12 | Jun 2026 | A1 inc 4 (appliance agent context) | `Appliance` gained `variant`, `inServiceDate`, `quirksNotes` (free-text brigade knowledge for the agent), wired through `extractApplianceDetails` + `ApplianceDetails` + create/update in both DB twins (in-memory + Table Storage columns). 3 round-trip tests; 736 pass. |
+| 4.13 | Jun 2026 | A1 inc 5 (zone-vocabulary seed) | `backend/src/constants/zoneVocabulary.ts` — code-level taxonomy mapping `VehicleType.code` → `ZoneSpec[]` walk-around sequences for Cat 1 tanker / heavy tanker / pumper / bulk water tender / rescue tender / command-support (NSW RFS classes). Zones auto-seed on `POST /appliances` when a `vehicleTypeId` is supplied (non-fatal catch). New admin endpoint `POST /appliances/:id/seed-zones` with idempotent default + `?replace=true`. 18 new tests; 754 pass, all coverage gates green. |
 
 ---
 

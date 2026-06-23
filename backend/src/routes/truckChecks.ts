@@ -28,6 +28,7 @@ import { azureStorageService } from '../services/azureStorage';
 import { authMiddleware, requireAdmin } from '../middleware/auth';
 import { attachOrganization } from '../middleware/entitlements';
 import { slugify } from '../utils/slug';
+import { getStarterZones } from '../constants/zoneVocabulary';
 import { io } from '../index';
 import {
   validateCreateAppliance,
@@ -121,7 +122,31 @@ router.post('/appliances', enforceVehicleLimit(), validateCreateAppliance, handl
     }
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.createAppliance(name, description, photoUrl, stationId, vehicleType, extractApplianceDetails(req.body));
+    const details = extractApplianceDetails(req.body);
+    const appliance = await db.createAppliance(name, description, photoUrl, stationId, vehicleType, details);
+
+    // Auto-seed zones from the starter vocabulary when a vehicleTypeId is provided.
+    if (details.vehicleTypeId) {
+      try {
+        const vt = await ensureVehicleTypeDatabase().getById(details.vehicleTypeId);
+        if (vt) {
+          const specs = getStarterZones(vt.code);
+          const zoneDb = ensureApplianceZoneDatabase();
+          await Promise.all(specs.map((s) => zoneDb.create({
+            applianceId: appliance.id,
+            stationId: appliance.stationId,
+            name: s.name,
+            zoneCode: s.zoneCode,
+            side: s.side,
+            order: s.order,
+            description: s.description,
+          })));
+        }
+      } catch (seedErr) {
+        logger.warn('Zone auto-seed failed (non-fatal):', seedErr);
+      }
+    }
+
     res.status(201).json(appliance);
   } catch (error) {
     logger.error('Error creating appliance:', error);
@@ -169,6 +194,62 @@ router.delete('/appliances/:id', validateApplianceId, handleValidationErrors, as
   } catch (error) {
     logger.error('Error deleting appliance:', error);
     res.status(500).json({ error: 'Failed to delete appliance' });
+  }
+});
+
+/**
+ * POST /api/truck-checks/appliances/:id/seed-zones
+ * Seed an appliance's zones from the starter vocabulary for its vehicle type.
+ * Admin-only. Idempotent by default (no-op when zones already exist).
+ * Pass ?replace=true to delete existing zones and re-seed from scratch.
+ */
+router.post('/appliances/:id/seed-zones', authMiddleware, attachOrganization, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const truckDb = await ensureTruckChecksDatabase(req.isDemoMode);
+    const appliance = await truckDb.getApplianceById(req.params.id);
+    if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
+
+    if (!appliance.vehicleTypeId) {
+      return res.status(422).json({ error: 'Appliance has no vehicleTypeId — assign a vehicle type first' });
+    }
+
+    const vt = await ensureVehicleTypeDatabase().getById(appliance.vehicleTypeId);
+    if (!vt) {
+      return res.status(422).json({ error: 'Vehicle type not found' });
+    }
+
+    const specs = getStarterZones(vt.code);
+    if (!specs.length) {
+      return res.json({ seeded: 0, zones: [], message: `No starter vocabulary for vehicle type code "${vt.code}"` });
+    }
+
+    const zoneDb = ensureApplianceZoneDatabase();
+    const replace = req.query.replace === 'true';
+
+    if (!replace) {
+      const existing = await zoneDb.listForAppliance(appliance.id);
+      if (existing.length) {
+        return res.json({ seeded: 0, zones: existing, message: 'Zones already exist — pass ?replace=true to re-seed' });
+      }
+    } else {
+      const existing = await zoneDb.listForAppliance(appliance.id);
+      await Promise.all(existing.map((z) => zoneDb.delete(z.id)));
+    }
+
+    const zones = await Promise.all(specs.map((s) => zoneDb.create({
+      applianceId: appliance.id,
+      stationId: appliance.stationId,
+      name: s.name,
+      zoneCode: s.zoneCode,
+      side: s.side,
+      order: s.order,
+      description: s.description,
+    })));
+
+    res.json({ seeded: zones.length, zones });
+  } catch (error) {
+    logger.error('Error seeding appliance zones:', error);
+    res.status(500).json({ error: 'Failed to seed appliance zones' });
   }
 });
 
