@@ -301,20 +301,25 @@ function summarySection(session) {
 
 function registerSection(session) {
   if (!session.findings?.length) return '';
+  // Only show the Unit column when at least one finding is attributed, so
+  // reviews that don't track units aren't cluttered with an empty column.
+  const hasUnits = session.findings.some((f) => f.unit);
   const rows = [];
   for (const phase of sessionPhases(session)) {
     for (const cat of CATEGORIES) {
       for (const f of session.findings.filter((x) => x.phase === phase && x.category === cat.id)) {
         const quote = f.quote ? `<div class="quote">&ldquo;${esc(f.quote)}&rdquo;</div>` : '';
-        rows.push(`<tr><td>${esc(phase)}</td><td class="cat">${esc(cat.short)}</td><td>${esc(f.text)}${quote}</td></tr>`);
+        const unitCell = hasUnits ? `<td class="unit">${f.unit ? esc(f.unit) : '—'}</td>` : '';
+        rows.push(`<tr><td>${esc(phase)}</td><td class="cat">${esc(cat.short)}</td>${unitCell}<td>${esc(f.text)}${quote}</td></tr>`);
       }
     }
   }
+  const unitHead = hasUnits ? '<th>Unit</th>' : '';
   return `<div class="doc pagebreak">
 <h1>Findings register</h1>
 <p class="meta">${session.findings.length} findings captured during the AAR.</p>
 <table class="register">
-<thead><tr><th>Phase</th><th>Category</th><th>Finding</th></tr></thead>
+<thead><tr><th>Phase</th><th>Category</th>${unitHead}<th>Finding</th></tr></thead>
 <tbody>${rows.join('\n')}</tbody>
 </table>
 </div>`;

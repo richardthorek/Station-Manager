@@ -3,7 +3,7 @@
 
 import { h, toast } from '../ui.js';
 import * as store from '../store.js';
-import { CATEGORIES, sessionPhases, createFinding } from '../lib/model.js';
+import { CATEGORIES, sessionPhases, sessionUnitNames, createFinding } from '../lib/model.js';
 import { findMergeSuggestions, mergeFindings } from '../lib/dedupe.js';
 import { analyseNow } from '../analyse.js';
 
@@ -13,6 +13,14 @@ let phaseFilter = null; // null = all
 const dismissedPairs = new Set();
 
 const pairKey = (a, b) => [a.id, b.id].sort().join('|');
+
+/** A unit-attribution <select>: a blank "no unit" option plus each attending unit. */
+function unitSelect(units, selected = '') {
+  return h('select', { 'aria-label': 'Attribute finding to a unit' },
+    h('option', { value: '', selected: !selected }, '— no unit'),
+    units.map((u) => h('option', { value: u, selected: u === selected }, u)),
+  );
+}
 
 function mergeSuggestionsPanel(session) {
   const suggestions = findMergeSuggestions(session.findings)
@@ -59,13 +67,14 @@ function mergeSuggestionsPanel(session) {
   );
 }
 
-function findingCard(f, phases) {
+function findingCard(f, phases, units) {
   const card = h('div', { class: `finding finding--${f.category}`, role: 'listitem' });
   const body = h('div', { class: 'finding__text' }, f.text);
   card.append(
     body,
     h('div', { class: 'finding__meta' },
       h('span', { class: 'chip chip--phase' }, f.phase),
+      f.unit ? h('span', { class: 'chip chip--unit', title: `Attributed to ${f.unit}` }, f.unit) : null,
       f.source === 'ai' ? h('span', { class: 'chip chip--ai', title: f.quote ? `“${f.quote}”` : 'AI extracted' }, 'AI') : null,
       h('span', { class: 'finding__tools' },
         h('button', { class: 'icon-btn', title: 'Edit', 'aria-label': 'Edit finding', onclick: () => editInline() }, '✎'),
@@ -79,14 +88,15 @@ function findingCard(f, phases) {
     const textArea = h('textarea', { rows: 3 }, f.text);
     const catSel = h('select', {}, CATEGORIES.map((c) => h('option', { value: c.id, selected: c.id === f.category }, c.label)));
     const phaseSel = h('select', {}, phases.map((p) => h('option', { value: p, selected: p === f.phase }, p)));
+    const unitSel = units.length ? unitSelect(units, f.unit) : null;
     const editor = h('div', { class: 'finding__editor' },
       textArea,
       h('div', { class: 'btn-row' },
-        catSel, phaseSel,
+        catSel, phaseSel, unitSel,
         h('button', { class: 'btn btn--small btn--primary', onclick: () => {
           store.update((s) => {
             const target = s.findings.find((x) => x.id === f.id);
-            if (target) Object.assign(target, { text: textArea.value.trim(), category: catSel.value, phase: phaseSel.value });
+            if (target) Object.assign(target, { text: textArea.value.trim(), category: catSel.value, phase: phaseSel.value, unit: unitSel ? unitSel.value : f.unit });
           }, { reason: 'findings' });
         } }, 'Save'),
         h('button', { class: 'btn btn--small', onclick: () => store.update(() => {}, { reason: 'findings' }) }, 'Cancel'),
@@ -99,19 +109,20 @@ function findingCard(f, phases) {
   return card;
 }
 
-function quickAdd(phases) {
+function quickAdd(phases, units) {
   const input = h('input', { type: 'text', placeholder: 'Quick-add a finding…', class: 'quick-add__input' });
   const catSel = h('select', {}, CATEGORIES.map((c) => h('option', { value: c.id }, c.label)));
   const phaseSel = h('select', {}, phases.map((p) => h('option', { value: p, selected: p === store.getSession().currentPhase }, p)));
+  const unitSel = units.length ? unitSelect(units) : null;
   const add = () => {
     if (!input.value.trim()) return;
     store.update((s) => {
-      s.findings.push(createFinding({ category: catSel.value, phase: phaseSel.value, text: input.value.trim(), source: 'manual' }));
+      s.findings.push(createFinding({ category: catSel.value, phase: phaseSel.value, unit: unitSel ? unitSel.value : '', text: input.value.trim(), source: 'manual' }));
     }, { reason: 'findings' });
     toast('Finding added');
   };
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
-  return h('div', { class: 'quick-add' }, input, catSel, phaseSel, h('button', { class: 'btn btn--primary', onclick: add }, 'Add'));
+  return h('div', { class: 'quick-add' }, input, catSel, phaseSel, unitSel, h('button', { class: 'btn btn--primary', onclick: add }, 'Add'));
 }
 
 function togglePresent() {
@@ -123,6 +134,7 @@ function togglePresent() {
 export function render(container) {
   const session = store.getSession();
   const phases = sessionPhases(session);
+  const units = sessionUnitNames(session);
   if (phaseFilter && !phases.includes(phaseFilter)) phaseFilter = null;
   const status = h('span', { class: 'muted', role: 'status', 'aria-live': 'polite' });
 
@@ -141,7 +153,7 @@ export function render(container) {
     return h('div', { class: `board__col board__col--${cat.id}`, role: 'group', 'aria-label': `${cat.label} (${items.length})` },
       h('div', { class: 'board__head' }, h('span', {}, cat.label), h('span', { class: 'board__count', 'aria-hidden': 'true' }, String(items.length))),
       h('div', { class: 'board__cards', role: 'list' },
-        items.length ? items.map((f) => findingCard(f, phases)) : h('p', { class: 'muted board__empty' }, '—'),
+        items.length ? items.map((f) => findingCard(f, phases, units)) : h('p', { class: 'muted board__empty' }, '—'),
       ),
     );
   }));
@@ -163,7 +175,7 @@ export function render(container) {
     ),
     filterChips,
     mergeSuggestionsPanel(session),
-    quickAdd(phases),
+    quickAdd(phases, units),
     columns,
     h('button', { class: 'present-exit btn', onclick: togglePresent }, 'Exit present mode (Esc)'),
   );

@@ -210,6 +210,7 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
 .chip--phase { background: #e8edf1; }
 .chip--ai { background: #fdf3d7; color: #7a5c00; }
 .chip--manual { background: #e2f0e8; color: var(--good); }
+.chip--unit { background: #e4e9f5; color: #2f3e63; font-weight: 600; }
 .chip--done { background: #e2f0e8; color: var(--good); }
 .chip--filter { cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.9rem; min-height: var(--tap-min-sm); display: inline-flex; align-items: center; }
 .chip--filter:hover { border-color: var(--ink); }
