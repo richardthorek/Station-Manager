@@ -444,6 +444,24 @@ export interface ChecklistItem {
    * Used to render the checklist in sections. Optional.
    */
   section?: string;
+  /**
+   * A1 — link to an ApplianceZone (richer than the flat `section` string). When
+   * present, the maintenance agent can group the check by physical area and walk
+   * it in zone order. Optional / back-compatible.
+   */
+  zoneId?: string;
+  /** A1 — this item checks a specific ApplianceEquipment piece (optional). */
+  equipmentId?: string;
+  /**
+   * A1 — shape of the expected answer, so the agent knows how to ask/parse:
+   * 'ok-issue' (default pass/fail), 'numeric' (a reading + `unit`), 'level'
+   * (e.g. low/half/full), or free 'text'. Optional; absent = 'ok-issue'.
+   */
+  expectedResponseType?: 'ok-issue' | 'numeric' | 'level' | 'text';
+  /** A1 — unit for a numeric response, e.g. 'psi', 'L', '%'. Optional. */
+  unit?: string;
+  /** A1 — optional phrasing nudge for the agent when prompting this item. */
+  promptHint?: string;
 }
 
 /**
