@@ -323,7 +323,11 @@ Organizations are the billing tenant; features are gated per-org. Default-**off*
   and a matching `<FeatureRoute>` in the frontend; gating `/api/export` behind
   `reportsEnabled` and enforcing `maxStations` on `POST /api/stations` are live
   examples. See `backend/src/middleware/entitlements.ts`.
-- Post-deployment smoke tests are disabled in CI (need ts-node, prod has no dev
-  deps). Don't rely on them.
+- Post-deployment smoke tests **do run on `main` deploys** (`npm run test:post-deploy`
+  → compiled `backend/dist/scripts/postDeploymentTests.js`, hitting the live
+  `bungrfs-linux` app); they are skipped on PRs. They assert live-endpoint behaviour, so
+  a deliberate API/auth change (e.g. the `requireSession` data-protection gate makes
+  `GET /api/members` return 401 to anonymous callers) must be reflected in
+  `postDeploymentTests.ts` or the `main` run fails *after* the PR merged green.
 - Node 22.x / npm ≥ 10 required.
 </content>
