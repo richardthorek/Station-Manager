@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.8.0",
-  "lastUpdated": "2026-06-22",
+  "version": "1.10.0",
+  "lastUpdated": "2026-06-23",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -284,6 +284,40 @@
         "authentication": "JWT/optional",
         "requestBody": { "customItems": "ChecklistItem[]", "itemOrder": "string[] (standard item itemCode or custom item id)" },
         "responses": { "200": { "description": "EffectiveChecklist" }, "400": { "description": "customItems must be an array" }, "404": { "description": "Appliance not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      }
+    },
+    "truck-check-appliance-zones": {
+      "description": "A1 per-truck spatial model. An ApplianceZone is a named physical area on exactly ONE appliance (Pump Panel, Driver-side Locker 1, Cab), with a walk-around order and an optional canonical zoneCode slug for cross-brigade analytics. Admin-authored config; reads require an authenticated session. See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.1.",
+      "authentication": "JWT (zone writes require admin; list requires an authenticated session)",
+      "entitlement": "truckCheckEnabled (parent /api/truck-checks mount)",
+      "GET /api/truck-checks/appliances/:applianceId/zones": {
+        "method": "GET", "path": "/api/truck-checks/appliances/:applianceId/zones",
+        "description": "List one appliance's zones in walk-around order.",
+        "authentication": "JWT",
+        "responses": { "200": { "description": "ApplianceZone[]" }, "401": { "description": "Not authenticated" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "POST /api/truck-checks/appliances/:applianceId/zones": {
+        "method": "POST", "path": "/api/truck-checks/appliances/:applianceId/zones",
+        "description": "Create a zone on an appliance (stationId inherited from the truck; order defaults to the end; zoneCode derived from the name when not given).",
+        "authentication": "JWT (admin)",
+        "requestBody": { "name": "string", "zoneCode": "string?", "parentZoneId": "string?", "side": "'driver'|'passenger'|'front'|'rear'|'top'|'interior'|'na'?", "order": "number?", "description": "string?" },
+        "responses": { "201": { "description": "ApplianceZone" }, "400": { "description": "name required" }, "403": { "description": "Admin required" }, "404": { "description": "Appliance not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "PUT /api/truck-checks/zones/:id": {
+        "method": "PUT", "path": "/api/truck-checks/zones/:id",
+        "description": "Update a zone (partial patch; blank zoneCode is treated as not-provided).",
+        "authentication": "JWT (admin)",
+        "responses": { "200": { "description": "ApplianceZone" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
+        "implementation": "backend/src/routes/truckChecks.ts"
+      },
+      "DELETE /api/truck-checks/zones/:id": {
+        "method": "DELETE", "path": "/api/truck-checks/zones/:id",
+        "description": "Delete a zone.",
+        "authentication": "JWT (admin)",
+        "responses": { "204": { "description": "Deleted" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
         "implementation": "backend/src/routes/truckChecks.ts"
       }
     },

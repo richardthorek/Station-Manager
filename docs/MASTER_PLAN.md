@@ -271,9 +271,18 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
 
 ### AI maintenance agent track (truck check by voice/vision)
 
-- **A1 — Phase 1: truck model** ⬜ — new `ApplianceZone` / `ApplianceEquipment` entities
-  (both DB twins + types + factories), `Appliance`/`ChecklistItem` extensions, admin
-  authoring UI, canonical per-`vehicleType` vocabularies. Ships standalone value (no AI).
+- **A1 — Phase 1: truck model** 🟡 — *increment 1 done 2026-06-23:* `ApplianceZone`
+  (per-truck spatial model) shipped end-to-end on the backend — `ApplianceZone`/
+  `ApplianceZoneSide` types, in-memory `ApplianceZoneDatabase` + Table Storage twin
+  (partition by `applianceId`) + `applianceZoneDbFactory` (init wired in `index.ts`),
+  and admin-gated CRUD routes on the truck-checks router
+  (`GET/POST /api/truck-checks/appliances/:applianceId/zones`, `PUT/DELETE
+  /api/truck-checks/zones/:id`). Zones carry a walk-around `order` (defaults to end)
+  and a canonical `zoneCode` slug. 15 route + DB tests; coverage gate green;
+  `api_register.json` → v1.10.0. *Remaining increments:* `ApplianceEquipment` entity
+  (same twin pattern), the `Appliance`/`ChecklistItem` extensions (`quirksNotes`,
+  `zoneId`/`equipmentId`/`expectedResponseType`), the per-`vehicleType` starter
+  zone-vocabulary seed, and the admin authoring UI. Ships standalone value (no AI).
 - **A3 — Phase 2: voice agent (cloud)** ⬜ — PWA voice mode → agent tool-use loop
   (`get_appliance_context`/`record_result`/`flag_issue`/`next_unchecked_in_zone`/
   `complete_run`) → `CheckRun` + `AgentSession`/`AgentTurn` transcript; read-back/confirm;
@@ -2863,6 +2872,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.6 | Jun 2026 | AAR P1 (merge UI) | AAR findings board gained a "Possible duplicates" merge-suggestion panel: dedupe now has a two-band model (auto-skip ≥0.72; soft-band [0.5,0.72) surfaced for human merge via `findMergeSuggestions`/`mergeFindings`), with Merge / Keep-both actions and an accessibility pass (role=group/list columns, aria-live status, labelled merge region). 4 new pure tests; AAR suite 89. |
 | 4.7 | Jun 2026 | AAR P1 (unit attribution) | AAR findings can be attributed to an attending unit: optional `unit` on the finding model (`createFinding`/`normaliseSession` + `sessionUnitNames`), a unit `<select>` on board quick-add + inline edit, a `chip--unit` on cards, and a conditional **Unit** column in the report's findings register. 4 new tests; AAR suite 93. |
 | 4.8 | Jun 2026 | AAR P1 (`?demo` deep link) | `/aar/?demo` loads the bundled example review straight onto the findings board (shareable walkthrough link); `main.js` strips the query after loading, fails open if the example can't be fetched, and reuses the home view's `loadExampleSession()` loader. Only print-stylesheet refinements remain in P1. |
+| 4.9 | Jun 2026 | A1 inc 1 (appliance zones) | First slice of the AI maintenance-agent truck model: `ApplianceZone` per-truck spatial entity end-to-end on the backend — types, in-memory DB + Table Storage twin (partition by applianceId) + factory, and admin-gated CRUD routes on the truck-checks router. Walk-around `order` + canonical `zoneCode` slug. 15 tests; `api_register.json` → v1.10.0. Remaining A1: ApplianceEquipment, Appliance/ChecklistItem extensions, zone-vocabulary seed, admin UI. |
 
 ---
 
