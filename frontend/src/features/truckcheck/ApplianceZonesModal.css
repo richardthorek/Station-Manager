@@ -1,0 +1,483 @@
+/* A1 inc 6 — Appliance zones & equipment authoring modal */
+
+.azm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.azm-modal {
+  background: var(--color-surface, #fff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.22);
+  width: 100%;
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 4rem);
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.azm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 0;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  padding-bottom: 0.75rem;
+}
+
+.azm-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text, #111);
+  margin: 0;
+}
+
+.azm-vehicle-name {
+  color: var(--color-primary, #e5281b);
+}
+
+.azm-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--color-text-muted, #6b7280);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.azm-close:hover {
+  background: var(--color-surface-hover, #f3f4f6);
+}
+
+/* ── Tabs ── */
+.azm-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--color-border, #e5e7eb);
+  padding: 0 1.5rem;
+  gap: 0.25rem;
+}
+
+.azm-tab {
+  background: none;
+  border: none;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-muted, #6b7280);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+  min-height: 44px;
+}
+
+.azm-tab:hover {
+  color: var(--color-text, #111);
+}
+
+.azm-tab--active {
+  color: var(--color-primary, #e5281b);
+  border-bottom-color: var(--color-primary, #e5281b);
+}
+
+/* ── Body ── */
+.azm-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── Shared helpers ── */
+.azm-loading,
+.azm-empty {
+  color: var(--color-text-muted, #6b7280);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.azm-error {
+  color: var(--color-error, #dc2626);
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+}
+
+.azm-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 500;
+  gap: 0.2rem;
+}
+
+.azm-chip--code {
+  background: var(--color-surface-alt, #f3f4f6);
+  color: var(--color-text-muted, #6b7280);
+  font-family: ui-monospace, monospace;
+}
+
+.azm-chip--side {
+  background: var(--color-info-bg, #eff6ff);
+  color: var(--color-info, #1d4ed8);
+}
+
+.azm-chip--zone {
+  background: var(--color-success-bg, #f0fdf4);
+  color: var(--color-success, #15803d);
+}
+
+.azm-chip--retired {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+/* ── Buttons ── */
+.azm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  min-height: 36px;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+
+.azm-btn--primary {
+  background: var(--color-primary, #e5281b);
+  color: #fff;
+}
+
+.azm-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-dark, #c51f12);
+}
+
+.azm-btn--secondary {
+  background: var(--color-surface-alt, #f3f4f6);
+  color: var(--color-text, #111);
+  border-color: var(--color-border, #e5e7eb);
+}
+
+.azm-btn--secondary:hover:not(:disabled) {
+  background: var(--color-surface-hover, #e9eaeb);
+}
+
+.azm-btn--danger-ghost {
+  background: none;
+  color: var(--color-error, #dc2626);
+  border-color: var(--color-error, #dc2626);
+}
+
+.azm-btn--danger-ghost:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.azm-btn--icon {
+  padding: 0.3rem 0.5rem;
+  background: none;
+  font-size: 1rem;
+  min-width: 36px;
+  min-height: 36px;
+  border-color: transparent;
+}
+
+.azm-btn--icon:hover:not(:disabled) {
+  background: var(--color-surface-hover, #f3f4f6);
+}
+
+.azm-btn--danger:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.azm-btn--warn:hover:not(:disabled) {
+  background: #fff7ed;
+}
+
+.azm-btn--restore:hover:not(:disabled) {
+  background: #f0fdf4;
+}
+
+.azm-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Add form ── */
+.azm-add-form {
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.azm-add-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.6rem;
+}
+
+.azm-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.azm-input {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #111);
+  min-height: 36px;
+}
+
+.azm-input:focus {
+  outline: 2px solid var(--color-primary, #e5281b);
+  outline-offset: -1px;
+  border-color: var(--color-primary, #e5281b);
+}
+
+.azm-input--grow {
+  flex: 1;
+  min-width: 160px;
+}
+
+.azm-select {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #111);
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.azm-select:focus {
+  outline: 2px solid var(--color-primary, #e5281b);
+  outline-offset: -1px;
+}
+
+/* ── Seed bar ── */
+.azm-seed-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--color-surface-alt, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+}
+
+.azm-seed-msg {
+  font-size: 0.875rem;
+  color: var(--color-success, #15803d);
+}
+
+.azm-seed-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #6b7280);
+}
+
+/* ── Zone list ── */
+.azm-zone-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.azm-zone-row {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.azm-zone-row--editing {
+  border-color: var(--color-primary, #e5281b);
+}
+
+.azm-zone-view,
+.azm-zone-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.azm-zone-edit {
+  flex-wrap: wrap;
+}
+
+.azm-order-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-alt, #f3f4f6);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #6b7280);
+  flex-shrink: 0;
+}
+
+.azm-zone-info {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.azm-zone-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.azm-zone-desc {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #6b7280);
+  width: 100%;
+}
+
+.azm-row-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* ── Equipment list ── */
+.azm-retired-toggle {
+  margin-bottom: 0.75rem;
+}
+
+.azm-toggle-label {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #6b7280);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.azm-equip-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.azm-equip-row {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.azm-equip-row--retired {
+  opacity: 0.65;
+}
+
+.azm-equip-row--editing {
+  border-color: var(--color-primary, #e5281b);
+}
+
+.azm-equip-view,
+.azm-equip-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.azm-equip-edit {
+  flex-wrap: wrap;
+}
+
+.azm-equip-info {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.azm-equip-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.azm-equip-name--retired {
+  text-decoration: line-through;
+  color: var(--color-text-muted, #6b7280);
+}
+
+.azm-equip-serial {
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #6b7280);
+  font-family: ui-monospace, monospace;
+}
+
+.azm-equip-notes {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #6b7280);
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .azm-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .azm-modal {
+    border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+    max-height: 92vh;
+  }
+
+  .azm-add-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .azm-zone-view,
+  .azm-equip-view {
+    flex-wrap: wrap;
+  }
+}

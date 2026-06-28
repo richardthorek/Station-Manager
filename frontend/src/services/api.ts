@@ -17,7 +17,9 @@ import type {
   StationLookupResult,
   VehicleType,
   EffectiveChecklist,
-  IssueResult
+  IssueResult,
+  ApplianceZone,
+  ApplianceEquipment,
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 
@@ -682,6 +684,90 @@ class ApiService {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to delete appliance');
+  }
+
+  // Appliance zones (A1)
+  async getZones(applianceId: string): Promise<ApplianceZone[]> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${applianceId}/zones`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch zones');
+    return response.json();
+  }
+
+  async createZone(applianceId: string, zone: { name: string; side?: string; description?: string; order?: number }): Promise<ApplianceZone> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${applianceId}/zones`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(zone),
+    });
+    if (!response.ok) throw new Error('Failed to create zone');
+    return response.json();
+  }
+
+  async updateZone(id: string, patch: { name?: string; side?: string; description?: string; order?: number }): Promise<ApplianceZone> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/zones/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(patch),
+    });
+    if (!response.ok) throw new Error('Failed to update zone');
+    return response.json();
+  }
+
+  async deleteZone(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/zones/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to delete zone');
+  }
+
+  async seedZones(applianceId: string, replace = false): Promise<{ seeded: number; zones: ApplianceZone[]; message?: string }> {
+    const response = await fetch(
+      `${API_BASE_URL}/truck-checks/appliances/${applianceId}/seed-zones${replace ? '?replace=true' : ''}`,
+      { method: 'POST', headers: this.getHeaders() },
+    );
+    if (!response.ok) throw new Error('Failed to seed zones');
+    return response.json();
+  }
+
+  // Appliance equipment (A1)
+  async getEquipment(applianceId: string, includeInactive = false): Promise<ApplianceEquipment[]> {
+    const qs = includeInactive ? '?includeInactive=true' : '';
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${applianceId}/equipment${qs}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch equipment');
+    return response.json();
+  }
+
+  async createEquipment(applianceId: string, item: { name: string; zoneId?: string; serialNumber?: string; notes?: string }): Promise<ApplianceEquipment> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${applianceId}/equipment`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(item),
+    });
+    if (!response.ok) throw new Error('Failed to create equipment');
+    return response.json();
+  }
+
+  async updateEquipment(id: string, patch: { name?: string; zoneId?: string; serialNumber?: string; notes?: string; active?: boolean }): Promise<ApplianceEquipment> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/equipment/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(patch),
+    });
+    if (!response.ok) throw new Error('Failed to update equipment');
+    return response.json();
+  }
+
+  async deleteEquipment(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/equipment/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to delete equipment');
   }
 
   // Templates

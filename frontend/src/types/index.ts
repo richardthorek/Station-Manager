@@ -163,6 +163,45 @@ export interface ChecklistItem {
   section?: string;
 }
 
+/** Physical side/face of a truck a zone sits on. */
+export type ApplianceZoneSide = 'driver' | 'passenger' | 'front' | 'rear' | 'top' | 'interior' | 'na';
+
+/**
+ * A1 — named physical area on ONE appliance, giving the agent a spatial
+ * walk-around model. Authored by admin; brigades edit freely after seeding.
+ */
+export interface ApplianceZone {
+  id: string;
+  applianceId: string;
+  stationId?: string;
+  name: string;
+  zoneCode?: string;
+  parentZoneId?: string;
+  side?: ApplianceZoneSide;
+  order: number;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * A1 — piece of equipment that lives on ONE appliance. active:false retires
+ * it without losing history.
+ */
+export interface ApplianceEquipment {
+  id: string;
+  applianceId: string;
+  stationId?: string;
+  name: string;
+  equipmentCode?: string;
+  zoneId?: string;
+  serialNumber?: string;
+  notes?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /**
  * Status of a check result
  */

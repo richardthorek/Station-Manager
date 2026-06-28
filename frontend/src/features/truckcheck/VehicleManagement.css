@@ -81,6 +81,7 @@
 
 .btn-edit,
 .btn-template,
+.btn-zones,
 .btn-delete {
   flex: 1;
   min-width: fit-content;
@@ -103,6 +104,11 @@
   color: white;
 }
 
+.btn-zones {
+  background: #7c3aed;
+  color: white;
+}
+
 .btn-delete {
   background: #f44336;
   color: white;
@@ -110,6 +116,7 @@
 
 .btn-edit:hover,
 .btn-template:hover,
+.btn-zones:hover,
 .btn-delete:hover {
   opacity: 0.9;
 }
@@ -409,6 +416,7 @@
 
   .btn-edit,
   .btn-template,
+  .btn-zones,
   .btn-delete {
     width: 100%;
   }

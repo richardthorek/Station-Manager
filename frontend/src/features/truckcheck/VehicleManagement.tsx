@@ -3,6 +3,7 @@ import { api, ApiLimitError } from '../../services/api';
 import type { Appliance, ChecklistTemplate, ChecklistItem, VehicleType } from '../../types';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { ITEM_CODES, SECTIONS, resolveVocabSlug } from './checklistVocabulary';
+import { ApplianceZonesModal } from './ApplianceZonesModal';
 import './VehicleManagement.css';
 
 interface VehicleManagementProps {
@@ -12,6 +13,7 @@ interface VehicleManagementProps {
 
 export function VehicleManagement({ appliances, onUpdate }: VehicleManagementProps) {
   const [selectedVehicle, setSelectedVehicle] = useState<Appliance | null>(null);
+  const [zonesModalVehicle, setZonesModalVehicle] = useState<Appliance | null>(null);
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
@@ -348,6 +350,9 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
               <button className="btn-template" onClick={() => handleEditTemplate(vehicle)}>
                 📋 Template
               </button>
+              <button className="btn-zones" onClick={() => setZonesModalVehicle(vehicle)}>
+                🗺️ Zones
+              </button>
               <button className="btn-delete" onClick={() => handleDeleteVehicle(vehicle)}>
                 🗑️ Delete
               </button>
@@ -510,6 +515,14 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
             </div>
           </div>
         </div>
+      )}
+
+      {/* Zones & Equipment Modal */}
+      {zonesModalVehicle && (
+        <ApplianceZonesModal
+          appliance={zonesModalVehicle}
+          onClose={() => setZonesModalVehicle(null)}
+        />
       )}
 
       {/* Template Editor Modal */}
