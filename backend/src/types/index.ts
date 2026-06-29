@@ -491,6 +491,10 @@ export interface CheckRun {
   additionalComments?: string;
   status: 'in-progress' | 'completed';
   hasIssues: boolean;
+  /** A3 — how this run was produced. Defaults to 'manual'. */
+  source?: 'manual' | 'voice' | 'voice-vision';
+  /** A3 — link to the AgentSession transcript when source !== 'manual'. */
+  agentSessionId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -544,6 +548,54 @@ export interface IssueUpdate {
  */
 export interface CheckRunWithResults extends CheckRun {
   results: CheckResult[];
+}
+
+// ============================================
+// A3 — Voice Agent Session Types
+// ============================================
+
+/**
+ * A3 — A live or completed voice (or voice-vision) agent session.
+ * The formal CheckRun is the auditable compliance record; the AgentSession is
+ * the full narrative transcript and provenance (which model, what confidence,
+ * corrections, etc.).
+ */
+export interface AgentSession {
+  id: string;
+  runId?: string;               // linked CheckRun (formal output); set once run created
+  applianceId: string;
+  stationId?: string;
+  memberId?: string;            // roster member who initiated (when known)
+  initiatedBy: string;          // free-text name (kiosk fallback)
+  modality: 'voice' | 'voice-vision';
+  status: 'active' | 'completed' | 'aborted';
+  summary?: string;             // agent-generated summary written on complete_run
+  /** Stable identifiers of models used (e.g. azure-openai/gpt-4o, azure-speech/stt). */
+  models: string[];
+  startedAt: Date;
+  endedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * A3 — A single turn in an AgentSession transcript.
+ */
+export interface AgentTurn {
+  id: string;
+  sessionId: string;
+  role: 'user' | 'agent' | 'system' | 'tool';
+  /** Transcript text (STT output for 'user', TTS source for 'agent'). */
+  text?: string;
+  /** JSON-serialised tool call / tool result (for role='tool'). */
+  toolPayload?: string;
+  /** Blob path for stored audio frame (optional, A4 onwards). */
+  audioRef?: string;
+  /** Vision frame blob path (A4). */
+  imageRef?: string;
+  /** Sequence order within the session (for ordered reads). */
+  sequence: number;
+  createdAt: Date;
 }
 
 // ============================================
