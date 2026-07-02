@@ -353,21 +353,39 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   log, typed fallback, MP3 reply playback), entered from a 🎙 Voice Check button on
   the truck-check hub. 35 new tests incl. the first WS-endpoint integration suite
   (backend 817 + frontend 500 pass).
-  *⚠ A3 hardening — BLOCKS wider rollout (code review 2026-07-02, `docs/current_state/CODE_REVIEW_A3_20260702.md`):*
-  the `/ws/agent-check` WebSocket bypasses the guards the REST layer enforces.
+  *⚠ A3 hardening — BLOCKS wider rollout (code review 2026-07-02, expanded same day,
+  `docs/current_state/CODE_REVIEW_A3_20260702.md`, 16 findings F1–F16):*
+  the `/ws/agent-check` WebSocket bypasses the guards the REST layer enforces, and
+  `AgentSession` state is mutated from two uncoordinated places with no concurrency guard.
   **F1 (critical):** WS `applianceId` has no org/station scoping → cross-tenant read
   **and** write of another brigade's appliance/checklist/CheckRun. **F2 (high):**
   `GET /api/agent-sessions/:id[/turns]` has no ownership check → cross-tenant transcript
-  read (needs `organizationId` on `AgentSession` + both twins). **F3 (high):** the WS
-  is not `aiEnabled`-gated (REST is) → Community/Basic orgs can drive unpaid Azure spend;
-  violates the CLAUDE.md "gate on both sides" rule. Plus F4 no WS rate-limit/turn cap,
-  F5 no `maxPayload` (100 MiB default) on text frames, F6 JWT in the WS query string.
+  read. **F3 (high):** the WS is not `aiEnabled`-gated (REST is) → unpaid Azure spend;
+  violates the CLAUDE.md "gate on both sides" rule. **F10 (high, new):** `complete_run`
+  and the WS close handler both write `AgentSession.status` with no ETag/optimistic-concurrency
+  check in the Table twin's `updateSession` (unguarded read-modify-write) → a completed
+  check can be permanently recorded as aborted or vice versa. **F11 (high, new):** the
+  frontend has no `onBusy` handler, so any server `busy` frame (incl. from F10's turn-slot
+  trigger) permanently disables the talk button/composer with no error — reload is the only
+  recovery, which orphans the run. Plus F4 no WS rate-limit/turn cap, F5 no `maxPayload`
+  (100 MiB default) on text frames, F6 JWT in the WS query string + no Origin check on the
+  raw WS (Socket.io has one on the same server).
   **UX/stability:** F7 voice WS targets the Vite origin in dev (no `/ws` proxy) so it's
-  broken locally — follow the `useSocket` origin pattern; F8 agent audio replies are
-  silently dropped on iPad (iOS Safari autoplay policy) — the primary kiosk device, must
-  verify on-device; F9 no WS reconnect + orphaned in-progress `CheckRun` on drop.
-  *Remaining (A3 polish, after hardening):* `api_register.json` entry for the agent
-  surface; iPad screenshots; optional continuous-listening (VAD) upgrade behind the same frames.
+  broken locally; F8 agent audio replies are silently dropped on iPad (iOS Safari autoplay
+  policy, `.catch()` swallows the rejection) and the mic can silently capture nothing
+  (AudioContext never resumed) — the primary kiosk device, must verify on-device; F9 no WS
+  reconnect, and an abandoned run doesn't just orphan — `getActiveCheckRunForAppliance` forces
+  every future check (voice or manual) on that truck to rejoin the same stuck run, effectively
+  bricking it, made worse by no pong-timeout on the 30s keepalive; F12 (new) the agent never
+  joins an already-active `CheckRun` the way manual "Join Check" does → duplicate parallel runs;
+  F16 (new) `onPointerLeave` ends the utterance on natural finger movement (gloves/wet hands).
+  Also F13–F15 (silence replies bypass the transcript, `audio-start` re-entry drops buffered
+  audio, an overbroad `catch` swallows post-parse exceptions) and conventions gaps
+  (`function_register.json` not updated for 4 new services; composer touch targets at 48px
+  vs the 60px kiosk rule).
+  *Remaining (A3 polish, after hardening):* `api_register.json` + `function_register.json`
+  entries for the agent surface; iPad screenshots; optional continuous-listening (VAD)
+  upgrade behind the same frames.
   (D3 decisions resolved: backend proxy audio routing; Azure OpenAI; same App Service.)
   **A4 — Phase 3/4: offline + vision** ⬜ — on-device speech; camera
   frames + visual diff vs `referencePhotoUrl`; image capability in the gateway.
