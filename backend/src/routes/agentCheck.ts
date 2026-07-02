@@ -7,9 +7,11 @@
  *   Authorization header. Creates an AgentSession and keeps the connection
  *   alive with 30-second pings (well inside Azure App Service's 60 s idle
  *   timeout). `user-text` frames drive the Azure OpenAI tool loop
- *   (agentLoop.ts) and come back as `agent-text` — the text mode is both the
- *   inc-2 deliverable and the permanent debug surface once voice lands.
- *   Binary PCM audio (STT/TTS streaming) is inc 3.
+ *   (agentLoop.ts) and come back as `agent-text` — text mode is the permanent
+ *   debug surface. Voice is push-to-talk: `audio-start`, then binary frames of
+ *   raw 16 kHz 16-bit mono PCM, then `audio-end` → server-side Azure STT →
+ *   `transcript` frame → tool loop → `agent-text` + an `agent-audio` header
+ *   frame followed by one binary MP3 message (server-side Azure TTS).
  *
  * REST endpoints (mounted at /api/agent-sessions):
  *   GET /api/agent-sessions/:id        — fetch a session by id
@@ -24,6 +26,7 @@ import { authMiddleware } from '../middleware/auth';
 import { ensureAgentSessionDatabase } from '../services/agentSessionDbFactory';
 import { AgentToolExecutor } from '../services/agentTools';
 import { runAgentTurn } from '../services/agentLoop';
+import { recognizeSpeech, synthesizeSpeech, buildWavFile, TTS_MIME_TYPE } from '../services/agentSpeech';
 import { logger } from '../services/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
@@ -68,6 +71,10 @@ agentCheckRouter.get('/:id/turns', async (req: Request, res: Response) => {
 // ── WebSocket upgrade handler ─────────────────────────────────────────────────
 
 const PING_INTERVAL_MS = 30_000;
+
+// Push-to-talk utterance cap: ~65 s of 16 kHz 16-bit mono PCM. The STT
+// short-audio endpoint tops out at 60 s, so anything past this is a stuck key.
+const MAX_UTTERANCE_BYTES = 2 * 1024 * 1024;
 
 interface AuthenticatedClient {
   ws: WebSocket;
@@ -139,47 +146,107 @@ export function attachAgentCheckWs(httpServer: HttpServer): void {
         // One turn at a time per connection: the loop mutates run state, so a
         // second utterance mid-turn is rejected rather than interleaved.
         let turnInFlight = false;
+        // Push-to-talk capture buffer: non-null between audio-start/audio-end.
+        let utterance: Buffer[] | null = null;
+        let utteranceBytes = 0;
+
+        const send = (frame: Record<string, unknown>) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(frame));
+        };
+
+        /** TTS the reply and follow the header frame with one binary MP3 message. */
+        const speakReply = async (text: string) => {
+          const tts = await synthesizeSpeech(text);
+          if (tts.audio && ws.readyState === WebSocket.OPEN) {
+            send({ type: 'agent-audio', format: TTS_MIME_TYPE, bytes: tts.audio.length });
+            ws.send(tts.audio);
+          }
+        };
+
+        const runTurnAndReply = async (text: string, speak: boolean) => {
+          if (turnInFlight) {
+            send({ type: 'busy', error: 'Still working on the previous message' });
+            return;
+          }
+          turnInFlight = true;
+          try {
+            const outcome = await runAgentTurn(session, text, executor);
+            send({ type: 'agent-text', text: outcome.text, completed: outcome.completed, runId: session.runId });
+            if (speak) await speakReply(outcome.text);
+          } catch (err) {
+            logger.error('Agent turn failed', { error: err, sessionId: session.id });
+            send({ type: 'error', error: 'Agent turn failed' });
+          } finally {
+            turnInFlight = false;
+          }
+        };
 
         ws.on('message', async (data, isBinary) => {
           if (isBinary) {
-            // Binary PCM audio will be forwarded to Azure Speech STT in inc 3
+            // Raw 16 kHz 16-bit mono PCM chunks of the current utterance.
+            if (utterance === null) return; // no capture in progress — drop
+            const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data as ArrayBuffer);
+            utteranceBytes += chunk.length;
+            if (utteranceBytes > MAX_UTTERANCE_BYTES) {
+              utterance = null;
+              send({ type: 'error', error: 'Utterance too long — release the talk button and try again' });
+              return;
+            }
+            utterance.push(chunk);
             return;
           }
           try {
-            const msg = JSON.parse(data.toString()) as { type: string; text?: unknown };
+            const msg = JSON.parse(data.toString()) as { type: string; text?: unknown; speak?: unknown };
             if (msg.type === 'ping') {
-              ws.send(JSON.stringify({ type: 'pong' }));
+              send({ type: 'pong' });
               return;
             }
             if (msg.type === 'end-session') {
               ws.close(1000, 'Ended by client');
               return;
             }
+            if (msg.type === 'audio-start') {
+              if (turnInFlight) {
+                send({ type: 'busy', error: 'Still working on the previous message' });
+                return;
+              }
+              utterance = [];
+              utteranceBytes = 0;
+              return;
+            }
+            if (msg.type === 'audio-end') {
+              if (utterance === null) {
+                send({ type: 'error', error: 'No audio capture in progress' });
+                return;
+              }
+              const pcm = Buffer.concat(utterance);
+              utterance = null;
+              if (pcm.length === 0) {
+                send({ type: 'transcript', text: '' });
+                send({ type: 'agent-text', text: 'I did not hear anything — hold the button and speak.', completed: false, runId: session.runId });
+                return;
+              }
+              const stt = await recognizeSpeech(buildWavFile(pcm));
+              if (stt.error) {
+                send({ type: 'error', error: stt.error });
+                return;
+              }
+              if (!stt.text) {
+                send({ type: 'transcript', text: '' });
+                send({ type: 'agent-text', text: 'Sorry, I did not catch that — try again a little closer to the microphone.', completed: false, runId: session.runId });
+                return;
+              }
+              send({ type: 'transcript', text: stt.text });
+              await runTurnAndReply(stt.text, true);
+              return;
+            }
             if (msg.type === 'user-text') {
               const text = typeof msg.text === 'string' ? msg.text.trim() : '';
               if (!text) {
-                ws.send(JSON.stringify({ type: 'error', error: 'user-text requires a non-empty text field' }));
+                send({ type: 'error', error: 'user-text requires a non-empty text field' });
                 return;
               }
-              if (turnInFlight) {
-                ws.send(JSON.stringify({ type: 'busy', error: 'Still working on the previous message' }));
-                return;
-              }
-              turnInFlight = true;
-              try {
-                const outcome = await runAgentTurn(session, text, executor);
-                ws.send(JSON.stringify({
-                  type: 'agent-text',
-                  text: outcome.text,
-                  completed: outcome.completed,
-                  runId: session.runId,
-                }));
-              } catch (err) {
-                logger.error('Agent turn failed', { error: err, sessionId: session.id });
-                ws.send(JSON.stringify({ type: 'error', error: 'Agent turn failed' }));
-              } finally {
-                turnInFlight = false;
-              }
+              await runTurnAndReply(text, msg.speak === true);
             }
           } catch {
             // Non-JSON text ignored

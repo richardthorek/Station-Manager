@@ -17,6 +17,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../contexts/AuthContext';
 import { PageTransition } from '../../components/PageTransition';
 import { api } from '../../services/api';
 import type { Appliance, CheckRun, IssueResult } from '../../types';
@@ -24,6 +25,7 @@ import './TruckCheckPage.css';
 
 export function TruckCheckPage() {
   const { theme, toggleTheme } = useTheme();
+  const { hasFeature } = useAuth();
   const navigate = useNavigate();
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [activeChecks, setActiveChecks] = useState<Map<string, CheckRun>>(new Map());
@@ -210,6 +212,14 @@ export function TruckCheckPage() {
                   >
                     {activeCheck ? 'Join Check' : 'Start Check'}
                   </button>
+                  {hasFeature('aiEnabled') && !activeCheck && (
+                    <button
+                      className="btn-voice-check"
+                      onClick={() => navigate(`/truckcheck/voice/${appliance.id}`)}
+                    >
+                      🎙 Voice Check
+                    </button>
+                  )}
                 </div>
               );
             })}
