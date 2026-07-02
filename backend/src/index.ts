@@ -80,11 +80,18 @@ import { initializeAarSessionDatabase } from './services/aarSessionDbFactory';
 import { initializeVehicleTypeDatabase } from './services/vehicleTypeDbFactory';
 import { initializeApplianceZoneDatabase } from './services/applianceZoneDbFactory';
 import { initializeApplianceEquipmentDatabase } from './services/applianceEquipmentDbFactory';
+import { initializeAgentSessionDatabase } from './services/agentSessionDbFactory';
+import { agentCheckRouter, attachAgentCheckWs } from './routes/agentCheck';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
 
 const app = express();
 const httpServer = createServer(app);
+
+// Attach raw WS handler for voice-agent sessions (A3).
+// Must be registered before Socket.io attaches its own 'upgrade' listener so our
+// path check runs first; non-matching paths fall through to Socket.io.
+attachAgentCheckWs(httpServer);
 
 // Parse allowed origins for CORS (used by both Express and Socket.io)
 // Supports comma-separated list for multi-brigade deployment
@@ -415,6 +422,7 @@ app.use('/api/export', apiRateLimiter, requireFeature('reportsEnabled'), exportR
 
 // Achievement routes (now handles database selection per-request based on demo mode)
 app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());
+app.use('/api/agent-sessions', apiRateLimiter, requireFeature('aiEnabled'), agentCheckRouter);
 
 // Extend Socket interface to include station context
 interface SocketWithStation extends Socket {
@@ -638,6 +646,7 @@ async function initializeDatabasesInBackground() {
     await initializeVehicleTypeDatabase();
     await initializeApplianceZoneDatabase();
     await initializeApplianceEquipmentDatabase();
+    await initializeAgentSessionDatabase();
     startMeteredUsageReporter();
     ensureAdminUserDatabase();
 
