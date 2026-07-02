@@ -40,6 +40,12 @@ export interface ApplianceDetails {
   quirksNotes?: string;
 }
 
+/** Optional provenance fields for a check run started by the voice agent (A3). */
+export interface CheckRunDetails {
+  source?: CheckRun['source'];
+  agentSessionId?: string;
+}
+
 // Interface shared by truck checks database implementations
 export interface ITruckChecksDatabase {
   // Appliances
@@ -55,7 +61,8 @@ export interface ITruckChecksDatabase {
   updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[], stationId?: string, itemOrder?: string[]): Promise<ChecklistTemplate> | ChecklistTemplate;
 
   // Check Runs
-  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string): Promise<CheckRun> | CheckRun;
+  /** `runDetails` carries the A3 agent provenance (source + linked AgentSession) as a trailing object so the positional signature stays back-compatible. */
+  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string, runDetails?: CheckRunDetails): Promise<CheckRun> | CheckRun;
   getCheckRunById(id: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
   getAllCheckRuns(stationId?: string): Promise<CheckRun[]> | CheckRun[];
   getCheckRunsByAppliance(applianceId: string): Promise<CheckRun[]> | CheckRun[];

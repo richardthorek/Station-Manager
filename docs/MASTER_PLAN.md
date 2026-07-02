@@ -334,8 +334,19 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   `GET /api/agent-sessions/:id` + `GET /api/agent-sessions/:id/turns` (auth-gated,
   mounted behind `requireFeature('aiEnabled')`); 20 new backend tests; all 754 backend
   tests pass; typecheck clean.
-  *Remaining (inc 2+):* Azure Speech STT streaming into the WS; Azure OpenAI function-calling
-  tool-loop; TTS read-back; CheckRun creation from `complete_run` tool; PWA voice UI.
+  *Inc 2 (tool loop, text mode — done 2026-07-02):* the five design-contract tools live in
+  `services/agentTools.ts` (`AgentToolExecutor`: lazy CheckRun creation with
+  `source`/`agentSessionId` provenance, item resolution by id/itemCode/name,
+  re-record-updates, zone-scoped next-item, run/session finalisation);
+  `services/agentLoop.ts` runs the Azure OpenAI function-calling loop (≤8 tool
+  iterations/turn, every step persisted as `AgentTurn`s, only text turns replayed —
+  state re-grounds via `get_appliance_context`); `resolveEffectiveChecklist` extracted
+  to `services/effectiveChecklist.ts` (shared with the manual route); gateway
+  `chatCompletion` gained `tools` passthrough; WS `user-text` → `agent-text` frames
+  with a busy guard, and disconnect-without-`complete_run` now marks the session
+  `aborted`. 21 new tests (795 pass).
+  *Remaining (inc 3):* Azure Speech STT streaming + TTS read-back over the same WS;
+  PWA voice UI; `api_register.json` entry once the WS contract is final.
   (D3 decisions resolved: backend proxy audio routing; Azure OpenAI; same App Service.)
   **A4 — Phase 3/4: offline + vision** ⬜ — on-device speech; camera
   frames + visual diff vs `referencePhotoUrl`; image capability in the gateway.
@@ -405,6 +416,9 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
 - **D4 — Unified real-time transport:** Socket.io vs Azure Web PubSub for a converged
   backend (current lean: defer SignalR; adopt Web PubSub for Socket.IO when scale needs
   a backplane). **D5 — Deploy size/time:** shrink the package, target deploy < 10 min.
+
+### July 2026 Stabilization
+- 2026-07-02: **A3 inc 2 — voice-agent tool loop (text mode).** The agent can now actually run a truck check end-to-end over the `/ws/agent-check` WebSocket, in text mode (STT/TTS streaming is inc 3; text stays as the permanent debug surface). **What shipped:** (1) `services/effectiveChecklist.ts` — `resolveEffectiveChecklist` extracted from the truck-checks route so the agent merges the checklist identically to the manual workflow; (2) `createCheckRun` gained a trailing optional `runDetails?: { source, agentSessionId }` (interface + **both** twins, persisted as Table columns) so agent-started runs carry provenance; (3) `services/aiGateway.ts` — `ChatMessage` type + `tools`/`toolChoice` passthrough on `chatCompletion` (existing callers unchanged); (4) `services/agentTools.ts` — the five design-contract tools (`get_appliance_context`, `record_result`, `flag_issue`, `next_unchecked_in_zone`, `complete_run`) as an `AgentToolExecutor` bound to one AgentSession, with lazy CheckRun creation (linked both ways), item resolution by id/itemCode/name, re-record-updates-not-duplicates, zone-scoped next-item, and run/session finalisation; (5) `services/agentLoop.ts` — `runAgentTurn` drives Azure OpenAI function calling (max 8 tool iterations/turn), persists every step as `AgentTurn`s (user/tool/agent/system), replays only *text* turns as history (live state re-grounds via tools, so reconnects never desync); (6) `routes/agentCheck.ts` — `user-text` → loop → `agent-text` frames, `end-session`, one-turn-at-a-time busy guard, and close now marks an un-finished session `aborted` (only `complete_run` yields `completed`). 21 new tests (13 tools + 8 loop with mocked provider); *795 backend tests pass, coverage gates green, typecheck clean.* **Remaining (inc 3):** Azure Speech STT/TTS streaming over the same WS; PWA voice UI; register the agent API surface in `api_register.json` once the WS contract is final.
 
 ### June 2026 Stabilization
 - 2026-06-29: **A3 inc 1 — voice-agent backend plumbing.** D3 streaming-voice decisions resolved (backend proxy audio routing; Azure OpenAI function calling; same App Service with 30-s WS pings for 60-s idle timeout). **What shipped:** `AgentSession`/`AgentTurn` types in `backend/src/types/index.ts` (+ `CheckRun.source`/`CheckRun.agentSessionId` optional fields); in-memory twin `services/agentSessionDatabase.ts` + Table Storage twin `services/tableStorageAgentSessionDatabase.ts` (two-table: `AgentSessions` PK=applianceId RK=id, `AgentTurns` PK=sessionId RK=zero-padded-sequence+'-'+uuid); factory `services/agentSessionDbFactory.ts`; WS stub `routes/agentCheck.ts` — raw WS at `/ws/agent-check` (JWT auth, 30-s ping keepalive, session created on connect / completed on disconnect, binary audio ignored in stub); REST `GET /api/agent-sessions/:id` + `GET /api/agent-sessions/:id/turns` (behind `requireFeature('aiEnabled')`); WS upgrade handler attached to `httpServer` before Socket.io; factory init in `initializeDatabasesInBackground`. 20 new backend tests (DB unit + REST route). *Backend typecheck clean; 754 tests pass.* Inc 2 will wire Azure Speech STT + Azure OpenAI tool-loop.
@@ -488,7 +502,7 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
 - 2026-06-07: **Infrastructure-as-Code introduced (Issue #513).** Added `infra/` (Bicep) — the project's first IaC. Codifies the Table Storage data tier and provides a **dual-host comparison** (Linux B1 always-warm vs Azure Container Apps scale-to-zero) running the current Socket.io app unchanged, side-by-side with prod (prod untouched). Includes a multi-stage `Dockerfile`, a manual `infra-deploy.yml` workflow, and `infra/README.md`. **Critical finding:** the GitHub→Azure OIDC app registration was deleted from the tenant, silently breaking the last several `main` deploys (`AADSTS700016` at `Login to Azure`) — so the v1.1 merge did not reach production. The IaC README documents the one-time OIDC bootstrap that restores prod deploys. Real-time decision: **defer SignalR**; when multi-brigade scale needs a backplane, adopt **Azure Web PubSub for Socket.IO** (keeps the code, free tier) rather than a SignalR SDK rewrite. Follow-ups to raise: Windows→Linux prod migration, App Insights daily cap, managed-identity storage auth.
 - 2026-06-08: **SaaS foundation implemented** (first slice of the commercialization design). New top-level `Organization` billing tenant (in-memory + Table Storage twins + factory + `constants/plans.ts` catalog: Community/Basic/AI). Self-service `POST /api/auth/signup` creates an org (free Community plan) + owner; JWT now carries `organizationId`; `/auth/me` returns org + entitlements. New `/api/organizations/current` management routes (get/update plan + module toggles, list/create users) with `owner`/`admin` RBAC (`requireOwner` added). Feature gating via `requireFeature` middleware + `ENABLE_ENTITLEMENTS` flag (default off → backward compatible; the 525 existing tests untouched), applied to checkins/events (signInEnabled), truck-checks (truckCheckEnabled), reports (reportsEnabled). Owners can **disable the sign-in book for maintenance-only brigades** and AI is gated off below the AI plan (`clampEntitlements` prevents exceeding the plan ceiling). Frontend: `SignupPage` (`/signup`), `OrganizationPage` (`/admin/organization`), `AuthContext` extended with org/entitlements + `hasFeature`, and `FeatureRoute` guards on the gated routes. 12 new backend + 6 new frontend tests; all suites + coverage + build green. **Not yet wired:** live Stripe billing (entitlements are admin-set; Stripe Checkout/webhooks are the next slice), device accounts, and member logins — all per `docs/SAAS_COMMERCIALIZATION_DESIGN.md`.
 
-### Prioritised next steps (as of June 29, 2026)
+### Prioritised next steps (as of July 2, 2026)
 
 These are the highest-leverage items to act on next, in order. Read each track section above for full detail; this is the executive summary for picking up where we left off.
 
@@ -547,7 +561,7 @@ same-origin SM JWT, so the original "pass the JWT in" sub-task was already satis
 **Design decisions to resolve before billing goes live (🔵 D1–D3):**
 - D1: Confirm pricing details (trial length, AI metering unit, top-up pack sizes).
 - D2: Suite auth standard — currently SM JWT (confirmed). Revisit only if cross-origin SSO is needed in Phase 2.
-- ~~D3: AI gateway specifics (streaming-voice WebSocket contract blocks A3/voice agent).~~ **Resolved 2026-06-29** — backend proxy audio routing; Azure OpenAI function calling; same App Service with 30-s keepalive pings. A3 inc 1 (backend plumbing) is now shipped; next is inc 2 (Azure Speech STT + OpenAI tool-loop).
+- ~~D3: AI gateway specifics (streaming-voice WebSocket contract blocks A3/voice agent).~~ **Resolved 2026-06-29** — backend proxy audio routing; Azure OpenAI function calling; same App Service with 30-s keepalive pings. A3 inc 1 (backend plumbing) and inc 2 (OpenAI tool loop, text mode) are shipped; next is inc 3 (Azure Speech STT/TTS streaming + PWA voice UI).
 
 ---
 
@@ -2930,9 +2944,10 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.13 | Jun 2026 | A1 inc 5 (zone-vocabulary seed) | `backend/src/constants/zoneVocabulary.ts` — code-level taxonomy mapping `VehicleType.code` → `ZoneSpec[]` walk-around sequences for Cat 1 tanker / heavy tanker / pumper / bulk water tender / rescue tender / command-support (NSW RFS classes). Zones auto-seed on `POST /appliances` when a `vehicleTypeId` is supplied (non-fatal catch). New admin endpoint `POST /appliances/:id/seed-zones` with idempotent default + `?replace=true`. 18 new tests; 754 pass, all coverage gates green. |
 | 4.14 | Jun 2026 | A1 inc 6 (zones & equipment UI) | `ApplianceZonesModal` two-tab admin authoring UI for per-truck zones and equipment, wired into Vehicle Management cards via a "Zones" button. Zones tab: seed-from-vehicle-type bar, ordered zone list, inline edit/delete, add form. Equipment tab: active/retired toggle, inline edit, retire/restore/delete, zone picker, add form. `ApplianceZoneSide`/`ApplianceZone`/`ApplianceEquipment` types in `frontend/src/types/index.ts`; 9 API methods in `frontend/src/services/api.ts`. 11 new Vitest tests; 464 frontend tests pass. A1 data-model track feature-complete. |
 | 4.15 | Jun 2026 | A3 inc 1 (voice-agent backend plumbing) | D3 decisions resolved (backend proxy audio, Azure OpenAI, same App Service). Backend plumbing for voice-agent sessions: `AgentSession`/`AgentTurn` types (+ `CheckRun.source`/`agentSessionId`); in-memory + Table Storage twins; factory; WS stub at `/ws/agent-check` (JWT auth, 30-s ping keepalive, session lifecycle); REST `GET /api/agent-sessions/:id[/turns]` behind `requireFeature('aiEnabled')`. 20 new tests; 774 backend tests pass. |
+| 4.16 | Jul 2026 | A3 inc 2 (voice-agent tool loop, text mode) | The agent runs a full check over `/ws/agent-check` in text mode: five design-contract tools (`agentTools.ts`), Azure OpenAI function-calling loop with full AgentTurn transcript (`agentLoop.ts`), shared `effectiveChecklist.ts` resolver, `createCheckRun` provenance (`runDetails` in both twins), gateway `tools` passthrough, `user-text`/`agent-text`/`end-session` WS frames, abort-on-disconnect semantics. 21 new tests; 795 backend tests pass. |
 
 ---
 
 **End of Master Plan**
 
-Last Updated: June 29, 2026
+Last Updated: July 2, 2026

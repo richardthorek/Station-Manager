@@ -251,7 +251,7 @@ class TruckChecksDatabase {
   // Check Run Methods
   // ============================================
 
-  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string): CheckRun {
+  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string, runDetails?: { source?: CheckRun['source']; agentSessionId?: string }): CheckRun {
     const appliance = this.appliances.get(applianceId);
     if (!appliance) {
       throw new Error('Appliance not found');
@@ -268,6 +268,8 @@ class TruckChecksDatabase {
       contributors: [completedByName || completedBy],
       status: 'in-progress',
       hasIssues: false,
+      source: runDetails?.source,
+      agentSessionId: runDetails?.agentSessionId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

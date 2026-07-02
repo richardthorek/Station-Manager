@@ -4,10 +4,12 @@
  * WebSocket endpoint:
  *   WS /ws/agent-check
  *   Accepts a JWT in the first Upgrade query param (?token=...) or
- *   Authorization header. Creates an AgentSession, keeps the connection
+ *   Authorization header. Creates an AgentSession and keeps the connection
  *   alive with 30-second pings (well inside Azure App Service's 60 s idle
- *   timeout), and echoes control frames back so the PWA can verify the link.
- *   Full Azure Speech ↔ Azure OpenAI tool-loop will be wired in inc 2+.
+ *   timeout). `user-text` frames drive the Azure OpenAI tool loop
+ *   (agentLoop.ts) and come back as `agent-text` — the text mode is both the
+ *   inc-2 deliverable and the permanent debug surface once voice lands.
+ *   Binary PCM audio (STT/TTS streaming) is inc 3.
  *
  * REST endpoints (mounted at /api/agent-sessions):
  *   GET /api/agent-sessions/:id        — fetch a session by id
@@ -20,6 +22,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import jwt from 'jsonwebtoken';
 import { authMiddleware } from '../middleware/auth';
 import { ensureAgentSessionDatabase } from '../services/agentSessionDbFactory';
+import { AgentToolExecutor } from '../services/agentTools';
+import { runAgentTurn } from '../services/agentLoop';
 import { logger } from '../services/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
@@ -131,17 +135,52 @@ export function attachAgentCheckWs(httpServer: HttpServer): void {
         // Send session-started control frame
         ws.send(JSON.stringify({ type: 'session-started', sessionId: session.id }));
 
+        const executor = new AgentToolExecutor(session);
+        // One turn at a time per connection: the loop mutates run state, so a
+        // second utterance mid-turn is rejected rather than interleaved.
+        let turnInFlight = false;
+
         ws.on('message', async (data, isBinary) => {
           if (isBinary) {
-            // Binary PCM audio will be forwarded to Azure Speech STT in inc 2
+            // Binary PCM audio will be forwarded to Azure Speech STT in inc 3
             return;
           }
           try {
-            const msg = JSON.parse(data.toString()) as { type: string; [key: string]: unknown };
+            const msg = JSON.parse(data.toString()) as { type: string; text?: unknown };
             if (msg.type === 'ping') {
               ws.send(JSON.stringify({ type: 'pong' }));
+              return;
             }
-            // Additional control message types (end-session etc.) will be handled in inc 2
+            if (msg.type === 'end-session') {
+              ws.close(1000, 'Ended by client');
+              return;
+            }
+            if (msg.type === 'user-text') {
+              const text = typeof msg.text === 'string' ? msg.text.trim() : '';
+              if (!text) {
+                ws.send(JSON.stringify({ type: 'error', error: 'user-text requires a non-empty text field' }));
+                return;
+              }
+              if (turnInFlight) {
+                ws.send(JSON.stringify({ type: 'busy', error: 'Still working on the previous message' }));
+                return;
+              }
+              turnInFlight = true;
+              try {
+                const outcome = await runAgentTurn(session, text, executor);
+                ws.send(JSON.stringify({
+                  type: 'agent-text',
+                  text: outcome.text,
+                  completed: outcome.completed,
+                  runId: session.runId,
+                }));
+              } catch (err) {
+                logger.error('Agent turn failed', { error: err, sessionId: session.id });
+                ws.send(JSON.stringify({ type: 'error', error: 'Agent turn failed' }));
+              } finally {
+                turnInFlight = false;
+              }
+            }
           } catch {
             // Non-JSON text ignored
           }
@@ -150,8 +189,12 @@ export function attachAgentCheckWs(httpServer: HttpServer): void {
         ws.on('close', async () => {
           clearInterval(client.pingTimer);
           try {
-            const db = ensureAgentSessionDatabase();
-            await db.updateSession(session.id, { status: 'completed', endedAt: new Date() });
+            // complete_run already finalises the session; an early disconnect
+            // without it is an abort, not a completed check.
+            if (session.status === 'active') {
+              const db = ensureAgentSessionDatabase();
+              await db.updateSession(session.id, { status: 'aborted', endedAt: new Date() });
+            }
           } catch (err) {
             logger.error('Failed to close agent session', { error: err, sessionId: session.id });
           }
