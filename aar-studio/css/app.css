@@ -266,6 +266,19 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
 .live__error { color: var(--red); font-weight: 600; }
 /* .live__dot pulse is covered by the global prefers-reduced-motion guard near the top of this file. */
 
+/* ---------- persistent AI-error banner (AAR-10) ---------- */
+.ai-error-banner {
+  display: flex; gap: 0.75rem; align-items: center; justify-content: space-between;
+  flex-wrap: wrap;
+  border: 1px solid var(--red);
+  border-left: 4px solid var(--red);
+  background: rgb(200 16 46 / 0.10);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
 /* ---------- board ---------- */
 .board-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
 .board-toolbar h1 { margin: 0; }

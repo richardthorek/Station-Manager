@@ -5,7 +5,7 @@ import { h, toast } from '../ui.js';
 import * as store from '../store.js';
 import { CATEGORIES, sessionPhases, sessionUnitNames, createFinding } from '../lib/model.js';
 import { findMergeSuggestions, mergeFindings } from '../lib/dedupe.js';
-import { analyseNow } from '../analyse.js';
+import { analyseNow, getPersistentError, dismissPersistentError } from '../analyse.js';
 
 let phaseFilter = null; // null = all
 // Pairs the facilitator chose to "keep both", keyed by sorted finding-id pair.
@@ -19,6 +19,20 @@ function unitSelect(units, selected = '') {
   return h('select', { 'aria-label': 'Attribute finding to a unit' },
     h('option', { value: '', selected: !selected }, '— no unit'),
     units.map((u) => h('option', { value: u, selected: u === selected }, u)),
+  );
+}
+
+/**
+ * A latched 401/402/403 from auto-extraction (AAR-10): a single dismissible
+ * banner instead of an identical toast every 45s for the rest of the meeting.
+ * Dismissing lets the next auto-extract pass try again.
+ */
+function aiErrorBanner() {
+  const err = getPersistentError();
+  if (!err) return null;
+  return h('div', { class: 'ai-error-banner', role: 'alert' },
+    h('span', {}, `${err.message}${err.hint ? ` — ${err.hint}` : ''}`),
+    h('button', { class: 'btn btn--small', onclick: () => { dismissPersistentError(); store.update(() => {}, { reason: 'live' }); } }, 'Dismiss'),
   );
 }
 
@@ -173,6 +187,7 @@ export function render(container) {
         h('button', { class: 'btn', onclick: togglePresent, title: 'Fullscreen high-contrast view for the projector' }, '⛶ Present'),
       ),
     ),
+    aiErrorBanner(),
     filterChips,
     mergeSuggestionsPanel(session),
     quickAdd(phases, units),

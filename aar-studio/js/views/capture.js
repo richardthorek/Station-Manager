@@ -3,7 +3,7 @@
 
 import { h, toast, confirmDanger, pickFile } from '../ui.js';
 import * as store from '../store.js';
-import { analyseNow } from '../analyse.js';
+import { analyseNow, getPersistentError, dismissPersistentError } from '../analyse.js';
 import * as live from '../audio/live.js';
 import { createSegment, createNote, speakerName, displayTitle, GENERAL_PHASE } from '../lib/model.js';
 import { parseTranscript } from '../lib/transcriptParser.js';
@@ -62,6 +62,20 @@ function roomNotesPanel() {
           h('span', { class: 'room-note__text' }, n.text),
         )))
       : h('p', { class: 'muted' }, 'No room notes yet — share the link above to invite the room.'),
+  );
+}
+
+/**
+ * A latched 401/402/403 from auto-extraction (AAR-10): a single dismissible
+ * banner instead of an identical toast every 45s for the rest of the meeting.
+ * Dismissing lets the next auto-extract pass try again.
+ */
+function aiErrorBanner() {
+  const err = getPersistentError();
+  if (!err) return null;
+  return h('div', { class: 'ai-error-banner', role: 'alert' },
+    h('span', {}, `${err.message}${err.hint ? ` — ${err.hint}` : ''}`),
+    h('button', { class: 'btn btn--small', onclick: () => { dismissPersistentError(); store.update(() => {}, { reason: 'live' }); } }, 'Dismiss'),
   );
 }
 
@@ -188,6 +202,7 @@ export function render(container) {
       h('h1', {}, displayTitle(session)),
       h('a', { class: 'btn', href: '#/board' }, session.findings.length ? `See findings (${session.findings.length}) →` : 'Findings →'),
     ),
+    aiErrorBanner(),
     audioPanel(),
     roomNotesPanel(),
     h('section', { class: 'panel' },

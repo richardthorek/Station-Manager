@@ -6,10 +6,10 @@ with that bar: not "does it work" but "would a brigade facilitator show this to
 another brigade". Findings are documented for later agents to implement; no
 fixes are made in this review.
 
-**Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7), AAR-19, AAR-9, AAR-23 and AAR-3
-fixed 2026-07-03** (see the changelog entries) — the four findings the master
-plan grouped as "what stands between AAR Studio and a confident live demo",
-plus the first three Q2 items:
+**Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7), AAR-19, AAR-9, AAR-23, AAR-3 and
+AAR-10 fixed 2026-07-03** (see the changelog entries) — the four findings the
+master plan grouped as "what stands between AAR Studio and a confident live
+demo", plus four more Q2 items:
 - **AAR-6/AAR-8** (`js/audio/live.js`, `js/audio/speech.js`): the gateway
   speech token now refreshes proactively every 8 minutes, and the transcriber
   reconnects automatically (up to 4 backed-off attempts) on failure without
@@ -34,6 +34,11 @@ plus the first three Q2 items:
   `js/analyse.js`, `js/views/setup.js`): quick-start's GPS-fallback location is
   now flagged `locationIsAuto` so the AI's real place name (or manual typing)
   always replaces it instead of the coordinates sticking in the report header.
+- **AAR-10** (`js/lib/llm.js`, `js/analyse.js`, `js/views/capture.js`,
+  `js/views/board.js`): a 401/402/403 during auto-extraction now latches into
+  a single dismissible banner instead of repeating as a toast every 45s for
+  the rest of the meeting, and auto-extraction pauses until it's resolved or
+  dismissed.
 
 Note left for whoever picks up **AAR-11**: the AAR-6 token-refresh timer and
 each reconnect attempt call `/api/ai/speech/token` again, and the backend
@@ -168,14 +173,19 @@ is why they rank at the top of this review.
   (`Boolean(settings.authToken)`), same signal used elsewhere in the AAR
   audio stack.
 
-- **AAR-10 · Medium · UX — Persistent AI failures toast every ~45 seconds for
-  the rest of the meeting.** The auto-extract timer retries on the 45 s /
-  70-word policy; every failing pass raises an 8-second error toast
-  (`analyse.js:116-119`). If the org's AI allowance runs out mid-debrief
-  (402), the facilitator gets an identical toast every 45 s for an hour.
-  **Direction:** latch persistent failures (esp. 401/402/403) into a single
-  dismissible banner with the relevant action (sign in / top up), and pause
-  auto-extraction until it's resolved.
+- ~~**AAR-10 · Medium · UX — Persistent AI failures toast every ~45 seconds
+  for the rest of the meeting.**~~ **Fixed 2026-07-03.** The auto-extract
+  timer retries on the 45 s / 70-word policy; every failing pass raised an
+  8-second error toast (`analyse.js:116-119`). If the org's AI allowance ran
+  out mid-debrief (402), the facilitator got an identical toast every 45 s
+  for an hour. A new `isPersistentAiError()` (`lib/llm.js`) flags 401/402/403
+  (sign-in/allowance/plan — none of which resolve by waiting) as persistent;
+  `analyseNow` latches one into a module-level `persistentError` instead of
+  toasting again, `maybeAutoExtract` pauses while it's set, and a dismissible
+  `.ai-error-banner` (Capture + Board views) shows the message/hint with a
+  Dismiss button that lets the next auto-extract pass retry. A clean pass
+  clears the latch automatically. Transient statuses (429, 503, network
+  errors) keep the old toast-per-pass behaviour, since those can self-resolve.
 
 - **AAR-11 · Medium · FN — Metering counts "sessions" per token vend, which
   punishes reconnects.** Each `live.start` vends a speech token, and each
@@ -326,7 +336,7 @@ confident live demo in front of a brigade.
 | 4 | ~~**AAR-7** collab reconnect~~ **Fixed 2026-07-03** | Room notes silently vanishing mid-meeting betrays contributors |
 | 5 | ~~**AAR-19** report attribution~~ **Fixed 2026-07-03** | The shared artifact is the growth hook — it should say where it came from |
 | 6 | **AAR-15** conflict surfaced while editing | Two-facilitator divergence is otherwise invisible for hours |
-| 7 | **AAR-10** latch persistent AI failures | Toast-every-45s during a live meeting is demo-lethal |
+| 7 | ~~**AAR-10** latch persistent AI failures~~ **Fixed 2026-07-03** | Toast-every-45s during a live meeting is demo-lethal |
 | 8 | ~~**AAR-3** GPS coords block real location~~ **Fixed 2026-07-03** | Ugly report headers from the flagship quick-start path |
 | 9 | **AAR-11** metering per token vend | Fix alongside AAR-6/8 so reliability work doesn't burn allowance |
 | 10 | ~~**AAR-9 + AAR-23** audience-correct error copy~~ **Fixed 2026-07-03** | One sweep: gateway users must never be told to check Azure keys |
