@@ -8,7 +8,7 @@ a one-page executive snapshot and full summary. AAR Studio is one of the
 Static web app: plain HTML/CSS/ES modules, **no build step**. By default,
 speech-to-text and AI analysis go through the Station Manager backend's
 **AI gateway** (`/api/ai/*`) so credentials stay server-side and usage is
-metered against your plan — see the main app's `docs/AS_BUILT.md`. For local
+metered against your plan — see the main app's `docs/wiki/developer/architecture.md`. For local
 development you can still bring your own Azure resources via the Settings screen
 (the browser then calls Azure directly). Session data lives in `localStorage`.
 
@@ -16,7 +16,7 @@ development you can still bring your own Azure resources via the Settings screen
 > transcription, transcript paste ingest, AI extraction, live board, review,
 > AI report generation and all exports. Stage 5 polish remains — tracked in the
 > root [`docs/MASTER_PLAN.md`](../docs/MASTER_PLAN.md) (roadmap item P1); stage
-> history archived at [`docs/archive/AAR_STUDIO_PLAN.md`](../docs/archive/AAR_STUDIO_PLAN.md).
+> history archived at [`docs/wiki/developer/history/archive/AAR_STUDIO_PLAN.md`](../docs/wiki/developer/history/archive/AAR_STUDIO_PLAN.md).
 
 ## The workflow
 
@@ -132,4 +132,4 @@ You can still run it fully standalone for local development with
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module map and data
 model. The staged roadmap is folded into the root
 [`docs/MASTER_PLAN.md`](../docs/MASTER_PLAN.md) (stage history archived at
-[`docs/archive/AAR_STUDIO_PLAN.md`](../docs/archive/AAR_STUDIO_PLAN.md)).
+[`docs/wiki/developer/history/archive/AAR_STUDIO_PLAN.md`](../docs/wiki/developer/history/archive/AAR_STUDIO_PLAN.md)).

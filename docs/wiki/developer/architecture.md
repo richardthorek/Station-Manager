@@ -14,14 +14,14 @@ This document is the **SINGLE SOURCE OF TRUTH** for the current implementation s
 
 ### Related Documentation
 - **Planning & Roadmap**: `docs/MASTER_PLAN.md` - Strategic planning, enhancement backlog, and future features
-- **AI Development Guidelines**: `.github/copilot-instructions.md` - Repository conventions and development standards
+- **AI Development Guidelines**: `CLAUDE.md` - Repository conventions and development standards
 - **Machine-Readable Registries**:
-  - `docs/api_register.json` - REST API endpoints and WebSocket events (programmatic access)
-  - `docs/function_register.json` - Backend functions and service methods (programmatic access)
+  - `docs/registers/api_register.json` - REST API endpoints and WebSocket events (programmatic access)
+  - `docs/registers/function_register.json` - Backend functions and service methods (programmatic access)
 - **Feature Documentation**:
-  - `docs/API_DOCUMENTATION.md` - Human-readable API reference
+  - `docs/wiki/developer/api-reference.md` - Human-readable API reference
   - `docs/FUNCTION_REGISTER.md` - Human-readable function reference
-  - `docs/FEATURE_DEVELOPMENT_GUIDE.md` - Adding new features
+  - `docs/wiki/developer/feature-development.md` - Adding new features
 
 ### Update Requirements
 This document MUST be updated when:
@@ -33,8 +33,8 @@ This document MUST be updated when:
 - Technology stack versions are updated
 
 When updating this document, also update:
-- `docs/api_register.json` if APIs changed
-- `docs/function_register.json` if backend functions changed
+- `docs/registers/api_register.json` if APIs changed
+- `docs/registers/function_register.json` if backend functions changed
 - `docs/MASTER_PLAN.md` if strategic direction affected
 
 ---
@@ -711,7 +711,7 @@ frontend/src/
 
 ### Backend Service Structure and Function Registry
 
-**Machine-Readable Function Registry**: [`docs/function_register.json`](function_register.json) - Complete registry of all backend functions, service methods, and business logic
+**Machine-Readable Function Registry**: [`docs/registers/function_register.json`](../../registers/function_register.json) - Complete registry of all backend functions, service methods, and business logic
 
 The function register contains:
 - Service method signatures with parameter types
@@ -721,7 +721,7 @@ The function register contains:
 - Implementation file locations and line numbers
 - Complexity analysis and side effects documentation
 
-**Human-Readable Documentation**: [FUNCTION_REGISTER.md](FUNCTION_REGISTER.md) for detailed function reference.
+**Human-Readable Documentation**: [FUNCTION_REGISTER.md](history/FUNCTION_REGISTER.md) for detailed function reference.
 
 ```
 backend/src/
@@ -1275,7 +1275,7 @@ For existing deployments:
 
 ### Machine-Readable API Registry
 
-**Primary Source**: [`docs/api_register.json`](api_register.json) - Complete machine-readable REST API and WebSocket event registry
+**Primary Source**: [`docs/registers/api_register.json`](../../registers/api_register.json) - Complete machine-readable REST API and WebSocket event registry
 
 The API register contains:
 - Full endpoint definitions with request/response schemas
@@ -1284,7 +1284,7 @@ The API register contains:
 - Implementation file locations
 - Status codes and error responses
 
-**Human-Readable Documentation**: [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed endpoint reference.
+**Human-Readable Documentation**: [API_DOCUMENTATION.md](api-reference.md) for detailed endpoint reference.
 
 ### Endpoint Summary by Category
 
@@ -1582,7 +1582,7 @@ Potential improvements (not in current scope):
 - Multi-station comparison view
 - Station grouping by region
 
-**Documentation:** See `docs/archive/STATION_SELECTION_IMPLEMENTATION.md` for historical implementation notes.
+**Documentation:** See `docs/wiki/developer/history/archive/STATION_SELECTION_IMPLEMENTATION.md` for historical implementation notes.
 
 ---
 
@@ -2150,7 +2150,7 @@ const stations = await api.getStations();     // All stations
 #### Related Documentation
 
 - **Configuration Guide**: `docs/AUTHENTICATION_CONFIGURATION.md`
-- **API Registry**: `docs/api_register.json` (v1.3.0+)
+- **API Registry**: `docs/registers/api_register.json` (v1.3.0+)
 - **Master Plan**: `docs/MASTER_PLAN.md` (Phase 3 security enhancement)
 
 ---
@@ -2418,7 +2418,7 @@ bootstrap in `infra/README.md` also **restores the broken production deploy**.
 
 **Primary Workflow:** `.github/workflows/ci-cd.yml`  
 **Failure Handler:** `.github/workflows/create-issue-on-failure.yml`  
-**Documentation:** `docs/ci_pipeline.md`
+**Documentation:** `docs/wiki/developer/ci-pipeline.md`
 
 **Pipeline Stages:**
 
@@ -2717,7 +2717,7 @@ Returns:
 The production database is **Azure Table Storage** (the project migrated off
 Cosmos DB / MongoDB — `MONGODB_URI` is no longer used). The full, authoritative
 list lives in `backend/.env.example` and is documented by group in
-`docs/AZURE_DEPLOYMENT.md`; the essentials:
+`docs/wiki/developer/deployment.md`; the essentials:
 
 **Backend — core:**
 ```
@@ -2777,12 +2777,12 @@ VITE_FIREBREAK_URL=<suite sibling app>       # optional (app launcher)
 
 ### D. Related Documentation
 
-- [API_DOCUMENTATION.md](API_DOCUMENTATION.md) - Complete API reference
-- [GETTING_STARTED.md](GETTING_STARTED.md) - Development setup
-- [AZURE_DEPLOYMENT.md](AZURE_DEPLOYMENT.md) - Deployment guide
-- [archive/TRUCK_CHECKS_IMPLEMENTATION.md](archive/TRUCK_CHECKS_IMPLEMENTATION.md) - Truck checks feature (archived)
-- [ACHIEVEMENTS.md](ACHIEVEMENTS.md) - Achievement system
-- [implementation-notes/EVENT_MANAGEMENT.md](implementation-notes/EVENT_MANAGEMENT.md) - Event system
+- [API_DOCUMENTATION.md](api-reference.md) - Complete API reference
+- [GETTING_STARTED.md](getting-started.md) - Development setup
+- [AZURE_DEPLOYMENT.md](deployment.md) - Deployment guide
+- [archive/TRUCK_CHECKS_IMPLEMENTATION.md](history/archive/TRUCK_CHECKS_IMPLEMENTATION.md) - Truck checks feature (archived)
+- [ACHIEVEMENTS.md](../user-guide/achievements.md) - Achievement system
+- [implementation-notes/EVENT_MANAGEMENT.md](history/implementation-notes/EVENT_MANAGEMENT.md) - Event system
 
 ---
 

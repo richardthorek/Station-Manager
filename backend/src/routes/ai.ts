@@ -21,7 +21,7 @@
  *    the gate, consistent with the rest of the entitlement system; usage is only
  *    recorded when an org is known. Full AAR identity is tracked separately
  *    (docs/MASTER_PLAN.md roadmap item A2; design in
- *    docs/archive/CONSOLIDATION_REVIEW.md).
+ *    docs/wiki/developer/history/archive/CONSOLIDATION_REVIEW.md).
  */
 
 import { Router, Request, Response } from 'express';

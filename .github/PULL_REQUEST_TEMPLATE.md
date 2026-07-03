@@ -44,16 +44,16 @@
 
 **REQUIRED**: All PRs must update relevant documentation. Check all that apply:
 
-### Planning & Roadmap
-- [ ] **Updated `/docs/MASTER_PLAN.md`** (if this PR affects roadmap, features, technical debt, or strategic direction)
-  - [ ] Marked feature as complete in backlog
-  - [ ] Updated technical debt register
-  - [ ] Added new items to enhancement backlog
-  - [ ] Modified priority or timeline
+### Planning & Changelog
+- [ ] **Added a dated entry to `/docs/wiki/developer/changelog.md`** describing what shipped (required for any non-trivial change)
+- [ ] **Updated `/docs/MASTER_PLAN.md`** (if this PR affects the status board, queue priorities, or open decisions)
+  - [ ] Flipped feature status on the board
+  - [ ] Removed completed / added new queue items
+  - [ ] Recorded or resolved an open decision
   - [ ] N/A - No planning changes
 
 ### Implementation Documentation
-- [ ] **Updated `/docs/AS_BUILT.md`** and related docs (if this PR changes architecture, APIs, database, or deployment)
+- [ ] **Updated `/docs/wiki/developer/architecture.md`** and related docs (if this PR changes architecture, APIs, database, or deployment)
   - [ ] Updated architecture diagrams/descriptions
   - [ ] Updated API endpoint counts and summaries
   - [ ] Updated database schema documentation
@@ -61,7 +61,7 @@
   - [ ] N/A - No implementation documentation changes
 
 ### Machine-Readable Registries
-- [ ] **Updated `/docs/api_register.json`** (if this PR adds/modifies/removes REST endpoints or WebSocket events)
+- [ ] **Updated `/docs/registers/api_register.json`** (if this PR adds/modifies/removes REST endpoints or WebSocket events)
   - [ ] Added new endpoint definitions with full schema
   - [ ] Updated existing endpoint parameters/responses
   - [ ] Removed deprecated endpoints
@@ -69,7 +69,7 @@
   - [ ] Validated JSON syntax with `jsonlint`
   - [ ] N/A - No API changes
 
-- [ ] **Updated `/docs/function_register.json`** (if this PR adds/modifies backend functions or services)
+- [ ] **Updated `/docs/registers/function_register.json`** (if this PR adds/modifies backend functions or services)
   - [ ] Added new function signatures
   - [ ] Updated existing method parameters/return types
   - [ ] Updated implementation file locations
@@ -78,7 +78,7 @@
   - [ ] N/A - No function signature changes
 
 ### Development Guidelines
-- [ ] **Updated `.github/copilot-instructions.md`** (if this PR introduces new conventions, workflows, or standards)
+- [ ] **Updated `CLAUDE.md`** (if this PR introduces new conventions, workflows, or standards)
   - [ ] Documented new coding conventions
   - [ ] Updated project structure rules
   - [ ] Modified development workflow
@@ -88,19 +88,19 @@
 
 ### Feature Documentation
 - [ ] **Updated feature-specific docs** (if applicable)
-  - [ ] Updated `docs/API_DOCUMENTATION.md`
-  - [ ] Updated `docs/FEATURE_DEVELOPMENT_GUIDE.md`
-  - [ ] Updated `docs/GETTING_STARTED.md`
+  - [ ] Updated `docs/wiki/developer/api-reference.md`
+  - [ ] Updated `docs/wiki/developer/feature-development.md`
+  - [ ] Updated `docs/wiki/developer/getting-started.md`
   - [ ] Updated other relevant markdown docs
   - [ ] N/A - No feature documentation changes
 
 ## Cross-Reference Validation
 - [ ] All documentation cross-references are valid and up-to-date
 - [ ] Machine-readable JSON files reference correct implementation locations
-- [ ] Links between MASTER_PLAN.md, AS_BUILT.md, and copilot-instructions.md are maintained
+- [ ] Links between MASTER_PLAN.md, wiki/developer/architecture.md, the changelog, and CLAUDE.md are maintained
 
 ## Code Quality Checklist
-- [ ] Code follows the project's style guidelines (see `.github/copilot-instructions.md`)
+- [ ] Code follows the project's style guidelines (see `CLAUDE.md`)
 - [ ] TypeScript strict mode compliance (no `any` types)
 - [ ] Proper error handling implemented
 - [ ] No console.log statements in production code (use proper logging)
@@ -155,7 +155,7 @@
 
 If this PR was generated or assisted by AI tools:
 - [ ] All generated code has been reviewed by a human
-- [ ] AI suggestions align with project conventions in `.github/copilot-instructions.md`
+- [ ] AI suggestions align with project conventions in `CLAUDE.md`
 - [ ] Documentation updates were completed as required
 - [ ] Machine-readable registries were validated
 - [ ] Cross-references were checked
@@ -163,7 +163,7 @@ If this PR was generated or assisted by AI tools:
 ---
 
 **By submitting this PR, I confirm that:**
-- I have followed the documentation discipline outlined in `.github/copilot-instructions.md`
+- I have followed the documentation discipline outlined in `CLAUDE.md`
 - I have updated all required documentation files
 - I have validated machine-readable JSON files
 - I have maintained cross-references between documentation files

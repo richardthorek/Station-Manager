@@ -92,7 +92,7 @@ through unchanged — so single-tenant local dev is unaffected. To exercise plan
 gating, sign up via `/signup` (creates an Organization on the free Community
 plan) and manage the plan at `/admin/organization`. Set `ENABLE_ENTITLEMENTS=false`
 to disable gating entirely for local dev. See
-[AUTHENTICATION_CONFIGURATION.md](./AUTHENTICATION_CONFIGURATION.md).
+[AUTHENTICATION_CONFIGURATION.md](authentication.md).
 
 **Optional integrations**: Stripe billing (`STRIPE_*`) and the AI gateway
 (`AZURE_OPENAI_*` / `AZURE_SPEECH_*`) are off until configured — see
@@ -346,15 +346,15 @@ To test on mobile devices on the same network:
 
 ## Next Steps
 
-- Review [MASTER_PLAN.md](./MASTER_PLAN.md) for the roadmap and change log
-- Read [FEATURE_DEVELOPMENT_GUIDE.md](./FEATURE_DEVELOPMENT_GUIDE.md) before adding a feature
-- See [AZURE_DEPLOYMENT.md](./AZURE_DEPLOYMENT.md) for production deployment
-- Check [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for API details
-- See [AS_BUILT.md](./AS_BUILT.md) for the current architecture of record
+- Review [MASTER_PLAN.md](../../MASTER_PLAN.md) for the roadmap and change log
+- Read [FEATURE_DEVELOPMENT_GUIDE.md](feature-development.md) before adding a feature
+- See [AZURE_DEPLOYMENT.md](deployment.md) for production deployment
+- Check [API_DOCUMENTATION.md](api-reference.md) for API details
+- See [AS_BUILT.md](architecture.md) for the current architecture of record
 
 ## Support
 
 For issues or questions:
 1. Check this documentation
-2. Review [MASTER_PLAN.md](./MASTER_PLAN.md) for design decisions
+2. Review [MASTER_PLAN.md](../../MASTER_PLAN.md) for design decisions
 3. Open an issue on GitHub

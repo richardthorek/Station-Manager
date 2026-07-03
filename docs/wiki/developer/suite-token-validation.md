@@ -2,7 +2,7 @@
 
 **Status:** Implemented (suite Phase 1 — federation). See issue #556 and the
 Consolidation & Standardisation Roadmap (Suite convergence track) in
-`docs/MASTER_PLAN.md`; design history in `docs/archive/SUITE_INTEGRATION_PLAN.md`
+`docs/MASTER_PLAN.md`; design history in `docs/wiki/developer/history/archive/SUITE_INTEGRATION_PLAN.md`
 (Option A / Phase 1).
 
 This document is the contract sibling Bushie Tools apps (Fire Santa Run, Fire
@@ -169,8 +169,8 @@ Sibling app ◀──token─────────────┘
 ## 6. Related
 
 - `docs/MASTER_PLAN.md` — the single plan (Consolidation & Standardisation Roadmap).
-- `docs/archive/SUITE_INTEGRATION_PLAN.md` — full options analysis (design history).
-- `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md` — Organization / plan / Stripe model (design history).
+- `docs/wiki/developer/history/archive/SUITE_INTEGRATION_PLAN.md` — full options analysis (design history).
+- `docs/wiki/developer/history/archive/SAAS_COMMERCIALIZATION_DESIGN.md` — Organization / plan / Stripe model (design history).
 - `backend/src/routes/auth.ts` — `GET /api/auth/entitlements` implementation.
 - `backend/src/constants/plans.ts` — plan → entitlement mapping.
 - `frontend/src/config/suiteApps.ts` — the launcher's sibling-app catalog.

@@ -413,8 +413,8 @@ useEffect(() => {
 
 - Review existing features for examples
 - Check the main README.md for general information
-- Refer to API documentation in `docs/API_DOCUMENTATION.md`
-- Follow the deployment guide in `docs/AZURE_DEPLOYMENT.md`
+- Refer to API documentation in `docs/wiki/developer/api-reference.md`
+- Follow the deployment guide in `docs/wiki/developer/deployment.md`
 
 ## Summary
 

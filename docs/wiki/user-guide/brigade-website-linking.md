@@ -402,7 +402,7 @@ If you want to build custom integrations:
 2. **Station Context:** Send `X-Station-Id` header with API requests
 3. **CORS:** Request domain whitelisting from administrator
 4. **Rate Limiting:** Be mindful of API rate limits
-5. **Documentation:** See `docs/API_DOCUMENTATION.md`
+5. **Documentation:** See `docs/wiki/developer/api-reference.md`
 
 **Contact administrator before building custom integrations.**
 
@@ -469,7 +469,7 @@ Phone: [Phone]
 ## Related Documentation
 
 - **Multi-Domain Hosting Analysis:** `docs/MULTI_DOMAIN_HOSTING_ANALYSIS.md`
-- **Kiosk Mode Setup (Administrators):** `docs/implementation-notes/KIOSK_MODE_SETUP.md`
+- **Kiosk Mode Setup (Administrators):** `docs/wiki/developer/history/implementation-notes/KIOSK_MODE_SETUP.md`
 - **Authentication Configuration:** `docs/AUTHENTICATION_CONFIGURATION.md`
-- **API Documentation:** `docs/API_DOCUMENTATION.md`
+- **API Documentation:** `docs/wiki/developer/api-reference.md`
 - **Deployment Guide:** `docs/AZURE_DEPLOYMENT.md`

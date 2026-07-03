@@ -7,7 +7,7 @@ This directory contains the automated CI/CD workflows for the RFS Station Manage
 ### `ci-cd.yml` (Primary Pipeline)
 **Status:** ✅ Active  
 **Purpose:** Comprehensive CI/CD pipeline with quality gates, testing, and deployment  
-**Documentation:** See [docs/ci_pipeline.md](../../docs/ci_pipeline.md)
+**Documentation:** See [docs/wiki/developer/ci-pipeline.md](../../docs/wiki/developer/ci-pipeline.md)
 
 **Features:**
 - Parallel quality checks (linting, type checking)
@@ -55,9 +55,9 @@ The new `ci-cd.yml` workflow provides:
 ## Documentation
 
 For detailed information about the CI/CD pipeline:
-- **Pipeline Documentation:** [docs/ci_pipeline.md](../../docs/ci_pipeline.md)
+- **Pipeline Documentation:** [docs/wiki/developer/ci-pipeline.md](../../docs/wiki/developer/ci-pipeline.md)
 - **Master Plan:** [docs/MASTER_PLAN.md](../../docs/MASTER_PLAN.md)
-- **As-Built Documentation:** [docs/AS_BUILT.md](../../docs/AS_BUILT.md)
+- **As-Built Documentation:** [docs/wiki/developer/architecture.md](../../docs/wiki/developer/architecture.md)
 
 ## Running Checks Locally
 
@@ -78,4 +78,4 @@ cd backend && npm test
 npm run build
 ```
 
-See [docs/ci_pipeline.md](../../docs/ci_pipeline.md) for more details.
+See [docs/wiki/developer/ci-pipeline.md](../../docs/wiki/developer/ci-pipeline.md) for more details.

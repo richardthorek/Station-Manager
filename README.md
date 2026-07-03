@@ -53,7 +53,7 @@ CI packages all three into a single Azure App Service deploy.
   entitlement sync (test-mode wired; see config below).
 - 🔐 **Suite federation** — Station Manager's JWT is the suite identity provider;
   sibling apps validate the same token and read entitlements via
-  `GET /api/auth/entitlements`. See [docs/SUITE_TOKEN_VALIDATION.md](docs/SUITE_TOKEN_VALIDATION.md).
+  `GET /api/auth/entitlements`. See [docs/wiki/developer/suite-token-validation.md](docs/wiki/developer/suite-token-validation.md).
 
 ### Platform
 - ⚡ Real-time WebSocket sync (no polling)
@@ -87,7 +87,7 @@ Local development uses an **in-memory database** by default — no Azure connect
 string required. Entitlement gating is on by default; set
 `ENABLE_ENTITLEMENTS=false` to disable it for single-tenant/kiosk dev.
 
-**📖 Full setup:** [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
+**📖 Full setup:** [docs/wiki/developer/getting-started.md](docs/wiki/developer/getting-started.md)
 
 ## Commands
 
@@ -173,8 +173,8 @@ Copy `backend/.env.example` → `backend/.env` and `frontend/.env.example` →
 | **AI gateway** | `AZURE_OPENAI_*`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` |
 | **Frontend** | `VITE_API_URL`, `VITE_SOCKET_URL`, `VITE_SANTA_RUN_URL`, `VITE_FIREBREAK_URL` |
 
-Full reference: [docs/AZURE_DEPLOYMENT.md](docs/AZURE_DEPLOYMENT.md) and
-[docs/AUTHENTICATION_CONFIGURATION.md](docs/AUTHENTICATION_CONFIGURATION.md).
+Full reference: [docs/wiki/developer/deployment.md](docs/wiki/developer/deployment.md) and
+[docs/wiki/developer/authentication.md](docs/wiki/developer/authentication.md).
 
 ## Testing
 
@@ -202,36 +202,42 @@ into one deploy zip.
 - **Images:** Azure Blob Storage (truck-check photos).
 - **Real-time:** Socket.io over native WebSocket (WSS in prod).
 
-See [docs/AZURE_DEPLOYMENT.md](docs/AZURE_DEPLOYMENT.md) for step-by-step
+See [docs/wiki/developer/deployment.md](docs/wiki/developer/deployment.md) for step-by-step
 instructions.
 
 ## Documentation
 
+The `docs/` folder holds exactly three things: the plan, the machine-readable
+registers, and the wiki.
+
 Start here:
-- **[docs/MASTER_PLAN.md](docs/MASTER_PLAN.md)** — single source of truth for
-  roadmap, priorities, and the change log
-- **[docs/AS_BUILT.md](docs/AS_BUILT.md)** — current architecture of record
-- **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** — local dev setup
-- **[docs/FEATURE_DEVELOPMENT_GUIDE.md](docs/FEATURE_DEVELOPMENT_GUIDE.md)** — how to add a feature
+- **[docs/MASTER_PLAN.md](docs/MASTER_PLAN.md)** — the single plan: feature
+  status board, prioritised queue, open decisions
+- **[docs/wiki/user-guide/](docs/wiki/user-guide/README.md)** — end-user guide
+  (members, kiosks, admins)
+- **[docs/wiki/developer/changelog.md](docs/wiki/developer/changelog.md)** — dated history of what shipped
+- **[docs/wiki/developer/architecture.md](docs/wiki/developer/architecture.md)** — current architecture of record
+- **[docs/wiki/developer/getting-started.md](docs/wiki/developer/getting-started.md)** — local dev setup
+- **[docs/wiki/developer/feature-development.md](docs/wiki/developer/feature-development.md)** — how to add a feature
 - **[CLAUDE.md](CLAUDE.md)** — fast, token-efficient repo guide for AI agents
 
 Reference:
-- **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)** + [docs/openapi.yaml](docs/openapi.yaml) — REST/WS reference
-- **[docs/AZURE_DEPLOYMENT.md](docs/AZURE_DEPLOYMENT.md)** — production deployment
-- **[docs/AUTHENTICATION_CONFIGURATION.md](docs/AUTHENTICATION_CONFIGURATION.md)** — auth & entitlements config
+- **[docs/wiki/developer/api-reference.md](docs/wiki/developer/api-reference.md)** + [docs/registers/openapi.yaml](docs/registers/openapi.yaml) — REST/WS reference
+- **[docs/wiki/developer/deployment.md](docs/wiki/developer/deployment.md)** — production deployment
+- **[docs/wiki/developer/authentication.md](docs/wiki/developer/authentication.md)** — auth & entitlements config
 
 Planning & SaaS/suite:
-- **[docs/MASTER_PLAN.md](docs/MASTER_PLAN.md)** — the single plan: roadmap, pricing, and the Consolidation & Standardisation Roadmap (cross-app, SaaS, AI, suite). No other planning doc exists.
-- **[docs/SUITE_TOKEN_VALIDATION.md](docs/SUITE_TOKEN_VALIDATION.md)** — sibling-app token/entitlement contract
-- Design history (reference only): [docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md](docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md), [docs/archive/SUITE_INTEGRATION_PLAN.md](docs/archive/SUITE_INTEGRATION_PLAN.md)
+- **[docs/MASTER_PLAN.md](docs/MASTER_PLAN.md)** — the single plan: status board, queue, pricing, open decisions (cross-app, SaaS, AI, suite). No other planning doc exists.
+- **[docs/wiki/developer/suite-token-validation.md](docs/wiki/developer/suite-token-validation.md)** — sibling-app token/entitlement contract
+- Design history (reference only): [docs/wiki/developer/history/archive/SAAS_COMMERCIALIZATION_DESIGN.md](docs/wiki/developer/history/archive/SAAS_COMMERCIALIZATION_DESIGN.md), [docs/wiki/developer/history/archive/SUITE_INTEGRATION_PLAN.md](docs/wiki/developer/history/archive/SUITE_INTEGRATION_PLAN.md)
 
-Historical material lives in [docs/archive/](docs/archive/); dated snapshots and
-UI screenshots in [docs/current_state/](docs/current_state/); deep dives in
-[docs/implementation-notes/](docs/implementation-notes/).
+Historical material lives in [docs/wiki/developer/history/archive/](docs/wiki/developer/history/archive/); dated snapshots and
+UI screenshots in [docs/wiki/developer/history/reviews/](docs/wiki/developer/history/reviews/); deep dives in
+[docs/wiki/developer/history/implementation-notes/](docs/wiki/developer/history/implementation-notes/).
 
-Most recent UAT pass: **[docs/current_state/UAT_REVIEW_20260622.md](docs/current_state/UAT_REVIEW_20260622.md)**
-— full production walkthrough including a logged-out/anonymous API probe. Findings are tracked
-in `docs/MASTER_PLAN.md`'s "Prioritised next steps."
+Most recent UAT pass: **[docs/wiki/developer/history/reviews/UAT_REVIEW_20260622.md](docs/wiki/developer/history/reviews/UAT_REVIEW_20260622.md)**
+— full production walkthrough including a logged-out/anonymous API probe. Remaining findings are
+tracked in `docs/MASTER_PLAN.md`'s queue.
 
 ## Security
 
@@ -242,14 +248,14 @@ validation, rate limiting (~1,000 req/hr/IP on the API; 5/15min on auth), JWT +
 bcrypt auth, and organization-scoped entitlement gating. Secrets are configured
 via environment variables / Azure Key Vault, never committed.
 
-See [docs/SECURITY_DEPLOYMENT_GUIDE.md](docs/SECURITY_DEPLOYMENT_GUIDE.md) and the
-security section of [docs/AS_BUILT.md](docs/AS_BUILT.md).
+See [docs/wiki/developer/security.md](docs/wiki/developer/security.md) and the
+security section of [docs/wiki/developer/architecture.md](docs/wiki/developer/architecture.md).
 
 ## Project status
 
 **v1.1 in production.** Sign-in is fully functional. Truck check and reports are
 deployed but have open issues — see the latest UAT
-([docs/current_state/UAT_REVIEW_20260622.md](docs/current_state/UAT_REVIEW_20260622.md))
+([docs/wiki/developer/history/reviews/UAT_REVIEW_20260622.md](docs/wiki/developer/history/reviews/UAT_REVIEW_20260622.md))
 and `docs/MASTER_PLAN.md`'s "Prioritised next steps." SaaS foundation
 (organizations, plans, entitlements) is wired; **Stripe billing is not yet
 configured in production** — there is currently no live upgrade path off the

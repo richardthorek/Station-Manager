@@ -414,8 +414,8 @@ Failed:       0 ❌
 
 - **CI/CD Pipeline:** `.github/workflows/ci-cd.yml`
 - **Master Plan:** `docs/MASTER_PLAN.md`
-- **As-Built:** `docs/AS_BUILT.md`
-- **API Documentation:** `docs/API_DOCUMENTATION.md`
+- **As-Built:** `docs/wiki/developer/architecture.md`
+- **API Documentation:** `docs/wiki/developer/api-reference.md`
 
 ### Azure Resources
 

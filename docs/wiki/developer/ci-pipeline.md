@@ -3,7 +3,7 @@
 **Document Version:** 1.0  
 **Last Updated:** January 2026  
 **Status:** Active  
-**Related Documentation:** [MASTER_PLAN.md](MASTER_PLAN.md), [AS_BUILT.md](AS_BUILT.md)
+**Related Documentation:** [MASTER_PLAN.md](../../MASTER_PLAN.md), [AS_BUILT.md](architecture.md)
 
 ---
 
@@ -701,11 +701,11 @@ build:
 
 ## Related Documentation
 
-- **[MASTER_PLAN.md](MASTER_PLAN.md)** - Project roadmap and strategic planning
-- **[AS_BUILT.md](AS_BUILT.md)** - Current implementation state
-- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Local development setup
-- **[FEATURE_DEVELOPMENT_GUIDE.md](FEATURE_DEVELOPMENT_GUIDE.md)** - Development guidelines
-- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - API reference
+- **[MASTER_PLAN.md](../../MASTER_PLAN.md)** - Project roadmap and strategic planning
+- **[AS_BUILT.md](architecture.md)** - Current implementation state
+- **[GETTING_STARTED.md](getting-started.md)** - Local development setup
+- **[FEATURE_DEVELOPMENT_GUIDE.md](feature-development.md)** - Development guidelines
+- **[API_DOCUMENTATION.md](api-reference.md)** - API reference
 
 ---
 

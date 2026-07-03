@@ -4,55 +4,68 @@ Guidance for Claude Code (and other AI agents) working in this repo. Optimised
 for fast, token-efficient navigation — **read the indexed file you need instead
 of grepping the whole tree.**
 
-## ⛔ THE ONE-PLAN RULE (non-negotiable)
+## ⛔ THE DOCS STRUCTURE RULE (non-negotiable)
 
-**There is exactly one plan: `docs/MASTER_PLAN.md`. Do not create any other.**
+**`docs/` contains exactly three things. Never add a fourth.**
 
-- **NEVER** create a new planning, roadmap, design-spike, "future work", proposal,
-  strategy, or `*_PLAN.md` / `*_DESIGN.md` / `*_ROADMAP.md` document — not in
-  `docs/`, not in an app folder, not anywhere. This includes splitting a plan
-  "just for this feature" or dropping a design doc next to code.
-- To capture future work, a design decision, a phase, or a change of direction:
-  **edit `docs/MASTER_PLAN.md`** (its "Consolidation & Standardisation Roadmap" is
-  the home for cross-app / SaaS / AI / suite work). That is the single source of
-  truth for *all three apps* (`backend/`, `frontend/`, `aar-studio/`) and the suite.
-- The former separate plans were folded in and moved to `docs/archive/` (banners
-  point back here). They are historical design **reference only — not live plans**;
-  never resurrect one as the place to plan.
-- If a planning doc somehow reappears, treat it as a defect: fold its content into
-  `MASTER_PLAN.md` and archive it. Don't add to it.
+1. **`docs/MASTER_PLAN.md`** — the one plan. All planning and forward intent
+   happens here and only here.
+2. **`docs/registers/`** — the machine-readable technical registers describing
+   the backend: `api_register.json`, `function_register.json`, `openapi.yaml`.
+3. **`docs/wiki/`** — wiki-style markdown: `wiki/developer/` (architecture,
+   guides, the changelog, and `history/` for archived reference material) and
+   `wiki/user-guide/` (the end-user guide).
 
-(`AS_BUILT.md`, `API_DOCUMENTATION.md`, registries, and the `archive/` /
-`implementation-notes/` reference docs describe what *is* built — they are not
-plans and are unaffected by this rule.)
+Rules that follow from this:
+
+- **NEVER** create a new planning, roadmap, design-spike, "future work",
+  proposal, strategy, or `*_PLAN.md` / `*_DESIGN.md` / `*_ROADMAP.md` document —
+  not in `docs/`, not in an app folder, not anywhere. To capture future work, a
+  design decision, or a change of direction: **edit `docs/MASTER_PLAN.md`**
+  (status board + prioritised queue + open decisions).
+- **NEVER** drop a new loose file at `docs/` top level. New developer docs go in
+  `docs/wiki/developer/`; new user-facing docs go in `docs/wiki/user-guide/`
+  (and get linked from that section's `README.md` index). Point-in-time
+  reviews/audits go in `docs/wiki/developer/history/reviews/`.
+- The old design spikes live in `docs/wiki/developer/history/archive/` — they
+  are historical **reference only, not live plans**; never resurrect one as the
+  place to plan. If a planning doc reappears anywhere, treat it as a defect:
+  fold its content into `MASTER_PLAN.md` and delete/archive it.
+- **The master plan looks forward only.** It holds the status board, the
+  prioritised queue, open decisions, and reference tables — not shipping
+  narratives. Dated "what shipped" entries belong in
+  `docs/wiki/developer/changelog.md`.
 
 ## 📝 PROGRESS TRACKING RULE (mandatory at end of every session)
 
-**At the end of every working session, update `docs/MASTER_PLAN.md`** before pushing the final commit. This is not optional — it is part of "done".
+**Before pushing the final commit of a session, record what happened.** This is
+not optional — it is part of "done".
 
-### What to record
+1. **Add a dated entry to `docs/wiki/developer/changelog.md`** (top of the
+   matching month section) summarising what shipped: what problem was solved,
+   the concrete changes, the PR number, and any caveats. Format:
 
-1. **In the "June 2026 Stabilization" section** (or the matching month/year section), add a dated bullet summarising what shipped: which files changed, what problem was solved, which PR number, and any caveats or known gaps.
+   ```
+   - 2026-MM-DD: **Short title (#PR).** One-sentence summary of the problem solved.
+     **What shipped:** concrete changes. *N tests; suites green.*
+   ```
 
-2. **Update "Prioritised next steps"** to reflect what remains. Mark items you completed as done. If the priorities have shifted, reorder the list. If a new blocker emerged, add it at the top with a brief explanation.
-
-3. **Update the version history table** at the bottom of the file with a one-line description of what changed.
-
-### Format guidance
-
-```
-- 2026-MM-DD: **Short title (#PR).** One-sentence summary of what problem this solved.
-  **What shipped:** bullet list of concrete changes. *N commits; test suites green.*
-```
+2. **Update `docs/MASTER_PLAN.md`** to match reality: flip statuses on the
+   feature board, remove finished queue items, insert newly discovered work in
+   priority order, and record/resolve open decisions. Do **not** add the dated
+   narrative there — that's the changelog's job.
 
 ### When to also update other docs
 
-- If an API endpoint was added/changed → also update `docs/api_register.json` and `docs/API_DOCUMENTATION.md`.
-- If a backend function/service signature changed → also update `docs/function_register.json`.
-- If the overall architecture changed → also update `docs/AS_BUILT.md`.
-- If the CI pipeline changed → also update `docs/ci_pipeline.md`.
+- API endpoint added/changed → `docs/registers/api_register.json` (+
+  `docs/registers/openapi.yaml`) and `docs/wiki/developer/api-reference.md`.
+- Backend function/service signature changed → `docs/registers/function_register.json`.
+- Architecture changed → `docs/wiki/developer/architecture.md`.
+- CI pipeline changed → `docs/wiki/developer/ci-pipeline.md`.
+- User-visible behaviour changed → the matching `docs/wiki/user-guide/` page.
 
-The master plan captures *what* and *why*; the registries and AS_BUILT capture *how*. Keep all four in sync.
+The plan captures *what's next and why*; the changelog captures *what shipped*;
+the registers and architecture page capture *how it works now*. Keep them in sync.
 
 ## What this is
 
@@ -71,11 +84,11 @@ view reports. Changes sync live across kiosks/tablets/phones via WebSockets.
   Root `package.json` orchestrates backend + frontend. See "Multi-app structure
   & integration seams" below — most recent production bugs came from the seams
   between these apps (service worker, CSP, CORS).
-- **Status**: v1.1 in production — sign-in, truck check, and reports all shipped.
-  Features are gated per-organization by SaaS **entitlements** (see "SaaS tenancy
-  & entitlements"). AAR Studio is live at `/aar`. Stripe billing is designed
-  (roadmap in `docs/MASTER_PLAN.md`; design in
-  `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md`) but **not yet wired**.
+- **Current status lives elsewhere** — feature state and priorities in
+  `docs/MASTER_PLAN.md` (status board + queue); what shipped when in
+  `docs/wiki/developer/changelog.md`. Don't rely on this file for either.
+  Features are gated per-organization by SaaS **entitlements** (see "SaaS
+  tenancy & entitlements").
 - **DB**: Azure Table Storage in prod; in-memory store for local dev/tests.
   Selected at runtime by `dbFactory` (see below).
 - **Deploy**: GitHub Actions → Azure **Linux** App Service (`bungrfs-linux`). The
@@ -169,8 +182,9 @@ package step, and the static mount — together.
 
 ## SaaS tenancy & entitlements
 
-Organizations are the billing tenant; features are gated per-org. Default-**off**
-(`ENABLE_ENTITLEMENTS` env) for single-tenant/kiosk back-compat.
+Organizations are the billing tenant; features are gated per-org. Default-**on**
+(`ENABLE_ENTITLEMENTS !== 'false'`); requests with no org context (kiosk/demo)
+always pass through, preserving single-tenant/kiosk back-compat.
 
 - **Model** (`backend/src/types/index.ts`, `backend/src/constants/plans.ts`):
   `Organization` (`planCode` `community|basic|ai`, `status`, `entitlements`,
@@ -188,11 +202,12 @@ Organizations are the billing tenant; features are gated per-org. Default-**off*
   requireFeature) and its flag added to `Entitlements` + `plans.ts`. Use
   `FeatureRoute` for plan features, `ProtectedRoute`/`requireOwner`/`requireAdmin`
   for admin/role — never mix the two.
-- **Not yet built:** Stripe checkout/portal/webhooks, usage metering
-  (`UsageRecord`), and gating on a few routes (`export`, station/device limits).
-  See the Consolidation & Standardisation Roadmap in `docs/MASTER_PLAN.md`
-  (commercialisation track C1–C4); detailed design in
-  `docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md`.
+- **Billing:** Stripe (Checkout/Portal/signature-verified webhooks) syncs the
+  org's plan/status/entitlements; billing code lives in `routes/billing.ts` +
+  `services/stripeClient.ts` and no-ops cleanly when Stripe env vars are unset.
+  For what's built vs outstanding, check the status board + queue in
+  `docs/MASTER_PLAN.md`; design history in
+  `docs/wiki/developer/history/archive/SAAS_COMMERCIALIZATION_DESIGN.md`.
 
 ## Backend file index (`backend/src/`)
 
@@ -258,29 +273,27 @@ Organizations are the billing tenant; features are gated per-org. Default-**off*
 
 ## Docs you should consult (don't re-derive)
 
-- `docs/MASTER_PLAN.md` — **the single plan.** Source of truth for roadmap,
-  priorities, technical debt, *and* all cross-app/commercialisation/AI/suite work
-  (see its "Consolidation & Standardisation Roadmap"). **There is no other plan.**
-  When capturing future work or a design decision, edit this file — never create a
-  new planning/design/roadmap doc. Update it when changing project direction.
-- `docs/AS_BUILT.md` — current architecture/implementation of record.
-- `docs/api_register.json` + `docs/function_register.json` — machine-readable
-  endpoint/function registries (Draft-7). Update when APIs/signatures change;
-  validated in CI via `scripts/validate-registries.sh`.
-- `docs/API_DOCUMENTATION.md`, `docs/openapi.yaml` — REST/WS reference.
-- `docs/GETTING_STARTED.md`, `docs/FEATURE_DEVELOPMENT_GUIDE.md` — dev guides.
-- `docs/AZURE_DEPLOYMENT.md`, `docs/ci_pipeline.md` — deploy/CI.
-- `docs/SUITE_TOKEN_VALIDATION.md` — current contract for sibling apps validating
-  the SM JWT (reference, not a plan).
-- **Archived design spikes** (`docs/archive/`) — historical detail only, *not* live
-  plans; their forward work is in MASTER_PLAN's roadmap: `CONSOLIDATION_REVIEW.md`
-  (cross-app coherence, AI gateway), `SAAS_COMMERCIALIZATION_DESIGN.md`
-  (pricing/Stripe/tenancy schema), `AI_MAINTENANCE_AGENT_DESIGN.md` (voice/vision
-  agent schema + tool contract), `SUITE_INTEGRATION_PLAN.md` (suite options),
-  `AAR_STUDIO_PLAN.md` (AAR stage history).
-- `.github/copilot-instructions.md` — full conventions (this file is the short form).
-- `docs/implementation-notes/` deep dives; `docs/current_state/` dated snapshots +
-  UI screenshots.
+The `docs/` layout is fixed (see THE DOCS STRUCTURE RULE above): the plan, the
+registers, and the wiki.
+
+- `docs/MASTER_PLAN.md` — **the single plan.** Feature status board,
+  prioritised queue (Q-items), open decisions. **There is no other plan.**
+- `docs/wiki/developer/changelog.md` — dated history of everything shipped.
+- `docs/wiki/developer/architecture.md` — architecture/implementation of record.
+- `docs/registers/api_register.json` + `docs/registers/function_register.json` —
+  machine-readable endpoint/function registers (Draft-7). Update when
+  APIs/signatures change; validated in CI via `scripts/validate-registries.sh`.
+  `docs/registers/openapi.yaml` — OpenAPI spec.
+- `docs/wiki/developer/README.md` — index of all developer pages: api-reference,
+  getting-started, feature-development, testing, deployment, ci-pipeline,
+  security, authentication, logging, suite-token-validation, registers-guide.
+- `docs/wiki/user-guide/README.md` — index of the end-user guide (update the
+  matching page when user-visible behaviour changes).
+- `docs/wiki/developer/history/` — archived design spikes (`archive/` —
+  historical detail only, *not* live plans: CONSOLIDATION_REVIEW,
+  SAAS_COMMERCIALIZATION_DESIGN, AI_MAINTENANCE_AGENT_DESIGN,
+  SUITE_INTEGRATION_PLAN, AAR_STUDIO_PLAN), dated reviews + screenshots
+  (`reviews/`), and implementation-note deep dives (`implementation-notes/`).
 
 ## Conventions (the ones that bite)
 
@@ -289,18 +302,19 @@ Organizations are the billing tenant; features are gated per-org. Default-**off*
   must be lazy-loaded and wrapped in `<Suspense fallback={<LoadingFallback />}>`.
 - **CSS**: component-scoped files, BEM-ish names, use vars from `index.css`.
   No inline styles.
-- **NSW RFS brand**: red `#e5281B`, lime `#cbdb2a`, Public Sans. Touch targets
-  ≥ 60px (kiosk). WCAG 2.1 AA. UI changes need iPad portrait+landscape
-  screenshots in the PR. (AAR Studio currently uses its own divergent palette —
-  unifying these is `CONSOLIDATION_REVIEW.md` #2.)
+- **NSW RFS brand**: red `#e5281B`, lime `#cbdb2a`, Public Sans — canonical
+  tokens in `aar-studio/css/rfs-tokens.css`, mirrored by the SPA's `index.css`.
+  Touch targets ≥ 60px (kiosk; 44px minimum for inline/desktop controls).
+  WCAG 2.1 AA. UI changes need iPad portrait+landscape screenshots in the PR.
 - **Gating**: plan features use `FeatureRoute` + backend `requireFeature`; admin
   uses `ProtectedRoute` + `requireOwner`/`requireAdmin`. Gate on both sides.
 - **API calls** go through `services/api.ts`; **DB access** through a factory.
 - **Tests** encouraged for new routes/services/components (coverage thresholds
   currently not enforced). Backend tests use the in-memory DB.
-- **Per the PR template / copilot-instructions**, update `MASTER_PLAN.md`,
-  `AS_BUILT.md`, and the JSON registers when a change affects roadmap, API, or
-  function signatures.
+- **Per the PR template**, update the changelog +
+  `MASTER_PLAN.md`, `wiki/developer/architecture.md`, and the
+  `docs/registers/` JSON registers when a change affects roadmap, API, or
+  function signatures (see THE PROGRESS TRACKING RULE above).
 
 ## Gotchas
 

@@ -267,7 +267,7 @@ AZURE_APP_INSIGHTS_CONNECTION_STRING="InstrumentationKey=xxx;IngestionEndpoint=h
 3. Configure 1-day retention in Azure Portal (Settings → Usage and estimated costs → Data Retention)
 
 **For detailed setup instructions, see:**
-- [Azure App Insights Configuration Guide](./AZURE_APP_INSIGHTS.md)
+- [Azure App Insights Configuration Guide](app-insights.md)
 
 **Key Features:**
 - ✅ Automatic log forwarding to Azure
@@ -441,9 +441,9 @@ Consider implementing log aggregation for long-term retention.
 ## Related Documentation
 
 - [Winston Documentation](https://github.com/winstonjs/winston)
-- [AS_BUILT.md](./AS_BUILT.md) - System architecture
-- [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) - API reference
-- [MASTER_PLAN.md](./MASTER_PLAN.md) - Project roadmap
+- [AS_BUILT.md](architecture.md) - System architecture
+- [API_DOCUMENTATION.md](api-reference.md) - API reference
+- [MASTER_PLAN.md](../../MASTER_PLAN.md) - Project roadmap
 
 ## Support
 
