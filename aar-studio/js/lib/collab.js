@@ -7,6 +7,15 @@ const SDK_URL = 'https://cdn.jsdelivr.net/npm/socket.io-client@4.8.1/dist/socket
 
 let sdkPromise = null;
 let socket = null;
+// Server-side room membership (socket.join) is tied to the underlying
+// connection and does not survive a reconnect — Socket.io transparently
+// reconnects after a network blip (or a laptop sleep), but the facilitator
+// or participant silently falls out of the room unless they re-announce
+// themselves. Replay whichever of these applies on every 'connect' event so
+// room notes keep flowing instead of vanishing after a dropout while the
+// sender still sees "sent" (AAR Studio hero review 2026-07-03, AAR-7).
+let hostState = null; // { code } — set by hostSession
+let joinState = null; // { code, label } — set by joinSession
 
 function loadIo() {
   if (globalThis.io) return Promise.resolve(globalThis.io);
@@ -24,7 +33,16 @@ function loadIo() {
 
 async function getSocket() {
   const io = await loadIo();
-  if (!socket) socket = io({ transports: ['websocket', 'polling'] });
+  if (!socket) {
+    socket = io({ transports: ['websocket', 'polling'] });
+    // Fires on the initial connect AND every automatic reconnect — re-join
+    // whichever room this tab was last in. Fire-and-forget: this is a
+    // background resync, not a user-initiated action awaiting a result.
+    socket.on('connect', () => {
+      if (hostState) socket.emit('aar:host', { code: hostState.code }, () => {});
+      if (joinState) socket.emit('aar:join', { code: joinState.code, label: joinState.label }, () => {});
+    });
+  }
   return socket;
 }
 
@@ -56,6 +74,7 @@ export async function hostSession(code, { onNote, onParticipant } = {}) {
   s.off('aar:participant-joined');
   if (onNote) s.on('aar:note', onNote);
   if (onParticipant) s.on('aar:participant-joined', onParticipant);
+  hostState = { code };
   return new Promise((resolve, reject) => {
     s.emit('aar:host', { code }, (res) => (res?.ok ? resolve(res) : reject(new Error(res?.error || 'Could not host the session'))));
   });
@@ -64,6 +83,7 @@ export async function hostSession(code, { onNote, onParticipant } = {}) {
 /** Participant: join an existing session. */
 export async function joinSession(code, label) {
   const s = await getSocket();
+  joinState = { code, label };
   return new Promise((resolve, reject) => {
     s.emit('aar:join', { code, label }, (res) => (res?.ok ? resolve(res) : reject(new Error(res?.error || 'Could not join the session'))));
   });

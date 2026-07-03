@@ -156,15 +156,28 @@ export function listSessions() {
   return sessions.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
 }
 
-export function deleteSession(id) {
+/**
+ * Remove a review from this device only — a brigade-shared cloud copy (if
+ * any) is left untouched. The safe default when a member is just tidying up
+ * one device (AAR Studio hero review 2026-07-03, AAR-1).
+ */
+export function deleteSessionLocal(id) {
   localStorage.removeItem(SESSION_PREFIX + id);
   if (current?.id === id) {
     current = null;
     localStorage.removeItem(LAST_KEY);
   }
-  // Best-effort cloud removal so a delete on one device propagates to the team.
-  if (isAuthed()) deleteServerSession(id).catch(() => {});
   notify('session-loaded');
+}
+
+/**
+ * Remove a review everywhere: this device and (best-effort) the brigade's
+ * shared cloud copy, so it's also gone from every other device. Only
+ * meaningful when signed in — the server call is a silent no-op otherwise.
+ */
+export function deleteSessionEverywhere(id) {
+  deleteSessionLocal(id);
+  if (isAuthed()) deleteServerSession(id).catch(() => {});
 }
 
 /**

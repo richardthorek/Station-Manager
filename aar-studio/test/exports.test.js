@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { emptyReport, renderSnapshotHtml, renderMarkdown, sessionFilename, renderTranscriptText } from '../js/lib/exports.js';
+import { emptyReport, renderSnapshotHtml, renderCombinedHtml, renderMarkdown, sessionFilename, renderTranscriptText } from '../js/lib/exports.js';
 import { normaliseSession } from '../js/lib/model.js';
 
 const sample = normaliseSession(JSON.parse(await readFile(new URL('../data/sample-session.json', import.meta.url), 'utf8')));
@@ -46,6 +46,12 @@ test('markdown summary includes report sections and the findings register', () =
   assert.match(md, /## Top three actions/);
   assert.match(md, /## Findings register/);
   assert.match(md, /\[Went well\]/);
+});
+
+test('every export carries the "Produced with AAR Studio" attribution (AAR-19)', () => {
+  assert.match(renderSnapshotHtml(sample), /Produced with AAR Studio · Bushie Tools/);
+  assert.match(renderCombinedHtml(sample), /Produced with AAR Studio · Bushie Tools/);
+  assert.match(renderMarkdown(sample), /Produced with AAR Studio · Bushie Tools/);
 });
 
 test('transcript text applies the speaker rename map', () => {

@@ -4,6 +4,11 @@
 import { CATEGORIES, GENERAL_PHASE, categoryLabel, sessionPhases, speakerName } from './model.js';
 import { escapeHtml as esc, fmtClock, slugify } from './text.js';
 
+// Every export a facilitator hands to another brigade or district staff is a
+// no-cost sales pitch — the artifact carried no attribution at all until this
+// line was added (AAR Studio hero review 2026-07-03, AAR-19).
+const ATTRIBUTION = 'Produced with AAR Studio · Bushie Tools';
+
 /** Blank report structure, pre-filled from session metadata. */
 export function emptyReport(session) {
   return {
@@ -144,7 +149,7 @@ ${actions.map((a, i) => `      <td><span class="n">${i + 1}</span>${esc(a)}</td>
     </tr></table>
   </div>` : ''}
 ${r.assessment ? `  <div class="section"><h2>Overall assessment</h2><div class="incident"><p>${esc(r.assessment)}</p></div></div>` : ''}
-${r.caveat ? `  <div class="footer">${esc(r.caveat)}</div>` : ''}
+  <div class="footer">${r.caveat ? `${esc(r.caveat)}<br>` : ''}${ATTRIBUTION}</div>
 </div>`;
 }
 
@@ -217,6 +222,7 @@ export function renderMarkdown(session) {
   if (r.assessment) out.push('## Overall assessment', '', r.assessment, '');
 
   out.push(...renderFindingsRegister(session));
+  out.push('---', '', `_${ATTRIBUTION}_`);
   return out.join('\n');
 }
 

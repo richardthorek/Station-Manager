@@ -118,15 +118,16 @@ function audioPanel() {
   const interimEl = h('div', { class: 'live__interim', 'aria-live': 'off' });
   const stateText = ls.status === 'starting' ? 'Connecting…'
     : ls.status === 'stopping' ? 'Wrapping up…'
+    : ls.status === 'reconnecting' ? 'Connection interrupted — reconnecting…'
     : 'Listening — talk naturally';
 
   const liveControls = h('div', { class: 'live' },
     h('div', { class: 'live__row' },
-      h('span', { class: 'live__dot', 'aria-hidden': 'true' }),
+      h('span', { class: `live__dot${ls.status === 'reconnecting' ? ' live__dot--reconnecting' : ''}`, 'aria-hidden': 'true' }),
       h('span', { class: 'live__state' }, stateText),
       elapsed,
       meter,
-      h('button', { class: 'btn btn--primary', disabled: ls.status !== 'listening', onclick: () => live.stop() }, '■ Stop & see findings'),
+      h('button', { class: 'btn btn--primary', disabled: ls.status !== 'listening' && ls.status !== 'reconnecting', onclick: () => live.stop() }, '■ Stop & see findings'),
     ),
     h('p', { class: 'live__progress muted' }, findingCount
       ? `${findingCount} finding${findingCount === 1 ? '' : 's'} so far — they keep appearing as you talk.`
@@ -140,7 +141,10 @@ function audioPanel() {
     ls.recordingUrl && ls.status === 'idle'
       ? h('p', {}, h('a', { class: 'btn', href: ls.recordingUrl, download: ls.recordingName }, '⬇ Download backup recording'))
       : null,
-    ls.error ? h('p', { class: 'live__error', role: 'alert' }, ls.error) : null,
+    // Suppress the raw error line while a reconnect is in flight — the amber
+    // "reconnecting…" status above already says enough without an alarming
+    // red alert for what's usually a transient, self-healing blip.
+    ls.error && ls.status !== 'reconnecting' ? h('p', { class: 'live__error', role: 'alert' }, ls.error) : null,
   );
 
   live.setUiListener((event, s) => {

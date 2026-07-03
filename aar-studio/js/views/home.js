@@ -55,9 +55,42 @@ function reviewCard(s) {
   const stat = s.findings
     ? `${s.findings} finding${s.findings === 1 ? '' : 's'}`
     : (s.segments ? 'recorded, not yet summarised' : 'empty');
+  const title = displayTitle({ incident: { title: s.title }, createdAt: s.createdAt });
+  // Signed in ⇒ this review likely has a brigade-shared cloud copy, so "delete"
+  // is no longer one unambiguous action — split it (A3 hero review 2026-07-03,
+  // AAR-1). Previously the single 🗑 button deleted the cloud copy too, with a
+  // confirm that never mentioned the team; a member "tidying up their iPad"
+  // could silently wipe the whole brigade's only copy.
+  const signedIn = isAuthed();
+
+  const removeLocalBtn = h('button', {
+    class: 'icon-btn', title: signedIn ? 'Remove from this device' : 'Delete',
+    'aria-label': signedIn ? `Remove "${title}" from this device` : `Delete "${title}"`,
+    onclick: () => {
+      const confirmed = signedIn
+        ? confirmDanger(`Remove "${title}" from this device? Your brigade's shared copy (if any) is kept — this only clears it here.`)
+        : confirmDanger(`Delete "${title}"? This can't be undone.`);
+      if (!confirmed) return;
+      store.deleteSessionLocal(s.id);
+      toast(signedIn ? 'Removed from this device' : 'Review deleted');
+    },
+  }, '🗑');
+
+  const deleteEverywhereBtn = signedIn
+    ? h('button', {
+        class: 'btn btn--small btn--danger', title: 'Delete for everyone',
+        'aria-label': `Delete "${title}" for your whole brigade`,
+        onclick: () => {
+          if (!confirmDanger(`Delete "${title}" for your whole brigade? This removes the shared copy — other devices will lose it too. This can't be undone.`)) return;
+          store.deleteSessionEverywhere(s.id);
+          toast('Review deleted for everyone');
+        },
+      }, 'Delete for everyone')
+    : null;
+
   return h('article', { class: 'review-card', 'data-session-id': s.id, onclick: () => { store.openSession(s.id); location.hash = '#/board'; } },
     h('div', { class: 'review-card__body' },
-      h('h3', { class: 'review-card__title' }, displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })),
+      h('h3', { class: 'review-card__title' }, title),
       h('p', { class: 'review-card__meta' }, subtitle || 'No details yet'),
       h('p', { class: 'review-card__stat' }, stat),
     ),
@@ -70,12 +103,8 @@ function reviewCard(s) {
         const session = store.openSession(s.id);
         download(sessionFilename(session, 'review', 'json'), store.exportSessionJson(session), 'application/json');
       } }, '⬇'),
-      h('button', { class: 'icon-btn icon-btn--danger', title: 'Delete', 'aria-label': 'Delete', onclick: () => {
-        if (confirmDanger(`Delete "${displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })}"? This can't be undone.`)) {
-          store.deleteSession(s.id);
-          toast('Review deleted');
-        }
-      } }, '🗑'),
+      removeLocalBtn,
+      deleteEverywhereBtn,
     ),
   );
 }

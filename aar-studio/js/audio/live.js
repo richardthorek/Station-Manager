@@ -60,7 +60,7 @@ async function fetchSpeechToken() {
 }
 
 const state = {
-  status: 'idle', // idle | starting | listening | stopping
+  status: 'idle', // idle | starting | listening | reconnecting | stopping
   source: null,
   startedAt: null,
   level: 0,
@@ -71,6 +71,23 @@ const state = {
   recordingUrl: null,
   recordingName: '',
 };
+
+/** Gateway mode = no user-supplied Speech key (this site vends short-lived tokens). */
+function isGatewayMode(settings) {
+  return !String(settings?.speechKey ?? '').trim();
+}
+
+// Azure Speech authorization tokens last ~10 minutes; a live AAR regularly
+// runs longer, so refresh proactively rather than waiting to fail
+// (AAR Studio hero review 2026-07-03, AAR-6). A missed refresh isn't fatal —
+// the reactive reconnect below (triggered by the SDK's own auth-failure
+// cancellation) is the fallback safety net.
+const TOKEN_REFRESH_INTERVAL_MS = 8 * 60 * 1000;
+// A handful of quick, backed-off automatic reconnect attempts before giving
+// up and surfacing a clear message — the backup recording (if enabled) keeps
+// running throughout, so nothing captured so far is lost (AAR-8).
+const MAX_RECONNECT_ATTEMPTS = 4;
+const RECONNECT_BACKOFF_MS = [1000, 3000, 6000, 10000];
 
 export function getState() {
   return state;
@@ -94,6 +111,13 @@ let transcriber = null;
 let recorder = null;
 let autoTimer = null;
 let labeler = null;
+let tokenRefreshTimer = null;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+// The base user settings (from getSettings()) for the in-flight session —
+// used to re-vend a gateway token on refresh/reconnect without re-reading
+// localStorage (a user could change Settings mid-meeting).
+let baseSettings = null;
 
 async function getInput(sourceKind, file) {
   if (sourceKind === 'mic') {
@@ -162,13 +186,107 @@ function onFinal(text, speakerId, offsetSec) {
   // No emit needed — the store update above already re-renders the view.
 }
 
+/** Vend a fresh gateway token when in gateway mode; pass BYO settings through unchanged. */
+async function vendLiveSettings(settings) {
+  if (!isGatewayMode(settings)) return settings;
+  const { token, region } = await fetchSpeechToken();
+  return { ...settings, authToken: token, speechRegion: region || settings.speechRegion };
+}
+
+/** Wire a transcriber to the shared onInterim/onFinal/onError handlers. */
+function buildTranscriber(sdk, liveSettings) {
+  return createTranscriber({
+    sdk,
+    settings: liveSettings,
+    onInterim: (text, speakerId) => {
+      state.interim = text ?? '';
+      state.interimSpeaker = labeler(speakerId);
+      emit('interim');
+    },
+    onFinal,
+    onError: (message) => handleTranscriberError(message),
+  });
+}
+
+/**
+ * A transcriber-level failure (auth expiry, dropped connection, service
+ * hiccup). Previously this tore down the whole capture — mic, worklet, and
+ * the local backup recording — on the very first error (AAR-8). Now it keeps
+ * the audio graph and backup recording running and tries a few backed-off
+ * automatic reconnects before giving up.
+ */
+function handleTranscriberError(message) {
+  // A manual stop is already in flight — a straggling cancellation from the
+  // old transcriber shouldn't resurrect anything.
+  if (state.status === 'stopping' || state.status === 'idle') return;
+  state.error = message;
+  if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+    state.status = 'reconnecting';
+    emit();
+    const delay = RECONNECT_BACKOFF_MS[Math.min(reconnectAttempts, RECONNECT_BACKOFF_MS.length - 1)];
+    reconnectAttempts++;
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => { void attemptReconnect(); }, delay);
+  } else {
+    state.error = 'Live transcription was interrupted and could not reconnect. '
+      + (state.recording ? 'Your audio backup is still recording — download it below once stopped, or start again.' : 'Start again to keep going.');
+    void stop();
+  }
+}
+
+/** Rebuild just the transcriber (fresh token in gateway mode) — mic/worklet/backup recorder untouched. */
+async function attemptReconnect() {
+  if (state.status !== 'reconnecting') return; // user stopped meanwhile
+  try {
+    const sdk = await loadSpeechSdk();
+    const liveSettings = await vendLiveSettings(baseSettings);
+    try { await transcriber?.stop(); } catch { /* already dead */ }
+    if (state.status !== 'reconnecting') return; // stopped while we were vending/closing
+    transcriber = buildTranscriber(sdk, liveSettings);
+    await transcriber.start();
+    if (state.status !== 'reconnecting') {
+      // A manual stop() landed while we were reconnecting — teardown() already
+      // ran (and may already have nulled `transcriber`); make sure this
+      // just-started instance doesn't linger regardless of that race.
+      const orphan = transcriber;
+      transcriber = null;
+      await orphan.stop().catch(() => {});
+      return;
+    }
+    reconnectAttempts = 0;
+    state.status = 'listening';
+    state.error = '';
+    emit();
+  } catch (err) {
+    if (state.status !== 'reconnecting') return;
+    handleTranscriberError(err?.message ?? String(err));
+  }
+}
+
+/** Proactively refresh the gateway token before it expires (gateway mode only). */
+function startTokenRefreshTimer() {
+  if (!isGatewayMode(baseSettings)) return;
+  clearInterval(tokenRefreshTimer);
+  tokenRefreshTimer = setInterval(async () => {
+    if (state.status !== 'listening' && state.status !== 'reconnecting') return;
+    try {
+      const { token, region } = await fetchSpeechToken();
+      if (region) baseSettings = { ...baseSettings, speechRegion: region };
+      transcriber?.updateAuthToken(token);
+    } catch (err) {
+      console.warn('AAR speech token refresh failed — relying on reactive reconnect', err);
+    }
+  }, TOKEN_REFRESH_INTERVAL_MS);
+}
+
 /**
  * Start live listening. sourceKind: 'mic' | 'display' | 'file'.
  * options: { file?: File, backup?: boolean }
  */
 export async function start(sourceKind, { file = null, backup = false } = {}) {
   if (state.status !== 'idle') return;
-  const settings = getSettings();
+  baseSettings = getSettings();
+  reconnectAttempts = 0;
   state.status = 'starting';
   state.source = sourceKind;
   state.error = '';
@@ -181,11 +299,7 @@ export async function start(sourceKind, { file = null, backup = false } = {}) {
     // Gateway mode (no user-supplied Speech key): vend a short-lived token from
     // the server. This also runs the AI session allowance/entitlement gate, so a
     // 402/403/503 here stops the start cleanly with a friendly message.
-    let liveSettings = settings;
-    if (!String(settings.speechKey ?? '').trim()) {
-      const { token, region } = await fetchSpeechToken();
-      liveSettings = { ...settings, authToken: token, speechRegion: region || settings.speechRegion };
-    }
+    const liveSettings = await vendLiveSettings(baseSettings);
 
     audioCtx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
     await audioCtx.resume();
@@ -194,21 +308,7 @@ export async function start(sourceKind, { file = null, backup = false } = {}) {
     sourceNode = await getInput(sourceKind, file);
 
     labeler = createSpeakerLabeler();
-    transcriber = createTranscriber({
-      sdk,
-      settings: liveSettings,
-      onInterim: (text, speakerId) => {
-        state.interim = text ?? '';
-        state.interimSpeaker = labeler(speakerId);
-        emit('interim');
-      },
-      onFinal,
-      onError: (message) => {
-        state.error = message;
-        emit();
-        stop();
-      },
-    });
+    transcriber = buildTranscriber(sdk, liveSettings);
 
     workletNode = new AudioWorkletNode(audioCtx, 'pcm-tap');
     const sampleRate = audioCtx.sampleRate;
@@ -232,6 +332,7 @@ export async function start(sourceKind, { file = null, backup = false } = {}) {
     state.status = 'listening';
     state.startedAt = Date.now();
     autoTimer = setInterval(() => { maybeAutoExtract(); }, 5000);
+    startTokenRefreshTimer();
     emit();
 
     // If the user ends a screen-share from the browser chrome, stop cleanly.
@@ -247,6 +348,11 @@ export async function start(sourceKind, { file = null, backup = false } = {}) {
 async function teardown() {
   clearInterval(autoTimer);
   autoTimer = null;
+  clearInterval(tokenRefreshTimer);
+  tokenRefreshTimer = null;
+  clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+  reconnectAttempts = 0;
   if (recorder?.state === 'recording') recorder.stop();
   recorder = null;
   try { workletNode?.port.close(); workletNode?.disconnect(); } catch { /* already gone */ }
@@ -266,7 +372,7 @@ async function teardown() {
 }
 
 export async function stop() {
-  if (state.status !== 'listening' && state.status !== 'starting') return;
+  if (state.status !== 'listening' && state.status !== 'starting' && state.status !== 'reconnecting') return;
   state.status = 'stopping';
   emit();
   await teardown();

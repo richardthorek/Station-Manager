@@ -248,6 +248,7 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
   background: var(--red);
   animation: live-pulse 1.6s ease-in-out infinite;
 }
+.live__dot--reconnecting { background: var(--ui-amber); }
 @keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 .live__state { font-weight: 700; }
 .live__elapsed { font-family: ui-monospace, Consolas, monospace; color: var(--muted); }
@@ -433,7 +434,7 @@ body.join-mode .nav { display: none; }
 .review-card__title { font-size: 1rem; margin: 0; color: var(--ink); }
 .review-card__meta { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--muted); }
 .review-card__stat { margin: 0; font-size: 0.82rem; font-weight: 600; color: var(--ink-2); }
-.review-card__actions { display: flex; gap: 0.3rem; justify-content: flex-end; }
+.review-card__actions { display: flex; gap: 0.3rem; justify-content: flex-end; flex-wrap: wrap; }
 /* Cloud (team-shared) reviews not yet pulled onto this device. */
 .review-card--cloud { border-style: dashed; background: transparent; }
 .review-card--cloud .review-card__stat { color: var(--muted); font-weight: 500; }

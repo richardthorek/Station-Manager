@@ -6,6 +6,35 @@ with that bar: not "does it work" but "would a brigade facilitator show this to
 another brigade". Findings are documented for later agents to implement; no
 fixes are made in this review.
 
+**Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7) and AAR-19 fixed 2026-07-03** (see
+the changelog entries) — the four findings the master plan grouped as "what
+stands between AAR Studio and a confident live demo", plus the first Q2 item:
+- **AAR-6/AAR-8** (`js/audio/live.js`, `js/audio/speech.js`): the gateway
+  speech token now refreshes proactively every 8 minutes, and the transcriber
+  reconnects automatically (up to 4 backed-off attempts) on failure without
+  tearing down the audio graph or backup recording — a `reconnecting` status
+  replaces the old silent fall-back to idle.
+- **AAR-1** (`js/store.js`, `js/views/home.js`): review deletion is now split
+  into "Remove from this device" vs. a signed-in-only "Delete for everyone",
+  each with its own explicit confirm.
+- **AAR-7** (`js/lib/collab.js`): the facilitator/participant now re-announce
+  themselves to the room on every Socket.io reconnect, so room notes survive
+  a network blip instead of silently vanishing.
+- **AAR-19** (`js/lib/exports.js`): every export (snapshot HTML, combined
+  report, Markdown summary) now carries a "Produced with AAR Studio · Bushie
+  Tools" attribution line — the report's colour palette turned out to already
+  match the current brand tokens exactly, so no palette change was needed
+  (see the corrected finding text below).
+
+Note left for whoever picks up **AAR-11**: the AAR-6 token-refresh timer and
+each reconnect attempt call `/api/ai/speech/token` again, and the backend
+currently counts every vend as a separate metered session
+(`backend/src/routes/ai.ts`'s `countUsage` sums raw usage rows, not distinct
+sessions) — a long meeting will now consume several sessions' worth of
+allowance. Deliberately *not* fixed here (billing semantics, not a
+reliability bug) — flagged for AAR-11's own pass, which the review already
+scoped as coordinating with this fix.
+
 **Scope:** the whole `aar-studio/` bundle (views, libs, audio, CSS), its
 backend seams (`/api/aar-sessions`, `/api/ai/*`, Socket.io collab relay,
 `/aar` CSP), and the paths a new user takes into it (landing card, `?demo`,
@@ -211,17 +240,18 @@ report studio (every field editable, live preview) are well conceived. The
 exported report is where the hero lens bites hardest — it is the artifact
 brigades will forward to district staff and other brigades.
 
-- **AAR-19 · High · UX/brand — The exported report carries the pre-rebrand
-  palette and no product attribution.** `SNAPSHOT_CSS`/`COMBINED_CSS`
-  hardcode `#c8102e` red and `#e8b84b` gold (`lib/exports.js:37-77,253-270`)
-  — the palette the #549/#550 rebrand explicitly replaced with the canonical
-  RFS tokens (`css/rfs-tokens.css`: red `#e5281B`, lime `#cbdb2a`). Every
-  shared snapshot advertises the old brand. And nothing on the document says
-  where it came from: for the feature that sells the app, a discreet
-  "Produced with AAR Studio · Bushie Tools" footer on exports is the organic
-  growth hook. **Direction:** re-derive the export CSS from the token values
-  (keeping print-friendly contrast), add the attribution footer, and refresh
-  `data/sample-session.json`'s baked report if needed.
+- **AAR-19 · High · UX/brand — The exported report carries no product
+  attribution.** *(Correction from the initial pass: `SNAPSHOT_CSS`/
+  `COMBINED_CSS`'s hardcoded `#c8102e` red (`lib/exports.js:37-77,253-270`)
+  actually **matches** the current `--rfs-core-red` token exactly — it is not
+  a pre-rebrand colour, and no palette fix is needed. `#e8b84b` gold is a
+  bespoke print-document accent, distinct from the UI's `--ui-amber`, and is a
+  legitimate standalone design choice for an "official report" look.)* The
+  real gap: nothing on the exported document says where it came from — for
+  the feature that sells the app, a discreet "Produced with AAR Studio ·
+  Bushie Tools" footer on every export is the organic growth hook, and it's
+  currently missing. **Direction:** add the attribution footer to
+  `renderSnapshotHtml`/`renderCombinedHtml` (and the Markdown export).
 
 - **AAR-20 · Medium · UX — Print/PDF path is the known-fragile iframe print.**
   `preview.contentWindow?.print()` (`views/report.js:109`) prints a `srcdoc`
@@ -278,11 +308,11 @@ confident live demo in front of a brigade.
 
 | Rank | Finding | Why first |
 |---|---|---|
-| 1 | **AAR-6** token refresh (Critical) | Live transcription dying at ~10 min kills the hero demo in every real meeting |
-| 2 | **AAR-8** error teardown keeps recording | The safety net (backup recording) must survive transcriber failures |
-| 3 | **AAR-1** team-wide delete | Silent brigade-wide data loss from a "tidy up" tap |
-| 4 | **AAR-7** collab reconnect | Room notes silently vanishing mid-meeting betrays contributors |
-| 5 | **AAR-19** report brand + attribution | The shared artifact must carry the current brand — and sell the product |
+| 1 | ~~**AAR-6** token refresh (Critical)~~ **Fixed 2026-07-03** | Live transcription dying at ~10 min kills the hero demo in every real meeting |
+| 2 | ~~**AAR-8** error teardown keeps recording~~ **Fixed 2026-07-03** | The safety net (backup recording) must survive transcriber failures |
+| 3 | ~~**AAR-1** team-wide delete~~ **Fixed 2026-07-03** | Silent brigade-wide data loss from a "tidy up" tap |
+| 4 | ~~**AAR-7** collab reconnect~~ **Fixed 2026-07-03** | Room notes silently vanishing mid-meeting betrays contributors |
+| 5 | ~~**AAR-19** report attribution~~ **Fixed 2026-07-03** | The shared artifact is the growth hook — it should say where it came from |
 | 6 | **AAR-15** conflict surfaced while editing | Two-facilitator divergence is otherwise invisible for hours |
 | 7 | **AAR-10** latch persistent AI failures | Toast-every-45s during a live meeting is demo-lethal |
 | 8 | **AAR-3** GPS coords block real location | Ugly report headers from the flagship quick-start path |
