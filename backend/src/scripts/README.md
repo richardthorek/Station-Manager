@@ -41,7 +41,7 @@ Legacy script that seeds only activities. Use `seedDatabase.ts` for comprehensiv
 
 Validates deployed application health by running smoke tests against live deployment.
 
-**Documentation:** `docs/POST_DEPLOYMENT_TESTING.md`
+**Documentation:** `docs/wiki/developer/post-deployment-testing.md`
 
 **Usage:**
 

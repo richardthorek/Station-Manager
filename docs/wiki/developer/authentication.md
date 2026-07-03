@@ -28,7 +28,7 @@ Admin/owner JWTs carry `{ id, username, role, organizationId }`. The
 `organizationId` claim is the tenant boundary: middleware loads the org and reads
 its entitlements from it. Sibling Bushie Tools apps validate this **same** SM JWT
 and read entitlements via `GET /api/auth/entitlements` — see
-[`SUITE_TOKEN_VALIDATION.md`](./SUITE_TOKEN_VALIDATION.md). Station Manager is the
+[`SUITE_TOKEN_VALIDATION.md`](suite-token-validation.md). Station Manager is the
 suite's identity provider and licensing service.
 
 ## Configuration
@@ -230,7 +230,7 @@ reads entitlements from `/api/auth/me`.
 
 **Sibling apps** — Fire Santa Run, Fire Break Calculator, and the AAR Studio
 sub-app validate the SM JWT and gate themselves via `GET /api/auth/entitlements`.
-See [`SUITE_TOKEN_VALIDATION.md`](./SUITE_TOKEN_VALIDATION.md).
+See [`SUITE_TOKEN_VALIDATION.md`](suite-token-validation.md).
 
 > **Never set `ENABLE_ENTITLEMENTS=false` in production** — it disables all
 > plan/billing enforcement. It exists only for local single-tenant dev.
@@ -372,8 +372,8 @@ const stations = (!requireAuth || isAuthenticated)
 
 ## Related Documentation
 
-- [Authentication Context Implementation](../frontend/src/contexts/AuthContext.tsx)
-- [Auth Middleware Implementation](../backend/src/middleware/auth.ts)
-- [Station Context Implementation](../frontend/src/contexts/StationContext.tsx)
-- [API Documentation](./API_DOCUMENTATION.md)
-- [Master Plan](./MASTER_PLAN.md)
+- [Authentication Context Implementation](../../../frontend/src/contexts/AuthContext.tsx)
+- [Auth Middleware Implementation](../../../backend/src/middleware/auth.ts)
+- [Station Context Implementation](../../../frontend/src/contexts/StationContext.tsx)
+- [API Documentation](api-reference.md)
+- [Master Plan](../../MASTER_PLAN.md)

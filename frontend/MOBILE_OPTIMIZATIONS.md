@@ -196,9 +196,9 @@ Tactile feedback using the Vibration API for touch interactions:
 
 ## Related Documentation
 
-- [AS_BUILT.md](../docs/AS_BUILT.md) - System architecture
+- [AS_BUILT.md](../docs/wiki/developer/architecture.md) - System architecture
 - [MASTER_PLAN.md](../docs/MASTER_PLAN.md) - Issue #29 tracking
-- [API_DOCUMENTATION.md](../docs/API_DOCUMENTATION.md) - API reference
+- [API_DOCUMENTATION.md](../docs/wiki/developer/api-reference.md) - API reference
 
 ## Success Criteria
 

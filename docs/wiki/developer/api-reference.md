@@ -74,7 +74,7 @@ endpoints).
 The `Entitlements` shape also includes limits (`maxStations`, `maxDevices`,
 `aiIncludedSessions`) and per-app suite flags (`aarStudioEnabled`,
 `santaRunEnabled`, `fireBreakEnabled`) used by sibling Bushie Tools apps. See
-`docs/SUITE_TOKEN_VALIDATION.md` for the entitlements-probe contract.
+`docs/wiki/developer/suite-token-validation.md` for the entitlements-probe contract.
 
 ## Input Validation and Security
 
@@ -193,7 +193,7 @@ rate-limited; login/signup additionally use `sensitiveActionRateLimiter`.
 **Auth**: Bearer JWT.
 **Response** (200 OK): `{ entitlements, planCode, status }`
 (`entitlements`/`planCode` are `null` for users with no organization.) See
-`docs/SUITE_TOKEN_VALIDATION.md` for the full sibling-app contract.
+`docs/wiki/developer/suite-token-validation.md` for the full sibling-app contract.
 
 ---
 

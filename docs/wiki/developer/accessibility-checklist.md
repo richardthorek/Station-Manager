@@ -458,7 +458,7 @@ button:focus-visible {
 - `docs/ACCESSIBILITY.md` - Project accessibility standards
 - `docs/KEYBOARD_SHORTCUTS.md` - Keyboard navigation guide
 - `docs/SCREEN_READER_GUIDE.md` - Screen reader user guide
-- `.github/copilot-instructions.md` - Development guidelines
+- `CLAUDE.md` - Development guidelines
 
 ### External
 

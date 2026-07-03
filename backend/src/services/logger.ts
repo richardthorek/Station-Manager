@@ -39,7 +39,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Azure App Insights integration (optional)
-// Note: For full Application Insights integration, see docs/AZURE_APP_INSIGHTS.md
+// Note: For full Application Insights integration, see docs/wiki/developer/app-insights.md
 // The connection string is configured via AZURE_APP_INSIGHTS_CONNECTION_STRING environment variable
 // but the actual transport setup requires additional configuration in production deployments
 
@@ -138,11 +138,11 @@ if (isProduction) {
 // Add Azure Application Insights transport if configured
 // NOTE: This requires applicationinsights SDK to be set up separately
 // For now, we log a message indicating it needs manual configuration
-// See docs/AZURE_APP_INSIGHTS.md for full setup instructions
+// See docs/wiki/developer/app-insights.md for full setup instructions
 const appInsightsConnectionString = process.env.AZURE_APP_INSIGHTS_CONNECTION_STRING;
 if (appInsightsConnectionString && !isProduction) {
   console.log('📊 Azure Application Insights connection string detected');
-  console.log('   For full setup, see docs/AZURE_APP_INSIGHTS.md');
+  console.log('   For full setup, see docs/wiki/developer/app-insights.md');
 }
 
 /**

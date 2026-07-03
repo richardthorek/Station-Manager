@@ -117,7 +117,7 @@
 #   - Automatic issue creation on failure (see create-issue-on-failure.yml)
 #
 # Documentation:
-#   - See docs/ci_pipeline.md for detailed pipeline documentation
+#   - See docs/wiki/developer/ci-pipeline.md for detailed pipeline documentation
 #   - See docs/MASTER_PLAN.md for strategic planning
 #
 # Maintenance:

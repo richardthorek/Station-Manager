@@ -6,7 +6,7 @@
  * Price IDs are configured via env so the catalog stays deployment-agnostic.
  *
  * Pricing rationale lives in docs/MASTER_PLAN.md (Pricing & plans reference);
- * the full design analysis is docs/archive/SAAS_COMMERCIALIZATION_DESIGN.md.
+ * the full design analysis is docs/wiki/developer/history/archive/SAAS_COMMERCIALIZATION_DESIGN.md.
  */
 
 import type { Entitlements, PlanCode } from '../types';

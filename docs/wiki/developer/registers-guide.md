@@ -141,7 +141,7 @@ Both files follow JSON Schema Draft 7 format for maximum compatibility and tooli
 These machine-readable registries are cross-referenced by:
 - `AS_BUILT.md` - Links to registries for implementation details
 - `MASTER_PLAN.md` - References for tracking API/function changes
-- `.github/copilot-instructions.md` - AI development guidelines
+- `CLAUDE.md` - repo conventions and AI agent guidance
 - `API_DOCUMENTATION.md` - Human-readable API reference (derived from api_register.json)
 - `FUNCTION_REGISTER.md` - Human-readable function reference (derived from function_register.json)
 
@@ -192,7 +192,7 @@ Current versions:
 ## Support
 
 For questions or issues with machine-readable registries:
-- Review `.github/copilot-instructions.md` for documentation discipline guidelines
+- Review `CLAUDE.md` for documentation discipline guidelines
 - Check `MASTER_PLAN.md` for strategic direction
 - Consult `AS_BUILT.md` for implementation details
 

@@ -309,7 +309,7 @@ export type ApplianceZoneSide = 'driver' | 'passenger' | 'front' | 'rear' | 'top
  * string with real, per-appliance areas the maintenance agent can walk in order
  * and prompt "same area" within. `zoneCode` is a canonical slug for
  * cross-brigade analytics (seeded from a per-vehicleType starter taxonomy, then
- * edited by the brigade). See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.1.
+ * edited by the brigade). See docs/wiki/developer/history/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.1.
  */
 export interface ApplianceZone {
   id: string;
@@ -330,7 +330,7 @@ export interface ApplianceZone {
  * ("Holmatro spreader", "BA set #2", "Akron branch"), optionally located in a
  * zone. Captures the equipment differences between trucks so the maintenance
  * agent knows what's actually on *this* vehicle (and where). `equipmentCode` is
- * a canonical slug for analytics. See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.2.
+ * a canonical slug for analytics. See docs/wiki/developer/history/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.2.
  */
 export interface ApplianceEquipment {
   id: string;

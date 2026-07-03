@@ -16,7 +16,7 @@
  * 2. Configure 1-day retention in Azure Portal (Settings → Data Retention)
  * 3. Logs automatically flow to Application Insights
  * 
- * See docs/AZURE_APP_INSIGHTS.md for detailed setup instructions.
+ * See docs/wiki/developer/app-insights.md for detailed setup instructions.
  */
 
 import { setup, defaultClient, Contracts, TelemetryClient } from 'applicationinsights';

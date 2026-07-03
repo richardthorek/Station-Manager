@@ -10,7 +10,7 @@
  *
  * Each sibling app validates the same SM-issued JWT and reads the same
  * entitlements via GET /api/auth/entitlements — see
- * docs/SUITE_TOKEN_VALIDATION.md.
+ * docs/wiki/developer/suite-token-validation.md.
  */
 
 import type { EntitlementFeature } from '../contexts/AuthContext';

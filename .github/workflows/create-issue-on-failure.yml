@@ -130,9 +130,9 @@ jobs:
 
             ### Resources
 
-            - 📖 [CI/CD Pipeline Documentation](docs/ci_pipeline.md)
-            - 📚 [Contributing Guidelines](docs/FEATURE_DEVELOPMENT_GUIDE.md)
-            - 🔧 [Getting Started Guide](docs/GETTING_STARTED.md)
+            - 📖 [CI/CD Pipeline Documentation](docs/wiki/developer/ci-pipeline.md)
+            - 📚 [Contributing Guidelines](docs/wiki/developer/feature-development.md)
+            - 🔧 [Getting Started Guide](docs/wiki/developer/getting-started.md)
 
             ---
 

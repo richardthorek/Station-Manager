@@ -357,8 +357,8 @@ To disable completely:
 
 - [Azure Application Insights Documentation](https://learn.microsoft.com/en-us/azure/azure-monitor/app/app-insights-overview)
 - [Kusto Query Language (KQL) Reference](https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/)
-- [LOGGING.md](./LOGGING.md) - Application logging guide
-- [AS_BUILT.md](./AS_BUILT.md) - System architecture
+- [LOGGING.md](logging.md) - Application logging guide
+- [AS_BUILT.md](architecture.md) - System architecture
 
 ## Support
 

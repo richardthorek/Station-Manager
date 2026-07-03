@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Detailed change log lives in `docs/MASTER_PLAN.md` (June 2026 Stabilization
-section). Highlights below are grouped by theme; see MASTER_PLAN for the full
+_The detailed, dated change log lives in
+[`docs/wiki/developer/changelog.md`](docs/wiki/developer/changelog.md).
+Highlights below are grouped by theme; see the wiki changelog for the full
 per-PR record._
 
 ### Bushie Tools suite (federation — Phase 1)
@@ -18,7 +19,7 @@ per-PR record._
   per-feature flags; `GET /api/auth/entitlements` lets sibling apps validate the
   same JWT and read entitlements. The logged-in landing page is now the suite
   **app launcher** (apps lock/unlock by entitlement). New
-  `docs/SUITE_TOKEN_VALIDATION.md` documents the contract. SM JWT is retained as
+  `docs/wiki/developer/suite-token-validation.md` documents the contract. SM JWT is retained as
   the suite IdP (kiosk/device iPads use brigade access tokens).
 - **Bushie Tools rebrand + design-system unification** (#549, #550): canonical
   RFS design tokens (`aar-studio/css/rfs-tokens.css`) shared by the SPA and AAR
@@ -61,7 +62,7 @@ per-PR record._
 - API/function references updated for the auth, organizations, AI gateway, and
   billing endpoint groups; deployment/security/auth docs refreshed with current
   env vars and Table Storage.
-- Archived completed point-in-time fix/audit summaries to `docs/archive/`.
+- Archived completed point-in-time fix/audit summaries to `docs/wiki/developer/history/archive/`.
 
 ## [1.0.0] - 2026-01-01
 
