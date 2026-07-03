@@ -155,12 +155,21 @@ Respond with a JSON object: {"title", "location", "incidentType", "units": [{"un
  * Build a non-destructive patch: only fields the user (or a previous pass) hasn't
  * already filled get the discussion-derived value. Returns { incident?, units? }
  * with just the keys that should change, or {} if nothing to apply.
+ *
+ * `location` is the one exception to "never overwrite": a still-`locationIsAuto`
+ * value (raw GPS coordinates from quick-start, see store.js's setIncidentLocation)
+ * is replaced by a real place name the moment the discussion reveals one — a
+ * typed or previously-derived location is never touched (AAR Studio hero review
+ * 2026-07-03, AAR-3).
  */
 export function mergeMetadata(session, meta = {}) {
   const patch = {};
   const incident = {};
   if (meta.title?.trim() && !session.incident.title?.trim()) incident.title = meta.title.trim();
-  if (meta.location?.trim() && !session.incident.location?.trim()) incident.location = meta.location.trim();
+  if (meta.location?.trim() && (!session.incident.location?.trim() || session.incident.locationIsAuto)) {
+    incident.location = meta.location.trim();
+    incident.locationIsAuto = false;
+  }
   if (meta.incidentType && INCIDENT_TYPES.includes(meta.incidentType) && !session.incident.type) incident.type = meta.incidentType;
   if (Object.keys(incident).length) patch.incident = incident;
   const units = (Array.isArray(meta.units) ? meta.units : [])

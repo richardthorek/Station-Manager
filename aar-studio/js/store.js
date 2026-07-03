@@ -86,10 +86,17 @@ export function quickStart() {
   return current;
 }
 
-/** Best-effort device location (e.g. from geolocation); never overwrites a value. */
+/**
+ * Best-effort device location (e.g. from geolocation) — never overwrites a
+ * real location (typed or discussion-derived), only a still-auto one. Marks
+ * the value `locationIsAuto` so a later AI metadata pass can still replace
+ * these raw coordinates with the actual place name once it's mentioned
+ * (AAR Studio hero review 2026-07-03, AAR-3).
+ */
 export function setIncidentLocation(location) {
-  if (!current || !location || current.incident.location?.trim()) return;
-  update((s) => { s.incident.location = location; }, { reason: 'session' });
+  if (!current || !location) return;
+  if (current.incident.location?.trim() && !current.incident.locationIsAuto) return;
+  update((s) => { s.incident.location = location; s.incident.locationIsAuto = true; }, { reason: 'session' });
 }
 
 /** Rename the current or a given session's incident title. */

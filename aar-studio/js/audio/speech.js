@@ -64,13 +64,21 @@ export function createTranscriber({ sdk, settings, onInterim, onFinal, onError }
   const pushStream = sdk.AudioInputStream.createPushStream(format);
   const audioConfig = sdk.AudioConfig.fromStreamInput(pushStream);
 
+  // Gateway mode (the default — no user-supplied Speech key) vs. a BYO-Azure
+  // developer/self-host override: the two audiences need different advice,
+  // and telling a bushie on the built-in AI to "check the Speech key in
+  // Settings" sends them into a page that isn't meant for them (AAR Studio
+  // hero review 2026-07-03, AAR-9).
+  const gatewayMode = Boolean(settings.authToken);
   const offsetSec = (result) => (result.offset != null ? result.offset / 1e7 : null); // 100 ns ticks
   const handleCanceled = (e) => {
     if (e.reason === sdk.CancellationReason.Error) {
       const authFlavoured = isAuthCancellation(sdk, e);
       const hint = authFlavoured
         ? 'Reconnecting…'
-        : 'Check the Speech key/region in Settings.';
+        : gatewayMode
+          ? 'Try again in a moment — if it keeps happening, tell your administrator.'
+          : 'Check the Speech key/region in Settings.';
       onError(`Speech service error: ${e.errorDetails || e.errorCode}. ${hint}`, { authFlavoured });
     }
   };

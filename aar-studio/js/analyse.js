@@ -38,8 +38,9 @@ export async function maybeAutoExtract() {
 export async function fillMetadataFromDiscussion({ quiet = true } = {}) {
   const session = store.getSession();
   if (!session?.segments.some((seg) => seg.text.trim())) return;
-  // Nothing left to fill? Skip the call.
-  const blank = !session.incident.title?.trim() || !session.incident.location?.trim()
+  // Nothing left to fill? Skip the call. A GPS-only location (locationIsAuto)
+  // still counts as "needs filling" — a real place name should replace it.
+  const blank = !session.incident.title?.trim() || !session.incident.location?.trim() || session.incident.locationIsAuto
     || !session.incident.type || !(session.units ?? []).length;
   if (!blank) return;
   try {

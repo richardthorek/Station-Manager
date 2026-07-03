@@ -6,9 +6,10 @@ with that bar: not "does it work" but "would a brigade facilitator show this to
 another brigade". Findings are documented for later agents to implement; no
 fixes are made in this review.
 
-**Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7) and AAR-19 fixed 2026-07-03** (see
-the changelog entries) — the four findings the master plan grouped as "what
-stands between AAR Studio and a confident live demo", plus the first Q2 item:
+**Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7), AAR-19, AAR-9, AAR-23 and AAR-3
+fixed 2026-07-03** (see the changelog entries) — the four findings the master
+plan grouped as "what stands between AAR Studio and a confident live demo",
+plus the first three Q2 items:
 - **AAR-6/AAR-8** (`js/audio/live.js`, `js/audio/speech.js`): the gateway
   speech token now refreshes proactively every 8 minutes, and the transcriber
   reconnects automatically (up to 4 backed-off attempts) on failure without
@@ -25,6 +26,14 @@ stands between AAR Studio and a confident live demo", plus the first Q2 item:
   Tools" attribution line — the report's colour palette turned out to already
   match the current brand tokens exactly, so no palette change was needed
   (see the corrected finding text below).
+- **AAR-9/AAR-23** (`js/audio/speech.js`, `js/views/report.js`): speech and
+  report-generation error/empty-state copy now checks gateway vs BYO-Azure
+  mode before mentioning Settings, so a bushie on the built-in AI is never
+  told to go check an Azure key they don't have.
+- **AAR-3** (`js/lib/model.js`, `js/store.js`, `js/lib/extraction.js`,
+  `js/analyse.js`, `js/views/setup.js`): quick-start's GPS-fallback location is
+  now flagged `locationIsAuto` so the AI's real place name (or manual typing)
+  always replaces it instead of the coordinates sticking in the report header.
 
 Note left for whoever picks up **AAR-11**: the AAR-6 token-refresh timer and
 each reconnect attempt call `/api/ai/speech/token` again, and the backend
@@ -78,16 +87,17 @@ team" cloud section. The findings below are the gaps between *good* and
   confirm/prompt pair in `ui.js` (the settings dialog already shows the
   pattern).
 
-- **AAR-3 · Medium · UX — Quick-start writes raw GPS coordinates into the
-  incident location, and they stick.** `startRecordingNow`
+- ~~**AAR-3 · Medium · UX — Quick-start writes raw GPS coordinates into the
+  incident location, and they stick.**~~ **Fixed 2026-07-03.** `startRecordingNow`
   (`views/home.js:14-19`) stores `"-35.1234, 149.5678"` in
   `incident.location`; `mergeMetadata` only fills **blank** fields
   (`lib/extraction.js:163`), so the AI's proper place name ("Macs Reef Road,
   Bywong") can never replace the coordinates — and the raw lat/long leaks
-  into the report header and review cards. **Direction:** keep auto-captured
-  coords in a separate field (or mark location as `auto`), let
-  discussion-derived names overwrite auto values, and only surface coords
-  when nothing better exists.
+  into the report header and review cards. A new `incident.locationIsAuto`
+  flag (`lib/model.js`) marks a GPS-fallback value; `store.js`'s
+  `setIncidentLocation` sets it, `mergeMetadata` treats a still-auto location
+  as fillable (and clears the flag once replaced), and typing a location
+  manually (`views/setup.js`) clears it too.
 
 - **AAR-4 · Low · UX — The example review is buried.** "See an example" is a
   footer link (`views/home.js:172-176`), but the worked example *is* the
@@ -149,13 +159,14 @@ is why they rank at the top of this review.
   AAR-6), and surface a persistent "listening interrupted — reconnecting /
   resume" state rather than a silent fall-back to idle.
 
-- **AAR-9 · Medium · UX — Wrong-audience error copy in gateway mode.** The
-  speech `canceled` handler always says "Check the Speech key/region in
-  Settings" (`audio/speech.js:54`) — advice that only applies to BYO-Azure
-  developers. A bushie on the built-in AI has no key and will be sent
-  spelunking through the (deliberately developer-only) settings dialog.
-  **Direction:** branch the hint on gateway vs direct mode, mirroring the
-  `SPEECH_TOKEN_HINTS` / `GATEWAY_HINTS` pattern that already exists.
+- ~~**AAR-9 · Medium · UX — Wrong-audience error copy in gateway mode.**~~
+  **Fixed 2026-07-03.** The speech `canceled` handler always said "Check the
+  Speech key/region in Settings" (`audio/speech.js:54`) — advice that only
+  applies to BYO-Azure developers. A bushie on the built-in AI has no key and
+  would be sent spelunking through the (deliberately developer-only) settings
+  dialog. `createTranscriber` now branches on a local `gatewayMode` check
+  (`Boolean(settings.authToken)`), same signal used elsewhere in the AAR
+  audio stack.
 
 - **AAR-10 · Medium · UX — Persistent AI failures toast every ~45 seconds for
   the rest of the meeting.** The auto-extract timer retries on the 45 s /
@@ -275,11 +286,12 @@ brigades will forward to district staff and other brigades.
   `srcdoc` (`views/report.js:64-76`) — perceptible jank on iPad with a real
   report. Debounce ~300 ms.
 
-- **AAR-23 · Low · UX — Developer-mode wording shown to gateway users.** The
-  report empty-state says "Generation uses the report deployment from ⚙
-  Settings" (`views/report.js:57`) — meaningless to a bushie on the built-in
-  AI (same audience mismatch as AAR-9). The header comment "AI report
-  generation arrives in Stage 3" (`views/report.js:3`) is stale — it shipped.
+- ~~**AAR-23 · Low · UX — Developer-mode wording shown to gateway users.**~~
+  **Fixed 2026-07-03.** The report empty-state said "Generation uses the
+  report deployment from ⚙ Settings" (`views/report.js:57`) — meaningless to
+  a bushie on the built-in AI (same audience mismatch as AAR-9). Now branches
+  on `usesGateway(getSettings())`. The stale header comment ("AI report
+  generation arrives in Stage 3") is also corrected.
 
 - **AAR-24 · Low · UX — Untitled exports produce anonymous filenames.**
   `sessionFilename` slugs to `aar-…` with no date when the title is blank
@@ -315,9 +327,9 @@ confident live demo in front of a brigade.
 | 5 | ~~**AAR-19** report attribution~~ **Fixed 2026-07-03** | The shared artifact is the growth hook — it should say where it came from |
 | 6 | **AAR-15** conflict surfaced while editing | Two-facilitator divergence is otherwise invisible for hours |
 | 7 | **AAR-10** latch persistent AI failures | Toast-every-45s during a live meeting is demo-lethal |
-| 8 | **AAR-3** GPS coords block real location | Ugly report headers from the flagship quick-start path |
+| 8 | ~~**AAR-3** GPS coords block real location~~ **Fixed 2026-07-03** | Ugly report headers from the flagship quick-start path |
 | 9 | **AAR-11** metering per token vend | Fix alongside AAR-6/8 so reliability work doesn't burn allowance |
-| 10 | **AAR-9 + AAR-23** audience-correct error copy | One sweep: gateway users must never be told to check Azure keys |
+| 10 | ~~**AAR-9 + AAR-23** audience-correct error copy~~ **Fixed 2026-07-03** | One sweep: gateway users must never be told to check Azure keys |
 | 11 | **AAR-2** replace native prompt/confirm | Brand-consistent dialogs; unlocks AAR-1's better confirm |
 | 12 | **AAR-21** room notes in exports | Completes the collab promise |
 | 13 | **AAR-20** print path | Long-open P1; verify on iPad |

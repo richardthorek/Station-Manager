@@ -68,7 +68,7 @@ export function render(container) {
         h('legend', {}, 'Incident'),
         field('Title', text(s.incident.title, (sess, v) => { sess.incident.title = v; }, { placeholder: 'e.g. Structure fire — 12 Smith St (or leave blank)' })),
         field('Date', h('input', { type: 'date', value: s.incident.date, ...bind(null, (sess, v) => { sess.incident.date = v; }) })),
-        field('Location', text(s.incident.location, (sess, v) => { sess.incident.location = v; }, { list: STATION_LIST_ID })),
+        field('Location', text(s.incident.location, (sess, v) => { sess.incident.location = v; sess.incident.locationIsAuto = false; }, { list: STATION_LIST_ID })),
         field('Type', h('select', {
           onchange: (e) => store.update((sess) => { sess.incident.type = e.target.value; }, { silent: true }),
         }, [h('option', { value: '', selected: !s.incident.type }, '—'),

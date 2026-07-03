@@ -1,13 +1,13 @@
 // Report studio: every report field editable with a live preview, plus
-// exports (snapshot HTML, Markdown summary, session JSON, print-to-PDF).
-// AI report generation arrives in Stage 3 (remaining part).
+// exports (snapshot HTML, Markdown summary, session JSON, print-to-PDF),
+// and AI report generation from the curated findings.
 
 import { h, toast, download } from '../ui.js';
 import * as store from '../store.js';
 import { getSettings } from '../settings.js';
 import { emptyReport, renderSnapshotHtml, renderCombinedHtml, renderMarkdown, sessionFilename } from '../lib/exports.js';
 import { generateReport } from '../lib/reportGen.js';
-import { LlmError } from '../lib/llm.js';
+import { LlmError, usesGateway } from '../lib/llm.js';
 
 function field(labelText, input) {
   return h('label', { class: 'field' }, h('span', { class: 'field__label' }, labelText), input);
@@ -39,6 +39,13 @@ export function render(container) {
   if (!session.report) {
     const status = h('p', { class: 'muted', role: 'status' });
     const hasFindings = session.findings.length > 0;
+    // Most facilitators are on the built-in AI and have never opened Settings
+    // — telling them generation "uses the report deployment from ⚙ Settings"
+    // is meaningless to that audience (AAR Studio hero review 2026-07-03,
+    // AAR-23, same mismatch as AAR-9). Only BYO-Azure users need that detail.
+    const gatewayHint = usesGateway(getSettings())
+      ? 'Uses this site’s built-in AI — no setup needed.'
+      : 'Generation uses the report deployment from ⚙ Settings (falls back to the chat deployment).';
     container.append(
       h('h1', {}, 'Report'),
       h('section', { class: 'panel' },
@@ -54,7 +61,7 @@ export function render(container) {
           } }, 'Start from a blank template'),
         ),
         status,
-        h('p', { class: 'muted' }, 'Generation uses the report deployment from ⚙ Settings (falls back to the chat deployment). Load the Wamboin sample from Home to see a finished report.'),
+        h('p', { class: 'muted' }, `${gatewayHint} Load the Wamboin sample from Home to see a finished report.`),
       ),
     );
     return;
