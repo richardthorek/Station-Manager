@@ -19,7 +19,7 @@ import { ensureApplianceEquipmentDatabase } from './applianceEquipmentDbFactory'
 import { ensureAgentSessionDatabase } from './agentSessionDbFactory';
 import { resolveEffectiveChecklist } from './effectiveChecklist';
 import { logger } from './logger';
-import type { AgentSession, Appliance, ChecklistItem, CheckResult, CheckStatus, EffectiveChecklist } from '../types';
+import type { AgentSession, Appliance, ChecklistItem, CheckResult, CheckRun, CheckStatus, EffectiveChecklist } from '../types';
 
 /** OpenAI function-calling definitions advertised to the model. */
 export const AGENT_TOOL_DEFINITIONS = [
@@ -195,17 +195,32 @@ export class AgentToolExecutor {
     return db.getResultsByRunId(this.session.runId);
   }
 
-  /** Create the formal CheckRun on first use and link it to the session both ways. */
+  /**
+   * On first use, join an already-active CheckRun on this appliance (mirroring
+   * the manual "Join Check" flow — routes/truckChecks.ts POST /runs) instead
+   * of always creating a new one. Without this, starting a voice check while
+   * a manual (or another voice) check was already in progress on the same
+   * truck created a second, parallel CheckRun and split the results between
+   * them (A3 code review F12). Links the run to the session both ways either way.
+   */
   private async ensureRun(appliance: Appliance): Promise<string> {
     if (this.session.runId) return this.session.runId;
     const db = await ensureTruckChecksDatabase();
-    const run = await db.createCheckRun(
-      this.applianceId,
-      this.session.memberId ?? this.session.initiatedBy,
-      this.session.initiatedBy,
-      this.session.stationId ?? appliance.stationId,
-      { source: this.session.modality, agentSessionId: this.session.id },
-    );
+
+    const active = await db.getActiveCheckRunForAppliance(this.applianceId);
+    let run: CheckRun;
+    if (active) {
+      run = (await db.addContributorToCheckRun(active.id, this.session.initiatedBy)) ?? active;
+    } else {
+      run = await db.createCheckRun(
+        this.applianceId,
+        this.session.memberId ?? this.session.initiatedBy,
+        this.session.initiatedBy,
+        this.session.stationId ?? appliance.stationId,
+        { source: this.session.modality, agentSessionId: this.session.id },
+      );
+    }
+
     this.session.runId = run.id;
     await ensureAgentSessionDatabase().updateSession(this.session.id, { runId: run.id });
     return run.id;

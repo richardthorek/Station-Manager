@@ -7,11 +7,11 @@
  * doubles as the fallback for quiet environments and as the debug surface.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { VoiceAgentClient } from './voiceAgentClient';
-import { MicCapture, playAudioBlob } from './audioIO';
+import { MicCapture, playAudioBlob, unlockAudioPlayback } from './audioIO';
 import './VoiceCheckPage.css';
 
 type Role = 'user' | 'agent' | 'status';
@@ -22,7 +22,7 @@ interface TranscriptEntry {
   text: string;
 }
 
-type ConnectionState = 'connecting' | 'ready' | 'closed';
+type ConnectionState = 'connecting' | 'ready' | 'reconnecting' | 'closed';
 
 export function VoiceCheckPage() {
   const { applianceId } = useParams<{ applianceId: string }>();
@@ -56,8 +56,27 @@ export function VoiceCheckPage() {
     micRef.current = mic;
 
     const client = new VoiceAgentClient({
-      onSessionStarted: () => {
+      onSessionStarted: (sessionId, resumed) => {
         setConnection('ready');
+        if (resumed) {
+          // A dropped connection resumed into its previous session (A3 code
+          // review F9) — pull the persisted turn history back so the visible
+          // transcript matches what the server actually has, instead of
+          // silently starting from a blank slate.
+          api.getAgentSessionTurns(sessionId)
+            .then((turns) => {
+              nextIdRef.current = 0;
+              setEntries(
+                turns
+                  .filter((t) => (t.role === 'user' || t.role === 'agent') && t.text)
+                  .map((t) => ({ id: nextIdRef.current++, role: t.role as Role, text: t.text ?? '' })),
+              );
+            })
+            .catch(() => addEntry('status', 'Reconnected, but could not restore the earlier transcript.'));
+        }
+      },
+      onReconnecting: () => {
+        setConnection('reconnecting');
       },
       onTranscript: (text) => {
         if (text) addEntry('user', text);
@@ -69,7 +88,17 @@ export function VoiceCheckPage() {
         if (isCompleted) setCompleted(true);
       },
       onAgentAudio: (audio) => {
-        playAudioBlob(audio);
+        playAudioBlob(audio, (message) => addEntry('status', message));
+      },
+      onBusy: () => {
+        // The server rejected whatever we just sent because a previous turn
+        // hadn't finished yet. Without this, `busy` (already set true by the
+        // action that triggered it) would never clear and the talk button /
+        // composer would stay disabled forever with no explanation — the
+        // only way out was reloading the page, which abandons the check
+        // (A3 code review F11).
+        setBusy(false);
+        addEntry('status', 'Still working on the last message — try that again in a moment.');
       },
       onError: (error) => {
         addEntry('status', error);
@@ -97,8 +126,19 @@ export function VoiceCheckPage() {
 
   const canInteract = connection === 'ready' && !busy && !completed;
 
-  const startHold = useCallback(async () => {
+  const startHold = useCallback(async (event: PointerEvent<HTMLButtonElement>) => {
     if (!canInteract || holdingRef.current) return;
+    // Pointer capture keeps pointerup/pointercancel targeted at this button
+    // even if the finger drifts off its bounds mid-press (gloves, wet hands,
+    // gesturing while talking) — without it, onPointerLeave was the only
+    // signal for "finger moved off the button" and fired on ordinary drift,
+    // truncating the utterance mid-sentence with no warning
+    // (A3 code review F16).
+    event.currentTarget.setPointerCapture(event.pointerId);
+    // Unlock playback synchronously, still within this gesture's call stack —
+    // iOS Safari blocks .play() outside a gesture, so doing this later (when
+    // the agent's audio actually arrives, asynchronously) would be too late.
+    unlockAudioPlayback();
     holdingRef.current = true;
     setRecording(true);
     clientRef.current?.startUtterance();
@@ -116,8 +156,11 @@ export function VoiceCheckPage() {
     }
   }, [canInteract, addEntry]);
 
-  const endHold = useCallback(() => {
+  const endHold = useCallback((event: PointerEvent<HTMLButtonElement>) => {
     if (!holdingRef.current) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     holdingRef.current = false;
     micRef.current?.stop();
     setRecording(false);
@@ -134,17 +177,13 @@ export function VoiceCheckPage() {
     clientRef.current?.sendText(text, false);
   }, [draft, canInteract, addEntry]);
 
-  const statusLabel = completed
-    ? 'Check complete'
-    : connection === 'connecting'
-      ? 'Connecting…'
-      : connection === 'closed'
-        ? 'Disconnected'
-        : recording
-          ? 'Listening…'
-          : busy
-            ? 'Thinking…'
-            : 'Ready';
+  const connectionLabels: Record<ConnectionState, string> = {
+    connecting: 'Connecting…',
+    reconnecting: 'Reconnecting…',
+    closed: 'Disconnected',
+    ready: recording ? 'Listening…' : busy ? 'Thinking…' : 'Ready',
+  };
+  const statusLabel = completed ? 'Check complete' : connectionLabels[connection];
 
   return (
     <div className="voice-check-page">
@@ -183,7 +222,6 @@ export function VoiceCheckPage() {
             disabled={!canInteract && !recording}
             onPointerDown={startHold}
             onPointerUp={endHold}
-            onPointerLeave={endHold}
             onPointerCancel={endHold}
             aria-pressed={recording}
           >

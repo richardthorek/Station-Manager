@@ -19,7 +19,7 @@ import type { EntitlementFeature } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
-function entitlementsEnabled(): boolean {
+export function entitlementsEnabled(): boolean {
   return process.env.ENABLE_ENTITLEMENTS !== 'false';
 }
 

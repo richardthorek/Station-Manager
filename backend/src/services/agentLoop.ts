@@ -57,6 +57,23 @@ function extractMessage(body: unknown): ProviderChoiceMessage | null {
 }
 
 /**
+ * Was a complete_run tool result actually a success? AgentToolExecutor.execute
+ * always resolves to a JSON string (the OpenAI tool-message wire shape), so we
+ * parse it and read the typed `completed` field rather than substring-matching
+ * the raw text — a summary or issue comment that happened to contain the
+ * literal text `"completed":true` could otherwise end the session early
+ * (A3 code review, reuse/simplification section).
+ */
+function isCompletedToolResult(output: string): boolean {
+  try {
+    const parsed = JSON.parse(output) as { completed?: unknown };
+    return parsed.completed === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Run one user turn through the tool loop. Throws only on unexpected internal
  * errors; provider failures come back as a spoken-style error message so the
  * WS layer can always relay something to the member.
@@ -113,7 +130,7 @@ export async function runAgentTurn(
     for (const call of toolCalls) {
       const output = await executor.execute(call.function.name, call.function.arguments);
       toolCallsMade++;
-      if (call.function.name === 'complete_run' && output.includes('"completed":true')) {
+      if (call.function.name === 'complete_run' && isCompletedToolResult(output)) {
         completed = true;
       }
       await db.addTurn({

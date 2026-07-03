@@ -88,7 +88,7 @@ export async function recognizeSpeech(wavAudio: Buffer, fetchImpl: typeof fetch 
       method: 'POST',
       headers: {
         'Ocp-Apim-Subscription-Key': config.key,
-        'Content-Type': 'audio/wav; codecs=audio/pcm; samplerate=16000',
+        'Content-Type': `audio/wav; codecs=audio/pcm; samplerate=${PCM_SAMPLE_RATE}`,
         Accept: 'application/json',
       },
       body: new Uint8Array(wavAudio),
@@ -120,6 +120,13 @@ export async function recognizeSpeech(wavAudio: Buffer, fetchImpl: typeof fetch 
 /** Escape text for embedding in SSML. */
 function escapeXml(text: string): string {
   return text
+    // Strip control characters that are not valid XML Chars (e.g. a stray
+    // byte from a mis-decoded upstream payload echoed into the LLM reply) —
+    // entity-escaping alone doesn't help here, since these bytes are illegal
+    // in XML regardless of escaping, and would otherwise make Azure TTS
+    // reject the whole SSML request with no user-visible reply
+    // (A3 code review, reuse/simplification section).
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

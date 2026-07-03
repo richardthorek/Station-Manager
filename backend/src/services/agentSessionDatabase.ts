@@ -15,6 +15,7 @@ import type { AgentSession, AgentTurn } from '../types';
 export interface AgentSessionInput {
   applianceId: string;
   stationId?: string;
+  organizationId?: string;
   memberId?: string;
   initiatedBy: string;
   modality?: AgentSession['modality'];
@@ -64,6 +65,7 @@ export class AgentSessionDatabase implements IAgentSessionDatabase {
       id: uuidv4(),
       applianceId: input.applianceId,
       stationId: input.stationId,
+      organizationId: input.organizationId,
       memberId: input.memberId,
       initiatedBy: input.initiatedBy,
       modality: input.modality ?? 'voice',

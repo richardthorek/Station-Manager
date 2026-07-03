@@ -98,6 +98,14 @@ describe('synthesizeSpeech', () => {
     expect(init.body).toContain('Tank is &lt; half &amp; &quot;low&quot;');
   });
 
+  it('strips XML-illegal control characters instead of leaving them for the provider to reject', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(audioReply(Buffer.from([1])));
+    await synthesizeSpeech('Tank level\x00 is \x1Fnormal', fetchMock as unknown as typeof fetch);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.body).toContain('Tank level is normal');
+    expect(init.body).not.toMatch(/[\x00-\x08\x0B\x0C\x0E-\x1F]/);
+  });
+
   it('honours the AZURE_SPEECH_VOICE override', async () => {
     process.env.AZURE_SPEECH_VOICE = 'en-AU-WilliamNeural';
     const fetchMock = jest.fn().mockResolvedValue(audioReply(Buffer.from([1])));

@@ -53,6 +53,20 @@ beforeAll(async () => {
   }
 });
 
+// Most tests below assume a fresh, isolated CheckRun per session (the
+// pre-F12 behaviour). Since ensureRun now joins an already-active run on the
+// same appliance (A3 code review F12), leaving a run in-progress after a
+// test would otherwise leak into the next test via getActiveCheckRunForAppliance.
+// The dedicated F12 tests below create their own active run deliberately and
+// assert against it before this cleanup runs.
+afterEach(async () => {
+  const db = await ensureTruckChecksDatabase();
+  const runs = await db.getCheckRunsByAppliance(applianceId);
+  for (const r of runs) {
+    if (r.status === 'in-progress') await db.completeCheckRun(r.id);
+  }
+});
+
 describe('tool definitions', () => {
   it('advertises exactly the five design-contract tools', () => {
     expect([...AGENT_TOOL_NAMES].sort()).toEqual([
@@ -136,6 +150,42 @@ describe('record_result', () => {
     const { executor } = await newSession();
     expect((await run(executor, 'record_result', { item: 'Tyre condition', status: 'broken' })).error).toMatch(/status must be/);
     expect((await run(executor, 'record_result', { status: 'done' })).error).toBe('item is required');
+  });
+});
+
+describe('ensureRun joins an already-active CheckRun (A3 code review F12)', () => {
+  it('joins a manually-started run instead of creating a duplicate', async () => {
+    const db = await ensureTruckChecksDatabase();
+    const manualRun = await db.createCheckRun(applianceId, 'Manual Inspector', 'Manual Inspector', 'station-1');
+
+    const { session, executor } = await newSession();
+    await run(executor, 'record_result', { item: 'Pump operation', status: 'done' });
+
+    expect(session.runId).toBe(manualRun.id);
+    const joined = await db.getCheckRunById(manualRun.id);
+    expect(joined?.contributors).toContain('Test Member');
+  });
+
+  it('two simultaneous voice sessions on the same appliance record into the same run, not two', async () => {
+    const { session: sessionA, executor: executorA } = await newSession();
+    const { session: sessionB, executor: executorB } = await newSession();
+
+    await run(executorA, 'record_result', { item: 'Pump operation', status: 'done' });
+    await run(executorB, 'record_result', { item: 'Tyre condition', status: 'issue', detail: 'slow leak' });
+
+    expect(sessionA.runId).toBeTruthy();
+    expect(sessionB.runId).toBe(sessionA.runId);
+
+    const db = await ensureTruckChecksDatabase();
+    const results = await db.getResultsByRunId(sessionA.runId!);
+    expect(results.map((r) => r.itemName).sort()).toEqual(['Pump operation', 'Tyre condition']);
+  });
+
+  it('still creates a fresh run when no active run exists for the appliance', async () => {
+    const { session, executor } = await newSession();
+    await run(executor, 'record_result', { item: 'Stowage secure', status: 'done' });
+    const db = await ensureTruckChecksDatabase();
+    expect((await db.getCheckRunById(session.runId!))?.source).toBe('voice');
   });
 });
 

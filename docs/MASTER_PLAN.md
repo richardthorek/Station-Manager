@@ -353,39 +353,39 @@ Status legend: ⬜ planned · 🟡 partial/in-progress · 🔵 needs a decision 
   log, typed fallback, MP3 reply playback), entered from a 🎙 Voice Check button on
   the truck-check hub. 35 new tests incl. the first WS-endpoint integration suite
   (backend 817 + frontend 500 pass).
-  *⚠ A3 hardening — BLOCKS wider rollout (code review 2026-07-02, expanded same day,
-  `docs/current_state/CODE_REVIEW_A3_20260702.md`, 16 findings F1–F16):*
-  the `/ws/agent-check` WebSocket bypasses the guards the REST layer enforces, and
-  `AgentSession` state is mutated from two uncoordinated places with no concurrency guard.
-  **F1 (critical):** WS `applianceId` has no org/station scoping → cross-tenant read
-  **and** write of another brigade's appliance/checklist/CheckRun. **F2 (high):**
-  `GET /api/agent-sessions/:id[/turns]` has no ownership check → cross-tenant transcript
-  read. **F3 (high):** the WS is not `aiEnabled`-gated (REST is) → unpaid Azure spend;
-  violates the CLAUDE.md "gate on both sides" rule. **F10 (high, new):** `complete_run`
-  and the WS close handler both write `AgentSession.status` with no ETag/optimistic-concurrency
-  check in the Table twin's `updateSession` (unguarded read-modify-write) → a completed
-  check can be permanently recorded as aborted or vice versa. **F11 (high, new):** the
-  frontend has no `onBusy` handler, so any server `busy` frame (incl. from F10's turn-slot
-  trigger) permanently disables the talk button/composer with no error — reload is the only
-  recovery, which orphans the run. Plus F4 no WS rate-limit/turn cap, F5 no `maxPayload`
-  (100 MiB default) on text frames, F6 JWT in the WS query string + no Origin check on the
-  raw WS (Socket.io has one on the same server).
-  **UX/stability:** F7 voice WS targets the Vite origin in dev (no `/ws` proxy) so it's
-  broken locally; F8 agent audio replies are silently dropped on iPad (iOS Safari autoplay
-  policy, `.catch()` swallows the rejection) and the mic can silently capture nothing
-  (AudioContext never resumed) — the primary kiosk device, must verify on-device; F9 no WS
-  reconnect, and an abandoned run doesn't just orphan — `getActiveCheckRunForAppliance` forces
-  every future check (voice or manual) on that truck to rejoin the same stuck run, effectively
-  bricking it, made worse by no pong-timeout on the 30s keepalive; F12 (new) the agent never
-  joins an already-active `CheckRun` the way manual "Join Check" does → duplicate parallel runs;
-  F16 (new) `onPointerLeave` ends the utterance on natural finger movement (gloves/wet hands).
-  Also F13–F15 (silence replies bypass the transcript, `audio-start` re-entry drops buffered
-  audio, an overbroad `catch` swallows post-parse exceptions) and conventions gaps
-  (`function_register.json` not updated for 4 new services; composer touch targets at 48px
-  vs the 60px kiosk rule).
-  *Remaining (A3 polish, after hardening):* `api_register.json` + `function_register.json`
-  entries for the agent surface; iPad screenshots; optional continuous-listening (VAD)
-  upgrade behind the same frames.
+  *✅ A3 hardening — all 16 findings fixed (2026-07-03, code review
+  `docs/current_state/CODE_REVIEW_A3_20260702.md`, F1–F16):*
+  the `/ws/agent-check` WebSocket previously bypassed the guards the REST layer enforces, and
+  `AgentSession` state was mutated from two uncoordinated places with no concurrency guard.
+  **F1/F2/F3 (tenancy + entitlements):** the WS upgrade now resolves the appliance's owning
+  station/org and 403s on a mismatch with the caller's JWT org (F1); `GET /api/agent-sessions/:id[/turns]`
+  now 404s instead of serving another org's transcript (F2); the WS upgrade now checks
+  `aiEnabled` the same as the REST routes (F3). **F10 (data integrity):** `tableStorageAgentSessionDatabase.updateSession`
+  now does an ETag-conditional `Replace`, re-reading and retrying (max 3 attempts) on a 412
+  conflict instead of a bare read-modify-write, closing the race between `complete_run` and the
+  WS close handler. **F11 (recovery):** `VoiceCheckPage` now has an `onBusy` handler that clears
+  the busy flag and shows a retry message instead of permanently disabling the UI. **F4/F5/F6
+  (WS hardening):** per-user connection cap (3), per-session turn cap (60) and text-length cap (2000
+  chars), `maxPayload` (256 KiB) on the `ws` server, and an Origin check on the upgrade (WS auth
+  still uses a query-string JWT — no browser alternative for upgrade requests). **F7/F8/F9
+  (stability/UX):** dev WS URL now targets the backend origin instead of Vite's; mic capture
+  resumes a suspended `AudioContext` and playback failures surface a status message instead of
+  being swallowed; the client now reconnects with backoff (1s→8s, 5 attempts) and resumes the
+  same `AgentSession` via `resumeSessionId`, with a pong-timeout closing genuinely dead sockets.
+  **F12:** `AgentToolExecutor.ensureRun` now joins an already-active `CheckRun` on the appliance
+  (mirrors manual "Join Check") instead of always creating a new one. **F13–F16:** silence/no-match
+  replies are now persisted to the transcript; a repeated `audio-start` no longer drops buffered
+  audio; the WS message handler no longer lets a post-parse exception crash the connection
+  silently; the hold-to-talk button uses Pointer Capture so natural finger drift no longer
+  truncates a recording. **Conventions cleanup:** `docs/function_register.json` and
+  `docs/api_register.json` now document the agent-session services/routes and the raw
+  `/ws/agent-check` protocol; composer touch targets raised to 60px; `escapeXml` strips
+  XML-illegal control chars before entity-escaping; `agentLoop.ts`'s completion check now parses
+  the tool result's typed `completed` field instead of substring-matching the raw JSON. Every
+  fix shipped with new tests (backend +∼40, frontend +∼15); full suites green (backend 855
+  pass/1 skip, frontend 513 pass/16 skip, AAR Studio 93 pass).
+  *Remaining (A3 polish):* iPad on-device verification of F8's fixes; optional
+  continuous-listening (VAD) upgrade behind the same frames.
   (D3 decisions resolved: backend proxy audio routing; Azure OpenAI; same App Service.)
   **A4 — Phase 3/4: offline + vision** ⬜ — on-device speech; camera
   frames + visual diff vs `referencePhotoUrl`; image capability in the gateway.
@@ -457,6 +457,7 @@ is retained in the model but **unused/unenforced** (devices dropped from pricing
   a backplane). **D5 — Deploy size/time:** shrink the package, target deploy < 10 min.
 
 ### July 2026 Stabilization
+- 2026-07-03: **A3 code-review hardening — all 16 findings fixed (F1–F16).** Closes out the review filed 2026-07-02 (`docs/current_state/CODE_REVIEW_A3_20260702.md`) before wider rollout of the voice agent. **Security/tenancy:** WS upgrade now resolves the appliance's owning station/org and 403s a caller from a different org (F1); `GET /api/agent-sessions/:id[/turns]` 404s instead of serving another org's transcript, via a new `organizationId` field on `AgentSession` set at creation (F2); WS upgrade now checks `aiEnabled` the same as REST (F3); per-user connection cap (3, 429), per-session turn cap (60) and text-length cap (2000 chars) (F4); `maxPayload` 256 KiB on the `ws` server (F5); Origin header check on the upgrade (F6). **Data integrity:** `tableStorageAgentSessionDatabase.updateSession` now does an ETag-conditional `Replace`, retrying up to 3 times on a 412 conflict instead of an unguarded read-modify-write — closes the race between `complete_run` and the WS close handler racing to write `AgentSession.status` (F10). **Stability/UX:** dev WS URL now targets the backend origin instead of Vite's (F7); mic capture resumes a suspended `AudioContext` and playback failures surface a status message instead of failing silently (F8); client reconnects with backoff (1s→8s, 5 attempts) and resumes the same session via `resumeSessionId`, with a server pong-timeout closing dead sockets (F9); `VoiceCheckPage` gained an `onBusy` handler so a `busy` frame shows a retry message instead of permanently disabling the UI (F11). **Correctness:** `AgentToolExecutor.ensureRun` now joins an already-active `CheckRun` on the appliance instead of always creating a new one, mirroring manual "Join Check" (F12); silence/no-match replies are now persisted to the transcript (F13); a repeated `audio-start` no longer drops buffered audio (F14); the WS message handler no longer lets a post-parse exception crash the connection silently (F15); the hold-to-talk button uses the Pointer Capture API so natural finger drift no longer truncates a recording (F16). **Conventions cleanup:** `docs/function_register.json` (→ v1.4.0) and `docs/api_register.json` (→ v1.13.0) now document the agent-session services/routes and the raw `/ws/agent-check` protocol (previously undocumented since inc 1); composer touch targets raised 48px→60px (kiosk rule); `agentSpeech.ts`'s `escapeXml` strips XML-illegal control chars before entity-escaping so a stray byte in an LLM reply can't make Azure reject the whole SSML request; `agentLoop.ts`'s completion check now parses the tool result's typed `completed` field instead of substring-matching the raw JSON text. Every fix shipped with new regression tests targeting the specific failure scenario. *Backend 855 pass/1 skip, frontend 513 pass/16 skip, AAR Studio 93 pass; both typechecks + lint clean; full build green.* **Remaining:** iPad on-device verification of the F8 audio fixes; optional continuous-listening (VAD) upgrade is unrelated follow-on work, not a hardening gap.
 - 2026-07-02: **A3 inc 3 — voice layer: server-side Azure Speech + PWA push-to-talk UI.** The voice agent is now usable by voice end-to-end: hold-to-talk in the PWA → 16 kHz PCM over the WS → server-side Azure STT → tool loop → server-side Azure TTS reply played back. **Design call:** REST short-audio recognition with push-to-talk utterances (≤60 s) instead of the streaming Speech SDK — keeps the D3 backend-proxy decision, adds zero dependencies, is fully unit-testable, and press-and-hold suits a noisy engine bay; continuous/VAD streaming can replace `recognizeSpeech` behind the same WS frames later. **What shipped:** (1) `services/agentSpeech.ts` — `recognizeSpeech` (STT short-audio REST, en-AU, silence→empty-not-error), `synthesizeSpeech` (TTS REST, SSML-escaped, `AZURE_SPEECH_VOICE` default en-AU-NatashaNeural, MP3 out), `buildWavFile` (server wraps the raw PCM chunks in the RIFF header); reuses the existing `AZURE_SPEECH_KEY/REGION`. (2) WS protocol (`routes/agentCheck.ts`): `audio-start` → binary PCM chunks (2 MB cap = stuck-key guard) → `audio-end` → `transcript` frame → tool loop → `agent-text` + `agent-audio` header + one binary MP3; `user-text` gained a `speak` flag; canned prompts for silence/empty capture (no LLM call). (3) Frontend `features/truckcheck/voice/`: `audioEncoding.ts` (pure downsample-to-16k + Float32→PCM16, tested), `voiceAgentClient.ts` (WS wrapper, injectable socket, agent-audio↔binary pairing), `audioIO.ts` (getUserMedia/ScriptProcessor capture + playback shell; coverage-excluded like the other browser-only utils), `VoiceCheckPage.tsx` at `/truckcheck/voice/:applianceId` behind `FeatureRoute aiEnabled` (hold-to-talk ≥72 px, live transcript log, typed fallback, summary link on completion, mic-denied recovery); 🎙 Voice Check button on the truck-check hub cards (AI-plan orgs only). 35 new tests: 9 speech-adapter, 13 WS integration over a real socket (first tests of the WS endpoint — auth, text turns, audio turns, caps, abort-on-disconnect), 13 frontend (encoding/client/page). *Backend 817 + frontend 500 tests pass; all coverage gates green; both typechecks + lint clean.* **Remaining (A3 polish):** register the agent WS/REST surface in `api_register.json`; iPad screenshots for the PR; optional continuous-listening upgrade; A4 (offline + vision) unchanged.
 - 2026-07-02: **A3 inc 2 — voice-agent tool loop (text mode).** The agent can now actually run a truck check end-to-end over the `/ws/agent-check` WebSocket, in text mode (STT/TTS streaming is inc 3; text stays as the permanent debug surface). **What shipped:** (1) `services/effectiveChecklist.ts` — `resolveEffectiveChecklist` extracted from the truck-checks route so the agent merges the checklist identically to the manual workflow; (2) `createCheckRun` gained a trailing optional `runDetails?: { source, agentSessionId }` (interface + **both** twins, persisted as Table columns) so agent-started runs carry provenance; (3) `services/aiGateway.ts` — `ChatMessage` type + `tools`/`toolChoice` passthrough on `chatCompletion` (existing callers unchanged); (4) `services/agentTools.ts` — the five design-contract tools (`get_appliance_context`, `record_result`, `flag_issue`, `next_unchecked_in_zone`, `complete_run`) as an `AgentToolExecutor` bound to one AgentSession, with lazy CheckRun creation (linked both ways), item resolution by id/itemCode/name, re-record-updates-not-duplicates, zone-scoped next-item, and run/session finalisation; (5) `services/agentLoop.ts` — `runAgentTurn` drives Azure OpenAI function calling (max 8 tool iterations/turn), persists every step as `AgentTurn`s (user/tool/agent/system), replays only *text* turns as history (live state re-grounds via tools, so reconnects never desync); (6) `routes/agentCheck.ts` — `user-text` → loop → `agent-text` frames, `end-session`, one-turn-at-a-time busy guard, and close now marks an un-finished session `aborted` (only `complete_run` yields `completed`). 21 new tests (13 tools + 8 loop with mocked provider); *795 backend tests pass, coverage gates green, typecheck clean.* **Remaining (inc 3):** Azure Speech STT/TTS streaming over the same WS; PWA voice UI; register the agent API surface in `api_register.json` once the WS contract is final.
 
@@ -2986,6 +2987,7 @@ curl -H "Origin: https://malicious-site.com" \
 | 4.15 | Jun 2026 | A3 inc 1 (voice-agent backend plumbing) | D3 decisions resolved (backend proxy audio, Azure OpenAI, same App Service). Backend plumbing for voice-agent sessions: `AgentSession`/`AgentTurn` types (+ `CheckRun.source`/`agentSessionId`); in-memory + Table Storage twins; factory; WS stub at `/ws/agent-check` (JWT auth, 30-s ping keepalive, session lifecycle); REST `GET /api/agent-sessions/:id[/turns]` behind `requireFeature('aiEnabled')`. 20 new tests; 774 backend tests pass. |
 | 4.16 | Jul 2026 | A3 inc 2 (voice-agent tool loop, text mode) | The agent runs a full check over `/ws/agent-check` in text mode: five design-contract tools (`agentTools.ts`), Azure OpenAI function-calling loop with full AgentTurn transcript (`agentLoop.ts`), shared `effectiveChecklist.ts` resolver, `createCheckRun` provenance (`runDetails` in both twins), gateway `tools` passthrough, `user-text`/`agent-text`/`end-session` WS frames, abort-on-disconnect semantics. 21 new tests; 795 backend tests pass. |
 | 4.17 | Jul 2026 | A3 inc 3 (voice layer: Azure Speech + PWA push-to-talk) | Server-side Azure Speech STT/TTS (`agentSpeech.ts`, REST short-audio + push-to-talk per the backend-proxy D3 decision), WS audio frames (`audio-start`/PCM/`audio-end` → `transcript` + `agent-text` + binary MP3 reply), and the PWA voice UI (`/truckcheck/voice/:applianceId`, `FeatureRoute aiEnabled`, hold-to-talk + typed fallback) with a hub entry button. 35 new tests incl. the first WS integration suite; backend 817 + frontend 500 pass. |
+| 4.18 | Jul 2026 | A3 code-review hardening (F1–F16) | Closed all 16 findings from the pre-rollout code review: WS tenancy/entitlement scoping (F1–F3), WS rate/size/turn/connection caps + Origin check (F4–F6), dev WS origin fix (F7), iPad audio capture/playback fixes (F8), WS reconnect-with-backoff + session resume + pong-timeout (F9), ETag-conditional `AgentSession.status` updates (F10), frontend `onBusy` recovery (F11), join-active-CheckRun instead of duplicating (F12), transcript/buffer/exception-handling fixes (F13–F15), Pointer Capture on hold-to-talk (F16), plus registry docs + minor conventions cleanup. Every fix has a regression test; backend 855 pass/1 skip, frontend 513 pass/16 skip, AAR Studio 93 pass. |
 
 ---
 

@@ -49,6 +49,11 @@
   background: rgba(0, 0, 0, 0.35);
 }
 
+.voice-status--reconnecting {
+  background: var(--ui-amber);
+  color: #1a1a1a;
+}
+
 .voice-check-main {
   flex: 1;
   display: flex;
@@ -162,7 +167,7 @@
 
 .voice-composer input {
   flex: 1;
-  min-height: 48px;
+  min-height: 60px;
   padding: 0 1rem;
   border: 1px solid var(--border-color);
   border-radius: 10px;
@@ -172,7 +177,7 @@
 }
 
 .voice-composer button {
-  min-height: 48px;
+  min-height: 60px;
   min-width: 90px;
   border: none;
   border-radius: 10px;

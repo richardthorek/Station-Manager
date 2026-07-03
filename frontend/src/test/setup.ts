@@ -29,6 +29,15 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 })
 
+// jsdom doesn't implement the Pointer Events capture API (used by the voice
+// agent's hold-to-talk button — A3 code review F16); stub it so components
+// calling setPointerCapture/hasPointerCapture/releasePointerCapture don't throw.
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {}
+  Element.prototype.releasePointerCapture = () => {}
+  Element.prototype.hasPointerCapture = () => false
+}
+
 // Mock IntersectionObserver for components that use it
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}

@@ -82,6 +82,7 @@ import { initializeApplianceZoneDatabase } from './services/applianceZoneDbFacto
 import { initializeApplianceEquipmentDatabase } from './services/applianceEquipmentDbFactory';
 import { initializeAgentSessionDatabase } from './services/agentSessionDbFactory';
 import { agentCheckRouter, attachAgentCheckWs } from './routes/agentCheck';
+import { allowedOriginsList } from './utils/allowedOrigins';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
 
@@ -93,12 +94,11 @@ const httpServer = createServer(app);
 // path check runs first; non-matching paths fall through to Socket.io.
 attachAgentCheckWs(httpServer);
 
-// Parse allowed origins for CORS (used by both Express and Socket.io)
-// Supports comma-separated list for multi-brigade deployment
-const allowedOriginsList = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173')
-  .split(',')
-  .map(url => url.trim())
-  .filter(url => url.length > 0);
+// Allowed origins for CORS (used by Express, Socket.io, and the raw
+// agent-check WS upgrade handler) — shared via utils/allowedOrigins.ts rather
+// than exported from here, since agentCheck.ts's attachAgentCheckWs() runs
+// synchronously above and importing anything back from this file would be
+// circular (A3 code review F6).
 
 const io = new Server(httpServer, {
   cors: {
