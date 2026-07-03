@@ -165,14 +165,130 @@ is why they rank at the top of this review.
   the button renders regardless and fails only after the attempt. Minor —
   hide or annotate on unsupported platforms.
 
-## 3. AI analysis — extraction, dedupe, messaging
+## 3. AI analysis, dedupe & cloud sync
 
-*(pending)*
+The AI layer is the strongest part of the app: prompts encode AU fire-service
+vocabulary and transcript-reality handling, extraction is chunked with schema
+fallbacks (`json_schema` → `json_object` → free-form), metadata back-fill is
+strictly non-destructive, and the two-band dedupe (auto-skip ≥0.72, human
+merge suggestions 0.5–0.72) is a genuinely good design. Findings here are
+mostly about what happens when things *don't* go right.
 
-## 4. Board, report, exports, sync
+- **AAR-15 · Medium-High · FN — Cloud-sync conflicts are detected and then
+  thrown away while editing.** `pushSession` correctly reports
+  `{ conflict: true }` on a 409 (`lib/serverSync.js:74-75`), but the only
+  live caller is the debounced backup which fire-and-forgets it
+  (`store.js:21-26`). Two facilitators editing the same review: the loser's
+  edits stay local-only for the whole session with zero indication — the
+  "☁ Newer version" flag only appears later, on the home screen, if they
+  look. **Direction:** when a backup push returns `conflict`, surface a
+  persistent in-session banner ("A newer team copy exists — your edits are
+  saving to this device only · Load latest / Keep mine as a copy"), where
+  "keep mine" forks to a new id.
 
-*(pending)*
+- **AAR-16 · Low · FN — Dead station scoping in sync.** `toServerBody` sends
+  `session.stationId` (`lib/serverSync.js:37`) but nothing ever sets a
+  `stationId` on a session (`lib/model.js:createSession`) — the field is
+  always undefined. Either wire it (roster is already loaded when signed in)
+  or drop it.
+
+- **AAR-17 · Low · FN — Merging findings can drop a unit attribution.**
+  `mergeFindings` keeps `keep`'s identity wholesale (`lib/dedupe.js:102-112`);
+  if `keep` has no `unit` but `drop` does, the attribution is lost.
+  `unit: keep.unit || drop.unit` matches the quote-handling already there.
+
+- **AAR-18 · Low · UX — Finding deletion is instant and unrecoverable; blank
+  saves allowed.** The board's ✕ removes a finding with no confirm or undo
+  (`views/board.js:81`; same in `views/review.js:67`), while deleting a whole
+  review gets a confirm — inverted weight. Inline edit Save accepts empty
+  text, leaving a blank card. **Direction:** an "Undo" action on the deletion
+  toast (hero-grade, no confirm friction), and ignore empty-text saves.
+
+## 4. Board, report & exports
+
+The board (four columns, phase filter, present mode, merge panel) and the
+report studio (every field editable, live preview) are well conceived. The
+exported report is where the hero lens bites hardest — it is the artifact
+brigades will forward to district staff and other brigades.
+
+- **AAR-19 · High · UX/brand — The exported report carries the pre-rebrand
+  palette and no product attribution.** `SNAPSHOT_CSS`/`COMBINED_CSS`
+  hardcode `#c8102e` red and `#e8b84b` gold (`lib/exports.js:37-77,253-270`)
+  — the palette the #549/#550 rebrand explicitly replaced with the canonical
+  RFS tokens (`css/rfs-tokens.css`: red `#e5281B`, lime `#cbdb2a`). Every
+  shared snapshot advertises the old brand. And nothing on the document says
+  where it came from: for the feature that sells the app, a discreet
+  "Produced with AAR Studio · Bushie Tools" footer on exports is the organic
+  growth hook. **Direction:** re-derive the export CSS from the token values
+  (keeping print-friendly contrast), add the attribution footer, and refresh
+  `data/sample-session.json`'s baked report if needed.
+
+- **AAR-20 · Medium · UX — Print/PDF path is the known-fragile iframe print.**
+  `preview.contentWindow?.print()` (`views/report.js:109`) prints a `srcdoc`
+  iframe — unreliable on iOS Safari (can print the parent page) and the
+  long-open P1 "print-stylesheet refinements" item. **Direction:** open the
+  rendered HTML in a dedicated window/tab for printing, add proper `@page`
+  margins, and verify on iPad + desktop Chrome/Safari.
+
+- **AAR-21 · Medium · UX — Room-note contributors never see their notes in the
+  record.** Notes feed the AI as evidence, but no export includes them: the
+  combined report offers a transcript appendix only
+  (`lib/exports.js:328-340`), and report generation works from findings
+  alone (by design). Someone who typed five notes from the floor finds no
+  trace of them in the output — which undercuts the collab feature's promise.
+  **Direction:** an optional "Room notes" appendix (label + time + text) in
+  the combined report, and consider feeding un-analysed notes to report
+  generation as supporting evidence.
+
+- **AAR-22 · Low · UX — Report preview re-renders the whole iframe per
+  keystroke.** Every input event rebuilds the full snapshot HTML into
+  `srcdoc` (`views/report.js:64-76`) — perceptible jank on iPad with a real
+  report. Debounce ~300 ms.
+
+- **AAR-23 · Low · UX — Developer-mode wording shown to gateway users.** The
+  report empty-state says "Generation uses the report deployment from ⚙
+  Settings" (`views/report.js:57`) — meaningless to a bushie on the built-in
+  AI (same audience mismatch as AAR-9). The header comment "AI report
+  generation arrives in Stage 3" (`views/report.js:3`) is stale — it shipped.
+
+- **AAR-24 · Low · UX — Untitled exports produce anonymous filenames.**
+  `sessionFilename` slugs to `aar-…` with no date when the title is blank
+  (`lib/exports.js:23-25`), so downloads collide as `aar-snapshot.html`.
+  Reuse `displayTitle`'s friendly fallback + the incident/created date.
+
+---
+
+## What is already hero-grade (don't break it)
+
+- **The friendly flow:** "Start recording now" → AI fills title/location/
+  units from the talk → findings appear while people speak. This *is* the
+  demo; everything above protects it.
+- **The prompt engineering:** AU fire-service vocabulary preservation,
+  "(unclear)" honesty markers, garbled-speech repair, findings-only report
+  grounding with an explicit no-invention rule.
+- **Local-first with additive cloud:** signed-out capture works fully; sync
+  never blocks the room.
+- **Two-band dedupe + merge suggestions**, present mode, per-unit
+  attribution, and the report studio's everything-editable design.
 
 ## Priority order for implementation
 
-*(pending — filled once all sections are complete)*
+Work top-down. The top four are what stands between AAR Studio and a
+confident live demo in front of a brigade.
+
+| Rank | Finding | Why first |
+|---|---|---|
+| 1 | **AAR-6** token refresh (Critical) | Live transcription dying at ~10 min kills the hero demo in every real meeting |
+| 2 | **AAR-8** error teardown keeps recording | The safety net (backup recording) must survive transcriber failures |
+| 3 | **AAR-1** team-wide delete | Silent brigade-wide data loss from a "tidy up" tap |
+| 4 | **AAR-7** collab reconnect | Room notes silently vanishing mid-meeting betrays contributors |
+| 5 | **AAR-19** report brand + attribution | The shared artifact must carry the current brand — and sell the product |
+| 6 | **AAR-15** conflict surfaced while editing | Two-facilitator divergence is otherwise invisible for hours |
+| 7 | **AAR-10** latch persistent AI failures | Toast-every-45s during a live meeting is demo-lethal |
+| 8 | **AAR-3** GPS coords block real location | Ugly report headers from the flagship quick-start path |
+| 9 | **AAR-11** metering per token vend | Fix alongside AAR-6/8 so reliability work doesn't burn allowance |
+| 10 | **AAR-9 + AAR-23** audience-correct error copy | One sweep: gateway users must never be told to check Azure keys |
+| 11 | **AAR-2** replace native prompt/confirm | Brand-consistent dialogs; unlocks AAR-1's better confirm |
+| 12 | **AAR-21** room notes in exports | Completes the collab promise |
+| 13 | **AAR-20** print path | Long-open P1; verify on iPad |
+| 14 | AAR-4, AAR-5, AAR-12, AAR-13, AAR-14, AAR-16, AAR-17, AAR-18, AAR-22, AAR-24 | Low-severity batch; fold into the sessions above where files overlap |
