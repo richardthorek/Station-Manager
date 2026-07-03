@@ -5,10 +5,15 @@ import { SignupPage } from './SignupPage'
 
 const signup = vi.fn()
 const navigate = vi.fn()
+const showSuccess = vi.fn()
 const { createCheckoutSession } = vi.hoisted(() => ({ createCheckoutSession: vi.fn() }))
 
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({ signup }),
+}))
+
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ showSuccess }),
 }))
 
 // Mock the API module so the real fetch-based client isn't loaded in jsdom.
@@ -33,6 +38,7 @@ describe('SignupPage', () => {
   beforeEach(() => {
     signup.mockReset()
     navigate.mockReset()
+    showSuccess.mockReset()
     createCheckoutSession.mockReset()
   })
 
@@ -42,7 +48,7 @@ describe('SignupPage', () => {
     expect(screen.getByLabelText(/brigade \/ organisation name/i)).toBeInTheDocument()
   })
 
-  it('submits and navigates to the organization screen on success', async () => {
+  it('submits and navigates to the app picker on success (no billing intent)', async () => {
     signup.mockResolvedValue(undefined)
     renderPage()
 
@@ -58,7 +64,8 @@ describe('SignupPage', () => {
       username: 'captain',
       password: 'supersecret1',
     }))
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/admin/organization', { replace: true }))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }))
+    expect(showSuccess).toHaveBeenCalled()
   })
 
   it('starts Stripe checkout when a paid plan is pre-selected', async () => {

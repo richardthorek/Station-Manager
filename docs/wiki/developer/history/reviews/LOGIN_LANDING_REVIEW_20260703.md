@@ -1,5 +1,8 @@
 # Sign-in & landing sequences — review (2026-07-03)
 
+**Status: all four findings fixed 2026-07-03.** See the changelog entry for
+what shipped; this document is kept as the review record.
+
 **Directive (owner):** after signing in, users are deposited in an admin
 console with no obvious navigation. Unless the user was following a specific
 link, sign-in should land on the **app picker**. This review traces every

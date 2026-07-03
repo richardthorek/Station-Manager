@@ -10,10 +10,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth, type EntitlementFeature } from '../../../contexts/AuthContext';
 import { api, type PlanDefinition, type OrganizationUser, type AiUsage, type BillingStatus } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
+import { AdminNav } from '../../../components/AdminNav';
 import './OrganizationPage.css';
 
 const MODULES: { key: EntitlementFeature; label: string; help: string }[] = [
@@ -171,8 +172,8 @@ export function OrganizationPage() {
   if (!organization) {
     return (
       <div className="org-page">
+        <AdminNav />
         <header className="org-header">
-          <Link to="/" className="back-link">← Back to Home</Link>
           <h1>Organization</h1>
         </header>
         <main className="org-main" id="main-content" tabIndex={-1}>
@@ -189,8 +190,8 @@ export function OrganizationPage() {
   return (
     <PageTransition variant="fade">
       <div className="org-page">
+        <AdminNav />
         <header className="org-header">
-          <Link to="/" className="back-link">← Back to Home</Link>
           <h1>{organization.name}</h1>
           <p className="org-subtitle">
             Plan: <strong>{organization.planCode}</strong>

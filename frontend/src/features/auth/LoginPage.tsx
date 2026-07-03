@@ -11,7 +11,7 @@
  * - Redirect after successful login
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,15 +21,22 @@ import './LoginPage.css';
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
-  
+  const { login, isAuthenticated } = useAuth();
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Get the redirect path from location state, or default to admin page
-  const from = (location.state as { from?: string })?.from || '/admin/stations';
+  // Get the redirect path from location state, or default to the app picker
+  // (the post-login home) — a deep link that required auth sets `from`.
+  const from = (location.state as { from?: string })?.from || '/';
+
+  // An already-authenticated visitor (e.g. an old bookmark) shouldn't see the
+  // login form — send them straight to where they were headed.
+  useEffect(() => {
+    if (isAuthenticated) navigate(from, { replace: true });
+  }, [isAuthenticated, from, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
