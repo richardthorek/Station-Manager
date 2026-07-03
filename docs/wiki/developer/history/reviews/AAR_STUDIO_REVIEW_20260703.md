@@ -7,9 +7,9 @@ another brigade". Findings are documented for later agents to implement; no
 fixes are made in this review.
 
 **Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7), AAR-19, AAR-9, AAR-23, AAR-3,
-AAR-10 and AAR-2 fixed 2026-07-03** (see the changelog entries) — the four
-findings the master plan grouped as "what stands between AAR Studio and a
-confident live demo", plus five more Q2 items:
+AAR-10, AAR-2 and AAR-15 fixed 2026-07-03** (see the changelog entries) — the
+four findings the master plan grouped as "what stands between AAR Studio and
+a confident live demo", plus six more Q2 items:
 - **AAR-6/AAR-8** (`js/audio/live.js`, `js/audio/speech.js`): the gateway
   speech token now refreshes proactively every 8 minutes, and the transcriber
   reconnects automatically (up to 4 backed-off attempts) on failure without
@@ -44,6 +44,10 @@ confident live demo", plus five more Q2 items:
   `window.confirm` is replaced by a `<dialog>`-based `confirmDanger()`/
   `promptDialog()` pair in `ui.js`, matching the settings dialog's existing
   pattern.
+- **AAR-15** (`js/store.js`, `js/main.js`): a 409 from the debounced cloud
+  backup now latches a session-scoped `syncConflict` instead of being
+  silently discarded; a persistent banner on every view offers "Load latest"
+  (pulls the team's copy) or "Keep mine as a copy" (forks to a new id).
 
 Note left for whoever picks up **AAR-11**: the AAR-6 token-refresh timer and
 each reconnect attempt call `/api/ai/speech/token` again, and the backend
@@ -231,17 +235,20 @@ strictly non-destructive, and the two-band dedupe (auto-skip ≥0.72, human
 merge suggestions 0.5–0.72) is a genuinely good design. Findings here are
 mostly about what happens when things *don't* go right.
 
-- **AAR-15 · Medium-High · FN — Cloud-sync conflicts are detected and then
-  thrown away while editing.** `pushSession` correctly reports
-  `{ conflict: true }` on a 409 (`lib/serverSync.js:74-75`), but the only
-  live caller is the debounced backup which fire-and-forgets it
+- ~~**AAR-15 · Medium-High · FN — Cloud-sync conflicts are detected and then
+  thrown away while editing.**~~ **Fixed 2026-07-03.** `pushSession` correctly
+  reports `{ conflict: true }` on a 409 (`lib/serverSync.js:74-75`), but the
+  only live caller was the debounced backup which fire-and-forgot it
   (`store.js:21-26`). Two facilitators editing the same review: the loser's
-  edits stay local-only for the whole session with zero indication — the
-  "☁ Newer version" flag only appears later, on the home screen, if they
-  look. **Direction:** when a backup push returns `conflict`, surface a
-  persistent in-session banner ("A newer team copy exists — your edits are
-  saving to this device only · Load latest / Keep mine as a copy"), where
-  "keep mine" forks to a new id.
+  edits stayed local-only for the whole session with zero indication — the
+  "☁ Newer version" flag only appeared later, on the home screen, if they
+  looked. `store.js`'s `scheduleCloudBackup` now latches a conflict into
+  `syncConflict` (session-scoped); `main.js` renders a persistent banner on
+  every view ("A newer team copy exists — your edits are saving to this
+  device only · Load latest / Keep mine as a copy") — "Load latest" pulls the
+  server copy over local edits (`loadLatestFromTeam`), "Keep mine as a copy"
+  forks the session to a new id and drops the stale local entry under the old
+  one (`keepMineAsCopy`).
 
 - **AAR-16 · Low · FN — Dead station scoping in sync.** `toServerBody` sends
   `session.stationId` (`lib/serverSync.js:37`) but nothing ever sets a
@@ -342,7 +349,7 @@ confident live demo in front of a brigade.
 | 3 | ~~**AAR-1** team-wide delete~~ **Fixed 2026-07-03** | Silent brigade-wide data loss from a "tidy up" tap |
 | 4 | ~~**AAR-7** collab reconnect~~ **Fixed 2026-07-03** | Room notes silently vanishing mid-meeting betrays contributors |
 | 5 | ~~**AAR-19** report attribution~~ **Fixed 2026-07-03** | The shared artifact is the growth hook — it should say where it came from |
-| 6 | **AAR-15** conflict surfaced while editing | Two-facilitator divergence is otherwise invisible for hours |
+| 6 | ~~**AAR-15** conflict surfaced while editing~~ **Fixed 2026-07-03** | Two-facilitator divergence is otherwise invisible for hours |
 | 7 | ~~**AAR-10** latch persistent AI failures~~ **Fixed 2026-07-03** | Toast-every-45s during a live meeting is demo-lethal |
 | 8 | ~~**AAR-3** GPS coords block real location~~ **Fixed 2026-07-03** | Ugly report headers from the flagship quick-start path |
 | 9 | **AAR-11** metering per token vend | Fix alongside AAR-6/8 so reliability work doesn't burn allowance |
