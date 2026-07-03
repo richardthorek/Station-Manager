@@ -565,6 +565,8 @@ export interface AgentSession {
   runId?: string;               // linked CheckRun (formal output); set once run created
   applianceId: string;
   stationId?: string;
+  /** Owning Organization (from the caller's JWT), when present. Scopes reads to the same tenant. */
+  organizationId?: string;
   memberId?: string;            // roster member who initiated (when known)
   initiatedBy: string;          // free-text name (kiosk fallback)
   modality: 'voice' | 'voice-vision';

@@ -53,6 +53,18 @@ describe('GET /api/agent-sessions/:id', () => {
     expect(res.body.session.id).toBe(session.id);
     expect(res.body.session.applianceId).toBe('app-1');
   });
+
+  it('returns the session when its organizationId matches the caller (org-1)', async () => {
+    const session = await db.createSession({ applianceId: 'app-1', initiatedBy: 'tester', organizationId: 'org-1' });
+    await request(app).get(`/api/agent-sessions/${session.id}`).set(auth()).expect(200);
+  });
+
+  it('returns 404 (not 403) for a session owned by a different organization', async () => {
+    const session = await db.createSession({ applianceId: 'app-1', initiatedBy: 'tester', organizationId: 'org-2' });
+    // 404 rather than 403 so a cross-tenant probe can't distinguish
+    // "doesn't exist" from "exists but isn't yours".
+    await request(app).get(`/api/agent-sessions/${session.id}`).set(auth()).expect(404);
+  });
 });
 
 describe('GET /api/agent-sessions/:id/turns', () => {
@@ -88,5 +100,11 @@ describe('GET /api/agent-sessions/:id/turns', () => {
       .set(auth())
       .expect(200);
     expect(res.body.turns).toEqual([]);
+  });
+
+  it('returns 404 for turns of a session owned by a different organization', async () => {
+    const session = await db.createSession({ applianceId: 'app-1', initiatedBy: 'tester', organizationId: 'org-2' });
+    await db.addTurn({ sessionId: session.id, role: 'user', text: 'secret', sequence: 0 });
+    await request(app).get(`/api/agent-sessions/${session.id}/turns`).set(auth()).expect(404);
   });
 });

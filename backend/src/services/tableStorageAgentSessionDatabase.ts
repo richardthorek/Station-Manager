@@ -39,6 +39,7 @@ function buildTableName(baseName: string): string {
 interface AgentSessionEntity extends TableEntity {
   applianceId: string;
   stationId?: string;
+  organizationId?: string;
   memberId?: string;
   initiatedBy: string;
   modality: string;
@@ -101,6 +102,7 @@ export class TableStorageAgentSessionDatabase implements IAgentSessionDatabase {
       rowKey: s.id,
       applianceId: s.applianceId,
       stationId: s.stationId,
+      organizationId: s.organizationId,
       memberId: s.memberId,
       initiatedBy: s.initiatedBy,
       modality: s.modality,
@@ -120,6 +122,7 @@ export class TableStorageAgentSessionDatabase implements IAgentSessionDatabase {
       id: e.rowKey as string,
       applianceId: e.applianceId,
       stationId: e.stationId || undefined,
+      organizationId: e.organizationId || undefined,
       memberId: e.memberId || undefined,
       initiatedBy: e.initiatedBy,
       modality: (e.modality as AgentSession['modality']) || 'voice',
@@ -134,11 +137,12 @@ export class TableStorageAgentSessionDatabase implements IAgentSessionDatabase {
     };
   }
 
-  private async findSessionEntity(id: string): Promise<AgentSessionEntity | null> {
+  /** Returned entity carries `etag` (always set by the service) for optimistic-concurrency updates. */
+  private async findSessionEntity(id: string): Promise<(AgentSessionEntity & { etag: string }) | null> {
     const it = this.sessionsTable.listEntities<AgentSessionEntity>({
       queryOptions: { filter: odata`RowKey eq ${id}` },
     });
-    for await (const e of it) return e as AgentSessionEntity;
+    for await (const e of it) return e as AgentSessionEntity & { etag: string };
     return null;
   }
 
@@ -150,6 +154,7 @@ export class TableStorageAgentSessionDatabase implements IAgentSessionDatabase {
       id: uuidv4(),
       applianceId: input.applianceId,
       stationId: input.stationId,
+      organizationId: input.organizationId,
       memberId: input.memberId,
       initiatedBy: input.initiatedBy,
       modality: input.modality ?? 'voice',
@@ -168,20 +173,43 @@ export class TableStorageAgentSessionDatabase implements IAgentSessionDatabase {
     return e ? this.sessionFromEntity(e) : null;
   }
 
+  /**
+   * Optimistic-concurrency update: reads the entity's current `etag` and
+   * passes it back on `updateEntity` so a concurrent writer (e.g. the WS
+   * close handler racing `complete_run` — see A3 code review F10) gets a
+   * 412 Precondition Failed instead of silently clobbering the other
+   * writer's fields. Retries a bounded number of times against a freshly
+   * re-read entity so a real (non-conflicting) patch still succeeds.
+   */
   async updateSession(id: string, patch: AgentSessionPatch): Promise<AgentSession | null> {
-    const existing = await this.getSession(id);
-    if (!existing) return null;
-    const updated: AgentSession = {
-      ...existing,
-      ...(patch.runId !== undefined ? { runId: patch.runId } : {}),
-      ...(patch.status !== undefined ? { status: patch.status } : {}),
-      ...(patch.summary !== undefined ? { summary: patch.summary } : {}),
-      ...(patch.endedAt !== undefined ? { endedAt: patch.endedAt } : {}),
-      ...(patch.models !== undefined ? { models: patch.models } : {}),
-      updatedAt: new Date(),
-    };
-    await this.sessionsTable.updateEntity(this.sessionToEntity(updated), 'Replace');
-    return updated;
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const entity = await this.findSessionEntity(id);
+      if (!entity) return null;
+      const existing = this.sessionFromEntity(entity);
+      const updated: AgentSession = {
+        ...existing,
+        ...(patch.runId !== undefined ? { runId: patch.runId } : {}),
+        ...(patch.status !== undefined ? { status: patch.status } : {}),
+        ...(patch.summary !== undefined ? { summary: patch.summary } : {}),
+        ...(patch.endedAt !== undefined ? { endedAt: patch.endedAt } : {}),
+        ...(patch.models !== undefined ? { models: patch.models } : {}),
+        updatedAt: new Date(),
+      };
+      try {
+        await this.sessionsTable.updateEntity(this.sessionToEntity(updated), 'Replace', { etag: entity.etag });
+        return updated;
+      } catch (err: any) {
+        const isConflict = err?.statusCode === 412;
+        if (isConflict && attempt < MAX_ATTEMPTS) {
+          logger.warn('Agent session update conflict — retrying against fresh state', { sessionId: id, attempt });
+          continue;
+        }
+        logger.error('Failed to update agent session', { sessionId: id, error: err });
+        throw err;
+      }
+    }
+    return null;
   }
 
   async listSessionsForAppliance(applianceId: string): Promise<AgentSession[]> {

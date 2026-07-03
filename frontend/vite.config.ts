@@ -211,6 +211,9 @@ export default defineConfig({
         'src/services/offlineSupport.ts',
         // Pure animation helpers (Framer Motion / requestAnimationFrame wrappers)
         'src/utils/animations.ts',
+        // Voice-agent browser audio shell (getUserMedia/AudioContext/Audio — not in jsdom);
+        // the encoding maths lives in audioEncoding.ts, which IS covered
+        'src/features/truckcheck/voice/audioIO.ts',
       ],
       thresholds: {
         statements: 63,

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.3.0",
-  "lastUpdated": "2026-02-07",
+  "version": "1.4.0",
+  "lastUpdated": "2026-07-03",
   "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager\n\nMulti-Station Support: Database methods now accept optional stationId parameter for filtering. All methods filter by stationId when provided, default to 'default-station' otherwise.",
   "services": {
     "database": {
@@ -9,28 +9,28 @@
       "description": "In-memory database service implementation",
       "type": "class",
       "methods": {
-          "getAllMembers": {
-            "signature": "getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Member[]",
-            "line": 236,
-            "description": "Get all members sorted by activity level (check-ins in last 6 months), filtered by stationId if provided and excluding soft-deleted or inactive members",
-            "parameters": [
-              {
-                "name": "stationId",
-                "type": "string | undefined",
-                "description": "Optional station ID for filtering members by station",
-                "optional": true
-              },
-              {
-                "name": "options",
-                "type": "{ search?: string; filter?: string; sort?: string } | undefined",
-                "description": "Search, filter, and sort controls for member listings",
-                "optional": true
-              }
-            ],
-            "returns": "Member[]",
-            "complexity": "O(n log n)",
-            "sideEffects": "none"
-          },
+        "getAllMembers": {
+          "signature": "getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Member[]",
+          "line": 236,
+          "description": "Get all members sorted by activity level (check-ins in last 6 months), filtered by stationId if provided and excluding soft-deleted or inactive members",
+          "parameters": [
+            {
+              "name": "stationId",
+              "type": "string | undefined",
+              "description": "Optional station ID for filtering members by station",
+              "optional": true
+            },
+            {
+              "name": "options",
+              "type": "{ search?: string; filter?: string; sort?: string } | undefined",
+              "description": "Search, filter, and sort controls for member listings",
+              "optional": true
+            }
+          ],
+          "returns": "Member[]",
+          "complexity": "O(n log n)",
+          "sideEffects": "none"
+        },
         "getMemberByQRCode": {
           "signature": "getMemberByQRCode(qrCode: string): Member | undefined",
           "line": 387,
@@ -1196,6 +1196,168 @@
           "Tokens provide station-level access control"
         ]
       }
+    },
+    "agentSessionDbFactory": {
+      "file": "backend/src/services/agentSessionDbFactory.ts",
+      "description": "Factory for AgentSession database instances (voice/vision maintenance-agent sessions + turns) — chooses in-memory vs Azure Table Storage, same pattern as truckChecksDbFactory",
+      "functions": {
+        "ensureAgentSessionDatabase": {
+          "signature": "ensureAgentSessionDatabase(): IAgentSessionDatabase",
+          "description": "Get agent session database instance (singleton); Table Storage if AZURE_STORAGE_CONNECTION_STRING is set and USE_TABLE_STORAGE !== 'false', else in-memory",
+          "returns": "IAgentSessionDatabase",
+          "async": false
+        },
+        "initializeAgentSessionDatabase": {
+          "signature": "initializeAgentSessionDatabase(): Promise<void>",
+          "description": "Connects the Table Storage twin (creates tables if missing) when that backend is selected; no-op otherwise",
+          "returns": "Promise<void>",
+          "async": true
+        }
+      }
+    },
+    "agentSessionDatabase": {
+      "file": "backend/src/services/agentSessionDatabase.ts",
+      "description": "In-memory AgentSession/AgentTurn store (A3 voice-agent transcript). Table Storage twin is tableStorageAgentSessionDatabase.ts — keep both in sync with IAgentSessionDatabase.",
+      "functions": {
+        "createSession": {
+          "signature": "createSession(input: AgentSessionInput): Promise<AgentSession>",
+          "description": "Create a new active AgentSession; input carries applianceId, stationId, organizationId (tenancy scoping, A3 code review F1/F2), memberId, initiatedBy, modality",
+          "returns": "Promise<AgentSession>",
+          "async": true
+        },
+        "getSession": {
+          "signature": "getSession(id: string): Promise<AgentSession | null>",
+          "returns": "Promise<AgentSession | null>",
+          "async": true
+        },
+        "updateSession": {
+          "signature": "updateSession(id: string, patch: AgentSessionPatch): Promise<AgentSession | null>",
+          "description": "Patch runId/status/summary/endedAt/models on a session",
+          "returns": "Promise<AgentSession | null>",
+          "async": true
+        },
+        "listSessionsForAppliance": {
+          "signature": "listSessionsForAppliance(applianceId: string): Promise<AgentSession[]>",
+          "returns": "Promise<AgentSession[]>",
+          "async": true
+        },
+        "addTurn": {
+          "signature": "addTurn(input: AgentTurnInput): Promise<AgentTurn>",
+          "description": "Append one transcript turn (user/agent/tool/system) with an explicit sequence number",
+          "returns": "Promise<AgentTurn>",
+          "async": true
+        },
+        "getTurnsForSession": {
+          "signature": "getTurnsForSession(sessionId: string): Promise<AgentTurn[]>",
+          "returns": "Promise<AgentTurn[]>",
+          "async": true
+        }
+      }
+    },
+    "tableStorageAgentSessionDatabase": {
+      "file": "backend/src/services/tableStorageAgentSessionDatabase.ts",
+      "description": "Azure Table Storage twin of agentSessionDatabase.ts. updateSession uses ETag-based optimistic concurrency (Replace with If-Match), retrying up to 3 times on a 412 conflict before throwing — fixes a lost-update race between the WS close handler and an in-flight complete_run (A3 code review F10).",
+      "functions": {
+        "createSession": {
+          "signature": "createSession(input: AgentSessionInput): Promise<AgentSession>",
+          "returns": "Promise<AgentSession>",
+          "async": true
+        },
+        "getSession": {
+          "signature": "getSession(id: string): Promise<AgentSession | null>",
+          "returns": "Promise<AgentSession | null>",
+          "async": true
+        },
+        "updateSession": {
+          "signature": "updateSession(id: string, patch: AgentSessionPatch): Promise<AgentSession | null>",
+          "description": "Read-modify-write with ETag concurrency: re-reads the entity, applies the patch, and does a conditional Replace keyed on the ETag; retries (max 3 attempts) on 412 Precondition Failed, throws on exhaustion or any other error",
+          "returns": "Promise<AgentSession | null>",
+          "async": true
+        },
+        "listSessionsForAppliance": {
+          "signature": "listSessionsForAppliance(applianceId: string): Promise<AgentSession[]>",
+          "returns": "Promise<AgentSession[]>",
+          "async": true
+        },
+        "addTurn": {
+          "signature": "addTurn(input: AgentTurnInput): Promise<AgentTurn>",
+          "returns": "Promise<AgentTurn>",
+          "async": true
+        },
+        "getTurnsForSession": {
+          "signature": "getTurnsForSession(sessionId: string): Promise<AgentTurn[]>",
+          "returns": "Promise<AgentTurn[]>",
+          "async": true
+        },
+        "connect": {
+          "signature": "connect(): Promise<void>",
+          "description": "Creates the sessions/turns tables if they don't exist",
+          "returns": "Promise<void>",
+          "async": true
+        }
+      }
+    },
+    "agentSpeech": {
+      "file": "backend/src/services/agentSpeech.ts",
+      "description": "Voice-agent speech adapters (A3 inc 3) — server-side Azure Speech REST calls. Audio is proxied through the backend so the PWA never holds a speech key.",
+      "functions": {
+        "buildWavFile": {
+          "signature": "buildWavFile(pcm: Buffer): Buffer",
+          "description": "Wrap raw 16kHz 16-bit mono PCM in a 44-byte RIFF/WAV header for the STT short-audio endpoint",
+          "returns": "Buffer",
+          "async": false
+        },
+        "recognizeSpeech": {
+          "signature": "recognizeSpeech(wavAudio: Buffer, fetchImpl?: typeof fetch): Promise<RecognitionResult>",
+          "description": "POST one push-to-talk utterance to the regional Azure STT short-audio endpoint; silence/NoMatch is a normal 200 result with no text, not an error",
+          "returns": "Promise<RecognitionResult>",
+          "async": true
+        },
+        "synthesizeSpeech": {
+          "signature": "synthesizeSpeech(text: string, fetchImpl?: typeof fetch): Promise<SynthesisResult>",
+          "description": "Synthesise an agent reply to MP3 via Azure TTS with the configured AU voice; escapeXml strips XML-illegal control characters before entity-escaping so a stray byte in the LLM reply can't make Azure reject the whole SSML request (A3 code review, reuse/simplification section)",
+          "returns": "Promise<SynthesisResult>",
+          "async": true
+        }
+      }
+    },
+    "agentTools": {
+      "file": "backend/src/services/agentTools.ts",
+      "description": "Voice-agent tool layer (A3 inc 2) — the five OpenAI function-calling tools (get_appliance_context, record_result, flag_issue, next_unchecked_in_zone, complete_run) bound to the truck-check/zone/equipment stores for one AgentSession.",
+      "functions": {
+        "AgentToolExecutor.execute": {
+          "signature": "execute(name: string, argsJson: string): Promise<string>",
+          "description": "Dispatch one tool call by name; always resolves to a JSON string (the OpenAI tool-message wire shape), including on internal errors (returned as {error})",
+          "returns": "Promise<string>",
+          "async": true
+        },
+        "AgentToolExecutor.ensureRun": {
+          "signature": "ensureRun(appliance: Appliance): Promise<string>",
+          "description": "Lazily resolves the CheckRun for this session: joins an already-active run on the appliance (mirrors the manual 'Join Check' flow in routes/truckChecks.ts) instead of always creating a new one, so a voice check started mid-manual-check doesn't split results across two runs (A3 code review F12)",
+          "returns": "Promise<string>",
+          "async": true,
+          "visibility": "private"
+        }
+      }
+    },
+    "agentLoop": {
+      "file": "backend/src/services/agentLoop.ts",
+      "description": "Voice-agent conversation loop (A3 inc 2) — one user turn in, one agent reply out, driving Azure OpenAI function-calling against AGENT_TOOL_DEFINITIONS and persisting every step as an AgentTurn.",
+      "functions": {
+        "runAgentTurn": {
+          "signature": "runAgentTurn(session: AgentSession, userText: string, executor: AgentToolExecutor, fetchImpl?: typeof fetch): Promise<AgentTurnOutcome>",
+          "description": "Runs the tool-calling loop (max 8 iterations) for one user turn; provider failures return a spoken-style error message rather than throwing, so the WS layer always has something to relay",
+          "returns": "Promise<AgentTurnOutcome>",
+          "async": true
+        },
+        "isCompletedToolResult": {
+          "signature": "isCompletedToolResult(output: string): boolean",
+          "description": "Parses a complete_run tool result and reads its typed `completed` field, instead of substring-matching the raw JSON text — a summary/comment that happened to contain the literal text '\"completed\":true' could otherwise end the session early (A3 code review, reuse/simplification section)",
+          "returns": "boolean",
+          "async": false,
+          "visibility": "private"
+        }
+      }
     }
   },
   "routes": {
@@ -1406,6 +1568,31 @@
       "socketEvents": [
         "achievement-unlocked"
       ]
+    },
+    "agentCheck": {
+      "file": "backend/src/routes/agentCheck.ts",
+      "description": "REST endpoints for reading voice-agent sessions/transcripts, plus attachAgentCheckWs() which upgrades /ws/agent-check into the live voice-check WebSocket (audio in, tool-driven replies + TTS audio out). Mounted at /api/agent-sessions, gated behind requireFeature('aiEnabled').",
+      "endpoints": 2,
+      "handlers": [
+        {
+          "method": "GET",
+          "path": "/:id",
+          "handler": "agentCheckRouter.get('/:id')",
+          "line": 58
+        },
+        {
+          "method": "GET",
+          "path": "/:id/turns",
+          "handler": "agentCheckRouter.get('/:id/turns')",
+          "line": 73
+        }
+      ],
+      "websocket": {
+        "path": "/ws/agent-check",
+        "attachFunction": "attachAgentCheckWs(httpServer): void",
+        "line": 140,
+        "description": "Upgrades on pathname match, then in order: Origin check (A3 code review F6) -> JWT verify (query string token) -> per-user connection cap (F4) -> applianceId presence -> tenancy check (appliance's station org vs token org, F1) -> aiEnabled entitlement check (F3) -> optional resumeSessionId resolution (F9). Frames: client sends audio-start/audio-chunk/audio-end/user-text/end-session; server sends session-started (resumed flag), transcript, agent-text, agent-audio, error, busy. Pong-timeout liveness check terminates dead connections (F9); maxPayload caps a single WS message at 256KB (F5)."
+      }
     }
   },
   "utilities": {

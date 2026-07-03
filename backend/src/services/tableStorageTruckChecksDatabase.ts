@@ -403,7 +403,7 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
 
   // ===== CHECK RUN METHODS =====
 
-  async createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string): Promise<CheckRun> {
+  async createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string, runDetails?: { source?: CheckRun['source']; agentSessionId?: string }): Promise<CheckRun> {
     const appliance = await this.getApplianceById(applianceId);
     if (!appliance) {
       throw new Error('Appliance not found');
@@ -420,6 +420,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       contributors: completedByName ? [completedByName] : [],
       status: 'in-progress',
       hasIssues: false,
+      source: runDetails?.source,
+      agentSessionId: runDetails?.agentSessionId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -441,6 +443,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       additionalComments: checkRun.additionalComments || '',
       status: checkRun.status,
       hasIssues: checkRun.hasIssues,
+      source: checkRun.source || '',
+      agentSessionId: checkRun.agentSessionId || '',
       createdAt: checkRun.createdAt.toISOString(),
       updatedAt: checkRun.updatedAt.toISOString(),
     };
@@ -572,6 +576,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       additionalComments: (entity.additionalComments as string) || undefined,
       status: entity.status as 'in-progress' | 'completed',
       hasIssues: entity.hasIssues as boolean,
+      source: (entity.source as CheckRun['source']) || undefined,
+      agentSessionId: (entity.agentSessionId as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };

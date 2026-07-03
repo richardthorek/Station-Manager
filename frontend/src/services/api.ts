@@ -1562,6 +1562,16 @@ class ApiService {
     }
     return response.json();
   }
+
+  /** A3 voice agent — used to rehydrate the transcript after a WS reconnect resumes a session. */
+  async getAgentSessionTurns(sessionId: string): Promise<AgentTurnSummary[]> {
+    const response = await fetch(`${API_BASE_URL}/agent-sessions/${sessionId}/turns`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch agent session turns');
+    const data = await response.json();
+    return data.turns;
+  }
 }
 
 export interface PlanDefinition {
@@ -1598,6 +1608,13 @@ export interface AiUsage {
   remaining: number;
   resetAt: string;
   aiEnabled: boolean;
+}
+
+/** A3 — one transcript turn, as returned by GET /api/agent-sessions/:id/turns. */
+export interface AgentTurnSummary {
+  role: 'user' | 'agent' | 'system' | 'tool';
+  text?: string;
+  sequence: number;
 }
 
 export const api = new ApiService();

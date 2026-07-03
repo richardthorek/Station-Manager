@@ -324,6 +324,25 @@
   transform: translateY(0);
 }
 
+/* Secondary voice-agent entry (AI plan only) */
+.btn-voice-check {
+  background-color: transparent;
+  color: var(--rfs-core-red);
+  border: 2px solid var(--rfs-core-red);
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.btn-voice-check:hover {
+  background-color: var(--surface-hover);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .truckcheck-header {

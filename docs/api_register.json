@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.12.0",
-  "lastUpdated": "2026-06-23",
+  "version": "1.13.0",
+  "lastUpdated": "2026-07-03",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -36,17 +36,42 @@
         "requestBody": {
           "type": "object",
           "properties": {
-            "planCode": { "type": "string", "enum": ["basic", "ai"] },
-            "billingInterval": { "type": "string", "enum": ["monthly", "annual"], "default": "monthly" }
+            "planCode": {
+              "type": "string",
+              "enum": [
+                "basic",
+                "ai"
+              ]
+            },
+            "billingInterval": {
+              "type": "string",
+              "enum": [
+                "monthly",
+                "annual"
+              ],
+              "default": "monthly"
+            }
           },
-          "required": ["planCode"]
+          "required": [
+            "planCode"
+          ]
         },
         "responses": {
-          "200": { "description": "{ checkoutUrl } — redirect the browser to complete payment" },
-          "400": { "description": "Invalid planCode/interval or no Stripe price configured for the combination" },
-          "401": { "description": "Not authenticated" },
-          "403": { "description": "Not an org owner" },
-          "503": { "description": "Billing not configured (STRIPE_SECRET_KEY missing)" }
+          "200": {
+            "description": "{ checkoutUrl } — redirect the browser to complete payment"
+          },
+          "400": {
+            "description": "Invalid planCode/interval or no Stripe price configured for the combination"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not an org owner"
+          },
+          "503": {
+            "description": "Billing not configured (STRIPE_SECRET_KEY missing)"
+          }
         },
         "implementation": "backend/src/routes/billing.ts:40"
       },
@@ -57,11 +82,21 @@
         "authentication": "JWT (owner)",
         "requestBody": null,
         "responses": {
-          "200": { "description": "{ checkoutUrl, packSize } — redirect to complete payment" },
-          "400": { "description": "AI not enabled on this org" },
-          "401": { "description": "Not authenticated" },
-          "403": { "description": "Not an org owner" },
-          "503": { "description": "Top-up not configured (STRIPE_PRICE_AI_TOPUP or STRIPE_SECRET_KEY missing)" }
+          "200": {
+            "description": "{ checkoutUrl, packSize } — redirect to complete payment"
+          },
+          "400": {
+            "description": "AI not enabled on this org"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not an org owner"
+          },
+          "503": {
+            "description": "Top-up not configured (STRIPE_PRICE_AI_TOPUP or STRIPE_SECRET_KEY missing)"
+          }
         },
         "implementation": "backend/src/routes/billing.ts:148"
       },
@@ -72,11 +107,21 @@
         "authentication": "JWT (owner)",
         "requestBody": null,
         "responses": {
-          "200": { "description": "{ portalUrl }" },
-          "400": { "description": "Org has no Stripe customer yet (subscribe first)" },
-          "401": { "description": "Not authenticated" },
-          "403": { "description": "Not an org owner" },
-          "503": { "description": "Billing not configured" }
+          "200": {
+            "description": "{ portalUrl }"
+          },
+          "400": {
+            "description": "Org has no Stripe customer yet (subscribe first)"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not an org owner"
+          },
+          "503": {
+            "description": "Billing not configured"
+          }
         },
         "implementation": "backend/src/routes/billing.ts:113"
       },
@@ -88,9 +133,15 @@
         "parameters": {},
         "requestBody": null,
         "responses": {
-          "200": { "description": "{ planCode, status, trialEndsAt, hasPaymentMethod, stripeConfigured }" },
-          "401": { "description": "Not authenticated" },
-          "404": { "description": "Organization not found" }
+          "200": {
+            "description": "{ planCode, status, trialEndsAt, hasPaymentMethod, stripeConfigured }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
         },
         "implementation": "backend/src/routes/billing.ts:135"
       },
@@ -102,9 +153,15 @@
         "parameters": {},
         "requestBody": null,
         "responses": {
-          "200": { "description": "{ events: BillingEvent[] }" },
-          "401": { "description": "Not authenticated" },
-          "403": { "description": "Not an org owner" }
+          "200": {
+            "description": "{ events: BillingEvent[] }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not an org owner"
+          }
         },
         "implementation": "backend/src/routes/billing.ts:155"
       },
@@ -113,12 +170,23 @@
         "path": "/api/billing/webhook",
         "description": "Stripe webhook receiver. Verifies the Stripe-Signature against STRIPE_WEBHOOK_SECRET, syncs org plan/status/entitlements (checkout.session.completed, customer.subscription.updated/deleted, invoice.paid, invoice.payment_failed), and writes an idempotent audit row. Requires the raw request body (express.raw registered before express.json).",
         "authentication": "Stripe signature (no JWT)",
-        "requestBody": { "type": "string", "description": "Raw JSON event body (Buffer)" },
+        "requestBody": {
+          "type": "string",
+          "description": "Raw JSON event body (Buffer)"
+        },
         "responses": {
-          "200": { "description": "{ received: true } — always returned after audit; { duplicate: true } when the event was already processed" },
-          "400": { "description": "Missing or invalid Stripe-Signature" },
-          "500": { "description": "STRIPE_WEBHOOK_SECRET not configured" },
-          "503": { "description": "Billing not configured" }
+          "200": {
+            "description": "{ received: true } — always returned after audit; { duplicate: true } when the event was already processed"
+          },
+          "400": {
+            "description": "Missing or invalid Stripe-Signature"
+          },
+          "500": {
+            "description": "STRIPE_WEBHOOK_SECRET not configured"
+          },
+          "503": {
+            "description": "Billing not configured"
+          }
         },
         "implementation": "backend/src/routes/billing.ts:172"
       }
@@ -132,9 +200,15 @@
         "description": "Proxy a chat/completion request to the configured AI provider (Azure OpenAI; Anthropic adapter stubbed). Requires aiEnabled when org context is present.",
         "authentication": "JWT (aiEnabled when org context present)",
         "responses": {
-          "200": { "description": "Provider chat completion payload" },
-          "403": { "description": "aiEnabled entitlement required" },
-          "503": { "description": "AI provider not configured" }
+          "200": {
+            "description": "Provider chat completion payload"
+          },
+          "403": {
+            "description": "aiEnabled entitlement required"
+          },
+          "503": {
+            "description": "AI provider not configured"
+          }
         },
         "implementation": "backend/src/routes/ai.ts"
       },
@@ -144,9 +218,15 @@
         "description": "Generate an AI report/summary via the gateway. Requires aiEnabled when org context is present.",
         "authentication": "JWT (aiEnabled when org context present)",
         "responses": {
-          "200": { "description": "Generated report payload" },
-          "403": { "description": "aiEnabled entitlement required" },
-          "503": { "description": "AI provider not configured" }
+          "200": {
+            "description": "Generated report payload"
+          },
+          "403": {
+            "description": "aiEnabled entitlement required"
+          },
+          "503": {
+            "description": "AI provider not configured"
+          }
         },
         "implementation": "backend/src/routes/ai.ts"
       },
@@ -156,10 +236,18 @@
         "description": "Vend a short-lived Azure Speech authorization token for browser SDK use. Counts as one metered AI session and enforces the monthly allowance.",
         "authentication": "JWT (aiEnabled when org context present)",
         "responses": {
-          "200": { "description": "{ token, region } — short-lived Speech auth token" },
-          "402": { "description": "Monthly AI session allowance (included + bonus) exhausted — { remaining, included, bonus, resetAt, topupAvailable }" },
-          "403": { "description": "aiEnabled entitlement required" },
-          "503": { "description": "Speech provider not configured" }
+          "200": {
+            "description": "{ token, region } — short-lived Speech auth token"
+          },
+          "402": {
+            "description": "Monthly AI session allowance (included + bonus) exhausted — { remaining, included, bonus, resetAt, topupAvailable }"
+          },
+          "403": {
+            "description": "aiEnabled entitlement required"
+          },
+          "503": {
+            "description": "Speech provider not configured"
+          }
         },
         "implementation": "backend/src/routes/ai.ts"
       },
@@ -171,8 +259,12 @@
         "parameters": {},
         "requestBody": null,
         "responses": {
-          "200": { "description": "{ used, included, bonus, remaining, resetAt, aiEnabled } — bonus is purchased top-up sessions not yet consumed" },
-          "401": { "description": "Not authenticated" }
+          "200": {
+            "description": "{ used, included, bonus, remaining, resetAt, aiEnabled } — bonus is purchased top-up sessions not yet consumed"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
         },
         "implementation": "backend/src/routes/ai.ts"
       }
@@ -189,9 +281,15 @@
         "parameters": {},
         "requestBody": null,
         "responses": {
-          "200": { "description": "{ sessions: AARSessionSummary[] }" },
-          "401": { "description": "Not authenticated" },
-          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" }
+          "200": {
+            "description": "{ sessions: AARSessionSummary[] }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "No organization context, or aarStudioEnabled entitlement required"
+          }
         },
         "implementation": "backend/src/routes/aarSessions.ts"
       },
@@ -201,10 +299,18 @@
         "description": "Fetch one saved review including the full payload, scoped to the caller's org.",
         "authentication": "JWT (org context required)",
         "responses": {
-          "200": { "description": "{ session: AARSession }" },
-          "401": { "description": "Not authenticated" },
-          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
-          "404": { "description": "Review not found in this org" }
+          "200": {
+            "description": "{ session: AARSession }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "No organization context, or aarStudioEnabled entitlement required"
+          },
+          "404": {
+            "description": "Review not found in this org"
+          }
         },
         "implementation": "backend/src/routes/aarSessions.ts"
       },
@@ -213,14 +319,33 @@
         "path": "/api/aar-sessions/:id",
         "description": "Create or replace a review (the client owns the id). Org scoping is enforced; creation metadata (createdAt/createdBy) is preserved across updates. Optimistic concurrency: when clientUpdatedAt is supplied and an existing row was edited more recently, the save is rejected (409) instead of clobbering it; omit clientUpdatedAt to force last-write-wins.",
         "authentication": "JWT (org context required)",
-        "requestBody": { "title": "string", "incidentDate": "string?", "stationId": "string?", "schemaVersion": "number", "payload": "string (JSON of the AAR Studio session)", "clientUpdatedAt": "string? (the saving device's last-edit time, ISO; enables stale-write detection)" },
+        "requestBody": {
+          "title": "string",
+          "incidentDate": "string?",
+          "stationId": "string?",
+          "schemaVersion": "number",
+          "payload": "string (JSON of the AAR Studio session)",
+          "clientUpdatedAt": "string? (the saving device's last-edit time, ISO; enables stale-write detection)"
+        },
         "responses": {
-          "200": { "description": "{ session: AARSession }" },
-          "400": { "description": "payload or schemaVersion missing/invalid" },
-          "401": { "description": "Not authenticated" },
-          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
-          "409": { "description": "Stale write — updated more recently on another device; body is { error, current } (current omits payload)" },
-          "413": { "description": "Review payload too large to persist (~900k char cap)" }
+          "200": {
+            "description": "{ session: AARSession }"
+          },
+          "400": {
+            "description": "payload or schemaVersion missing/invalid"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "No organization context, or aarStudioEnabled entitlement required"
+          },
+          "409": {
+            "description": "Stale write — updated more recently on another device; body is { error, current } (current omits payload)"
+          },
+          "413": {
+            "description": "Review payload too large to persist (~900k char cap)"
+          }
         },
         "implementation": "backend/src/routes/aarSessions.ts"
       },
@@ -230,10 +355,18 @@
         "description": "Delete a review, scoped to the caller's org.",
         "authentication": "JWT (org context required)",
         "responses": {
-          "200": { "description": "{ success: true }" },
-          "401": { "description": "Not authenticated" },
-          "403": { "description": "No organization context, or aarStudioEnabled entitlement required" },
-          "404": { "description": "Review not found in this org" }
+          "200": {
+            "description": "{ success: true }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "No organization context, or aarStudioEnabled entitlement required"
+          },
+          "404": {
+            "description": "Review not found in this org"
+          }
         },
         "implementation": "backend/src/routes/aarSessions.ts"
       }
@@ -243,47 +376,117 @@
       "authentication": "JWT (vehicle-type writes require admin + org ownership; the effective-checklist endpoints are kiosk-friendly)",
       "entitlement": "truckCheckEnabled (parent /api/truck-checks mount)",
       "GET /api/truck-checks/vehicle-types": {
-        "method": "GET", "path": "/api/truck-checks/vehicle-types",
+        "method": "GET",
+        "path": "/api/truck-checks/vehicle-types",
         "description": "List the org's vehicle types plus all published standards.",
         "authentication": "JWT",
-        "responses": { "200": { "description": "VehicleType[]" }, "401": { "description": "Not authenticated" } },
+        "responses": {
+          "200": {
+            "description": "VehicleType[]"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "POST /api/truck-checks/vehicle-types": {
-        "method": "POST", "path": "/api/truck-checks/vehicle-types",
+        "method": "POST",
+        "path": "/api/truck-checks/vehicle-types",
         "description": "Create a vehicle type owned by the caller's org (isStandard publishes it).",
         "authentication": "JWT (admin)",
-        "requestBody": { "name": "string", "code": "string?", "category": "string?", "description": "string?", "isStandard": "boolean?", "standardItems": "ChecklistItem[]" },
-        "responses": { "201": { "description": "VehicleType" }, "400": { "description": "name/standardItems invalid" }, "403": { "description": "Admin required" } },
+        "requestBody": {
+          "name": "string",
+          "code": "string?",
+          "category": "string?",
+          "description": "string?",
+          "isStandard": "boolean?",
+          "standardItems": "ChecklistItem[]"
+        },
+        "responses": {
+          "201": {
+            "description": "VehicleType"
+          },
+          "400": {
+            "description": "name/standardItems invalid"
+          },
+          "403": {
+            "description": "Admin required"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "PUT /api/truck-checks/vehicle-types/:id": {
-        "method": "PUT", "path": "/api/truck-checks/vehicle-types/:id",
+        "method": "PUT",
+        "path": "/api/truck-checks/vehicle-types/:id",
         "description": "Update a vehicle type the org owns (re-normalises standard item codes).",
         "authentication": "JWT (admin, org-owned only)",
-        "responses": { "200": { "description": "VehicleType" }, "403": { "description": "Not your org's type" }, "404": { "description": "Not found" } },
+        "responses": {
+          "200": {
+            "description": "VehicleType"
+          },
+          "403": {
+            "description": "Not your org's type"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "DELETE /api/truck-checks/vehicle-types/:id": {
-        "method": "DELETE", "path": "/api/truck-checks/vehicle-types/:id",
+        "method": "DELETE",
+        "path": "/api/truck-checks/vehicle-types/:id",
         "description": "Delete a vehicle type the org owns.",
         "authentication": "JWT (admin, org-owned only)",
-        "responses": { "204": { "description": "Deleted" }, "403": { "description": "Not your org's type" }, "404": { "description": "Not found" } },
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "Not your org's type"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "GET /api/truck-checks/appliances/:id/checklist": {
-        "method": "GET", "path": "/api/truck-checks/appliances/:id/checklist",
+        "method": "GET",
+        "path": "/api/truck-checks/appliances/:id/checklist",
         "description": "The resolved effective checklist for an appliance (locked standard items + brigade custom overlay, in saved order). What the check workflow renders.",
         "authentication": "JWT/optional (kiosk-friendly)",
-        "responses": { "200": { "description": "EffectiveChecklist" }, "404": { "description": "Appliance not found" } },
+        "responses": {
+          "200": {
+            "description": "EffectiveChecklist"
+          },
+          "404": {
+            "description": "Appliance not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "PUT /api/truck-checks/appliances/:id/checklist": {
-        "method": "PUT", "path": "/api/truck-checks/appliances/:id/checklist",
+        "method": "PUT",
+        "path": "/api/truck-checks/appliances/:id/checklist",
         "description": "Save the brigade's custom overlay (custom items + preferred order). Standard items are never sent here; they live on the type.",
         "authentication": "JWT/optional",
-        "requestBody": { "customItems": "ChecklistItem[]", "itemOrder": "string[] (standard item itemCode or custom item id)" },
-        "responses": { "200": { "description": "EffectiveChecklist" }, "400": { "description": "customItems must be an array" }, "404": { "description": "Appliance not found" } },
+        "requestBody": {
+          "customItems": "ChecklistItem[]",
+          "itemOrder": "string[] (standard item itemCode or custom item id)"
+        },
+        "responses": {
+          "200": {
+            "description": "EffectiveChecklist"
+          },
+          "400": {
+            "description": "customItems must be an array"
+          },
+          "404": {
+            "description": "Appliance not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       }
     },
@@ -292,40 +495,110 @@
       "authentication": "JWT (zone writes require admin; list requires an authenticated session)",
       "entitlement": "truckCheckEnabled (parent /api/truck-checks mount)",
       "GET /api/truck-checks/appliances/:applianceId/zones": {
-        "method": "GET", "path": "/api/truck-checks/appliances/:applianceId/zones",
+        "method": "GET",
+        "path": "/api/truck-checks/appliances/:applianceId/zones",
         "description": "List one appliance's zones in walk-around order.",
         "authentication": "JWT",
-        "responses": { "200": { "description": "ApplianceZone[]" }, "401": { "description": "Not authenticated" } },
+        "responses": {
+          "200": {
+            "description": "ApplianceZone[]"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "POST /api/truck-checks/appliances/:applianceId/zones": {
-        "method": "POST", "path": "/api/truck-checks/appliances/:applianceId/zones",
+        "method": "POST",
+        "path": "/api/truck-checks/appliances/:applianceId/zones",
         "description": "Create a zone on an appliance (stationId inherited from the truck; order defaults to the end; zoneCode derived from the name when not given).",
         "authentication": "JWT (admin)",
-        "requestBody": { "name": "string", "zoneCode": "string?", "parentZoneId": "string?", "side": "'driver'|'passenger'|'front'|'rear'|'top'|'interior'|'na'?", "order": "number?", "description": "string?" },
-        "responses": { "201": { "description": "ApplianceZone" }, "400": { "description": "name required" }, "403": { "description": "Admin required" }, "404": { "description": "Appliance not found" } },
+        "requestBody": {
+          "name": "string",
+          "zoneCode": "string?",
+          "parentZoneId": "string?",
+          "side": "'driver'|'passenger'|'front'|'rear'|'top'|'interior'|'na'?",
+          "order": "number?",
+          "description": "string?"
+        },
+        "responses": {
+          "201": {
+            "description": "ApplianceZone"
+          },
+          "400": {
+            "description": "name required"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "404": {
+            "description": "Appliance not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "PUT /api/truck-checks/zones/:id": {
-        "method": "PUT", "path": "/api/truck-checks/zones/:id",
+        "method": "PUT",
+        "path": "/api/truck-checks/zones/:id",
         "description": "Update a zone (partial patch; blank zoneCode is treated as not-provided).",
         "authentication": "JWT (admin)",
-        "responses": { "200": { "description": "ApplianceZone" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
+        "responses": {
+          "200": {
+            "description": "ApplianceZone"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "DELETE /api/truck-checks/zones/:id": {
-        "method": "DELETE", "path": "/api/truck-checks/zones/:id",
+        "method": "DELETE",
+        "path": "/api/truck-checks/zones/:id",
         "description": "Delete a zone.",
         "authentication": "JWT (admin)",
-        "responses": { "204": { "description": "Deleted" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "POST /api/truck-checks/appliances/:id/seed-zones": {
-        "method": "POST", "path": "/api/truck-checks/appliances/:id/seed-zones",
+        "method": "POST",
+        "path": "/api/truck-checks/appliances/:id/seed-zones",
         "description": "Seed an appliance's zones from the starter vocabulary for its VehicleType.code (zoneVocabulary.ts). Idempotent by default — returns existing zones unchanged. Pass ?replace=true to delete and re-seed. Returns { seeded: number, zones: ApplianceZone[], message?: string }. Also triggered automatically (non-fatal) on POST /appliances when vehicleTypeId is supplied.",
         "authentication": "JWT (admin)",
-        "queryParams": { "replace": "boolean? — if true, deletes existing zones before seeding" },
-        "responses": { "200": { "description": "{ seeded: number, zones: ApplianceZone[], message?: string }" }, "401": { "description": "Not authenticated" }, "403": { "description": "Admin required" }, "404": { "description": "Appliance not found" }, "422": { "description": "No vehicleTypeId set on appliance, or vehicle type record not found" } },
+        "queryParams": {
+          "replace": "boolean? — if true, deletes existing zones before seeding"
+        },
+        "responses": {
+          "200": {
+            "description": "{ seeded: number, zones: ApplianceZone[], message?: string }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "404": {
+            "description": "Appliance not found"
+          },
+          "422": {
+            "description": "No vehicleTypeId set on appliance, or vehicle type record not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       }
     },
@@ -334,50 +607,123 @@
       "authentication": "JWT (equipment writes require admin; list requires an authenticated session)",
       "entitlement": "truckCheckEnabled (parent /api/truck-checks mount)",
       "GET /api/truck-checks/appliances/:applianceId/equipment": {
-        "method": "GET", "path": "/api/truck-checks/appliances/:applianceId/equipment",
+        "method": "GET",
+        "path": "/api/truck-checks/appliances/:applianceId/equipment",
         "description": "List one appliance's equipment (active only by default; ?includeInactive=true to include retired).",
         "authentication": "JWT",
-        "responses": { "200": { "description": "ApplianceEquipment[]" }, "401": { "description": "Not authenticated" } },
+        "responses": {
+          "200": {
+            "description": "ApplianceEquipment[]"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "POST /api/truck-checks/appliances/:applianceId/equipment": {
-        "method": "POST", "path": "/api/truck-checks/appliances/:applianceId/equipment",
+        "method": "POST",
+        "path": "/api/truck-checks/appliances/:applianceId/equipment",
         "description": "Add equipment to an appliance (stationId inherited from the truck; equipmentCode derived from the name when not given; active defaults true).",
         "authentication": "JWT (admin)",
-        "requestBody": { "name": "string", "equipmentCode": "string?", "zoneId": "string?", "serialNumber": "string?", "notes": "string?", "active": "boolean?" },
-        "responses": { "201": { "description": "ApplianceEquipment" }, "400": { "description": "name required" }, "403": { "description": "Admin required" }, "404": { "description": "Appliance not found" } },
+        "requestBody": {
+          "name": "string",
+          "equipmentCode": "string?",
+          "zoneId": "string?",
+          "serialNumber": "string?",
+          "notes": "string?",
+          "active": "boolean?"
+        },
+        "responses": {
+          "201": {
+            "description": "ApplianceEquipment"
+          },
+          "400": {
+            "description": "name required"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "404": {
+            "description": "Appliance not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "PUT /api/truck-checks/equipment/:id": {
-        "method": "PUT", "path": "/api/truck-checks/equipment/:id",
+        "method": "PUT",
+        "path": "/api/truck-checks/equipment/:id",
         "description": "Update an equipment item (partial patch; set active:false to retire while keeping history).",
         "authentication": "JWT (admin)",
-        "responses": { "200": { "description": "ApplianceEquipment" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
+        "responses": {
+          "200": {
+            "description": "ApplianceEquipment"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "DELETE /api/truck-checks/equipment/:id": {
-        "method": "DELETE", "path": "/api/truck-checks/equipment/:id",
+        "method": "DELETE",
+        "path": "/api/truck-checks/equipment/:id",
         "description": "Delete an equipment item (prefer active:false to retain history).",
         "authentication": "JWT (admin)",
-        "responses": { "204": { "description": "Deleted" }, "403": { "description": "Admin required" }, "404": { "description": "Not found" } },
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       }
     },
     "truck-check-issues": {
       "description": "TC-4 issue follow-up. A CheckResult with status 'issue' starts an 'open' lifecycle; an equipment officer moves it open → acknowledged → resolved (admin-gated via the parent mount; no separate role). Member attribution (TC-3): a check run's completedBy holds the roster memberId when the inspector is picked from the roster, else the free-text name (kiosk).",
       "GET /api/truck-checks/issues": {
-        "method": "GET", "path": "/api/truck-checks/issues",
+        "method": "GET",
+        "path": "/api/truck-checks/issues",
         "description": "Station-scoped flat feed of issue results enriched with appliance/run context for the equipment-officer follow-up view. ?status=open|acknowledged|resolved; defaults to outstanding (open+acknowledged).",
         "authentication": "JWT/optional",
-        "responses": { "200": { "description": "IssueResult[] (CheckResult + applianceId/applianceName/runStartTime)" } },
+        "responses": {
+          "200": {
+            "description": "IssueResult[] (CheckResult + applianceId/applianceName/runStartTime)"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       },
       "PATCH /api/truck-checks/results/:id/issue": {
-        "method": "PATCH", "path": "/api/truck-checks/results/:id/issue",
+        "method": "PATCH",
+        "path": "/api/truck-checks/results/:id/issue",
         "description": "Update an issue result's lifecycle (issueStatus/issueNote/assignedTo/resolvedBy). Resolving stamps resolvedAt. Body must include runId (Table Storage locates the result by run partition).",
         "authentication": "JWT/optional",
-        "requestBody": { "runId": "string", "issueStatus": "'open'|'acknowledged'|'resolved'?", "issueNote": "string?", "assignedTo": "string?", "resolvedBy": "string?" },
-        "responses": { "200": { "description": "CheckResult" }, "400": { "description": "Invalid issueStatus" }, "404": { "description": "Issue result not found (include runId)" } },
+        "requestBody": {
+          "runId": "string",
+          "issueStatus": "'open'|'acknowledged'|'resolved'?",
+          "issueNote": "string?",
+          "assignedTo": "string?",
+          "resolvedBy": "string?"
+        },
+        "responses": {
+          "200": {
+            "description": "CheckResult"
+          },
+          "400": {
+            "description": "Invalid issueStatus"
+          },
+          "404": {
+            "description": "Issue result not found (include runId)"
+          }
+        },
         "implementation": "backend/src/routes/truckChecks.ts"
       }
     },
@@ -672,13 +1018,23 @@
           "schema": {
             "type": "object",
             "properties": {
-              "inviteUrl": { "type": "string", "format": "uri" },
-              "token": { "type": "string", "format": "uuid" }
+              "inviteUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "token": {
+                "type": "string",
+                "format": "uuid"
+              }
             }
           }
         },
-        "404": { "description": "Member not found" },
-        "500": { "description": "Server error" }
+        "404": {
+          "description": "Member not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
       },
       "implementation": "backend/src/routes/members.ts"
     },
@@ -704,13 +1060,21 @@
           "schema": {
             "type": "object",
             "properties": {
-              "memberName": { "type": "string" },
-              "orgName": { "type": "string" }
+              "memberName": {
+                "type": "string"
+              },
+              "orgName": {
+                "type": "string"
+              }
             }
           }
         },
-        "404": { "description": "Token not found or already used" },
-        "409": { "description": "Invite already used" }
+        "404": {
+          "description": "Token not found or already used"
+        },
+        "409": {
+          "description": "Invite already used"
+        }
       },
       "implementation": "backend/src/routes/memberActivation.ts"
     },
@@ -735,10 +1099,19 @@
           "application/json": {
             "schema": {
               "type": "object",
-              "required": ["username", "password"],
+              "required": [
+                "username",
+                "password"
+              ],
               "properties": {
-                "username": { "type": "string", "minLength": 3 },
-                "password": { "type": "string", "minLength": 8 }
+                "username": {
+                  "type": "string",
+                  "minLength": 3
+                },
+                "password": {
+                  "type": "string",
+                  "minLength": 8
+                }
               }
             }
           }
@@ -750,15 +1123,27 @@
           "schema": {
             "type": "object",
             "properties": {
-              "success": { "type": "boolean" },
-              "message": { "type": "string" }
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              }
             }
           }
         },
-        "400": { "description": "Validation error" },
-        "404": { "description": "Token not found or already used" },
-        "409": { "description": "Already activated or username taken" },
-        "500": { "description": "Server error" }
+        "400": {
+          "description": "Validation error"
+        },
+        "404": {
+          "description": "Token not found or already used"
+        },
+        "409": {
+          "description": "Already activated or username taken"
+        },
+        "500": {
+          "description": "Server error"
+        }
       },
       "implementation": "backend/src/routes/memberActivation.ts"
     },
@@ -1077,6 +1462,49 @@
           "maxRequests": 84,
           "windowMs": 300000
         }
+      }
+    },
+    "agent-sessions": {
+      "description": "Read access to A3 voice-agent sessions/transcripts (the write path is the /ws/agent-check WebSocket, documented separately under voiceAgentWebSocket). Mounted at /api/agent-sessions, rate limited, gated behind requireFeature('aiEnabled').",
+      "authentication": "JWT bearer",
+      "GET /api/agent-sessions/:id": {
+        "method": "GET",
+        "path": "/api/agent-sessions/:id",
+        "description": "Fetch one AgentSession by id",
+        "authentication": "JWT (organization-scoped: 404 if the session's organizationId does not match the caller's, A3 code review F2)",
+        "responses": {
+          "200": {
+            "description": "AgentSession",
+            "schema": {
+              "$ref": "#/definitions/AgentSession"
+            }
+          },
+          "404": {
+            "description": "Not found, or not visible to the caller's organization"
+          }
+        },
+        "implementation": "backend/src/routes/agentCheck.ts:58"
+      },
+      "GET /api/agent-sessions/:id/turns": {
+        "method": "GET",
+        "path": "/api/agent-sessions/:id/turns",
+        "description": "Fetch the ordered transcript turns for a session (used to rehydrate the PWA UI after a WS reconnect, A3 code review F9)",
+        "authentication": "JWT (organization-scoped: 404 if the session's organizationId does not match the caller's, A3 code review F2)",
+        "responses": {
+          "200": {
+            "description": "AgentTurn[], ordered by sequence",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/AgentTurn"
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found, or not visible to the caller's organization"
+          }
+        },
+        "implementation": "backend/src/routes/agentCheck.ts:73"
       }
     }
   },
@@ -4128,79 +4556,226 @@
       "type": "object",
       "description": "Audit row for a received Stripe webhook event (including failures), used for idempotency and troubleshooting.",
       "properties": {
-        "id": { "type": "string", "format": "uuid" },
-        "organizationId": { "type": "string", "description": "Org the event applies to; absent when the event carries no org metadata" },
-        "stripeEventId": { "type": "string" },
-        "eventType": { "type": "string", "description": "Stripe event type, e.g. checkout.session.completed" },
-        "payload": { "type": "string", "description": "JSON string of event.data.object" },
-        "processedAt": { "type": "string", "format": "date-time" },
-        "error": { "type": "string", "description": "Set when processing threw" }
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "organizationId": {
+          "type": "string",
+          "description": "Org the event applies to; absent when the event carries no org metadata"
+        },
+        "stripeEventId": {
+          "type": "string"
+        },
+        "eventType": {
+          "type": "string",
+          "description": "Stripe event type, e.g. checkout.session.completed"
+        },
+        "payload": {
+          "type": "string",
+          "description": "JSON string of event.data.object"
+        },
+        "processedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "error": {
+          "type": "string",
+          "description": "Set when processing threw"
+        }
       },
-      "required": ["id", "stripeEventId", "eventType", "payload", "processedAt"]
+      "required": [
+        "id",
+        "stripeEventId",
+        "eventType",
+        "payload",
+        "processedAt"
+      ]
     },
     "AARSession": {
       "type": "object",
       "description": "A persisted AAR Studio review, scoped to the owning organization. The full client-side session is stored verbatim as a JSON string in payload; the other fields are denormalised for listing and access control. In Table Storage the payload is chunked across payload0..payloadN properties to stay under the per-property/entity size limits; this is an implementation detail not exposed by the API.",
       "properties": {
-        "id": { "type": "string", "description": "Client-owned review id (AAR Studio generates it)" },
-        "organizationId": { "type": "string" },
-        "stationId": { "type": "string", "description": "Optional brigade/station the review belongs to" },
-        "title": { "type": "string", "description": "Denormalised incident title (or friendly fallback)" },
-        "incidentDate": { "type": "string", "description": "Denormalised incident date (ISO yyyy-mm-dd)" },
-        "schemaVersion": { "type": "number", "description": "AAR Studio session schema version" },
-        "payload": { "type": "string", "description": "JSON of the full AAR Studio session object" },
-        "createdBy": { "type": "string", "description": "userId of the facilitator who first saved it" },
-        "createdByName": { "type": "string", "description": "Display name of the facilitator" },
-        "clientUpdatedAt": { "type": "string", "format": "date-time", "description": "The review's last-edit time on the saving device; used for optimistic-concurrency conflict detection (distinct from updatedAt, the server write time)" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "id": {
+          "type": "string",
+          "description": "Client-owned review id (AAR Studio generates it)"
+        },
+        "organizationId": {
+          "type": "string"
+        },
+        "stationId": {
+          "type": "string",
+          "description": "Optional brigade/station the review belongs to"
+        },
+        "title": {
+          "type": "string",
+          "description": "Denormalised incident title (or friendly fallback)"
+        },
+        "incidentDate": {
+          "type": "string",
+          "description": "Denormalised incident date (ISO yyyy-mm-dd)"
+        },
+        "schemaVersion": {
+          "type": "number",
+          "description": "AAR Studio session schema version"
+        },
+        "payload": {
+          "type": "string",
+          "description": "JSON of the full AAR Studio session object"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "userId of the facilitator who first saved it"
+        },
+        "createdByName": {
+          "type": "string",
+          "description": "Display name of the facilitator"
+        },
+        "clientUpdatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The review's last-edit time on the saving device; used for optimistic-concurrency conflict detection (distinct from updatedAt, the server write time)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["id", "organizationId", "title", "schemaVersion", "payload", "createdAt", "updatedAt"]
+      "required": [
+        "id",
+        "organizationId",
+        "title",
+        "schemaVersion",
+        "payload",
+        "createdAt",
+        "updatedAt"
+      ]
     },
     "ChecklistItem": {
       "type": "object",
       "description": "One check on a checklist. itemCode is a stable slug enabling cross-brigade aggregation; isStandard marks an item that comes from a VehicleType's locked standard checklist.",
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "referencePhotoUrl": { "type": "string" },
-        "order": { "type": "number" },
-        "itemCode": { "type": "string" },
-        "section": { "type": "string" },
-        "isStandard": { "type": "boolean" }
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "referencePhotoUrl": {
+          "type": "string"
+        },
+        "order": {
+          "type": "number"
+        },
+        "itemCode": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "isStandard": {
+          "type": "boolean"
+        }
       },
-      "required": ["id", "name", "description", "order"]
+      "required": [
+        "id",
+        "name",
+        "description",
+        "order"
+      ]
     },
     "VehicleType": {
       "type": "object",
       "description": "A standard vehicle type owning a locked standard checklist. Brigades adopt a type for their vehicles and add/reorder custom items but never edit the standard items (the locked core that enables cross-brigade comparison). isStandard publishes it for other orgs to adopt.",
       "properties": {
-        "id": { "type": "string" },
-        "organizationId": { "type": "string", "description": "Owning org; absent for a global/standard type" },
-        "isStandard": { "type": "boolean" },
-        "code": { "type": "string", "description": "Canonical slug, e.g. 'cat1-tanker'" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "category": { "type": "string" },
-        "standardItems": { "type": "array", "items": { "$ref": "#/definitions/ChecklistItem" }, "description": "Locked standard checks, each with a stable itemCode and isStandard:true" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "id": {
+          "type": "string"
+        },
+        "organizationId": {
+          "type": "string",
+          "description": "Owning org; absent for a global/standard type"
+        },
+        "isStandard": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string",
+          "description": "Canonical slug, e.g. 'cat1-tanker'"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "standardItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChecklistItem"
+          },
+          "description": "Locked standard checks, each with a stable itemCode and isStandard:true"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["id", "isStandard", "code", "name", "standardItems", "createdAt", "updatedAt"]
+      "required": [
+        "id",
+        "isStandard",
+        "code",
+        "name",
+        "standardItems",
+        "createdAt",
+        "updatedAt"
+      ]
     },
     "EffectiveChecklist": {
       "type": "object",
       "description": "The resolved checklist for an appliance: the vehicle type's locked standard items merged with the brigade's custom overlay, in saved order. Computed, not stored.",
       "properties": {
-        "applianceId": { "type": "string" },
-        "applianceName": { "type": "string" },
-        "vehicleTypeId": { "type": "string" },
-        "vehicleTypeName": { "type": "string" },
-        "items": { "type": "array", "items": { "$ref": "#/definitions/ChecklistItem" }, "description": "Each carries isStandard so the UI can lock standard rows" }
+        "applianceId": {
+          "type": "string"
+        },
+        "applianceName": {
+          "type": "string"
+        },
+        "vehicleTypeId": {
+          "type": "string"
+        },
+        "vehicleTypeName": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChecklistItem"
+          },
+          "description": "Each carries isStandard so the UI can lock standard rows"
+        }
       },
-      "required": ["applianceId", "applianceName", "items"]
+      "required": [
+        "applianceId",
+        "applianceName",
+        "items"
+      ]
     },
     "Member": {
       "type": "object",
@@ -4850,6 +5425,116 @@
         "stationId",
         "createdAt"
       ]
+    },
+    "AgentSession": {
+      "type": "object",
+      "description": "One voice/vision-guided truck-check conversation (A3)",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "runId": {
+          "type": "string",
+          "description": "Linked CheckRun, set once the first result is recorded"
+        },
+        "applianceId": {
+          "type": "string"
+        },
+        "stationId": {
+          "type": "string"
+        },
+        "organizationId": {
+          "type": "string",
+          "description": "Owning organization from the caller's JWT at session creation; scopes reads to the same tenant (A3 code review F1/F2)"
+        },
+        "memberId": {
+          "type": "string"
+        },
+        "initiatedBy": {
+          "type": "string"
+        },
+        "modality": {
+          "type": "string",
+          "enum": [
+            "voice",
+            "voice-vision"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "completed",
+            "aborted"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "AgentTurn": {
+      "type": "object",
+      "description": "One transcript turn within an AgentSession",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "user",
+            "agent",
+            "system",
+            "tool"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "toolPayload": {
+          "type": "string",
+          "description": "JSON-serialised tool call/result, present when role is 'tool'"
+        },
+        "audioRef": {
+          "type": "string"
+        },
+        "imageRef": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
     }
   },
   "auth": {
@@ -4867,36 +5552,81 @@
             "properties": {
               "entitlements": {
                 "oneOf": [
-                  { "type": "null" },
+                  {
+                    "type": "null"
+                  },
                   {
                     "type": "object",
                     "properties": {
-                      "signInEnabled": { "type": "boolean" },
-                      "truckCheckEnabled": { "type": "boolean" },
-                      "reportsEnabled": { "type": "boolean" },
-                      "aiEnabled": { "type": "boolean" },
-                      "aarStudioEnabled": { "type": "boolean" },
-                      "santaRunEnabled": { "type": "boolean" },
-                      "fireBreakEnabled": { "type": "boolean" },
-                      "maxStations": { "type": "number" },
-                      "maxDevices": { "type": "number" },
-                      "aiIncludedSessions": { "type": "number" }
+                      "signInEnabled": {
+                        "type": "boolean"
+                      },
+                      "truckCheckEnabled": {
+                        "type": "boolean"
+                      },
+                      "reportsEnabled": {
+                        "type": "boolean"
+                      },
+                      "aiEnabled": {
+                        "type": "boolean"
+                      },
+                      "aarStudioEnabled": {
+                        "type": "boolean"
+                      },
+                      "santaRunEnabled": {
+                        "type": "boolean"
+                      },
+                      "fireBreakEnabled": {
+                        "type": "boolean"
+                      },
+                      "maxStations": {
+                        "type": "number"
+                      },
+                      "maxDevices": {
+                        "type": "number"
+                      },
+                      "aiIncludedSessions": {
+                        "type": "number"
+                      }
                     }
                   }
                 ],
                 "description": "null when the user has no associated organisation"
               },
               "planCode": {
-                "oneOf": [{ "type": "null" }, { "type": "string", "enum": ["community", "basic", "ai"] }]
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "community",
+                      "basic",
+                      "ai"
+                    ]
+                  }
+                ]
               },
               "status": {
-                "oneOf": [{ "type": "null" }, { "type": "string" }]
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
               }
             }
           }
         },
-        "401": { "description": "Missing or invalid JWT" },
-        "500": { "description": "Internal server error" }
+        "401": {
+          "description": "Missing or invalid JWT"
+        },
+        "500": {
+          "description": "Internal server error"
+        }
       }
     }
   },
@@ -4925,5 +5655,45 @@
         ".github/copilot-instructions.md"
       ]
     }
+  },
+  "voiceAgentWebSocket": {
+    "description": "Raw (non-Socket.io) WebSocket for the A3 voice-agent push-to-talk flow. Server: attachAgentCheckWs(httpServer) in backend/src/routes/agentCheck.ts.",
+    "path": "/ws/agent-check",
+    "query": {
+      "token": "JWT, same as Authorization: Bearer (WebSocket upgrade requests can't set headers from the browser)",
+      "applianceId": "Required. Truck being checked.",
+      "resumeSessionId": "Optional. Resumes a still-active session on the same appliance/organization after a dropped connection (A3 code review F9) instead of starting a fresh one."
+    },
+    "upgradeChecks": [
+      "Origin header must be in the configured allowed-origins list when present (A3 code review F6)",
+      "JWT must verify (401 on failure)",
+      "Per-user concurrent connection cap, default 3 (429, A3 code review F4)",
+      "applianceId required (400)",
+      "Appliance's station organization must match the caller's JWT organization (403, A3 code review F1)",
+      "aiEnabled entitlement required when entitlements are enabled and the caller has an organization (403, A3 code review F3)"
+    ],
+    "limits": {
+      "maxPayloadBytes": 262144,
+      "maxUtteranceBytes": 2097152,
+      "maxUserTextChars": 2000,
+      "maxTurnsPerSession": 60,
+      "maxConnectionsPerUser": 3
+    },
+    "clientToServer": {
+      "audio-start": "Begin buffering one push-to-talk utterance",
+      "audio-chunk": "Base64 PCM16 audio chunk, appended to the buffered utterance",
+      "audio-end": "Finish the utterance: runs STT, then one agent turn, then TTS",
+      "user-text": "Typed message instead of voice; runs one agent turn directly",
+      "end-session": "Client is done; server closes the socket after acknowledging"
+    },
+    "serverToClient": {
+      "session-started": "{ sessionId, resumed: boolean } — resumed is true when resumeSessionId was honoured (A3 code review F9)",
+      "transcript": "STT result text for the just-finished utterance",
+      "agent-text": "Agent's spoken reply text, plus whether the run is complete and its runId",
+      "agent-audio": "TTS audio (MP3) for the agent's reply",
+      "busy": "Sent instead of a reply when a turn is already in flight for this session (A3 code review F11); client should retry shortly",
+      "error": "{ message } — recoverable errors (provider failure, cap exceeded, bad frame)"
+    },
+    "liveness": "Server pings on an interval and terminates the connection if no pong is received before the next ping (A3 code review F9, dead-connection detection)"
   }
 }

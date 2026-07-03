@@ -35,6 +35,13 @@ describe('AgentSessionDatabase', () => {
       expect(s.modality).toBe('voice');
     });
 
+    it('stores organizationId when supplied, and leaves it undefined otherwise', async () => {
+      const owned = await db.createSession({ applianceId: 'app-1', initiatedBy: 'u', organizationId: 'org-1' });
+      expect(owned.organizationId).toBe('org-1');
+      const unowned = await db.createSession({ applianceId: 'app-1', initiatedBy: 'u' });
+      expect(unowned.organizationId).toBeUndefined();
+    });
+
     it('getSession returns the created session', async () => {
       const s = await db.createSession({ applianceId: 'app-1', initiatedBy: 'u' });
       const fetched = await db.getSession(s.id);

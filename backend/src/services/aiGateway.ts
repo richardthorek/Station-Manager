@@ -53,10 +53,25 @@ function deploymentFor(kind: AiKind): string | undefined {
   return process.env.AZURE_OPENAI_DEPLOYMENT_CHAT;
 }
 
+/**
+ * One chat message in the Azure OpenAI wire shape. The tool-calling fields are
+ * used by the A3 voice agent's loop; plain callers pass just role + content.
+ */
+export interface ChatMessage {
+  role: string;
+  content: string | null;
+  tool_calls?: unknown;
+  tool_call_id?: string;
+  name?: string;
+}
+
 export interface ChatRequest {
   kind: AiKind;
-  messages: Array<{ role: string; content: string }>;
+  messages: ChatMessage[];
   responseFormat?: unknown;
+  /** OpenAI function-calling tool definitions (A3 agent loop). */
+  tools?: unknown[];
+  toolChoice?: unknown;
   fetchImpl?: typeof fetch;
 }
 
@@ -82,6 +97,8 @@ export async function chatCompletion(req: ChatRequest): Promise<ChatResult> {
   const url = `${endpoint}/openai/deployments/${encodeURIComponent(deployment)}/chat/completions?api-version=${encodeURIComponent(apiVersion)}`;
   const body: Record<string, unknown> = { messages: req.messages };
   if (req.responseFormat) body.response_format = req.responseFormat;
+  if (req.tools) body.tools = req.tools;
+  if (req.toolChoice) body.tool_choice = req.toolChoice;
 
   let res: Response;
   try {
