@@ -1,6 +1,6 @@
 // Home: friendly landing — start a new review or reopen a past one.
 
-import { h, toast, download, pickFile, confirmDanger } from '../ui.js';
+import { h, toast, download, pickFile, confirmDanger, promptDialog } from '../ui.js';
 import * as store from '../store.js';
 import { requestAutoStart } from './capture.js';
 import { displayTitle } from '../lib/model.js';
@@ -66,10 +66,10 @@ function reviewCard(s) {
   const removeLocalBtn = h('button', {
     class: 'icon-btn', title: signedIn ? 'Remove from this device' : 'Delete',
     'aria-label': signedIn ? `Remove "${title}" from this device` : `Delete "${title}"`,
-    onclick: () => {
+    onclick: async () => {
       const confirmed = signedIn
-        ? confirmDanger(`Remove "${title}" from this device? Your brigade's shared copy (if any) is kept — this only clears it here.`)
-        : confirmDanger(`Delete "${title}"? This can't be undone.`);
+        ? await confirmDanger(`Remove "${title}" from this device? Your brigade's shared copy (if any) is kept — this only clears it here.`, { confirmLabel: 'Remove' })
+        : await confirmDanger(`Delete "${title}"? This can't be undone.`);
       if (!confirmed) return;
       store.deleteSessionLocal(s.id);
       toast(signedIn ? 'Removed from this device' : 'Review deleted');
@@ -80,8 +80,9 @@ function reviewCard(s) {
     ? h('button', {
         class: 'btn btn--small btn--danger', title: 'Delete for everyone',
         'aria-label': `Delete "${title}" for your whole brigade`,
-        onclick: () => {
-          if (!confirmDanger(`Delete "${title}" for your whole brigade? This removes the shared copy — other devices will lose it too. This can't be undone.`)) return;
+        onclick: async () => {
+          const confirmed = await confirmDanger(`Delete "${title}" for your whole brigade? This removes the shared copy — other devices will lose it too. This can't be undone.`, { confirmLabel: 'Delete for everyone' });
+          if (!confirmed) return;
           store.deleteSessionEverywhere(s.id);
           toast('Review deleted for everyone');
         },
@@ -95,9 +96,9 @@ function reviewCard(s) {
       h('p', { class: 'review-card__stat' }, stat),
     ),
     h('div', { class: 'review-card__actions', onclick: (e) => e.stopPropagation() },
-      h('button', { class: 'icon-btn', title: 'Rename', 'aria-label': 'Rename', onclick: () => {
-        const name = prompt('Name this review:', s.title || '');
-        if (name != null) store.renameSession(s.id, name.trim());
+      h('button', { class: 'icon-btn', title: 'Rename', 'aria-label': 'Rename', onclick: async () => {
+        const name = await promptDialog('Name this review:', s.title || '');
+        if (name != null) store.renameSession(s.id, name);
       } }, '✎'),
       h('button', { class: 'icon-btn', title: 'Save a copy', 'aria-label': 'Save a copy', onclick: () => {
         const session = store.openSession(s.id);

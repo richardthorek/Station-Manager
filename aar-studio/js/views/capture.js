@@ -210,8 +210,8 @@ export function render(container) {
       transcript,
       segments.length ? h('div', { class: 'btn-row' },
         h('button', { class: 'btn btn--small', title: 'Re-check for findings now', onclick: () => analyseNow(null) }, '↻ Update findings now'),
-        h('button', { class: 'btn btn--small btn--danger', onclick: () => {
-          if (confirmDanger('Clear everything that was captured? Findings are kept.')) {
+        h('button', { class: 'btn btn--small btn--danger', onclick: async () => {
+          if (await confirmDanger('Clear everything that was captured? Findings are kept.', { confirmLabel: 'Clear' })) {
             store.update((s) => { s.segments = []; }, { reason: 'segments' });
           }
         } }, 'Clear transcript'),

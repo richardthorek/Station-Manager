@@ -2,7 +2,7 @@
 // exports (snapshot HTML, Markdown summary, session JSON, print-to-PDF),
 // and AI report generation from the curated findings.
 
-import { h, toast, download } from '../ui.js';
+import { h, toast, download, confirmDanger } from '../ui.js';
 import * as store from '../store.js';
 import { getSettings } from '../settings.js';
 import { emptyReport, renderSnapshotHtml, renderCombinedHtml, renderMarkdown, sessionFilename } from '../lib/exports.js';
@@ -114,8 +114,8 @@ export function render(container) {
         h('button', { class: 'btn', onclick: () => download(sessionFilename(session, 'summary', 'md'), renderMarkdown(store.getSession()), 'text/markdown') }, '⬇ Markdown'),
         h('button', { class: 'btn', onclick: () => download(sessionFilename(session, 'session', 'json'), store.exportSessionJson(), 'application/json') }, '⬇ Session JSON'),
         h('button', { class: 'btn', onclick: () => { preview.contentWindow?.print(); } }, '🖨 Print / PDF'),
-        h('button', { class: 'btn', disabled: !session.findings.length, onclick: (e) => {
-          if (window.confirm('Regenerate the report with AI? Your current report (including manual edits) will be replaced.')) {
+        h('button', { class: 'btn', disabled: !session.findings.length, onclick: async (e) => {
+          if (await confirmDanger('Regenerate the report with AI? Your current report (including manual edits) will be replaced.', { confirmLabel: 'Regenerate' })) {
             e.target.disabled = true;
             generate(genStatus).finally(() => { e.target.disabled = false; });
           }
@@ -147,8 +147,8 @@ export function render(container) {
         field('Overall assessment', h('textarea', { rows: 4, oninput: edit((rep, v) => { rep.assessment = v; }) }, r.assessment)),
         field('Verification caveat (report footer)', h('textarea', { rows: 2, oninput: edit((rep, v) => { rep.caveat = v; }) }, r.caveat)),
         h('div', { class: 'btn-row' },
-          h('button', { class: 'btn btn--danger', onclick: () => {
-            if (window.confirm('Discard the whole report? Findings and transcript are kept.')) {
+          h('button', { class: 'btn btn--danger', onclick: async () => {
+            if (await confirmDanger('Discard the whole report? Findings and transcript are kept.', { confirmLabel: 'Discard' })) {
               store.update((s) => { s.report = null; }, { reason: 'report' });
               toast('Report discarded');
             }

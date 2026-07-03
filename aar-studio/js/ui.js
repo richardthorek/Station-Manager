@@ -55,6 +55,60 @@ export function pickFile(accept) {
   });
 }
 
-export function confirmDanger(message) {
-  return window.confirm(message);
+let confirmDialogEl = null;
+function getConfirmDialog() {
+  if (!confirmDialogEl) confirmDialogEl = document.getElementById('confirm-dialog');
+  return confirmDialogEl;
+}
+
+/**
+ * In-app replacement for window.confirm — native dialogs are unstylable,
+ * break the brand, and are suppressed in some kiosk/webview contexts
+ * (AAR Studio hero review 2026-07-03, AAR-2). Resolves true/false.
+ */
+export function confirmDanger(message, { confirmLabel = 'Delete', cancelLabel = 'Cancel' } = {}) {
+  return new Promise((resolve) => {
+    const dialog = getConfirmDialog();
+    clear(dialog);
+    dialog.append(
+      h('form', { method: 'dialog' },
+        h('p', { class: 'dialog__message' }, message),
+        h('div', { class: 'dialog__actions' },
+          h('button', { class: 'btn', type: 'button', onclick: () => { dialog.close(); resolve(false); } }, cancelLabel),
+          h('button', { class: 'btn btn--danger', type: 'button', onclick: () => { dialog.close(); resolve(true); } }, confirmLabel),
+        ),
+      ),
+    );
+    dialog.showModal();
+  });
+}
+
+/**
+ * In-app replacement for window.prompt (AAR-2). Resolves the trimmed value on
+ * submit, or null if cancelled/closed (Escape, backdrop, Cancel button).
+ */
+export function promptDialog(message, defaultValue = '', { confirmLabel = 'Save' } = {}) {
+  return new Promise((resolve) => {
+    const dialog = getConfirmDialog();
+    clear(dialog);
+    const input = h('input', { type: 'text', value: defaultValue });
+    let resolved = false;
+    dialog.addEventListener('close', () => { if (!resolved) resolve(null); }, { once: true });
+    dialog.append(
+      h('form', {
+        method: 'dialog',
+        onsubmit: () => { resolved = true; resolve(input.value.trim()); },
+      },
+        h('p', { class: 'dialog__message' }, message),
+        input,
+        h('div', { class: 'dialog__actions' },
+          h('button', { class: 'btn', type: 'button', onclick: () => dialog.close() }, 'Cancel'),
+          h('button', { class: 'btn btn--primary', type: 'submit' }, confirmLabel),
+        ),
+      ),
+    );
+    dialog.showModal();
+    input.focus();
+    input.select();
+  });
 }

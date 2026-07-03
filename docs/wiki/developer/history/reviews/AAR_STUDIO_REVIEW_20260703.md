@@ -6,10 +6,10 @@ with that bar: not "does it work" but "would a brigade facilitator show this to
 another brigade". Findings are documented for later agents to implement; no
 fixes are made in this review.
 
-**Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7), AAR-19, AAR-9, AAR-23, AAR-3 and
-AAR-10 fixed 2026-07-03** (see the changelog entries) — the four findings the
-master plan grouped as "what stands between AAR Studio and a confident live
-demo", plus four more Q2 items:
+**Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7), AAR-19, AAR-9, AAR-23, AAR-3,
+AAR-10 and AAR-2 fixed 2026-07-03** (see the changelog entries) — the four
+findings the master plan grouped as "what stands between AAR Studio and a
+confident live demo", plus five more Q2 items:
 - **AAR-6/AAR-8** (`js/audio/live.js`, `js/audio/speech.js`): the gateway
   speech token now refreshes proactively every 8 minutes, and the transcriber
   reconnects automatically (up to 4 backed-off attempts) on failure without
@@ -39,6 +39,11 @@ demo", plus four more Q2 items:
   a single dismissible banner instead of repeating as a toast every 45s for
   the rest of the meeting, and auto-extraction pauses until it's resolved or
   dismissed.
+- **AAR-2** (`js/ui.js`, `index.html`, `js/views/home.js`,
+  `js/views/capture.js`, `js/views/report.js`): every native `window.prompt`/
+  `window.confirm` is replaced by a `<dialog>`-based `confirmDanger()`/
+  `promptDialog()` pair in `ui.js`, matching the settings dialog's existing
+  pattern.
 
 Note left for whoever picks up **AAR-11**: the AAR-6 token-refresh timer and
 each reconnect attempt call `/api/ai/speech/token` again, and the backend
@@ -83,14 +88,16 @@ team" cloud section. The findings below are the gaps between *good* and
   only when signed in, with an explicit team-wide warning), and consider a
   soft-delete window server-side so an accidental team delete is recoverable.
 
-- **AAR-2 · Medium · UX — Native `prompt()` / `confirm()` throughout.**
-  Rename uses `window.prompt` (`views/home.js:66`), destructive confirms use
-  `window.confirm` (`ui.js:58-60`, also `views/capture.js:195`). The SPA
-  already purged `prompt()` (June 2026 resolution-modal work) as sub-par;
-  native dialogs are unstylable, break the brand, and are suppressed in some
-  kiosk/webview contexts. **Direction:** a small `<dialog>`-based
-  confirm/prompt pair in `ui.js` (the settings dialog already shows the
-  pattern).
+- ~~**AAR-2 · Medium · UX — Native `prompt()` / `confirm()` throughout.**~~
+  **Fixed 2026-07-03.** Rename used `window.prompt` (`views/home.js:66`),
+  destructive confirms used `window.confirm` (`ui.js:58-60`, also
+  `views/capture.js:195`, `views/report.js` regenerate/discard). Native
+  dialogs are unstylable, break the brand, and are suppressed in some
+  kiosk/webview contexts. `ui.js` now exports a `<dialog>`-based
+  `confirmDanger()`/`promptDialog()` pair (Promise-returning, reusing a new
+  `#confirm-dialog` element alongside the existing `#settings-dialog`
+  pattern); every call site (`home.js` rename + both deletes, `capture.js`
+  clear transcript, `report.js` regenerate + discard) now awaits it.
 
 - ~~**AAR-3 · Medium · UX — Quick-start writes raw GPS coordinates into the
   incident location, and they stick.**~~ **Fixed 2026-07-03.** `startRecordingNow`
@@ -340,7 +347,7 @@ confident live demo in front of a brigade.
 | 8 | ~~**AAR-3** GPS coords block real location~~ **Fixed 2026-07-03** | Ugly report headers from the flagship quick-start path |
 | 9 | **AAR-11** metering per token vend | Fix alongside AAR-6/8 so reliability work doesn't burn allowance |
 | 10 | ~~**AAR-9 + AAR-23** audience-correct error copy~~ **Fixed 2026-07-03** | One sweep: gateway users must never be told to check Azure keys |
-| 11 | **AAR-2** replace native prompt/confirm | Brand-consistent dialogs; unlocks AAR-1's better confirm |
+| 11 | ~~**AAR-2** replace native prompt/confirm~~ **Fixed 2026-07-03** | Brand-consistent dialogs; unlocks AAR-1's better confirm |
 | 12 | **AAR-21** room notes in exports | Completes the collab promise |
 | 13 | **AAR-20** print path | Long-open P1; verify on iPad |
 | 14 | AAR-4, AAR-5, AAR-12, AAR-13, AAR-14, AAR-16, AAR-17, AAR-18, AAR-22, AAR-24 | Low-severity batch; fold into the sessions above where files overlap |

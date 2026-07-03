@@ -380,6 +380,9 @@ body.present .board__empty { color: #93a1ad; }
 .dialog::backdrop { background: rgb(21 33 43 / 0.6); }
 .dialog h3 { margin: 1rem 0 0.5rem; }
 .dialog__actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.dialog--confirm { width: min(420px, 92vw); }
+.dialog__message { margin: 0 0 0.75rem; }
+.dialog--confirm input[type="text"] { width: 100%; box-sizing: border-box; }
 .settings__note { font-size: 0.85rem; color: var(--muted); }
 .settings__row { display: flex; gap: 0.6rem; align-items: center; margin: 0.4rem 0 0.2rem; }
 .settings__status { font-size: 0.85rem; flex: 1; }
