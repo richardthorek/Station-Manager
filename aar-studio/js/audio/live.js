@@ -39,6 +39,12 @@ function gatewayAuthHeader() {
  * Gateway mode: ask the server to vend a short-lived Azure Speech token so the
  * browser never holds a subscription key. Returns { token, region }. Throws a
  * friendly Error on a gating/availability failure.
+ *
+ * Sends the review's session id so the backend can dedupe metering: the
+ * AAR-6/AAR-8 reliability fixes mean one meeting now re-vends a token on
+ * every proactive refresh and reconnect, and without a shared id each vend
+ * was counted as its own metered AI session (AAR Studio hero review
+ * 2026-07-03, AAR-11).
  */
 async function fetchSpeechToken() {
   let res;
@@ -46,7 +52,7 @@ async function fetchSpeechToken() {
     res = await fetch('/api/ai/speech/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...gatewayAuthHeader() },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ sessionId: store.getSession()?.id }),
     });
   } catch {
     throw new Error('Could not reach the AI service to start listening. Check you are online and try again.');

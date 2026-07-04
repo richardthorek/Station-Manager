@@ -28,8 +28,14 @@ export function monthStart(from: Date = new Date()): Date {
 
 export interface IUsageDatabase {
   recordUsage(input: RecordUsageInput): Promise<UsageRecord>;
-  /** Count usage rows of a given type for an org since `since` (default: this month). */
+  /** Count usage rows of a given type for an org since `since` (default: this month), deduped by sessionId. */
   countUsage(organizationId: string, type: UsageType, since?: Date): Promise<number>;
+  /**
+   * Has this sessionId already been recorded this month? Lets a route allow a
+   * re-vend for an already-counted session through the allowance gate without
+   * re-checking (or re-consuming) it (AAR-11).
+   */
+  hasRecordedSession(organizationId: string, type: UsageType, sessionId: string, since?: Date): Promise<boolean>;
   /** All usage rows for an org (optionally since a date), newest first. */
   listUsage(organizationId: string, since?: Date): Promise<UsageRecord[]>;
   /** Rows not yet reported to Stripe metered billing. */
@@ -55,14 +61,35 @@ export class UsageDatabase implements IUsageDatabase {
     return row;
   }
 
+  /**
+   * A speech-token re-vend for the same review (proactive refresh, or a
+   * reconnect after a blip — both introduced by the AAR-6/AAR-8 reliability
+   * fixes) shares one `sessionId`, so it counts once, not once per vend. Rows
+   * with no `sessionId` (older clients, or usage types that don't send one)
+   * each count individually, unchanged (AAR Studio hero review 2026-07-03,
+   * AAR-11).
+   */
   async countUsage(organizationId: string, type: UsageType, since: Date = monthStart()): Promise<number> {
     let total = 0;
+    const seenSessionIds = new Set<string>();
     for (const row of this.rows.values()) {
-      if (row.organizationId === organizationId && row.type === type && row.createdAt >= since) {
-        total += row.units;
+      if (row.organizationId !== organizationId || row.type !== type || row.createdAt < since) continue;
+      if (row.sessionId) {
+        if (seenSessionIds.has(row.sessionId)) continue;
+        seenSessionIds.add(row.sessionId);
       }
+      total += row.units;
     }
     return total;
+  }
+
+  async hasRecordedSession(organizationId: string, type: UsageType, sessionId: string, since: Date = monthStart()): Promise<boolean> {
+    for (const row of this.rows.values()) {
+      if (row.organizationId === organizationId && row.type === type && row.sessionId === sessionId && row.createdAt >= since) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async listUsage(organizationId: string, since?: Date): Promise<UsageRecord[]> {

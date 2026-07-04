@@ -178,6 +178,18 @@ describe('AI gateway', () => {
       expect(await db.countUsage('org2', 'speech')).toBe(1);
     });
 
+    it('dedupes usage rows sharing a sessionId — a re-vend for the same review counts once (AAR-11)', async () => {
+      const db = getUsageDatabase();
+      await db.clear();
+      // A token-refresh timer / reconnect re-vends for the same meeting.
+      await db.recordUsage({ organizationId: 'org1', type: 'speech', sessionId: 's1' });
+      await db.recordUsage({ organizationId: 'org1', type: 'speech', sessionId: 's1' });
+      await db.recordUsage({ organizationId: 'org1', type: 'speech', sessionId: 's1' });
+      // A second, distinct meeting still counts separately.
+      await db.recordUsage({ organizationId: 'org1', type: 'speech', sessionId: 's2' });
+      expect(await db.countUsage('org1', 'speech')).toBe(2);
+    });
+
     it('monthlyResetAt is the first of next month and after monthStart', () => {
       const now = new Date('2026-06-20T10:00:00Z');
       expect(monthlyResetAt(now).toISOString()).toBe('2026-07-01T00:00:00.000Z');
@@ -266,6 +278,31 @@ describe('AI gateway', () => {
         .set('Authorization', `Bearer ${tokenFor(org)}`)
         .send({});
       expect(res.status).toBe(403);
+    });
+
+    it('re-vending for the same sessionId does not consume extra allowance (AAR-11)', async () => {
+      configureSpeech();
+      (global as { fetch?: unknown }).fetch = (async () => ({ ok: true, text: async () => 'tok-abc' })) as unknown as typeof fetch;
+      // A token-refresh timer and a couple of reconnects across one meeting —
+      // all for the same review, previously each burned a metered session.
+      const org = await makeOrg('ai', { aiIncludedSessions: 1 });
+      const app = buildApp();
+      for (let i = 0; i < 3; i++) {
+        const res = await request(app)
+          .post('/api/ai/speech/token')
+          .set('Authorization', `Bearer ${tokenFor(org)}`)
+          .send({ sessionId: 'review-1' });
+        expect(res.status).toBe(200);
+      }
+      expect(await ensureUsageDatabase().countUsage(org.id, 'speech')).toBe(1);
+
+      // A second, distinct review still consumes its own session — and with
+      // only 1 included, this one is correctly blocked.
+      const res = await request(app)
+        .post('/api/ai/speech/token')
+        .set('Authorization', `Bearer ${tokenFor(org)}`)
+        .send({ sessionId: 'review-2' });
+      expect(res.status).toBe(402);
     });
   });
 

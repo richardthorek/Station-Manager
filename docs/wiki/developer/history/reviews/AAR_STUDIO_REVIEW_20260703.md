@@ -7,9 +7,8 @@ another brigade". Findings are documented for later agents to implement; no
 fixes are made in this review.
 
 **Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7), AAR-19, AAR-9, AAR-23, AAR-3,
-AAR-10, AAR-2 and AAR-15 fixed 2026-07-03** (see the changelog entries) — the
-four findings the master plan grouped as "what stands between AAR Studio and
-a confident live demo", plus six more Q2 items:
+AAR-10, AAR-2, AAR-15 and AAR-11 fixed 2026-07-03** (see the changelog
+entries) — the entire "AAR hero polish" Q1 batch is now shipped:
 - **AAR-6/AAR-8** (`js/audio/live.js`, `js/audio/speech.js`): the gateway
   speech token now refreshes proactively every 8 minutes, and the transcriber
   reconnects automatically (up to 4 backed-off attempts) on failure without
@@ -48,15 +47,16 @@ a confident live demo", plus six more Q2 items:
   backup now latches a session-scoped `syncConflict` instead of being
   silently discarded; a persistent banner on every view offers "Load latest"
   (pulls the team's copy) or "Keep mine as a copy" (forks to a new id).
+- **AAR-11** (`js/audio/live.js`, `backend/src/routes/ai.ts`,
+  `backend/src/services/usageDatabase.ts` + Table Storage twin): the client
+  now sends the review's session id with every `/api/ai/speech/token` vend;
+  the backend dedupes metering by `sessionId` (`countUsage`) and lets a
+  re-vend for an already-counted review pass the allowance gate
+  (`hasRecordedSession`), so the AAR-6 refresh timer and reconnects no longer
+  burn a metered session apiece.
 
-Note left for whoever picks up **AAR-11**: the AAR-6 token-refresh timer and
-each reconnect attempt call `/api/ai/speech/token` again, and the backend
-currently counts every vend as a separate metered session
-(`backend/src/routes/ai.ts`'s `countUsage` sums raw usage rows, not distinct
-sessions) — a long meeting will now consume several sessions' worth of
-allowance. Deliberately *not* fixed here (billing semantics, not a
-reliability bug) — flagged for AAR-11's own pass, which the review already
-scoped as coordinating with this fix.
+That closes the whole Q1 "AAR hero polish" batch — every finding the master
+plan grouped under it is now shipped.
 
 **Scope:** the whole `aar-studio/` bundle (views, libs, audio, CSS), its
 backend seams (`/api/aar-sessions`, `/api/ai/*`, Socket.io collab relay,
@@ -198,13 +198,16 @@ is why they rank at the top of this review.
   clears the latch automatically. Transient statuses (429, 503, network
   errors) keep the old toast-per-pass behaviour, since those can self-resolve.
 
-- **AAR-11 · Medium · FN — Metering counts "sessions" per token vend, which
-  punishes reconnects.** Each `live.start` vends a speech token, and each
-  vend consumes one metered AI session. The fixes for AAR-6/AAR-8 (and plain
-  user behaviour: stop for a break, resume after) multiply vends within one
-  meeting. **Direction:** server-side, don't count a re-vend for the same
-  org within a short window (or meter by meeting via a client-supplied
-  session id) — coordinate with the billing track before changing.
+- ~~**AAR-11 · Medium · FN — Metering counts "sessions" per token vend, which
+  punishes reconnects.**~~ **Fixed 2026-07-03.** Each `live.start` vended a
+  speech token, and each vend consumed one metered AI session. The fixes for
+  AAR-6/AAR-8 (and plain user behaviour: stop for a break, resume after)
+  multiply vends within one meeting. The client now sends the review's session
+  id (`js/audio/live.js`'s `fetchSpeechToken`); the backend meters by meeting
+  — `countUsage` dedupes rows sharing a `sessionId`, and the speech-token gate
+  uses `hasRecordedSession` to let a re-vend for an already-counted review
+  through without consuming a new one (both DB twins updated). Metered by
+  meeting, not by vend — the direction the billing track (D1) can build on.
 
 - **AAR-12 · Low · FN — Findings extracted from room notes carry note ids in
   `segmentIds`.** Note evidence is fed to the model as pseudo-segments with
@@ -352,7 +355,7 @@ confident live demo in front of a brigade.
 | 6 | ~~**AAR-15** conflict surfaced while editing~~ **Fixed 2026-07-03** | Two-facilitator divergence is otherwise invisible for hours |
 | 7 | ~~**AAR-10** latch persistent AI failures~~ **Fixed 2026-07-03** | Toast-every-45s during a live meeting is demo-lethal |
 | 8 | ~~**AAR-3** GPS coords block real location~~ **Fixed 2026-07-03** | Ugly report headers from the flagship quick-start path |
-| 9 | **AAR-11** metering per token vend | Fix alongside AAR-6/8 so reliability work doesn't burn allowance |
+| 9 | ~~**AAR-11** metering per token vend~~ **Fixed 2026-07-03** | Fix alongside AAR-6/8 so reliability work doesn't burn allowance |
 | 10 | ~~**AAR-9 + AAR-23** audience-correct error copy~~ **Fixed 2026-07-03** | One sweep: gateway users must never be told to check Azure keys |
 | 11 | ~~**AAR-2** replace native prompt/confirm~~ **Fixed 2026-07-03** | Brand-consistent dialogs; unlocks AAR-1's better confirm |
 | 12 | **AAR-21** room notes in exports | Completes the collab promise |

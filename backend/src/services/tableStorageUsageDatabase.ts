@@ -99,6 +99,7 @@ export class TableStorageUsageDatabase implements IUsageDatabase {
     return row;
   }
 
+  /** Dedupes by sessionId — see the in-memory twin's countUsage for why (AAR-11). */
   async countUsage(organizationId: string, type: UsageType, since: Date = monthStart()): Promise<number> {
     const sinceIso = since.toISOString();
     const iterator = this.table.listEntities<UsageEntity>({
@@ -107,10 +108,27 @@ export class TableStorageUsageDatabase implements IUsageDatabase {
       },
     });
     let total = 0;
+    const seenSessionIds = new Set<string>();
     for await (const entity of iterator) {
-      total += (entity as UsageEntity).units;
+      const row = entity as UsageEntity;
+      if (row.sessionId) {
+        if (seenSessionIds.has(row.sessionId)) continue;
+        seenSessionIds.add(row.sessionId);
+      }
+      total += row.units;
     }
     return total;
+  }
+
+  async hasRecordedSession(organizationId: string, type: UsageType, sessionId: string, since: Date = monthStart()): Promise<boolean> {
+    const sinceIso = since.toISOString();
+    const iterator = this.table.listEntities<UsageEntity>({
+      queryOptions: {
+        filter: odata`PartitionKey eq ${organizationId} and type eq ${type} and sessionId eq ${sessionId} and createdAt ge ${sinceIso}`,
+      },
+    });
+    for await (const _entity of iterator) return true;
+    return false;
   }
 
   async listUsage(organizationId: string, since?: Date): Promise<UsageRecord[]> {
