@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/Header';
 import { api } from '../../services/api';
 import { useSocket } from '../../hooks/useSocket';
+import { setMemberSessionToken } from '../../utils/memberSession';
 import './SignInLinkPage.css';
 
 export function SignInLinkPage() {
@@ -46,9 +47,16 @@ export function SignInLinkPage() {
       try {
         setStatus('loading');
         const result = await api.urlCheckIn(userIdentifier, stationId || undefined);
-        
+
         setMemberName(result.member);
-        
+
+        // AC-1: the backend mints a short-lived, station-scoped read session
+        // on every successful (or already-checked-in) response — store it so
+        // this browser can now open the live sign-in book via AccessRoute.
+        if (result.sessionToken) {
+          setMemberSessionToken(result.sessionToken);
+        }
+
         if (result.action === 'already-checked-in') {
           setStatus('already-checked-in');
           setMessage(`${result.member} is already checked in.`);
@@ -68,12 +76,12 @@ export function SignInLinkPage() {
     performCheckIn();
   }, [searchParams, emit]);
 
-  // A personal check-in link is a one-member credential, not a pass into the
-  // brigade's full sign-in book (that needs a brigade device code or an
-  // account). The check-in above is the whole job, so send them home rather
-  // than to /signin, which the access gate would bounce anyway.
+  // AC-1: a successful check-in mints a station-scoped member-session, so
+  // this visitor can now legitimately open the live sign-in book (AccessRoute
+  // recognises the stored session token). On error there's no session to use,
+  // so send them home instead.
   const handleGoToSignIn = () => {
-    navigate('/');
+    navigate(status === 'error' ? '/' : '/signin');
   };
 
   if (status === 'loading') {
@@ -124,7 +132,7 @@ export function SignInLinkPage() {
 
           <div className="action-buttons">
             <button className="btn-primary" onClick={handleGoToSignIn}>
-              Done
+              {status === 'error' ? 'Go Home' : 'Go to Sign-In Book'}
             </button>
           </div>
         </div>

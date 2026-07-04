@@ -15,6 +15,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { ensureDatabase } from '../services/dbFactory';
 import {
   validateCreateCheckIn,
@@ -27,6 +28,24 @@ import { flexibleAuth } from '../middleware/flexibleAuth';
 import { logger } from '../services/logger';
 
 const router = Router();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const MEMBER_SESSION_EXPIRY = '8h'; // a shift-length read session, not a persistent credential
+
+/**
+ * AC-1 — mints a short-lived, station-scoped read session for a member who
+ * checked in via their personal link, so their browser can then load the
+ * live sign-in book (flexibleAuth/requireSession recognise this via
+ * X-Member-Session — see middleware/flexibleAuth.ts's validateMemberSession).
+ * Never elevates beyond station-wide read; expires on its own.
+ */
+function mintMemberSessionToken(memberId: string, stationId: string, brigadeId?: string): string {
+  return jwt.sign(
+    { memberId, stationId, brigadeId, credentialType: 'member-session' },
+    JWT_SECRET,
+    { expiresIn: MEMBER_SESSION_EXPIRY }
+  );
+}
 
 // Apply station middleware to all routes
 router.use(stationMiddleware);
@@ -193,6 +212,11 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
       return res.status(400).json({ error: 'No active activity set' });
     }
 
+    // AC-1: mint a station-scoped read session so the visitor's browser can
+    // load the live sign-in book after checking in via their personal link.
+    const station = await db.getStationById(stationId);
+    const sessionToken = mintMemberSessionToken(member.id, stationId, station?.brigadeId);
+
     // Check if already checked in
     const existingCheckIn = await db.getCheckInByMember(member.id);
     if (existingCheckIn) {
@@ -200,6 +224,7 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
         action: 'already-checked-in',
         member: member.name,
         checkIn: existingCheckIn,
+        sessionToken,
       });
     }
 
@@ -224,6 +249,7 @@ router.post('/url-checkin', validateUrlCheckIn, handleValidationErrors, async (r
       action: 'checked-in',
       member: member.name,
       checkIn,
+      sessionToken,
     });
   } catch (error) {
     logger.error('URL check-in error', { error, requestId: req.id });

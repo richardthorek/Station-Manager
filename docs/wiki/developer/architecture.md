@@ -1172,9 +1172,12 @@ Kiosk mode provides strict brigade/station locking for shared devices (iPads, ta
 #### Architecture
 
 **Backend Components:**
-- `services/brigadeAccessService.ts` - Token lifecycle management (create, validate, revoke, query)
-- `middleware/kioskModeMiddleware.ts` - Validates brigade tokens from URL query parameters
-- `routes/brigadeAccess.ts` - REST API for token management (6 endpoints)
+- `services/brigadeAccessService.ts` - Legacy in-memory token lifecycle (create, validate, revoke, query) — no persistence, kept for back-compat with any previously issued kiosk URLs
+- `services/deviceDatabase.ts` / `services/tableStorageDeviceDatabase.ts` / `services/deviceDbFactory.ts` - AC-5: the first-class `Device` model (in-memory + Table Storage twins) — named, typed (`kiosk`/`tablet`/`phone`/`wearable`), revocable, with a `lastSeenAt` audit trail, replacing the anonymous UUID as the go-forward credential
+- `services/kioskAccessResolver.ts` - AC-5: the one place that resolves a kiosk token — tries the `Device` store first, falls back to the legacy `BrigadeAccessToken` store, so both keep working through every call site
+- `middleware/kioskModeMiddleware.ts` / `middleware/flexibleAuth.ts` - Validate brigade tokens from the URL query parameter / `X-Brigade-Token` header via `kioskAccessResolver`
+- `routes/brigadeAccess.ts` - REST API for legacy token management (6 endpoints); `/validate` now resolves through `kioskAccessResolver` too
+- `routes/devices.ts` - AC-5: REST API for `Device` management (list/create/rename/revoke/delete, owner-admin gated + org-scoped) plus a public `/validate`
 
 **Frontend Components:**
 - `utils/kioskMode.ts` - Kiosk mode detection and management
@@ -1183,7 +1186,7 @@ Kiosk mode provides strict brigade/station locking for shared devices (iPads, ta
 - `components/StationSelector.tsx` - Shows locked UI in kiosk mode, disables dropdown
 
 **Frontend route guards (compose outer→inner):**
-- `components/AccessRoute.tsx` — "is this visitor allowed in at all?" Wraps the walk-up sign-in surface (`/signin`); allows only a signed-in account, a brigade device code (kiosk `?brigade=<token>`), or the public demo, else redirects to the front door (`/`). Stricter than FeatureRoute (which is default-open with no org context).
+- `components/AccessRoute.tsx` — "is this visitor allowed in at all?" Wraps the walk-up sign-in surface (`/signin`); allows a signed-in account, a brigade device code (kiosk `?brigade=<token>`), a member-session (AC-1, from checking in via a personal link), or the public demo, else redirects to the front door (`/`). Stricter than FeatureRoute (which is default-open with no org context).
 - `components/FeatureRoute.tsx` — "does this brigade's plan include the module?" (entitlement gate; default-open for kiosk/demo/back-compat).
 - `components/ProtectedRoute.tsx` — "is this an authenticated admin?" (auth gate for `/admin/*`).
 
@@ -1209,13 +1212,20 @@ interface BrigadeAccessToken {
 
 #### API Endpoints
 
-**Brigade Access Management:**
+**Brigade Access Management (legacy, still supported):**
 - `POST /api/brigade-access/generate` - Generate new kiosk token (returns kioskUrl)
 - `POST /api/brigade-access/validate` - Validate token and get station info
 - `DELETE /api/brigade-access/:token` - Revoke token immediately
 - `GET /api/brigade-access/brigade/:brigadeId` - List all tokens for brigade
 - `GET /api/brigade-access/station/:stationId` - List all tokens for station
 - `GET /api/brigade-access/stats` - Get active token statistics
+
+**Device Management (AC-5, the go-forward system):**
+- `GET /api/devices` - List the caller org's devices (optional `?stationId=`)
+- `POST /api/devices` - Enroll a device (returns `{ device, kioskUrl }`)
+- `PATCH /api/devices/:id` - Rename / revoke / reactivate a device your org owns
+- `DELETE /api/devices/:id` - Remove a device your org owns
+- `POST /api/devices/validate` - Public: resolve a device token (called by the device itself)
 
 #### Usage Example
 
@@ -2053,7 +2063,7 @@ When `REQUIRE_AUTH=true`, the following endpoints require JWT authentication:
 - `PUT /api/stations/:id` - Update station
 - `DELETE /api/stations/:id` - Delete station
 
-**Brigade Access Endpoints:**
+**Brigade Access Endpoints (legacy):**
 - `GET /api/brigade-access/brigade/:brigadeId` - List brigade tokens
 - `GET /api/brigade-access/station/:stationId` - List station tokens
 - `GET /api/brigade-access/stats` - Token statistics
@@ -2061,13 +2071,20 @@ When `REQUIRE_AUTH=true`, the following endpoints require JWT authentication:
 - `POST /api/brigade-access/generate` - Generate token
 - `DELETE /api/brigade-access/:token` - Revoke token
 
+**Device Endpoints (AC-5, owner/admin, org-scoped):**
+- `GET /api/devices` - List the caller org's devices
+- `POST /api/devices` - Enroll a device
+- `PATCH /api/devices/:id` - Rename / revoke / reactivate a device
+- `DELETE /api/devices/:id` - Remove a device
+
 #### Public Endpoints (Always Accessible)
 
 **Demo Station Access:**
 - `GET /api/stations/demo` - Get demo station (sample data)
 
 **Kiosk Token Validation:**
-- `POST /api/brigade-access/validate` - Validate kiosk token
+- `POST /api/brigade-access/validate` - Validate kiosk token (legacy + Device, via kioskAccessResolver)
+- `POST /api/devices/validate` - Validate a Device token directly (AC-5)
 
 **Authentication Endpoints:**
 - `POST /api/auth/login` - User login (returns JWT)

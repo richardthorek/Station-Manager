@@ -39,6 +39,35 @@ export interface BrigadeAccessToken {
   description?: string;         // Optional description (e.g., "Main Kiosk")
 }
 
+/** AC-5 device type: what kind of hardware is enrolled. */
+export type DeviceType = 'kiosk' | 'tablet' | 'phone' | 'wearable';
+
+/** AC-5 device status: revocation is a status flip, not a delete. */
+export type DeviceStatus = 'active' | 'revoked';
+
+/**
+ * AC-5 — a first-class device account, formalising the anonymous
+ * `BrigadeAccessToken` UUID into a named, typed, revocable credential with a
+ * last-seen audit trail. The token is validated the same way a
+ * BrigadeAccessToken is (both back a `/signin?brigade=<token>` kiosk URL), so
+ * existing kiosk URLs and this session's new AccessRoute gate are unaffected.
+ * See docs/wiki/developer/history/archive/SAAS_COMMERCIALIZATION_DESIGN.md §4.
+ */
+export interface Device {
+  id: string;
+  organizationId?: string;      // owning org; optional for back-compat (kiosk/demo without org context)
+  stationId: string;            // station this device is locked to
+  type: DeviceType;
+  name: string;                 // e.g. "Main shed kiosk", "Captain's phone"
+  token: string;                // unguessable credential (UUID), same model as BrigadeAccessToken
+  status: DeviceStatus;
+  description?: string;
+  lastSeenAt?: Date;            // updated each time the token is validated
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt?: Date;
+}
+
 /**
  * Admin User - for authentication
  * Used to protect administrative operations

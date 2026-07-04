@@ -25,6 +25,11 @@ vi.mock('../utils/demoMode', () => ({
   isDemoActive: () => mockIsDemoActive(),
 }));
 
+const mockHasMemberSession = vi.fn();
+vi.mock('../utils/memberSession', () => ({
+  hasMemberSession: () => mockHasMemberSession(),
+}));
+
 function renderGate() {
   return render(
     <MemoryRouter initialEntries={['/signin']}>
@@ -49,6 +54,7 @@ describe('AccessRoute', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false, isLoading: false });
     mockIsKioskMode.mockReturnValue(false);
     mockIsDemoActive.mockReturnValue(false);
+    mockHasMemberSession.mockReturnValue(false);
   });
 
   it('redirects a bare visit (no account, no code, no demo) to the front door', () => {
@@ -71,6 +77,12 @@ describe('AccessRoute', () => {
 
   it('allows the public demo through', () => {
     mockIsDemoActive.mockReturnValue(true);
+    renderGate();
+    expect(screen.getByText('SIGN-IN BOOK')).toBeInTheDocument();
+  });
+
+  it('allows a member-session (checked in via personal link) through', () => {
+    mockHasMemberSession.mockReturnValue(true);
     renderGate();
     expect(screen.getByText('SIGN-IN BOOK')).toBeInTheDocument();
   });

@@ -7,6 +7,8 @@
  *   - is signed in (a manager/member account), OR
  *   - arrived on a brigade device via its unique code (kiosk mode,
  *     `?brigade=<token>`), OR
+ *   - checked in via their own personal link, which mints a short-lived
+ *     station-scoped member-session (AC-1), OR
  *   - is in the public demo (`?demo=true`, sticky for the session).
  *
  * Anyone else — a bare visit to `/signin` with no code and no account — is sent
@@ -24,6 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { LoadingFallback } from './LoadingFallback';
 import { isKioskMode } from '../utils/kioskMode';
 import { isDemoActive } from '../utils/demoMode';
+import { hasMemberSession } from '../utils/memberSession';
 
 interface AccessRouteProps {
   children: ReactNode;
@@ -36,7 +39,7 @@ export function AccessRoute({ children }: AccessRouteProps) {
     return <LoadingFallback />;
   }
 
-  const allowed = isAuthenticated || isKioskMode() || isDemoActive();
+  const allowed = isAuthenticated || isKioskMode() || isDemoActive() || hasMemberSession();
   if (!allowed) {
     return <Navigate to="/" replace />;
   }

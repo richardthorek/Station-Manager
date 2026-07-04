@@ -1358,6 +1358,102 @@
           "visibility": "private"
         }
       }
+    },
+    "deviceDatabase": {
+      "file": "backend/src/services/deviceDatabase.ts",
+      "description": "AC-5 — in-memory Device database (dev/test twin). A Device is a first-class, named, typed, revocable credential for a kiosk/tablet/phone/wearable, formalising the anonymous BrigadeAccessToken UUID. Production uses tableStorageDeviceDatabase.ts, selected by deviceDbFactory.ts.",
+      "functions": {
+        "isDeviceLive": {
+          "signature": "isDeviceLive(device: Device): boolean",
+          "description": "True when a device is usable right now: status is 'active' and it hasn't passed its expiresAt.",
+          "returns": "boolean",
+          "async": false
+        },
+        "create": {
+          "signature": "create(input: DeviceInput): Promise<Device>",
+          "description": "Creates a device with a generated id and an unguessable crypto.randomUUID() token (same model as BrigadeAccessToken).",
+          "returns": "Promise<Device>",
+          "async": true
+        },
+        "getByToken": {
+          "signature": "getByToken(token: string): Promise<Device | null>",
+          "description": "Resolves a live (active, unexpired) device by its token — the primary lookup used for kiosk validation.",
+          "returns": "Promise<Device | null>",
+          "async": true
+        },
+        "touchLastSeen": {
+          "signature": "touchLastSeen(id: string): Promise<void>",
+          "description": "Updates lastSeenAt each time the device's token is validated, giving the admin UI an audit trail.",
+          "returns": "Promise<void>",
+          "async": true
+        },
+        "update": {
+          "signature": "update(id: string, patch: DevicePatch): Promise<Device | null>",
+          "description": "Renames a device and/or flips its status between 'active' and 'revoked'.",
+          "returns": "Promise<Device | null>",
+          "async": true
+        },
+        "listForOrganization": {
+          "signature": "listForOrganization(organizationId?: string): Promise<Device[]>",
+          "description": "Lists the caller org's devices, sorted by name.",
+          "returns": "Promise<Device[]>",
+          "async": true
+        },
+        "listForStation": {
+          "signature": "listForStation(stationId: string): Promise<Device[]>",
+          "description": "Lists devices enrolled at one station, sorted by name.",
+          "returns": "Promise<Device[]>",
+          "async": true
+        }
+      }
+    },
+    "tableStorageDeviceDatabase": {
+      "file": "backend/src/services/tableStorageDeviceDatabase.ts",
+      "description": "AC-5 — Azure Table Storage twin of deviceDatabase.ts. Single 'Device' partition, rowKey = id, mirroring tableStorageVehicleTypeDatabase.ts's low-volume single-partition pattern. Keep in sync with the in-memory twin.",
+      "functions": {
+        "connect": {
+          "signature": "connect(): Promise<void>",
+          "description": "Creates the Devices table if it doesn't exist yet.",
+          "returns": "Promise<void>",
+          "async": true
+        },
+        "getByToken": {
+          "signature": "getByToken(token: string): Promise<Device | null>",
+          "description": "Filtered single-partition scan for a live device matching the given token.",
+          "returns": "Promise<Device | null>",
+          "async": true
+        }
+      }
+    },
+    "deviceDbFactory": {
+      "file": "backend/src/services/deviceDbFactory.ts",
+      "description": "AC-5 — chooses between in-memory and Azure Table Storage Device implementations based on environment configuration, mirroring vehicleTypeDbFactory.ts.",
+      "functions": {
+        "ensureDeviceDatabase": {
+          "signature": "ensureDeviceDatabase(): IDeviceDatabase",
+          "description": "Lazily selects and caches the Device database instance (Table Storage when AZURE_STORAGE_CONNECTION_STRING is set and USE_TABLE_STORAGE isn't 'false', else in-memory).",
+          "returns": "IDeviceDatabase",
+          "async": false
+        },
+        "initializeDeviceDatabase": {
+          "signature": "initializeDeviceDatabase(): Promise<void>",
+          "description": "Connects the Table Storage twin (creating the Devices table) on server boot; no-op for the in-memory twin.",
+          "returns": "Promise<void>",
+          "async": true
+        }
+      }
+    },
+    "kioskAccessResolver": {
+      "file": "backend/src/services/kioskAccessResolver.ts",
+      "description": "AC-5 — the one place that resolves a `/signin?brigade=<token>` kiosk token, trying the new Device store first and falling back to the legacy BrigadeAccessToken so the two stores never drift out of sync. Shared by kioskModeMiddleware.ts, flexibleAuth.ts's brigade-token path, and POST /api/brigade-access/validate.",
+      "functions": {
+        "resolveKioskAccess": {
+          "signature": "resolveKioskAccess(token: string): Promise<ResolvedKioskAccess | null>",
+          "description": "Resolves a kiosk token to its station (and brigade, via the station's brigadeId). Touches the device's lastSeenAt when resolved via the Device store. Returns null when the token is unknown, revoked, or expired.",
+          "returns": "Promise<ResolvedKioskAccess | null>",
+          "async": true
+        }
+      }
     }
   },
   "routes": {

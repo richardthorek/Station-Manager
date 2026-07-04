@@ -84,6 +84,39 @@ describe('requireSession — anonymous data-exposure protection', () => {
     });
   });
 
+  describe('allows member-session tokens (AC-1)', () => {
+    it('allows a GET carrying a valid X-Member-Session token', async () => {
+      const token = jwt.sign(
+        { memberId: 'm1', stationId: 'station-1', brigadeId: 'brigade-1', credentialType: 'member-session' },
+        JWT_SECRET,
+        { expiresIn: '8h' }
+      );
+      const res = await request(app).get('/probe').set('X-Member-Session', token);
+      expect(res.status).toBe(200);
+    });
+
+    it('rejects a token missing the member-session credentialType claim', async () => {
+      const token = jwt.sign({ memberId: 'm1', stationId: 'station-1' }, JWT_SECRET);
+      const res = await request(app).get('/probe').set('X-Member-Session', token);
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects an expired member-session token', async () => {
+      const token = jwt.sign(
+        { memberId: 'm1', stationId: 'station-1', credentialType: 'member-session' },
+        JWT_SECRET,
+        { expiresIn: '-1h' }
+      );
+      const res = await request(app).get('/probe').set('X-Member-Session', token);
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects garbage in X-Member-Session', async () => {
+      const res = await request(app).get('/probe').set('X-Member-Session', 'not-a-jwt');
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('preserves demo + write pass-through', () => {
     it('allows an anonymous GET for the public demo station', async () => {
       const res = await request(app).get('/probe').set('X-Station-Id', DEMO_STATION_ID);
