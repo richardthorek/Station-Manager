@@ -317,6 +317,10 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
 .finding--didnt { border-left: 4px solid var(--red); }
 .finding--happened { border-left: 4px solid var(--ink-2); }
 .finding--next { border-left: 4px solid #b07d10; }
+/* The finding text is the primary edit surface — tap to refine (AAR rework). */
+.finding__text { cursor: text; border-radius: 4px; padding: 0.1rem 0.15rem; margin: -0.1rem -0.15rem; }
+.finding__text:hover { background: rgb(203 219 42 / 0.14); }
+.finding__text:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 .finding__meta { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.35rem; flex-wrap: wrap; }
 .finding__tools { margin-left: auto; white-space: nowrap; }
 .finding__quote { font-size: 0.78rem; color: var(--muted); font-style: italic; margin-top: 0.3rem; }

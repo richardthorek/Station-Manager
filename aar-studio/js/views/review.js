@@ -85,10 +85,22 @@ function findingsPanel(session, phases) {
 export function render(container) {
   const session = store.getSession();
   const phases = sessionPhases(session);
+  // Findings lead — shaping the insights is the work that matters. Fixing the
+  // raw transcript is optional and tucked into an Advanced section so it no
+  // longer dominates the page (AAR insight-quality rework 2026-07-04).
+  const hasTranscript = session.segments.length || Object.keys(session.speakers ?? {}).length
+    || session.segments.some((s) => s.speaker);
   container.append(
-    h('h1', {}, 'Review & edit'),
-    speakerPanel(session),
+    h('h1', {}, 'Edit findings'),
+    h('p', { class: 'muted' }, 'Shape the insights the AI surfaced — edit the wording, category, phase or unit, or add your own. This is where the review is made.'),
     findingsPanel(session, phases),
-    transcriptPanel(session, phases),
+    hasTranscript
+      ? h('details', { class: 'advanced' },
+          h('summary', {}, 'Advanced: fix the raw transcript & speaker names'),
+          h('p', { class: 'muted' }, 'Usually unnecessary — the AI reads through garbled words on its own. Only dive in here if a finding is wrong because a word was badly misheard.'),
+          speakerPanel(session),
+          transcriptPanel(session, phases),
+        )
+      : null,
   );
 }

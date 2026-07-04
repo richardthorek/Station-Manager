@@ -83,7 +83,16 @@ function mergeSuggestionsPanel(session) {
 
 function findingCard(f, phases, units) {
   const card = h('div', { class: `finding finding--${f.category}`, role: 'listitem' });
-  const body = h('div', { class: 'finding__text' }, f.text);
+  // The card is the primary edit surface — tap the text to refine the insight
+  // (the whole point of AAR Studio is shaping findings, not transcript). The
+  // meta-row buttons stopPropagation so a delete tap doesn't also open the
+  // editor (AAR insight-quality rework 2026-07-04).
+  const body = h('div', {
+    class: 'finding__text', role: 'button', tabindex: '0', title: 'Tap to edit this finding',
+    onclick: () => editInline(),
+    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editInline(); } },
+  }, f.text);
+  const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
   card.append(
     body,
     h('div', { class: 'finding__meta' },
@@ -91,8 +100,8 @@ function findingCard(f, phases, units) {
       f.unit ? h('span', { class: 'chip chip--unit', title: `Attributed to ${f.unit}` }, f.unit) : null,
       f.source === 'ai' ? h('span', { class: 'chip chip--ai', title: f.quote ? `“${f.quote}”` : 'AI extracted' }, 'AI') : null,
       h('span', { class: 'finding__tools' },
-        h('button', { class: 'icon-btn', title: 'Edit', 'aria-label': 'Edit finding', onclick: () => editInline() }, '✎'),
-        h('button', { class: 'icon-btn', title: 'Delete', 'aria-label': 'Delete finding', onclick: () => store.update((s) => { s.findings = s.findings.filter((x) => x.id !== f.id); }, { reason: 'findings' }) }, '✕'),
+        h('button', { class: 'icon-btn', title: 'Edit', 'aria-label': 'Edit finding', onclick: stop(() => editInline()) }, '✎'),
+        h('button', { class: 'icon-btn', title: 'Delete', 'aria-label': 'Delete finding', onclick: stop(() => store.update((s) => { s.findings = s.findings.filter((x) => x.id !== f.id); }, { reason: 'findings' })) }, '✕'),
       ),
     ),
     f.quote ? h('div', { class: 'finding__quote' }, `“${f.quote}”`) : null,
