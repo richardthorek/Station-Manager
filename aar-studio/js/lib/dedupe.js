@@ -106,6 +106,9 @@ export function mergeFindings(keep, drop) {
     ...keep,
     text,
     quote: keep.quote || drop.quote || '',
+    // Don't lose a unit attribution when the kept finding has none — mirror the
+    // quote handling above (AAR Studio hero review 2026-07-03, AAR-17).
+    unit: keep.unit || drop.unit || '',
     segmentIds,
     source: 'merged',
   };

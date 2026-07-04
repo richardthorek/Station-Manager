@@ -82,3 +82,11 @@ test('mergeFindings keeps the longer text, unions evidence, and is pure', () => 
   assert.equal(keep.text, 'Pump too close.'); // inputs untouched
   assert.equal(drop.segmentIds.length, 1);
 });
+
+test('mergeFindings preserves a unit attribution the kept finding lacks (AAR-17)', () => {
+  const keep = { id: 'a', category: 'didnt', phase: 'Attack', text: 'Water ran out.', quote: '', unit: '', segmentIds: [], source: 'ai' };
+  const drop = { id: 'b', category: 'didnt', phase: 'Attack', text: 'The tanker ran dry.', quote: '', unit: 'Wamboin', segmentIds: [], source: 'ai' };
+  assert.equal(mergeFindings(keep, drop).unit, 'Wamboin', 'takes drop.unit when keep has none');
+  // A unit on the kept finding is never overwritten by the dropped one.
+  assert.equal(mergeFindings({ ...keep, unit: 'Bungendore' }, drop).unit, 'Bungendore');
+});

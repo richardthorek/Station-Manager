@@ -26,7 +26,13 @@ export function emptyReport(session) {
 }
 
 export function sessionFilename(session, suffix, ext) {
-  return `${slugify(session.incident.title || 'aar')}-${suffix}.${ext}`;
+  // An untitled review used to slug to a bare "aar-…" so every one collided as
+  // "aar-snapshot.html"; fall back to the incident/created date so downloads
+  // stay distinct (AAR Studio hero review 2026-07-03, AAR-24).
+  const title = session?.incident?.title?.trim();
+  const datePart = String(session?.incident?.date || session?.createdAt || '').slice(0, 10);
+  const base = title ? slugify(title) : (datePart ? `aar-${datePart}` : 'aar');
+  return `${base}-${suffix}.${ext}`;
 }
 
 function subLine(session) {
@@ -222,8 +228,27 @@ export function renderMarkdown(session) {
   if (r.assessment) out.push('## Overall assessment', '', r.assessment, '');
 
   out.push(...renderFindingsRegister(session));
+  out.push(...renderRoomNotes(session));
   out.push('---', '', `_${ATTRIBUTION}_`);
   return out.join('\n');
+}
+
+/**
+ * Room-notes appendix (Markdown lines). Notes are contributed live from the
+ * floor and fed to the AI as evidence, but never appeared in any export — so a
+ * member who typed five notes found no trace of them (AAR Studio hero review
+ * 2026-07-03, AAR-21). This puts their words back into the record.
+ */
+export function renderRoomNotes(session) {
+  const notes = (session.notes ?? []).filter((n) => n.text?.trim());
+  if (!notes.length) return [];
+  const out = ['## Room notes', '', `_${notes.length} note${notes.length === 1 ? '' : 's'} contributed from the floor during the AAR._`, ''];
+  for (const n of notes) {
+    const t = n.t != null ? `[${fmtClock(n.t)}] ` : '';
+    out.push(`- ${t}**${n.label || 'Room'}:** ${n.text}`);
+  }
+  out.push('');
+  return out;
 }
 
 /** Findings register section (Markdown lines). */
@@ -331,6 +356,21 @@ function registerSection(session) {
 </div>`;
 }
 
+function notesSection(session) {
+  const notes = (session.notes ?? []).filter((n) => n.text?.trim());
+  if (!notes.length) return '';
+  const paras = notes.map((n) => {
+    const t = n.t != null ? `<span class="t">[${fmtClock(n.t)}]</span> ` : '';
+    const who = `<span class="who">${esc(n.label || 'Room')}:</span> `;
+    return `<p>${t}${who}${esc(n.text)}</p>`;
+  });
+  return `<div class="doc pagebreak transcript">
+<h1>Appendix — room notes</h1>
+<p class="meta">${notes.length} note${notes.length === 1 ? '' : 's'} contributed from the floor during the AAR.</p>
+${paras.join('\n')}
+</div>`;
+}
+
 function transcriptSection(session) {
   if (!session.segments?.length) return '';
   const paras = session.segments.map((s) => {
@@ -362,6 +402,7 @@ export function renderCombinedHtml(session, { includeTranscript = false } = {}) 
 ${snapshotBody(session)}
 ${summarySection(session)}
 ${registerSection(session)}
+${notesSection(session)}
 ${includeTranscript ? transcriptSection(session) : ''}
 </body>
 </html>

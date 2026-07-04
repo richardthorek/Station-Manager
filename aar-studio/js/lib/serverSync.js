@@ -31,10 +31,12 @@ export function isAuthed(storage = globalThis.localStorage) {
  */
 export function toServerBody(session) {
   const title = session?.incident?.title?.trim() || '';
+  // Note: no `stationId` — the AAR session model never sets one, so sending it
+  // was always undefined dead weight (AAR Studio hero review 2026-07-03,
+  // AAR-16). The backend field stays optional for a future wiring.
   return {
     title: title || 'Untitled review',
     incidentDate: session?.incident?.date || undefined,
-    stationId: session?.stationId || undefined,
     schemaVersion: typeof session?.schemaVersion === 'number' ? session.schemaVersion : 1,
     // The device's last-edit time — the server uses it for stale-write detection.
     clientUpdatedAt: session?.updatedAt || undefined,
