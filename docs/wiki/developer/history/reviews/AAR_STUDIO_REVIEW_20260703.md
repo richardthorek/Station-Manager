@@ -6,9 +6,12 @@ with that bar: not "does it work" but "would a brigade facilitator show this to
 another brigade". Findings are documented for later agents to implement; no
 fixes are made in this review.
 
-**Status: Q1 (AAR-6, AAR-8, AAR-1, AAR-7), AAR-19, AAR-9, AAR-23, AAR-3,
-AAR-10, AAR-2, AAR-15 and AAR-11 fixed 2026-07-03** (see the changelog
-entries) — the entire "AAR hero polish" Q1 batch is now shipped:
+**Status: the "AAR hero polish" Q1 batch (AAR-1/2/3/6/7/8/9/10/11/15/19/23)
+shipped 2026-07-03, plus the insight-quality/session-clarity rework and the Q3
+batch (AAR-13/14/16/17/18/20/21/22/24) shipped 2026-07-04** (see the changelog).
+AAR-12 accepted-and-documented (mixed id space, no consumer); AAR-4, AAR-5 and
+physical-iPad verification of the AAR-20 print path remain open. Q1-batch
+detail below:
 - **AAR-6/AAR-8** (`js/audio/live.js`, `js/audio/speech.js`): the gateway
   speech token now refreshes proactively every 8 minutes, and the transcriber
   reconnects automatically (up to 4 backed-off attempts) on failure without
@@ -209,7 +212,7 @@ is why they rank at the top of this review.
   through without consuming a new one (both DB twins updated). Metered by
   meeting, not by vend — the direction the billing track (D1) can build on.
 
-- **AAR-12 · Low · FN — Findings extracted from room notes carry note ids in
+- **[Accepted 2026-07-04 — documented; no consumer resolves ids against segments]** **AAR-12 · Low · FN — Findings extracted from room notes carry note ids in
   `segmentIds`.** Note evidence is fed to the model as pseudo-segments with
   the note's id (`analyse.js:78-87`), and `toFinding` validates ids against
   that same pool — so a finding's `segmentIds` can reference `notes[]`
@@ -218,13 +221,13 @@ is why they rank at the top of this review.
   map note-derived evidence to a distinct `noteIds` field or accept and
   document the mixed id space.
 
-- **AAR-13 · Low · UX — The join page's status is write-once.** "● Connected"
+- **[Fixed 2026-07-04]** **AAR-13 · Low · UX — The join page's status is write-once.** "● Connected"
   is set on first join (`views/join.js:68-70`) and never downgraded; a phone
   that slept shows Connected while its socket is gone (and its notes may be
   lost per AAR-7). **Direction:** reflect socket `disconnect`/`connect`
   events in the status line, re-join on reconnect.
 
-- **AAR-14 · Low · UX — "Shared tab / system audio" is offered on devices that
+- **[Fixed 2026-07-04]** **AAR-14 · Low · UX — "Shared tab / system audio" is offered on devices that
   can't do it.** `getDisplayMedia` with audio is unavailable on iPad Safari;
   the button renders regardless and fails only after the attempt. Minor —
   hide or annotate on unsupported platforms.
@@ -253,18 +256,18 @@ mostly about what happens when things *don't* go right.
   forks the session to a new id and drops the stale local entry under the old
   one (`keepMineAsCopy`).
 
-- **AAR-16 · Low · FN — Dead station scoping in sync.** `toServerBody` sends
+- **[Fixed 2026-07-04]** **AAR-16 · Low · FN — Dead station scoping in sync.** `toServerBody` sends
   `session.stationId` (`lib/serverSync.js:37`) but nothing ever sets a
   `stationId` on a session (`lib/model.js:createSession`) — the field is
   always undefined. Either wire it (roster is already loaded when signed in)
   or drop it.
 
-- **AAR-17 · Low · FN — Merging findings can drop a unit attribution.**
+- **[Fixed 2026-07-04]** **AAR-17 · Low · FN — Merging findings can drop a unit attribution.**
   `mergeFindings` keeps `keep`'s identity wholesale (`lib/dedupe.js:102-112`);
   if `keep` has no `unit` but `drop` does, the attribution is lost.
   `unit: keep.unit || drop.unit` matches the quote-handling already there.
 
-- **AAR-18 · Low · UX — Finding deletion is instant and unrecoverable; blank
+- **[Fixed 2026-07-04]** **AAR-18 · Low · UX — Finding deletion is instant and unrecoverable; blank
   saves allowed.** The board's ✕ removes a finding with no confirm or undo
   (`views/board.js:81`; same in `views/review.js:67`), while deleting a whole
   review gets a confirm — inverted weight. Inline edit Save accepts empty
@@ -291,14 +294,14 @@ brigades will forward to district staff and other brigades.
   currently missing. **Direction:** add the attribution footer to
   `renderSnapshotHtml`/`renderCombinedHtml` (and the Markdown export).
 
-- **AAR-20 · Medium · UX — Print/PDF path is the known-fragile iframe print.**
+- **[Fixed 2026-07-04]** **AAR-20 · Medium · UX — Print/PDF path is the known-fragile iframe print.**
   `preview.contentWindow?.print()` (`views/report.js:109`) prints a `srcdoc`
   iframe — unreliable on iOS Safari (can print the parent page) and the
   long-open P1 "print-stylesheet refinements" item. **Direction:** open the
   rendered HTML in a dedicated window/tab for printing, add proper `@page`
   margins, and verify on iPad + desktop Chrome/Safari.
 
-- **AAR-21 · Medium · UX — Room-note contributors never see their notes in the
+- **[Fixed 2026-07-04]** **AAR-21 · Medium · UX — Room-note contributors never see their notes in the
   record.** Notes feed the AI as evidence, but no export includes them: the
   combined report offers a transcript appendix only
   (`lib/exports.js:328-340`), and report generation works from findings
@@ -308,7 +311,7 @@ brigades will forward to district staff and other brigades.
   the combined report, and consider feeding un-analysed notes to report
   generation as supporting evidence.
 
-- **AAR-22 · Low · UX — Report preview re-renders the whole iframe per
+- **[Fixed 2026-07-04]** **AAR-22 · Low · UX — Report preview re-renders the whole iframe per
   keystroke.** Every input event rebuilds the full snapshot HTML into
   `srcdoc` (`views/report.js:64-76`) — perceptible jank on iPad with a real
   report. Debounce ~300 ms.
@@ -320,7 +323,7 @@ brigades will forward to district staff and other brigades.
   on `usesGateway(getSettings())`. The stale header comment ("AI report
   generation arrives in Stage 3") is also corrected.
 
-- **AAR-24 · Low · UX — Untitled exports produce anonymous filenames.**
+- **[Fixed 2026-07-04]** **AAR-24 · Low · UX — Untitled exports produce anonymous filenames.**
   `sessionFilename` slugs to `aar-…` with no date when the title is blank
   (`lib/exports.js:23-25`), so downloads collide as `aar-snapshot.html`.
   Reuse `displayTitle`'s friendly fallback + the incident/created date.
@@ -358,6 +361,6 @@ confident live demo in front of a brigade.
 | 9 | ~~**AAR-11** metering per token vend~~ **Fixed 2026-07-03** | Fix alongside AAR-6/8 so reliability work doesn't burn allowance |
 | 10 | ~~**AAR-9 + AAR-23** audience-correct error copy~~ **Fixed 2026-07-03** | One sweep: gateway users must never be told to check Azure keys |
 | 11 | ~~**AAR-2** replace native prompt/confirm~~ **Fixed 2026-07-03** | Brand-consistent dialogs; unlocks AAR-1's better confirm |
-| 12 | **AAR-21** room notes in exports | Completes the collab promise |
-| 13 | **AAR-20** print path | Long-open P1; verify on iPad |
-| 14 | AAR-4, AAR-5, AAR-12, AAR-13, AAR-14, AAR-16, AAR-17, AAR-18, AAR-22, AAR-24 | Low-severity batch; fold into the sessions above where files overlap |
+| 12 | ~~**AAR-21** room notes in exports~~ **Fixed 2026-07-04** | Completes the collab promise |
+| 13 | ~~**AAR-20** print path~~ **Fixed 2026-07-04** (code; physical-iPad verify still pending) | Long-open P1; verify on iPad |
+| 14 | Low-severity batch — **Fixed 2026-07-04:** AAR-13, AAR-14, AAR-16, AAR-17, AAR-18, AAR-22, AAR-24; **accepted (documented):** AAR-12 (mixed segment/note id space — no current consumer resolves ids against segments); **still open:** AAR-4, AAR-5 | Fold into the sessions above where files overlap |

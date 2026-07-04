@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-04 (AAR hero-polish batch + insight-quality/session-clarity rework shipped; Q1 now = live-validate the consolidation quality on a real debrief)
+**Last updated:** 2026-07-04 (AAR hero-polish batch + insight-quality/session-clarity rework + most of Q3 shipped; Q1 = live-validate consolidation quality, Q3 remainder = AAR-4/5)
 **Status:** Living document — **the single plan** for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
 
 ---
@@ -47,7 +47,7 @@ One row per function/feature of the product. Status: ✅ shipped & stable · �
 | 5 | **Truck check — manual** (vehicle types, locked standard checklists, zones/equipment, issue lifecycle, member attribution) | ✅ | Cross-brigade comparative reporting (Q6); vehicle mgmt surfacing (Q11) |
 | 6 | **Truck check — voice agent (A3)** (hold-to-talk PWA → server-side STT → tool loop → TTS; hardened per F1–F16 review) | 🟡 | iPad on-device verification (Q4); pilot rollout (Q5); VAD/continuous listening (Q15); vision + offline = A4 (Q16) |
 | 7 | **Reports & analytics** (dashboard, cross-station, CSV/PDF export) | ✅ | Advanced analytics dashboard #123 (Q14) |
-| 8 | **AAR Studio — THE HERO** (AI-facilitated After Action Reviews, cloud sync, collab notes, dedupe/merge) | 🟡 | "Hero polish" batch (AAR-1/2/3/6/7/8/9/10/11/15/19/23) + insight-quality/session-clarity rework shipped per [AAR review](wiki/developer/history/reviews/AAR_STUDIO_REVIEW_20260703.md); remaining: live-validate the consolidation quality (Q1) + collab/export batch (Q3); CSP shrink (Q10) |
+| 8 | **AAR Studio — THE HERO** (AI-facilitated After Action Reviews, cloud sync, collab notes, dedupe/merge) | 🟡 | Hero-polish batch + insight-quality/session-clarity rework + most of the Q3 remaining batch shipped per [AAR review](wiki/developer/history/reviews/AAR_STUDIO_REVIEW_20260703.md); remaining: live-validate consolidation quality (Q1), AAR-4/5 hero-example + sign-in hint (Q3), iPad print verify (Q4), CSP shrink (Q10) |
 | 9 | **Multi-station** (isolation, station mgmt UI, national RFS dataset lookup, demo station) | ✅ | Migration scripts deferred until a real multi-brigade migration needs one |
 | 10 | **SaaS tenancy & entitlements** (Organization, plans, `requireFeature` both-sides gating, limits) | ✅ | `maxDevices` unenforced by design (devices dropped from pricing) |
 | 11 | **Stripe billing** (Checkout, Portal, webhooks, trial, audit trail, AI top-up packs) | 🟡 | Metered overage needs a Stripe meter + D1 pricing decisions (Q7); device accounts (Q8) |
@@ -77,7 +77,7 @@ The single ordered work queue across every track. Work top-down; re-order here w
 
 ### Next
 
-- **Q3 — AAR remaining batch: complete the collab promise + lows.** **AAR-21** (room notes appear in no export — contributors never see their words in the record), **AAR-20** (iframe print path; the long-open P1 print-stylesheet item — verify on iPad), and the low-severity sweep (AAR-4, 5, 12, 13, 14, 16, 17, 18, 22, 24), folded into whichever files Q1 already touches.
+- **Q3 — AAR remaining batch (mostly shipped 2026-07-04).** Shipped: **AAR-21** (room-notes appendix in the combined report + Markdown), **AAR-20** (print in a dedicated window + `@page` margins — *physical-iPad verification still pending, batch with Q4*), **AAR-22** (debounced report preview), **AAR-24** (date-fallback export filenames), **AAR-17** (merge preserves unit), **AAR-16** (dropped dead `stationId`), **AAR-18** (undo on finding delete + reject blank saves), **AAR-13** (join status reflects connect/disconnect), **AAR-14** (hide "share tab audio" where unsupported). **AAR-12** accepted-and-documented (mixed segment/note id space — no current consumer). **Still open:** **AAR-4** (surface the worked example in the hero, not the footer) and **AAR-5** (a signed-out "sign in to back up & share" hint — also the upgrade hook).
 - **Q4 — Voice agent: iPad on-device verification.** The F8 audio fixes were built against documented iOS Safari behaviour but have never run on a physical iPad. Run a full voice check on iPad (portrait + landscape), capture the screenshots the PR convention requires, log device-specific breakage. *Blocks Q5; batch with an on-device check of the AAR live-listen reconnect logic shipped 2026-07-03 (AAR-6/8).*
 - **Q5 — Voice agent: pilot rollout.** After Q4, enable for 1–2 pilot AI-plan brigades and gather feedback (noise handling, phrasing, turn caps). Hardening (F1–F16) is done; this is product feedback, not engineering.
 - **Q6 — Truck check: cross-brigade comparative reporting.** The point of locked standard checklist items with stable `itemCode`s (TC-D1): compare outcomes for the same vehicle type across brigades. Aggregation by `vehicleType` + `itemCode` and a report view.
