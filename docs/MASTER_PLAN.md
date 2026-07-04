@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-04 (AAR hero-polish batch + insight-quality/session-clarity rework + the whole Q3 remaining batch shipped; queue renumbered — Q1 now = live-validate consolidation quality on a real debrief)
+**Last updated:** 2026-07-04 (cross-app responsive UI review — phone-width chip overflow + touch-target fix shipped in aar-studio; frontend confirmed clean)
 **Status:** Living document — **the single plan** for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
 
 ---
@@ -96,6 +96,7 @@ The single ordered work queue across every track. Work top-down; re-order here w
 - **Q16 — T6: suite shared packages.** npm/pnpm workspace, `@rfs/ui` / `@rfs/types` / `@rfs/auth-sdk`; sibling repos consume `/api/auth/entitlements`; SSO redirect for cross-origin apps. (#557)
 - **Q17 — T7: suite monorepo consolidation.** Turborepo; Fire Break Calculator embedded; Fire Santa Run seasonal peer; converge backends onto Express; one pipeline. Depends on Q16 and a commercial reason. (#558)
 - **Q18 — T1 remainder: shared truck-check types.** Fold `Appliance`/`VehicleType`/`ChecklistItem`/`CheckRun`/`CheckResult` into `shared/domain-types.d.ts` like the sign-in types.
+- **Q19 — aar-studio: adopt a shared responsive-breakpoint convention.** Per [RESPONSIVE_UI_REVIEW_20260704](wiki/developer/history/reviews/RESPONSIVE_UI_REVIEW_20260704.md) (UI-3): aar-studio's stylesheet has only 3 `@media` rules total (vs. 65 responsive CSS files in `frontend/`) and currently passes an automated phone/tablet/desktop overflow + touch-target scan mostly by luck (auto-fit grids happening to degrade gracefully), not by design. Not urgent — nothing else is broken today — but the next time aar-studio gets sustained feature work, add shared breakpoint vars to `rfs-tokens.css` and check new screens against them explicitly rather than relying on incidental wrapping.
 
 ---
 
