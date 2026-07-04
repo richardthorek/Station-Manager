@@ -79,7 +79,21 @@ h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
   opacity: 0.85;
 }
 .topbar__name { font-weight: 700; letter-spacing: 1px; }
-.topbar__session { color: rgba(255, 255, 255, 0.9); font-size: 0.85rem; }
+/* Active-review chip — makes the selected review unmistakable. */
+.topbar__session { display: inline-flex; align-items: center; gap: 0.35rem; }
+.topbar__session:empty { display: none; }
+.topbar__session-icon { font-size: 0.85rem; }
+.topbar__session-name {
+  color: var(--rfs-white); font-size: 0.85rem; font-weight: 600; text-decoration: none;
+  background: rgba(255, 255, 255, 0.16); border-radius: 999px; padding: 0.1rem 0.6rem;
+  max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.topbar__session-name:hover { background: rgba(255, 255, 255, 0.28); }
+.topbar__session-close {
+  background: none; border: none; color: rgba(255, 255, 255, 0.75); cursor: pointer;
+  font-size: 0.85rem; line-height: 1; padding: 0.15rem 0.25rem; border-radius: 4px;
+}
+.topbar__session-close:hover { color: var(--rfs-white); background: rgba(255, 255, 255, 0.16); }
 .nav { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
 .nav__link {
   color: rgba(255, 255, 255, 0.88);
@@ -465,9 +479,15 @@ body.join-mode .nav { display: none; }
 }
 .review-card:hover { border-color: var(--red); }
 .review-card:active { transform: translateY(1px); }
+.review-card:hover .review-card__open { color: var(--red); }
 .review-card__title { font-size: 1rem; margin: 0; color: var(--ink); }
 .review-card__meta { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--muted); }
 .review-card__stat { margin: 0; font-size: 0.82rem; font-weight: 600; color: var(--ink-2); }
+/* Explicit "tap to open" affordance so a card clearly reads as a doorway. */
+.review-card__open { font-size: 0.8rem; font-weight: 600; color: var(--ink-2); margin-top: 0.15rem; }
+/* The review that's currently open — unmistakable which one you're in. */
+.review-card--active { border-color: var(--good); border-left: 4px solid var(--good); background: rgb(4 120 87 / 0.06); }
+.review-card__active-flag { font-size: 0.72rem; font-weight: 700; color: var(--good); text-transform: uppercase; letter-spacing: 0.04em; }
 .review-card__actions { display: flex; gap: 0.3rem; justify-content: flex-end; flex-wrap: wrap; }
 /* Cloud (team-shared) reviews not yet pulled onto this device. */
 .review-card--cloud { border-style: dashed; background: transparent; }

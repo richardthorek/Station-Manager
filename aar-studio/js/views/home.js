@@ -50,12 +50,13 @@ async function openSavedFile() {
   }
 }
 
-function reviewCard(s) {
+function reviewCard(s, currentId) {
   const subtitle = [friendlyDate(s.incidentDate || s.createdAt), s.location].filter(Boolean).join(' · ');
   const stat = s.findings
     ? `${s.findings} finding${s.findings === 1 ? '' : 's'}`
     : (s.segments ? 'recorded, not yet summarised' : 'empty');
   const title = displayTitle({ incident: { title: s.title }, createdAt: s.createdAt });
+  const isActive = s.id === currentId;
   // Signed in ⇒ this review likely has a brigade-shared cloud copy, so "delete"
   // is no longer one unambiguous action — split it (A3 hero review 2026-07-03,
   // AAR-1). Previously the single 🗑 button deleted the cloud copy too, with a
@@ -89,11 +90,16 @@ function reviewCard(s) {
       }, 'Delete for everyone')
     : null;
 
-  return h('article', { class: 'review-card', 'data-session-id': s.id, onclick: () => { store.openSession(s.id); location.hash = '#/board'; } },
+  return h('article', {
+    class: `review-card${isActive ? ' review-card--active' : ''}`, 'data-session-id': s.id,
+    onclick: () => { store.openSession(s.id); location.hash = '#/board'; },
+  },
     h('div', { class: 'review-card__body' },
+      isActive ? h('span', { class: 'review-card__active-flag' }, '● Currently open') : null,
       h('h3', { class: 'review-card__title' }, title),
       h('p', { class: 'review-card__meta' }, subtitle || 'No details yet'),
       h('p', { class: 'review-card__stat' }, stat),
+      h('span', { class: 'review-card__open' }, isActive ? 'Back to this review →' : 'Open review →'),
     ),
     h('div', { class: 'review-card__actions', onclick: (e) => e.stopPropagation() },
       h('button', { class: 'icon-btn', title: 'Rename', 'aria-label': 'Rename', onclick: async () => {
@@ -182,6 +188,7 @@ async function appendCloudReviews(container, localById) {
 export function render(container) {
   const sessions = store.listSessions();
   const localById = new Map(sessions.map((s) => [s.id, s.updatedAt]));
+  const currentId = store.getSession()?.id ?? null;
 
   container.append(
     h('section', { class: 'hero hero--home' },
@@ -196,7 +203,7 @@ export function render(container) {
     h('section', { class: 'reviews' },
       h('h2', {}, 'Your reviews'),
       sessions.length
-        ? h('div', { class: 'review-grid' }, sessions.map(reviewCard))
+        ? h('div', { class: 'review-grid' }, sessions.map((s) => reviewCard(s, currentId)))
         : h('p', { class: 'muted' }, 'No reviews yet. Hit “Start recording now” at the end of your next job.'),
     ),
     h('section', { class: 'home-footer' },

@@ -24,6 +24,21 @@ export function clear(node) {
   return node;
 }
 
+/**
+ * Append children to an existing element, skipping null/false with the same
+ * rules h() uses for its children. Prefer this over a raw `parent.append(...)`
+ * whenever a child can be conditional (`cond ? node : null`) or come from a
+ * function that may return null — a bare `append(null)` renders the literal
+ * string "null" in the DOM.
+ */
+export function mount(parent, ...children) {
+  for (const child of children.flat(Infinity)) {
+    if (child == null || child === false) continue;
+    parent.append(child.nodeType ? child : document.createTextNode(child));
+  }
+  return parent;
+}
+
 let toastHost = null;
 export function toast(message, kind = 'info', ms = 3500) {
   if (!toastHost) {

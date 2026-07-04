@@ -1,7 +1,7 @@
 // Review & edit: transcript text/phase/speaker editing, diarised speaker
 // renaming, full findings curation.
 
-import { h, toast } from '../ui.js';
+import { h, toast, mount } from '../ui.js';
 import * as store from '../store.js';
 import { CATEGORIES, sessionPhases, createFinding } from '../lib/model.js';
 import { fmtClock } from '../lib/text.js';
@@ -90,7 +90,7 @@ export function render(container) {
   // longer dominates the page (AAR insight-quality rework 2026-07-04).
   const hasTranscript = session.segments.length || Object.keys(session.speakers ?? {}).length
     || session.segments.some((s) => s.speaker);
-  container.append(
+  mount(container,
     h('h1', {}, 'Edit findings'),
     h('p', { class: 'muted' }, 'Shape the insights the AI surfaced — edit the wording, category, phase or unit, or add your own. This is where the review is made.'),
     findingsPanel(session, phases),

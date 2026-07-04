@@ -1,7 +1,7 @@
 // Live findings board: four category columns, phase chips and filter,
 // quick add, edit/delete, fullscreen high-contrast Present mode.
 
-import { h, toast } from '../ui.js';
+import { h, toast, mount } from '../ui.js';
 import * as store from '../store.js';
 import { CATEGORIES, sessionPhases, sessionUnitNames, createFinding } from '../lib/model.js';
 import { findMergeSuggestions, mergeFindings } from '../lib/dedupe.js';
@@ -93,7 +93,7 @@ function findingCard(f, phases, units) {
     onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editInline(); } },
   }, f.text);
   const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
-  card.append(
+  mount(card,
     body,
     h('div', { class: 'finding__meta' },
       h('span', { class: 'chip chip--phase' }, f.phase),
@@ -187,7 +187,7 @@ export function render(container) {
     render(container);
   }
 
-  container.append(
+  mount(container,
     h('div', { class: 'board-toolbar' },
       h('h1', {}, 'Findings board'),
       h('div', { class: 'btn-row' },

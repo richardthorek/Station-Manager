@@ -1,7 +1,7 @@
 // Capture: just listen. Live transcription + automatic finding extraction —
 // no phase clicking, no manual "analyse". The room talks; findings appear.
 
-import { h, toast, confirmDanger, pickFile } from '../ui.js';
+import { h, toast, confirmDanger, pickFile, mount } from '../ui.js';
 import * as store from '../store.js';
 import { analyseNow, getPersistentError, dismissPersistentError } from '../analyse.js';
 import * as live from '../audio/live.js';
@@ -197,7 +197,7 @@ export function render(container) {
       )))
     : h('p', { class: 'muted' }, 'Nothing captured yet. Start recording above — what’s said appears here.');
 
-  container.append(
+  mount(container,
     h('div', { class: 'capture-head' },
       h('h1', {}, displayTitle(session)),
       h('a', { class: 'btn', href: '#/board' }, session.findings.length ? `See findings (${session.findings.length}) →` : 'Findings →'),

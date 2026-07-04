@@ -62,7 +62,20 @@ function renderNav() {
     }, r.label));
   }
   nav.append(h('button', { class: 'nav__settings', title: 'Settings', 'aria-label': 'Settings', onclick: openSettingsDialog }, '⚙'));
-  sessionLabel.textContent = session ? displayTitle(session) : '';
+  // Active-review indicator: a clear chip so it's never ambiguous which review
+  // you're in. Tap it to jump back to that review's board; the ✕ closes it and
+  // returns to the review list (AAR session-clarity rework 2026-07-04).
+  clear(sessionLabel);
+  if (session) {
+    sessionLabel.append(
+      h('span', { class: 'topbar__session-icon', 'aria-hidden': 'true' }, '📋'),
+      h('a', { class: 'topbar__session-name', href: '#/board', title: 'Open this review’s findings' }, displayTitle(session)),
+      h('button', {
+        class: 'topbar__session-close', title: 'Close this review', 'aria-label': 'Close this review',
+        onclick: () => { store.closeSession(); location.hash = '#/home'; },
+      }, '✕'),
+    );
+  }
 }
 
 function render() {
