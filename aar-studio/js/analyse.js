@@ -11,8 +11,11 @@ import { LlmError, isPersistentAiError } from './lib/llm.js';
 import { GENERAL_PHASE } from './lib/model.js';
 
 let analysing = false;
-let lastExtractAt = 0;
 let pendingWords = 0;
+// When the most recent words arrived — the trigger waits for a quiet gap after
+// this before processing, so it reads a settled discussion rather than chopping
+// one mid-flow (AAR insight-quality rework 2026-07-04).
+let lastWordAt = 0;
 
 // A latched 401/402/403 pauses auto-extraction and is surfaced as a single
 // dismissible banner by the view, instead of an identical toast every 45s
@@ -34,12 +37,18 @@ export function dismissPersistentError() {
 /** Live capture reports newly transcribed words here. */
 export function noteNewWords(n) {
   pendingWords += n;
+  lastWordAt = Date.now();
 }
 
-/** Timer-driven check: run a pass when the 45 s / 70-word policy says so. */
+/**
+ * Timer-driven check: run a consolidation pass once the discussion has settled
+ * (a quiet gap after the last words) or the backlog hits the ceiling. Waiting
+ * for the pause is what lets one pass see a whole topic and merge it into a few
+ * findings instead of one per utterance (AAR insight-quality rework).
+ */
 export async function maybeAutoExtract() {
   if (analysing || persistentError) return;
-  if (!shouldAutoExtract({ msSinceLast: Date.now() - lastExtractAt, wordsPending: pendingWords })) return;
+  if (!shouldAutoExtract({ msSinceWords: Date.now() - lastWordAt, wordsPending: pendingWords })) return;
   await analyseNow(null, { quiet: true });
 }
 
@@ -104,7 +113,6 @@ export async function analyseNow(statusEl = null, { quiet = false } = {}) {
     return;
   }
   analysing = true;
-  lastExtractAt = Date.now();
   pendingWords = 0;
   const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
   try {
