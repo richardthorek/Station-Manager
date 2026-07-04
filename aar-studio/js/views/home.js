@@ -1,12 +1,32 @@
 // Home: friendly landing — start a new review or reopen a past one.
 
-import { h, toast, download, pickFile, confirmDanger, promptDialog } from '../ui.js';
+import { h, toast, download, pickFile, confirmDanger, promptDialog, mount } from '../ui.js';
 import * as store from '../store.js';
 import { requestAutoStart } from './capture.js';
 import { displayTitle } from '../lib/model.js';
 import { friendlyDate } from '../lib/text.js';
 import { sessionFilename } from '../lib/exports.js';
 import { isAuthed, listServerSessions, fetchServerSession, isRemoteNewer } from '../lib/serverSync.js';
+
+const SIGNIN_HINT_DISMISSED = 'aarstudio.signinHintDismissed';
+
+/**
+ * Signed-out hint (AAR-5): cloud backup / "From your team" simply don't appear
+ * when signed out, so a facilitator who never signs in silently gets no
+ * backup — one dropped iPad loses the review. A quiet, dismissible nudge (also
+ * the upgrade hook). Null when signed in or already dismissed.
+ */
+function signInHint() {
+  if (isAuthed() || localStorage.getItem(SIGNIN_HINT_DISMISSED)) return null;
+  const el = h('div', { class: 'signin-hint' },
+    h('span', {}, '☁ Sign in to back up your reviews and share them with your brigade. Without it, a review lives only on this device.'),
+    h('span', { class: 'signin-hint__actions' },
+      h('a', { class: 'btn btn--small btn--primary', href: '/login' }, 'Sign in'),
+      h('button', { class: 'btn btn--small', onclick: () => { localStorage.setItem(SIGNIN_HINT_DISMISSED, '1'); el.remove(); } }, 'Not now'),
+    ),
+  );
+  return el;
+}
 
 // Quick kick-off: blank review with today's date, jump to capture, start the mic.
 function startRecordingNow() {
@@ -190,7 +210,9 @@ export function render(container) {
   const localById = new Map(sessions.map((s) => [s.id, s.updatedAt]));
   const currentId = store.getSession()?.id ?? null;
 
-  container.append(
+  const exampleBtn = (cls, label) => h('button', { class: cls, onclick: () => loadExampleSession().catch((e) => toast(e.message, 'error')) }, label);
+
+  mount(container,
     h('section', { class: 'hero hero--home' },
       h('h1', {}, 'After Action Reviews, made easy'),
       h('p', {}, 'Record your crew’s debrief and get a clear write-up — who attended, what happened, what went well, and what to do next time. Just talk; the app does the rest.'),
@@ -200,14 +222,20 @@ export function render(container) {
       ),
       h('p', { class: 'hero__hint' }, 'No setup needed — start talking and the title, location and crews are picked up from the conversation. You can edit anything afterwards.'),
     ),
+    signInHint(),
     h('section', { class: 'reviews' },
       h('h2', {}, 'Your reviews'),
       sessions.length
         ? h('div', { class: 'review-grid' }, sessions.map((s) => reviewCard(s, currentId)))
-        : h('p', { class: 'muted' }, 'No reviews yet. Hit “Start recording now” at the end of your next job.'),
+        // First visit with zero reviews: the worked example *is* the sell, so
+        // give it a prominent CTA here rather than only a footer link (AAR-4).
+        : h('div', { class: 'reviews-empty' },
+            h('p', { class: 'muted' }, 'No reviews yet — hit “Start recording now” at the end of your next job.'),
+            exampleBtn('btn btn--primary', '👀 See what a finished review looks like'),
+          ),
     ),
     h('section', { class: 'home-footer' },
-      h('button', { class: 'link-btn', onclick: () => loadExampleSession().catch((e) => toast(e.message, 'error')) }, 'See an example'),
+      exampleBtn('link-btn', 'See an example'),
       h('span', { class: 'home-footer__sep' }, '·'),
       h('button', { class: 'link-btn', onclick: openSavedFile }, 'Open a saved review file'),
     ),
