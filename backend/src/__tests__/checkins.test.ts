@@ -8,9 +8,12 @@
 
 import request from 'supertest';
 import express, { Express } from 'express';
+import jwt from 'jsonwebtoken';
 import checkinsRouter from '../routes/checkins';
 import membersRouter from '../routes/members';
 import activitiesRouter from '../routes/activities';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
 let app: Express;
 
@@ -363,6 +366,33 @@ describe('Check-Ins API', () => {
       expect(response.body.member).toBe(memberName);
       expect(response.body.checkIn).toHaveProperty('id');
       expect(response.body.checkIn.checkInMethod).toBe('qr');
+
+      // AC-1: a station-scoped member-session token is minted for the visitor's browser.
+      expect(response.body.sessionToken).toBeTruthy();
+      const claims = jwt.verify(response.body.sessionToken, JWT_SECRET) as {
+        memberId: string;
+        stationId: string;
+        credentialType: string;
+      };
+      expect(claims.credentialType).toBe('member-session');
+      expect(claims.memberId).toBe(memberId);
+    });
+
+    it('mints a sessionToken on an already-checked-in response too', async () => {
+      const memberResponse = await request(app)
+        .post('/api/members')
+        .send({ name: 'Already Checked In Test' });
+      const memberId = memberResponse.body.id;
+
+      await request(app).post('/api/checkins/url-checkin').send({ identifier: memberId }).expect(201);
+
+      const response = await request(app)
+        .post('/api/checkins/url-checkin')
+        .send({ identifier: memberId })
+        .expect(200);
+
+      expect(response.body.action).toBe('already-checked-in');
+      expect(response.body.sessionToken).toBeTruthy();
     });
 
     it('should check in a member by name identifier (backward compatibility)', async () => {

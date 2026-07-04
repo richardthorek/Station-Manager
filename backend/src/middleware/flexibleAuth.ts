@@ -32,12 +32,20 @@ const ENABLE_DATA_PROTECTION = process.env.ENABLE_DATA_PROTECTION === 'true';
  */
 interface AuthResult {
   authenticated: boolean;
-  credentialType: 'jwt' | 'brigade-token' | 'none';
+  credentialType: 'jwt' | 'brigade-token' | 'member-session' | 'none';
   userId?: string;
   username?: string;
   role?: 'admin' | 'viewer';
   brigadeId?: string;
   stationId?: string;
+}
+
+/** Claims minted into a member-session token — see routes/checkins.ts's /url-checkin. */
+interface MemberSessionClaims {
+  memberId: string;
+  brigadeId?: string;
+  stationId: string;
+  credentialType: 'member-session';
 }
 
 /**
@@ -109,6 +117,37 @@ async function validateBrigadeToken(req: Request): Promise<AuthResult | null> {
 }
 
 /**
+ * Extract and validate a member-session token (AC-1) from the X-Member-Session
+ * header. Minted by POST /api/checkins/url-checkin when a member checks in via
+ * their personal link, so the same visitor can then read that station's live
+ * book (grid, active event) without a full admin/kiosk credential. Station-wide
+ * read scope, same as a brigade/kiosk token — never elevates beyond that.
+ */
+function validateMemberSession(req: Request): AuthResult | null {
+  try {
+    const token = req.headers['x-member-session'] as string | undefined;
+    if (!token) {
+      return null;
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET) as MemberSessionClaims;
+    if (decoded.credentialType !== 'member-session' || !decoded.stationId) {
+      return null;
+    }
+
+    return {
+      authenticated: true,
+      credentialType: 'member-session',
+      userId: decoded.memberId,
+      brigadeId: decoded.brigadeId,
+      stationId: decoded.stationId,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
  * Validate that the request has access to the requested resource
  * based on the authentication scope
  */
@@ -124,8 +163,9 @@ function validateScope(authResult: AuthResult, req: Request, scope: string): boo
     return true;
   }
 
-  // Brigade token can access brigade-scoped or station-scoped resources
-  if (authResult.credentialType === 'brigade-token') {
+  // Brigade token and member-session both grant station-wide read access
+  // (member-session never elevates beyond that — see validateMemberSession).
+  if (authResult.credentialType === 'brigade-token' || authResult.credentialType === 'member-session') {
     // Check if requested resource matches token's brigade/station
     const requestedStationId = resolveRequestedStationId(req);
     const requestedBrigadeId = req.query.brigadeId as string;
@@ -188,6 +228,11 @@ export function flexibleAuth(options: FlexibleAuthOptions = {}) {
       authResult = await validateBrigadeToken(req);
     }
 
+    // If brigade token failed too, try a member-session token (AC-1)
+    if (!authResult) {
+      authResult = validateMemberSession(req);
+    }
+
     // No valid credentials found
     if (!authResult) {
       if (logUnauthorized) {
@@ -206,8 +251,8 @@ export function flexibleAuth(options: FlexibleAuthOptions = {}) {
       return;
     }
 
-    // If brigade token provides stationId and none is provided, lock request to token station
-    if (authResult.credentialType === 'brigade-token' && authResult.stationId) {
+    // If brigade token/member-session provides stationId and none is provided, lock request to that station
+    if ((authResult.credentialType === 'brigade-token' || authResult.credentialType === 'member-session') && authResult.stationId) {
       if (!resolveRequestedStationId(req)) {
         req.stationId = authResult.stationId;
         req.isDemoMode = false;
@@ -254,6 +299,9 @@ export function flexibleAuth(options: FlexibleAuthOptions = {}) {
  *      403'd owners; reads only need a valid session, not a specific role.
  *   3. It carries a valid brigade/kiosk access token (station-scoped). Kiosks
  *      forward this as the X-Brigade-Token header (see frontend api.ts).
+ *   4. It carries a valid member-session token (AC-1, station-scoped) — minted
+ *      by POST /api/checkins/url-checkin when a member checks in via their
+ *      personal link, forwarded as X-Member-Session (see frontend api.ts).
  *
  * Otherwise it is rejected with 401. Mounted in index.ts on the read routers;
  * write-path kiosk actions (check-ins, truck-check results) are deliberately
@@ -292,6 +340,18 @@ export function requireSession(options: { readsOnly?: boolean } = {}) {
         req.isDemoMode = false;
       }
       req.auth = brigadeResult;
+      next();
+      return;
+    }
+
+    // 4. Valid member-session token (AC-1 — station-scoped, minted on personal-link check-in).
+    const memberSessionResult = validateMemberSession(req);
+    if (memberSessionResult) {
+      if (memberSessionResult.stationId && !resolveRequestedStationId(req)) {
+        req.stationId = memberSessionResult.stationId;
+        req.isDemoMode = false;
+      }
+      req.auth = memberSessionResult;
       next();
       return;
     }

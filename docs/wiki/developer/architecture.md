@@ -1186,7 +1186,7 @@ Kiosk mode provides strict brigade/station locking for shared devices (iPads, ta
 - `components/StationSelector.tsx` - Shows locked UI in kiosk mode, disables dropdown
 
 **Frontend route guards (compose outer→inner):**
-- `components/AccessRoute.tsx` — "is this visitor allowed in at all?" Wraps the walk-up sign-in surface (`/signin`); allows only a signed-in account, a brigade device code (kiosk `?brigade=<token>`), or the public demo, else redirects to the front door (`/`). Stricter than FeatureRoute (which is default-open with no org context).
+- `components/AccessRoute.tsx` — "is this visitor allowed in at all?" Wraps the walk-up sign-in surface (`/signin`); allows a signed-in account, a brigade device code (kiosk `?brigade=<token>`), a member-session (AC-1, from checking in via a personal link), or the public demo, else redirects to the front door (`/`). Stricter than FeatureRoute (which is default-open with no org context).
 - `components/FeatureRoute.tsx` — "does this brigade's plan include the module?" (entitlement gate; default-open for kiosk/demo/back-compat).
 - `components/ProtectedRoute.tsx` — "is this an authenticated admin?" (auth gate for `/admin/*`).
 

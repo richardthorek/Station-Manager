@@ -50,6 +50,7 @@ export interface ApplianceDetails {
 }
 import type { Organization, Entitlements } from '../contexts/AuthContext';
 import { getKioskToken } from '../utils/kioskMode';
+import { getMemberSessionToken } from '../utils/memberSession';
 
 // Use relative URL in production, localhost in development; ensure trailing /api
 const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
@@ -121,6 +122,13 @@ class ApiService {
     const kioskToken = getKioskToken();
     if (kioskToken) {
       headers['X-Brigade-Token'] = kioskToken;
+    }
+
+    // AC-1: forward a member-session token (minted on personal-link check-in)
+    // so a signed-out visitor can read their brigade's live sign-in book.
+    const memberSessionToken = getMemberSessionToken();
+    if (memberSessionToken) {
+      headers['X-Member-Session'] = memberSessionToken;
     }
 
     // Merge with additional headers
@@ -517,7 +525,7 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to undo check-in');
   }
 
-  async urlCheckIn(identifier: string, stationId?: string): Promise<{ action: string; member: string; checkIn?: CheckIn }> {
+  async urlCheckIn(identifier: string, stationId?: string): Promise<{ action: string; member: string; checkIn?: CheckIn; sessionToken?: string }> {
     const response = await fetch(`${API_BASE_URL}/checkins/url-checkin`, {
       method: 'POST',
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
