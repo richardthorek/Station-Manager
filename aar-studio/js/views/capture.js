@@ -116,12 +116,18 @@ function audioPanel() {
       : () => live.start(kind, { backup: true }),
   }, `${live.SOURCES[kind].icon} ${kind === 'mic' ? 'Start recording the room' : live.SOURCES[kind].label}`);
 
+  // "Shared tab / system audio" needs getDisplayMedia, which iPad Safari
+  // doesn't expose — showing the button there just fails after the tap, so
+  // hide it on unsupported platforms (AAR Studio hero review 2026-07-03, AAR-14).
+  const canShareTab = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia;
   const idleControls = h('div', {},
     h('div', { class: 'capture-start' }, startBtn('mic', true)),
     h('details', { class: 'more-ways' },
       h('summary', {}, 'Other ways to capture'),
-      h('div', { class: 'btn-row' }, startBtn('display'), startBtn('file')),
-      h('p', { class: 'muted' }, 'Share a Teams meeting tab (tick “Share audio”), or upload a recording you already have. Diarisation and language live in ⚙ Settings.'),
+      h('div', { class: 'btn-row' }, canShareTab ? startBtn('display') : null, startBtn('file')),
+      h('p', { class: 'muted' }, canShareTab
+        ? 'Share a Teams meeting tab (tick “Share audio”), or upload a recording you already have. Diarisation and language live in ⚙ Settings.'
+        : 'Upload a recording you already have. (Sharing a meeting tab’s audio isn’t supported on this device.) Diarisation and language live in ⚙ Settings.'),
     ),
   );
 

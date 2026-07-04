@@ -89,6 +89,21 @@ export async function joinSession(code, label) {
   });
 }
 
+/**
+ * Subscribe to socket connection state (AAR Studio hero review 2026-07-03,
+ * AAR-13). Calls cb(true) on connect and cb(false) on disconnect so a
+ * participant's status line reflects reality instead of a write-once
+ * "Connected" that lies after the phone sleeps. Returns an unsubscribe fn.
+ */
+export async function onConnectionChange(cb) {
+  const s = await getSocket();
+  const onConnect = () => cb(true);
+  const onDisconnect = () => cb(false);
+  s.on('connect', onConnect);
+  s.on('disconnect', onDisconnect);
+  return () => { s.off('connect', onConnect); s.off('disconnect', onDisconnect); };
+}
+
 /** Participant: send a note. Resolves with the server-stamped note. */
 export async function sendNote({ code, text, label, offsetSec = null }) {
   const s = await getSocket();
