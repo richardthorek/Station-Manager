@@ -4,10 +4,15 @@ import { shouldAutoExtract, chunkSegments, findingsSchema, buildMessages, toFind
 import { extractJsonObject, chatJson, LlmError } from '../js/lib/llm.js';
 import { createSession, createSegment, GENERAL_PHASE } from '../js/lib/model.js';
 
-test('auto-extract trigger needs both elapsed time and pending words', () => {
-  assert.equal(shouldAutoExtract({ msSinceLast: 50_000, wordsPending: 100 }), true);
-  assert.equal(shouldAutoExtract({ msSinceLast: 10_000, wordsPending: 500 }), false);
-  assert.equal(shouldAutoExtract({ msSinceLast: 90_000, wordsPending: 20 }), false);
+test('auto-extract waits for the discussion to settle, or fires on a large backlog', () => {
+  // Settled: enough words banked AND a quiet pause since the last words — process the topic.
+  assert.equal(shouldAutoExtract({ msSinceWords: 16_000, wordsPending: 60 }), true);
+  // Still mid-flow: words arrived recently — hold off so one pass reads the whole exchange.
+  assert.equal(shouldAutoExtract({ msSinceWords: 3_000, wordsPending: 200 }), false);
+  // Quiet, but almost nothing said — not worth a pass.
+  assert.equal(shouldAutoExtract({ msSinceWords: 60_000, wordsPending: 20 }), false);
+  // Safety valve: an unbroken monologue that never pauses still gets processed.
+  assert.equal(shouldAutoExtract({ msSinceWords: 1_000, wordsPending: 600 }), true);
 });
 
 test('chunkSegments respects the word budget and phase boundaries', () => {

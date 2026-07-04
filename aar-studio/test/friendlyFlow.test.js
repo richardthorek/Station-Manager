@@ -61,6 +61,24 @@ test('mergeMetadata ignores empty/unknown values and pre-filled units', () => {
   assert.equal(patch.units, undefined, 'units already present — left alone');
 });
 
+test('mergeMetadata replaces a quick-start GPS location but never a real one (AAR-3)', () => {
+  // A quick-start review's location is raw device coordinates, flagged auto —
+  // a real place name mentioned in the discussion should replace it.
+  const auto = createSession({
+    incident: { title: '', date: '', location: '-35.1234, 149.5678', type: '', locationIsAuto: true },
+  });
+  const patch = mergeMetadata(auto, { location: 'Wamboin' });
+  assert.equal(patch.incident.location, 'Wamboin');
+  assert.equal(patch.incident.locationIsAuto, false, 'clears the auto flag once a real name is applied');
+
+  // A real, non-auto location (typed or already AI-derived) is never touched.
+  const real = createSession({
+    incident: { title: '', date: '', location: 'Bungendore Station', type: '', locationIsAuto: false },
+  });
+  const untouched = mergeMetadata(real, { location: 'Somewhere else' });
+  assert.equal(untouched.incident, undefined, 'a real location is never overwritten');
+});
+
 test('metadataSchema constrains incidentType to known values plus empty', () => {
   const schema = metadataSchema();
   assert.ok(schema.properties.incidentType.enum.includes(''));

@@ -40,9 +40,17 @@ export function parseClock(s) {
   return (h ? Number(h) * 3600 : 0) + Number(min) * 60 + Number(sec);
 }
 
+/**
+ * Session/segment/finding ids — used to scope API access (e.g. cloud-sync
+ * session ids double as the collab join-code seed), so they need to be
+ * unguessable. `Math.random()` is not cryptographically secure; both
+ * branches here use the Web Crypto API instead (CodeQL insecure-randomness
+ * finding on PR #609, flagged from the AAR-15 sync-conflict fix).
+ */
 export function uid() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
-  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  return 'id-' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

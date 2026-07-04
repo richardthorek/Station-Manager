@@ -79,7 +79,21 @@ h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
   opacity: 0.85;
 }
 .topbar__name { font-weight: 700; letter-spacing: 1px; }
-.topbar__session { color: rgba(255, 255, 255, 0.9); font-size: 0.85rem; }
+/* Active-review chip — makes the selected review unmistakable. */
+.topbar__session { display: inline-flex; align-items: center; gap: 0.35rem; }
+.topbar__session:empty { display: none; }
+.topbar__session-icon { font-size: 0.85rem; }
+.topbar__session-name {
+  color: var(--rfs-white); font-size: 0.85rem; font-weight: 600; text-decoration: none;
+  background: rgba(255, 255, 255, 0.16); border-radius: 999px; padding: 0.1rem 0.6rem;
+  max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.topbar__session-name:hover { background: rgba(255, 255, 255, 0.28); }
+.topbar__session-close {
+  background: none; border: none; color: rgba(255, 255, 255, 0.75); cursor: pointer;
+  font-size: 0.85rem; line-height: 1; padding: 0.15rem 0.25rem; border-radius: 4px;
+}
+.topbar__session-close:hover { color: var(--rfs-white); background: rgba(255, 255, 255, 0.16); }
 .nav { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
 .nav__link {
   color: rgba(255, 255, 255, 0.88);
@@ -248,6 +262,7 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
   background: var(--red);
   animation: live-pulse 1.6s ease-in-out infinite;
 }
+.live__dot--reconnecting { background: var(--ui-amber); }
 @keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 .live__state { font-weight: 700; }
 .live__elapsed { font-family: ui-monospace, Consolas, monospace; color: var(--muted); }
@@ -264,6 +279,33 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
 .live__interim { min-height: 1.5em; margin-top: 0.6rem; color: var(--muted); font-style: italic; }
 .live__error { color: var(--red); font-weight: 600; }
 /* .live__dot pulse is covered by the global prefers-reduced-motion guard near the top of this file. */
+
+/* ---------- persistent AI-error banner (AAR-10) ---------- */
+.ai-error-banner {
+  display: flex; gap: 0.75rem; align-items: center; justify-content: space-between;
+  flex-wrap: wrap;
+  border: 1px solid var(--red);
+  border-left: 4px solid var(--red);
+  background: rgb(200 16 46 / 0.10);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+/* ---------- persistent cloud-sync-conflict banner (AAR-15) ---------- */
+.sync-conflict-banner {
+  display: flex; gap: 0.75rem; align-items: center; justify-content: space-between;
+  flex-wrap: wrap;
+  border: 1px solid var(--gold);
+  border-left: 4px solid var(--gold);
+  background: rgb(203 219 42 / 0.10);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  margin: 0 0 1rem;
+  font-weight: 600;
+}
+.sync-conflict-banner .btn-row { flex-wrap: wrap; }
 
 /* ---------- board ---------- */
 .board-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
@@ -289,6 +331,10 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
 .finding--didnt { border-left: 4px solid var(--red); }
 .finding--happened { border-left: 4px solid var(--ink-2); }
 .finding--next { border-left: 4px solid #b07d10; }
+/* The finding text is the primary edit surface — tap to refine (AAR rework). */
+.finding__text { cursor: text; border-radius: 4px; padding: 0.1rem 0.15rem; margin: -0.1rem -0.15rem; }
+.finding__text:hover { background: rgb(203 219 42 / 0.14); }
+.finding__text:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 .finding__meta { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.35rem; flex-wrap: wrap; }
 .finding__tools { margin-left: auto; white-space: nowrap; }
 .finding__quote { font-size: 0.78rem; color: var(--muted); font-style: italic; margin-top: 0.3rem; }
@@ -366,6 +412,9 @@ body.present .board__empty { color: #93a1ad; }
 .dialog::backdrop { background: rgb(21 33 43 / 0.6); }
 .dialog h3 { margin: 1rem 0 0.5rem; }
 .dialog__actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.dialog--confirm { width: min(420px, 92vw); }
+.dialog__message { margin: 0 0 0.75rem; }
+.dialog--confirm input[type="text"] { width: 100%; box-sizing: border-box; }
 .settings__note { font-size: 0.85rem; color: var(--muted); }
 .settings__row { display: flex; gap: 0.6rem; align-items: center; margin: 0.4rem 0 0.2rem; }
 .settings__status { font-size: 0.85rem; flex: 1; }
@@ -378,8 +427,15 @@ body.present .board__empty { color: #93a1ad; }
   background: var(--ink); color: #fff; padding: 0.6rem 1rem; border-radius: var(--radius);
   box-shadow: var(--shadow); font-size: 0.9rem; max-width: 80vw;
   animation: toast-in 0.25s ease-out;
+  display: flex; align-items: center; gap: 0.75rem;
 }
 .toast--error { background: var(--red); }
+.toast__action {
+  background: rgba(255, 255, 255, 0.16); color: #fff; border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px; padding: 0.15rem 0.7rem; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
+}
+.toast__action:hover { background: rgba(255, 255, 255, 0.3); }
 .toast--out { opacity: 0; transition: opacity 0.4s; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 
@@ -422,6 +478,16 @@ body.join-mode .nav { display: none; }
 .hero .btn--hero.btn--primary { box-shadow: var(--shadow); }
 
 .reviews { margin-bottom: 1.6rem; }
+/* Signed-out backup/upgrade nudge (AAR-5). */
+.signin-hint {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
+  border: 1px solid var(--gold); border-left: 4px solid var(--gold);
+  background: rgb(203 219 42 / 0.10); border-radius: var(--radius);
+  padding: 0.6rem 0.75rem; margin: 0 0 1rem; font-size: 0.9rem;
+}
+.signin-hint__actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+/* Zero-reviews empty state with the example CTA (AAR-4). */
+.reviews-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; }
 .review-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
 .review-card {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
@@ -430,10 +496,16 @@ body.join-mode .nav { display: none; }
 }
 .review-card:hover { border-color: var(--red); }
 .review-card:active { transform: translateY(1px); }
+.review-card:hover .review-card__open { color: var(--red); }
 .review-card__title { font-size: 1rem; margin: 0; color: var(--ink); }
 .review-card__meta { margin: 0.1rem 0 0; font-size: 0.85rem; color: var(--muted); }
 .review-card__stat { margin: 0; font-size: 0.82rem; font-weight: 600; color: var(--ink-2); }
-.review-card__actions { display: flex; gap: 0.3rem; justify-content: flex-end; }
+/* Explicit "tap to open" affordance so a card clearly reads as a doorway. */
+.review-card__open { font-size: 0.8rem; font-weight: 600; color: var(--ink-2); margin-top: 0.15rem; }
+/* The review that's currently open — unmistakable which one you're in. */
+.review-card--active { border-color: var(--good); border-left: 4px solid var(--good); background: rgb(4 120 87 / 0.06); }
+.review-card__active-flag { font-size: 0.72rem; font-weight: 700; color: var(--good); text-transform: uppercase; letter-spacing: 0.04em; }
+.review-card__actions { display: flex; gap: 0.3rem; justify-content: flex-end; flex-wrap: wrap; }
 /* Cloud (team-shared) reviews not yet pulled onto this device. */
 .review-card--cloud { border-style: dashed; background: transparent; }
 .review-card--cloud .review-card__stat { color: var(--muted); font-weight: 500; }

@@ -7,26 +7,48 @@ import * as store from './store.js';
 import { getSettings } from './settings.js';
 import { extractFromSegments, extractMetadata, mergeMetadata, shouldAutoExtract } from './lib/extraction.js';
 import { dedupeFindings } from './lib/dedupe.js';
-import { LlmError } from './lib/llm.js';
+import { LlmError, isPersistentAiError } from './lib/llm.js';
 import { GENERAL_PHASE } from './lib/model.js';
 
 let analysing = false;
-let lastExtractAt = 0;
 let pendingWords = 0;
+// When the most recent words arrived — the trigger waits for a quiet gap after
+// this before processing, so it reads a settled discussion rather than chopping
+// one mid-flow (AAR insight-quality rework 2026-07-04).
+let lastWordAt = 0;
+
+// A latched 401/402/403 pauses auto-extraction and is surfaced as a single
+// dismissible banner by the view, instead of an identical toast every 45s
+// (AAR-10). Cleared on a successful pass or an explicit dismiss.
+let persistentError = null;
 
 export function isAnalysing() {
   return analysing;
 }
 
+export function getPersistentError() {
+  return persistentError;
+}
+
+export function dismissPersistentError() {
+  persistentError = null;
+}
+
 /** Live capture reports newly transcribed words here. */
 export function noteNewWords(n) {
   pendingWords += n;
+  lastWordAt = Date.now();
 }
 
-/** Timer-driven check: run a pass when the 45 s / 70-word policy says so. */
+/**
+ * Timer-driven check: run a consolidation pass once the discussion has settled
+ * (a quiet gap after the last words) or the backlog hits the ceiling. Waiting
+ * for the pause is what lets one pass see a whole topic and merge it into a few
+ * findings instead of one per utterance (AAR insight-quality rework).
+ */
 export async function maybeAutoExtract() {
-  if (analysing) return;
-  if (!shouldAutoExtract({ msSinceLast: Date.now() - lastExtractAt, wordsPending: pendingWords })) return;
+  if (analysing || persistentError) return;
+  if (!shouldAutoExtract({ msSinceWords: Date.now() - lastWordAt, wordsPending: pendingWords })) return;
   await analyseNow(null, { quiet: true });
 }
 
@@ -38,8 +60,9 @@ export async function maybeAutoExtract() {
 export async function fillMetadataFromDiscussion({ quiet = true } = {}) {
   const session = store.getSession();
   if (!session?.segments.some((seg) => seg.text.trim())) return;
-  // Nothing left to fill? Skip the call.
-  const blank = !session.incident.title?.trim() || !session.incident.location?.trim()
+  // Nothing left to fill? Skip the call. A GPS-only location (locationIsAuto)
+  // still counts as "needs filling" — a real place name should replace it.
+  const blank = !session.incident.title?.trim() || !session.incident.location?.trim() || session.incident.locationIsAuto
     || !session.incident.type || !(session.units ?? []).length;
   if (!blank) return;
   try {
@@ -90,7 +113,6 @@ export async function analyseNow(statusEl = null, { quiet = false } = {}) {
     return;
   }
   analysing = true;
-  lastExtractAt = Date.now();
   pendingWords = 0;
   const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
   try {
@@ -109,13 +131,22 @@ export async function analyseNow(statusEl = null, { quiet = false } = {}) {
       const noteIds = new Set(pendingNotes.map((n) => n.id));
       for (const n of (s.notes ?? [])) if (noteIds.has(n.id)) n.analysed = true;
     }, { reason: 'findings' });
+    persistentError = null;
     setStatus('');
     if (!quiet || added.length) {
       toast(`${added.length} new finding(s)${skipped.length ? `, ${skipped.length} duplicate(s) skipped` : ''}`);
     }
   } catch (err) {
     const hint = err instanceof LlmError && err.hint ? ` — ${err.hint}` : '';
-    toast(`${err.message}${hint}`, 'error', 8000);
+    if (isPersistentAiError(err)) {
+      // Latch it — the view renders a single dismissible banner from
+      // getPersistentError() instead of this repeating as a toast on every
+      // auto-extract pass (AAR-10).
+      persistentError = { message: err.message, hint: err.hint, status: err.status };
+      if (!quiet) toast(`${err.message}${hint}`, 'error', 8000);
+    } else {
+      toast(`${err.message}${hint}`, 'error', 8000);
+    }
     setStatus('');
   } finally {
     analysing = false;

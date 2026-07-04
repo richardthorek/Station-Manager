@@ -11,10 +11,10 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
 import { PageTransition } from '../../../components/PageTransition';
+import { AdminNav } from '../../../components/AdminNav';
 import type { Station } from '../../../types';
 import { StationTokenCard } from './StationTokenCard';
 import './BrigadeAccessPage.css';
@@ -179,12 +179,9 @@ export function BrigadeAccessPage() {
   return (
     <PageTransition variant="slideFromBottom">
       <div className="brigade-access-page">
+      <AdminNav />
       <header className="page-header-compact">
         <div className="header-top">
-          <div className="header-nav">
-            <Link to="/" className="back-link">← Home</Link>
-            <Link to="/admin/stations" className="back-link">← Stations</Link>
-          </div>
           <div className="header-actions">
             <button onClick={loadData} className="icon-button" title="Refresh">
               🔄

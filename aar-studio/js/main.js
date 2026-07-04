@@ -1,6 +1,6 @@
 // App bootstrap: hash router, nav, re-render policy.
 
-import { h, clear } from './ui.js';
+import { h, clear, toast } from './ui.js';
 import * as store from './store.js';
 import { displayTitle } from './lib/model.js';
 import { checkAccess } from './lib/entitlement.js';
@@ -30,6 +30,28 @@ function currentRoute() {
   return ROUTES.find((r) => r.hash === location.hash) ?? ROUTES[0];
 }
 
+/**
+ * A live, in-session warning that a backup push found the team's cloud copy
+ * newer than this device's edits (409) — shown on every view, not just
+ * discovered later on Home, so a facilitator can't keep editing a copy that's
+ * silently only saving locally (AAR Studio hero review 2026-07-03, AAR-15).
+ */
+function syncConflictBanner() {
+  return h('div', { class: 'sync-conflict-banner', role: 'alert' },
+    h('span', {}, 'A newer team copy exists — your edits are saving to this device only.'),
+    h('div', { class: 'btn-row' },
+      h('button', { class: 'btn btn--small', onclick: async () => {
+        const ok = await store.loadLatestFromTeam();
+        toast(ok ? 'Loaded the team’s latest copy' : 'Could not load the latest copy — try again', ok ? 'info' : 'error');
+      } }, 'Load latest'),
+      h('button', { class: 'btn btn--small btn--primary', onclick: () => {
+        store.keepMineAsCopy();
+        toast('Saved your edits as a new copy');
+      } }, 'Keep mine as a copy'),
+    ),
+  );
+}
+
 function renderNav() {
   const session = store.getSession();
   clear(nav);
@@ -40,7 +62,20 @@ function renderNav() {
     }, r.label));
   }
   nav.append(h('button', { class: 'nav__settings', title: 'Settings', 'aria-label': 'Settings', onclick: openSettingsDialog }, '⚙'));
-  sessionLabel.textContent = session ? displayTitle(session) : '';
+  // Active-review indicator: a clear chip so it's never ambiguous which review
+  // you're in. Tap it to jump back to that review's board; the ✕ closes it and
+  // returns to the review list (AAR session-clarity rework 2026-07-04).
+  clear(sessionLabel);
+  if (session) {
+    sessionLabel.append(
+      h('span', { class: 'topbar__session-icon', 'aria-hidden': 'true' }, '📋'),
+      h('a', { class: 'topbar__session-name', href: '#/board', title: 'Open this review’s findings' }, displayTitle(session)),
+      h('button', {
+        class: 'topbar__session-close', title: 'Close this review', 'aria-label': 'Close this review',
+        onclick: () => { store.closeSession(); location.hash = '#/home'; },
+      }, '✕'),
+    );
+  }
 }
 
 function render() {
@@ -63,6 +98,7 @@ function render() {
   }
   renderNav();
   clear(main);
+  if (store.getSyncConflict()) main.append(syncConflictBanner());
   route.view.render(main);
 }
 

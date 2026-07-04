@@ -20,11 +20,6 @@
   opacity: 0.9;
 }
 
-.org-header .back-link {
-  color: var(--rfs-white);
-  text-decoration: none;
-}
-
 .org-main {
   max-width: 960px;
   margin: 0 auto;

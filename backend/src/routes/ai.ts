@@ -113,38 +113,48 @@ router.post('/speech/token', async (req: Request, res: Response) => {
   if (!passesAiGate(req.organization, res)) return;
 
   const org = req.organization;
-  // Allowance gate: a speech token == one AAR session.
-  // Total allowance = monthly included + purchased bonus (bonus doesn't reset).
+  const sessionId = typeof req.body?.sessionId === 'string' && req.body.sessionId ? req.body.sessionId : undefined;
+
+  // Allowance gate: a speech token == one AAR session. A re-vend for a review
+  // already counted this month (the AAR-6 proactive refresh, or a reconnect
+  // after a blip) doesn't consume a new one — it's the same meeting, just
+  // asking for another token — so it always passes the gate (AAR Studio hero
+  // review 2026-07-03, AAR-11). Total allowance = monthly included + bonus
+  // (bonus doesn't reset).
   if (org && entitlementsEnabled()) {
-    const used = await ensureUsageDatabase().countUsage(org.id, 'speech');
-    const included = org.entitlements.aiIncludedSessions;
-    const bonus = org.aiBonusSessions ?? 0;
-    const total = included + bonus;
-    if (used >= total) {
-      res.status(402).json({
-        error: 'AI session limit reached for this month',
-        remaining: 0,
-        included,
-        bonus,
-        used,
-        resetAt: monthlyResetAt().toISOString(),
-        upgradeRequired: true,
-        topupAvailable: true,
-      });
-      return;
-    }
-    // Monthly allowance exhausted but bonus remains — deduct one bonus session now,
-    // before issuing the token, so a crash after issue doesn't leak a free session.
-    if (used >= included && bonus > 0) {
-      await ensureOrganizationDatabase().updateOrganization(org.id, {
-        aiBonusSessions: bonus - 1,
-      });
+    const usageDb = ensureUsageDatabase();
+    const alreadyGranted = sessionId ? await usageDb.hasRecordedSession(org.id, 'speech', sessionId) : false;
+    if (!alreadyGranted) {
+      const used = await usageDb.countUsage(org.id, 'speech');
+      const included = org.entitlements.aiIncludedSessions;
+      const bonus = org.aiBonusSessions ?? 0;
+      const total = included + bonus;
+      if (used >= total) {
+        res.status(402).json({
+          error: 'AI session limit reached for this month',
+          remaining: 0,
+          included,
+          bonus,
+          used,
+          resetAt: monthlyResetAt().toISOString(),
+          upgradeRequired: true,
+          topupAvailable: true,
+        });
+        return;
+      }
+      // Monthly allowance exhausted but bonus remains — deduct one bonus session now,
+      // before issuing the token, so a crash after issue doesn't leak a free session.
+      if (used >= included && bonus > 0) {
+        await ensureOrganizationDatabase().updateOrganization(org.id, {
+          aiBonusSessions: bonus - 1,
+        });
+      }
     }
   }
 
   try {
     const { token, region } = await issueSpeechToken();
-    await recordIfOrg(org, 'speech', req.body?.sessionId);
+    await recordIfOrg(org, 'speech', sessionId);
     res.json({ token, region });
   } catch (error) {
     const status = error instanceof GatewayError ? error.status : 500;

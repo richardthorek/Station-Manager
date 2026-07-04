@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "lastUpdated": "2026-07-03",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
@@ -233,8 +233,17 @@
       "POST /api/ai/speech/token": {
         "method": "POST",
         "path": "/api/ai/speech/token",
-        "description": "Vend a short-lived Azure Speech authorization token for browser SDK use. Counts as one metered AI session and enforces the monthly allowance.",
+        "description": "Vend a short-lived Azure Speech authorization token for browser SDK use. Counts as one metered AI session and enforces the monthly allowance. A re-vend carrying a sessionId already recorded this month (a proactive token refresh or reconnect for the same review) does not consume a new session.",
         "authentication": "JWT (aiEnabled when org context present)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "sessionId": {
+              "type": "string",
+              "description": "Optional client-supplied review/meeting id. Vends sharing the same sessionId within the month are deduped to one metered session (AAR-11)."
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "{ token, region } — short-lived Speech auth token"

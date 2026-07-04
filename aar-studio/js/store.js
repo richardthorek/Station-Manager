@@ -2,8 +2,8 @@
 // mutation, tiny pub/sub so views can re-render on structural changes.
 
 import { createSession, normaliseSession } from './lib/model.js';
-import { toDateInput } from './lib/text.js';
-import { isAuthed, pushSession, deleteServerSession } from './lib/serverSync.js';
+import { toDateInput, uid } from './lib/text.js';
+import { isAuthed, pushSession, fetchServerSession, deleteServerSession } from './lib/serverSync.js';
 
 const SESSION_PREFIX = 'aarstudio.session.';
 const LAST_KEY = 'aarstudio.lastSession';
@@ -14,15 +14,68 @@ const listeners = new Set();
 let cloudBackupTimer = null;
 
 /**
+ * Set when a background backup push finds the server's copy was edited more
+ * recently elsewhere (409) — the local edit only saved to this device.
+ * Session-scoped; the two resolution actions below (loadLatestFromTeam /
+ * keepMineAsCopy) are the only way to clear it while staying on the same
+ * session (AAR Studio hero review 2026-07-03, AAR-15 — previously detected
+ * and silently discarded by the fire-and-forget backup push).
+ */
+let syncConflict = null;
+
+/**
  * Mirror the current session to the server, debounced, when signed in. Saves
  * happen on every edit (incl. per-keystroke), so we coalesce them into one PUT a
- * few seconds after activity settles. Best-effort: failures never surface.
+ * few seconds after activity settles. Best-effort: network/auth failures never
+ * surface — but a 409 (someone else's edit is newer) does, via syncConflict,
+ * so it doesn't get silently swallowed while the facilitator keeps typing.
  */
 function scheduleCloudBackup() {
   if (!current || !isAuthed()) return;
   const session = current;
   clearTimeout(cloudBackupTimer);
-  cloudBackupTimer = setTimeout(() => { pushSession(session).catch(() => {}); }, CLOUD_BACKUP_DELAY_MS);
+  cloudBackupTimer = setTimeout(() => {
+    pushSession(session).then((result) => {
+      if (result.conflict) {
+        syncConflict = { sessionId: session.id };
+        notify('sync-conflict');
+      }
+    }).catch(() => {});
+  }, CLOUD_BACKUP_DELAY_MS);
+}
+
+/** The current session's unresolved sync conflict, if any (AAR-15). */
+export function getSyncConflict() {
+  return syncConflict && current && syncConflict.sessionId === current.id ? syncConflict : null;
+}
+
+/**
+ * Resolve a conflict by pulling the team's newer copy over this device's
+ * local edits (which are discarded). Returns true on success.
+ */
+export async function loadLatestFromTeam() {
+  if (!syncConflict || !current) return false;
+  const remote = await fetchServerSession(syncConflict.sessionId);
+  if (!remote) return false;
+  adoptSession(remote);
+  syncConflict = null;
+  return true;
+}
+
+/**
+ * Resolve a conflict by keeping this device's edits as a new review (a fresh
+ * id, so it stops fighting the team's copy for the same slot). The stale
+ * local entry under the old id is dropped — the team's copy at that id is now
+ * the authoritative one.
+ */
+export function keepMineAsCopy() {
+  if (!syncConflict || !current) return;
+  const oldId = current.id;
+  current.id = uid();
+  syncConflict = null;
+  localStorage.removeItem(SESSION_PREFIX + oldId);
+  persist();
+  notify('session-loaded');
 }
 
 export function getSession() {
@@ -86,10 +139,17 @@ export function quickStart() {
   return current;
 }
 
-/** Best-effort device location (e.g. from geolocation); never overwrites a value. */
+/**
+ * Best-effort device location (e.g. from geolocation) — never overwrites a
+ * real location (typed or discussion-derived), only a still-auto one. Marks
+ * the value `locationIsAuto` so a later AI metadata pass can still replace
+ * these raw coordinates with the actual place name once it's mentioned
+ * (AAR Studio hero review 2026-07-03, AAR-3).
+ */
 export function setIncidentLocation(location) {
-  if (!current || !location || current.incident.location?.trim()) return;
-  update((s) => { s.incident.location = location; }, { reason: 'session' });
+  if (!current || !location) return;
+  if (current.incident.location?.trim() && !current.incident.locationIsAuto) return;
+  update((s) => { s.incident.location = location; s.incident.locationIsAuto = true; }, { reason: 'session' });
 }
 
 /** Rename the current or a given session's incident title. */
@@ -156,15 +216,28 @@ export function listSessions() {
   return sessions.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
 }
 
-export function deleteSession(id) {
+/**
+ * Remove a review from this device only — a brigade-shared cloud copy (if
+ * any) is left untouched. The safe default when a member is just tidying up
+ * one device (AAR Studio hero review 2026-07-03, AAR-1).
+ */
+export function deleteSessionLocal(id) {
   localStorage.removeItem(SESSION_PREFIX + id);
   if (current?.id === id) {
     current = null;
     localStorage.removeItem(LAST_KEY);
   }
-  // Best-effort cloud removal so a delete on one device propagates to the team.
-  if (isAuthed()) deleteServerSession(id).catch(() => {});
   notify('session-loaded');
+}
+
+/**
+ * Remove a review everywhere: this device and (best-effort) the brigade's
+ * shared cloud copy, so it's also gone from every other device. Only
+ * meaningful when signed in — the server call is a silent no-op otherwise.
+ */
+export function deleteSessionEverywhere(id) {
+  deleteSessionLocal(id);
+  if (isAuthed()) deleteServerSession(id).catch(() => {});
 }
 
 /**

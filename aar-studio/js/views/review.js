@@ -1,10 +1,11 @@
 // Review & edit: transcript text/phase/speaker editing, diarised speaker
 // renaming, full findings curation.
 
-import { h, toast } from '../ui.js';
+import { h, toast, mount } from '../ui.js';
 import * as store from '../store.js';
 import { CATEGORIES, sessionPhases, createFinding } from '../lib/model.js';
 import { fmtClock } from '../lib/text.js';
+import { deleteFinding } from './board.js';
 
 function speakerPanel(session) {
   const raw = [...new Set(session.segments.map((s) => s.speaker).filter(Boolean))];
@@ -64,7 +65,7 @@ function findingsPanel(session, phases) {
           onchange: (e) => store.update((s) => { const t = s.findings.find((x) => x.id === f.id); if (t) t.phase = e.target.value; }, { silent: true }),
         }, phases.map((p) => h('option', { value: p, selected: p === f.phase }, p))),
         h('span', { class: `chip ${f.source === 'ai' ? 'chip--ai' : 'chip--manual'}` }, f.source),
-        h('button', { class: 'icon-btn', title: 'Delete finding', onclick: () => store.update((s) => { s.findings = s.findings.filter((x) => x.id !== f.id); }, { reason: 'findings' }) }, '✕'),
+        h('button', { class: 'icon-btn', title: 'Delete finding', onclick: () => deleteFinding(f) }, '✕'),
       ),
       h('textarea', {
         rows: 2,
@@ -85,10 +86,22 @@ function findingsPanel(session, phases) {
 export function render(container) {
   const session = store.getSession();
   const phases = sessionPhases(session);
-  container.append(
-    h('h1', {}, 'Review & edit'),
-    speakerPanel(session),
+  // Findings lead — shaping the insights is the work that matters. Fixing the
+  // raw transcript is optional and tucked into an Advanced section so it no
+  // longer dominates the page (AAR insight-quality rework 2026-07-04).
+  const hasTranscript = session.segments.length || Object.keys(session.speakers ?? {}).length
+    || session.segments.some((s) => s.speaker);
+  mount(container,
+    h('h1', {}, 'Edit findings'),
+    h('p', { class: 'muted' }, 'Shape the insights the AI surfaced — edit the wording, category, phase or unit, or add your own. This is where the review is made.'),
     findingsPanel(session, phases),
-    transcriptPanel(session, phases),
+    hasTranscript
+      ? h('details', { class: 'advanced' },
+          h('summary', {}, 'Advanced: fix the raw transcript & speaker names'),
+          h('p', { class: 'muted' }, 'Usually unnecessary — the AI reads through garbled words on its own. Only dive in here if a finding is wrong because a word was badly misheard.'),
+          speakerPanel(session),
+          transcriptPanel(session, phases),
+        )
+      : null,
   );
 }

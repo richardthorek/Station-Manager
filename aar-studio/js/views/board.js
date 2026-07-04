@@ -1,11 +1,11 @@
 // Live findings board: four category columns, phase chips and filter,
 // quick add, edit/delete, fullscreen high-contrast Present mode.
 
-import { h, toast } from '../ui.js';
+import { h, toast, mount } from '../ui.js';
 import * as store from '../store.js';
 import { CATEGORIES, sessionPhases, sessionUnitNames, createFinding } from '../lib/model.js';
 import { findMergeSuggestions, mergeFindings } from '../lib/dedupe.js';
-import { analyseNow } from '../analyse.js';
+import { analyseNow, getPersistentError, dismissPersistentError } from '../analyse.js';
 
 let phaseFilter = null; // null = all
 // Pairs the facilitator chose to "keep both", keyed by sorted finding-id pair.
@@ -14,11 +14,51 @@ const dismissedPairs = new Set();
 
 const pairKey = (a, b) => [a.id, b.id].sort().join('|');
 
+/**
+ * Delete a finding with an Undo affordance instead of a confirm — deletion was
+ * instant and unrecoverable while deleting a whole review asks for confirmation,
+ * an inverted weight (AAR Studio hero review 2026-07-03, AAR-18). Restores at
+ * the original position if Undo is tapped.
+ */
+export function deleteFinding(f) {
+  let removed = null;
+  let index = -1;
+  store.update((s) => {
+    index = s.findings.findIndex((x) => x.id === f.id);
+    if (index >= 0) removed = s.findings.splice(index, 1)[0];
+  }, { reason: 'findings' });
+  if (!removed) return;
+  toast('Finding deleted', 'info', 6000, {
+    label: 'Undo',
+    onClick: () => {
+      store.update((s) => {
+        if (s.findings.some((x) => x.id === removed.id)) return; // already restored
+        s.findings.splice(Math.min(index, s.findings.length), 0, removed);
+      }, { reason: 'findings' });
+      toast('Finding restored');
+    },
+  });
+}
+
 /** A unit-attribution <select>: a blank "no unit" option plus each attending unit. */
 function unitSelect(units, selected = '') {
   return h('select', { 'aria-label': 'Attribute finding to a unit' },
     h('option', { value: '', selected: !selected }, '— no unit'),
     units.map((u) => h('option', { value: u, selected: u === selected }, u)),
+  );
+}
+
+/**
+ * A latched 401/402/403 from auto-extraction (AAR-10): a single dismissible
+ * banner instead of an identical toast every 45s for the rest of the meeting.
+ * Dismissing lets the next auto-extract pass try again.
+ */
+function aiErrorBanner() {
+  const err = getPersistentError();
+  if (!err) return null;
+  return h('div', { class: 'ai-error-banner', role: 'alert' },
+    h('span', {}, `${err.message}${err.hint ? ` — ${err.hint}` : ''}`),
+    h('button', { class: 'btn btn--small', onclick: () => { dismissPersistentError(); store.update(() => {}, { reason: 'live' }); } }, 'Dismiss'),
   );
 }
 
@@ -69,16 +109,25 @@ function mergeSuggestionsPanel(session) {
 
 function findingCard(f, phases, units) {
   const card = h('div', { class: `finding finding--${f.category}`, role: 'listitem' });
-  const body = h('div', { class: 'finding__text' }, f.text);
-  card.append(
+  // The card is the primary edit surface — tap the text to refine the insight
+  // (the whole point of AAR Studio is shaping findings, not transcript). The
+  // meta-row buttons stopPropagation so a delete tap doesn't also open the
+  // editor (AAR insight-quality rework 2026-07-04).
+  const body = h('div', {
+    class: 'finding__text', role: 'button', tabindex: '0', title: 'Tap to edit this finding',
+    onclick: () => editInline(),
+    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editInline(); } },
+  }, f.text);
+  const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
+  mount(card,
     body,
     h('div', { class: 'finding__meta' },
       h('span', { class: 'chip chip--phase' }, f.phase),
       f.unit ? h('span', { class: 'chip chip--unit', title: `Attributed to ${f.unit}` }, f.unit) : null,
       f.source === 'ai' ? h('span', { class: 'chip chip--ai', title: f.quote ? `“${f.quote}”` : 'AI extracted' }, 'AI') : null,
       h('span', { class: 'finding__tools' },
-        h('button', { class: 'icon-btn', title: 'Edit', 'aria-label': 'Edit finding', onclick: () => editInline() }, '✎'),
-        h('button', { class: 'icon-btn', title: 'Delete', 'aria-label': 'Delete finding', onclick: () => store.update((s) => { s.findings = s.findings.filter((x) => x.id !== f.id); }, { reason: 'findings' }) }, '✕'),
+        h('button', { class: 'icon-btn', title: 'Edit', 'aria-label': 'Edit finding', onclick: stop(() => editInline()) }, '✎'),
+        h('button', { class: 'icon-btn', title: 'Delete', 'aria-label': 'Delete finding', onclick: stop(() => deleteFinding(f)) }, '✕'),
       ),
     ),
     f.quote ? h('div', { class: 'finding__quote' }, `“${f.quote}”`) : null,
@@ -94,9 +143,11 @@ function findingCard(f, phases, units) {
       h('div', { class: 'btn-row' },
         catSel, phaseSel, unitSel,
         h('button', { class: 'btn btn--small btn--primary', onclick: () => {
+          const text = textArea.value.trim();
+          if (!text) { toast('A finding needs some text', 'error'); textArea.focus(); return; } // ignore blank saves (AAR-18)
           store.update((s) => {
             const target = s.findings.find((x) => x.id === f.id);
-            if (target) Object.assign(target, { text: textArea.value.trim(), category: catSel.value, phase: phaseSel.value, unit: unitSel ? unitSel.value : f.unit });
+            if (target) Object.assign(target, { text, category: catSel.value, phase: phaseSel.value, unit: unitSel ? unitSel.value : f.unit });
           }, { reason: 'findings' });
         } }, 'Save'),
         h('button', { class: 'btn btn--small', onclick: () => store.update(() => {}, { reason: 'findings' }) }, 'Cancel'),
@@ -164,7 +215,7 @@ export function render(container) {
     render(container);
   }
 
-  container.append(
+  mount(container,
     h('div', { class: 'board-toolbar' },
       h('h1', {}, 'Findings board'),
       h('div', { class: 'btn-row' },
@@ -173,6 +224,7 @@ export function render(container) {
         h('button', { class: 'btn', onclick: togglePresent, title: 'Fullscreen high-contrast view for the projector' }, '⛶ Present'),
       ),
     ),
+    aiErrorBanner(),
     filterChips,
     mergeSuggestionsPanel(session),
     quickAdd(phases, units),

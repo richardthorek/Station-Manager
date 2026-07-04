@@ -5,18 +5,31 @@ import { chatJson } from './llm.js';
 import { CATEGORIES, CATEGORY_IDS, GENERAL_PHASE, INCIDENT_TYPES, sessionPhases, createFinding } from './model.js';
 import { countWords, fmtClock } from './text.js';
 
-/** Live auto-extraction policy: ≥45 s elapsed AND ≥70 new words pending. */
-export const TRIGGER = { minMs: 45_000, minWords: 70 };
+/**
+ * Live auto-extraction policy. We deliberately do NOT extract on a fixed timer:
+ * firing mid-discussion chops one topic into many tiny per-utterance findings.
+ * Instead we wait for the discussion to *settle* — a pause of `quietMs` after
+ * the last words, with at least `minWords` banked — so the model reads a whole
+ * back-and-forth exchange and can synthesise it into a few consolidated
+ * findings. `ceilingWords` is a safety valve: a long unbroken monologue that
+ * never pauses still gets processed once the backlog is large, so it can't grow
+ * without bound (AAR insight-quality rework 2026-07-04).
+ */
+export const TRIGGER = { quietMs: 15_000, minWords: 45, ceilingWords: 600 };
 
-export function shouldAutoExtract({ msSinceLast, wordsPending }) {
-  return msSinceLast >= TRIGGER.minMs && wordsPending >= TRIGGER.minWords;
+export function shouldAutoExtract({ msSinceWords, wordsPending }) {
+  if (wordsPending >= TRIGGER.ceilingWords) return true;
+  return wordsPending >= TRIGGER.minWords && msSinceWords >= TRIGGER.quietMs;
 }
 
 /**
  * Group consecutive segments into chunks of ~maxWords for one LLM call each,
- * breaking on phase boundaries so phase context stays coherent.
+ * breaking on phase boundaries so phase context stays coherent. The budget is
+ * wide on purpose: one call should see a whole discussion arc (many speakers,
+ * back-and-forth) so it can consolidate, not a narrow slice that forces
+ * per-utterance findings (AAR insight-quality rework 2026-07-04).
  */
-export function chunkSegments(segments, maxWords = 450) {
+export function chunkSegments(segments, maxWords = 1400) {
   const chunks = [];
   let current = [];
   let words = 0;
@@ -64,7 +77,7 @@ export function buildMessages({ session, segments }) {
   const phases = sessionPhases(session);
   const units = (session.units ?? []).map((u) => `${u.unit}${u.role ? ` (${u.role})` : ''}`).join(', ') || 'not recorded';
   const categories = CATEGORIES.map((c) => `- "${c.id}" = ${c.label}`).join('\n');
-  const system = `You analyse the live transcript of a fire brigade After Action Review (AAR) meeting and extract discrete findings.
+  const system = `You are the expert facilitator of a fire brigade After Action Review (AAR). You listen to the crew's debrief and surface the handful of findings that actually matter — like a seasoned captain summing up, not a stenographer. Your job is INSIGHT, not transcription.
 
 Incident: ${session.incident.title || 'untitled'} — ${session.incident.type || 'unknown type'}, ${session.incident.date || 'date unknown'}, ${session.incident.location || 'location unknown'}.
 Attending units: ${units}.
@@ -73,14 +86,15 @@ Incident phases discussed: ${phases.join(', ')}. "${GENERAL_PHASE}" is the bucke
 Classify every finding into exactly one category:
 ${categories}
 
+CONSOLIDATE — this is the most important rule. The text below is one stretch of discussion where several people talk back and forth about a few topics. Do NOT emit a finding per sentence or per speaker. Instead, read the whole exchange, work out the underlying points being made, and write ONE finding per distinct point — combining what several people said about the same thing into a single, well-rounded finding. A short debrief segment should usually yield only 1–4 findings. If you find yourself writing more than about 5, you are being too granular: merge them. Prefer a smaller number of substantial, standalone findings over many thin restatements.
+
 Transcript reality: this is usually a single room microphone with many speakers, so words are garbled. Fix obvious mis-hearings from context (e.g. "be a operators" → "BA operators"). Mark names or figures you are not sure of with "(unclear)". Keep Australian fire-service terminology exactly as used: BA, BACO, Cat 1, Cat 6, 38 mm, 65 mm, OCC, FRNSW, SCC, appliance, fireground, talkgroup.
 
 Rules:
-- Each finding is one discrete point, written as a clear standalone sentence (or two) a brigade member could read cold.
-- Ignore small talk, jokes, scheduling chatter and the facilitator's process talk ("let's move on to suppression").
-- Each transcript segment is prefixed with its id like [s12]. Every finding must include the segment ids it came from in segmentIds, and a short verbatim quote in quote.
-- Use the segment's tagged phase as a hint, but assign the phase the content is actually about.
-- If a chunk contains nothing of substance, return an empty findings array.
+- Each finding is a genuine insight or outcome a brigade member could read cold and act on — a clear sentence or two synthesising the discussion, not a paraphrase of one utterance.
+- Ignore small talk, jokes, scheduling chatter and the facilitator's process talk ("let's move on to suppression"). Silence is fine: if nothing of substance was decided or learned, return an empty array.
+- Each transcript segment is prefixed with its id like [s12]. Every finding must list ALL the segment ids that contributed to it in segmentIds (a consolidated finding will usually cite several), and one short verbatim quote in quote that best captures it.
+- Use the segments' tagged phase as a hint, but assign the phase the content is actually about.
 
 Respond with a JSON object: {"findings": [{"category", "phase", "text", "quote", "segmentIds"}]}.`;
 
@@ -89,7 +103,7 @@ Respond with a JSON object: {"findings": [{"category", "phase", "text", "quote",
     const speaker = seg.speaker ? ` ${seg.speaker}:` : '';
     return `[${seg.id}]${time} (${seg.phase})${speaker} ${seg.text}`;
   });
-  const user = `Extract findings from these transcript segments:\n\n${lines.join('\n')}`;
+  const user = `Here is a stretch of the debrief. Read the whole thing, then give me the consolidated findings — the few points that matter, each combining everything said about it:\n\n${lines.join('\n')}`;
   return [
     { role: 'system', content: system },
     { role: 'user', content: user },
@@ -155,12 +169,21 @@ Respond with a JSON object: {"title", "location", "incidentType", "units": [{"un
  * Build a non-destructive patch: only fields the user (or a previous pass) hasn't
  * already filled get the discussion-derived value. Returns { incident?, units? }
  * with just the keys that should change, or {} if nothing to apply.
+ *
+ * `location` is the one exception to "never overwrite": a still-`locationIsAuto`
+ * value (raw GPS coordinates from quick-start, see store.js's setIncidentLocation)
+ * is replaced by a real place name the moment the discussion reveals one — a
+ * typed or previously-derived location is never touched (AAR Studio hero review
+ * 2026-07-03, AAR-3).
  */
 export function mergeMetadata(session, meta = {}) {
   const patch = {};
   const incident = {};
   if (meta.title?.trim() && !session.incident.title?.trim()) incident.title = meta.title.trim();
-  if (meta.location?.trim() && !session.incident.location?.trim()) incident.location = meta.location.trim();
+  if (meta.location?.trim() && (!session.incident.location?.trim() || session.incident.locationIsAuto)) {
+    incident.location = meta.location.trim();
+    incident.locationIsAuto = false;
+  }
   if (meta.incidentType && INCIDENT_TYPES.includes(meta.incidentType) && !session.incident.type) incident.type = meta.incidentType;
   if (Object.keys(incident).length) patch.incident = incident;
   const units = (Array.isArray(meta.units) ? meta.units : [])

@@ -15,6 +15,7 @@ import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
 import { useStation, DEMO_STATION_ID } from '../../../contexts/StationContext';
 import { PageTransition } from '../../../components/PageTransition';
+import { AdminNav } from '../../../components/AdminNav';
 import type { Station } from '../../../types';
 import { CreateStationModal } from './CreateStationModal';
 import { EditStationModal } from './EditStationModal';
@@ -231,8 +232,8 @@ export function StationManagementPage() {
   if (loading) {
     return (
       <div className="station-management-page">
+        <AdminNav />
         <header className="page-header-compact">
-          <Link to="/" className="back-link">← Home</Link>
           <h1>Station Management</h1>
         </header>
         <div className="loading-message">
@@ -246,9 +247,9 @@ export function StationManagementPage() {
   return (
     <PageTransition variant="slideFromBottom">
       <div className="station-management-page">
+      <AdminNav />
       <header className="page-header-compact">
         <div className="header-top">
-          <Link to="/" className="back-link">← Home</Link>
           <div className="header-actions">
             <button onClick={handleRefresh} className="icon-button" title="Refresh">
               🔄

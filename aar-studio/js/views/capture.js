@@ -1,9 +1,9 @@
 // Capture: just listen. Live transcription + automatic finding extraction —
 // no phase clicking, no manual "analyse". The room talks; findings appear.
 
-import { h, toast, confirmDanger, pickFile } from '../ui.js';
+import { h, toast, confirmDanger, pickFile, mount } from '../ui.js';
 import * as store from '../store.js';
-import { analyseNow } from '../analyse.js';
+import { analyseNow, getPersistentError, dismissPersistentError } from '../analyse.js';
 import * as live from '../audio/live.js';
 import { createSegment, createNote, speakerName, displayTitle, GENERAL_PHASE } from '../lib/model.js';
 import { parseTranscript } from '../lib/transcriptParser.js';
@@ -65,6 +65,20 @@ function roomNotesPanel() {
   );
 }
 
+/**
+ * A latched 401/402/403 from auto-extraction (AAR-10): a single dismissible
+ * banner instead of an identical toast every 45s for the rest of the meeting.
+ * Dismissing lets the next auto-extract pass try again.
+ */
+function aiErrorBanner() {
+  const err = getPersistentError();
+  if (!err) return null;
+  return h('div', { class: 'ai-error-banner', role: 'alert' },
+    h('span', {}, `${err.message}${err.hint ? ` — ${err.hint}` : ''}`),
+    h('button', { class: 'btn btn--small', onclick: () => { dismissPersistentError(); store.update(() => {}, { reason: 'live' }); } }, 'Dismiss'),
+  );
+}
+
 // Quick kick-off asks Capture to start a source as soon as it mounts.
 let pendingAutoStart = null;
 export function requestAutoStart(kind = 'mic') { pendingAutoStart = kind; }
@@ -102,12 +116,18 @@ function audioPanel() {
       : () => live.start(kind, { backup: true }),
   }, `${live.SOURCES[kind].icon} ${kind === 'mic' ? 'Start recording the room' : live.SOURCES[kind].label}`);
 
+  // "Shared tab / system audio" needs getDisplayMedia, which iPad Safari
+  // doesn't expose — showing the button there just fails after the tap, so
+  // hide it on unsupported platforms (AAR Studio hero review 2026-07-03, AAR-14).
+  const canShareTab = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia;
   const idleControls = h('div', {},
     h('div', { class: 'capture-start' }, startBtn('mic', true)),
     h('details', { class: 'more-ways' },
       h('summary', {}, 'Other ways to capture'),
-      h('div', { class: 'btn-row' }, startBtn('display'), startBtn('file')),
-      h('p', { class: 'muted' }, 'Share a Teams meeting tab (tick “Share audio”), or upload a recording you already have. Diarisation and language live in ⚙ Settings.'),
+      h('div', { class: 'btn-row' }, canShareTab ? startBtn('display') : null, startBtn('file')),
+      h('p', { class: 'muted' }, canShareTab
+        ? 'Share a Teams meeting tab (tick “Share audio”), or upload a recording you already have. Diarisation and language live in ⚙ Settings.'
+        : 'Upload a recording you already have. (Sharing a meeting tab’s audio isn’t supported on this device.) Diarisation and language live in ⚙ Settings.'),
     ),
   );
 
@@ -118,15 +138,16 @@ function audioPanel() {
   const interimEl = h('div', { class: 'live__interim', 'aria-live': 'off' });
   const stateText = ls.status === 'starting' ? 'Connecting…'
     : ls.status === 'stopping' ? 'Wrapping up…'
+    : ls.status === 'reconnecting' ? 'Connection interrupted — reconnecting…'
     : 'Listening — talk naturally';
 
   const liveControls = h('div', { class: 'live' },
     h('div', { class: 'live__row' },
-      h('span', { class: 'live__dot', 'aria-hidden': 'true' }),
+      h('span', { class: `live__dot${ls.status === 'reconnecting' ? ' live__dot--reconnecting' : ''}`, 'aria-hidden': 'true' }),
       h('span', { class: 'live__state' }, stateText),
       elapsed,
       meter,
-      h('button', { class: 'btn btn--primary', disabled: ls.status !== 'listening', onclick: () => live.stop() }, '■ Stop & see findings'),
+      h('button', { class: 'btn btn--primary', disabled: ls.status !== 'listening' && ls.status !== 'reconnecting', onclick: () => live.stop() }, '■ Stop & see findings'),
     ),
     h('p', { class: 'live__progress muted' }, findingCount
       ? `${findingCount} finding${findingCount === 1 ? '' : 's'} so far — they keep appearing as you talk.`
@@ -140,7 +161,10 @@ function audioPanel() {
     ls.recordingUrl && ls.status === 'idle'
       ? h('p', {}, h('a', { class: 'btn', href: ls.recordingUrl, download: ls.recordingName }, '⬇ Download backup recording'))
       : null,
-    ls.error ? h('p', { class: 'live__error', role: 'alert' }, ls.error) : null,
+    // Suppress the raw error line while a reconnect is in flight — the amber
+    // "reconnecting…" status above already says enough without an alarming
+    // red alert for what's usually a transient, self-healing blip.
+    ls.error && ls.status !== 'reconnecting' ? h('p', { class: 'live__error', role: 'alert' }, ls.error) : null,
   );
 
   live.setUiListener((event, s) => {
@@ -179,11 +203,12 @@ export function render(container) {
       )))
     : h('p', { class: 'muted' }, 'Nothing captured yet. Start recording above — what’s said appears here.');
 
-  container.append(
+  mount(container,
     h('div', { class: 'capture-head' },
       h('h1', {}, displayTitle(session)),
       h('a', { class: 'btn', href: '#/board' }, session.findings.length ? `See findings (${session.findings.length}) →` : 'Findings →'),
     ),
+    aiErrorBanner(),
     audioPanel(),
     roomNotesPanel(),
     h('section', { class: 'panel' },
@@ -191,8 +216,8 @@ export function render(container) {
       transcript,
       segments.length ? h('div', { class: 'btn-row' },
         h('button', { class: 'btn btn--small', title: 'Re-check for findings now', onclick: () => analyseNow(null) }, '↻ Update findings now'),
-        h('button', { class: 'btn btn--small btn--danger', onclick: () => {
-          if (confirmDanger('Clear everything that was captured? Findings are kept.')) {
+        h('button', { class: 'btn btn--small btn--danger', onclick: async () => {
+          if (await confirmDanger('Clear everything that was captured? Findings are kept.', { confirmLabel: 'Clear' })) {
             store.update((s) => { s.segments = []; }, { reason: 'segments' });
           }
         } }, 'Clear transcript'),

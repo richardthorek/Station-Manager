@@ -1,12 +1,32 @@
 // Home: friendly landing — start a new review or reopen a past one.
 
-import { h, toast, download, pickFile, confirmDanger } from '../ui.js';
+import { h, toast, download, pickFile, confirmDanger, promptDialog, mount } from '../ui.js';
 import * as store from '../store.js';
 import { requestAutoStart } from './capture.js';
 import { displayTitle } from '../lib/model.js';
 import { friendlyDate } from '../lib/text.js';
 import { sessionFilename } from '../lib/exports.js';
 import { isAuthed, listServerSessions, fetchServerSession, isRemoteNewer } from '../lib/serverSync.js';
+
+const SIGNIN_HINT_DISMISSED = 'aarstudio.signinHintDismissed';
+
+/**
+ * Signed-out hint (AAR-5): cloud backup / "From your team" simply don't appear
+ * when signed out, so a facilitator who never signs in silently gets no
+ * backup — one dropped iPad loses the review. A quiet, dismissible nudge (also
+ * the upgrade hook). Null when signed in or already dismissed.
+ */
+function signInHint() {
+  if (isAuthed() || localStorage.getItem(SIGNIN_HINT_DISMISSED)) return null;
+  const el = h('div', { class: 'signin-hint' },
+    h('span', {}, '☁ Sign in to back up your reviews and share them with your brigade. Without it, a review lives only on this device.'),
+    h('span', { class: 'signin-hint__actions' },
+      h('a', { class: 'btn btn--small btn--primary', href: '/login' }, 'Sign in'),
+      h('button', { class: 'btn btn--small', onclick: () => { localStorage.setItem(SIGNIN_HINT_DISMISSED, '1'); el.remove(); } }, 'Not now'),
+    ),
+  );
+  return el;
+}
 
 // Quick kick-off: blank review with today's date, jump to capture, start the mic.
 function startRecordingNow() {
@@ -50,32 +70,68 @@ async function openSavedFile() {
   }
 }
 
-function reviewCard(s) {
+function reviewCard(s, currentId) {
   const subtitle = [friendlyDate(s.incidentDate || s.createdAt), s.location].filter(Boolean).join(' · ');
   const stat = s.findings
     ? `${s.findings} finding${s.findings === 1 ? '' : 's'}`
     : (s.segments ? 'recorded, not yet summarised' : 'empty');
-  return h('article', { class: 'review-card', 'data-session-id': s.id, onclick: () => { store.openSession(s.id); location.hash = '#/board'; } },
+  const title = displayTitle({ incident: { title: s.title }, createdAt: s.createdAt });
+  const isActive = s.id === currentId;
+  // Signed in ⇒ this review likely has a brigade-shared cloud copy, so "delete"
+  // is no longer one unambiguous action — split it (A3 hero review 2026-07-03,
+  // AAR-1). Previously the single 🗑 button deleted the cloud copy too, with a
+  // confirm that never mentioned the team; a member "tidying up their iPad"
+  // could silently wipe the whole brigade's only copy.
+  const signedIn = isAuthed();
+
+  const removeLocalBtn = h('button', {
+    class: 'icon-btn', title: signedIn ? 'Remove from this device' : 'Delete',
+    'aria-label': signedIn ? `Remove "${title}" from this device` : `Delete "${title}"`,
+    onclick: async () => {
+      const confirmed = signedIn
+        ? await confirmDanger(`Remove "${title}" from this device? Your brigade's shared copy (if any) is kept — this only clears it here.`, { confirmLabel: 'Remove' })
+        : await confirmDanger(`Delete "${title}"? This can't be undone.`);
+      if (!confirmed) return;
+      store.deleteSessionLocal(s.id);
+      toast(signedIn ? 'Removed from this device' : 'Review deleted');
+    },
+  }, '🗑');
+
+  const deleteEverywhereBtn = signedIn
+    ? h('button', {
+        class: 'btn btn--small btn--danger', title: 'Delete for everyone',
+        'aria-label': `Delete "${title}" for your whole brigade`,
+        onclick: async () => {
+          const confirmed = await confirmDanger(`Delete "${title}" for your whole brigade? This removes the shared copy — other devices will lose it too. This can't be undone.`, { confirmLabel: 'Delete for everyone' });
+          if (!confirmed) return;
+          store.deleteSessionEverywhere(s.id);
+          toast('Review deleted for everyone');
+        },
+      }, 'Delete for everyone')
+    : null;
+
+  return h('article', {
+    class: `review-card${isActive ? ' review-card--active' : ''}`, 'data-session-id': s.id,
+    onclick: () => { store.openSession(s.id); location.hash = '#/board'; },
+  },
     h('div', { class: 'review-card__body' },
-      h('h3', { class: 'review-card__title' }, displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })),
+      isActive ? h('span', { class: 'review-card__active-flag' }, '● Currently open') : null,
+      h('h3', { class: 'review-card__title' }, title),
       h('p', { class: 'review-card__meta' }, subtitle || 'No details yet'),
       h('p', { class: 'review-card__stat' }, stat),
+      h('span', { class: 'review-card__open' }, isActive ? 'Back to this review →' : 'Open review →'),
     ),
     h('div', { class: 'review-card__actions', onclick: (e) => e.stopPropagation() },
-      h('button', { class: 'icon-btn', title: 'Rename', 'aria-label': 'Rename', onclick: () => {
-        const name = prompt('Name this review:', s.title || '');
-        if (name != null) store.renameSession(s.id, name.trim());
+      h('button', { class: 'icon-btn', title: 'Rename', 'aria-label': 'Rename', onclick: async () => {
+        const name = await promptDialog('Name this review:', s.title || '');
+        if (name != null) store.renameSession(s.id, name);
       } }, '✎'),
       h('button', { class: 'icon-btn', title: 'Save a copy', 'aria-label': 'Save a copy', onclick: () => {
         const session = store.openSession(s.id);
         download(sessionFilename(session, 'review', 'json'), store.exportSessionJson(session), 'application/json');
       } }, '⬇'),
-      h('button', { class: 'icon-btn icon-btn--danger', title: 'Delete', 'aria-label': 'Delete', onclick: () => {
-        if (confirmDanger(`Delete "${displayTitle({ incident: { title: s.title }, createdAt: s.createdAt })}"? This can't be undone.`)) {
-          store.deleteSession(s.id);
-          toast('Review deleted');
-        }
-      } }, '🗑'),
+      removeLocalBtn,
+      deleteEverywhereBtn,
     ),
   );
 }
@@ -152,8 +208,11 @@ async function appendCloudReviews(container, localById) {
 export function render(container) {
   const sessions = store.listSessions();
   const localById = new Map(sessions.map((s) => [s.id, s.updatedAt]));
+  const currentId = store.getSession()?.id ?? null;
 
-  container.append(
+  const exampleBtn = (cls, label) => h('button', { class: cls, onclick: () => loadExampleSession().catch((e) => toast(e.message, 'error')) }, label);
+
+  mount(container,
     h('section', { class: 'hero hero--home' },
       h('h1', {}, 'After Action Reviews, made easy'),
       h('p', {}, 'Record your crew’s debrief and get a clear write-up — who attended, what happened, what went well, and what to do next time. Just talk; the app does the rest.'),
@@ -163,14 +222,20 @@ export function render(container) {
       ),
       h('p', { class: 'hero__hint' }, 'No setup needed — start talking and the title, location and crews are picked up from the conversation. You can edit anything afterwards.'),
     ),
+    signInHint(),
     h('section', { class: 'reviews' },
       h('h2', {}, 'Your reviews'),
       sessions.length
-        ? h('div', { class: 'review-grid' }, sessions.map(reviewCard))
-        : h('p', { class: 'muted' }, 'No reviews yet. Hit “Start recording now” at the end of your next job.'),
+        ? h('div', { class: 'review-grid' }, sessions.map((s) => reviewCard(s, currentId)))
+        // First visit with zero reviews: the worked example *is* the sell, so
+        // give it a prominent CTA here rather than only a footer link (AAR-4).
+        : h('div', { class: 'reviews-empty' },
+            h('p', { class: 'muted' }, 'No reviews yet — hit “Start recording now” at the end of your next job.'),
+            exampleBtn('btn btn--primary', '👀 See what a finished review looks like'),
+          ),
     ),
     h('section', { class: 'home-footer' },
-      h('button', { class: 'link-btn', onclick: () => loadExampleSession().catch((e) => toast(e.message, 'error')) }, 'See an example'),
+      exampleBtn('link-btn', 'See an example'),
       h('span', { class: 'home-footer__sep' }, '·'),
       h('button', { class: 'link-btn', onclick: openSavedFile }, 'Open a saved review file'),
     ),

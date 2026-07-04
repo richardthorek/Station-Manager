@@ -13,12 +13,14 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import { PageTransition } from '../../components/PageTransition';
+import { useToast } from '../../hooks/useToast';
 import './LoginPage.css';
 
 export function SignupPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signup } = useAuth();
+  const { showSuccess } = useToast();
 
   // A paid plan can be pre-selected from the marketing page
   // (e.g. /signup?plan=basic&interval=annual). After the account is created we
@@ -61,7 +63,10 @@ export function SignupPage() {
         }
       }
 
-      navigate('/admin/organization', { replace: true });
+      // No billing intent — drop them at the app picker (the post-login home)
+      // rather than an admin console; the picker already surfaces upgrade paths.
+      showSuccess('Account created — welcome to Bushie Tools!');
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-up failed');
     } finally {

@@ -17,6 +17,17 @@ export class LlmError extends Error {
   }
 }
 
+// Statuses where waiting and retrying can never help — the facilitator has to
+// act (sign in, top up, upgrade) before the AI comes back. Auto-extraction
+// treats these as "persistent" so it can stop hammering an identical toast
+// every 45s for the rest of the meeting (AAR Studio hero review 2026-07-03,
+// AAR-10); 429/503/network errors are left as transient/retryable.
+const PERSISTENT_AI_STATUSES = new Set([401, 402, 403]);
+
+export function isPersistentAiError(err) {
+  return err instanceof LlmError && PERSISTENT_AI_STATUSES.has(err.status);
+}
+
 export function chatUrl(settings, deployment) {
   const endpoint = String(settings.llmEndpoint ?? '').trim().replace(/\/+$/, '');
   if (!endpoint) throw new LlmError('No Azure OpenAI endpoint configured', { hint: 'Open Settings and set your Foundry/Azure OpenAI endpoint, e.g. https://myresource.openai.azure.com' });

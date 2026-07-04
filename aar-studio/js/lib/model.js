@@ -30,7 +30,10 @@ export function createSession(partial = {}) {
     schemaVersion: SCHEMA_VERSION,
     createdAt: now,
     updatedAt: now,
-    incident: { title: '', date: '', location: '', type: '' },
+    // locationIsAuto marks `location` as a device-captured GPS fallback
+    // (quick-start) rather than a real place name — it stays overwritable by
+    // a discussion-derived name (AAR Studio hero review 2026-07-03, AAR-3).
+    incident: { title: '', date: '', location: '', type: '', locationIsAuto: false },
     aar: { date: '', location: '', facilitator: '' },
     units: [],
     phases: [...DEFAULT_PHASES],

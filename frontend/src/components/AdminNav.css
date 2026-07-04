@@ -1,0 +1,95 @@
+.admin-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-nav__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  color: var(--rfs-core-red);
+  text-decoration: none;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+.admin-nav__home:hover {
+  text-decoration: underline;
+}
+
+.admin-nav__links {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.admin-nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.admin-nav__link:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.admin-nav__link--active {
+  background: var(--rfs-core-red);
+  color: #fff;
+}
+
+.admin-nav__link--active:hover {
+  background: var(--rfs-core-red-dark);
+  color: #fff;
+}
+
+.admin-nav__user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  white-space: nowrap;
+}
+
+.admin-nav__username {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.admin-nav__logout {
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.admin-nav__logout:hover {
+  background: var(--surface-hover);
+}
+
+@media (max-width: 640px) {
+  .admin-nav {
+    gap: 0.75rem;
+  }
+  .admin-nav__username {
+    display: none;
+  }
+}

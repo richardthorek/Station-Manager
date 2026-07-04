@@ -24,18 +24,48 @@ export function clear(node) {
   return node;
 }
 
+/**
+ * Append children to an existing element, skipping null/false with the same
+ * rules h() uses for its children. Prefer this over a raw `parent.append(...)`
+ * whenever a child can be conditional (`cond ? node : null`) or come from a
+ * function that may return null — a bare `append(null)` renders the literal
+ * string "null" in the DOM.
+ */
+export function mount(parent, ...children) {
+  for (const child of children.flat(Infinity)) {
+    if (child == null || child === false) continue;
+    parent.append(child.nodeType ? child : document.createTextNode(child));
+  }
+  return parent;
+}
+
 let toastHost = null;
-export function toast(message, kind = 'info', ms = 3500) {
+/**
+ * Show a transient toast. `action` (optional) adds an inline button — e.g. an
+ * "Undo" on a destructive action (AAR-18) — that runs its onClick and dismisses
+ * the toast. Action toasts linger a little longer so there's time to react.
+ */
+export function toast(message, kind = 'info', ms = 3500, action = null) {
   if (!toastHost) {
     toastHost = h('div', { class: 'toast-host', role: 'status', 'aria-live': 'polite' });
     document.body.append(toastHost);
   }
-  const t = h('div', { class: `toast toast--${kind}` }, message);
-  toastHost.append(t);
-  setTimeout(() => {
+  const t = h('div', { class: `toast toast--${kind}` }, h('span', {}, message));
+  let dismissed = false;
+  const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
     t.classList.add('toast--out');
     setTimeout(() => t.remove(), 400);
-  }, ms);
+  };
+  if (action?.label) {
+    t.append(h('button', {
+      class: 'toast__action',
+      onclick: () => { try { action.onClick?.(); } finally { dismiss(); } },
+    }, action.label));
+  }
+  toastHost.append(t);
+  setTimeout(dismiss, action ? Math.max(ms, 6000) : ms);
 }
 
 export function download(filename, text, mime = 'text/plain') {
@@ -55,6 +85,60 @@ export function pickFile(accept) {
   });
 }
 
-export function confirmDanger(message) {
-  return window.confirm(message);
+let confirmDialogEl = null;
+function getConfirmDialog() {
+  if (!confirmDialogEl) confirmDialogEl = document.getElementById('confirm-dialog');
+  return confirmDialogEl;
+}
+
+/**
+ * In-app replacement for window.confirm — native dialogs are unstylable,
+ * break the brand, and are suppressed in some kiosk/webview contexts
+ * (AAR Studio hero review 2026-07-03, AAR-2). Resolves true/false.
+ */
+export function confirmDanger(message, { confirmLabel = 'Delete', cancelLabel = 'Cancel' } = {}) {
+  return new Promise((resolve) => {
+    const dialog = getConfirmDialog();
+    clear(dialog);
+    dialog.append(
+      h('form', { method: 'dialog' },
+        h('p', { class: 'dialog__message' }, message),
+        h('div', { class: 'dialog__actions' },
+          h('button', { class: 'btn', type: 'button', onclick: () => { dialog.close(); resolve(false); } }, cancelLabel),
+          h('button', { class: 'btn btn--danger', type: 'button', onclick: () => { dialog.close(); resolve(true); } }, confirmLabel),
+        ),
+      ),
+    );
+    dialog.showModal();
+  });
+}
+
+/**
+ * In-app replacement for window.prompt (AAR-2). Resolves the trimmed value on
+ * submit, or null if cancelled/closed (Escape, backdrop, Cancel button).
+ */
+export function promptDialog(message, defaultValue = '', { confirmLabel = 'Save' } = {}) {
+  return new Promise((resolve) => {
+    const dialog = getConfirmDialog();
+    clear(dialog);
+    const input = h('input', { type: 'text', value: defaultValue });
+    let resolved = false;
+    dialog.addEventListener('close', () => { if (!resolved) resolve(null); }, { once: true });
+    dialog.append(
+      h('form', {
+        method: 'dialog',
+        onsubmit: () => { resolved = true; resolve(input.value.trim()); },
+      },
+        h('p', { class: 'dialog__message' }, message),
+        input,
+        h('div', { class: 'dialog__actions' },
+          h('button', { class: 'btn', type: 'button', onclick: () => dialog.close() }, 'Cancel'),
+          h('button', { class: 'btn btn--primary', type: 'submit' }, confirmLabel),
+        ),
+      ),
+    );
+    dialog.showModal();
+    input.focus();
+    input.select();
+  });
 }

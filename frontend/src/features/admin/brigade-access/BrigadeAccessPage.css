@@ -23,14 +23,9 @@
 
 .header-top {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 0.5rem;
-}
-
-.header-nav {
-  display: flex;
-  gap: 1rem;
 }
 
 .header-actions {
@@ -57,19 +52,6 @@
 .last-refresh {
   font-size: 0.85rem;
   color: var(--text-secondary);
-}
-
-.back-link {
-  display: inline-block;
-  color: var(--color-error);
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.9rem;
-  transition: color 0.2s;
-}
-
-.back-link:hover {
-  color: var(--rfs-dark-grey);
 }
 
 .page-header-compact h1 {

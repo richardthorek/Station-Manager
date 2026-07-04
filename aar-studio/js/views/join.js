@@ -2,9 +2,14 @@
 // account, no install, no session needed. Big text box, one-tap send.
 
 import { h, clear, toast } from '../ui.js';
-import { joinSession, sendNote } from '../lib/collab.js';
+import { joinSession, sendNote, onConnectionChange } from '../lib/collab.js';
 
 const LABEL_KEY = 'aarstudio.noteLabel';
+const CONNECTED_MSG = '● Connected — add as many notes as you like.';
+
+// Drop any prior connection listener when the join page re-renders, so status
+// updates don't stack up (AAR-13).
+let unsubscribeConnection = null;
 
 /** Parse the join code from a #/join/CODE hash. */
 export function codeFromHash(hash = location.hash) {
@@ -66,6 +71,16 @@ export function render(container) {
   ));
 
   joinSession(code, nameInput.value.trim())
-    .then(() => { status.textContent = '● Connected — add as many notes as you like.'; })
+    .then(() => { status.textContent = CONNECTED_MSG; })
     .catch((err) => { status.textContent = `Couldn’t connect: ${err.message}`; });
+
+  // Keep the status honest as the socket drops/reconnects (a slept phone used
+  // to keep showing "Connected"). The AAR-7 re-join on 'connect' restores room
+  // membership, so notes flow again once we're back (AAR-13).
+  unsubscribeConnection?.();
+  onConnectionChange((connected) => {
+    status.textContent = connected
+      ? CONNECTED_MSG
+      : '○ Offline — reconnecting. Your notes will send once you’re back.';
+  }).then((unsub) => { unsubscribeConnection = unsub; }).catch(() => {});
 }

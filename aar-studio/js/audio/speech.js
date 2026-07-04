@@ -28,10 +28,26 @@ export function loadSpeechSdk() {
 }
 
 /**
+ * Cancellation error codes that mean "the credential died", not "the audio/
+ * network died" — these are the ones a fresh token can plausibly recover from.
+ * (AAR Studio hero review 2026-07-03, AAR-6.)
+ */
+export function isAuthCancellation(sdk, e) {
+  if (e?.reason !== sdk.CancellationReason.Error) return false;
+  const code = e.errorCode;
+  return code === sdk.CancellationErrorCode.AuthenticationFailure
+    || code === sdk.CancellationErrorCode.ConnectionFailure;
+}
+
+/**
  * Create a live transcriber over a push stream.
  * Callbacks: onInterim(text, speakerId), onFinal(text, speakerId, offsetSec),
- * onError(message).
- * Returns { start, stop, push } — push takes an ArrayBuffer of PCM16 @16 kHz.
+ * onError(message, { authFlavoured }) — authFlavoured hints that a fresh
+ * token/reconnect may fix it (vs. a genuine mic/config problem).
+ * Returns { start, stop, push, updateAuthToken } — push takes an ArrayBuffer
+ * of PCM16 @16 kHz; updateAuthToken swaps in a freshly-vended gateway token
+ * without tearing down the connection (Azure Speech SDK auth tokens expire
+ * after ~10 minutes — a live AAR meeting regularly runs longer).
  */
 export function createTranscriber({ sdk, settings, onInterim, onFinal, onError }) {
   if (!settings.speechRegion || (!settings.authToken && !settings.speechKey)) {
@@ -48,10 +64,22 @@ export function createTranscriber({ sdk, settings, onInterim, onFinal, onError }
   const pushStream = sdk.AudioInputStream.createPushStream(format);
   const audioConfig = sdk.AudioConfig.fromStreamInput(pushStream);
 
+  // Gateway mode (the default — no user-supplied Speech key) vs. a BYO-Azure
+  // developer/self-host override: the two audiences need different advice,
+  // and telling a bushie on the built-in AI to "check the Speech key in
+  // Settings" sends them into a page that isn't meant for them (AAR Studio
+  // hero review 2026-07-03, AAR-9).
+  const gatewayMode = Boolean(settings.authToken);
   const offsetSec = (result) => (result.offset != null ? result.offset / 1e7 : null); // 100 ns ticks
   const handleCanceled = (e) => {
     if (e.reason === sdk.CancellationReason.Error) {
-      onError(`Speech service error: ${e.errorDetails || e.errorCode}. Check the Speech key/region in Settings.`);
+      const authFlavoured = isAuthCancellation(sdk, e);
+      const hint = authFlavoured
+        ? 'Reconnecting…'
+        : gatewayMode
+          ? 'Try again in a moment — if it keeps happening, tell your administrator.'
+          : 'Check the Speech key/region in Settings.';
+      onError(`Speech service error: ${e.errorDetails || e.errorCode}. ${hint}`, { authFlavoured });
     }
   };
 
@@ -90,5 +118,8 @@ export function createTranscriber({ sdk, settings, onInterim, onFinal, onError }
         engine.close();
       }),
     push: (arrayBuffer) => pushStream.write(arrayBuffer),
+    // Swap in a freshly-vended token on the live connection — the SDK applies
+    // it to the next reconnect without needing a new recognizer instance.
+    updateAuthToken: (token) => { engine.authorizationToken = token; },
   };
 }
