@@ -84,6 +84,7 @@ const SNAPSHOT_CSS = `
   .actions td { vertical-align:top; font-size:8.4pt; line-height:1.3; padding-right:12px; width:33%; }
   .actions .n { color:#e8b84b; font-weight:bold; font-size:11pt; padding-right:6px; }
   .footer { padding:7px 24px 10px 24px; font-size:7.2pt; color:#7a8590; }
+  @page { margin: 12mm; }
   @media print { .page { max-width:none; } }
 `;
 

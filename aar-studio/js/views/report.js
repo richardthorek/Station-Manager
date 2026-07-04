@@ -69,13 +69,20 @@ export function render(container) {
 
   const r = session.report;
   const preview = h('iframe', { class: 'report-preview', title: 'Report preview' });
-  const refresh = () => { preview.srcdoc = renderSnapshotHtml(store.getSession()); };
+  const renderPreview = () => { preview.srcdoc = renderSnapshotHtml(store.getSession()); };
+  // Rebuilding the whole snapshot iframe on every keystroke is perceptible jank
+  // on iPad, so coalesce refreshes ~250 ms after typing settles (AAR Studio
+  // hero review 2026-07-03, AAR-22). `refresh` (immediate) is used for the
+  // initial paint; `refreshDebounced` for per-keystroke edits.
+  let refreshTimer = null;
+  const refresh = () => { clearTimeout(refreshTimer); refreshTimer = null; renderPreview(); };
+  const refreshDebounced = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(renderPreview, 250); };
 
   // Every edit autosaves silently and refreshes the preview; no re-render so
   // focus is preserved while typing.
   const edit = (apply) => (e) => {
     store.update((s) => apply(s.report, e.target.value), { silent: true });
-    refresh();
+    refreshDebounced();
   };
   const lines = (value) => (value ?? []).join('\n');
   const splitLines = (v) => v.split('\n').map((x) => x.trim()).filter(Boolean);
@@ -97,12 +104,29 @@ export function render(container) {
   const phaseEditors = r.phases.map((p, i) => h('details', { class: 'phase-report', open: true },
     h('summary', {}, p.name),
     field('What happened (narrative)', h('textarea', { rows: 4, oninput: edit((rep, v) => { rep.phases[i].happened = v; }) }, p.happened)),
-    field('What went well (one bullet per line)', h('textarea', { rows: 4, oninput: (e) => { store.update((s) => { s.report.phases[i].well = splitLines(e.target.value); }, { silent: true }); refresh(); } }, lines(p.well))),
-    field("What didn't go well / lessons (one bullet per line)", h('textarea', { rows: 4, oninput: (e) => { store.update((s) => { s.report.phases[i].didnt = splitLines(e.target.value); }, { silent: true }); refresh(); } }, lines(p.didnt))),
+    field('What went well (one bullet per line)', h('textarea', { rows: 4, oninput: (e) => { store.update((s) => { s.report.phases[i].well = splitLines(e.target.value); }, { silent: true }); refreshDebounced(); } }, lines(p.well))),
+    field("What didn't go well / lessons (one bullet per line)", h('textarea', { rows: 4, oninput: (e) => { store.update((s) => { s.report.phases[i].didnt = splitLines(e.target.value); }, { silent: true }); refreshDebounced(); } }, lines(p.didnt))),
   ));
 
   const transcriptCheck = h('input', { type: 'checkbox' });
   const genStatus = h('span', { class: 'muted' });
+
+  // Print the snapshot in its own window rather than calling print() on the
+  // preview iframe — iframe srcdoc printing is unreliable on iOS Safari (it can
+  // print the parent page) and was the long-open P1 print item (AAR Studio hero
+  // review 2026-07-03, AAR-20). The standalone doc carries its own @page margins.
+  const printReport = () => {
+    const html = renderSnapshotHtml(store.getSession());
+    const w = window.open('', '_blank');
+    if (!w) { toast('Allow pop-ups to print, or use ⬇ Snapshot HTML and print that', 'error', 6000); return; }
+    let printed = false;
+    const go = () => { if (printed) return; printed = true; try { w.focus(); w.print(); } catch { /* user can print manually */ } };
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.onload = go;
+    setTimeout(go, 500); // fallback if onload doesn't fire for the written doc
+  };
 
   container.append(
     h('div', { class: 'board-toolbar' },
@@ -113,7 +137,7 @@ export function render(container) {
         h('label', { class: 'field field--check', title: 'Append the full transcript to the combined report' }, transcriptCheck, h('span', {}, '+ transcript')),
         h('button', { class: 'btn', onclick: () => download(sessionFilename(session, 'summary', 'md'), renderMarkdown(store.getSession()), 'text/markdown') }, '⬇ Markdown'),
         h('button', { class: 'btn', onclick: () => download(sessionFilename(session, 'session', 'json'), store.exportSessionJson(), 'application/json') }, '⬇ Session JSON'),
-        h('button', { class: 'btn', onclick: () => { preview.contentWindow?.print(); } }, '🖨 Print / PDF'),
+        h('button', { class: 'btn', onclick: printReport }, '🖨 Print / PDF'),
         h('button', { class: 'btn', disabled: !session.findings.length, onclick: async (e) => {
           if (await confirmDanger('Regenerate the report with AI? Your current report (including manual edits) will be replaced.', { confirmLabel: 'Regenerate' })) {
             e.target.disabled = true;
@@ -132,14 +156,14 @@ export function render(container) {
           h('table', { class: 'table' }, h('thead', {}, h('tr', {}, h('th', {}, 'Value'), h('th', {}, 'Label'), h('th'))), statsBody),
           h('button', { class: 'btn btn--small', onclick: () => store.update((s) => { s.report.stats.push({ value: '', label: '' }); }, { reason: 'report' }) }, '+ Add stat'),
         ),
-        field('Incident snapshot (paragraphs, blank line between)', h('textarea', { rows: 5, oninput: (e) => { store.update((s) => { s.report.snapshot = splitParas(e.target.value); }, { silent: true }); refresh(); } }, paras(r.snapshot))),
+        field('Incident snapshot (paragraphs, blank line between)', h('textarea', { rows: 5, oninput: (e) => { store.update((s) => { s.report.snapshot = splitParas(e.target.value); }, { silent: true }); refreshDebounced(); } }, paras(r.snapshot))),
         h('fieldset', {}, h('legend', {}, 'Per-phase detail'), phaseEditors),
         h('fieldset', {},
           h('legend', {}, 'Cross-cutting themes (0–3)'),
           themeRows,
           h('button', { class: 'btn btn--small', disabled: r.themes.length >= 3, onclick: () => store.update((s) => { s.report.themes.push({ title: '', body: '' }); }, { reason: 'report' }) }, '+ Add theme'),
         ),
-        field('Consolidated recommendations (one per line)', h('textarea', { rows: 6, oninput: (e) => { store.update((s) => { s.report.recommendations = splitLines(e.target.value); }, { silent: true }); refresh(); } }, lines(r.recommendations))),
+        field('Consolidated recommendations (one per line)', h('textarea', { rows: 6, oninput: (e) => { store.update((s) => { s.report.recommendations = splitLines(e.target.value); }, { silent: true }); refreshDebounced(); } }, lines(r.recommendations))),
         h('fieldset', {},
           h('legend', {}, 'Top three actions'),
           [0, 1, 2].map((i) => field(`Action ${i + 1}`, h('textarea', { rows: 2, oninput: edit((rep, v) => { rep.actions[i] = v; }) }, r.actions[i] ?? ''))),
