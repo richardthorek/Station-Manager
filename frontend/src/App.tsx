@@ -11,8 +11,10 @@ import { SkipToContent } from './components/SkipToContent';
 import { LiveAnnouncer } from './components/LiveAnnouncer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { FeatureRoute } from './components/FeatureRoute';
+import { AccessRoute } from './components/AccessRoute';
 import { TrialBanner } from './components/TrialBanner';
 import { initDB } from './services/offlineStorage';
+import { activateDemo, isDemoActive } from './utils/demoMode';
 
 // Lazy load all route components for better code splitting
 const LandingPage = lazy(() => import('./features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -35,6 +37,7 @@ const CheckSummaryPage = lazy(() => import('./features/truckcheck/CheckSummaryPa
 const TemplateSelectionPage = lazy(() => import('./features/truckcheck/TemplateSelectionPage').then(m => ({ default: m.TemplateSelectionPage })));
 const TemplateEditorPage = lazy(() => import('./features/truckcheck/TemplateEditorPage').then(m => ({ default: m.TemplateEditorPage })));
 const VehicleTypesPage = lazy(() => import('./features/truckcheck/VehicleTypesPage').then(m => ({ default: m.VehicleTypesPage })));
+const TruckCheckComparativePage = lazy(() => import('./features/truckcheck/TruckCheckComparativePage').then(m => ({ default: m.TruckCheckComparativePage })));
 const VoiceCheckPage = lazy(() => import('./features/truckcheck/voice/VoiceCheckPage').then(m => ({ default: m.VoiceCheckPage })));
 
 // Reports routes (v1.1)
@@ -51,10 +54,16 @@ const CrossStationReportsPage = lazy(() => import('./features/reports/CrossStati
  */
 function HomeRoute() {
   const { isAuthenticated, isLoading } = useAuth();
-  const isDemo = new URLSearchParams(useLocation().search).get('demo') === 'true';
+  const urlDemo = new URLSearchParams(useLocation().search).get('demo') === 'true';
+
+  // Entering via ?demo=true sticks demo mode for the session, so the AccessRoute
+  // gate keeps letting the demo into /signin etc. after the query param drops.
+  useEffect(() => {
+    if (urlDemo) activateDemo();
+  }, [urlDemo]);
 
   if (isLoading) return <LoadingFallback />;
-  if (isAuthenticated || isDemo) return <LandingPage />;
+  if (isAuthenticated || urlDemo || isDemoActive()) return <LandingPage />;
   return <MarketingPage />;
 }
 
@@ -75,8 +84,9 @@ function AnimatedRoutes() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/activate/:token" element={<ActivatePage />} />
 
-        {/* Sign-In — gated by the signInEnabled entitlement (maintenance-only brigades can hide it) */}
-        <Route path="/signin" element={<FeatureRoute feature="signInEnabled" title="Sign-in book"><SignInPage /></FeatureRoute>} />
+        {/* Sign-In — AccessRoute first (must arrive with a brigade code, an account,
+            or the demo), then the signInEnabled entitlement (maintenance-only brigades can hide it) */}
+        <Route path="/signin" element={<AccessRoute><FeatureRoute feature="signInEnabled" title="Sign-in book"><SignInPage /></FeatureRoute></AccessRoute>} />
         <Route path="/sign-in" element={<SignInLinkPage />} />
         <Route path="/profile/:memberId" element={<UserProfilePage />} />
 
@@ -88,6 +98,7 @@ function AnimatedRoutes() {
         <Route path="/truckcheck/select" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateSelectionPage /></FeatureRoute>} />
         <Route path="/truckcheck/templates/:applianceId" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateEditorPage /></FeatureRoute>} />
         <Route path="/truckcheck/vehicle-types" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><VehicleTypesPage /></FeatureRoute>} />
+        <Route path="/truckcheck/comparative" element={<FeatureRoute feature="reportsEnabled" title="Truck check"><TruckCheckComparativePage /></FeatureRoute>} />
         <Route path="/truckcheck/voice/:applianceId" element={<FeatureRoute feature="aiEnabled" title="Voice check"><VoiceCheckPage /></FeatureRoute>} />
 
         {/* Reports (v1.1) — gated by reportsEnabled */}

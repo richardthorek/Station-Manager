@@ -3158,6 +3158,117 @@
         }
       },
       "implementation": "backend/src/routes/reports.ts"
+    },
+    "GET /api/reports/truckcheck-comparative": {
+      "method": "GET",
+      "path": "/api/reports/truckcheck-comparative",
+      "description": "Compare truck check outcomes for the same vehicle type across stations, grouped by the checklist's stable itemCode (TC-D1) so results line up even when brigades word an item differently. When an authenticated org context is present, requested stationIds are scoped down to stations belonging to the caller's organization.",
+      "authentication": "none",
+      "parameters": {
+        "query": {
+          "stationIds": {
+            "type": "string",
+            "required": true,
+            "description": "Comma-separated station IDs to compare"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Comparative truck check report",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "startDate": {
+                "type": "string"
+              },
+              "endDate": {
+                "type": "string"
+              },
+              "stationIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "vehicleTypes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "vehicleTypeCode": {
+                      "type": "string"
+                    },
+                    "vehicleTypeName": {
+                      "type": "string"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "itemCode": {
+                            "type": "string"
+                          },
+                          "itemName": {
+                            "type": "string"
+                          },
+                          "stations": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "stationId": {
+                                  "type": "string"
+                                },
+                                "stationName": {
+                                  "type": "string"
+                                },
+                                "totalChecks": {
+                                  "type": "number"
+                                },
+                                "doneCount": {
+                                  "type": "number"
+                                },
+                                "issueCount": {
+                                  "type": "number"
+                                },
+                                "skippedCount": {
+                                  "type": "number"
+                                },
+                                "passRate": {
+                                  "type": "number",
+                                  "description": "Percentage (0-100), doneCount / (doneCount + issueCount)"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Missing stationIds parameter"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/reports.ts"
     }
   },
   "stations": {

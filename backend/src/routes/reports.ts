@@ -17,8 +17,10 @@
 import { Router } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
+import { ensureVehicleTypeDatabase } from '../services/vehicleTypeDbFactory';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 import { logger } from '../services/logger';
+import type { VehicleType } from '../types';
 
 const router = Router();
 
@@ -168,6 +170,145 @@ router.get('/truckcheck-compliance', async (req, res) => {
   } catch (error) {
     logger.error('Error generating truck check compliance:', error);
     res.status(500).json({ error: 'Failed to generate truck check compliance' });
+  }
+});
+
+/**
+ * GET /api/reports/truckcheck-comparative
+ * Compare truck check outcomes for the same vehicle type across stations,
+ * grouped by the checklist's stable itemCode (TC-D1) so results line up even
+ * when brigades word an item differently. Query params: stationIds
+ * (comma-separated, required), startDate, endDate.
+ */
+router.get('/truckcheck-comparative', async (req, res) => {
+  try {
+    const { startDate, endDate } = parseDateRange(req);
+    const stationIdsParam = req.query.stationIds as string;
+
+    if (!stationIdsParam) {
+      return res.status(400).json({ error: 'stationIds parameter is required' });
+    }
+
+    const db = await ensureDatabase(req.isDemoMode);
+    const truckDb = await ensureTruckChecksDatabase(req.isDemoMode);
+    const vehicleTypeDb = ensureVehicleTypeDatabase();
+
+    let stationIds = stationIdsParam.split(',').map(id => id.trim()).filter(Boolean);
+
+    const allStations = await db.getAllStations();
+
+    // When we have an authenticated org context, only ever compare the
+    // caller's own stations — never let a client-supplied stationId reach
+    // into another organization's data.
+    if (req.organization) {
+      const orgId = req.organization.id;
+      const orgStationIds = new Set(allStations.filter(s => s.organizationId === orgId).map(s => s.id));
+      stationIds = stationIds.filter(id => orgStationIds.has(id));
+    }
+
+    const stationNames = new Map(allStations.map(s => [s.id, s.name]));
+    const vehicleTypeCache = new Map<string, VehicleType | null>();
+
+    interface StationBucket {
+      stationId: string;
+      stationName: string;
+      totalChecks: number;
+      doneCount: number;
+      issueCount: number;
+      skippedCount: number;
+    }
+    interface ItemBucket {
+      itemCode: string;
+      itemName: string;
+      stations: Map<string, StationBucket>;
+    }
+    const vehicleTypeBuckets = new Map<string, { vehicleTypeCode: string; vehicleTypeName: string; items: Map<string, ItemBucket> }>();
+
+    for (const stationId of stationIds) {
+      const runs = await truckDb.getCheckRunsByDateRange(startDate, endDate, stationId);
+
+      for (const run of runs) {
+        const appliance = await truckDb.getApplianceById(run.applianceId);
+        if (!appliance) continue;
+
+        let vehicleTypeCode: string;
+        let vehicleTypeName: string;
+        if (appliance.vehicleTypeId) {
+          if (!vehicleTypeCache.has(appliance.vehicleTypeId)) {
+            vehicleTypeCache.set(appliance.vehicleTypeId, await vehicleTypeDb.getById(appliance.vehicleTypeId));
+          }
+          const vt = vehicleTypeCache.get(appliance.vehicleTypeId);
+          vehicleTypeCode = vt?.code ?? appliance.vehicleTypeId;
+          vehicleTypeName = vt?.name ?? appliance.vehicleType ?? 'Unknown vehicle type';
+        } else if (appliance.vehicleType) {
+          // Legacy free-form slug — group on itself since there's no VehicleType record.
+          vehicleTypeCode = appliance.vehicleType;
+          vehicleTypeName = appliance.vehicleType;
+        } else {
+          continue; // No vehicle type to compare by — skip.
+        }
+
+        if (!vehicleTypeBuckets.has(vehicleTypeCode)) {
+          vehicleTypeBuckets.set(vehicleTypeCode, { vehicleTypeCode, vehicleTypeName, items: new Map() });
+        }
+        const vtBucket = vehicleTypeBuckets.get(vehicleTypeCode)!;
+
+        const results = await truckDb.getResultsByRunId(run.id);
+        for (const result of results) {
+          if (!result.itemCode) continue; // Back-compat: pre-itemCode results aren't comparable.
+
+          if (!vtBucket.items.has(result.itemCode)) {
+            vtBucket.items.set(result.itemCode, { itemCode: result.itemCode, itemName: result.itemName, stations: new Map() });
+          }
+          const itemBucket = vtBucket.items.get(result.itemCode)!;
+
+          if (!itemBucket.stations.has(stationId)) {
+            itemBucket.stations.set(stationId, {
+              stationId,
+              stationName: stationNames.get(stationId) ?? stationId,
+              totalChecks: 0,
+              doneCount: 0,
+              issueCount: 0,
+              skippedCount: 0,
+            });
+          }
+          const stationBucket = itemBucket.stations.get(stationId)!;
+          stationBucket.totalChecks += 1;
+          if (result.status === 'done') stationBucket.doneCount += 1;
+          else if (result.status === 'issue') stationBucket.issueCount += 1;
+          else stationBucket.skippedCount += 1;
+        }
+      }
+    }
+
+    const vehicleTypes = Array.from(vehicleTypeBuckets.values())
+      .map(vt => ({
+        vehicleTypeCode: vt.vehicleTypeCode,
+        vehicleTypeName: vt.vehicleTypeName,
+        items: Array.from(vt.items.values()).map(item => ({
+          itemCode: item.itemCode,
+          itemName: item.itemName,
+          stations: Array.from(item.stations.values()).map(s => ({
+            ...s,
+            passRate: s.doneCount + s.issueCount > 0
+              ? Math.round((s.doneCount / (s.doneCount + s.issueCount)) * 100)
+              : 100,
+          })),
+        })),
+      }))
+      // A vehicle type with only pre-itemCode (TC-D1) legacy results has no
+      // comparable items — drop it rather than reporting an empty group.
+      .filter(vt => vt.items.length > 0);
+
+    res.json({
+      startDate,
+      endDate,
+      stationIds,
+      vehicleTypes,
+    });
+  } catch (error) {
+    logger.error('Error generating truck check comparative report:', error);
+    res.status(500).json({ error: 'Failed to generate truck check comparative report' });
   }
 });
 

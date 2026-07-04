@@ -170,11 +170,14 @@ export function MarketingPage() {
               <Link to="/signup" className="mkt-btn mkt-btn--primary mkt-btn--lg">
                 Try it free
               </Link>
+              <a href="/?demo=true" className="mkt-btn mkt-btn--ghost mkt-btn--lg">
+                Try the demo
+              </a>
               <a href="#pricing" className="mkt-btn mkt-btn--ghost mkt-btn--lg">
                 See plans
               </a>
             </div>
-            <p className="mkt-hero-note">Free Community plan — no card needed.</p>
+            <p className="mkt-hero-note">Free Community plan — no card needed. The demo uses test data — no sign-up.</p>
           </section>
 
           {/* Apps */}

@@ -1178,8 +1178,14 @@ Kiosk mode provides strict brigade/station locking for shared devices (iPads, ta
 
 **Frontend Components:**
 - `utils/kioskMode.ts` - Kiosk mode detection and management
+- `utils/demoMode.ts` - Public-demo detection (`?demo=true`, session-sticky) — the one anonymous path allowed without a brigade code
 - `contexts/StationContext.tsx` - Validates tokens on initialization, locks station selection
 - `components/StationSelector.tsx` - Shows locked UI in kiosk mode, disables dropdown
+
+**Frontend route guards (compose outer→inner):**
+- `components/AccessRoute.tsx` — "is this visitor allowed in at all?" Wraps the walk-up sign-in surface (`/signin`); allows only a signed-in account, a brigade device code (kiosk `?brigade=<token>`), or the public demo, else redirects to the front door (`/`). Stricter than FeatureRoute (which is default-open with no org context).
+- `components/FeatureRoute.tsx` — "does this brigade's plan include the module?" (entitlement gate; default-open for kiosk/demo/back-compat).
+- `components/ProtectedRoute.tsx` — "is this an authenticated admin?" (auth gate for `/admin/*`).
 
 #### Token Security
 
@@ -1329,12 +1335,13 @@ The API register contains:
 - `GET /api/achievements/member/:memberId` - Get member achievements
 - `GET /api/achievements/recent` - Get recent unlocks
 
-**Reports & Analytics (9 endpoints)**
+**Reports & Analytics (10 endpoints)**
 - `GET /api/reports/attendance-summary` - Monthly attendance statistics
 - `GET /api/reports/member-participation` - Top members by participation
 - `GET /api/reports/activity-breakdown` - Activity category breakdown
 - `GET /api/reports/event-statistics` - Event statistics (count, duration, etc.)
 - `GET /api/reports/truckcheck-compliance` - Truck check compliance metrics
+- `GET /api/reports/truckcheck-comparative` - Compare truck check outcomes for the same vehicle type across stations, grouped by the checklist's stable itemCode (TC-D1); requested stationIds are scoped to the caller's organization when an org context is present
 - `GET /api/reports/advanced/trend-analysis` - Advanced trend analysis (MoM/YoY growth)
 - `GET /api/reports/advanced/heat-map` - Activity heat map by day/hour
 - `GET /api/reports/advanced/funnel` - Member funnel analysis (conversion through stages)

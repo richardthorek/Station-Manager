@@ -210,12 +210,15 @@ export function AdminDashboardPage() {
           >
             🔧 Follow-ups
           </button>
-          <button 
+          <button
             className={`tab ${activeTab === 'vehicles' ? 'active' : ''}`}
             onClick={() => setActiveTab('vehicles')}
           >
             🚒 Vehicle Management
           </button>
+          <Link to="/truckcheck/comparative" className="tab">
+            📈 Compare Stations
+          </Link>
         </div>
       </header>
 
