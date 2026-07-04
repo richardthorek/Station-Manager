@@ -1329,12 +1329,13 @@ The API register contains:
 - `GET /api/achievements/member/:memberId` - Get member achievements
 - `GET /api/achievements/recent` - Get recent unlocks
 
-**Reports & Analytics (9 endpoints)**
+**Reports & Analytics (10 endpoints)**
 - `GET /api/reports/attendance-summary` - Monthly attendance statistics
 - `GET /api/reports/member-participation` - Top members by participation
 - `GET /api/reports/activity-breakdown` - Activity category breakdown
 - `GET /api/reports/event-statistics` - Event statistics (count, duration, etc.)
 - `GET /api/reports/truckcheck-compliance` - Truck check compliance metrics
+- `GET /api/reports/truckcheck-comparative` - Compare truck check outcomes for the same vehicle type across stations, grouped by the checklist's stable itemCode (TC-D1); requested stationIds are scoped to the caller's organization when an org context is present
 - `GET /api/reports/advanced/trend-analysis` - Advanced trend analysis (MoM/YoY growth)
 - `GET /api/reports/advanced/heat-map` - Activity heat map by day/hour
 - `GET /api/reports/advanced/funnel` - Member funnel analysis (conversion through stages)

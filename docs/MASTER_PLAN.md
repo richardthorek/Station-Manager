@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-04 (cross-app responsive UI review — phone-width chip overflow + touch-target fix shipped in aar-studio; frontend confirmed clean)
+**Last updated:** 2026-07-04 (Q5 shipped — cross-brigade comparative truck-check reporting; cross-app responsive UI review — phone-width chip overflow + touch-target fix shipped in aar-studio; frontend confirmed clean)
 **Status:** Living document — **the single plan** for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
 
 ---
@@ -40,24 +40,24 @@ One row per function/feature of the product. Status: ✅ shipped & stable · �
 
 | # | Feature / function | Status | Remaining |
 |---|---|---|---|
-| 1 | **Sign-in & check-in/out** (kiosk, mobile, QR, real-time sync) | ✅ | Minor perf polish (Q11) |
+| 1 | **Sign-in & check-in/out** (kiosk, mobile, QR, real-time sync) | ✅ | Minor perf polish (Q10) |
 | 2 | **Events & activities** (create/end events, participants, audit trail) | ✅ | — |
 | 3 | **Member profiles & achievements** (QR codes, stats, 20 achievements) | ✅ | — |
 | 4 | **Member management** (search/filter/sort, CSV import, invite/activation) | ✅ | — |
-| 5 | **Truck check — manual** (vehicle types, locked standard checklists, zones/equipment, issue lifecycle, member attribution) | ✅ | Cross-brigade comparative reporting (Q5); vehicle mgmt surfacing (Q10) |
-| 6 | **Truck check — voice agent (A3)** (hold-to-talk PWA → server-side STT → tool loop → TTS; hardened per F1–F16 review) | 🟡 | iPad on-device verification (Q3); pilot rollout (Q4); VAD/continuous listening (Q14); vision + offline = A4 (Q15) |
-| 7 | **Reports & analytics** (dashboard, cross-station, CSV/PDF export) | ✅ | Advanced analytics dashboard #123 (Q13) |
-| 8 | **AAR Studio — THE HERO** (AI-facilitated After Action Reviews, cloud sync, collab notes, dedupe/merge) | 🟡 | Hero-polish batch + insight-quality/session-clarity rework + the whole AAR review remaining batch shipped per [AAR review](wiki/developer/history/reviews/AAR_STUDIO_REVIEW_20260703.md); remaining: live-validate consolidation quality (Q1), iPad print verify (Q3), CSP shrink (Q9) |
+| 5 | **Truck check — manual** (vehicle types, locked standard checklists, zones/equipment, issue lifecycle, member attribution, cross-brigade comparative reporting) | ✅ | Vehicle mgmt surfacing (Q9) |
+| 6 | **Truck check — voice agent (A3)** (hold-to-talk PWA → server-side STT → tool loop → TTS; hardened per F1–F16 review) | 🟡 | iPad on-device verification (Q3); pilot rollout (Q4); VAD/continuous listening (Q13); vision + offline = A4 (Q14) |
+| 7 | **Reports & analytics** (dashboard, cross-station, CSV/PDF export) | ✅ | Advanced analytics dashboard #123 (Q12) |
+| 8 | **AAR Studio — THE HERO** (AI-facilitated After Action Reviews, cloud sync, collab notes, dedupe/merge) | 🟡 | Hero-polish batch + insight-quality/session-clarity rework + the whole AAR review remaining batch shipped per [AAR review](wiki/developer/history/reviews/AAR_STUDIO_REVIEW_20260703.md); remaining: live-validate consolidation quality (Q1), iPad print verify (Q3), CSP shrink (Q8) |
 | 9 | **Multi-station** (isolation, station mgmt UI, national RFS dataset lookup, demo station) | ✅ | Migration scripts deferred until a real multi-brigade migration needs one |
 | 10 | **SaaS tenancy & entitlements** (Organization, plans, `requireFeature` both-sides gating, limits) | ✅ | `maxDevices` unenforced by design (devices dropped from pricing) |
-| 11 | **Stripe billing** (Checkout, Portal, webhooks, trial, audit trail, AI top-up packs) | 🟡 | Metered overage needs a Stripe meter + D1 pricing decisions (Q6); device accounts (Q7) |
+| 11 | **Stripe billing** (Checkout, Portal, webhooks, trial, audit trail, AI top-up packs) | 🟡 | Metered overage needs a Stripe meter + D1 pricing decisions (Q5); device accounts (Q6) |
 | 12 | **AI gateway & metering** (`/api/ai/*`, server-side keys, session allowance) | ✅ | Anthropic adapter is a stub (fine until needed) |
-| 13 | **Suite federation — Bushie Tools Phase 1** (SM JWT as suite IdP, `/api/auth/entitlements`, app launcher) | ✅ | Phases 2–3: shared packages, monorepo (Q16, Q17) |
-| 14 | **PWA / offline** (service worker, install prompt, offline queue) | ✅ | Double SW-registration log (Q11); deeper offline is part of A4 |
+| 13 | **Suite federation — Bushie Tools Phase 1** (SM JWT as suite IdP, `/api/auth/entitlements`, app launcher) | ✅ | Phases 2–3: shared packages, monorepo (Q15, Q16) |
+| 14 | **PWA / offline** (service worker, install prompt, offline queue) | ✅ | Double SW-registration log (Q10); deeper offline is part of A4 |
 | 15 | **Auth & security** (JWT + brigade tokens + demo bypass, `requireSession` read gate, rate limiting, CSP/Helmet) | ✅ | — |
 | 16 | **Infra & deploy** (Bicep IaC, GitHub Actions → Linux App Service, run-from-package, post-deploy smoke tests) | ✅ | OIDC bootstrap documented; watch item only |
-| 17 | **Notifications (email/SMS)** #120 | ⬜ | Not started (Q12) |
-| 18 | **Documentation** (this restructure: plan + registers + wiki) | 🟡 | User-guide screenshots; content refresh of migrated dev pages (Q8) |
+| 17 | **Notifications (email/SMS)** #120 | ⬜ | Not started (Q11) |
+| 18 | **Documentation** (this restructure: plan + registers + wiki) | 🟡 | User-guide screenshots; content refresh of migrated dev pages (Q7) |
 
 ---
 
@@ -73,30 +73,29 @@ The single ordered work queue across every track. Work top-down; re-order here w
 ### Now
 
 - **Q1 — AAR Studio: validate the insight-quality rework on a live debrief (owner, 2026-07-04).** The structural rework shipped 2026-07-04 (see changelog): **(a)** consolidation — settle-based trigger (quiet-gap, not fixed timer), chunk range 450 → 1400 words, "expert facilitator" prompt that combines a back-and-forth into ~1–4 findings; **(b)** tap-to-edit finding cards + findings-led Edit page with transcript demoted to Advanced; **(c)** active-review chip in the topbar + "Currently open" flag on Home. UI/structure verified in Chromium at iPad-portrait width. **Remaining — needs a real debrief:** the consolidation quality can only be proven with live AI over real audio. Run a genuine debrief, confirm a short one yields a sensible handful of findings (not 30), and tune the trigger (`quietMs`/`ceilingWords`) and prompt if it's still too granular or now too sparse. Batch with the Q3 on-device session.
-- **Q2 — D1 pricing decisions (owner).** Confirm: trial length (14 vs 30 days, AI included?), AI metering unit (session vs audio-minute; see AAR-11 for why per-vend is wrong), top-up pack size/price, per-org vs per-station billing for district orgs, grant/PO invoicing. *Blocks Q6. Decision, not code.*
+- **Q2 — D1 pricing decisions (owner).** Confirm: trial length (14 vs 30 days, AI included?), AI metering unit (session vs audio-minute; see AAR-11 for why per-vend is wrong), top-up pack size/price, per-org vs per-station billing for district orgs, grant/PO invoicing. *Blocks Q5. Decision, not code.*
 
 ### Next
 
 - **Q3 — Voice agent: iPad on-device verification.** The F8 audio fixes were built against documented iOS Safari behaviour but have never run on a physical iPad. Run a full voice check on iPad (portrait + landscape), capture the screenshots the PR convention requires, log device-specific breakage. *Blocks Q4; batch with an on-device check of the AAR live-listen reconnect logic (AAR-6/8) and that the AAR-20 print path prints cleanly from its new print window on iPad.*
 - **Q4 — Voice agent: pilot rollout.** After Q3, enable for 1–2 pilot AI-plan brigades and gather feedback (noise handling, phrasing, turn caps). Hardening (F1–F16) is done; this is product feedback, not engineering.
-- **Q5 — Truck check: cross-brigade comparative reporting.** The point of locked standard checklist items with stable `itemCode`s (TC-D1): compare outcomes for the same vehicle type across brigades. Aggregation by `vehicleType` + `itemCode` and a report view.
-- **Q6 — Billing: metered AI overage end-to-end.** `meteredUsageReporter.ts` is a safe no-op until a Stripe meter is configured. After Q2: create the meter, map `UsageRecord` → meter events, verify an overage invoice in test mode. Include the AAR-11 session-vs-vend fix.
-- **Q7 — C4 remainder: device accounts.** Formalise `BrigadeAccessToken` into first-class `Device` accounts (named kiosk devices, revocation, per-device audit) — the remaining half of SaaS Phase C.
-- **Q8 — Wiki content refresh.** Sweep migrated developer pages for staleness (known: deployment-optimization + ci-pipeline pre-Linux framing), and add screenshots to the user guide (combine with Q3's iPad session).
+- **Q5 — Billing: metered AI overage end-to-end.** `meteredUsageReporter.ts` is a safe no-op until a Stripe meter is configured. After Q2: create the meter, map `UsageRecord` → meter events, verify an overage invoice in test mode. Include the AAR-11 session-vs-vend fix.
+- **Q6 — C4 remainder: device accounts.** Formalise `BrigadeAccessToken` into first-class `Device` accounts (named kiosk devices, revocation, per-device audit) — the remaining half of SaaS Phase C.
+- **Q7 — Wiki content refresh.** Sweep migrated developer pages for staleness (known: deployment-optimization + ci-pipeline pre-Linux framing), and add screenshots to the user guide (combine with Q3's iPad session).
 
 ### Later
 
-- **Q9 — AAR Studio: shrink the `/aar` CSP.** Blocked: live transcription still uses the Azure Speech SDK browser-direct (`wss://*.stt.speech.microsoft.com`), so the CSP must keep provider hosts. Unblocks if AAR moves to a backend speech proxy like the voice agent's (`agentSpeech.ts` pattern) — the CSP hosts are unrelated to AAR-6's now-shipped token-refresh/reconnect fix, so this stays blocked on the proxy move itself.
-- **Q10 — Truck check: surface vehicle management.** Vehicle CRUD is buried inside the admin dashboard (old TC-6). Small UX task.
-- **Q11 — Frontend polish batch.** Known minor UAT leftovers: double service-worker registration log; `/login` and `/profile/:memberId` settle in 3.5–5s vs near-instant elsewhere.
-- **Q12 — Notifications (email/SMS) #120.** Event reminders and issue-assignment notifications. Design the provider choice (ACS vs SendGrid vs Twilio) first; the truck-check issue lifecycle (`assignedTo`) is the obvious first consumer.
-- **Q13 — Advanced analytics dashboard #123.** Value unproven — validate demand with pilot brigades before building.
-- **Q14 — Voice agent: continuous listening (VAD).** Swap push-to-talk for voice-activity detection behind the same WS frames. Gather pilot feedback first.
-- **Q15 — A4: vision + offline agent phase.** Camera frames + visual diff against `referencePhotoUrl`; on-device speech for offline sheds. Do not start until the voice agent has pilot mileage.
-- **Q16 — T6: suite shared packages.** npm/pnpm workspace, `@rfs/ui` / `@rfs/types` / `@rfs/auth-sdk`; sibling repos consume `/api/auth/entitlements`; SSO redirect for cross-origin apps. (#557)
-- **Q17 — T7: suite monorepo consolidation.** Turborepo; Fire Break Calculator embedded; Fire Santa Run seasonal peer; converge backends onto Express; one pipeline. Depends on Q16 and a commercial reason. (#558)
-- **Q18 — T1 remainder: shared truck-check types.** Fold `Appliance`/`VehicleType`/`ChecklistItem`/`CheckRun`/`CheckResult` into `shared/domain-types.d.ts` like the sign-in types.
-- **Q19 — aar-studio: adopt a shared responsive-breakpoint convention.** Per [RESPONSIVE_UI_REVIEW_20260704](wiki/developer/history/reviews/RESPONSIVE_UI_REVIEW_20260704.md) (UI-3): aar-studio's stylesheet has only 3 `@media` rules total (vs. 65 responsive CSS files in `frontend/`) and currently passes an automated phone/tablet/desktop overflow + touch-target scan mostly by luck (auto-fit grids happening to degrade gracefully), not by design. Not urgent — nothing else is broken today — but the next time aar-studio gets sustained feature work, add shared breakpoint vars to `rfs-tokens.css` and check new screens against them explicitly rather than relying on incidental wrapping.
+- **Q8 — AAR Studio: shrink the `/aar` CSP.** Blocked: live transcription still uses the Azure Speech SDK browser-direct (`wss://*.stt.speech.microsoft.com`), so the CSP must keep provider hosts. Unblocks if AAR moves to a backend speech proxy like the voice agent's (`agentSpeech.ts` pattern) — the CSP hosts are unrelated to AAR-6's now-shipped token-refresh/reconnect fix, so this stays blocked on the proxy move itself.
+- **Q9 — Truck check: surface vehicle management.** Vehicle CRUD is buried inside the admin dashboard (old TC-6). Small UX task.
+- **Q10 — Frontend polish batch.** Known minor UAT leftovers: double service-worker registration log; `/login` and `/profile/:memberId` settle in 3.5–5s vs near-instant elsewhere.
+- **Q11 — Notifications (email/SMS) #120.** Event reminders and issue-assignment notifications. Design the provider choice (ACS vs SendGrid vs Twilio) first; the truck-check issue lifecycle (`assignedTo`) is the obvious first consumer.
+- **Q12 — Advanced analytics dashboard #123.** Value unproven — validate demand with pilot brigades before building.
+- **Q13 — Voice agent: continuous listening (VAD).** Swap push-to-talk for voice-activity detection behind the same WS frames. Gather pilot feedback first.
+- **Q14 — A4: vision + offline agent phase.** Camera frames + visual diff against `referencePhotoUrl`; on-device speech for offline sheds. Do not start until the voice agent has pilot mileage.
+- **Q15 — T6: suite shared packages.** npm/pnpm workspace, `@rfs/ui` / `@rfs/types` / `@rfs/auth-sdk`; sibling repos consume `/api/auth/entitlements`; SSO redirect for cross-origin apps. (#557)
+- **Q16 — T7: suite monorepo consolidation.** Turborepo; Fire Break Calculator embedded; Fire Santa Run seasonal peer; converge backends onto Express; one pipeline. Depends on Q15 and a commercial reason. (#558)
+- **Q17 — T1 remainder: shared truck-check types.** Fold `Appliance`/`VehicleType`/`ChecklistItem`/`CheckRun`/`CheckResult` into `shared/domain-types.d.ts` like the sign-in types.
+- **Q18 — aar-studio: adopt a shared responsive-breakpoint convention.** Per [RESPONSIVE_UI_REVIEW_20260704](wiki/developer/history/reviews/RESPONSIVE_UI_REVIEW_20260704.md) (UI-3): aar-studio's stylesheet has only 3 `@media` rules total (vs. 65 responsive CSS files in `frontend/`) and currently passes an automated phone/tablet/desktop overflow + touch-target scan mostly by luck (auto-fit grids happening to degrade gracefully), not by design. Not urgent — nothing else is broken today — but the next time aar-studio gets sustained feature work, add shared breakpoint vars to `rfs-tokens.css` and check new screens against them explicitly rather than relying on incidental wrapping.
 
 ---
 
@@ -104,8 +103,8 @@ The single ordered work queue across every track. Work top-down; re-order here w
 
 | ID | Decision | State |
 |---|---|---|
-| **D1** | Pricing details: trial length, AI metering unit, top-up sizes, org- vs station-level billing, grant/PO invoicing, AAR-in-Basic?, Fire Break tier placement, Santa Run seasonal billing | 🔵 **Open — owner.** Blocks Q6; see Q2 |
-| **D2** | Suite auth standard: SM JWT vs Entra External ID | ✅ Resolved — keep SM JWT (kiosk brigade-token model needs it). Revisit only if cross-origin SSO becomes real (Q16) |
+| **D1** | Pricing details: trial length, AI metering unit, top-up sizes, org- vs station-level billing, grant/PO invoicing, AAR-in-Basic?, Fire Break tier placement, Santa Run seasonal billing | 🔵 **Open — owner.** Blocks Q5; see Q2 |
+| **D2** | Suite auth standard: SM JWT vs Entra External ID | ✅ Resolved — keep SM JWT (kiosk brigade-token model needs it). Revisit only if cross-origin SSO becomes real (Q15) |
 | **D3** | Streaming-voice architecture | ✅ Resolved 2026-06-29 — backend proxies audio; Azure OpenAI function calling; same App Service, 30-s WS pings |
 | **D4** | Real-time transport at scale: Socket.io vs Azure Web PubSub | 🔵 Open, not urgent — current lean: adopt *Web PubSub for Socket.IO* (keeps code) when multi-brigade scale needs a backplane |
 | **D5** | Deploy size/time | ✅ Resolved 2026-06-22 — run-from-package cut the deploy step from ~8 min to <1 min |
@@ -121,7 +120,7 @@ The live catalog is code (`backend/src/constants/plans.ts`); this is the intende
 | **Community** (free) | $0 | up to 10 | 1 | Manual sign-in + 1 vehicle check, single station |
 | **Basic** | $10/mo · $100/yr | unlimited | unlimited | Full manual suite + reports & CSV export, multiple stations |
 | **AI Pro** | $19/mo · $190/yr | unlimited | unlimited | Basic + AAR Studio (~25 AI sessions/mo) + voice agent |
-| **Bushie Suite** *(planned)* | $29/mo · $290/yr | unlimited | unlimited | AI Pro + all Bushie Tools apps (after Q16/Q17) |
+| **Bushie Suite** *(planned)* | $29/mo · $290/yr | unlimited | unlimited | AI Pro + all Bushie Tools apps (after Q15/Q16) |
 
 Stripe AU ≈ 1.75% + $0.30; AI ≈ $0.60/AAR session; annual = 2 months free. `maxDevices` remains in the model but is deliberately unenforced (devices dropped from pricing in #574).
 
@@ -140,7 +139,7 @@ Stripe AU ≈ 1.75% + $0.30; AI ≈ $0.60/AAR session; annual = 2 months free. `
 | R7 | Low user adoption | Med | High | "Average bushie" ethos, pilot feedback loops (Q4), station champions |
 | R8 | Regressions during refactors | Med | Med | CI gates (typecheck, tests, lint, coverage), post-deploy smoke tests |
 | R9 | Dependency vulnerabilities | Med | Med | Dependabot grouped PRs, security scanning |
-| R10 | Rural connectivity | High | Med | PWA offline queue; A4 offline agent phase (Q15) |
+| R10 | Rural connectivity | High | Med | PWA offline queue; A4 offline agent phase (Q14) |
 
 ---
 

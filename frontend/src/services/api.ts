@@ -1121,6 +1121,36 @@ class ApiService {
     return response.json();
   }
 
+  async getTruckCheckComparative(stationIds: string[], startDate: string, endDate: string): Promise<{
+    startDate: string;
+    endDate: string;
+    stationIds: string[];
+    vehicleTypes: Array<{
+      vehicleTypeCode: string;
+      vehicleTypeName: string;
+      items: Array<{
+        itemCode: string;
+        itemName: string;
+        stations: Array<{
+          stationId: string;
+          stationName: string;
+          totalChecks: number;
+          doneCount: number;
+          issueCount: number;
+          skippedCount: number;
+          passRate: number;
+        }>;
+      }>;
+    }>;
+  }> {
+    const idsParam = stationIds.join(',');
+    const response = await fetch(`${API_BASE_URL}/reports/truckcheck-comparative?stationIds=${idsParam}&startDate=${startDate}&endDate=${endDate}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch truck check comparative report');
+    return response.json();
+  }
+
   // ============================================
   // Cross-Station Reports
   // ============================================
