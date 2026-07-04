@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-04 (Device accounts brought forward into the access rework as AC-5, queue renumbered; sign-in book now gated behind a brigade code / account / demo; Q5 shipped — cross-brigade comparative truck-check reporting; cross-app responsive UI review shipped in aar-studio)
+**Last updated:** 2026-07-04 (AC-5 shipped — first-class Device accounts replacing the anonymous kiosk token, wired into every kiosk-gating call site; sign-in book gated behind a brigade code / account / demo; Q5 shipped — cross-brigade comparative truck-check reporting; cross-app responsive UI review shipped in aar-studio)
 **Status:** Living document — **the single plan** for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
 
 ---
@@ -40,7 +40,7 @@ One row per function/feature of the product. Status: ✅ shipped & stable · �
 
 | # | Feature / function | Status | Remaining |
 |---|---|---|---|
-| 1 | **Sign-in & check-in/out** (kiosk, mobile, QR, real-time sync) | ✅ | Access rework in progress (AC-1…AC-5, below); minor perf polish (Q9) |
+| 1 | **Sign-in & check-in/out** (kiosk, mobile, QR, real-time sync) | ✅ | Access rework in progress (AC-1…AC-4, below; AC-5 device accounts shipped); minor perf polish (Q9) |
 | 2 | **Events & activities** (create/end events, participants, audit trail) | ✅ | — |
 | 3 | **Member profiles & achievements** (QR codes, stats, 20 achievements) | ✅ | — |
 | 4 | **Member management** (search/filter/sort, CSV import, invite/activation) | ✅ | — |
@@ -50,7 +50,7 @@ One row per function/feature of the product. Status: ✅ shipped & stable · �
 | 8 | **AAR Studio — THE HERO** (AI-facilitated After Action Reviews, cloud sync, collab notes, dedupe/merge) | 🟡 | Hero-polish batch + insight-quality/session-clarity rework + the whole AAR review remaining batch shipped per [AAR review](wiki/developer/history/reviews/AAR_STUDIO_REVIEW_20260703.md); remaining: live-validate consolidation quality (Q1), iPad print verify (Q3), CSP shrink (Q7) |
 | 9 | **Multi-station** (isolation, station mgmt UI, national RFS dataset lookup, demo station) | ✅ | Migration scripts deferred until a real multi-brigade migration needs one |
 | 10 | **SaaS tenancy & entitlements** (Organization, plans, `requireFeature` both-sides gating, limits) | ✅ | `maxDevices` unenforced by design (devices dropped from pricing) |
-| 11 | **Stripe billing** (Checkout, Portal, webhooks, trial, audit trail, AI top-up packs) | 🟡 | Metered overage needs a Stripe meter + D1 pricing decisions (Q5); device accounts moved into the access rework (AC-5) |
+| 11 | **Stripe billing** (Checkout, Portal, webhooks, trial, audit trail, AI top-up packs) | 🟡 | Metered overage needs a Stripe meter + D1 pricing decisions (Q5); device accounts shipped (AC-5) but unmetered — `maxDevices` still unenforced per #574 |
 | 12 | **AI gateway & metering** (`/api/ai/*`, server-side keys, session allowance) | ✅ | Anthropic adapter is a stub (fine until needed) |
 | 13 | **Suite federation — Bushie Tools Phase 1** (SM JWT as suite IdP, `/api/auth/entitlements`, app launcher) | ✅ | Phases 2–3: shared packages, monorepo (Q14, Q15) |
 | 14 | **PWA / offline** (service worker, install prompt, offline queue) | ✅ | Double SW-registration log (Q9); deeper offline is part of A4 |
@@ -79,7 +79,7 @@ The agreed model for how anonymous access, membership, and subscriptions fit tog
 - **AC-2 — Visitor sign-ins.** New ephemeral check-in path at a kiosk/brigade URL: type a name, it's recorded for the event/attendance but **not** persisted as a `Member` (never counts toward `maxMembers`), gets no history, and can't tap-to-repeat (must retype each time). The member grid must not render visitors as tappable tiles.
 - **AC-3 — Truck-check join model, then gate `/truckcheck`.** Owner's shape: a brigade device / signed-in user *starts* a check session (per vehicle); a QR/link then lets anyone pick an existing vehicle/session to check or join (like the AAR collab join). Build that start-and-share flow first, then apply the same `AccessRoute` discipline to `/truckcheck` so it can't be opened bare either.
 - **AC-4 — Consistency sweep.** Reports and admin are already auth-gated (`ProtectedRoute` + `requireSession`); confirm nothing else exposes a walk-up surface without a credential once AC-1…AC-3 land.
-- **AC-5 — Device accounts (brought forward from the "Next" queue, was Q6/C4 remainder).** Today's brigade device code (the thing `AccessRoute` checks via kiosk `?brigade=<token>`) is an anonymous `BrigadeAccessToken` — a bare UUID with no name, type, or per-device audit trail. Formalise it into a first-class `Device` (`id`, `organizationId`, `stationId`, `type: 'kiosk'|'tablet'|'phone'|'wearable'`, `name`, `token`, `status: 'active'|'revoked'`, `lastSeenAt`) per the archived design ([SAAS_COMMERCIALIZATION_DESIGN §4](wiki/developer/history/archive/SAAS_COMMERCIALIZATION_DESIGN.md)) — backward compatible, existing tokens map onto `Device` rows of type `kiosk`. This directly strengthens the credential model AC-1/AC-3 depend on: a named, revocable, audited device is a much better anchor for "who let this session in" than an unnamed UUID, and the admin UI gets a real device list (rename, see last-seen, revoke a lost tablet) instead of an opaque token list. Moved here because it's the same underlying work as this initiative, not adjacent billing infra — do this before or alongside AC-1/AC-3, not after.
+- **AC-5 — Device accounts. ✅ Shipped 2026-07-04.** Formalised the anonymous `BrigadeAccessToken` UUID into a first-class `Device` (in-memory + Table Storage twins, `/api/devices` CRUD, org-scoped, owner/admin gated) per the archived design ([SAAS_COMMERCIALIZATION_DESIGN §4](wiki/developer/history/archive/SAAS_COMMERCIALIZATION_DESIGN.md)). `kioskAccessResolver.ts` wires Device tokens into every existing kiosk-gating call site (`kioskModeMiddleware`, `flexibleAuth`'s brigade-token path, `/api/brigade-access/validate`) alongside the legacy store, so a new Device-issued kiosk URL actually works end-to-end (sign in, check in members, run activities) — not just a parallel unused API. Admin UI: a "Devices" section per station (enroll/rename/revoke/reactivate/remove, copy/QR the kiosk URL) alongside the untouched legacy token UI. See changelog. `maxDevices` enforcement remains intentionally off per #574.
 
 ### Now
 

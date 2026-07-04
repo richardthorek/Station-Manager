@@ -18,13 +18,13 @@ import { body, param, query } from 'express-validator';
 import { handleValidationErrors } from '../middleware/validationHandler';
 import {
   generateBrigadeAccessToken,
-  validateBrigadeAccessToken,
   revokeBrigadeAccessToken,
   getBrigadeAccessTokens,
   getStationAccessTokens,
   getActiveTokenCount,
   getAllBrigadeAccessTokens,
 } from '../services/brigadeAccessService';
+import { resolveKioskAccess } from '../services/kioskAccessResolver';
 import { logger } from '../services/logger';
 import { optionalAuth } from '../middleware/auth';
 
@@ -127,23 +127,26 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { token } = req.body;
-      
-      const accessToken = validateBrigadeAccessToken(token);
-      
-      if (!accessToken) {
+
+      // AC-5: resolves against the new Device store first, falling back to
+      // this legacy in-memory token store — so a kiosk URL generated either
+      // way keeps working through this one endpoint.
+      const resolved = await resolveKioskAccess(token);
+
+      if (!resolved) {
         return res.status(404).json({
           valid: false,
           error: 'Token not found or expired',
         });
       }
-      
+
       res.json({
         valid: true,
-        brigadeId: accessToken.brigadeId,
-        stationId: accessToken.stationId,
-        description: accessToken.description,
-        createdAt: accessToken.createdAt,
-        expiresAt: accessToken.expiresAt,
+        brigadeId: resolved.brigadeId,
+        stationId: resolved.stationId,
+        description: resolved.description,
+        createdAt: resolved.createdAt,
+        expiresAt: resolved.expiresAt,
       });
     } catch (error) {
       logger.error('Error validating brigade access token:', error);

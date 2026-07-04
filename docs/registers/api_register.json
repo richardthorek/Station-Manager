@@ -4530,6 +4530,164 @@
       ]
     }
   },
+  "devices": {
+    "GET /api/devices": {
+      "method": "GET",
+      "path": "/api/devices",
+      "description": "AC-5 — list the caller org's Device accounts (named, typed, revocable kiosk/tablet/phone/wearable credentials), optionally filtered to one station.",
+      "authentication": "required (owner/admin)",
+      "parameters": {
+        "query": {
+          "stationId": {
+            "type": "string",
+            "required": false,
+            "description": "Filter to devices enrolled at this station"
+          }
+        }
+      },
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Devices for the caller's organization",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "devices": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/Device" }
+              },
+              "count": { "type": "integer" }
+            }
+          }
+        },
+        "401": { "description": "Not authenticated" },
+        "403": { "description": "Not an owner/admin" }
+      },
+      "implementation": "backend/src/routes/devices.ts"
+    },
+    "POST /api/devices": {
+      "method": "POST",
+      "path": "/api/devices",
+      "description": "AC-5 — enroll a new device for a station in the caller's org. Formalises the anonymous BrigadeAccessToken UUID into a named, typed, revocable credential; the returned token backs the same `/signin?brigade=<token>` kiosk URL.",
+      "authentication": "required (owner/admin)",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "stationId": { "type": "string" },
+            "type": { "type": "string", "enum": ["kiosk", "tablet", "phone", "wearable"] },
+            "name": { "type": "string", "maxLength": 100 },
+            "description": { "type": "string", "maxLength": 200 },
+            "expiresInDays": { "type": "integer", "minimum": 1, "maximum": 3650 }
+          },
+          "required": ["stationId", "type", "name"]
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Device enrolled",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "device": { "$ref": "#/definitions/Device" },
+              "kioskUrl": { "type": "string", "format": "uri", "example": "https://host/signin?brigade=uuid" }
+            }
+          }
+        },
+        "400": { "description": "Validation error" },
+        "401": { "description": "Not authenticated" },
+        "403": { "description": "Not an owner/admin" }
+      },
+      "implementation": "backend/src/routes/devices.ts"
+    },
+    "PATCH /api/devices/:id": {
+      "method": "PATCH",
+      "path": "/api/devices/:id",
+      "description": "AC-5 — rename a device and/or flip its status between 'active' and 'revoked'. Only the owning organization may manage its own devices.",
+      "authentication": "required (owner/admin)",
+      "parameters": {
+        "path": { "id": { "type": "string", "required": true } }
+      },
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "maxLength": 100 },
+            "description": { "type": "string", "maxLength": 200 },
+            "status": { "type": "string", "enum": ["active", "revoked"] }
+          }
+        }
+      },
+      "responses": {
+        "200": { "description": "Updated device", "schema": { "$ref": "#/definitions/Device" } },
+        "403": { "description": "Device belongs to a different organization" },
+        "404": { "description": "Device not found" }
+      },
+      "implementation": "backend/src/routes/devices.ts"
+    },
+    "DELETE /api/devices/:id": {
+      "method": "DELETE",
+      "path": "/api/devices/:id",
+      "description": "AC-5 — remove a device your organization owns.",
+      "authentication": "required (owner/admin)",
+      "parameters": {
+        "path": { "id": { "type": "string", "required": true } }
+      },
+      "requestBody": null,
+      "responses": {
+        "204": { "description": "Device removed" },
+        "403": { "description": "Device belongs to a different organization" },
+        "404": { "description": "Device not found" }
+      },
+      "implementation": "backend/src/routes/devices.ts"
+    },
+    "POST /api/devices/validate": {
+      "method": "POST",
+      "path": "/api/devices/validate",
+      "description": "AC-5 — public: resolve a device token to its station (called by the device itself, e.g. a kiosk on load). Updates the device's lastSeenAt audit trail on success. Mirrors POST /api/brigade-access/validate, which now falls back to this same resolution (see kioskAccessResolver.ts).",
+      "authentication": "none",
+      "parameters": {},
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": { "token": { "type": "string", "format": "uuid" } },
+          "required": ["token"]
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Token is valid",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "valid": { "type": "boolean", "enum": [true] },
+              "deviceId": { "type": "string" },
+              "deviceName": { "type": "string" },
+              "deviceType": { "type": "string" },
+              "stationId": { "type": "string" },
+              "brigadeId": { "type": "string", "nullable": true },
+              "description": { "type": "string", "nullable": true },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "expiresAt": { "type": "string", "format": "date-time", "nullable": true }
+            }
+          }
+        },
+        "404": { "description": "Token not found, revoked, or expired" },
+        "400": { "description": "Validation error" }
+      },
+      "implementation": "backend/src/routes/devices.ts",
+      "security": {
+        "notes": [
+          "Public endpoint — the token itself is the credential, same trust model as /api/brigade-access/validate",
+          "Revoked or expired devices resolve as not-found"
+        ]
+      }
+    }
+  },
   "socketEvents": {
     "serverToClient": {
       "member-added": {
@@ -5545,6 +5703,25 @@
         "stationId",
         "createdAt"
       ]
+    },
+    "Device": {
+      "type": "object",
+      "description": "AC-5 — a first-class device account (kiosk/tablet/phone/wearable), formalising the anonymous BrigadeAccessToken UUID into a named, typed, revocable credential with a last-seen audit trail.",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string", "nullable": true, "description": "Owning org; absent for back-compat (kiosk/demo without org context)" },
+        "stationId": { "type": "string" },
+        "type": { "type": "string", "enum": ["kiosk", "tablet", "phone", "wearable"] },
+        "name": { "type": "string", "description": "e.g. 'Main shed kiosk', 'Captain's phone'" },
+        "token": { "type": "string", "format": "uuid", "description": "Unguessable credential — same model as BrigadeAccessToken" },
+        "status": { "type": "string", "enum": ["active", "revoked"] },
+        "description": { "type": "string", "nullable": true },
+        "lastSeenAt": { "type": "string", "format": "date-time", "nullable": true, "description": "Updated each time the token is validated" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time", "nullable": true }
+      },
+      "required": ["id", "stationId", "type", "name", "token", "status", "createdAt", "updatedAt"]
     },
     "AgentSession": {
       "type": "object",

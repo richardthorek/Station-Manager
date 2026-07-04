@@ -20,6 +20,7 @@ import type {
   IssueResult,
   ApplianceZone,
   ApplianceEquipment,
+  Device,
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
 
@@ -1373,6 +1374,62 @@ class ApiService {
       throw new Error(errorData.error || 'Failed to revoke token');
     }
     return response.json();
+  }
+
+  // ============================================
+  // Devices (AC-5 — named, typed, revocable kiosk credentials)
+  // ============================================
+
+  async getDevices(stationId?: string): Promise<{ devices: Device[]; count: number }> {
+    const url = stationId
+      ? `${API_BASE_URL}/devices?stationId=${encodeURIComponent(stationId)}`
+      : `${API_BASE_URL}/devices`;
+    const response = await fetch(url, { headers: this.getHeaders() });
+    if (!response.ok) throw new Error('Failed to fetch devices');
+    return response.json();
+  }
+
+  async createDevice(data: {
+    stationId: string;
+    type: Device['type'];
+    name: string;
+    description?: string;
+    expiresInDays?: number;
+  }): Promise<{ device: Device; kioskUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/devices`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create device');
+    }
+    return response.json();
+  }
+
+  async updateDevice(id: string, patch: { name?: string; description?: string; status?: Device['status'] }): Promise<Device> {
+    const response = await fetch(`${API_BASE_URL}/devices/${id}`, {
+      method: 'PATCH',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(patch),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update device');
+    }
+    return response.json();
+  }
+
+  async deleteDevice(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/devices/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to delete device');
+    }
   }
 
   // Demo Mode

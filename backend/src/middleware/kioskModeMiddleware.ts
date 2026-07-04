@@ -18,7 +18,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { validateBrigadeAccessToken } from '../services/brigadeAccessService';
+import { resolveKioskAccess } from '../services/kioskAccessResolver';
 
 // Extend Express Request type to include kiosk mode flag
 declare global {
@@ -41,38 +41,43 @@ declare global {
  * @param res - Express response object
  * @param next - Express next function
  */
-export function kioskModeMiddleware(req: Request, res: Response, next: NextFunction): void {
+export async function kioskModeMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   // Check for brigade token in query parameters
   const brigadeToken = req.query.brigade as string | undefined;
-  
+
   if (!brigadeToken) {
     // Not in kiosk mode
     req.kioskMode = false;
     next();
     return;
   }
-  
-  // Validate the brigade access token
-  const accessToken = validateBrigadeAccessToken(brigadeToken);
-  
-  if (!accessToken) {
-    // Invalid or expired token
-    res.status(403).json({
-      error: 'Invalid or expired brigade access token',
-      message: 'The kiosk access token is not valid. Please contact your administrator.',
-    });
-    return;
+
+  // Resolve the token — tries the new Device store first, falls back to the
+  // legacy BrigadeAccessToken (see kioskAccessResolver.ts).
+  try {
+    const resolved = await resolveKioskAccess(brigadeToken);
+
+    if (!resolved) {
+      // Invalid or expired token
+      res.status(403).json({
+        error: 'Invalid or expired brigade access token',
+        message: 'The kiosk access token is not valid. Please contact your administrator.',
+      });
+      return;
+    }
+
+    // Token is valid - activate kiosk mode
+    req.kioskMode = true;
+    req.kioskToken = brigadeToken;
+    req.kioskBrigadeId = resolved.brigadeId;
+
+    // Lock station to the token's station
+    req.stationId = resolved.stationId;
+
+    next();
+  } catch (error) {
+    next(error);
   }
-  
-  // Token is valid - activate kiosk mode
-  req.kioskMode = true;
-  req.kioskToken = brigadeToken;
-  req.kioskBrigadeId = accessToken.brigadeId;
-  
-  // Lock station to the token's station
-  req.stationId = accessToken.stationId;
-  
-  next();
 }
 
 /**

@@ -115,6 +115,27 @@ export interface VehicleType {
 }
 
 /**
+ * A first-class device account (AC-5) — a named, typed, revocable credential
+ * for a brigade-locked kiosk/tablet/phone/wearable. Formalises the anonymous
+ * BrigadeAccessToken UUID; the token backs the same `/signin?brigade=<token>`
+ * kiosk URL.
+ */
+export interface Device {
+  id: string;
+  organizationId?: string;
+  stationId: string;
+  type: 'kiosk' | 'tablet' | 'phone' | 'wearable';
+  name: string;
+  token: string;
+  status: 'active' | 'revoked';
+  description?: string;
+  lastSeenAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt?: string;
+}
+
+/**
  * The resolved checklist for an appliance: locked standard items merged with the
  * brigade's custom items, in saved order. Computed server-side.
  */

@@ -20,7 +20,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { validateBrigadeAccessToken } from '../services/brigadeAccessService';
+import { resolveKioskAccess } from '../services/kioskAccessResolver';
 import { logger } from '../services/logger';
 import { DEMO_STATION_ID } from '../constants/stations';
 
@@ -91,17 +91,17 @@ async function validateBrigadeToken(req: Request): Promise<AuthResult | null> {
       return null;
     }
 
-    const tokenData = await validateBrigadeAccessToken(token);
-    
-    if (!tokenData) {
+    const resolved = await resolveKioskAccess(token);
+
+    if (!resolved) {
       return null;
     }
 
     return {
       authenticated: true,
       credentialType: 'brigade-token',
-      brigadeId: tokenData.brigadeId,
-      stationId: tokenData.stationId,
+      brigadeId: resolved.brigadeId,
+      stationId: resolved.stationId,
     };
   } catch (error) {
     return null;

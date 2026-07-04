@@ -15,7 +15,7 @@ import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
 import { PageTransition } from '../../../components/PageTransition';
 import { AdminNav } from '../../../components/AdminNav';
-import type { Station } from '../../../types';
+import type { Station, Device } from '../../../types';
 import { StationTokenCard } from './StationTokenCard';
 import './BrigadeAccessPage.css';
 
@@ -36,30 +36,36 @@ interface StationWithToken extends Station {
 export function BrigadeAccessPage() {
   const [stations, setStations] = useState<Station[]>([]);
   const [tokens, setTokens] = useState<TokenInfo[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
+  const [enrollingFor, setEnrollingFor] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-  
+
   const socket = useSocket();
 
   /**
-   * Load stations and tokens
+   * Load stations, tokens, and devices
    */
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Load stations and tokens in parallel
-      const [stationsData, tokensData] = await Promise.all([
+
+      // Load stations, tokens, and devices in parallel. Devices is best-effort:
+      // the caller may be a legacy admin without an organizationId, in which
+      // case the API still returns an empty list rather than an error.
+      const [stationsData, tokensData, devicesData] = await Promise.all([
         api.getStations(),
         api.getAllBrigadeAccessTokens(),
+        api.getDevices().catch(() => ({ devices: [], count: 0 })),
       ]);
-      
+
       setStations(stationsData);
       setTokens(tokensData.tokens);
+      setDevices(devicesData.devices);
       setLastRefresh(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -142,6 +148,67 @@ export function BrigadeAccessPage() {
     } catch (err) {
       console.error('Error revoking token:', err);
       alert('Failed to revoke token: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    }
+  };
+
+  /**
+   * Enroll a new device for a station
+   */
+  const handleEnrollDevice = async (stationId: string, name: string, type: Device['type']) => {
+    try {
+      setEnrollingFor(stationId);
+      const result = await api.createDevice({ stationId, type, name });
+      setDevices([...devices, result.device]);
+    } catch (err) {
+      console.error('Error enrolling device:', err);
+      alert('Failed to enroll device: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setEnrollingFor(null);
+    }
+  };
+
+  /**
+   * Rename a device
+   */
+  const handleRenameDevice = async (id: string, name: string) => {
+    try {
+      const updated = await api.updateDevice(id, { name });
+      setDevices(devices.map(d => (d.id === id ? updated : d)));
+    } catch (err) {
+      console.error('Error renaming device:', err);
+      alert('Failed to rename device: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    }
+  };
+
+  /**
+   * Revoke or reactivate a device
+   */
+  const handleSetDeviceStatus = async (id: string, status: Device['status']) => {
+    if (status === 'revoked' && !confirm('Revoke this device? Its kiosk URL will stop working immediately.')) {
+      return;
+    }
+    try {
+      const updated = await api.updateDevice(id, { status });
+      setDevices(devices.map(d => (d.id === id ? updated : d)));
+    } catch (err) {
+      console.error('Error updating device status:', err);
+      alert('Failed to update device: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    }
+  };
+
+  /**
+   * Remove a device
+   */
+  const handleDeleteDevice = async (id: string) => {
+    if (!confirm('Remove this device? This cannot be undone.')) {
+      return;
+    }
+    try {
+      await api.deleteDevice(id);
+      setDevices(devices.filter(d => d.id !== id));
+    } catch (err) {
+      console.error('Error deleting device:', err);
+      alert('Failed to remove device: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   };
 
@@ -273,6 +340,12 @@ export function BrigadeAccessPage() {
                     onGenerateToken={() => handleGenerateToken(station)}
                     onRevokeToken={handleRevokeToken}
                     isGenerating={generatingFor === station.id}
+                    devices={devices.filter(d => d.stationId === station.id)}
+                    onEnrollDevice={(name, type) => handleEnrollDevice(station.id, name, type)}
+                    onRenameDevice={handleRenameDevice}
+                    onSetDeviceStatus={handleSetDeviceStatus}
+                    onDeleteDevice={handleDeleteDevice}
+                    isEnrolling={enrollingFor === station.id}
                   />
                 ))}
               </div>

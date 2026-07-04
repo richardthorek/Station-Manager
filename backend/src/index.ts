@@ -53,6 +53,7 @@ import truckChecksRouter from './routes/truckChecks';
 import reportsRouter from './routes/reports';
 import stationsRouter from './routes/stations';
 import brigadeAccessRouter from './routes/brigadeAccess';
+import devicesRouter from './routes/devices';
 import exportRouter from './routes/export';
 import authRouter from './routes/auth';
 import organizationsRouter from './routes/organizations';
@@ -79,6 +80,7 @@ import { initializeBillingEventDatabase } from './services/billingEventDbFactory
 import { initializeAarSessionDatabase } from './services/aarSessionDbFactory';
 import { initializeVehicleTypeDatabase } from './services/vehicleTypeDbFactory';
 import { initializeApplianceZoneDatabase } from './services/applianceZoneDbFactory';
+import { initializeDeviceDatabase } from './services/deviceDbFactory';
 import { initializeApplianceEquipmentDatabase } from './services/applianceEquipmentDbFactory';
 import { initializeAgentSessionDatabase } from './services/agentSessionDbFactory';
 import { agentCheckRouter, attachAgentCheckWs } from './routes/agentCheck';
@@ -418,6 +420,7 @@ app.use('/api/stations', apiRateLimiter, stationsRouter);
 app.use('/api/truck-checks', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('truckCheckEnabled'), truckChecksRouter);
 app.use('/api/reports', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('reportsEnabled'), reportsRouter);
 app.use('/api/brigade-access', apiRateLimiter, brigadeAccessRouter);
+app.use('/api/devices', apiRateLimiter, devicesRouter);
 app.use('/api/export', apiRateLimiter, requireFeature('reportsEnabled'), exportRouter);
 
 // Achievement routes (now handles database selection per-request based on demo mode)
@@ -646,6 +649,7 @@ async function initializeDatabasesInBackground() {
     await initializeVehicleTypeDatabase();
     await initializeApplianceZoneDatabase();
     await initializeApplianceEquipmentDatabase();
+    await initializeDeviceDatabase();
     await initializeAgentSessionDatabase();
     startMeteredUsageReporter();
     ensureAdminUserDatabase();
