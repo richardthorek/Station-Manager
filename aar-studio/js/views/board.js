@@ -14,6 +14,32 @@ const dismissedPairs = new Set();
 
 const pairKey = (a, b) => [a.id, b.id].sort().join('|');
 
+/**
+ * Delete a finding with an Undo affordance instead of a confirm — deletion was
+ * instant and unrecoverable while deleting a whole review asks for confirmation,
+ * an inverted weight (AAR Studio hero review 2026-07-03, AAR-18). Restores at
+ * the original position if Undo is tapped.
+ */
+export function deleteFinding(f) {
+  let removed = null;
+  let index = -1;
+  store.update((s) => {
+    index = s.findings.findIndex((x) => x.id === f.id);
+    if (index >= 0) removed = s.findings.splice(index, 1)[0];
+  }, { reason: 'findings' });
+  if (!removed) return;
+  toast('Finding deleted', 'info', 6000, {
+    label: 'Undo',
+    onClick: () => {
+      store.update((s) => {
+        if (s.findings.some((x) => x.id === removed.id)) return; // already restored
+        s.findings.splice(Math.min(index, s.findings.length), 0, removed);
+      }, { reason: 'findings' });
+      toast('Finding restored');
+    },
+  });
+}
+
 /** A unit-attribution <select>: a blank "no unit" option plus each attending unit. */
 function unitSelect(units, selected = '') {
   return h('select', { 'aria-label': 'Attribute finding to a unit' },
@@ -101,7 +127,7 @@ function findingCard(f, phases, units) {
       f.source === 'ai' ? h('span', { class: 'chip chip--ai', title: f.quote ? `“${f.quote}”` : 'AI extracted' }, 'AI') : null,
       h('span', { class: 'finding__tools' },
         h('button', { class: 'icon-btn', title: 'Edit', 'aria-label': 'Edit finding', onclick: stop(() => editInline()) }, '✎'),
-        h('button', { class: 'icon-btn', title: 'Delete', 'aria-label': 'Delete finding', onclick: stop(() => store.update((s) => { s.findings = s.findings.filter((x) => x.id !== f.id); }, { reason: 'findings' })) }, '✕'),
+        h('button', { class: 'icon-btn', title: 'Delete', 'aria-label': 'Delete finding', onclick: stop(() => deleteFinding(f)) }, '✕'),
       ),
     ),
     f.quote ? h('div', { class: 'finding__quote' }, `“${f.quote}”`) : null,
@@ -117,9 +143,11 @@ function findingCard(f, phases, units) {
       h('div', { class: 'btn-row' },
         catSel, phaseSel, unitSel,
         h('button', { class: 'btn btn--small btn--primary', onclick: () => {
+          const text = textArea.value.trim();
+          if (!text) { toast('A finding needs some text', 'error'); textArea.focus(); return; } // ignore blank saves (AAR-18)
           store.update((s) => {
             const target = s.findings.find((x) => x.id === f.id);
-            if (target) Object.assign(target, { text: textArea.value.trim(), category: catSel.value, phase: phaseSel.value, unit: unitSel ? unitSel.value : f.unit });
+            if (target) Object.assign(target, { text, category: catSel.value, phase: phaseSel.value, unit: unitSel ? unitSel.value : f.unit });
           }, { reason: 'findings' });
         } }, 'Save'),
         h('button', { class: 'btn btn--small', onclick: () => store.update(() => {}, { reason: 'findings' }) }, 'Cancel'),

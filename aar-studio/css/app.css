@@ -427,8 +427,15 @@ body.present .board__empty { color: #93a1ad; }
   background: var(--ink); color: #fff; padding: 0.6rem 1rem; border-radius: var(--radius);
   box-shadow: var(--shadow); font-size: 0.9rem; max-width: 80vw;
   animation: toast-in 0.25s ease-out;
+  display: flex; align-items: center; gap: 0.75rem;
 }
 .toast--error { background: var(--red); }
+.toast__action {
+  background: rgba(255, 255, 255, 0.16); color: #fff; border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px; padding: 0.15rem 0.7rem; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
+}
+.toast__action:hover { background: rgba(255, 255, 255, 0.3); }
 .toast--out { opacity: 0; transition: opacity 0.4s; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 

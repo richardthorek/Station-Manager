@@ -40,17 +40,32 @@ export function mount(parent, ...children) {
 }
 
 let toastHost = null;
-export function toast(message, kind = 'info', ms = 3500) {
+/**
+ * Show a transient toast. `action` (optional) adds an inline button — e.g. an
+ * "Undo" on a destructive action (AAR-18) — that runs its onClick and dismisses
+ * the toast. Action toasts linger a little longer so there's time to react.
+ */
+export function toast(message, kind = 'info', ms = 3500, action = null) {
   if (!toastHost) {
     toastHost = h('div', { class: 'toast-host', role: 'status', 'aria-live': 'polite' });
     document.body.append(toastHost);
   }
-  const t = h('div', { class: `toast toast--${kind}` }, message);
-  toastHost.append(t);
-  setTimeout(() => {
+  const t = h('div', { class: `toast toast--${kind}` }, h('span', {}, message));
+  let dismissed = false;
+  const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
     t.classList.add('toast--out');
     setTimeout(() => t.remove(), 400);
-  }, ms);
+  };
+  if (action?.label) {
+    t.append(h('button', {
+      class: 'toast__action',
+      onclick: () => { try { action.onClick?.(); } finally { dismiss(); } },
+    }, action.label));
+  }
+  toastHost.append(t);
+  setTimeout(dismiss, action ? Math.max(ms, 6000) : ms);
 }
 
 export function download(filename, text, mime = 'text/plain') {

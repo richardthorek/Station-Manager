@@ -5,6 +5,7 @@ import { h, toast, mount } from '../ui.js';
 import * as store from '../store.js';
 import { CATEGORIES, sessionPhases, createFinding } from '../lib/model.js';
 import { fmtClock } from '../lib/text.js';
+import { deleteFinding } from './board.js';
 
 function speakerPanel(session) {
   const raw = [...new Set(session.segments.map((s) => s.speaker).filter(Boolean))];
@@ -64,7 +65,7 @@ function findingsPanel(session, phases) {
           onchange: (e) => store.update((s) => { const t = s.findings.find((x) => x.id === f.id); if (t) t.phase = e.target.value; }, { silent: true }),
         }, phases.map((p) => h('option', { value: p, selected: p === f.phase }, p))),
         h('span', { class: `chip ${f.source === 'ai' ? 'chip--ai' : 'chip--manual'}` }, f.source),
-        h('button', { class: 'icon-btn', title: 'Delete finding', onclick: () => store.update((s) => { s.findings = s.findings.filter((x) => x.id !== f.id); }, { reason: 'findings' }) }, '✕'),
+        h('button', { class: 'icon-btn', title: 'Delete finding', onclick: () => deleteFinding(f) }, '✕'),
       ),
       h('textarea', {
         rows: 2,
