@@ -62,7 +62,10 @@ h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
   top: 0;
   z-index: 10;
 }
-.topbar__brand { display: flex; align-items: baseline; gap: 0.5rem; }
+/* flex-wrap: on a phone-width screen, "AAR Studio" + the active-review chip
+   don't both fit on one line — wrap rather than force horizontal scroll on
+   every page (found via mobile-viewport audit, 2026-07-04). */
+.topbar__brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.4rem 0.5rem; }
 .topbar__home {
   display: inline-flex;
   align-items: baseline;
@@ -92,6 +95,10 @@ h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
 .topbar__session-close {
   background: none; border: none; color: rgba(255, 255, 255, 0.75); cursor: pointer;
   font-size: 0.85rem; line-height: 1; padding: 0.15rem 0.25rem; border-radius: 4px;
+  /* Icon-only button — pad the hit area up to the 44px touch-target minimum
+     without inflating the visible glyph (mobile-viewport audit, 2026-07-04). */
+  min-width: var(--tap-min-sm); min-height: var(--tap-min-sm);
+  display: inline-flex; align-items: center; justify-content: center;
 }
 .topbar__session-close:hover { color: var(--rfs-white); background: rgba(255, 255, 255, 0.16); }
 .nav { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
