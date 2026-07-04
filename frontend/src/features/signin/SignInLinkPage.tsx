@@ -68,8 +68,12 @@ export function SignInLinkPage() {
     performCheckIn();
   }, [searchParams, emit]);
 
+  // A personal check-in link is a one-member credential, not a pass into the
+  // brigade's full sign-in book (that needs a brigade device code or an
+  // account). The check-in above is the whole job, so send them home rather
+  // than to /signin, which the access gate would bounce anyway.
   const handleGoToSignIn = () => {
-    navigate('/signin');
+    navigate('/');
   };
 
   if (status === 'loading') {
@@ -120,7 +124,7 @@ export function SignInLinkPage() {
 
           <div className="action-buttons">
             <button className="btn-primary" onClick={handleGoToSignIn}>
-              Go to Sign-In Page
+              Done
             </button>
           </div>
         </div>

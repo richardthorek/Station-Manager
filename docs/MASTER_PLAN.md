@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-04 (Q5 shipped — cross-brigade comparative truck-check reporting; cross-app responsive UI review — phone-width chip overflow + touch-target fix shipped in aar-studio; frontend confirmed clean)
+**Last updated:** 2026-07-04 (Access & membership rework kicked off — sign-in book now gated behind a brigade code / account / demo; Q5 shipped — cross-brigade comparative truck-check reporting; cross-app responsive UI review shipped in aar-studio)
 **Status:** Living document — **the single plan** for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
 
 ---
@@ -40,7 +40,7 @@ One row per function/feature of the product. Status: ✅ shipped & stable · �
 
 | # | Feature / function | Status | Remaining |
 |---|---|---|---|
-| 1 | **Sign-in & check-in/out** (kiosk, mobile, QR, real-time sync) | ✅ | Minor perf polish (Q10) |
+| 1 | **Sign-in & check-in/out** (kiosk, mobile, QR, real-time sync) | ✅ | Access rework in progress (AC-1…AC-2, below); minor perf polish (Q10) |
 | 2 | **Events & activities** (create/end events, participants, audit trail) | ✅ | — |
 | 3 | **Member profiles & achievements** (QR codes, stats, 20 achievements) | ✅ | — |
 | 4 | **Member management** (search/filter/sort, CSV import, invite/activation) | ✅ | — |
@@ -69,6 +69,16 @@ The single ordered work queue across every track. Work top-down; re-order here w
 > it is what sells the app. The AAR hero-review findings
 > ([AAR_STUDIO_REVIEW_20260703](wiki/developer/history/reviews/AAR_STUDIO_REVIEW_20260703.md),
 > AAR-1…AAR-24 with a full implementation ranking) therefore lead this queue.
+
+### Access & membership rework (owner, 2026-07-04) — in progress
+
+The agreed model for how anonymous access, membership, and subscriptions fit together — a themed initiative tracked here rather than as scattered Q-items. **The principle:** the walk-up apps (sign-in, truck check) are only reachable with a legitimate access credential — a brigade device code, a member's personal link, or the public demo — never by typing the bare URL. *Managing* a brigade (adding members, minting links/QR, reports) always needs a signed-in account; that account can be free within limits (the Community plan, ≤10 members) or paid. A paid brigade's owner can already add helpers as `owner`/`admin`/`viewer` users. Visitors can always sign in at a kiosk/brigade URL but get no history and must retype their name each time — they are not a workaround for the member cap.
+
+- **Shipped (2026-07-04):** `AccessRoute` gate on `/signin` — a bare visit with no brigade code / account / demo now redirects to the front door instead of opening the book on the demo/default station. Explicit "Try the demo" button + session-sticky demo mode. See changelog.
+- **AC-1 — Personal member link as a real credential.** Today the personal check-in link is `…/sign-in?user=<memberId>&station=<stationId>` — it checks the member in but doesn't carry the brigade id and doesn't establish a session, so it can't open the full book (and the read gate 401s it). Rework the link to carry `brigadeId + memberId`, have it establish a scoped read session (so `requireSession` passes and `AccessRoute` allows it), and regenerate the QR/link accordingly.
+- **AC-2 — Visitor sign-ins.** New ephemeral check-in path at a kiosk/brigade URL: type a name, it's recorded for the event/attendance but **not** persisted as a `Member` (never counts toward `maxMembers`), gets no history, and can't tap-to-repeat (must retype each time). The member grid must not render visitors as tappable tiles.
+- **AC-3 — Truck-check join model, then gate `/truckcheck`.** Owner's shape: a brigade device / signed-in user *starts* a check session (per vehicle); a QR/link then lets anyone pick an existing vehicle/session to check or join (like the AAR collab join). Build that start-and-share flow first, then apply the same `AccessRoute` discipline to `/truckcheck` so it can't be opened bare either.
+- **AC-4 — Consistency sweep.** Reports and admin are already auth-gated (`ProtectedRoute` + `requireSession`); confirm nothing else exposes a walk-up surface without a credential once AC-1…AC-3 land.
 
 ### Now
 
