@@ -72,6 +72,26 @@ individually since there's no shared breakpoint convention to lean on the way
 sustained feature work, rather than as a one-off audit item now. Queued as
 Q-later — see MASTER_PLAN.
 
+## Addendum — sign-in book (`frontend/src/features/signin/`)
+
+Same automated method (scripted overflow + touch-target scan at all four
+viewports), run against `/signin` with the backend's in-memory dev DB serving
+real station/event data (not just an empty state).
+
+**Result: clean.** Zero horizontal overflow at any of the four viewports —
+`SignInPage.css` already carries four tuned breakpoints (1400/1200/1024/768px),
+consistent with `frontend/`'s general responsive maturity found above. The
+member grid, search box, event tabs, and "+ New Event" FAB all reflow correctly
+down to 390px phone width with live data loaded.
+
+Three icon-only secondary controls measured under the 44px touch-target
+minimum: `.theme-toggle-btn` (36–40px), `.admin-menu-btn` (40px), and
+`.event-end-btn` (28×28px, `MemberNameGrid.css:132`). All three are
+low-frequency secondary actions (not the primary sign-in tap targets), and
+`.event-end-btn` in particular is sized to sit inline in a tight event-tab
+strip — bumping it risks breaking that layout. Not fixed this pass; noted here
+rather than queued, since severity is low and the fix isn't a safe drive-by.
+
 ## What's already solid
 
 - `frontend/` — no overflow or touch-target violations found at any tested
