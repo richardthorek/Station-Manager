@@ -9,8 +9,9 @@ fixes are made in this review.
 **Status: the "AAR hero polish" Q1 batch (AAR-1/2/3/6/7/8/9/10/11/15/19/23)
 shipped 2026-07-03, plus the insight-quality/session-clarity rework and the Q3
 batch (AAR-13/14/16/17/18/20/21/22/24) shipped 2026-07-04** (see the changelog).
-AAR-12 accepted-and-documented (mixed id space, no consumer); AAR-4, AAR-5 and
-physical-iPad verification of the AAR-20 print path remain open. Q1-batch
+AAR-4 and AAR-5 also shipped 2026-07-04. AAR-12 accepted-and-documented
+(mixed id space, no consumer). Only physical-iPad verification of the AAR-20
+print path remains open. Q1-batch
 detail below:
 - **AAR-6/AAR-8** (`js/audio/live.js`, `js/audio/speech.js`): the gateway
   speech token now refreshes proactively every 8 minutes, and the transcriber
@@ -118,12 +119,12 @@ team" cloud section. The findings below are the gaps between *good* and
   as fillable (and clears the flag once replaced), and typing a location
   manually (`views/setup.js`) clears it too.
 
-- **AAR-4 · Low · UX — The example review is buried.** "See an example" is a
+- **[Fixed 2026-07-04]** **AAR-4 · Low · UX — The example review is buried.** "See an example" is a
   footer link (`views/home.js:172-176`), but the worked example *is* the
   sales demo. On a first visit with zero reviews, it deserves a spot in the
   hero section ("See what a finished review looks like"), not the footer.
 
-- **AAR-5 · Low · UX — No affordance explaining that signing in unlocks team
+- **[Fixed 2026-07-04]** **AAR-5 · Low · UX — No affordance explaining that signing in unlocks team
   sync.** Cloud backup/"From your team" simply don't appear when signed out
   (`views/home.js:134-135`). A facilitator who never signs in silently gets
   no backup — one dropped iPad loses the review. **Direction:** a quiet,
@@ -363,4 +364,4 @@ confident live demo in front of a brigade.
 | 11 | ~~**AAR-2** replace native prompt/confirm~~ **Fixed 2026-07-03** | Brand-consistent dialogs; unlocks AAR-1's better confirm |
 | 12 | ~~**AAR-21** room notes in exports~~ **Fixed 2026-07-04** | Completes the collab promise |
 | 13 | ~~**AAR-20** print path~~ **Fixed 2026-07-04** (code; physical-iPad verify still pending) | Long-open P1; verify on iPad |
-| 14 | Low-severity batch — **Fixed 2026-07-04:** AAR-13, AAR-14, AAR-16, AAR-17, AAR-18, AAR-22, AAR-24; **accepted (documented):** AAR-12 (mixed segment/note id space — no current consumer resolves ids against segments); **still open:** AAR-4, AAR-5 | Fold into the sessions above where files overlap |
+| 14 | Low-severity batch — **Fixed 2026-07-04:** AAR-13, AAR-14, AAR-16, AAR-17, AAR-18, AAR-22, AAR-24; **accepted (documented):** AAR-12 (mixed segment/note id space — no current consumer resolves ids against segments); **also fixed:** AAR-4, AAR-5 | Fold into the sessions above where files overlap |
