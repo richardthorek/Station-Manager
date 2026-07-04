@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-04 (full AAR Q1 hero-polish batch shipped — AAR-1/2/3/6/7/8/9/10/11/15/19/23; Q1 now leads with the owner's insight-quality + session-clarity rework)
+**Last updated:** 2026-07-04 (AAR hero-polish batch + insight-quality/session-clarity rework shipped; Q1 now = live-validate the consolidation quality on a real debrief)
 **Status:** Living document — **the single plan** for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
 
 ---
@@ -47,7 +47,7 @@ One row per function/feature of the product. Status: ✅ shipped & stable · �
 | 5 | **Truck check — manual** (vehicle types, locked standard checklists, zones/equipment, issue lifecycle, member attribution) | ✅ | Cross-brigade comparative reporting (Q6); vehicle mgmt surfacing (Q11) |
 | 6 | **Truck check — voice agent (A3)** (hold-to-talk PWA → server-side STT → tool loop → TTS; hardened per F1–F16 review) | 🟡 | iPad on-device verification (Q4); pilot rollout (Q5); VAD/continuous listening (Q15); vision + offline = A4 (Q16) |
 | 7 | **Reports & analytics** (dashboard, cross-station, CSV/PDF export) | ✅ | Advanced analytics dashboard #123 (Q14) |
-| 8 | **AAR Studio — THE HERO** (AI-facilitated After Action Reviews, cloud sync, collab notes, dedupe/merge) | 🟡 | Full Q1 "hero polish" batch shipped 2026-07-03 (AAR-1/2/3/6/7/8/9/10/11/15/19/23) per [AAR review](wiki/developer/history/reviews/AAR_STUDIO_REVIEW_20260703.md); next: insight-quality + session-clarity rework (Q1) and remaining collab/export batch (Q3); CSP shrink (Q10) |
+| 8 | **AAR Studio — THE HERO** (AI-facilitated After Action Reviews, cloud sync, collab notes, dedupe/merge) | 🟡 | "Hero polish" batch (AAR-1/2/3/6/7/8/9/10/11/15/19/23) + insight-quality/session-clarity rework shipped per [AAR review](wiki/developer/history/reviews/AAR_STUDIO_REVIEW_20260703.md); remaining: live-validate the consolidation quality (Q1) + collab/export batch (Q3); CSP shrink (Q10) |
 | 9 | **Multi-station** (isolation, station mgmt UI, national RFS dataset lookup, demo station) | ✅ | Migration scripts deferred until a real multi-brigade migration needs one |
 | 10 | **SaaS tenancy & entitlements** (Organization, plans, `requireFeature` both-sides gating, limits) | ✅ | `maxDevices` unenforced by design (devices dropped from pricing) |
 | 11 | **Stripe billing** (Checkout, Portal, webhooks, trial, audit trail, AI top-up packs) | 🟡 | Metered overage needs a Stripe meter + D1 pricing decisions (Q7); device accounts (Q8) |
@@ -72,7 +72,7 @@ The single ordered work queue across every track. Work top-down; re-order here w
 
 ### Now
 
-- **Q1 — AAR Studio: insight-quality + session-clarity rework (owner, 2026-07-04).** The whole Q1 hero-polish batch (AAR-1/2/3/6/7/8/9/10/11/15/19/23) shipped 2026-07-03. Owner's next hero direction — make AAR Studio a true “Jarvis/Cortana” assistant that surfaces *consolidated wisdom*, not a per-utterance transcript rephraser. Three threads: **(a) Insight consolidation** — extraction currently fires per chunk and emits one finding per utterance (30+ for a short debrief); rework the trigger to accumulate a backlog of raw points and re-process them into a smaller set of consolidated findings/outcomes once a topic is detected to have moved on (widen the discussion “range” fed to the model; dedupe/merge harder). **(b) Edit insights, not transcript** — de-emphasise granular transcript correction; make findings cards tap-to-edit the primary editing surface. **(c) Session clarity** — the UI is confusing about which review is “selected”; make dropping into a session and the active-session indicator obvious. *Supersedes the old Q1 as the lead hero item; details firm up during implementation.*
+- **Q1 — AAR Studio: validate the insight-quality rework on a live debrief (owner, 2026-07-04).** The structural rework shipped 2026-07-04 (see changelog): **(a)** consolidation — settle-based trigger (quiet-gap, not fixed timer), chunk range 450 → 1400 words, "expert facilitator" prompt that combines a back-and-forth into ~1–4 findings; **(b)** tap-to-edit finding cards + findings-led Edit page with transcript demoted to Advanced; **(c)** active-review chip in the topbar + "Currently open" flag on Home. UI/structure verified in Chromium at iPad-portrait width. **Remaining — needs a real debrief:** the consolidation quality can only be proven with live AI over real audio. Run a genuine debrief, confirm a short one yields a sensible handful of findings (not 30), and tune the trigger (`quietMs`/`ceilingWords`) and prompt if it's still too granular or now too sparse. Batch with the Q4 on-device session.
 - **Q2 — D1 pricing decisions (owner).** Confirm: trial length (14 vs 30 days, AI included?), AI metering unit (session vs audio-minute; see AAR-11 for why per-vend is wrong), top-up pack size/price, per-org vs per-station billing for district orgs, grant/PO invoicing. *Blocks Q7. Decision, not code.*
 
 ### Next
