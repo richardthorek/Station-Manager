@@ -17,9 +17,10 @@
   align-items: stretch;
   background: var(--color-gray-light);
   border-bottom: 2px solid var(--border-color);
-  gap: 4px;
+  gap: 8px;
   padding: 12px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .collapse-grid-btn {
@@ -577,6 +578,19 @@
   .grid-search-input {
     font-size: 16px; /* Prevent iOS zoom */
     padding: 12px 40px 12px 14px;
+  }
+}
+
+/* Phone widths: the collapse button + a single event tab + a full-size
+   "+ New Event" can't share one row — the tab gets starved below its own
+   width, clips its end (✕) button, and butts straight against the lime
+   button ("running into each other"). Drop "+ New Event" to its own
+   full-width row (the header already has flex-wrap) so the tab gets the rest
+   of row 1 and renders in full. */
+@media (max-width: 480px) {
+  .new-event-btn {
+    flex: 1 0 100%;
+    order: 3;
   }
 }
 
