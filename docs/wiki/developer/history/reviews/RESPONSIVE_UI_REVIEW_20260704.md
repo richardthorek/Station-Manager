@@ -92,6 +92,50 @@ low-frequency secondary actions (not the primary sign-in tap targets), and
 strip — bumping it risks breaking that layout. Not fixed this pass; noted here
 rather than queued, since severity is low and the fix isn't a safe drive-by.
 
+## Addendum 2 — sign-in book deep audit (2026-07-06)
+
+A follow-up, data-driven pass over the **sign-in book** with the backend
+serving real seeded data (8 members, an active event, several checked in), so
+the member grid and event tabs actually rendered (the earlier addendum hit an
+empty/loading state). Scanned `/signin`, `/profile/:memberId`, and the
+personal-link `/sign-in?user=…` at 390/768/1024/1440 (plus 360/414/600 for the
+header specifically), scripting horizontal-overflow and 44px touch-target
+checks in Chromium.
+
+**Result: zero horizontal overflow** at every route × viewport. Two real
+layout bugs found and fixed:
+
+- **UI-4 (High, fixed) — profile hero didn't stack on phones.** `.profile-hero`
+  is a CSS **grid** (`grid-template-columns: auto 1fr`), but the ≤640px override
+  tried to stack it with `flex-direction: column`, which is **inert on a grid
+  container**. So on phones the avatar and body stayed side-by-side and cramped,
+  even though the same block sets `text-align: center` and centres the
+  name/badges (i.e. a single centred column was always the intent). Fixed with
+  `grid-template-columns: 1fr` + `justify-items: center`, centred the
+  header/meta once stacked, and capped the `🆔 <full-UUID>` chip with
+  `overflow-wrap: anywhere` so it can't push past a phone-width screen.
+  (`UserProfilePage.css`.)
+- **UI-5 (High, fixed) — event tab and "+ New Event" collided on phones**
+  (owner-reported: "the training and new event buttons appear to be running
+  into each other"). In `MemberNameGrid.css`'s `.event-tabs-header`, the
+  collapse button + a single event tab + a full-size "+ New Event" all competed
+  for one row; the `.event-tabs` container (`flex:1; overflow-x:auto`) was
+  starved below the tab's own width, so the tab **clipped its own end (✕)
+  button** and butted straight against the lime button with a 4px gap — two
+  saturated blocks reading as "running into each other". Fixed: the header now
+  wraps (`flex-wrap`) with an 8px gap, and at ≤480px "+ New Event" drops to its
+  own full-width row (`order:3; flex:1 0 100%`) so the tab takes the rest of
+  row 1 and shows in full. Stays inline at ≥481px. Verified across
+  360/390/414/600/768px.
+
+**Known, not fixed (documented, low priority):** the phone sign-in header still
+has three sub-44px icon controls — the ⚙️ settings and 🌙 theme toggles (~32px)
+and the event `✕` end button (28px, now fully visible after UI-5). These are
+secondary controls, and the `✕` sits in a deliberately tight tab strip where a
+blind size bump risks the layout (same call as UI-3's `.event-end-btn` note).
+Left as-is; worth a padded-hit-area pass (à la UI-2) if the sign-in book gets a
+dedicated touch-target sweep.
+
 ## What's already solid
 
 - `frontend/` — no overflow or touch-target violations found at any tested

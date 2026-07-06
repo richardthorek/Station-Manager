@@ -146,7 +146,7 @@ export interface Event<TDate = string> {
 export interface EventParticipant<TDate = string> {
   id: string;
   eventId: string;
-  memberId: string;
+  memberId: string;              // For visitors (AC-2): a synthetic `visitor-<uuid>` id, not a real Member
   memberName: string;
   memberRank?: string | null;
   stationId?: string;            // Multi-station support (optional, defaults to 'default-station')
@@ -154,6 +154,12 @@ export interface EventParticipant<TDate = string> {
   checkInMethod: CheckInMethod;
   location?: string;
   isOffsite: boolean;
+  /**
+   * AC-2 — ephemeral visitor sign-in. True when this participant is a walk-up
+   * guest who typed their name, NOT a persisted Member: no history, never
+   * counts toward the org's member cap, and no tap-to-repeat tile in the grid.
+   */
+  isVisitor?: boolean;
   createdAt: TDate;
 }
 

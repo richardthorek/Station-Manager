@@ -2036,6 +2036,10 @@
               "member": {
                 "type": "string",
                 "description": "Display name of the member"
+              },
+              "sessionToken": {
+                "type": "string",
+                "description": "AC-1 — short-lived (8h), station-scoped member-session JWT. Send it back as the X-Member-Session header to read the station's live sign-in book without a full account or kiosk token (station-wide read scope, never more)."
               }
             }
           }
@@ -2056,6 +2060,10 @@
               "member": {
                 "type": "string",
                 "description": "Display name of the member"
+              },
+              "sessionToken": {
+                "type": "string",
+                "description": "AC-1 — short-lived (8h), station-scoped member-session JWT. Send it back as the X-Member-Session header to read the station's live sign-in book without a full account or kiosk token (station-wide read scope, never more)."
               }
             }
           }
@@ -2557,6 +2565,120 @@
           "notes"
         ],
         "description": "Creates EventAuditLog entry for both additions and removals (toggle undo)"
+      },
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "maxRequests": 84,
+          "windowMs": 300000,
+          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "headers": [
+            "RateLimit-Limit",
+            "RateLimit-Remaining",
+            "RateLimit-Reset"
+          ]
+        }
+      }
+    },
+    "POST /api/events/:eventId/visitors": {
+      "method": "POST",
+      "path": "/api/events/:eventId/visitors",
+      "description": "AC-2 — sign in an ephemeral visitor by typed name. The visitor is recorded as an EventParticipant for attendance but is never persisted as a Member: no history, no member-cap impact, no tap-to-repeat tile. Unlike /participants there is no toggle — every call adds a new visitor row.",
+      "authentication": "none",
+      "parameters": {
+        "path": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Event UUID"
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "schema": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Visitor's typed name (not a Member id)"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "kiosk",
+                "mobile",
+                "qr",
+                "manual"
+              ],
+              "description": "Check-in method (default: 'kiosk')"
+            },
+            "location": {
+              "type": "string",
+              "description": "Location description (optional)"
+            },
+            "isOffsite": {
+              "type": "boolean",
+              "description": "Whether check-in is off-site (default: false)"
+            },
+            "performedBy": {
+              "type": "string",
+              "description": "User ID or name of person performing the action (optional)"
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 500,
+              "description": "Optional notes or reason for action (optional)"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Visitor added",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "added"
+                ]
+              },
+              "participant": {
+                "$ref": "#/definitions/EventParticipant",
+                "description": "isVisitor=true, memberId is a synthetic 'visitor-<uuid>'"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid request, missing name, or event not active"
+        },
+        "404": {
+          "description": "Event not found"
+        },
+        "500": {
+          "description": "Server error"
+        }
+      },
+      "implementation": "backend/src/routes/events.ts:330",
+      "socketEvent": "participant-change",
+      "auditLog": {
+        "enabled": true,
+        "captures": [
+          "timestamp",
+          "device",
+          "location",
+          "performedBy",
+          "notes"
+        ],
+        "description": "Creates EventAuditLog entry with action 'participant-added', same as a member check-in"
       },
       "security": {
         "rateLimiting": {
@@ -4554,14 +4676,22 @@
             "properties": {
               "devices": {
                 "type": "array",
-                "items": { "$ref": "#/definitions/Device" }
+                "items": {
+                  "$ref": "#/definitions/Device"
+                }
               },
-              "count": { "type": "integer" }
+              "count": {
+                "type": "integer"
+              }
             }
           }
         },
-        "401": { "description": "Not authenticated" },
-        "403": { "description": "Not an owner/admin" }
+        "401": {
+          "description": "Not authenticated"
+        },
+        "403": {
+          "description": "Not an owner/admin"
+        }
       },
       "implementation": "backend/src/routes/devices.ts"
     },
@@ -4576,13 +4706,37 @@
         "schema": {
           "type": "object",
           "properties": {
-            "stationId": { "type": "string" },
-            "type": { "type": "string", "enum": ["kiosk", "tablet", "phone", "wearable"] },
-            "name": { "type": "string", "maxLength": 100 },
-            "description": { "type": "string", "maxLength": 200 },
-            "expiresInDays": { "type": "integer", "minimum": 1, "maximum": 3650 }
+            "stationId": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "kiosk",
+                "tablet",
+                "phone",
+                "wearable"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "expiresInDays": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
+            }
           },
-          "required": ["stationId", "type", "name"]
+          "required": [
+            "stationId",
+            "type",
+            "name"
+          ]
         }
       },
       "responses": {
@@ -4591,14 +4745,26 @@
           "schema": {
             "type": "object",
             "properties": {
-              "device": { "$ref": "#/definitions/Device" },
-              "kioskUrl": { "type": "string", "format": "uri", "example": "https://host/signin?brigade=uuid" }
+              "device": {
+                "$ref": "#/definitions/Device"
+              },
+              "kioskUrl": {
+                "type": "string",
+                "format": "uri",
+                "example": "https://host/signin?brigade=uuid"
+              }
             }
           }
         },
-        "400": { "description": "Validation error" },
-        "401": { "description": "Not authenticated" },
-        "403": { "description": "Not an owner/admin" }
+        "400": {
+          "description": "Validation error"
+        },
+        "401": {
+          "description": "Not authenticated"
+        },
+        "403": {
+          "description": "Not an owner/admin"
+        }
       },
       "implementation": "backend/src/routes/devices.ts"
     },
@@ -4608,23 +4774,49 @@
       "description": "AC-5 — rename a device and/or flip its status between 'active' and 'revoked'. Only the owning organization may manage its own devices.",
       "authentication": "required (owner/admin)",
       "parameters": {
-        "path": { "id": { "type": "string", "required": true } }
+        "path": {
+          "id": {
+            "type": "string",
+            "required": true
+          }
+        }
       },
       "requestBody": {
         "required": true,
         "schema": {
           "type": "object",
           "properties": {
-            "name": { "type": "string", "maxLength": 100 },
-            "description": { "type": "string", "maxLength": 200 },
-            "status": { "type": "string", "enum": ["active", "revoked"] }
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "revoked"
+              ]
+            }
           }
         }
       },
       "responses": {
-        "200": { "description": "Updated device", "schema": { "$ref": "#/definitions/Device" } },
-        "403": { "description": "Device belongs to a different organization" },
-        "404": { "description": "Device not found" }
+        "200": {
+          "description": "Updated device",
+          "schema": {
+            "$ref": "#/definitions/Device"
+          }
+        },
+        "403": {
+          "description": "Device belongs to a different organization"
+        },
+        "404": {
+          "description": "Device not found"
+        }
       },
       "implementation": "backend/src/routes/devices.ts"
     },
@@ -4634,13 +4826,24 @@
       "description": "AC-5 — remove a device your organization owns.",
       "authentication": "required (owner/admin)",
       "parameters": {
-        "path": { "id": { "type": "string", "required": true } }
+        "path": {
+          "id": {
+            "type": "string",
+            "required": true
+          }
+        }
       },
       "requestBody": null,
       "responses": {
-        "204": { "description": "Device removed" },
-        "403": { "description": "Device belongs to a different organization" },
-        "404": { "description": "Device not found" }
+        "204": {
+          "description": "Device removed"
+        },
+        "403": {
+          "description": "Device belongs to a different organization"
+        },
+        "404": {
+          "description": "Device not found"
+        }
       },
       "implementation": "backend/src/routes/devices.ts"
     },
@@ -4654,8 +4857,15 @@
         "required": true,
         "schema": {
           "type": "object",
-          "properties": { "token": { "type": "string", "format": "uuid" } },
-          "required": ["token"]
+          "properties": {
+            "token": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "token"
+          ]
         }
       },
       "responses": {
@@ -4664,20 +4874,50 @@
           "schema": {
             "type": "object",
             "properties": {
-              "valid": { "type": "boolean", "enum": [true] },
-              "deviceId": { "type": "string" },
-              "deviceName": { "type": "string" },
-              "deviceType": { "type": "string" },
-              "stationId": { "type": "string" },
-              "brigadeId": { "type": "string", "nullable": true },
-              "description": { "type": "string", "nullable": true },
-              "createdAt": { "type": "string", "format": "date-time" },
-              "expiresAt": { "type": "string", "format": "date-time", "nullable": true }
+              "valid": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "deviceId": {
+                "type": "string"
+              },
+              "deviceName": {
+                "type": "string"
+              },
+              "deviceType": {
+                "type": "string"
+              },
+              "stationId": {
+                "type": "string"
+              },
+              "brigadeId": {
+                "type": "string",
+                "nullable": true
+              },
+              "description": {
+                "type": "string",
+                "nullable": true
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
             }
           }
         },
-        "404": { "description": "Token not found, revoked, or expired" },
-        "400": { "description": "Validation error" }
+        "404": {
+          "description": "Token not found, revoked, or expired"
+        },
+        "400": {
+          "description": "Validation error"
+        }
       },
       "implementation": "backend/src/routes/devices.ts",
       "security": {
@@ -5324,6 +5564,10 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "isVisitor": {
+          "type": "boolean",
+          "description": "AC-2: true for ephemeral visitors (typed name, not a persisted Member)"
         }
       }
     },
@@ -5708,20 +5952,76 @@
       "type": "object",
       "description": "AC-5 — a first-class device account (kiosk/tablet/phone/wearable), formalising the anonymous BrigadeAccessToken UUID into a named, typed, revocable credential with a last-seen audit trail.",
       "properties": {
-        "id": { "type": "string" },
-        "organizationId": { "type": "string", "nullable": true, "description": "Owning org; absent for back-compat (kiosk/demo without org context)" },
-        "stationId": { "type": "string" },
-        "type": { "type": "string", "enum": ["kiosk", "tablet", "phone", "wearable"] },
-        "name": { "type": "string", "description": "e.g. 'Main shed kiosk', 'Captain's phone'" },
-        "token": { "type": "string", "format": "uuid", "description": "Unguessable credential — same model as BrigadeAccessToken" },
-        "status": { "type": "string", "enum": ["active", "revoked"] },
-        "description": { "type": "string", "nullable": true },
-        "lastSeenAt": { "type": "string", "format": "date-time", "nullable": true, "description": "Updated each time the token is validated" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" },
-        "expiresAt": { "type": "string", "format": "date-time", "nullable": true }
+        "id": {
+          "type": "string"
+        },
+        "organizationId": {
+          "type": "string",
+          "nullable": true,
+          "description": "Owning org; absent for back-compat (kiosk/demo without org context)"
+        },
+        "stationId": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "kiosk",
+            "tablet",
+            "phone",
+            "wearable"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "e.g. 'Main shed kiosk', 'Captain's phone'"
+        },
+        "token": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unguessable credential — same model as BrigadeAccessToken"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "revoked"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "nullable": true
+        },
+        "lastSeenAt": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true,
+          "description": "Updated each time the token is validated"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true
+        }
       },
-      "required": ["id", "stationId", "type", "name", "token", "status", "createdAt", "updatedAt"]
+      "required": [
+        "id",
+        "stationId",
+        "type",
+        "name",
+        "token",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
     },
     "AgentSession": {
       "type": "object",
