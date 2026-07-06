@@ -5,7 +5,8 @@ import { h, toast, mount } from '../ui.js';
 import * as store from '../store.js';
 import { CATEGORIES, sessionPhases, sessionUnitNames, createFinding } from '../lib/model.js';
 import { findMergeSuggestions, mergeFindings } from '../lib/dedupe.js';
-import { analyseNow, getPersistentError, dismissPersistentError } from '../analyse.js';
+import { analyseNow, getPersistentError, dismissPersistentError, isAnalysing, setAnalysisListener } from '../analyse.js';
+import * as live from '../audio/live.js';
 
 let phaseFilter = null; // null = all
 // Pairs the facilitator chose to "keep both", keyed by sorted finding-id pair.
@@ -176,6 +177,68 @@ function quickAdd(phases, units) {
   return h('div', { class: 'quick-add' }, input, catSel, phaseSel, unitSel, h('button', { class: 'btn btn--primary', onclick: add }, 'Add'));
 }
 
+/**
+ * Present mode runs unattended on a projector while recording/analysis keep
+ * going in the background — with no toolbar in sight, the facilitator had no
+ * way to tell it hadn't silently died. This renders a compact live strip
+ * (recording dot + a scrolling transcript tail) and a findings-processing
+ * spinner, wired directly to the live-listen and analysis singletons rather
+ * than waiting for a store re-render (interim words and analysis start/stop
+ * don't otherwise trigger one).
+ */
+function presentStatusBar(session) {
+  const dot = h('span', { class: 'present-status__dot', 'aria-hidden': 'true' });
+  const stateText = h('span', { class: 'present-status__state' });
+  const transcriptList = h('ul', { class: 'present-status__transcript', 'aria-label': 'Live transcript' });
+  const analysingDot = h('span', { class: 'present-status__spinner', 'aria-hidden': 'true' });
+  const analysingText = h('span', {});
+
+  function paintRecording(s) {
+    const active = s.status === 'listening' || s.status === 'starting' || s.status === 'reconnecting';
+    dot.classList.toggle('present-status__dot--off', !active);
+    dot.classList.toggle('present-status__dot--warn', s.status === 'reconnecting');
+    stateText.textContent = s.status === 'starting' ? 'Connecting…'
+      : s.status === 'reconnecting' ? 'Reconnecting…'
+      : s.status === 'listening' ? 'Recording live'
+      : 'Not recording';
+  }
+  function paintTranscript(s) {
+    const recent = session.segments.slice(-6).map((seg) => seg.text);
+    if (s.interim) recent.push(`${s.interimSpeaker ? s.interimSpeaker + ': ' : ''}${s.interim}…`);
+    transcriptList.replaceChildren(...(recent.length
+      ? recent.map((t) => h('li', {}, t))
+      : [h('li', { class: 'muted' }, 'Waiting for audio…')]));
+    transcriptList.scrollTop = transcriptList.scrollHeight;
+  }
+  function paintAnalysing() {
+    const busy = isAnalysing();
+    analysingDot.classList.toggle('present-status__spinner--off', !busy);
+    analysingText.textContent = busy ? 'Processing findings…' : 'Findings up to date';
+  }
+
+  const initialLive = live.getState();
+  paintRecording(initialLive);
+  paintTranscript(initialLive);
+  paintAnalysing();
+
+  live.setUiListener((event, s) => { paintRecording(s); if (event === 'interim') paintTranscript(s); });
+  setAnalysisListener(() => paintAnalysing());
+
+  return h('div', { class: 'present-status' },
+    h('div', { class: 'present-status__rec' }, dot, stateText),
+    transcriptList,
+    h('div', { class: 'present-status__analysing' }, analysingDot, analysingText),
+  );
+}
+
+/** Busiest column decides the font/padding scale so all four fit one screen. */
+function densityBucket(maxColumnCount) {
+  if (maxColumnCount <= 4) return 'roomy';
+  if (maxColumnCount <= 7) return 'cozy';
+  if (maxColumnCount <= 11) return 'tight';
+  return 'dense';
+}
+
 function togglePresent() {
   const on = document.body.classList.toggle('present');
   if (on) document.documentElement.requestFullscreen?.().catch(() => {});
@@ -199,8 +262,10 @@ export function render(container) {
     }),
   );
 
+  let maxColumnCount = 0;
   const columns = h('div', { class: 'board' }, CATEGORIES.map((cat) => {
     const items = visible.filter((f) => f.category === cat.id);
+    maxColumnCount = Math.max(maxColumnCount, items.length);
     return h('div', { class: `board__col board__col--${cat.id}`, role: 'group', 'aria-label': `${cat.label} (${items.length})` },
       h('div', { class: 'board__head' }, h('span', {}, cat.label), h('span', { class: 'board__count', 'aria-hidden': 'true' }, String(items.length))),
       h('div', { class: 'board__cards', role: 'list' },
@@ -208,6 +273,11 @@ export function render(container) {
       ),
     );
   }));
+
+  // Only affects layout combined with body.present in CSS — harmless to keep
+  // current outside present mode.
+  document.body.classList.remove('present-density--roomy', 'present-density--cozy', 'present-density--tight', 'present-density--dense');
+  document.body.classList.add(`present-density--${densityBucket(maxColumnCount)}`);
 
   function rerender() {
     // local UI state (filter) changed — re-render without touching the store
@@ -225,6 +295,7 @@ export function render(container) {
       ),
     ),
     aiErrorBanner(),
+    presentStatusBar(session),
     filterChips,
     mergeSuggestionsPanel(session),
     quickAdd(phases, units),
