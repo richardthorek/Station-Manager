@@ -4,6 +4,7 @@
 import { chatJson } from './llm.js';
 import { CATEGORIES, CATEGORY_IDS, GENERAL_PHASE, INCIDENT_TYPES, sessionPhases, createFinding } from './model.js';
 import { countWords, fmtClock } from './text.js';
+import { annotateColloquialSizes } from './sizing.js';
 
 /**
  * Live auto-extraction policy. We deliberately do NOT extract on a fixed timer:
@@ -86,7 +87,7 @@ Incident phases discussed: ${phases.join(', ')}. "${GENERAL_PHASE}" is the bucke
 Classify every finding into exactly one category:
 ${categories}
 
-CONSOLIDATE — this is the most important rule. The text below is one stretch of discussion where several people talk back and forth about a few topics. Do NOT emit a finding per sentence or per speaker. Instead, read the whole exchange, work out the underlying points being made, and write ONE finding per distinct point — combining what several people said about the same thing into a single, well-rounded finding. A short debrief segment should usually yield only 1–4 findings. If you find yourself writing more than about 5, you are being too granular: merge them. Prefer a smaller number of substantial, standalone findings over many thin restatements.
+CONSOLIDATE BY TOPIC, NOT BY SEGMENT — this is the most important rule. The text below is one stretch of discussion where several people talk back and forth, often about more than one topic. Do NOT emit a finding per sentence or per speaker — for each distinct topic (e.g. communications, size-up, staging/location, PPE, safety, logistics, incident management are usually separate topics even inside one continuous exchange), read everything said about that topic and combine it into ONE well-rounded finding. But do NOT collapse separate topics into a single finding just because they came up in the same breath: comms, size-up and staging location are three findings, not one, even when the same back-and-forth covers all three in a row. As a rough guide, a short debrief segment usually yields somewhere around 3–8 findings: far more than that is under-consolidated (restating near-duplicates), one or two findings covering a segment that clearly touched several distinct topics is over-consolidated (topics blurred together).
 
 Transcript reality: this is usually a single room microphone with many speakers, so words are garbled. Fix obvious mis-hearings from context (e.g. "be a operators" → "BA operators"). Mark names or figures you are not sure of with "(unclear)". Keep Australian fire-service terminology exactly as used: BA, BACO, Cat 1, Cat 6, 38 mm, 65 mm, OCC, FRNSW, SCC, appliance, fireground, talkgroup.
 
@@ -95,6 +96,7 @@ Rules:
 - Ignore small talk, jokes, scheduling chatter and the facilitator's process talk ("let's move on to suppression"). Silence is fine: if nothing of substance was decided or learned, return an empty array.
 - Each transcript segment is prefixed with its id like [s12]. Every finding must list ALL the segment ids that contributed to it in segmentIds (a consolidated finding will usually cite several), and one short verbatim quote in quote that best captures it.
 - Use the segments' tagged phase as a hint, but assign the phase the content is actually about.
+- Metric sizing: when the crew describes a size or distance colloquially or in imperial units, keep their comparison and add the metric equivalent in parentheses — "about the size of a tennis court (≈ 260 m²)", "3 miles down the road (≈ 4.8 km)", "three footy fields (≈ 2.1 ha)". Use m, km, m² and ha. The quote stays verbatim — never convert inside quote.
 
 Respond with a JSON object: {"findings": [{"category", "phase", "text", "quote", "segmentIds"}]}.`;
 
@@ -103,7 +105,7 @@ Respond with a JSON object: {"findings": [{"category", "phase", "text", "quote",
     const speaker = seg.speaker ? ` ${seg.speaker}:` : '';
     return `[${seg.id}]${time} (${seg.phase})${speaker} ${seg.text}`;
   });
-  const user = `Here is a stretch of the debrief. Read the whole thing, then give me the consolidated findings — the few points that matter, each combining everything said about it:\n\n${lines.join('\n')}`;
+  const user = `Here is a stretch of the debrief. Read the whole thing, then give me the consolidated findings — one per distinct topic, each combining everything said about that topic, with separate topics kept as separate findings:\n\n${lines.join('\n')}`;
   return [
     { role: 'system', content: system },
     { role: 'user', content: user },
@@ -117,7 +119,9 @@ export function toFinding(raw, session, segmentPool) {
   return createFinding({
     category: CATEGORY_IDS.includes(raw.category) ? raw.category : 'happened',
     phase: phases.includes(raw.phase) ? raw.phase : GENERAL_PHASE,
-    text: String(raw.text ?? '').trim(),
+    // Deterministic backstop for the prompt's metric-sizing rule: colloquial
+    // sizes the model left unconverted get their metric equivalent appended.
+    text: annotateColloquialSizes(String(raw.text ?? '').trim()),
     quote: String(raw.quote ?? '').trim(),
     segmentIds: (Array.isArray(raw.segmentIds) ? raw.segmentIds : []).filter((id) => validIds.has(id)),
     source: 'ai',

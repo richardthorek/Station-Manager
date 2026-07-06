@@ -5,6 +5,7 @@
 import { chatJson } from './llm.js';
 import { CATEGORIES, sessionPhases, GENERAL_PHASE } from './model.js';
 import { emptyReport } from './exports.js';
+import { normaliseSizeValue } from './sizing.js';
 
 export function reportSchema(phases) {
   const str = { type: 'string' };
@@ -76,7 +77,7 @@ Audience: brigade members and district staff. Tone: plain, direct, operational �
 Produce a JSON report with this structure and style:
 - headline: the incident title, tightened if needed.
 - contextBar: one line describing the property/context and key constraints.
-- stats: 4-6 punchy figures drawn ONLY from the findings (value like "8" or "~1000", short uppercase-friendly label). Include "0 injuries"-style stats only if supported by the findings.
+- stats: 4-6 punchy figures drawn ONLY from the findings (value like "8" or "~1000", short uppercase-friendly label). Include "0 injuries"-style stats only if supported by the findings. Stat values must be metric (m, km, m², ha, L/min) — never a colloquial comparison: "the size of a tennis court" becomes value "≈ 260 m²", "3 miles" becomes "≈ 4.8 km".
 - snapshot: 1-2 paragraphs telling the incident story.
 - phases: one entry per phase, in this order: ${phases.join(', ')}. Each has a short "happened" narrative plus "well" and "didnt" bullet lists. Write bullets as "Bold lead. Supporting detail." — a 3-8 word lead sentence, then the detail. Use the ${GENERAL_PHASE} entry for material not tied to one phase; leave fields empty if a phase genuinely has nothing.
 - themes: 0-3 cross-cutting sections (e.g. logistics aftermath) for material that spans phases; empty array if none warranted.
@@ -84,6 +85,8 @@ Produce a JSON report with this structure and style:
 - actions: exactly the top 3 actions, each one sentence, imperative.
 - assessment: an honest overall paragraph — what the job says about the brigades, and the single most important lesson.
 - caveat: a verification footer noting the source (AAR meeting transcript) and that names/callsigns/figures should be verified before wider distribution.
+
+Use metric units throughout (m, km, m², ha). Where the findings quote a colloquial size (tennis courts, footy fields, miles), narrative text keeps the comparison with the metric in parentheses; stats and figures use the metric value alone.
 
 Base everything on the findings. Do not introduce facts that are not in them.`;
 
@@ -130,8 +133,10 @@ export function normaliseReport(raw, session) {
   return {
     headline: str(r.headline, base.headline),
     contextBar: str(r.contextBar),
+    // normaliseSizeValue is the deterministic backstop for the metric-stats
+    // prompt rule: a value like "1 Tennis Court" becomes "≈ 260 m²".
     stats: (Array.isArray(r.stats) ? r.stats : [])
-      .map((s) => ({ value: str(s?.value), label: str(s?.label) }))
+      .map((s) => ({ value: normaliseSizeValue(str(s?.value)), label: str(s?.label) }))
       .filter((s) => s.value || s.label)
       .slice(0, 6),
     snapshot: strArr(r.snapshot),

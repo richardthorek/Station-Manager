@@ -12,6 +12,17 @@ import { GENERAL_PHASE } from './lib/model.js';
 
 let analysing = false;
 let pendingWords = 0;
+
+// Single UI listener for analysis progress (Present mode shows a spinner
+// while a pass — including timer-driven auto-extraction, which has no
+// statusEl of its own — is in flight).
+let analysisListener = null;
+export function setAnalysisListener(fn) {
+  analysisListener = fn;
+}
+function emitAnalysing(message = '') {
+  analysisListener?.({ analysing, message });
+}
 // When the most recent words arrived — the trigger waits for a quiet gap after
 // this before processing, so it reads a settled discussion rather than chopping
 // one mid-flow (AAR insight-quality rework 2026-07-04).
@@ -114,7 +125,7 @@ export async function analyseNow(statusEl = null, { quiet = false } = {}) {
   }
   analysing = true;
   pendingWords = 0;
-  const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
+  const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; emitAnalysing(msg); };
   try {
     setStatus(`Analysing ${pending.length} segment(s)…`);
     const found = await extractFromSegments({
@@ -150,5 +161,6 @@ export async function analyseNow(statusEl = null, { quiet = false } = {}) {
     setStatus('');
   } finally {
     analysing = false;
+    emitAnalysing();
   }
 }
