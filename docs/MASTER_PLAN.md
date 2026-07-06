@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-04 (AC-1 shipped — personal member link mints a station-scoped read session; AC-5 shipped — first-class Device accounts; sign-in book gated behind a brigade code / account / member-session / demo; Q5 shipped — cross-brigade comparative truck-check reporting; cross-app responsive UI review shipped in aar-studio)
+**Last updated:** 2026-07-06 (AC-2 shipped — ephemeral visitor sign-ins; sign-in book responsive audit — fixed profile-hero mobile stacking + event-tab/New-Event phone collision; AC-1 shipped — personal member link mints a station-scoped read session; AC-5 shipped — first-class Device accounts; sign-in book gated behind a brigade code / account / member-session / demo; Q5 shipped — cross-brigade comparative truck-check reporting)
 **Status:** Living document — **the single plan** for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
 
 ---
@@ -40,7 +40,7 @@ One row per function/feature of the product. Status: ✅ shipped & stable · �
 
 | # | Feature / function | Status | Remaining |
 |---|---|---|---|
-| 1 | **Sign-in & check-in/out** (kiosk, mobile, QR, real-time sync) | ✅ | Access rework in progress (AC-2…AC-4, below; AC-1 personal-link credential + AC-5 device accounts shipped); minor perf polish (Q9) |
+| 1 | **Sign-in & check-in/out** (kiosk, mobile, QR, real-time sync) | ✅ | Access rework in progress (AC-3, AC-4 below; AC-1 personal-link credential + AC-2 visitor sign-ins + AC-5 device accounts shipped); minor perf polish (Q9) |
 | 2 | **Events & activities** (create/end events, participants, audit trail) | ✅ | — |
 | 3 | **Member profiles & achievements** (QR codes, stats, 20 achievements) | ✅ | — |
 | 4 | **Member management** (search/filter/sort, CSV import, invite/activation) | ✅ | — |
@@ -76,7 +76,7 @@ The agreed model for how anonymous access, membership, and subscriptions fit tog
 
 - **Shipped (2026-07-04):** `AccessRoute` gate on `/signin` — a bare visit with no brigade code / account / demo now redirects to the front door instead of opening the book on the demo/default station. Explicit "Try the demo" button + session-sticky demo mode. See changelog.
 - **AC-1 — Personal member link as a real credential. ✅ Shipped 2026-07-04.** `POST /api/checkins/url-checkin` now mints a short-lived (8h), station-scoped member-session JWT on check-in; `flexibleAuth`/`requireSession` recognise it via `X-Member-Session` (station-wide read, never more); `SignInLinkPage` stores it and now opens `/signin` instead of dead-ending at "Done". See changelog.
-- **AC-2 — Visitor sign-ins.** New ephemeral check-in path at a kiosk/brigade URL: type a name, it's recorded for the event/attendance but **not** persisted as a `Member` (never counts toward `maxMembers`), gets no history, and can't tap-to-repeat (must retype each time). The member grid must not render visitors as tappable tiles.
+- **AC-2 — Visitor sign-ins. ✅ Shipped 2026-07-06.** New ephemeral check-in path: `POST /api/events/:eventId/visitors` records a typed name as an `EventParticipant` (`isVisitor: true`, synthetic `visitor-<uuid>` id) but never persists a `Member` — no history, never counts toward `maxMembers`, no toggle (every submit is a fresh row). `MemberNameGrid` gets a "+ Visitor" affordance that reveals a name input; visitors show a "Visitor" badge in the roster and can be removed like any participant. The member grid still only ever renders real `Member`s as tappable tiles. See changelog.
 - **AC-3 — Truck-check join model, then gate `/truckcheck`.** Owner's shape: a brigade device / signed-in user *starts* a check session (per vehicle); a QR/link then lets anyone pick an existing vehicle/session to check or join (like the AAR collab join). Build that start-and-share flow first, then apply the same `AccessRoute` discipline to `/truckcheck` so it can't be opened bare either.
 - **AC-4 — Consistency sweep.** Reports and admin are already auth-gated (`ProtectedRoute` + `requireSession`); confirm nothing else exposes a walk-up surface without a credential once AC-1…AC-3 land.
 - **AC-5 — Device accounts. ✅ Shipped 2026-07-04.** Formalised the anonymous `BrigadeAccessToken` UUID into a first-class `Device` (in-memory + Table Storage twins, `/api/devices` CRUD, org-scoped, owner/admin gated) per the archived design ([SAAS_COMMERCIALIZATION_DESIGN §4](wiki/developer/history/archive/SAAS_COMMERCIALIZATION_DESIGN.md)). `kioskAccessResolver.ts` wires Device tokens into every existing kiosk-gating call site (`kioskModeMiddleware`, `flexibleAuth`'s brigade-token path, `/api/brigade-access/validate`) alongside the legacy store, so a new Device-issued kiosk URL actually works end-to-end (sign in, check in members, run activities) — not just a parallel unused API. Admin UI: a "Devices" section per station (enroll/rename/revoke/reactivate/remove, copy/QR the kiosk URL) alongside the untouched legacy token UI. See changelog. `maxDevices` enforcement remains intentionally off per #574.

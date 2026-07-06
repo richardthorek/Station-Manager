@@ -361,14 +361,38 @@ export function SignInPage() {
       setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
 
       // Announce check-out to screen readers (no success toast per requirements)
-      const member = members.find(m => m.id === memberId);
-      if (member) {
-        announce(`${member.name} checked out`, 'polite');
-      }
+      announce(`${participant.memberName} checked out`, 'polite');
 
       emit('participant-change', { eventId: selectedEventId, action: 'removed', participantId: participant.id, memberId });
     } catch (err) {
       console.error('Error removing participant:', err);
+      const errorMessage = formatErrorMessage(err);
+      announce(`Error: ${errorMessage}`, 'assertive');
+      showError(errorMessage);
+    }
+  };
+
+  const handleAddVisitor = async (name: string) => {
+    if (!selectedEventId) {
+      showWarning('Please select or start an event first');
+      return;
+    }
+
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    try {
+      const result = await api.addEventVisitor(selectedEventId, trimmed, 'kiosk');
+
+      // Reload the specific event to get the updated roster
+      const updatedEvent = await api.getEvent(selectedEventId);
+      setEvents(prevEvents => prevEvents.map(e => e.id === selectedEventId ? updatedEvent : e));
+
+      announce(`Visitor ${trimmed} signed in`, 'polite');
+      showSuccess(`Visitor "${trimmed}" signed in`);
+      emit('participant-change', { eventId: selectedEventId, ...result });
+    } catch (err) {
+      console.error('Error signing in visitor:', err);
       const errorMessage = formatErrorMessage(err);
       announce(`Error: ${errorMessage}`, 'assertive');
       showError(errorMessage);
@@ -600,6 +624,7 @@ export function SignInPage() {
             onSelectEvent={handleSelectEvent}
             onCheckIn={handleCheckIn}
             onCheckOut={handleRemoveParticipant}
+            onAddVisitor={handleAddVisitor}
             onStartNewEvent={() => setShowNewEventModal(true)}
             onEndEvent={handleEndEvent}
             onCollapse={() => setIsGridExpanded(false)}

@@ -87,6 +87,50 @@ export const validateAddParticipant = [
 ];
 
 /**
+ * Validation for adding an ephemeral visitor to an event (AC-2)
+ * POST /api/events/:eventId/visitors
+ *
+ * Unlike a participant, a visitor is identified by a typed name (not a
+ * persisted Member id), so we validate `name` rather than `memberId`.
+ */
+export const validateAddVisitor = [
+  param('eventId')
+    .trim()
+    .escape()
+    .notEmpty()
+    .withMessage('Event ID is required')
+    .isLength({ max: 100 })
+    .withMessage('Event ID is invalid'),
+
+  body('name')
+    .trim()
+    .escape()
+    .notEmpty()
+    .withMessage('Visitor name is required')
+    .isLength({ max: 100 })
+    .withMessage('Visitor name must not exceed 100 characters'),
+
+  body('method')
+    .optional()
+    .trim()
+    .escape()
+    .isIn(['kiosk', 'mobile', 'qr', 'manual'])
+    .withMessage('Method must be one of: kiosk, mobile, qr, manual'),
+
+  body('location')
+    .optional()
+    .trim()
+    .escape()
+    .isLength({ max: 500 })
+    .withMessage('Location must not exceed 500 characters'),
+
+  body('isOffsite')
+    .optional()
+    .isBoolean()
+    .withMessage('isOffsite must be a boolean'),
+];
+
+/**
  * Validation for removing a participant
  * DELETE /api/events/:eventId/participants/:participantId
  */

@@ -157,6 +157,9 @@ export function CurrentEventParticipants({ event, onRemoveParticipant }: Current
                 <div className="participant-header">
                   <div className={`rank-helmet ${getRankHelmetClass(participant.memberRank)}`}></div>
                   <span className="participant-name">{participant.memberName}</span>
+                  {participant.isVisitor && (
+                    <span className="visitor-badge" title="Walk-up visitor, not a saved member">Visitor</span>
+                  )}
                 </div>
                 <div className="participant-footer">
                   <span className="participant-time">{formatTime(participant.checkInTime)}</span>

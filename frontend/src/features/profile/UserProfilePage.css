@@ -67,6 +67,10 @@
   color: var(--rfs-dark-grey);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   font-size: 0.95rem;
+  /* The 🆔 chip carries a full member UUID — cap it to the container and let
+     the id wrap inside the pill rather than overflow a phone-width screen. */
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .profile-hero-stats {
@@ -648,12 +652,32 @@
     padding: 0.5rem 0;
   }
 
-  /* Hero section adjustments */
+  /* Hero section adjustments — .profile-hero is a grid (auto 1fr), so a single
+     column is what actually stacks the avatar above the body on phones;
+     `flex-direction` is inert on a grid and left the two side-by-side, cramping
+     the body and overflowing. */
   .profile-hero {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    justify-items: center;
     text-align: center;
     padding: 1.5rem;
     gap: 1.5rem;
+  }
+
+  /* Stacked + centred: the header's default space-between/flex-end pushes the
+     name and id chips to opposite edges, which reads as broken once the hero
+     is a single centred column. Stack and centre them instead. */
+  .profile-hero-body {
+    width: 100%;
+  }
+
+  .profile-hero-header {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-hero-meta {
+    justify-content: center;
   }
 
   .profile-avatar-wrapper {

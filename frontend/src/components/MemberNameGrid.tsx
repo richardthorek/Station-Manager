@@ -9,6 +9,8 @@ interface MemberNameGridProps {
   onSelectEvent: (eventId: string) => void;
   onCheckIn: (memberId: string) => void;
   onCheckOut?: (memberId: string) => void;
+  /** AC-2 — sign in an ephemeral visitor by typed name. */
+  onAddVisitor?: (name: string) => void;
   onStartNewEvent: () => void;
   onEndEvent: (eventId: string) => void;
   onCollapse: () => void;
@@ -21,12 +23,15 @@ export function MemberNameGrid({
   onSelectEvent,
   onCheckIn,
   onCheckOut,
+  onAddVisitor,
   onStartNewEvent,
   onEndEvent,
   onCollapse,
 }: MemberNameGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [pendingOperations, setPendingOperations] = useState<Map<string, 'signing-in' | 'signing-out'>>(new Map());
+  const [visitorName, setVisitorName] = useState('');
+  const [showVisitorInput, setShowVisitorInput] = useState(false);
 
   // Get only active events
   const activeEvents = events.filter(e => e.isActive);
@@ -105,6 +110,14 @@ export function MemberNameGrid({
     }, 1000);
   };
 
+  const handleVisitorSubmit = () => {
+    const trimmed = visitorName.trim();
+    if (!trimmed || !onAddVisitor) return;
+    onAddVisitor(trimmed);
+    setVisitorName('');
+    setShowVisitorInput(false);
+  };
+
   // If no active events, don't show the grid
   if (activeEvents.length === 0) {
     return null;
@@ -178,24 +191,78 @@ export function MemberNameGrid({
         >
           {/* Search bar */}
           <div className="grid-search-bar">
-            <input
-              type="text"
-              placeholder="Search members..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="grid-search-input"
-              aria-label="Search members"
-            />
-            {searchTerm && (
+            <div className="grid-search-input-wrapper">
+              <input
+                type="text"
+                placeholder="Search members..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="grid-search-input"
+                aria-label="Search members"
+              />
+              {searchTerm && (
+                <button
+                  className="clear-search-btn"
+                  onClick={() => setSearchTerm('')}
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            {onAddVisitor && !showVisitorInput && (
               <button
-                className="clear-search-btn"
-                onClick={() => setSearchTerm('')}
-                aria-label="Clear search"
+                className="add-visitor-btn"
+                onClick={() => setShowVisitorInput(true)}
+                title="Sign in a walk-up visitor (not a saved member)"
               >
-                ×
+                + Visitor
               </button>
             )}
           </div>
+
+          {/* AC-2 — ephemeral visitor sign-in */}
+          {onAddVisitor && showVisitorInput && (
+            <div className="visitor-signin-bar">
+              <input
+                type="text"
+                className="visitor-name-input"
+                placeholder="Visitor's name…"
+                value={visitorName}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
+                maxLength={100}
+                aria-label="Visitor name"
+                onChange={(e) => setVisitorName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleVisitorSubmit();
+                  } else if (e.key === 'Escape') {
+                    setShowVisitorInput(false);
+                    setVisitorName('');
+                  }
+                }}
+              />
+              <button
+                className="visitor-signin-confirm"
+                onClick={handleVisitorSubmit}
+                disabled={!visitorName.trim()}
+              >
+                Sign in
+              </button>
+              <button
+                className="visitor-signin-cancel"
+                onClick={() => {
+                  setShowVisitorInput(false);
+                  setVisitorName('');
+                }}
+                aria-label="Cancel visitor sign-in"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
 
           {/* Member name grid */}
           <div className="member-name-grid" role="list" aria-label="Member list">
