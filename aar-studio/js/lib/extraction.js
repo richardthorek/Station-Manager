@@ -4,6 +4,7 @@
 import { chatJson } from './llm.js';
 import { CATEGORIES, CATEGORY_IDS, GENERAL_PHASE, INCIDENT_TYPES, sessionPhases, createFinding } from './model.js';
 import { countWords, fmtClock } from './text.js';
+import { annotateColloquialSizes } from './sizing.js';
 
 /**
  * Live auto-extraction policy. We deliberately do NOT extract on a fixed timer:
@@ -95,6 +96,7 @@ Rules:
 - Ignore small talk, jokes, scheduling chatter and the facilitator's process talk ("let's move on to suppression"). Silence is fine: if nothing of substance was decided or learned, return an empty array.
 - Each transcript segment is prefixed with its id like [s12]. Every finding must list ALL the segment ids that contributed to it in segmentIds (a consolidated finding will usually cite several), and one short verbatim quote in quote that best captures it.
 - Use the segments' tagged phase as a hint, but assign the phase the content is actually about.
+- Metric sizing: when the crew describes a size or distance colloquially or in imperial units, keep their comparison and add the metric equivalent in parentheses — "about the size of a tennis court (≈ 260 m²)", "3 miles down the road (≈ 4.8 km)", "three footy fields (≈ 2.1 ha)". Use m, km, m² and ha. The quote stays verbatim — never convert inside quote.
 
 Respond with a JSON object: {"findings": [{"category", "phase", "text", "quote", "segmentIds"}]}.`;
 
@@ -117,7 +119,9 @@ export function toFinding(raw, session, segmentPool) {
   return createFinding({
     category: CATEGORY_IDS.includes(raw.category) ? raw.category : 'happened',
     phase: phases.includes(raw.phase) ? raw.phase : GENERAL_PHASE,
-    text: String(raw.text ?? '').trim(),
+    // Deterministic backstop for the prompt's metric-sizing rule: colloquial
+    // sizes the model left unconverted get their metric equivalent appended.
+    text: annotateColloquialSizes(String(raw.text ?? '').trim()),
     quote: String(raw.quote ?? '').trim(),
     segmentIds: (Array.isArray(raw.segmentIds) ? raw.segmentIds : []).filter((id) => validIds.has(id)),
     source: 'ai',
