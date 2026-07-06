@@ -535,6 +535,44 @@
           "returns": "EventParticipant[]",
           "complexity": "O(n)",
           "sideEffects": "none"
+        },
+        "addEventVisitor": {
+          "signature": "addEventVisitor(eventId: string, name: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): EventParticipant",
+          "line": 833,
+          "description": "AC-2 — adds an ephemeral visitor to an event as an EventParticipant with a synthetic 'visitor-<uuid>' memberId and isVisitor=true. Not persisted as a Member (no history, no member-cap impact). No toggle: always inserts a new row.",
+          "parameters": [
+            {
+              "name": "eventId",
+              "type": "string"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "description": "Visitor's typed name"
+            },
+            {
+              "name": "method",
+              "type": "'kiosk' | 'mobile' | 'qr'"
+            },
+            {
+              "name": "location",
+              "type": "string | undefined",
+              "optional": true
+            },
+            {
+              "name": "isOffsite",
+              "type": "boolean | undefined",
+              "optional": true
+            },
+            {
+              "name": "stationId",
+              "type": "string | undefined",
+              "optional": true
+            }
+          ],
+          "returns": "EventParticipant",
+          "complexity": "O(1)",
+          "sideEffects": "Adds a visitor EventParticipant to the event; does not touch the members store"
         }
       }
     },
@@ -878,6 +916,44 @@
           "returns": "void",
           "throws": "Error if stationId contains invalid characters",
           "security": "Prevents injection attacks by validating format"
+        },
+        "addEventVisitor": {
+          "signature": "addEventVisitor(eventId: string, name: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): EventParticipant",
+          "line": 998,
+          "description": "AC-2 — adds an ephemeral visitor to an event as an EventParticipant with a synthetic 'visitor-<uuid>' memberId and isVisitor=true. Not persisted as a Member (no history, no member-cap impact). No toggle: always inserts a new row.",
+          "parameters": [
+            {
+              "name": "eventId",
+              "type": "string"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "description": "Visitor's typed name"
+            },
+            {
+              "name": "method",
+              "type": "'kiosk' | 'mobile' | 'qr'"
+            },
+            {
+              "name": "location",
+              "type": "string | undefined",
+              "optional": true
+            },
+            {
+              "name": "isOffsite",
+              "type": "boolean | undefined",
+              "optional": true
+            },
+            {
+              "name": "stationId",
+              "type": "string | undefined",
+              "optional": true
+            }
+          ],
+          "returns": "EventParticipant",
+          "complexity": "O(1)",
+          "sideEffects": "Adds a visitor EventParticipant to the event; does not touch the members store"
         }
       }
     },

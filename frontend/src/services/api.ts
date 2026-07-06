@@ -619,6 +619,27 @@ class ApiService {
     return response.json();
   }
 
+  /**
+   * AC-2 — sign in an ephemeral visitor by typed name. The visitor is recorded
+   * against the event for attendance but is never persisted as a Member (no
+   * history, no member-cap impact, no tap-to-repeat tile).
+   */
+  async addEventVisitor(
+    eventId: string,
+    name: string,
+    method: 'kiosk' | 'mobile' | 'qr' = 'kiosk',
+    location?: string,
+    isOffsite?: boolean
+  ): Promise<{ action: string; participant: EventParticipant }> {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/visitors`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ name, method, location, isOffsite }),
+    });
+    if (!response.ok) throw new Error('Failed to add visitor');
+    return response.json();
+  }
+
   async removeEventParticipant(eventId: string, participantId: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/events/${eventId}/participants/${participantId}`, {
       method: 'DELETE',

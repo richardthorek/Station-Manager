@@ -991,6 +991,55 @@ export class TableStorageDatabase {
     return participant;
   }
 
+  /**
+   * AC-2 — add an ephemeral visitor (typed name, synthetic id, not a Member).
+   * See the in-memory twin's addEventVisitor for the rationale.
+   */
+  async addEventVisitor(
+    eventId: string,
+    name: string,
+    method: 'kiosk' | 'mobile' | 'qr',
+    location?: string,
+    isOffsite: boolean = false,
+    stationId?: string
+  ): Promise<EventParticipant> {
+    const event = await this.getEventById(eventId);
+    if (!event) throw new Error('Event not found');
+
+    const participant: EventParticipant = {
+      id: uuidv4(),
+      eventId,
+      memberId: `visitor-${uuidv4()}`,
+      memberName: name.trim(),
+      memberRank: 'Visitor',
+      stationId: getEffectiveStationId(stationId || event.stationId),
+      checkInTime: new Date(),
+      checkInMethod: method,
+      location,
+      isOffsite,
+      isVisitor: true,
+      createdAt: new Date(),
+    };
+
+    const entity: TableEntity = {
+      partitionKey: eventId,
+      rowKey: participant.id,
+      memberId: participant.memberId,
+      memberName: participant.memberName,
+      memberRank: participant.memberRank || '',
+      stationId: participant.stationId || '',
+      checkInTime: participant.checkInTime.toISOString(),
+      checkInMethod: participant.checkInMethod,
+      location: participant.location || '',
+      isOffsite: participant.isOffsite,
+      isVisitor: true,
+      createdAt: participant.createdAt.toISOString(),
+    };
+
+    await this.eventParticipantsTable.createEntity(entity);
+    return participant;
+  }
+
   async getEventParticipants(eventId: string): Promise<EventParticipant[]> {
     // Efficient single-partition query
     const entities = this.eventParticipantsTable.listEntities<TableEntity>({
@@ -1135,6 +1184,7 @@ export class TableStorageDatabase {
       checkInMethod: entity.checkInMethod as 'kiosk' | 'mobile' | 'qr',
       location: (entity.location as string) || undefined,
       isOffsite: entity.isOffsite as boolean,
+      isVisitor: (entity.isVisitor as boolean) || undefined,
       createdAt: new Date(entity.createdAt as string),
     };
   }

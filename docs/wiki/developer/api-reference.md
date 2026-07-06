@@ -1115,6 +1115,52 @@ Or if removing:
 - `400`: Invalid member ID or event is ended
 - `404`: Event or member not found
 
+### Add Event Visitor (AC-2)
+
+#### `POST /api/events/:eventId/visitors`
+
+Sign in an ephemeral visitor by typed name. Unlike `addEventParticipant`, the
+visitor is **never persisted as a Member** — no history, no member-cap impact,
+no tap-to-repeat tile in the member grid — and there is **no toggle**: every
+call adds a new `EventParticipant` row (`isVisitor: true`, synthetic
+`memberId: "visitor-<uuid>"`), even for a repeated name.
+
+**Parameters**:
+- `eventId` (path): Event UUID
+
+**Request Body**:
+```json
+{
+  "name": "Jane Visitor",
+  "method": "kiosk",
+  "location": "Station",
+  "isOffsite": false
+}
+```
+
+**Response** (201 Created):
+```json
+{
+  "action": "added",
+  "participant": {
+    "id": "uuid",
+    "eventId": "uuid",
+    "memberId": "visitor-uuid",
+    "memberName": "Jane Visitor",
+    "memberRank": "Visitor",
+    "checkInTime": "2024-11-15T12:44:30.000Z",
+    "checkInMethod": "kiosk",
+    "isOffsite": false,
+    "isVisitor": true,
+    "createdAt": "2024-11-15T12:44:30.000Z"
+  }
+}
+```
+
+**Errors**:
+- `400`: Missing/blank `name` or event is ended
+- `404`: Event not found
+
 ### Remove Event Participant
 
 #### `DELETE /api/events/:eventId/participants/:participantId`

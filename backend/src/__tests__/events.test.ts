@@ -301,6 +301,103 @@ describe('Events API', () => {
     });
   });
 
+  describe('POST /api/events/:eventId/visitors (AC-2)', () => {
+    let eventId: string;
+
+    beforeEach(async () => {
+      const createResponse = await request(app)
+        .post('/api/events')
+        .send({ activityId: testActivityId, createdBy: testMemberId });
+      eventId = createResponse.body.id;
+    });
+
+    it('should add an ephemeral visitor by typed name', async () => {
+      const response = await request(app)
+        .post(`/api/events/${eventId}/visitors`)
+        .send({ name: 'Jane Visitor', method: 'kiosk' })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('action', 'added');
+      expect(response.body.participant).toHaveProperty('memberName', 'Jane Visitor');
+      expect(response.body.participant).toHaveProperty('isVisitor', true);
+      expect(response.body.participant.memberId).toMatch(/^visitor-/);
+      expect(response.body.participant).toHaveProperty('eventId', eventId);
+    });
+
+    it('should never toggle: two sign-ins with the same name create two rows', async () => {
+      const first = await request(app)
+        .post(`/api/events/${eventId}/visitors`)
+        .send({ name: 'Repeat Name' })
+        .expect(201);
+
+      const second = await request(app)
+        .post(`/api/events/${eventId}/visitors`)
+        .send({ name: 'Repeat Name' })
+        .expect(201);
+
+      expect(second.body).toHaveProperty('action', 'added');
+      expect(second.body.participant.id).not.toBe(first.body.participant.id);
+      expect(second.body.participant.memberId).not.toBe(first.body.participant.memberId);
+    });
+
+    it('should not persist a visitor as a Member (no member cap / grid tile)', async () => {
+      const before = await request(app).get('/api/members');
+      const beforeCount = before.body.length;
+
+      await request(app)
+        .post(`/api/events/${eventId}/visitors`)
+        .send({ name: 'Ghost Walker' })
+        .expect(201);
+
+      const after = await request(app).get('/api/members');
+      expect(after.body.length).toBe(beforeCount);
+      expect(after.body.some((m: { name: string }) => m.name === 'Ghost Walker')).toBe(false);
+    });
+
+    it('should return 400 if name is missing', async () => {
+      const response = await request(app)
+        .post(`/api/events/${eventId}/visitors`)
+        .send({ method: 'kiosk' })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error', 'Validation failed');
+    });
+
+    it('should return 404 if event does not exist', async () => {
+      const response = await request(app)
+        .post('/api/events/non-existent-event/visitors')
+        .send({ name: 'Nobody' })
+        .expect(404);
+
+      expect(response.body.error).toContain('Event not found');
+    });
+
+    it('should return 400 when adding a visitor to an ended event', async () => {
+      await request(app).put(`/api/events/${eventId}/end`).expect(200);
+
+      const response = await request(app)
+        .post(`/api/events/${eventId}/visitors`)
+        .send({ name: 'Too Late' })
+        .expect(400);
+
+      expect(response.body.error).toContain('Cannot add participants to an ended event');
+    });
+
+    it('should surface the visitor in the event participant roster', async () => {
+      await request(app)
+        .post(`/api/events/${eventId}/visitors`)
+        .send({ name: 'Roster Visitor' })
+        .expect(201);
+
+      const eventResponse = await request(app).get(`/api/events/${eventId}`).expect(200);
+      const visitor = eventResponse.body.participants.find(
+        (p: { memberName: string }) => p.memberName === 'Roster Visitor'
+      );
+      expect(visitor).toBeDefined();
+      expect(visitor.isVisitor).toBe(true);
+    });
+  });
+
   describe('PUT /api/events/:eventId/end', () => {
     it('should end an active event', async () => {
       // Create an event

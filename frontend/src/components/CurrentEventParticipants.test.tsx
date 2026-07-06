@@ -188,4 +188,51 @@ describe('CurrentEventParticipants', () => {
       expect(helmetElements.length).toBeGreaterThan(0);
     });
   });
+
+  describe('visitor participants (AC-2)', () => {
+    const eventWithVisitor: EventWithParticipants = {
+      ...mockEvent,
+      participantCount: 3,
+      participants: [
+        ...mockEvent.participants,
+        {
+          id: 'participant-3',
+          eventId: 'event-1',
+          memberId: 'visitor-abc123',
+          memberName: 'Walk-up Wendy',
+          memberRank: 'Visitor',
+          checkInTime: new Date().toISOString(),
+          checkInMethod: 'kiosk',
+          isOffsite: false,
+          isVisitor: true,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    it('shows a visitor badge for participants flagged as visitors', () => {
+      render(<CurrentEventParticipants event={eventWithVisitor} />);
+      expect(screen.getByText('Walk-up Wendy')).toBeInTheDocument();
+      expect(screen.getByText('Visitor')).toBeInTheDocument();
+    });
+
+    it('does not show a visitor badge for regular members', () => {
+      render(<CurrentEventParticipants event={mockEvent} />);
+      expect(screen.queryByText('Visitor')).not.toBeInTheDocument();
+    });
+
+    it('can still be removed like any other participant', async () => {
+      const user = userEvent.setup();
+      const onRemoveParticipant = vi.fn();
+      render(<CurrentEventParticipants event={eventWithVisitor} onRemoveParticipant={onRemoveParticipant} />);
+
+      const visitorCard = screen.getByText('Walk-up Wendy').closest('[role="button"]');
+      expect(visitorCard).toBeInTheDocument();
+
+      if (visitorCard) {
+        await user.click(visitorCard);
+        expect(onRemoveParticipant).toHaveBeenCalledWith('visitor-abc123');
+      }
+    });
+  });
 });

@@ -820,7 +820,47 @@ class DatabaseService {
 
     this.eventParticipants.set(participant.id, participant);
     event.updatedAt = new Date();
-    
+
+    return participant;
+  }
+
+  /**
+   * AC-2 — add an ephemeral visitor to an event. The visitor is a participant
+   * with a typed name and a synthetic `visitor-<uuid>` id; it is deliberately
+   * NOT stored as a Member (no history, never counts toward the member cap,
+   * no tap-to-repeat tile in the grid). Each visitor sign-in is a fresh entry.
+   */
+  addEventVisitor(
+    eventId: string,
+    name: string,
+    method: 'kiosk' | 'mobile' | 'qr',
+    location?: string,
+    isOffsite: boolean = false,
+    stationId?: string
+  ): EventParticipant {
+    const event = this.events.get(eventId);
+    if (!event) {
+      throw new Error('Event not found');
+    }
+
+    const participant: EventParticipant = {
+      id: uuidv4(),
+      eventId,
+      memberId: `visitor-${uuidv4()}`,
+      memberName: name.trim(),
+      memberRank: 'Visitor',
+      stationId: getEffectiveStationId(stationId),
+      checkInTime: new Date(),
+      checkInMethod: method,
+      location,
+      isOffsite,
+      isVisitor: true,
+      createdAt: new Date(),
+    };
+
+    this.eventParticipants.set(participant.id, participant);
+    event.updatedAt = new Date();
+
     return participant;
   }
 

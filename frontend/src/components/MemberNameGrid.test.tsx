@@ -341,4 +341,163 @@ describe('MemberNameGrid', () => {
     // Should not show member buttons
     expect(screen.queryByText('Alice Johnson')).not.toBeInTheDocument();
   });
+
+  describe('visitor sign-in (AC-2)', () => {
+    it('should not show the visitor button when onAddVisitor is not provided', () => {
+      render(
+        <MemberNameGrid
+          members={mockMembers}
+          events={mockEvents}
+          selectedEventId="event1"
+          onSelectEvent={vi.fn()}
+          onCheckIn={vi.fn()}
+          onStartNewEvent={vi.fn()}
+          onEndEvent={vi.fn()}
+          onCollapse={vi.fn()}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: /\+ Visitor/i })).not.toBeInTheDocument();
+    });
+
+    it('should reveal a name input when the visitor button is clicked', () => {
+      render(
+        <MemberNameGrid
+          members={mockMembers}
+          events={mockEvents}
+          selectedEventId="event1"
+          onSelectEvent={vi.fn()}
+          onCheckIn={vi.fn()}
+          onStartNewEvent={vi.fn()}
+          onEndEvent={vi.fn()}
+          onCollapse={vi.fn()}
+          onAddVisitor={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /\+ Visitor/i }));
+
+      expect(screen.getByLabelText(/Visitor name/i)).toBeInTheDocument();
+    });
+
+    it('should call onAddVisitor with the typed name and reset the input', () => {
+      const onAddVisitor = vi.fn();
+
+      render(
+        <MemberNameGrid
+          members={mockMembers}
+          events={mockEvents}
+          selectedEventId="event1"
+          onSelectEvent={vi.fn()}
+          onCheckIn={vi.fn()}
+          onStartNewEvent={vi.fn()}
+          onEndEvent={vi.fn()}
+          onCollapse={vi.fn()}
+          onAddVisitor={onAddVisitor}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /\+ Visitor/i }));
+
+      const nameInput = screen.getByLabelText(/Visitor name/i) as HTMLInputElement;
+      fireEvent.change(nameInput, { target: { value: 'Jane Walk-up' } });
+      fireEvent.click(screen.getByRole('button', { name: /^Sign in$/i }));
+
+      expect(onAddVisitor).toHaveBeenCalledWith('Jane Walk-up');
+      // Input collapses back to the "+ Visitor" trigger after submit
+      expect(screen.queryByLabelText(/Visitor name/i)).not.toBeInTheDocument();
+    });
+
+    it('should submit on Enter key', () => {
+      const onAddVisitor = vi.fn();
+
+      render(
+        <MemberNameGrid
+          members={mockMembers}
+          events={mockEvents}
+          selectedEventId="event1"
+          onSelectEvent={vi.fn()}
+          onCheckIn={vi.fn()}
+          onStartNewEvent={vi.fn()}
+          onEndEvent={vi.fn()}
+          onCollapse={vi.fn()}
+          onAddVisitor={onAddVisitor}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /\+ Visitor/i }));
+      const nameInput = screen.getByLabelText(/Visitor name/i);
+      fireEvent.change(nameInput, { target: { value: 'Enter Key Visitor' } });
+      fireEvent.keyDown(nameInput, { key: 'Enter' });
+
+      expect(onAddVisitor).toHaveBeenCalledWith('Enter Key Visitor');
+    });
+
+    it('should not call onAddVisitor for a blank name', () => {
+      const onAddVisitor = vi.fn();
+
+      render(
+        <MemberNameGrid
+          members={mockMembers}
+          events={mockEvents}
+          selectedEventId="event1"
+          onSelectEvent={vi.fn()}
+          onCheckIn={vi.fn()}
+          onStartNewEvent={vi.fn()}
+          onEndEvent={vi.fn()}
+          onCollapse={vi.fn()}
+          onAddVisitor={onAddVisitor}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /\+ Visitor/i }));
+      expect(screen.getByRole('button', { name: /^Sign in$/i })).toBeDisabled();
+      expect(onAddVisitor).not.toHaveBeenCalled();
+    });
+
+    it('should cancel and hide the input without calling onAddVisitor', () => {
+      const onAddVisitor = vi.fn();
+
+      render(
+        <MemberNameGrid
+          members={mockMembers}
+          events={mockEvents}
+          selectedEventId="event1"
+          onSelectEvent={vi.fn()}
+          onCheckIn={vi.fn()}
+          onStartNewEvent={vi.fn()}
+          onEndEvent={vi.fn()}
+          onCollapse={vi.fn()}
+          onAddVisitor={onAddVisitor}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /\+ Visitor/i }));
+      fireEvent.change(screen.getByLabelText(/Visitor name/i), { target: { value: 'Never Submitted' } });
+      fireEvent.click(screen.getByRole('button', { name: /Cancel visitor sign-in/i }));
+
+      expect(screen.queryByLabelText(/Visitor name/i)).not.toBeInTheDocument();
+      expect(onAddVisitor).not.toHaveBeenCalled();
+    });
+
+    it('should never render a visitor as a tappable member tile', () => {
+      // Visitors are never added to `members` (that's the whole point of AC-2),
+      // so this asserts the grid only ever renders from that list.
+      render(
+        <MemberNameGrid
+          members={mockMembers}
+          events={mockEvents}
+          selectedEventId="event1"
+          onSelectEvent={vi.fn()}
+          onCheckIn={vi.fn()}
+          onStartNewEvent={vi.fn()}
+          onEndEvent={vi.fn()}
+          onCollapse={vi.fn()}
+          onAddVisitor={vi.fn()}
+        />
+      );
+
+      expect(screen.getAllByRole('button').filter(b => b.className.includes('member-name-btn'))).toHaveLength(mockMembers.length);
+    });
+  });
 });

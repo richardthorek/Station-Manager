@@ -75,6 +75,8 @@ export interface IDatabase {
   reactivateEvent(eventId: string): Promise<Event | null> | Event | null;
   deleteEvent(eventId: string): Promise<Event | null> | Event | null; // Soft delete
   addEventParticipant(eventId: string, memberId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): Promise<EventParticipant> | EventParticipant;
+  /** AC-2 — add an ephemeral visitor (typed name, not a persisted Member). */
+  addEventVisitor(eventId: string, name: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): Promise<EventParticipant> | EventParticipant;
   getEventParticipants(eventId: string): Promise<EventParticipant[]> | EventParticipant[];
   getEventWithParticipants(eventId: string): Promise<EventWithParticipants | null> | EventWithParticipants | null;
   getEventsWithParticipants(limit?: number, offset?: number, stationId?: string): Promise<EventWithParticipants[]> | EventWithParticipants[];

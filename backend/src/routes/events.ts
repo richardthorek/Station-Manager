@@ -22,6 +22,7 @@ import {
   validateCreateEvent,
   validateEventId,
   validateAddParticipant,
+  validateAddVisitor,
   validateRemoveParticipant,
   validateEventQuery,
 } from '../middleware/eventValidation';
@@ -314,6 +315,83 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
   } catch (error) {
     logger.error('Error adding participant', { error, eventId: req.params.id, requestId: req.id });
     res.status(500).json({ error: 'Failed to add participant' });
+  }
+});
+
+/**
+ * Add an ephemeral visitor to an event (AC-2)
+ *
+ * A visitor types their name and is recorded against the event for attendance,
+ * but is NOT persisted as a Member: they never count toward the org's member
+ * cap, get no history, and cannot tap-to-repeat (each visit retypes the name).
+ * Unlike participants there is no toggle — each POST always adds a new visitor
+ * row (two visitors may legitimately share a name).
+ */
+router.post('/:eventId/visitors', validateAddVisitor, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase(req.isDemoMode);
+    const { eventId } = req.params;
+    const { name, method, location, isOffsite, performedBy, notes } = req.body;
+    const stationId = getStationIdFromRequest(req);
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Visitor name is required' });
+    }
+
+    // Check if event exists
+    const event = await db.getEventById(eventId);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if (!eventMatchesStation(event, stationId)) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    // Check if event is active
+    if (!event.isActive) {
+      return res.status(400).json({ error: 'Cannot add participants to an ended event' });
+    }
+
+    // Extract device and location information for audit trail
+    const deviceInfo = extractDeviceInfo(req);
+    const locationInfo = extractLocationInfo(req);
+    const sanitizedNotes = sanitizeNotes(notes);
+
+    // Add visitor (inherits event's stationId). No toggle: always a new row.
+    const participant = await db.addEventVisitor(
+      eventId,
+      name,
+      method || 'kiosk',
+      location,
+      isOffsite || false,
+      event.stationId
+    );
+
+    // Create audit log for addition
+    await db.createEventAuditLog(
+      eventId,
+      'participant-added',
+      participant.id,
+      participant.memberId,
+      participant.memberName,
+      participant.memberRank,
+      participant.checkInMethod,
+      performedBy,
+      deviceInfo,
+      locationInfo,
+      stationId,
+      req.id,
+      sanitizedNotes
+    );
+
+    res.status(201).json({
+      action: 'added',
+      participant,
+    });
+  } catch (error) {
+    logger.error('Error adding visitor', { error, eventId: req.params.eventId, requestId: req.id });
+    res.status(500).json({ error: 'Failed to add visitor' });
   }
 });
 

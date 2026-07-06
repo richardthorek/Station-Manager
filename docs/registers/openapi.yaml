@@ -632,6 +632,56 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/events/{eventId}/visitors:
+    post:
+      tags:
+        - Events
+      summary: Sign in an ephemeral visitor (AC-2)
+      description: >-
+        Add a walk-up visitor to an event by typed name. Unlike
+        addEventParticipant, the visitor is never persisted as a Member (no
+        history, no member-cap impact, no tap-to-repeat tile) and there is no
+        toggle — every call adds a new EventParticipant row with
+        isVisitor=true and a synthetic memberId.
+      operationId: addEventVisitor
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: Event UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                  example: Jane Visitor
+                method:
+                  type: string
+                  enum: [kiosk, mobile, qr, manual]
+      responses:
+        '201':
+          description: Visitor added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventParticipant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/events/{id}/participants/{participantId}:
     delete:
       tags:
@@ -926,6 +976,11 @@ components:
           nullable: true
         isActive:
           type: boolean
+        isVisitor:
+          type: boolean
+          description: >-
+            AC-2: true for ephemeral visitors (typed name, not a persisted
+            Member).
         createdAt:
           type: string
           format: date-time
