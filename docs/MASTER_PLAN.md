@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-04 (AC-1 shipped — personal member link mints a station-scoped read session; AC-5 shipped — first-class Device accounts; sign-in book gated behind a brigade code / account / member-session / demo; Q5 shipped — cross-brigade comparative truck-check reporting; cross-app responsive UI review shipped in aar-studio)
+**Last updated:** 2026-07-06 (sign-in book responsive audit — fixed profile-hero mobile stacking + event-tab/New-Event phone collision; AC-1 shipped — personal member link mints a station-scoped read session; AC-5 shipped — first-class Device accounts; sign-in book gated behind a brigade code / account / member-session / demo; Q5 shipped — cross-brigade comparative truck-check reporting)
 **Status:** Living document — **the single plan** for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
 
 ---
