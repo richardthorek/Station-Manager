@@ -2036,6 +2036,10 @@
               "member": {
                 "type": "string",
                 "description": "Display name of the member"
+              },
+              "sessionToken": {
+                "type": "string",
+                "description": "AC-1 — short-lived (8h), station-scoped member-session JWT. Send it back as the X-Member-Session header to read the station's live sign-in book without a full account or kiosk token (station-wide read scope, never more)."
               }
             }
           }
@@ -2056,6 +2060,10 @@
               "member": {
                 "type": "string",
                 "description": "Display name of the member"
+              },
+              "sessionToken": {
+                "type": "string",
+                "description": "AC-1 — short-lived (8h), station-scoped member-session JWT. Send it back as the X-Member-Session header to read the station's live sign-in book without a full account or kiosk token (station-wide read scope, never more)."
               }
             }
           }
