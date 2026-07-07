@@ -15,6 +15,10 @@ const dismissedPairs = new Set();
 
 const pairKey = (a, b) => [a.id, b.id].sort().join('|');
 
+// Present mode persistence: store the status bar element when entering present
+// mode so it survives full re-renders. Its listeners stay wired to live state.
+let persistentPresentStatusBar = null;
+
 /**
  * Delete a finding with an Undo affordance instead of a confirm — deletion was
  * instant and unrecoverable while deleting a whole review asks for confirmation,
@@ -203,7 +207,11 @@ function presentStatusBar(session) {
       : 'Not recording';
   }
   function paintTranscript(s) {
-    const recent = session.segments.slice(-6).map((seg) => seg.text);
+    // Read from the current session, not the one captured at creation time,
+    // so transcript updates even if the findings board re-renders with a
+    // different session reference.
+    const currentSession = store.getSession();
+    const recent = (currentSession?.segments ?? []).slice(-6).map((seg) => seg.text);
     if (s.interim) recent.push(`${s.interimSpeaker ? s.interimSpeaker + ': ' : ''}${s.interim}…`);
     transcriptList.replaceChildren(...(recent.length
       ? recent.map((t) => h('li', {}, t))
@@ -221,14 +229,33 @@ function presentStatusBar(session) {
   paintTranscript(initialLive);
   paintAnalysing();
 
+  // Wire both recording state and analysis status to update independently
+  // of the main view re-renders, so live changes are visible in present mode.
   live.setUiListener((event, s) => { paintRecording(s); if (event === 'interim') paintTranscript(s); });
   setAnalysisListener(() => paintAnalysing());
 
-  return h('div', { class: 'present-status' },
+  // Also update transcript when store changes (new segments added), since
+  // interim events might not fire if there's a pause between final segment
+  // and the next utterance.
+  const unsubscribeTranscript = store.subscribe((reason) => {
+    if (reason === 'segments' || reason === 'findings') {
+      paintTranscript(live.getState());
+      paintAnalysing();
+    }
+  });
+
+  // Cleanup subscription when status bar is removed.
+  const originalBar = h('div', { class: 'present-status' },
     h('div', { class: 'present-status__rec' }, dot, stateText),
     transcriptList,
     h('div', { class: 'present-status__analysing' }, analysingDot, analysingText),
   );
+  const removeListener = originalBar.remove;
+  originalBar.remove = function() {
+    unsubscribeTranscript();
+    return removeListener.call(this);
+  };
+  return originalBar;
 }
 
 /** Busiest column decides the font/padding scale so all four fit one screen. */
@@ -241,8 +268,19 @@ function densityBucket(maxColumnCount) {
 
 function togglePresent() {
   const on = document.body.classList.toggle('present');
-  if (on) document.documentElement.requestFullscreen?.().catch(() => {});
-  else if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  if (on) {
+    // Entering present mode: create the persistent status bar if not already done.
+    // It will be re-inserted after each re-render by the render function.
+    if (!persistentPresentStatusBar) {
+      persistentPresentStatusBar = presentStatusBar(store.getSession());
+    }
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  } else {
+    // Exiting present mode: discard the persistent status bar.
+    persistentPresentStatusBar?.remove?.();
+    persistentPresentStatusBar = null;
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  }
 }
 
 export function render(container) {
@@ -285,6 +323,12 @@ export function render(container) {
     render(container);
   }
 
+  const isInPresentMode = document.body.classList.contains('present');
+
+  // In present mode, the status bar is persistent (created in togglePresent) and
+  // re-inserted after each render so it keeps its listeners alive across updates.
+  const statusBarElement = isInPresentMode ? null : presentStatusBar(session);
+
   mount(container,
     h('div', { class: 'board-toolbar' },
       h('h1', {}, 'Findings board'),
@@ -295,13 +339,25 @@ export function render(container) {
       ),
     ),
     aiErrorBanner(),
-    presentStatusBar(session),
+    ...(statusBarElement ? [statusBarElement] : []),
     filterChips,
     mergeSuggestionsPanel(session),
     quickAdd(phases, units),
     columns,
     h('button', { class: 'present-exit btn', onclick: togglePresent }, 'Exit present mode (Esc)'),
   );
+
+  // In present mode, re-insert the persistent status bar after the error banner
+  // so it survives the container clear on each re-render and keeps its listeners.
+  if (isInPresentMode && persistentPresentStatusBar) {
+    const errorBanner = container.querySelector('.ai-error-banner');
+    const insertAfter = errorBanner || container.querySelector('.board-toolbar');
+    if (insertAfter?.nextSibling) {
+      insertAfter.parentNode.insertBefore(persistentPresentStatusBar, insertAfter.nextSibling);
+    } else {
+      container.insertBefore(persistentPresentStatusBar, container.children[1]);
+    }
+  }
 }
 
 document.addEventListener('keydown', (e) => {
