@@ -14,6 +14,7 @@ export function TemplateEditorPage() {
   const [success, setSuccess] = useState(false);
   const [storageEnabled, setStorageEnabled] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
 
   useEffect(() => {
     loadTemplate();
@@ -54,7 +55,9 @@ export function TemplateEditorPage() {
       description: 'Enter description here',
       order: items.length + 1,
     };
-    setItems([...items, newItem]);
+    const newItems = [...items, newItem];
+    setItems(newItems);
+    setSelectedItemIndex(newItems.length - 1);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -189,106 +192,145 @@ export function TemplateEditorPage() {
       )}
 
       <main className="template-editor-main" id="main-content" tabIndex={-1}>
-        <div className="items-list">
-          {items.map((item, index) => (
-            <div key={index} className="item-card">
-              <div className="item-header">
-                <span className="item-number">{index + 1}</span>
-                <div className="item-controls">
+        <div className="editor-layout">
+          {/* Left pane: item list */}
+          <div className="editor-sidebar">
+            <div className="items-list-compact">
+              {items.length === 0 ? (
+                <div className="empty-list-message">
+                  <p>No check items yet.</p>
+                  <p className="secondary-text">Click "Add New Check Item" to get started.</p>
+                </div>
+              ) : (
+                items.map((item, index) => (
                   <button
-                    className="control-button"
-                    onClick={() => handleMoveUp(index)}
-                    disabled={index === 0}
-                    title="Move up"
+                    key={index}
+                    className={`item-list-entry ${selectedItemIndex === index ? 'selected' : ''}`}
+                    onClick={() => setSelectedItemIndex(index)}
                   >
-                    ▲
+                    <span className="item-list-number">{index + 1}</span>
+                    <span className="item-list-title">{item.name || 'Untitled'}</span>
                   </button>
-                  <button
-                    className="control-button"
-                    onClick={() => handleMoveDown(index)}
-                    disabled={index === items.length - 1}
-                    title="Move down"
-                  >
-                    ▼
-                  </button>
-                  <button
-                    className="control-button delete-button"
-                    onClick={() => handleRemoveItem(index)}
-                    title="Remove item"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              <div className="item-content">
-                <div className="form-group">
-                  <label htmlFor={`name-${index}`}>Item Name</label>
-                  <input
-                    id={`name-${index}`}
-                    type="text"
-                    className="item-name-input"
-                    value={item.name}
-                    onChange={(e) => handleUpdateItem(index, 'name', e.target.value)}
-                    placeholder="e.g., Tyre Condition"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor={`description-${index}`}>Description</label>
-                  <textarea
-                    id={`description-${index}`}
-                    className="item-description-input"
-                    value={item.description}
-                    onChange={(e) => handleUpdateItem(index, 'description', e.target.value)}
-                    placeholder="Enter detailed instructions for this check..."
-                    rows={4}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <p className="form-label">Reference Photo (Optional)</p>
-                  {item.referencePhotoUrl ? (
-                    <div className="photo-preview">
-                      <img src={item.referencePhotoUrl} alt="Reference" />
-                      <button
-                        className="remove-photo-button"
-                        onClick={() => handleRemovePhoto(index)}
-                      >
-                        Remove Photo
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="photo-upload">
-                      <input
-                        type="file"
-                        id={`photo-${index}`}
-                        accept="image/*"
-                        onChange={(e) => handlePhotoUpload(index, e)}
-                        disabled={!storageEnabled || uploadingIndex === index}
-                      />
-                      <label htmlFor={`photo-${index}`} className="upload-label">
-                        {uploadingIndex === index ? 'Uploading...' : 'Choose Photo'}
-                      </label>
-                      {!storageEnabled && (
-                        <span className="disabled-text">
-                          (Photo upload not configured)
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <p className="help-text">
-                    Add a reference photo to guide users on what to check
-                  </p>
-                </div>
-              </div>
+                ))
+              )}
             </div>
-          ))}
-        </div>
+            <button className="add-item-button-sidebar" onClick={handleAddItem}>
+              + Add Check Item
+            </button>
+          </div>
 
-        <button className="add-item-button" onClick={handleAddItem}>
-          + Add New Check Item
-        </button>
+          {/* Right pane: editor */}
+          <div className="editor-pane">
+            {selectedItemIndex !== null && selectedItemIndex < items.length ? (
+              <div className="item-editor">
+                <div className="editor-header">
+                  <h3>Check Item #{selectedItemIndex + 1}</h3>
+                  <div className="editor-actions">
+                    <button
+                      className="control-button-sm"
+                      onClick={() => handleMoveUp(selectedItemIndex)}
+                      disabled={selectedItemIndex === 0}
+                      title="Move up"
+                      aria-label="Move item up"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      className="control-button-sm"
+                      onClick={() => handleMoveDown(selectedItemIndex)}
+                      disabled={selectedItemIndex === items.length - 1}
+                      title="Move down"
+                      aria-label="Move item down"
+                    >
+                      ▼
+                    </button>
+                    <button
+                      className="control-button-sm delete-button"
+                      onClick={() => {
+                        handleRemoveItem(selectedItemIndex);
+                        setSelectedItemIndex(null);
+                      }}
+                      title="Remove item"
+                      aria-label="Delete item"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                <div className="item-editor-form">
+                  <div className="form-group-large">
+                    <label htmlFor="editor-name">Item Name</label>
+                    <input
+                      id="editor-name"
+                      type="text"
+                      className="item-name-input-large"
+                      value={items[selectedItemIndex].name}
+                      onChange={(e) => handleUpdateItem(selectedItemIndex, 'name', e.target.value)}
+                      placeholder="e.g., Tyre Condition"
+                    />
+                  </div>
+
+                  <div className="form-group-large">
+                    <label htmlFor="editor-description">Description</label>
+                    <textarea
+                      id="editor-description"
+                      className="item-description-input-large"
+                      value={items[selectedItemIndex].description}
+                      onChange={(e) => handleUpdateItem(selectedItemIndex, 'description', e.target.value)}
+                      placeholder="Enter detailed instructions for this check..."
+                    />
+                  </div>
+
+                  <div className="form-group-large">
+                    <label className="form-label">Reference Photo (Optional)</label>
+                    {items[selectedItemIndex].referencePhotoUrl ? (
+                      <div className="photo-preview-large">
+                        <img src={items[selectedItemIndex].referencePhotoUrl} alt="Reference" />
+                        <button
+                          className="remove-photo-button"
+                          onClick={() => handleRemovePhoto(selectedItemIndex)}
+                        >
+                          Remove Photo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="photo-upload-large">
+                        <input
+                          type="file"
+                          id="editor-photo"
+                          accept="image/*"
+                          onChange={(e) => handlePhotoUpload(selectedItemIndex, e)}
+                          disabled={!storageEnabled || uploadingIndex === selectedItemIndex}
+                        />
+                        <label htmlFor="editor-photo" className="upload-label-large">
+                          {uploadingIndex === selectedItemIndex ? (
+                            <>Uploading...</>
+                          ) : (
+                            <>📷 Choose Reference Photo</>
+                          )}
+                        </label>
+                        {!storageEnabled && (
+                          <span className="disabled-text">
+                            Photo upload not configured
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <p className="help-text">
+                      Add a reference photo to guide users on what to check
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="editor-empty">
+                <p className="empty-state-icon">👆</p>
+                <p>Select a check item from the list to edit it</p>
+              </div>
+            )}
+          </div>
+        </div>
       </main>
 
       <footer className="template-editor-footer">
