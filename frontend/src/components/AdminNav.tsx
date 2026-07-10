@@ -14,7 +14,7 @@ import './AdminNav.css';
 
 const ADMIN_LINKS = [
   { to: '/admin/stations', label: 'Stations' },
-  { to: '/admin/brigade-access', label: 'Brigade Access' },
+  { to: '/admin/brigade-access', label: 'Crew Access' },
   { to: '/admin/organization', label: 'Organization' },
 ];
 

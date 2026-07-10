@@ -197,7 +197,7 @@ export function ExportData() {
         </div>
 
         <div className="export-group">
-          <h4>Truck Checks</h4>
+          <h4>Vehicle Checks</h4>
           <button
             className="btn-export"
             onClick={handleExportTruckChecks}
