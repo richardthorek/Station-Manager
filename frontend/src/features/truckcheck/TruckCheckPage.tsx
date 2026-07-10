@@ -18,6 +18,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Moon, Sun, Settings2, Wrench, Truck, TriangleAlert, Mic } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
@@ -194,7 +195,7 @@ export function TruckCheckPage() {
               aria-label="Toggle theme"
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
-              {theme === 'light' ? '🌙' : '☀️'}
+              {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
             </button>
           </div>
           <h1>Vehicle Roster</h1>
@@ -204,16 +205,16 @@ export function TruckCheckPage() {
         <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="view-tabs">
             <Link to="/truckcheck/admin" className="tab-link">
-              ⚙️ Admin Dashboard
+              <Settings2 size={16} strokeWidth={2} aria-hidden /> Admin Dashboard
             </Link>
             <Link to="/truckcheck/vehicle-types" className="tab-link">
-              🧰 Templates &amp; Vehicle Types
+              <Wrench size={16} strokeWidth={2} aria-hidden /> Templates &amp; Vehicle Types
             </Link>
           </div>
 
           {appliances.length === 0 ? (
             <div className="roster-empty">
-              <div className="roster-empty__icon">🚒</div>
+              <div className="roster-empty__icon"><Truck size={40} strokeWidth={2} aria-hidden /></div>
               <h2>No vehicles yet</h2>
               <p>Add your brigade's vehicles from the Admin Dashboard to start running weekly checks.</p>
               <Link to="/truckcheck/admin" className="btn-primary">Go to Admin Dashboard</Link>
@@ -238,7 +239,7 @@ export function TruckCheckPage() {
                       {appliance.photoUrl ? (
                         <img src={appliance.photoUrl} alt={appliance.name} className="roster-card__photo" />
                       ) : (
-                        <div className="roster-card__icon" aria-hidden="true">🚛</div>
+                        <div className="roster-card__icon" aria-hidden="true"><Truck size={28} strokeWidth={2} /></div>
                       )}
                     </div>
 
@@ -247,7 +248,7 @@ export function TruckCheckPage() {
                         <h3 className="roster-card__name">{appliance.name}</h3>
                         {issueCount > 0 && (
                           <span className="roster-chip roster-chip--issue" title="Outstanding issues">
-                            ⚠ {issueCount}
+                            <TriangleAlert size={14} strokeWidth={2} aria-hidden /> {issueCount}
                           </span>
                         )}
                       </div>
@@ -312,7 +313,7 @@ export function TruckCheckPage() {
                               className="btn-voice-check"
                               onClick={() => navigate(`/truckcheck/voice/${appliance.id}`)}
                             >
-                              🎙 Voice
+                              <Mic size={16} strokeWidth={2} aria-hidden /> Voice
                             </button>
                           )}
                         </>

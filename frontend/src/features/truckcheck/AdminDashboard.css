@@ -31,6 +31,9 @@
 }
 
 .tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0.75rem 1.5rem;
   background: rgba(255, 255, 255, 0.1);
   border: none;
@@ -205,6 +208,10 @@
 }
 
 .no-results p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   margin: 0;
   color: var(--rfs-dark-grey);
 }
@@ -265,6 +272,9 @@
 }
 
 .issue-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   background: var(--status-issue-border);
   color: var(--rfs-white);
   padding: 0.5rem 1rem;
@@ -342,6 +352,9 @@
 }
 
 .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   padding: 0.25rem 0.75rem;
   border-radius: 4px;
   font-size: 0.85rem;

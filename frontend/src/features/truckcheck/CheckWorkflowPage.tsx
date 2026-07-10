@@ -1,6 +1,11 @@
-import { useState, useEffect, useRef, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment, type ReactNode } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import {
+  Moon, Sun, Check, CircleCheckBig, TriangleAlert, Users, PartyPopper, Search, Camera, Upload,
+  Wrench, Droplet, CircleGauge, Lightbulb, ShowerHead, Radio, Fuel, BatteryFull,
+  FlameKindling, HeartPulse, Settings2,
+} from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -357,21 +362,21 @@ export function CheckWorkflowPage() {
     }
   }
 
-  function getItemIcon(itemName: string): string {
+  function getItemIcon(itemName: string): ReactNode {
     const name = itemName.toLowerCase();
-    if (name.includes('oil') || name.includes('fluid')) return '🛢️';
-    if (name.includes('tire') || name.includes('wheel')) return '🛞';
-    if (name.includes('light') || name.includes('beacon')) return '💡';
-    if (name.includes('hose') || name.includes('water')) return '🚿';
-    if (name.includes('radio') || name.includes('communication')) return '📻';
-    if (name.includes('fuel') || name.includes('tank')) return '⛽';
-    if (name.includes('battery')) return '🔋';
-    if (name.includes('extinguisher') || name.includes('fire')) return '🧯';
-    if (name.includes('tool') || name.includes('equipment')) return '🔧';
-    if (name.includes('first aid') || name.includes('medical')) return '🏥';
-    if (name.includes('ladder')) return '🪜';
-    if (name.includes('pump')) return '⚙️';
-    return '✓'; // Default checkmark
+    const props = { size: 20, strokeWidth: 2, 'aria-hidden': true as const };
+    if (name.includes('oil') || name.includes('fluid')) return <Droplet {...props} />;
+    if (name.includes('tire') || name.includes('wheel')) return <CircleGauge {...props} />;
+    if (name.includes('light') || name.includes('beacon')) return <Lightbulb {...props} />;
+    if (name.includes('hose') || name.includes('water')) return <ShowerHead {...props} />;
+    if (name.includes('radio') || name.includes('communication')) return <Radio {...props} />;
+    if (name.includes('fuel') || name.includes('tank')) return <Fuel {...props} />;
+    if (name.includes('battery')) return <BatteryFull {...props} />;
+    if (name.includes('extinguisher') || name.includes('fire')) return <FlameKindling {...props} />;
+    if (name.includes('tool') || name.includes('equipment') || name.includes('ladder')) return <Wrench {...props} />;
+    if (name.includes('first aid') || name.includes('medical')) return <HeartPulse {...props} />;
+    if (name.includes('pump')) return <Settings2 {...props} />;
+    return <Check {...props} />; // Default checkmark
   }
 
   if (loading) {
@@ -406,7 +411,7 @@ export function CheckWorkflowPage() {
           <div className="header-top">
             <Link to="/truckcheck" className="back-link">← Back</Link>
             <button className="theme-toggle-btn" onClick={toggleTheme}>
-              {theme === 'light' ? '🌙' : '☀️'}
+              {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
             </button>
           </div>
           <h1>{appliance.name} Check</h1>
@@ -463,7 +468,7 @@ export function CheckWorkflowPage() {
         <div className="header-top">
           <Link to="/truckcheck" className="back-link">← Cancel</Link>
           <button className="theme-toggle-btn" onClick={toggleTheme}>
-            {theme === 'light' ? '🌙' : '☀️'}
+            {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
           </button>
         </div>
         <h1>{appliance.name} Check</h1>
@@ -490,7 +495,7 @@ export function CheckWorkflowPage() {
             >
               {markingRemaining
                 ? 'Marking…'
-                : `✓ Mark remaining ${template.items.length - results.size} as OK`}
+                : <><Check size={16} strokeWidth={2} aria-hidden /> {`Mark remaining ${template.items.length - results.size} as OK`}</>}
             </button>
           )}
         </div>
@@ -499,12 +504,12 @@ export function CheckWorkflowPage() {
           <div className="check-status-info">
             {isJoinedCheck && (
               <div className="joined-check-notice">
-                ✅ Joined existing check
+                <CircleCheckBig size={16} strokeWidth={2} aria-hidden /> Joined existing check
               </div>
             )}
             {checkRun.contributors && checkRun.contributors.length > 1 && (
               <div className="contributors-badge">
-                👥 {checkRun.contributors.length} contributors
+                <Users size={16} strokeWidth={2} aria-hidden /> {checkRun.contributors.length} contributors
               </div>
             )}
           </div>
@@ -582,7 +587,7 @@ export function CheckWorkflowPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, type: 'spring' }}
               >
-                <div className="completion-icon">🎉</div>
+                <div className="completion-icon"><PartyPopper size={40} strokeWidth={2} aria-hidden /></div>
                 <h2>All Items Completed!</h2>
                 <p>You've completed all {template.items.length} items in this check.</p>
                 <button 
@@ -600,7 +605,7 @@ export function CheckWorkflowPage() {
       {results.size === template.items.length && (
         <div className="completion-sticky" aria-label="Completion actions">
           <button className="btn-complete" onClick={handleFinishCheck}>
-            ✅ Finish & View Summary
+            <CircleCheckBig size={18} strokeWidth={2} aria-hidden /> Finish & View Summary
           </button>
         </div>
       )}
@@ -627,7 +632,7 @@ export function CheckWorkflowPage() {
 
 interface CheckItemCardProps {
   item: { id: string; name: string; description: string; referencePhotoUrl?: string; itemCode?: string; section?: string };
-  itemIcon: string;
+  itemIcon: ReactNode;
   isActive: boolean;
   result?: CheckResult;
   onResult: (status: CheckStatus, comment?: string, photoUrl?: string) => void;
@@ -737,14 +742,14 @@ function CheckItemCard({ item, itemIcon, isActive, result, onResult, onPhotoClic
             >
               <img src={item.referencePhotoUrl} alt={`Reference for ${item.name}`} />
               <div className="photo-overlay">
-                <span className="zoom-icon">🔍</span>
+                <span className="zoom-icon"><Search size={20} strokeWidth={2} aria-hidden /></span>
               </div>
             </button>
             <p className="photo-caption">Reference Photo (click to enlarge)</p>
           </div>
         ) : (
           <div className="reference-photo-placeholder">
-            <div className="photo-icon">📷</div>
+            <div className="photo-icon"><Camera size={28} strokeWidth={2} aria-hidden /></div>
             <p className="photo-text">No reference photo available</p>
           </div>
         )}
@@ -752,8 +757,8 @@ function CheckItemCard({ item, itemIcon, isActive, result, onResult, onPhotoClic
         {result ? (
           <div className="result-display">
             <div className={`result-badge ${result.status}`}>
-              {result.status === 'done' && '✓ Done'}
-              {result.status === 'issue' && '⚠ Issue'}
+              {result.status === 'done' && <><Check size={14} strokeWidth={2} aria-hidden /> Done</>}
+              {result.status === 'issue' && <><TriangleAlert size={14} strokeWidth={2} aria-hidden /> Issue</>}
               {result.status === 'skipped' && '○ Skipped'}
             </div>
             {result.completedBy && (
@@ -773,7 +778,7 @@ function CheckItemCard({ item, itemIcon, isActive, result, onResult, onPhotoClic
                 >
                   <img src={result.photoUrl} alt="Issue documentation" />
                   <div className="photo-overlay">
-                    <span className="zoom-icon">🔍</span>
+                    <span className="zoom-icon"><Search size={20} strokeWidth={2} aria-hidden /></span>
                   </div>
                 </button>
                 <p className="photo-caption">Uploaded Photo (click to enlarge)</p>
@@ -788,10 +793,10 @@ function CheckItemCard({ item, itemIcon, isActive, result, onResult, onPhotoClic
             {!showComment ? (
               <>
                 <button className="btn-done" onClick={() => handleStatus('done')}>
-                  ✓ Done
+                  <Check size={16} strokeWidth={2} aria-hidden /> Done
                 </button>
                 <button className="btn-issue" onClick={() => handleStatus('issue')}>
-                  ⚠ Issue
+                  <TriangleAlert size={16} strokeWidth={2} aria-hidden /> Issue
                 </button>
                 <button className="btn-skip" onClick={() => handleStatus('skipped')}>
                   Skip
@@ -834,7 +839,7 @@ function CheckItemCard({ item, itemIcon, isActive, result, onResult, onPhotoClic
                             style={{ display: 'none' }}
                           />
                           <label htmlFor={uploadInputId} className="upload-button">
-                            {uploading ? '📤 Uploading...' : '📸 Add Photo'}
+                            {uploading ? <><Upload size={16} strokeWidth={2} aria-hidden /> Uploading...</> : <><Camera size={16} strokeWidth={2} aria-hidden /> Add Photo</>}
                           </label>
                         </div>
                       )}
