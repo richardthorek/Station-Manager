@@ -134,7 +134,7 @@ export function LandingPage() {
             animate="animate"
           >
             <motion.article
-              className={`feature-card${signInLocked ? ' feature-card--locked' : ''}`}
+              className={`feature-card feature-card--signin${signInLocked ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
@@ -145,7 +145,7 @@ export function LandingPage() {
             </motion.article>
 
             <motion.article
-              className={`feature-card${truckCheckLocked ? ' feature-card--locked' : ''}`}
+              className={`feature-card feature-card--vehicle${truckCheckLocked ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
@@ -156,7 +156,7 @@ export function LandingPage() {
             </motion.article>
 
             <motion.article
-              className={`feature-card${reportsLocked ? ' feature-card--locked' : ''}`}
+              className={`feature-card feature-card--reports${reportsLocked ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
@@ -167,7 +167,7 @@ export function LandingPage() {
             </motion.article>
 
             <motion.article
-              className={`feature-card${entitlements && !hasFeature('aarStudioEnabled') ? ' feature-card--locked' : ''}`}
+              className={`feature-card feature-card--aar${entitlements && !hasFeature('aarStudioEnabled') ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
@@ -189,7 +189,7 @@ export function LandingPage() {
             </motion.article>
 
             <motion.article
-              className="feature-card"
+              className="feature-card feature-card--admin"
               variants={itemVariants}
               transition={itemTransition}
             >
@@ -220,7 +220,7 @@ export function LandingPage() {
               return (
                 <motion.article
                   key={suiteApp.id}
-                  className={`feature-card${locked ? ' feature-card--locked' : ''}`}
+                  className={`feature-card feature-card--suite${locked ? ' feature-card--locked' : ''}`}
                   variants={itemVariants}
                   transition={itemTransition}
                 >

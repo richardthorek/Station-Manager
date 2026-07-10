@@ -192,18 +192,18 @@
 }
 
 .status-badge.done {
-  background: var(--status-done-border);
-  color: var(--rfs-white);
+  background: var(--surface-success);
+  color: var(--text-success-strong);
 }
 
 .status-badge.issue {
-  background: var(--status-issue-border);
-  color: var(--rfs-white);
+  background: var(--surface-warning);
+  color: var(--text-warning-strong);
 }
 
 .status-badge.skipped {
-  background: var(--status-skip-border);
-  color: var(--rfs-white);
+  background: var(--status-skip-bg, var(--bg-secondary));
+  color: var(--status-skip-text, var(--text-secondary));
 }
 
 .result-comment {

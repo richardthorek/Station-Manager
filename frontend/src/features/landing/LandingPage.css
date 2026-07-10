@@ -23,36 +23,11 @@
 }
 
 .landing-header {
-  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
+  background: #0C1220;
   padding: 1rem 1.25rem;
   box-shadow: var(--shadow-lg);
   flex-shrink: 0;
   position: relative;
-  overflow: hidden;
-}
-
-.landing-header::before,
-.landing-header::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.landing-header::before {
-  top: -50%;
-  right: -10%;
-  width: 300px;
-  height: 300px;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.landing-header::after {
-  bottom: -50%;
-  left: -10%;
-  width: 250px;
-  height: 250px;
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .header-content {
@@ -90,7 +65,7 @@
 
 .eyebrow {
   margin: 0;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--accent-amber);
   font-weight: 700;
   letter-spacing: 0.2px;
   text-transform: uppercase;
@@ -255,11 +230,19 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--rfs-core-red) 0%, var(--rfs-lime) 100%);
+  background: var(--rfs-core-red);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.3s ease;
 }
+
+/* Per-module flat accent bar (design system v2.0 §6 module colour map) */
+.feature-card--signin::before { background: var(--rfs-core-red); }
+.feature-card--vehicle::before { background: var(--rfs-neutral-dark); }
+.feature-card--reports::before { background: var(--ui-blue); }
+.feature-card--aar::before { background: var(--accent-amber); }
+.feature-card--admin::before { background: var(--ui-green); }
+.feature-card--suite::before { background: var(--rfs-neutral-dark); }
 
 .feature-card:hover {
   transform: translateY(-6px);
