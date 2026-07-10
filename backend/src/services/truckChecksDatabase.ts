@@ -284,6 +284,15 @@ class TruckChecksDatabase {
     );
   }
 
+  deleteCheckRun(id: string): boolean {
+    if (!this.checkRuns.has(id)) return false;
+    // Cascade-delete the run's results so no orphans linger.
+    for (const result of this.getResultsByRunId(id)) {
+      this.checkResults.delete(result.id);
+    }
+    return this.checkRuns.delete(id);
+  }
+
   addContributorToCheckRun(runId: string, contributorName: string): CheckRun | undefined {
     const run = this.checkRuns.get(runId);
     if (!run) return undefined;

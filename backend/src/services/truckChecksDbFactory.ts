@@ -68,6 +68,12 @@ export interface ITruckChecksDatabase {
   getCheckRunsByAppliance(applianceId: string): Promise<CheckRun[]> | CheckRun[];
   getCheckRunsByDateRange(startDate: Date, endDate: Date, stationId?: string): Promise<CheckRun[]> | CheckRun[];
   completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
+  /**
+   * Delete a check run and all of its results. Used to cancel/abandon a run that
+   * was left open (e.g. someone walked away mid-check). Returns false when the run
+   * does not exist.
+   */
+  deleteCheckRun(id: string): Promise<boolean> | boolean;
   getActiveCheckRunForAppliance(applianceId: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
   addContributorToCheckRun(runId: string, contributorName: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
 

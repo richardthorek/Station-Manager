@@ -763,7 +763,8 @@
           "getCheckRunById",
           "getCheckRunWithResults",
           "createCheckRun",
-          "completeCheckRun"
+          "completeCheckRun",
+          "deleteCheckRun"
         ],
         "checkResults": [
           "createCheckResult",

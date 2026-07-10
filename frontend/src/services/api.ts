@@ -950,6 +950,15 @@ class ApiService {
     return response.json();
   }
 
+  /** Cancel/abandon a check run left open from a previous session. */
+  async cancelCheckRun(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to cancel check run');
+  }
+
   // Check Results
   async createCheckResult(
     runId: string,
