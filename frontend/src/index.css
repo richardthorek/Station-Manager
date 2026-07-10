@@ -257,14 +257,13 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
   line-height: 1.2;
 }
 
 button {
-  font-family: inherit;
+  font-family: 'Archivo', inherit;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   border: none;
   border-radius: var(--radius-md);
@@ -275,12 +274,10 @@ button {
 }
 
 button:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
 button:active {
-  transform: translateY(0);
   box-shadow: var(--shadow-md);
 }
 
@@ -320,21 +317,23 @@ input:focus, select:focus {
  * - Always use the semantic CSS variables — never hardcode hex
  */
 
-/* Utility Classes - Modern Button Variants */
+/* Utility Classes - Modern Button Variants (flat fills, no gradients) */
 .btn-primary {
-  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
+  background: var(--rfs-core-red);
+  font-family: 'Archivo', inherit;
   color: #ffffff;
   box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--rfs-core-red-dark) 0%, #8a0a20 100%);
+  background: var(--rfs-core-red-dark);
   color: #ffffff;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
   background: var(--bg-card);
+  font-family: 'Archivo', inherit;
   color: var(--text-primary);
   border: 2px solid var(--border-color);
   box-shadow: var(--shadow-sm);
@@ -347,24 +346,27 @@ input:focus, select:focus {
 }
 
 .btn-success {
-  background: linear-gradient(135deg, var(--ui-green) 0%, #006940 100%);
+  background: var(--ui-green);
+  font-family: 'Archivo', inherit;
   color: #ffffff;
   box-shadow: var(--shadow-sm);
 }
 
 .btn-success:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-accent {
-  background: linear-gradient(135deg, var(--rfs-lime) 0%, var(--rfs-lime-dark) 100%);
-  color: #000000;
+  background: var(--accent-amber);
+  font-family: 'Archivo', inherit;
+  color: var(--accent-amber-ink);
   box-shadow: var(--shadow-sm);
 }
 
 .btn-accent:hover {
-  color: #000000;
-  box-shadow: var(--shadow-lg);
+  background: var(--accent-amber-dark);
+  color: var(--accent-amber-ink);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-ghost {
@@ -380,13 +382,15 @@ input:focus, select:focus {
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
+  background: var(--rfs-core-red);
+  font-family: 'Archivo', inherit;
   color: #ffffff;
   box-shadow: var(--shadow-sm);
 }
 
 .btn-danger:hover {
-  box-shadow: var(--shadow-lg);
+  background: var(--rfs-core-red-dark);
+  box-shadow: var(--shadow-md);
 }
 
 /* Card Variants */
