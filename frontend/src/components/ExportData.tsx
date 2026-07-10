@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { BarChart3, CircleAlert, CircleCheckBig, Download } from 'lucide-react';
 import { api } from '../services/api';
 import { downloadCSV, getTodayFormatted } from '../utils/csvUtils';
 import './ExportData.css';
@@ -108,17 +109,17 @@ export function ExportData() {
 
   return (
     <div className="export-data">
-      <h3>📊 Export Data</h3>
-      
+      <h3><BarChart3 size={20} strokeWidth={2} aria-hidden /> Export Data</h3>
+
       {error && (
         <div className="export-error" role="alert">
-          <span aria-hidden="true">❌ </span>
+          <span aria-hidden="true"><CircleAlert size={16} strokeWidth={2} /></span>
           <span>Error: {error}</span>
         </div>
       )}
       {success && (
         <div className="export-success" role="status">
-          <span aria-hidden="true">✅ </span>
+          <span aria-hidden="true"><CircleCheckBig size={16} strokeWidth={2} /></span>
           <span>Success: {success}</span>
         </div>
       )}
@@ -131,7 +132,7 @@ export function ExportData() {
             onClick={handleExportMembers}
             disabled={loading !== null}
           >
-            {loading === 'members' ? 'Exporting...' : '📥 Export Members'}
+            {loading === 'members' ? 'Exporting...' : <><Download size={16} strokeWidth={2} aria-hidden /> Export Members</>}
           </button>
         </div>
 
@@ -178,7 +179,7 @@ export function ExportData() {
             onClick={handleExportCheckIns}
             disabled={loading !== null}
           >
-            {loading === 'checkins' ? 'Exporting...' : '📥 Export Check-Ins'}
+            {loading === 'checkins' ? 'Exporting...' : <><Download size={16} strokeWidth={2} aria-hidden /> Export Check-Ins</>}
           </button>
           <p className="export-hint">Uses date range filter above</p>
         </div>
@@ -190,7 +191,7 @@ export function ExportData() {
             onClick={handleExportEvents}
             disabled={loading !== null}
           >
-            {loading === 'events' ? 'Exporting...' : '📥 Export Events'}
+            {loading === 'events' ? 'Exporting...' : <><Download size={16} strokeWidth={2} aria-hidden /> Export Events</>}
           </button>
           <p className="export-hint">Uses date range filter above</p>
         </div>
@@ -202,7 +203,7 @@ export function ExportData() {
             onClick={handleExportTruckChecks}
             disabled={loading !== null}
           >
-            {loading === 'truckcheck' ? 'Exporting...' : '📥 Export Truck Checks'}
+            {loading === 'truckcheck' ? 'Exporting...' : <><Download size={16} strokeWidth={2} aria-hidden /> Export Vehicle Checks</>}
           </button>
           <p className="export-hint">Uses date range filter above</p>
         </div>

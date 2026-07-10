@@ -12,6 +12,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { Flame, Settings2, Users, Plus, BarChart3, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useStation } from '../contexts/StationContext';
 import './Header.css';
@@ -81,7 +82,7 @@ export function Header({
     <header className={`header ${isDemo ? 'demo-mode' : ''}`}>
       <div className="header-content">
         <div className="header-logo">
-          <div className="logo-icon">🚒</div>
+          <div className="logo-icon"><Flame size={24} strokeWidth={2} aria-hidden /></div>
           <h1>Station Manager</h1>
           {isDemo && (
             <div className="demo-badge" title="Demo Mode - Data can be reset at any time">
@@ -100,7 +101,7 @@ export function Header({
                 aria-haspopup="true"
                 title="Admin options"
               >
-                ⚙️
+                <Settings2 size={20} strokeWidth={2} aria-hidden />
               </button>
               {isMenuOpen && (
                 <div className="admin-menu-dropdown" role="menu">
@@ -110,7 +111,7 @@ export function Header({
                       onClick={() => handleMenuItemClick(onManageUsers)}
                       role="menuitem"
                     >
-                      <span className="menu-item-icon">👥</span>
+                      <span className="menu-item-icon"><Users size={18} strokeWidth={2} aria-hidden /></span>
                       <span className="menu-item-text">Manage Users</span>
                     </button>
                   )}
@@ -120,7 +121,7 @@ export function Header({
                       onClick={() => handleMenuItemClick(onAddActivityType)}
                       role="menuitem"
                     >
-                      <span className="menu-item-icon">➕</span>
+                      <span className="menu-item-icon"><Plus size={18} strokeWidth={2} aria-hidden /></span>
                       <span className="menu-item-text">Add Activity Type</span>
                     </button>
                   )}
@@ -130,7 +131,7 @@ export function Header({
                       onClick={() => handleMenuItemClick(onExportData)}
                       role="menuitem"
                     >
-                      <span className="menu-item-icon">📊</span>
+                      <span className="menu-item-icon"><BarChart3 size={18} strokeWidth={2} aria-hidden /></span>
                       <span className="menu-item-text">Export Data</span>
                     </button>
                   )}
@@ -144,7 +145,7 @@ export function Header({
             aria-label="Toggle theme"
             title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
-            {theme === 'light' ? '🌙' : '☀️'}
+            {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
           </button>
           {showDatabaseWarning && (
             <div className="status-indicator warning" title="Using in-memory database - data will be lost on restart">

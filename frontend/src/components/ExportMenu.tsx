@@ -14,6 +14,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { Download, FileText, BarChart3, ImageIcon, ChevronUp, ChevronDown, Check } from 'lucide-react';
 import './ExportMenu.css';
 
 interface ExportMenuProps {
@@ -76,9 +77,9 @@ export function ExportMenu({
         aria-label="Export options"
         aria-expanded={isOpen}
       >
-        <span className="export-menu__icon">📥</span>
+        <span className="export-menu__icon"><Download size={18} strokeWidth={2} aria-hidden /></span>
         <span>Export</span>
-        <span className="export-menu__arrow">{isOpen ? '▲' : '▼'}</span>
+        <span className="export-menu__arrow">{isOpen ? <ChevronUp size={16} strokeWidth={2} aria-hidden /> : <ChevronDown size={16} strokeWidth={2} aria-hidden />}</span>
       </button>
 
       {isOpen && (
@@ -88,7 +89,7 @@ export function ExportMenu({
             onClick={() => handleExport('pdf', onExportPDF)}
             disabled={isExporting}
           >
-            <span className="export-menu__option-icon">📄</span>
+            <span className="export-menu__option-icon"><FileText size={20} strokeWidth={2} aria-hidden /></span>
             <div className="export-menu__option-content">
               <span className="export-menu__option-title">Export as PDF</span>
               <span className="export-menu__option-description">
@@ -102,7 +103,7 @@ export function ExportMenu({
             onClick={() => handleExport('excel', onExportExcel)}
             disabled={isExporting}
           >
-            <span className="export-menu__option-icon">📊</span>
+            <span className="export-menu__option-icon"><BarChart3 size={20} strokeWidth={2} aria-hidden /></span>
             <div className="export-menu__option-content">
               <span className="export-menu__option-title">Export as Excel</span>
               <span className="export-menu__option-description">
@@ -116,7 +117,7 @@ export function ExportMenu({
             onClick={() => handleExport('png', onExportPNG)}
             disabled={isExporting}
           >
-            <span className="export-menu__option-icon">🖼️</span>
+            <span className="export-menu__option-icon"><ImageIcon size={20} strokeWidth={2} aria-hidden /></span>
             <div className="export-menu__option-content">
               <span className="export-menu__option-title">Export Charts as PNG</span>
               <span className="export-menu__option-description">
@@ -136,7 +137,7 @@ export function ExportMenu({
 
       {exportSuccess && (
         <div className="export-menu__success">
-          <span className="export-menu__success-icon">✓</span>
+          <span className="export-menu__success-icon"><Check size={16} strokeWidth={2} aria-hidden /></span>
           <span>{exportSuccess}</span>
         </div>
       )}

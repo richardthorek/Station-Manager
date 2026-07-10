@@ -60,7 +60,7 @@
 }
 
 .logo-icon {
-  font-size: 2.2rem;
+  display: inline-flex;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   animation: pulse 2s ease-in-out infinite;
 }
@@ -259,7 +259,7 @@
 }
 
 .menu-item-icon {
-  font-size: 1.2rem;
+  display: inline-flex;
   flex-shrink: 0;
 }
 

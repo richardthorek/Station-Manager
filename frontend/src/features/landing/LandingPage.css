@@ -174,7 +174,8 @@
 }
 
 .header-cta .btn-icon {
-  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 .header-cta .btn-text {
@@ -271,7 +272,8 @@
 }
 
 .feature-icon {
-  font-size: 3rem;
+  display: inline-flex;
+  color: var(--rfs-core-red);
   margin-bottom: 1rem;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   transition: transform 0.3s ease;
@@ -568,7 +570,8 @@
 }
 
 .feature-link--locked .lock-icon {
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Suite sibling-app badge (e.g. "Seasonal") */
