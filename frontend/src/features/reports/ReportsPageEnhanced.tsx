@@ -43,7 +43,7 @@ import './ReportsPage.css';
 // RFS brand colors for charts
 const CHART_COLORS = {
   primary: '#e5281B',     // RFS red
-  lime: '#cbdb2a',        // RFS lime
+  lime: '#F6A609',        // Hi-Vis Amber
   blue: '#215e9e',        // UI blue
   green: '#008550',       // UI green
   amber: '#fbb034',       // UI amber

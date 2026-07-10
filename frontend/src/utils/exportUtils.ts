@@ -14,7 +14,7 @@ import html2canvas from 'html2canvas';
 // RFS brand colors
 const RFS_COLORS = {
   red: '#e5281B',
-  lime: '#cbdb2a',
+  lime: '#F6A609',
   black: '#000000',
   white: '#ffffff',
   darkGrey: '#4d4d4f',

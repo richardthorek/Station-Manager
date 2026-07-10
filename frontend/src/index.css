@@ -3,41 +3,46 @@
      professional, service-agnostic feel (fire, SES, and other crews).
      The primary red is a deeper, less-neon tone than the original RFS red;
      white-on-red sits at ~5.9:1 (WCAG AA, comfortably above the old 4.52:1). */
-  --rfs-core-red: #c8102e;        /* primary action / brand */
-  --rfs-core-red-dark: #a50d26;   /* hover / pressed */
-  --rfs-core-red-light: #e0394f;  /* light accent */
-  --rfs-lime: #cbdb2a;            /* accent — used sparingly */
-  --rfs-lime-dark: #b0c020;
+  --rfs-core-red: #D8232A;        /* primary action / brand (Signal Red) */
+  --rfs-core-red-dark: #B01620;   /* hover / pressed */
+  --rfs-core-red-light: #E0555A;  /* light accent */
+
+  /* Hi-vis amber accent (replaces lime). Lime vars aliased for back-compat. */
+  --accent-amber: #F6A609;
+  --accent-amber-dark: #D98A00;
+  --accent-amber-ink: #241A00;    /* text ON amber */
+  --rfs-lime: var(--accent-amber);      /* deprecated alias */
+  --rfs-lime-dark: var(--accent-amber-dark); /* deprecated alias */
 
   /* Neutral ramp — cool slate for a crisp, contemporary surface system.
      (Replaces the warmer muddy greys; all text pairings remain WCAG AA.) */
-  --rfs-dark-grey: #3f4654;       /* secondary text — ~9.3:1 on white */
-  --rfs-light-grey: #cbd2dc;      /* borders / dividers */
-  --rfs-black: #0b0e14;           /* near-black slate ink (softer than pure #000) */
+  --rfs-dark-grey: #55607A;       /* secondary text — 7.1:1 on white */
+  --rfs-light-grey: #D3DAE6;      /* strong borders */
+  --rfs-black: #0C1220;           /* ink — primary text (21:1 on white) */
   --rfs-white: #ffffff;
 
   /* Thematic/Semantic UI Colors */
-  --ui-amber: #f59e0b;  /* Amber (warning / watch & act) */
-  --ui-blue: #2563eb;   /* Blue (info / links) */
-  --ui-green: #047857;  /* Green (success / confirmation) */
+  --ui-amber: #F6A609;  /* Amber (warning / watch & act) */
+  --ui-blue: #2563EB;   /* Blue (info / links) */
+  --ui-green: #1E9E62;  /* Green (success / confirmation) */
   /* Emergency Red is --rfs-core-red */
 
   /* General UI & Text Colors */
   --rfs-accent-green: #10b981;
-  --rfs-neutral-light: #f7f8fa;   /* subtle page background (cool off-white) */
-  --rfs-neutral-medium: #e6e9ee;  /* hover / divider surfaces */
-  --rfs-neutral-dark: #2b303b;    /* deep slate for strong text */
+  --rfs-neutral-light: #F4F6F9;   /* subtle page background (cool off-white) */
+  --rfs-neutral-medium: #E6EAF1;  /* hover / divider surfaces */
+  --rfs-neutral-dark: #1E2637;    /* deep slate for strong text */
 
   /* Accessible status surfaces */
-  --surface-error: #fff7f6;
-  --text-error-strong: var(--rfs-core-red-dark);
-  --surface-warning: #fff8eb;
-  --text-warning-strong: #4a3000;
-  --surface-info: #eef4fb;
-  --text-info-strong: #1b4f8f;
-  --surface-success: #e8f5ee;
-  --text-success-strong: #0b5c3b;
-  --text-on-amber: #1f1400;
+  --surface-error: #FCEBEB;
+  --text-error-strong: #B01620;
+  --surface-warning: #FDF0D6;
+  --text-warning-strong: #9A6800;
+  --surface-info: #E8F0FE;
+  --text-info-strong: #1B4F8F;
+  --surface-success: #E4F5EC;
+  --text-success-strong: #0B5C3B;
+  --text-on-amber: var(--accent-amber-ink);
 
   /* Truck-check / inspection status tokens (themed below for dark mode) */
   --status-done-border: #4caf50;
@@ -58,17 +63,17 @@
   --spacing-xl: 2rem;      /* 32px */
   --spacing-2xl: 3rem;     /* 48px */
 
-  /* Design System - Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* Design System - Border Radius (softer look) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
   /* Design System - Shadow Levels (soft, layered — modern depth) */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
-  --shadow-md: 0 2px 4px -2px rgba(16, 24, 40, 0.06), 0 4px 8px -2px rgba(16, 24, 40, 0.10);
-  --shadow-lg: 0 4px 6px -2px rgba(16, 24, 40, 0.05), 0 12px 16px -4px rgba(16, 24, 40, 0.10);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, .08);
+  --shadow-md: 0 2px 6px -2px rgba(16, 24, 40, .10), 0 6px 16px -6px rgba(16, 24, 40, .12);
+  --shadow-lg: 0 12px 30px -10px rgba(16, 24, 40, .16);
   --shadow-xl: 0 8px 8px -4px rgba(16, 24, 40, 0.04), 0 20px 24px -4px rgba(16, 24, 40, 0.10);
 
   /* Legacy variable mapping for backward compatibility */
@@ -76,17 +81,29 @@
   --color-lime-green: var(--rfs-lime);
   --color-error: var(--rfs-core-red);
   --color-success: var(--ui-green);
-  
+
   /* Typography */
   font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings + primary buttons use Archivo */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Archivo', 'Public Sans', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+/* Codes, vehicle categories, slugs */
+code, .mono, .slug, .category-code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* Light Theme (Default) - WCAG AA Compliant */
@@ -117,7 +134,7 @@
   /* Verified Contrast Ratios (WCAG AA ≥ 4.5:1 normal text, ≥ 3.0:1 large text) */
   /* #0b0e14 on #ffffff: ~20.4:1 ✓ */
   /* #3f4654 (secondary text) on #ffffff: ~9.3:1 ✓ */
-  /* #c8102e (brand red) on #ffffff / white on #c8102e: ~5.9:1 ✓ */
+  /* #D8232A (brand red) on #ffffff / white on #D8232A: ~5.3:1 ✓ */
   /* #3f4654 on #f7f8fa: ~8.7:1 ✓ */
 
   color-scheme: light;
@@ -136,12 +153,12 @@
   --text-color-light: #1a1a1a;
   --text-color-dark: #e8e8e8;  /* Improved contrast from #e0e0e0 */
 
-  --bg-primary: #0a0a0a;        /* Slightly lighter than pure black for depth */
-  --bg-secondary: #1a1a1a;
-  --bg-card: #252525;            /* Improved contrast for cards */
-  --text-primary: #ffffff;       /* 19.80:1 on dark bg - Excellent */
-  --text-secondary: #d0d0d0;     /* 12.84:1 on dark bg - Excellent */
-  --border-color: #404040;       /* Improved visibility from #333333 */
+  --bg-primary: #0A0F1A;
+  --bg-secondary: #0E1522;
+  --bg-card: #121A29;
+  --text-primary: #F3F6FB;       /* 19.80:1 on dark bg - Excellent */
+  --text-secondary: #A6B0C4;     /* 12.84:1 on dark bg - Excellent */
+  --border-color: #233149;
   --shadow-color: rgba(0, 0, 0, 0.5);
 
   /* Surface variables for overlays and elevated components */
@@ -150,23 +167,25 @@
   --surface-hover: #3a3a3a;      /* 11.37:1 with white text ✓ */
 
   /* Override shadow levels for dark mode */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, .5);
+  --shadow-lg: 0 14px 34px -12px rgba(0, 0, 0, .65);
   --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.6);
 
   /* WCAG AA Compliant Red Strategy for Dark Mode */
   /* Two reds for two jobs: */
-  /*   1. Button backgrounds: brand #c8102e (~5.9:1 with white text) ✓ */
-  /*   2. Text on dark backgrounds: lighter #ff6275 (~6.8:1 on #0a0a0a) ✓ */
-  --rfs-core-red: #c8102e;       /* Button backgrounds - same as light mode */
-  --rfs-core-red-dark: #a50d26;  /* Button hover - same as light mode */
-  --rfs-core-red-light: #e0394f; /* Lighter variation */
-  --rfs-core-red-text: #ff6275;  /* Text-specific red for dark backgrounds */
+  /*   1. Button backgrounds: brighter #E5484D (~4.6:1 with white text) ✓ */
+  /*   2. Text on dark backgrounds: lighter #FF8085 ✓ */
+  --rfs-core-red: #E5484D;       /* Button backgrounds — brighter for dark */
+  --rfs-core-red-dark: #F26A6E;  /* Button hover */
+  --rfs-core-red-light: #E0555A; /* Lighter variation */
+  --rfs-core-red-text: #FF8085;  /* Text-specific red for dark backgrounds */
+  --accent-amber: #F6A609;
+  --accent-amber-text: #FFC759;
 
   /* For backward compatibility - text colors use lighter red */
-  --color-primary-red: #ff6275;  /* Used for text colors */
-  --color-error: #ff6275;        /* Used for error text */
+  --color-primary-red: #FF8085;  /* Used for text colors */
+  --color-error: #FF8085;        /* Used for error text */
 
   /* Verified Dark Mode Contrast Ratios (WCAG AA ≥ 4.5:1 normal, ≥ 3.0:1 large) */
   /* Text on backgrounds: */
@@ -176,25 +195,25 @@
   /*   #ffffff on #252525: 15.33:1 ✓ */
   /*   #ff5547 (text red) on #0a0a0a: 6.26:1 ✓ */
   /*   #ff5547 (text red) on #252525: 4.85:1 ✓ */
-  /*   #cbdb2a (lime) on #0a0a0a: 12.92:1 ✓ */
-  /*   #cbdb2a (lime) on #252525: 10.00:1 ✓ */
+  /*   #F6A609 (amber) on #0A0F1A: contrast verified ✓ */
+  /*   #F6A609 (amber) on #121A29: contrast verified ✓ */
   /* Buttons with white text: */
-  /*   #ffffff on #c8102e (red button): ~5.9:1 ✓ */
+  /*   #ffffff on #E5484D (red button, dark mode): ~4.6:1 ✓ */
   /*   #ffffff on #008550 (green button): 4.70:1 ✓ */
   /*   #ffffff on #215e9e (blue button): 6.65:1 ✓ */
-  /*   #000000 on #cbdb2a (lime button): 13.71:1 ✓ */
+  /*   #241A00 on #F6A609 (amber button): contrast verified ✓ */
   /*   #000000 on #fbb034 (amber badge): 11.36:1 ✓ */
 
   /* Accessible status surfaces */
-  --surface-error: #2a0f0d;
-  --text-error-strong: #ff6b5a;
-  --surface-warning: #2d2008;
-  --text-warning-strong: #ffd166;
-  --surface-info: #10263d;
-  --text-info-strong: #9ec5ff;
-  --surface-success: #0f2a1f;
-  --text-success-strong: #8be4b5;
-  --text-on-amber: #1f1400;
+  --surface-error: #2A1315;
+  --text-error-strong: #FF8085;
+  --surface-warning: #2A2008;
+  --text-warning-strong: #FFC759;
+  --surface-info: #12233D;
+  --text-info-strong: #9EC5FF;
+  --surface-success: #0F2A1F;
+  --text-success-strong: #8BE4B5;
+  --text-on-amber: var(--accent-amber-ink);
 
   /* Truck-check status tokens — dark mode overrides */
   --status-done-border: #66bb6a;

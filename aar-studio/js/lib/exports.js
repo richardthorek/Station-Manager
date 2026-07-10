@@ -54,14 +54,14 @@ const SNAPSHOT_CSS = `
   .header h1 { font-size:19pt; font-weight:bold; margin-top:3px; letter-spacing:0.3px; }
   .header .sub { font-size:9pt; color:#b9c4cd; margin-top:4px; }
   .header .sub b { color:#fff; }
-  .redbar { background:#c8102e; color:#fff; padding:6px 24px; font-size:8.6pt; }
+  .redbar { background:#D8232A; color:#fff; padding:6px 24px; font-size:8.6pt; }
   .section { padding:0 24px; }
   .factrow { width:100%; border-collapse:collapse; margin-top:10px; table-layout:fixed; }
   .factrow td { text-align:center; padding:7px 4px; background:#f1f4f6; border-left:3px solid #fff; vertical-align:top; }
   .factrow td:first-child { border-left:none; }
-  .factrow .num { font-size:15pt; font-weight:bold; color:#c8102e; display:block; }
+  .factrow .num { font-size:15pt; font-weight:bold; color:#D8232A; display:block; }
   .factrow .lbl { font-size:7.2pt; text-transform:uppercase; letter-spacing:0.6px; color:#4a5560; display:block; margin-top:2px; }
-  h2 { font-size:9.5pt; text-transform:uppercase; letter-spacing:1.4px; color:#15212b; border-bottom:2px solid #c8102e; padding-bottom:2px; margin:11px 0 5px 0; }
+  h2 { font-size:9.5pt; text-transform:uppercase; letter-spacing:1.4px; color:#15212b; border-bottom:2px solid #D8232A; padding-bottom:2px; margin:11px 0 5px 0; }
   .incident p { margin-bottom:4px; }
   .brigades { width:100%; border-collapse:collapse; margin-top:2px; }
   .brigades td { font-size:8.4pt; padding:3px 8px 3px 0; vertical-align:top; }
@@ -72,11 +72,11 @@ const SNAPSHOT_CSS = `
   .cols td.right { padding-left:11px; border-left:1px solid #dde3e8; }
   .colhead { font-size:9pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; padding:4px 8px; margin-bottom:5px; color:#fff; }
   .good { background:#1f7a4d; }
-  .bad  { background:#c8102e; }
+  .bad  { background:#D8232A; }
   ul { list-style:none; }
   ul li { padding-left:13px; position:relative; margin-bottom:4px; font-size:8.7pt; }
   ul.g li:before { content:"+"; position:absolute; left:0; color:#1f7a4d; font-weight:bold; }
-  ul.b li:before { content:"!"; position:absolute; left:0; color:#c8102e; font-weight:bold; }
+  ul.b li:before { content:"!"; position:absolute; left:0; color:#D8232A; font-weight:bold; }
   li b { color:#15212b; }
   .actions { background:#15212b; color:#fff; margin:11px 24px 0 24px; padding:9px 14px 8px 14px; }
   .actions .ah { font-size:8pt; letter-spacing:2px; text-transform:uppercase; color:#e8b84b; font-weight:bold; margin-bottom:4px; }
@@ -291,7 +291,7 @@ const COMBINED_CSS = `
   .doc ol li { margin-bottom:4px; font-size:8.7pt; }
   .meta { font-size:8.4pt; color:#4a5560; margin-bottom:8px; }
   .register { width:100%; border-collapse:collapse; margin-top:4px; }
-  .register th { text-align:left; font-size:7.4pt; text-transform:uppercase; letter-spacing:0.6px; color:#4a5560; border-bottom:2px solid #c8102e; padding:3px 6px 3px 0; }
+  .register th { text-align:left; font-size:7.4pt; text-transform:uppercase; letter-spacing:0.6px; color:#4a5560; border-bottom:2px solid #D8232A; padding:3px 6px 3px 0; }
   .register td { font-size:8.4pt; padding:3px 8px 3px 0; border-bottom:1px solid #dde3e8; vertical-align:top; }
   .register .cat { white-space:nowrap; font-weight:bold; }
   .register .quote { color:#4a5560; font-style:italic; }

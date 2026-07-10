@@ -16,7 +16,7 @@ interface ConfettiPiece {
 
 const CONFETTI_COLORS = [
   '#e5281B', // RFS Red
-  '#cbdb2a', // RFS Lime
+  '#F6A609', // Hi-Vis Amber
   '#fbb034', // Amber
   '#215e9e', // Blue
   '#008550', // Green
