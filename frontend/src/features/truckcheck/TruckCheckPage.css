@@ -143,121 +143,188 @@
   border-bottom-color: var(--rfs-core-red);
 }
 
-/* Start View */
-.start-view .instructions {
-  margin-bottom: 2rem;
-}
-
-.start-view .instructions h2 {
-  margin: 0 0 0.5rem 0;
-  color: var(--text-primary);
-}
-
-.start-view .instructions p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-.appliance-grid {
+/* ── Roster ─────────────────────────────────────────────── */
+.roster-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.25rem;
 }
 
-.appliance-card {
+.roster-card {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  grid-template-areas:
+    'media body'
+    'actions actions';
+  gap: 1rem;
   background: var(--rfs-white);
   color: var(--rfs-black);
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  padding: 2rem;
-  text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-  position: relative;
+  border-left: 5px solid var(--rfs-mid-grey, #b0b0b0);
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.appliance-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+.roster-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
-.active-check-badge {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
-  padding: 0.4rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  animation: pulse 2s ease-in-out infinite;
+.roster-card--active {
+  border-left-color: #4caf50;
 }
 
-.active-check-badge .contributors-count {
-  font-size: 0.7rem;
-  opacity: 0.95;
+.roster-card--has-issues {
+  border-left-color: var(--status-issue-border, #e57373);
 }
 
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-  50% {
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
-  }
+.roster-card__media {
+  grid-area: media;
 }
 
-.appliance-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.appliance-photo {
-  width: 100%;
-  height: 150px;
+.roster-card__photo {
+  width: 72px;
+  height: 72px;
   object-fit: cover;
   border-radius: 8px;
-  margin-bottom: 1rem;
 }
 
-.appliance-card h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.5rem;
+.roster-card__icon {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem;
+  background: var(--rfs-light-grey, #f0f0f0);
+  border-radius: 8px;
+}
+
+.roster-card__body {
+  grid-area: body;
+  min-width: 0;
+}
+
+.roster-card__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.roster-card__name {
+  margin: 0;
+  font-size: 1.25rem;
   color: var(--rfs-black);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.appliance-identity {
-  margin: 0 0 0.5rem 0;
+.roster-card__identity {
+  margin: 0.15rem 0 0.5rem 0;
   color: var(--rfs-dark-grey);
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
 }
 
-.appliance-description {
-  margin: 0 0 1.5rem 0;
-  color: var(--rfs-dark-grey);
+.roster-card__status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
   font-size: 0.9rem;
 }
 
-.appliance-card--has-issues {
-  border: 2px solid var(--status-issue-border, #e57373);
+.roster-card__result {
+  font-weight: 700;
+  color: var(--rfs-black);
 }
 
-.open-issues-badge {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
+.roster-card__meta {
+  color: var(--rfs-dark-grey);
+  font-size: 0.82rem;
+}
+
+.roster-card__meta--never {
+  color: var(--status-issue-border, #e57373);
+  font-weight: 600;
+}
+
+.roster-card__status--active {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.roster-card__contributors {
+  color: var(--rfs-dark-grey);
+  font-weight: 400;
+}
+
+.roster-status-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4caf50;
+  margin-right: 0.4rem;
+  animation: roster-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes roster-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); }
+  50% { box-shadow: 0 0 0 5px rgba(76, 175, 80, 0); }
+}
+
+.roster-chip {
+  flex-shrink: 0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.roster-chip--issue {
   background: var(--status-issue-border, #e57373);
   color: #fff;
-  padding: 0.35rem 0.65rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.roster-card__actions {
+  grid-area: actions;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 0.85rem;
+}
+
+.roster-card__actions .btn-primary,
+.roster-card__actions .btn-secondary,
+.roster-card__actions .btn-danger,
+.roster-card__actions .btn-voice-check {
+  width: auto;
+  flex: 1 1 auto;
+  min-height: 44px;
+  margin-top: 0;
+  padding: 0.6rem 1rem;
+}
+
+.roster-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+}
+
+.roster-empty__icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.roster-empty .btn-primary {
+  width: auto;
+  display: inline-block;
+  margin-top: 1rem;
+  text-decoration: none;
 }
 
 /* Admin View */
@@ -324,6 +391,44 @@
   transform: translateY(0);
 }
 
+.btn-secondary {
+  background-color: transparent;
+  color: var(--rfs-core-red);
+  border: 2px solid var(--rfs-core-red);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: var(--surface-hover);
+}
+
+.btn-danger {
+  background-color: transparent;
+  color: var(--status-issue-border, #d32f2f);
+  border: 2px solid var(--status-issue-border, #e57373);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--status-issue-border, #e57373);
+  color: #fff;
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Secondary voice-agent entry (AI plan only) */
 .btn-voice-check {
   background-color: transparent;
@@ -357,7 +462,7 @@
     padding: 1rem;
   }
 
-  .appliance-grid,
+  .roster-grid,
   .admin-actions {
     grid-template-columns: 1fr;
   }

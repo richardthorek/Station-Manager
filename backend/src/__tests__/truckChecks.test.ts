@@ -452,6 +452,50 @@ describe('Truck Checks API - Check Runs', () => {
       expect(response.body).toHaveProperty('error');
     });
   });
+
+  describe('DELETE /api/truck-checks/runs/:id', () => {
+    it('should cancel an in-progress run and cascade-delete its results', async () => {
+      // Create an appliance + run + a result, then cancel the run.
+      const applianceRes = await request(app)
+        .post('/api/truck-checks/appliances')
+        .send({ name: 'Cancel Test Appliance' });
+      const cancelApplianceId = applianceRes.body.id;
+
+      const runRes = await request(app)
+        .post('/api/truck-checks/runs')
+        .send({ applianceId: cancelApplianceId, completedBy: 'tester' });
+      const cancelRunId = runRes.body.id;
+
+      await request(app)
+        .post('/api/truck-checks/results')
+        .send({ runId: cancelRunId, itemId: 'i1', itemName: 'Item 1', status: 'done' })
+        .expect(201);
+
+      await request(app)
+        .delete(`/api/truck-checks/runs/${cancelRunId}`)
+        .expect(204);
+
+      // Run is gone…
+      await request(app)
+        .get(`/api/truck-checks/runs/${cancelRunId}`)
+        .expect(404);
+
+      // …and the appliance has no active run, so it's checkable again.
+      const activeRes = await request(app)
+        .post('/api/truck-checks/runs')
+        .send({ applianceId: cancelApplianceId, completedBy: 'tester2' })
+        .expect(201);
+      expect(activeRes.body.joined).toBe(false);
+    });
+
+    it('should return 404 when cancelling a non-existent run', async () => {
+      const response = await request(app)
+        .delete('/api/truck-checks/runs/non-existent-run')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error');
+    });
+  });
 });
 
 describe('Truck Checks API - Check Results', () => {
@@ -502,6 +546,38 @@ describe('Truck Checks API - Check Results', () => {
       expect(response.body).toHaveProperty('status', 'done');
 
       resultId = response.body.id;
+    });
+
+    it('should create a result when itemDescription is empty (optional)', async () => {
+      // Regression: items legitimately have blank descriptions; the workflow
+      // passes them through, so an empty itemDescription must NOT 400.
+      const response = await request(app)
+        .post('/api/truck-checks/results')
+        .send({
+          runId,
+          itemId: 'item-no-desc',
+          itemName: 'No description item',
+          itemDescription: '',
+          status: 'done',
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('status', 'done');
+    });
+
+    it('should create a result when itemDescription is omitted entirely', async () => {
+      const response = await request(app)
+        .post('/api/truck-checks/results')
+        .send({
+          runId,
+          itemId: 'item-omit-desc',
+          itemName: 'Omitted description item',
+          status: 'done',
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
     });
 
     it('should return 400 if required fields are missing', async () => {

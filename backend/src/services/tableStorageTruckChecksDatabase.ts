@@ -533,6 +533,29 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     }
   }
 
+  async deleteCheckRun(id: string): Promise<boolean> {
+    const checkRun = await this.getCheckRunById(id);
+    if (!checkRun) return false;
+
+    // Cascade-delete the run's results (partitioned by runId) first, then the run.
+    const results = await this.getResultsByRunId(id);
+    await Promise.all(
+      results.map((r) =>
+        this.checkResultsTable.deleteEntity(id, r.id).catch((error: any) => {
+          if (error?.statusCode !== 404) throw error;
+        }),
+      ),
+    );
+
+    const monthKey = checkRun.startTime.toISOString().slice(0, 7);
+    try {
+      await this.checkRunsTable.deleteEntity(`CheckRun_${monthKey}`, id);
+    } catch (error: any) {
+      if (error?.statusCode !== 404) throw error;
+    }
+    return true;
+  }
+
   async getActiveCheckRunForAppliance(applianceId: string): Promise<CheckRun | null> {
     const runs = await this.getCheckRunsByAppliance(applianceId);
     return runs.find(run => run.status === 'in-progress') || null;

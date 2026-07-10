@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-06 (AC-2 shipped — ephemeral visitor sign-ins; sign-in book responsive audit — fixed profile-hero mobile stacking + event-tab/New-Event phone collision; AC-1 shipped — personal member link mints a station-scoped read session; AC-5 shipped — first-class Device accounts; sign-in book gated behind a brigade code / account / member-session / demo; Q5 shipped — cross-brigade comparative truck-check reporting)
+**Last updated:** 2026-07-10 (#617 — truck-check result-save 400 fixed (blank item description), vehicle roster with cancel/finalise for stuck runs, new `DELETE /api/truck-checks/runs/:id`; partially addresses Q8); 2026-07-06 (AC-2 shipped — ephemeral visitor sign-ins; sign-in book responsive audit — fixed profile-hero mobile stacking + event-tab/New-Event phone collision; AC-1 shipped — personal member link mints a station-scoped read session; AC-5 shipped — first-class Device accounts; sign-in book gated behind a brigade code / account / member-session / demo; Q5 shipped — cross-brigade comparative truck-check reporting)
 **Status:** Living document — **the single plan** for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
 
 ---
@@ -96,7 +96,7 @@ The agreed model for how anonymous access, membership, and subscriptions fit tog
 ### Later
 
 - **Q7 — AAR Studio: shrink the `/aar` CSP.** Blocked: live transcription still uses the Azure Speech SDK browser-direct (`wss://*.stt.speech.microsoft.com`), so the CSP must keep provider hosts. Unblocks if AAR moves to a backend speech proxy like the voice agent's (`agentSpeech.ts` pattern) — the CSP hosts are unrelated to AAR-6's now-shipped token-refresh/reconnect fix, so this stays blocked on the proxy move itself.
-- **Q8 — Truck check: surface vehicle management.** Vehicle CRUD is buried inside the admin dashboard (old TC-6). Small UX task.
+- **Q8 — Truck check: surface vehicle management.** Vehicle CRUD is buried inside the admin dashboard (old TC-6). Small UX task. *Partially addressed 2026-07-10 (#617): the `/truckcheck` landing page is now a **vehicle roster** — per-vehicle identity, last-check result (`10/12 OK`), when/who, outstanding issues, and Resume/Finalise/**Cancel** for in-progress runs (backed by the new `DELETE /api/truck-checks/runs/:id`). Remaining: fold add/edit/delete vehicle CRUD into the roster so it isn't admin-only, and reduce duplication between the roster, VehicleManagement, and VehicleTypes/Template screens (single "Templates & Vehicle Types" entry).*
 - **Q9 — Frontend polish batch.** Known minor UAT leftovers: double service-worker registration log; `/login` and `/profile/:memberId` settle in 3.5–5s vs near-instant elsewhere.
 - **Q10 — Notifications (email/SMS) #120.** Event reminders and issue-assignment notifications. Design the provider choice (ACS vs SendGrid vs Twilio) first; the truck-check issue lifecycle (`assignedTo`) is the obvious first consumer.
 - **Q11 — Advanced analytics dashboard #123.** Value unproven — validate demand with pilot brigades before building.

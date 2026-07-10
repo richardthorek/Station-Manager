@@ -831,6 +831,41 @@ router.put('/runs/:id/complete', validateCompleteCheckRun, handleValidationError
   }
 });
 
+/**
+ * DELETE /api/truck-checks/runs/:id
+ * Cancel/abandon a check run (and its results). Lets an operator clear a run that
+ * was left open from a previous session so the vehicle is checkable again.
+ */
+router.delete('/runs/:id', validateCheckRunId, handleValidationErrors, async (req: Request, res: Response) => {
+  try {
+    const db = await ensureTruckChecksDatabase(req.isDemoMode);
+    const checkRun = await db.getCheckRunById(req.params.id);
+    if (!checkRun) {
+      return res.status(404).json({ error: 'Check run not found' });
+    }
+
+    const deleted = await db.deleteCheckRun(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Check run not found' });
+    }
+
+    // Notify the room so any open roster/kiosk clears the "in progress" state.
+    if (checkRun.stationId) {
+      io.to(`station-${checkRun.stationId}`).emit('truck-check-update', {
+        type: 'check-cancelled',
+        runId: checkRun.id,
+        applianceId: checkRun.applianceId,
+        timestamp: new Date(),
+      });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Error cancelling check run:', error);
+    res.status(500).json({ error: 'Failed to cancel check run' });
+  }
+});
+
 // ============================================
 // Check Result Routes
 // ============================================
@@ -844,9 +879,11 @@ router.post('/results', validateCreateCheckResult, handleValidationErrors, async
     const { runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy, itemCode, section } = req.body;
     const stationId = getStationIdFromRequest(req);
 
-    if (!runId || !itemId || !itemName || !itemDescription || !status) {
+    // itemDescription is optional (see validator note) — an item may legitimately
+    // have no description. Only the run/item identity and a valid status are required.
+    if (!runId || !itemId || !itemName || !status) {
       return res.status(400).json({
-        error: 'runId, itemId, itemName, itemDescription, and status are required'
+        error: 'runId, itemId, itemName, and status are required'
       });
     }
 
@@ -859,7 +896,7 @@ router.post('/results', validateCreateCheckResult, handleValidationErrors, async
       runId,
       itemId,
       itemName,
-      itemDescription,
+      itemDescription ?? '',
       status as CheckStatus,
       comment,
       photoUrl,

@@ -325,11 +325,14 @@ export const validateCreateCheckResult = [
     .isLength({ min: 1, max: 200 })
     .withMessage('Item name must be between 1 and 200 characters'),
   
+  // Descriptions are genuinely optional — many standard items and most custom
+  // items carry no description, and the workflow passes the item's description
+  // straight through. Requiring it here 400'd every check on a blank-description
+  // item (the "Failed to create check result" bug). Accept empty/absent.
   body('itemDescription')
+    .optional({ checkFalsy: true })
     .trim()
     .escape()
-    .notEmpty()
-    .withMessage('Item description is required')
     .isLength({ max: 1000 })
     .withMessage('Item description must not exceed 1000 characters'),
   
