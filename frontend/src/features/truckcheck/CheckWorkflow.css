@@ -162,6 +162,9 @@
 }
 
 .joined-check-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   background: rgba(76, 175, 80, 0.2);
   color: var(--status-done-border);
   padding: 0.25rem 0.5rem;
@@ -172,6 +175,9 @@
 }
 
 .contributors-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   background: rgba(255, 255, 255, 0.2);
   padding: 0.25rem 0.5rem;
   border-radius: 8px;
@@ -431,7 +437,9 @@
 }
 
 .completion-icon {
-  font-size: 4rem;
+  display: flex;
+  justify-content: center;
+  color: var(--rfs-core-red);
   margin-bottom: 1rem;
   animation: bounce 1s ease-in-out;
 }
@@ -458,6 +466,10 @@
 }
 
 .btn-complete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
   color: var(--rfs-white);
   border: none;
@@ -551,16 +563,16 @@
 }
 
 .item-icon {
-  font-size: 2rem;
-  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: rgba(203, 219, 42, 0.15);
+  color: var(--accent-amber-dark, #b0c020);
+  background: rgba(246, 166, 9, 0.15);
   border-radius: 50%;
-  border: 2px solid rgba(203, 219, 42, 0.3);
+  border: 2px solid rgba(246, 166, 9, 0.3);
+  flex-shrink: 0;
 }
 
 .check-item-card.has-issue .item-icon {
@@ -594,7 +606,8 @@
 }
 
 .photo-icon {
-  font-size: 3rem;
+  display: flex;
+  justify-content: center;
   margin-bottom: 0.5rem;
   opacity: 0.5;
 }
@@ -616,23 +629,25 @@
   border-radius: 4px;
   font-size: 1.1rem;
   font-weight: 600;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   margin-bottom: 1rem;
 }
 
 .result-badge.done {
-  background: var(--status-done-border);
-  color: var(--rfs-white);
+  background: var(--surface-success);
+  color: var(--text-success-strong);
 }
 
 .result-badge.issue {
-  background: var(--status-issue-border);
-  color: var(--rfs-white);
+  background: var(--surface-warning);
+  color: var(--text-warning-strong);
 }
 
 .result-badge.skipped {
-  background: var(--status-skip-border);
-  color: var(--rfs-white);
+  background: var(--status-skip-bg, var(--bg-secondary));
+  color: var(--status-skip-text, var(--text-secondary));
 }
 
 .completed-by {
@@ -717,6 +732,10 @@
 }
 
 .btn-done {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   background: linear-gradient(135deg,var(--status-done-text) 0%, #43a047 100%);
 }
 .btn-done:hover {
@@ -726,6 +745,10 @@
 }
 
 .btn-issue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   background: linear-gradient(135deg,#ef6c00 0%, #fb8c00 100%);
 }
 .btn-issue:hover {
@@ -952,7 +975,8 @@
 }
 
 .zoom-icon {
-  font-size: 3rem;
+  display: flex;
+  color: #fff;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
 }
 
@@ -1049,7 +1073,9 @@
 }
 
 .upload-button {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   background: rgba(234, 67, 53, 0.2);
   border: 2px dashed rgba(234, 67, 53, 0.5);
   color: var(--text-primary);
@@ -1114,7 +1140,10 @@
 
 /* "Mark remaining as OK" sits in the dark header alongside the progress text */
 .btn-mark-remaining {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   margin: 0.5rem auto 0;
   padding: 0.5rem 1rem;
   min-height: 44px;

@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { BarChart3, CalendarCheck, Users, Clock } from 'lucide-react';
 import {
   PieChart,
   Pie,
@@ -43,7 +44,7 @@ import './ReportsPage.css';
 // RFS brand colors for charts
 const CHART_COLORS = {
   primary: '#e5281B',     // RFS red
-  lime: '#cbdb2a',        // RFS lime
+  lime: '#F6A609',        // Hi-Vis Amber
   blue: '#215e9e',        // UI blue
   green: '#008550',       // UI green
   amber: '#fbb034',       // UI amber
@@ -539,21 +540,21 @@ export function ReportsPageEnhanced() {
                   previousValue={comparePrevious ? previousTotalCheckIns : undefined}
                   sparklineData={attendanceSparkline}
                   color="red"
-                  icon="📊"
+                  icon={<BarChart3 size={22} strokeWidth={2} aria-hidden />}
                 />
                 <KPICard
                   title="Total Events"
                   value={eventStatistics?.totalEvents || 0}
                   previousValue={comparePrevious ? previousEventStats?.totalEvents : undefined}
                   color="blue"
-                  icon="📅"
+                  icon={<CalendarCheck size={22} strokeWidth={2} aria-hidden />}
                 />
                 <KPICard
                   title="Total Participants"
                   value={eventStatistics?.totalParticipants || 0}
                   previousValue={comparePrevious ? previousEventStats?.totalParticipants : undefined}
                   color="green"
-                  icon="👥"
+                  icon={<Users size={22} strokeWidth={2} aria-hidden />}
                 />
                 <KPICard
                   title="Avg Duration"
@@ -561,7 +562,7 @@ export function ReportsPageEnhanced() {
                   suffix=" min"
                   previousValue={comparePrevious ? previousEventStats?.averageDuration : undefined}
                   color="amber"
-                  icon="⏱️"
+                  icon={<Clock size={22} strokeWidth={2} aria-hidden />}
                 />
               </div>
             </section>
@@ -690,7 +691,7 @@ export function ReportsPageEnhanced() {
             {truckCheckCompliance && (
               <section className="chart-section">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <h2>Truck Check Compliance</h2>
+                  <h2>Vehicle Check Compliance</h2>
                   <AttentionToggle
                     label="Show Issues Only"
                     enabled={showComplianceIssuesOnly}

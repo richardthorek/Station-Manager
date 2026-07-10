@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Moon, Sun, BarChart3, Wrench, Truck, TrendingUp, CircleCheckBig, Download, TriangleAlert, Check } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { downloadCSV, getTodayFormatted } from '../../utils/csvUtils';
@@ -193,7 +194,7 @@ export function AdminDashboardPage() {
         <div className="header-top">
           <Link to="/truckcheck" className="back-link">← Back to Vehicle Checks</Link>
           <button className="theme-toggle-btn" onClick={toggleTheme}>
-            {theme === 'light' ? '🌙' : '☀️'}
+            {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
           </button>
         </div>
         <h1>Admin Dashboard</h1>
@@ -202,22 +203,22 @@ export function AdminDashboardPage() {
             className={`tab ${activeTab === 'history' ? 'active' : ''}`}
             onClick={() => setActiveTab('history')}
           >
-            📊 Check History
+            <BarChart3 size={16} strokeWidth={2} aria-hidden /> Check History
           </button>
           <button
             className={`tab ${activeTab === 'followups' ? 'active' : ''}`}
             onClick={() => setActiveTab('followups')}
           >
-            🔧 Follow-ups
+            <Wrench size={16} strokeWidth={2} aria-hidden /> Follow-ups
           </button>
           <button
             className={`tab ${activeTab === 'vehicles' ? 'active' : ''}`}
             onClick={() => setActiveTab('vehicles')}
           >
-            🚒 Vehicle Management
+            <Truck size={16} strokeWidth={2} aria-hidden /> Vehicle Management
           </button>
           <Link to="/truckcheck/comparative" className="tab">
-            📈 Compare Stations
+            <TrendingUp size={16} strokeWidth={2} aria-hidden /> Compare Stations
           </Link>
         </div>
       </header>
@@ -245,7 +246,7 @@ export function AdminDashboardPage() {
             </div>
 
             {issues.length === 0 ? (
-              <div className="no-results"><p>No issues to follow up. 🎉</p></div>
+              <div className="no-results"><p><CircleCheckBig size={18} strokeWidth={2} aria-hidden /> No issues to follow up.</p></div>
             ) : (
               <div className="runs-list">
                 {issues.map((issue) => (
@@ -340,7 +341,7 @@ export function AdminDashboardPage() {
               disabled={exportLoading}
               aria-busy={exportLoading}
             >
-              {exportLoading ? 'Exporting…' : '📥 Export CSV'}
+              {exportLoading ? 'Exporting…' : <><Download size={16} strokeWidth={2} aria-hidden /> Export CSV</>}
             </button>
           </div>
           {exportFeedback && (
@@ -408,7 +409,7 @@ export function AdminDashboardPage() {
                     )}
                     {run.hasIssues && (
                       <span className="issue-badge">
-                        ⚠ {run.results.filter(r => r.status === 'issue').length} Issue(s)
+                        <TriangleAlert size={14} strokeWidth={2} aria-hidden /> {run.results.filter(r => r.status === 'issue').length} Issue(s)
                       </span>
                     )}
                     <span className="expand-icon">
@@ -425,8 +426,8 @@ export function AdminDashboardPage() {
                           <div className="result-info">
                             <h4>{result.itemName}</h4>
                             <span className={`status-badge ${result.status}`}>
-                              {result.status === 'done' && '✓ Done'}
-                              {result.status === 'issue' && '⚠ Issue'}
+                              {result.status === 'done' && <><Check size={14} strokeWidth={2} aria-hidden /> Done</>}
+                              {result.status === 'issue' && <><TriangleAlert size={14} strokeWidth={2} aria-hidden /> Issue</>}
                               {result.status === 'skipped' && '○ Skipped'}
                             </span>
                           </div>

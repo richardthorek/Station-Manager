@@ -196,7 +196,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.25rem;
+  color: var(--rfs-dark-grey);
   background: var(--rfs-light-grey, #f0f0f0);
   border-radius: 8px;
 }
@@ -277,6 +277,9 @@
 }
 
 .roster-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   flex-shrink: 0;
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
@@ -316,7 +319,9 @@
 }
 
 .roster-empty__icon {
-  font-size: 3rem;
+  display: flex;
+  justify-content: center;
+  color: var(--rfs-light-grey, #c9c9c9);
   margin-bottom: 0.5rem;
 }
 
@@ -431,6 +436,10 @@
 
 /* Secondary voice-agent entry (AI plan only) */
 .btn-voice-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   background-color: transparent;
   color: var(--rfs-core-red);
   border: 2px solid var(--rfs-core-red);

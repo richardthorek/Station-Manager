@@ -8,12 +8,13 @@
  */
 
 import { Link, NavLink } from 'react-router-dom';
+import { Flame } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import './AdminNav.css';
 
 const ADMIN_LINKS = [
   { to: '/admin/stations', label: 'Stations' },
-  { to: '/admin/brigade-access', label: 'Brigade Access' },
+  { to: '/admin/brigade-access', label: 'Crew Access' },
   { to: '/admin/organization', label: 'Organization' },
 ];
 
@@ -23,7 +24,7 @@ export function AdminNav() {
   return (
     <nav className="admin-nav" aria-label="Admin">
       <Link to="/" className="admin-nav__home" aria-label="Back to Bushie Tools home">
-        <span aria-hidden="true">🚒</span> Bushie Tools
+        <span aria-hidden="true"><Flame size={18} strokeWidth={2} /></span> Bushie Tools
       </Link>
       <div className="admin-nav__links">
         {ADMIN_LINKS.map((link) => (

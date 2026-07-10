@@ -32,7 +32,7 @@ describe('AdminNav', () => {
   it('lists the three admin sections and marks the current one active', () => {
     renderNav('/admin/brigade-access');
     expect(screen.getByRole('link', { name: 'Stations' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Brigade Access' })).toHaveClass('admin-nav__link--active');
+    expect(screen.getByRole('link', { name: 'Crew Access' })).toHaveClass('admin-nav__link--active');
     expect(screen.getByRole('link', { name: 'Organization' })).not.toHaveClass('admin-nav__link--active');
   });
 

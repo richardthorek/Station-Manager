@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { User } from 'lucide-react';
 import type { Member, CheckInWithDetails } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
@@ -105,7 +106,7 @@ function MemberButton({ member, isCheckedIn, onCheckIn, pendingOperation }: Memb
         <span className="swipe-hint" aria-hidden="true">✓ Check In</span>
       )}
       {swipeDirection === 'left' && (
-        <span className="swipe-hint" aria-hidden="true">👤 Profile</span>
+        <span className="swipe-hint" aria-hidden="true"><User size={14} strokeWidth={2} /> Profile</span>
       )}
     </button>
   );

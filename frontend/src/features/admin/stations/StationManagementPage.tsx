@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { RefreshCw, Building2, Check, Search, LayoutGrid, List, KeyRound, Users, MapPin, Map, Eye, Pencil, Trash2 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
 import { useStation, DEMO_STATION_ID } from '../../../contexts/StationContext';
@@ -252,7 +253,7 @@ export function StationManagementPage() {
         <div className="header-top">
           <div className="header-actions">
             <button onClick={handleRefresh} className="icon-button" title="Refresh">
-              🔄
+              <RefreshCw size={18} strokeWidth={2} aria-hidden />
             </button>
             <span className="last-refresh">
               Updated {lastRefresh.toLocaleTimeString()}
@@ -273,7 +274,7 @@ export function StationManagementPage() {
         {/* Dashboard Statistics */}
         <div className="dashboard-stats">
           <div className="stat-card gradient-red">
-            <div className="stat-icon">🏢</div>
+            <div className="stat-icon"><Building2 size={24} strokeWidth={2} aria-hidden /></div>
             <div className="stat-content">
               <div className="stat-value">{stats.total}</div>
               <div className="stat-label">Total Stations</div>
@@ -281,7 +282,7 @@ export function StationManagementPage() {
           </div>
           
           <div className="stat-card gradient-green">
-            <div className="stat-icon">✓</div>
+            <div className="stat-icon"><Check size={24} strokeWidth={2} aria-hidden /></div>
             <div className="stat-content">
               <div className="stat-value">{stats.active}</div>
               <div className="stat-label">Active</div>
@@ -297,7 +298,7 @@ export function StationManagementPage() {
           </div>
           
           <div className="stat-card gradient-blue">
-            <div className="stat-icon">🔍</div>
+            <div className="stat-icon"><Search size={24} strokeWidth={2} aria-hidden /></div>
             <div className="stat-content">
               <div className="stat-value">{stats.filtered}</div>
               <div className="stat-label">Filtered Results</div>
@@ -327,18 +328,18 @@ export function StationManagementPage() {
                 className={`view-button ${viewMode === 'grid' ? 'active' : ''}`}
                 title="Card Grid View"
               >
-                ⊞
+                <LayoutGrid size={18} strokeWidth={2} aria-hidden />
               </button>
               <button
                 onClick={() => setViewMode('table')}
                 className={`view-button ${viewMode === 'table' ? 'active' : ''}`}
                 title="Table View"
               >
-                ☰
+                <List size={18} strokeWidth={2} aria-hidden />
               </button>
             </div>
             <Link to="/admin/brigade-access" className="secondary-button-compact">
-              🔑 Crew Access
+              <KeyRound size={16} strokeWidth={2} aria-hidden /> Crew Access
             </Link>
             <button
               onClick={() => setIsCreateModalOpen(true)}
@@ -376,15 +377,15 @@ export function StationManagementPage() {
                   
                   <div className="station-card-body">
                     <div className="station-card-detail">
-                      <span className="detail-icon">👥</span>
+                      <span className="detail-icon"><Users size={16} strokeWidth={2} aria-hidden /></span>
                       <span className="detail-text">{station.brigadeName}</span>
                     </div>
                     <div className="station-card-detail">
-                      <span className="detail-icon">📍</span>
+                      <span className="detail-icon"><MapPin size={16} strokeWidth={2} aria-hidden /></span>
                       <span className="detail-text">{station.hierarchy.district}</span>
                     </div>
                     <div className="station-card-detail">
-                      <span className="detail-icon">🗺️</span>
+                      <span className="detail-icon"><Map size={16} strokeWidth={2} aria-hidden /></span>
                       <span className="detail-text">{station.hierarchy.area}</span>
                     </div>
                   </div>
@@ -395,14 +396,14 @@ export function StationManagementPage() {
                       className="card-action-button"
                       title="View Details"
                     >
-                      👁️
+                      <Eye size={16} strokeWidth={2} aria-hidden />
                     </button>
                     <button
                       onClick={() => setEditingStation(station)}
                       className="card-action-button"
                       title="Edit Station"
                     >
-                      ✏️
+                      <Pencil size={16} strokeWidth={2} aria-hidden />
                     </button>
                     <button
                       onClick={() => setDeletingStation(station)}
@@ -410,7 +411,7 @@ export function StationManagementPage() {
                       title="Delete Station"
                       disabled={!station.isActive}
                     >
-                      🗑️
+                      <Trash2 size={16} strokeWidth={2} aria-hidden />
                     </button>
                   </div>
                 </div>
@@ -504,7 +505,7 @@ export function StationManagementPage() {
                             aria-label={`View ${station.name}`}
                             title="View Details"
                           >
-                            👁️
+                            <Eye size={16} strokeWidth={2} aria-hidden />
                           </button>
                           <button
                             onClick={() => setEditingStation(station)}
@@ -512,7 +513,7 @@ export function StationManagementPage() {
                             aria-label={`Edit ${station.name}`}
                             title="Edit Station"
                           >
-                            ✏️
+                            <Pencil size={16} strokeWidth={2} aria-hidden />
                           </button>
                           <button
                             onClick={() => setDeletingStation(station)}
@@ -521,7 +522,7 @@ export function StationManagementPage() {
                             title="Delete Station"
                             disabled={!station.isActive}
                           >
-                            🗑️
+                            <Trash2 size={16} strokeWidth={2} aria-hidden />
                           </button>
                         </div>
                       </td>

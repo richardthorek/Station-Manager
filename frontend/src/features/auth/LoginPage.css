@@ -47,7 +47,9 @@
 }
 
 .login-icon {
-  font-size: 3rem;
+  display: flex;
+  justify-content: center;
+  color: var(--rfs-core-red);
   margin-bottom: 1rem;
 }
 

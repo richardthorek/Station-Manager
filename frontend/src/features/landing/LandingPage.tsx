@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { LogIn, Truck, BarChart3, Mic, Settings2, GraduationCap, LockKeyhole, LogOut, Moon, Sun, Lock, Heart } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../contexts/AuthContext';
 import { OnboardingWizard } from '../../components/OnboardingWizard';
@@ -51,7 +52,7 @@ export function LandingPage() {
         aria-label={`${moduleName} is not included in your plan — click to view upgrade options`}
       >
         Not in your plan
-        <span className="lock-icon" aria-hidden="true">🔒</span>
+        <span className="lock-icon" aria-hidden="true"><Lock size={16} strokeWidth={2} /></span>
       </Link>
     ) : (
       <Link to={to} className="feature-link">
@@ -87,7 +88,7 @@ export function LandingPage() {
               onClick={() => setShowOnboarding(true)}
               aria-label="Start guided tour"
             >
-              <span className="btn-icon">🎓</span>
+              <span className="btn-icon"><GraduationCap size={20} strokeWidth={2} aria-hidden /></span>
               <span className="btn-text">Guided tour</span>
             </button>
             {requireAuth && !isAuthenticated && (
@@ -96,7 +97,7 @@ export function LandingPage() {
                 onClick={() => navigate('/login')}
                 aria-label="Admin login"
               >
-                <span className="btn-icon">🔐</span>
+                <span className="btn-icon"><LockKeyhole size={20} strokeWidth={2} aria-hidden /></span>
                 <span className="btn-text">Admin Login</span>
               </button>
             )}
@@ -107,18 +108,18 @@ export function LandingPage() {
                 aria-label={`Logout ${user.username}`}
                 title={`Logged in as ${user.username}`}
               >
-                <span className="btn-icon">👤</span>
+                <span className="btn-icon"><LogOut size={20} strokeWidth={2} aria-hidden /></span>
                 <span className="btn-text">Logout</span>
               </button>
             )}
-            <button 
+            <button
               type="button"
               className="theme-toggle-btn"
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
-              <span aria-hidden="true">{theme === 'light' ? '🌙' : '☀️'}</span>
+              <span aria-hidden="true">{theme === 'light' ? <Moon size={20} strokeWidth={2} /> : <Sun size={20} strokeWidth={2} />}</span>
             </button>
           </div>
         </div>
@@ -133,51 +134,51 @@ export function LandingPage() {
             animate="animate"
           >
             <motion.article
-              className={`feature-card${signInLocked ? ' feature-card--locked' : ''}`}
+              className={`feature-card feature-card--signin${signInLocked ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
-              <div className="feature-icon" aria-hidden="true">🔥</div>
+              <div className="feature-icon" aria-hidden="true"><LogIn size={32} strokeWidth={2} /></div>
               <h3>Station Sign-In</h3>
               <p>Quick and easy member check-in/out with activity tracking. Real-time updates across all devices.</p>
               {moduleLink(signInLocked, '/signin', 'Go to Sign-In', 'Station Sign-In')}
             </motion.article>
 
             <motion.article
-              className={`feature-card${truckCheckLocked ? ' feature-card--locked' : ''}`}
+              className={`feature-card feature-card--vehicle${truckCheckLocked ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
-              <div className="feature-icon" aria-hidden="true">🚛</div>
+              <div className="feature-icon" aria-hidden="true"><Truck size={32} strokeWidth={2} /></div>
               <h3>Vehicle Check</h3>
               <p>Vehicle and equipment maintenance tracking with inspection checklists.</p>
               {moduleLink(truckCheckLocked, '/truckcheck', 'Go to Vehicle Check', 'Vehicle Check')}
             </motion.article>
 
             <motion.article
-              className={`feature-card${reportsLocked ? ' feature-card--locked' : ''}`}
+              className={`feature-card feature-card--reports${reportsLocked ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
-              <div className="feature-icon" aria-hidden="true">📊</div>
+              <div className="feature-icon" aria-hidden="true"><BarChart3 size={32} strokeWidth={2} /></div>
               <h3>Reports & Analytics</h3>
               <p>Historical reporting, analytics, and data export capabilities.</p>
               {moduleLink(reportsLocked, '/reports', 'Go to Reports', 'Reports & Analytics')}
             </motion.article>
 
             <motion.article
-              className={`feature-card${entitlements && !hasFeature('aarStudioEnabled') ? ' feature-card--locked' : ''}`}
+              className={`feature-card feature-card--aar${entitlements && !hasFeature('aarStudioEnabled') ? ' feature-card--locked' : ''}`}
               variants={itemVariants}
               transition={itemTransition}
             >
-              <div className="feature-icon" aria-hidden="true">🎙️</div>
+              <div className="feature-icon" aria-hidden="true"><Mic size={32} strokeWidth={2} /></div>
               <h3>AAR Studio</h3>
               <p>AI-assisted After Action Reviews: capture the discussion live, build a findings board, and export the report.</p>
               {/* AAR Studio is a self-contained static sub-app served by the backend at /aar, so this is a plain link, not a router route. */}
               {entitlements && !hasFeature('aarStudioEnabled') ? (
                 <Link to="/admin/organization" className="feature-link feature-link--locked" aria-label="AAR Studio requires AI Pro plan — click to view upgrade options">
                   Upgrade to AI Pro
-                  <span className="lock-icon" aria-hidden="true">🔒</span>
+                  <span className="lock-icon" aria-hidden="true"><Lock size={16} strokeWidth={2} /></span>
                 </Link>
               ) : (
                 <a href="/aar/" className="feature-link">
@@ -188,11 +189,11 @@ export function LandingPage() {
             </motion.article>
 
             <motion.article
-              className="feature-card"
+              className="feature-card feature-card--admin"
               variants={itemVariants}
               transition={itemTransition}
             >
-              <div className="feature-icon" aria-hidden="true">⚙️</div>
+              <div className="feature-icon" aria-hidden="true"><Settings2 size={32} strokeWidth={2} /></div>
               <h3>Station Management</h3>
               <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
               {(!requireAuth || isAuthenticated) ? (
@@ -219,7 +220,7 @@ export function LandingPage() {
               return (
                 <motion.article
                   key={suiteApp.id}
-                  className={`feature-card${locked ? ' feature-card--locked' : ''}`}
+                  className={`feature-card feature-card--suite${locked ? ' feature-card--locked' : ''}`}
                   variants={itemVariants}
                   transition={itemTransition}
                 >
@@ -230,7 +231,7 @@ export function LandingPage() {
                   {locked ? (
                     <Link to="/admin/organization" className="feature-link feature-link--locked" aria-label={`${suiteApp.name} is not included in your plan — click to view upgrade options`}>
                       Not in your plan
-                      <span className="lock-icon" aria-hidden="true">🔒</span>
+                      <span className="lock-icon" aria-hidden="true"><Lock size={16} strokeWidth={2} /></span>
                     </Link>
                   ) : (
                     <a href={suiteApp.href} className="feature-link" target="_blank" rel="noopener noreferrer">
@@ -247,7 +248,7 @@ export function LandingPage() {
 
       <footer className="landing-footer">
         <div className="footer-content">
-          <span>Built with ❤️ for the volunteer community</span>
+          <span>Built with <Heart size={14} strokeWidth={2} fill="currentColor" aria-hidden /> for the volunteer community</span>
           <span className="footer-separator">•</span>
           <span className="version">
             Version 1.1 • Build: {__APP_VERSION__.commitShort}

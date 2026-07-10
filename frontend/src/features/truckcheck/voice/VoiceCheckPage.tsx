@@ -188,7 +188,7 @@ export function VoiceCheckPage() {
   return (
     <div className="voice-check-page">
       <header className="voice-check-header">
-        <Link to="/truckcheck" className="back-link">← Truck Check</Link>
+        <Link to="/truckcheck" className="back-link">← Vehicle Check</Link>
         <h1>Voice Check{applianceName ? ` — ${applianceName}` : ''}</h1>
         <span className={`voice-status voice-status--${completed ? 'complete' : connection}`}>{statusLabel}</span>
       </header>

@@ -33,8 +33,10 @@
 }
 
 .icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem;
-  font-size: 1.2rem;
   background: transparent;
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -108,7 +110,7 @@
 }
 
 .stat-icon {
-  font-size: 2.5rem;
+  display: flex;
   opacity: 0.9;
 }
 
@@ -159,8 +161,10 @@
 }
 
 .view-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem 0.75rem;
-  font-size: 1.2rem;
   background: var(--bg-card);
   border: none;
   border-right: 1px solid var(--border-color);
@@ -193,7 +197,9 @@
   transition: background 0.2s, transform 0.1s;
   white-space: nowrap;
   text-decoration: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .primary-button-compact {
@@ -328,10 +334,11 @@
 }
 
 .detail-icon {
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0.8;
   width: 1.5rem;
-  text-align: center;
 }
 
 .detail-text {
@@ -350,8 +357,10 @@
 
 .card-action-button {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem;
-  font-size: 1.2rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -527,8 +536,10 @@
 }
 
 .action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem 0.75rem;
-  font-size: 1.2rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 6px;

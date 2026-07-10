@@ -218,7 +218,8 @@
 }
 
 .mkt-app-icon {
-  font-size: 2rem;
+  display: flex;
+  color: var(--rfs-core-red);
 }
 
 .mkt-app-card--soon {

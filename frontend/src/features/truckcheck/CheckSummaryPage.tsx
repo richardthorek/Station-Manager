@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import { Moon, Sun, Check, TriangleAlert, Search } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { Lightbox } from '../../components/Lightbox';
@@ -107,7 +108,7 @@ export function CheckSummaryPage() {
         <div className="header-top">
           <Link to="/truckcheck" className="back-link">← Back</Link>
           <button className="theme-toggle-btn" onClick={toggleTheme}>
-            {theme === 'light' ? '🌙' : '☀️'}
+            {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
           </button>
         </div>
         <h1>Check Summary</h1>
@@ -138,8 +139,8 @@ export function CheckSummaryPage() {
                 <div className="result-header">
                   <h3>{result.itemName}</h3>
                   <span className={`status-badge ${result.status}`}>
-                    {result.status === 'done' && '✓ Done'}
-                    {result.status === 'issue' && '⚠ Issue'}
+                    {result.status === 'done' && <><Check size={14} strokeWidth={2} aria-hidden /> Done</>}
+                    {result.status === 'issue' && <><TriangleAlert size={14} strokeWidth={2} aria-hidden /> Issue</>}
                     {result.status === 'skipped' && '○ Skipped'}
                   </span>
                 </div>
@@ -157,7 +158,7 @@ export function CheckSummaryPage() {
                     >
                       <img src={result.photoUrl} alt={result.itemName} />
                       <div className="photo-overlay">
-                        <span className="zoom-icon">🔍</span>
+                        <span className="zoom-icon"><Search size={20} strokeWidth={2} aria-hidden /></span>
                       </div>
                     </button>
                   </div>
