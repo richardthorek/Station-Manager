@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { BarChart3, CalendarCheck, Users, Clock } from 'lucide-react';
 import {
   PieChart,
   Pie,
@@ -539,21 +540,21 @@ export function ReportsPageEnhanced() {
                   previousValue={comparePrevious ? previousTotalCheckIns : undefined}
                   sparklineData={attendanceSparkline}
                   color="red"
-                  icon="📊"
+                  icon={<BarChart3 size={22} strokeWidth={2} aria-hidden />}
                 />
                 <KPICard
                   title="Total Events"
                   value={eventStatistics?.totalEvents || 0}
                   previousValue={comparePrevious ? previousEventStats?.totalEvents : undefined}
                   color="blue"
-                  icon="📅"
+                  icon={<CalendarCheck size={22} strokeWidth={2} aria-hidden />}
                 />
                 <KPICard
                   title="Total Participants"
                   value={eventStatistics?.totalParticipants || 0}
                   previousValue={comparePrevious ? previousEventStats?.totalParticipants : undefined}
                   color="green"
-                  icon="👥"
+                  icon={<Users size={22} strokeWidth={2} aria-hidden />}
                 />
                 <KPICard
                   title="Avg Duration"
@@ -561,7 +562,7 @@ export function ReportsPageEnhanced() {
                   suffix=" min"
                   previousValue={comparePrevious ? previousEventStats?.averageDuration : undefined}
                   color="amber"
-                  icon="⏱️"
+                  icon={<Clock size={22} strokeWidth={2} aria-hidden />}
                 />
               </div>
             </section>

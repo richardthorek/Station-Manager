@@ -14,6 +14,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { LockKeyhole } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageTransition } from '../../components/PageTransition';
 import './LoginPage.css';
@@ -64,7 +65,7 @@ export function LoginPage() {
         <main className="login-main">
           <div className="login-container">
             <div className="login-card">
-              <div className="login-icon">🔐</div>
+              <div className="login-icon"><LockKeyhole size={32} strokeWidth={2} aria-hidden /></div>
               <h2>Sign In</h2>
               <p className="login-description">
                 Enter your credentials to access admin functions

@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { RefreshCw, TriangleAlert, Building2, Check, KeyRound } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
 import { PageTransition } from '../../../components/PageTransition';
@@ -251,7 +252,7 @@ export function BrigadeAccessPage() {
         <div className="header-top">
           <div className="header-actions">
             <button onClick={loadData} className="icon-button" title="Refresh">
-              🔄
+              <RefreshCw size={18} strokeWidth={2} aria-hidden />
             </button>
             <span className="last-refresh">
               Updated {lastRefresh.toLocaleTimeString()}
@@ -267,7 +268,7 @@ export function BrigadeAccessPage() {
       <main className="page-content" id="main-content" tabIndex={-1}>
         {error && (
           <div className="error-message">
-            <p>⚠️ {error}</p>
+            <p><TriangleAlert size={16} strokeWidth={2} aria-hidden /> {error}</p>
             <button onClick={loadData} className="retry-button">Retry</button>
           </div>
         )}
@@ -282,7 +283,7 @@ export function BrigadeAccessPage() {
             {/* Dashboard Statistics */}
             <div className="dashboard-stats">
               <div className="stat-card gradient-red">
-                <div className="stat-icon">🏢</div>
+                <div className="stat-icon"><Building2 size={24} strokeWidth={2} aria-hidden /></div>
                 <div className="stat-content">
                   <div className="stat-value">{stats.totalStations}</div>
                   <div className="stat-label">Total Stations</div>
@@ -290,7 +291,7 @@ export function BrigadeAccessPage() {
               </div>
               
               <div className="stat-card gradient-green">
-                <div className="stat-icon">✓</div>
+                <div className="stat-icon"><Check size={24} strokeWidth={2} aria-hidden /></div>
                 <div className="stat-content">
                   <div className="stat-value">{stats.stationsWithTokens}</div>
                   <div className="stat-label">With Tokens</div>
@@ -298,7 +299,7 @@ export function BrigadeAccessPage() {
               </div>
               
               <div className="stat-card gradient-amber">
-                <div className="stat-icon">⚠️</div>
+                <div className="stat-icon"><TriangleAlert size={24} strokeWidth={2} aria-hidden /></div>
                 <div className="stat-content">
                   <div className="stat-value">{stats.stationsWithoutTokens}</div>
                   <div className="stat-label">Need Tokens</div>
@@ -306,7 +307,7 @@ export function BrigadeAccessPage() {
               </div>
               
               <div className="stat-card gradient-blue">
-                <div className="stat-icon">🔑</div>
+                <div className="stat-icon"><KeyRound size={24} strokeWidth={2} aria-hidden /></div>
                 <div className="stat-content">
                   <div className="stat-value">{stats.totalTokens}</div>
                   <div className="stat-label">Active Tokens</div>

@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Moon, Sun, Flame, Mic, Heart } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { PageTransition } from '../../components/PageTransition';
 import './MarketingPage.css';
@@ -147,7 +148,7 @@ export function MarketingPage() {
                 aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
                 title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
               >
-                <span aria-hidden="true">{theme === 'light' ? '🌙' : '☀️'}</span>
+                <span aria-hidden="true">{theme === 'light' ? <Moon size={20} strokeWidth={2} /> : <Sun size={20} strokeWidth={2} />}</span>
               </button>
             </nav>
           </div>
@@ -185,7 +186,7 @@ export function MarketingPage() {
             <h2 id="apps-heading" className="mkt-section-title">What’s in the kit</h2>
             <div className="mkt-apps-grid">
               <article className="mkt-app-card">
-                <div className="mkt-app-icon" aria-hidden="true">🔥</div>
+                <div className="mkt-app-icon" aria-hidden="true"><Flame size={32} strokeWidth={2} /></div>
                 <h3>Station Manager</h3>
                 <p>
                   Sign members in and out, see who’s out on the job, and run
@@ -194,7 +195,7 @@ export function MarketingPage() {
                 </p>
               </article>
               <article className="mkt-app-card">
-                <div className="mkt-app-icon" aria-hidden="true">🎙️</div>
+                <div className="mkt-app-icon" aria-hidden="true"><Mic size={32} strokeWidth={2} /></div>
                 <h3>AAR Studio</h3>
                 <p>
                   Have your debrief out loud. The AI listens, sorts out the
@@ -318,7 +319,7 @@ export function MarketingPage() {
 
         <footer className="mkt-footer">
           <div className="mkt-footer-inner">
-            <span>Built with ❤️ for the volunteer community</span>
+            <span>Built with <Heart size={14} strokeWidth={2} fill="currentColor" aria-hidden /> for the volunteer community</span>
             <span className="mkt-footer-sep">•</span>
             <Link to="/login" className="mkt-footer-link">Log in</Link>
             <span className="mkt-footer-sep">•</span>
