@@ -1,0 +1,27 @@
+.add-to-home-screen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--rfs-lime, #F6A609);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.add-to-home-screen-btn:hover {
+  opacity: 0.9;
+}
+
+.add-to-home-screen-btn:active {
+  opacity: 0.8;
+}
+
+.btn-icon {
+  font-size: 1.1em;
+}
