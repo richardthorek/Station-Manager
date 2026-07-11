@@ -24,7 +24,9 @@ export function VehicleTypesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<VehicleType | null>(null);
+  const [viewing, setViewing] = useState<VehicleType | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
@@ -71,6 +73,11 @@ export function VehicleTypesPage() {
     setIsStandard(type.isStandard);
     setItems(type.standardItems.map((i) => ({ id: i.id || `d-${Math.random()}`, name: i.name, description: i.description })));
     setShowModal(true);
+  }
+
+  function openView(type: VehicleType) {
+    setViewing(type);
+    setShowViewModal(true);
   }
 
   function updateItem(index: number, field: 'name' | 'description', value: string) {
@@ -165,6 +172,7 @@ export function VehicleTypesPage() {
                     <p className="vt-card__stat">{t.standardItems.length} standard check{t.standardItems.length === 1 ? '' : 's'}</p>
                   </div>
                   <div className="vt-card__actions">
+                    <button className="btn-view" onClick={() => openView(t)} title="View template details and checks">👁️ View</button>
                     <button className="btn-edit" onClick={() => openEdit(t)} disabled={isBuiltIn} title={isBuiltIn ? 'Built-in templates cannot be edited' : ''}>✏️ Edit</button>
                     <button className="btn-delete" onClick={() => handleDelete(t)} disabled={isBuiltIn} title={isBuiltIn ? 'Built-in templates cannot be deleted' : ''}>🗑️ Delete</button>
                   </div>
@@ -174,6 +182,57 @@ export function VehicleTypesPage() {
           </div>
         )}
       </main>
+
+      {showViewModal && viewing && (
+        <div
+          className="modal-overlay"
+          role="button"
+          tabIndex={0}
+          aria-label="Close template details"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowViewModal(false); }}
+          onKeyDown={(e) => { if (e.key === 'Escape') setShowViewModal(false); }}
+        >
+          <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="vt-view-modal-title">
+            <h2 id="vt-view-modal-title">{viewing.name} {!viewing.organizationId && <span className="vt-badge vt-badge--builtin">Built-in</span>}</h2>
+
+            <div className="form-group">
+              <label>Agency</label>
+              <p className="vt-view-text">{viewing.agency || '(not specified)'}</p>
+            </div>
+
+            <div className="form-group">
+              <label>Category</label>
+              <p className="vt-view-text">{viewing.category || '(not specified)'}</p>
+            </div>
+
+            <div className="form-group">
+              <label>Description</label>
+              <p className="vt-view-text">{viewing.description || '(not specified)'}</p>
+            </div>
+
+            <h3 className="vt-items-title">Standard Checks ({viewing.standardItems.length})</h3>
+            {viewing.standardItems.length === 0 ? (
+              <p className="muted">No standard checks defined.</p>
+            ) : (
+              <div className="vt-items">
+                {viewing.standardItems.map((it, index) => (
+                  <div key={it.id || index} className="vt-item vt-item--readonly">
+                    <div className="vt-item__num">{index + 1}</div>
+                    <div className="vt-item__fields">
+                      <strong>{it.name}</strong>
+                      {it.description && <p className="vt-item__desc">{it.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowViewModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div
