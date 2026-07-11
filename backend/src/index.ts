@@ -156,6 +156,7 @@ app.use(helmet({
         "ws:", "wss:", // WebSocket connections for Socket.io
         "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
         "https://z.clarity.ms", // Microsoft Clarity data collection endpoint
+        "https://e.clarity.ms", // Microsoft Clarity collection endpoint
         "https://fonts.googleapis.com", // Google Fonts CSS (Fetch API)
         "https://fonts.gstatic.com", // Google Fonts files — the service worker fetch()es
                                      // these to cache them; connect-src governs SW fetch,
