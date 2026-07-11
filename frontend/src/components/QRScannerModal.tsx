@@ -17,6 +17,11 @@ interface QRScannerModalProps {
   isLoading?: boolean;
 }
 
+interface CameraDevice {
+  id: string;
+  label: string;
+}
+
 /**
  * Extract device token from QR code content (URL or token)
  */
@@ -49,10 +54,10 @@ function extractTokenFromQR(content: string): string | null {
 export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScannerModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [scanned, setScanned] = useState(false);
-  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const cameraIdRef = useRef<string | undefined>();
+  const cameraIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -64,15 +69,14 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
       try {
         // Get available cameras
         const devices = await Html5Qrcode.getCameras();
-        const camerasOnly = devices.filter(d => d.kind === 'videoinput');
 
-        if (camerasOnly.length === 0) {
+        if (devices.length === 0) {
           setError('No camera available on this device');
           return;
         }
 
-        setCameras(camerasOnly);
-        cameraIdRef.current = camerasOnly[0].id;
+        setCameras(devices as CameraDevice[]);
+        cameraIdRef.current = devices[0].id;
 
         const scanner = new Html5Qrcode('qr-scanner-container');
         scannerRef.current = scanner;
@@ -97,7 +101,7 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
                     return;
                   }
                   onScan(token, '');
-                } catch (err) {
+                } catch {
                   setError('Failed to parse QR code');
                 }
               },
@@ -165,7 +169,7 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
                 return;
               }
               onScan(token, '');
-            } catch (err) {
+            } catch {
               setError('Failed to parse QR code');
             }
           },
