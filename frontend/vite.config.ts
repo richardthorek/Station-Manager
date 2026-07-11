@@ -54,7 +54,7 @@ export default defineConfig({
       manifest: {
         name: 'Bushie Tools',
         short_name: 'Bushie Tools',
-        description: 'RFS crew toolkit: sign-in, vehicle checks, reports, and AI-facilitated After Action Reviews',
+        description: 'Simple tools for volunteer emergency crews — sign-in book, vehicle checks, reports, and AI-facilitated After Action Reviews',
         theme_color: '#D8232A',
         background_color: '#ffffff',
         display: 'standalone',
