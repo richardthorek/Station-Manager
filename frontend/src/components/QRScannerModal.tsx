@@ -51,7 +51,7 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
             return;
           }
           onScan(token.trim(), stationId.trim());
-        } catch (err) {
+        } catch {
           setError('Failed to parse QR code');
         }
       },
@@ -77,11 +77,29 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
 
   if (!isOpen) return null;
 
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) handleClose();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') handleClose();
+  };
+
   return (
-    <div className="qr-scanner-overlay" onClick={handleClose}>
-      <div className="qr-scanner-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="qr-scanner-overlay"
+      onClick={handleOverlayClick}
+      onKeyDown={handleKeyDown}
+      role="presentation"
+    >
+      <div
+        className="qr-scanner-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="qr-scanner-title"
+      >
         <div className="qr-scanner-header">
-          <h2>Scan Device QR Code</h2>
+          <h2 id="qr-scanner-title">Scan Device QR Code</h2>
           <button
             onClick={handleClose}
             className="qr-scanner-close"
