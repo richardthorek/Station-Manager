@@ -317,12 +317,8 @@ export function requireSession(options: { readsOnly?: boolean } = {}) {
       return;
     }
 
-    const requestedStationId = resolveRequestedStationId(req);
-
-    // 1. Public demo station stays open (explicit or implicit when no station specified).
-    if (requestedStationId === DEMO_STATION_ID || !requestedStationId) {
-      req.stationId = DEMO_STATION_ID;
-      req.isDemoMode = true;
+    // 1. Public demo station stays open.
+    if (resolveRequestedStationId(req) === DEMO_STATION_ID) {
       next();
       return;
     }
@@ -339,7 +335,7 @@ export function requireSession(options: { readsOnly?: boolean } = {}) {
     const brigadeResult = await validateBrigadeToken(req);
     if (brigadeResult) {
       // Lock the request to the token's station when none was explicitly asked for.
-      if (brigadeResult.stationId && !requestedStationId) {
+      if (brigadeResult.stationId && !resolveRequestedStationId(req)) {
         req.stationId = brigadeResult.stationId;
         req.isDemoMode = false;
       }
@@ -351,7 +347,7 @@ export function requireSession(options: { readsOnly?: boolean } = {}) {
     // 4. Valid member-session token (AC-1 — station-scoped, minted on personal-link check-in).
     const memberSessionResult = validateMemberSession(req);
     if (memberSessionResult) {
-      if (memberSessionResult.stationId && !requestedStationId) {
+      if (memberSessionResult.stationId && !resolveRequestedStationId(req)) {
         req.stationId = memberSessionResult.stationId;
         req.isDemoMode = false;
       }

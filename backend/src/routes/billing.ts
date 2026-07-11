@@ -22,7 +22,6 @@ import {
   topupPackSize,
 } from '../services/stripeClient';
 import { authMiddleware, requireOwner } from '../middleware/auth';
-import { requireSession } from '../middleware/flexibleAuth';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { ensureBillingEventDatabase } from '../services/billingEventDbFactory';
 import { getDefaultEntitlements, isPlanCode } from '../constants/plans';
@@ -199,34 +198,11 @@ router.post('/topup', authMiddleware, requireOwner, async (req: Request, res: Re
 
 // ─── GET /api/billing/status ─────────────────────────────────────────────────
 
-router.get('/status', requireSession({ readsOnly: true }), async (req: Request, res: Response) => {
+router.get('/status', authMiddleware, async (req: Request, res: Response) => {
   try {
-    // If no authenticated user/organization (demo mode or unauthenticated), return default community plan
-    if (!req.user?.organizationId) {
-      return res.json({
-        planCode: 'community',
-        status: 'active',
-        trialEndsAt: null,
-        hasPaymentMethod: false,
-        stripeConfigured: isStripeConfigured(),
-        topupAvailable: isTopupConfigured(),
-        topupPackSize: topupPackSize(),
-      });
-    }
-
     const orgDb = ensureOrganizationDatabase();
-    const org = await orgDb.getOrganizationById(req.user.organizationId);
-    if (!org) {
-      return res.json({
-        planCode: 'community',
-        status: 'active',
-        trialEndsAt: null,
-        hasPaymentMethod: false,
-        stripeConfigured: isStripeConfigured(),
-        topupAvailable: isTopupConfigured(),
-        topupPackSize: topupPackSize(),
-      });
-    }
+    const org = await orgDb.getOrganizationById(req.user?.organizationId ?? '');
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
 
     return res.json({
       planCode: org.planCode,
