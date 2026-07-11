@@ -144,6 +144,7 @@ app.use(helmet({
         "'self'",
         "https://www.clarity.ms", // Microsoft Clarity analytics (dynamically loads script)
         "https://scripts.clarity.ms", // Microsoft Clarity script files
+        "https://static.cloudflareinsights.com", // Cloudflare Insights analytics script
       ],
       // Allow inline styles for React and Google Fonts stylesheet
       styleSrc: [
@@ -162,6 +163,7 @@ app.use(helmet({
         "https://fonts.gstatic.com", // Google Fonts files — the service worker fetch()es
                                      // these to cache them; connect-src governs SW fetch,
                                      // so font-src alone isn't enough (CSP error otherwise)
+        "https://*.cloudflare.com", // Cloudflare Insights analytics endpoints
       ],
       // Allow self-hosted fonts, data URIs, and Google Fonts
       fontSrc: [
