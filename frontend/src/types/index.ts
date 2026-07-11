@@ -108,8 +108,10 @@ export interface VehicleType {
   name: string;
   description?: string;
   category?: string;
+  agency?: string;
   standardItems: ChecklistItem[];
   createdBy?: string;
+  seedVersion?: number;
   createdAt: string;
   updatedAt: string;
 }

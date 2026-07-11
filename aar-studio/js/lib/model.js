@@ -30,6 +30,8 @@ export function createSession(partial = {}) {
     schemaVersion: SCHEMA_VERSION,
     createdAt: now,
     updatedAt: now,
+    // isDemo: sample data only; recording, AI, and editing are disabled.
+    isDemo: false,
     // locationIsAuto marks `location` as a device-captured GPS fallback
     // (quick-start) rather than a real place name — it stays overwritable by
     // a discussion-derived name (AAR Studio hero review 2026-07-03, AAR-3).

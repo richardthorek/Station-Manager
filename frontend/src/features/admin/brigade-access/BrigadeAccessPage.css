@@ -172,7 +172,7 @@
 
 .stat-card.gradient-amber {
   background: linear-gradient(135deg, var(--ui-amber) 0%, #e89c2a 100%);
-  color: var(--text-on-amber);
+  color: white;
 }
 
 .stat-card.gradient-blue {
@@ -193,12 +193,14 @@
   font-weight: 700;
   line-height: 1;
   margin-bottom: 0.25rem;
+  color: white;
 }
 
 .stat-label {
   font-size: 0.9rem;
   opacity: 0.9;
   font-weight: 500;
+  color: white;
 }
 
 /* Toolbar */

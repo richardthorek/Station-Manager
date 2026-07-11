@@ -17,7 +17,7 @@ test('emptyReport mirrors the session phases and pre-fills the headline', () => 
 test('snapshot HTML renders the key sections and escapes content', () => {
   const html = renderSnapshotHtml(sample);
   assert.match(html, /Executive Snapshot/);
-  assert.match(html, /Wamboin Structure Fire — 412 Macs Reef Road/);
+  assert.match(html, /Example: Rural Structure Fire — Long Driveway Access/);
   assert.match(html, /Top three actions/);
   assert.match(html, /What worked/);
   assert.match(html, /Lessons/);
@@ -39,7 +39,7 @@ test('snapshot HTML omits empty sections gracefully', () => {
 
 test('markdown summary includes report sections and the findings register', () => {
   const md = renderMarkdown(sample);
-  assert.match(md, /^# After Action Review — Wamboin/m);
+  assert.match(md, /^# After Action Review — Example: Rural Structure Fire/m);
   assert.match(md, /## Incident snapshot/);
   assert.match(md, /## Suppression/);
   assert.match(md, /## Consolidated recommendations/);
@@ -61,7 +61,7 @@ test('transcript text applies the speaker rename map', () => {
 });
 
 test('sessionFilename slugifies', () => {
-  assert.equal(sessionFilename(sample, 'snapshot', 'html'), 'wamboin-structure-fire-412-macs-reef-road-snapshot.html');
+  assert.equal(sessionFilename(sample, 'snapshot', 'html'), 'example-rural-structure-fire-long-driveway-access-snapshot.html');
 });
 
 test('sessionFilename falls back to a date slug for an untitled review (AAR-24)', () => {

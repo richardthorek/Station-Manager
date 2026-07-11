@@ -17,9 +17,9 @@ test('report prompt carries findings, units and style rules', () => {
   const [system, user] = buildReportMessages(sample);
   assert.match(system.content, /Bold lead/);
   assert.match(system.content, /BACO/);
-  assert.match(user.content, /Wamboin/);
+  assert.match(user.content, /Example/);
   assert.match(user.content, /\[Arrival \| What didn't go well\]/);
-  assert.match(user.content, /Fire & Rescue NSW/);
+  assert.match(user.content, /Metro Fire Service/);
 });
 
 test('normaliseReport keeps session phase order, clamps themes/actions, pads actions to 3', () => {

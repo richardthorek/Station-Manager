@@ -67,9 +67,11 @@ export async function maybeAutoExtract() {
  * Fill in blank incident details (title, location, type, units) from the
  * discussion. Non-destructive — never overwrites anything the user typed.
  * Quiet by default; toasts only when it actually fills something in.
+ * Skipped in demo mode (AI features disabled).
  */
 export async function fillMetadataFromDiscussion({ quiet = true } = {}) {
   const session = store.getSession();
+  if (!session || session.isDemo) return;
   if (!session?.segments.some((seg) => seg.text.trim())) return;
   // Nothing left to fill? Skip the call. A GPS-only location (locationIsAuto)
   // still counts as "needs filling" — a real place name should replace it.
@@ -100,11 +102,26 @@ export async function fillMetadataFromDiscussion({ quiet = true } = {}) {
 /**
  * Run extraction over all un-analysed segments.
  * quiet=true (auto passes) only toasts when something was found or failed.
+ * Demo mode skips AI and marks segments as analysed to prevent auto-extraction attempts.
  */
 export async function analyseNow(statusEl = null, { quiet = false } = {}) {
   if (analysing) return;
   const session = store.getSession();
   if (!session) return;
+
+  // Demo mode: silently mark segments as analysed without calling AI
+  if (session.isDemo) {
+    const pendingSegs = session.segments.filter((seg) => !seg.analysed);
+    const pendingNotes = (session.notes ?? []).filter((n) => !n.analysed);
+    if (pendingSegs.length || pendingNotes.length) {
+      store.update((s) => {
+        for (const seg of s.segments) seg.analysed = true;
+        for (const n of (s.notes ?? [])) n.analysed = true;
+      }, { reason: 'findings' });
+    }
+    return;
+  }
+
   const pendingSegs = session.segments.filter((seg) => !seg.analysed && seg.text.trim());
   const pendingNotes = (session.notes ?? []).filter((n) => !n.analysed && n.text.trim());
   // Room notes are fed to the AI as extra evidence, shaped like transcript

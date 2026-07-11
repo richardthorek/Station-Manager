@@ -10,15 +10,16 @@ import { deleteFinding } from './board.js';
 function speakerPanel(session) {
   const raw = [...new Set(session.segments.map((s) => s.speaker).filter(Boolean))];
   if (!raw.length) return null;
+  const isDemo = session.isDemo;
   return h('section', { class: 'panel' },
     h('h2', {}, 'Speakers'),
-    h('p', { class: 'muted' }, 'Rename diarised speakers — the new name is used everywhere (board, report, exports).'),
+    h('p', { class: 'muted' }, isDemo ? 'Sample demo — read-only' : 'Rename diarised speakers — the new name is used everywhere (board, report, exports).'),
     h('table', { class: 'table' },
       h('thead', {}, h('tr', {}, h('th', {}, 'Transcript name'), h('th', {}, 'Display as'))),
       h('tbody', {}, raw.map((name) => h('tr', {},
         h('td', {}, name),
         h('td', {}, h('input', {
-          type: 'text', value: session.speakers[name] ?? '', placeholder: name,
+          type: 'text', disabled: isDemo, value: session.speakers[name] ?? '', placeholder: name,
           oninput: (e) => store.update((s) => {
             if (e.target.value.trim()) s.speakers[name] = e.target.value;
             else delete s.speakers[name];
@@ -31,21 +32,24 @@ function speakerPanel(session) {
 
 function transcriptPanel(session, phases) {
   if (!session.segments.length) return null;
+  const isDemo = session.isDemo;
   return h('section', { class: 'panel' },
     h('h2', {}, `Transcript (${session.segments.length} segments)`),
     h('div', { class: 'review-segments' }, session.segments.map((seg) => h('div', { class: 'review-segment' },
       h('div', { class: 'review-segment__meta' },
         seg.t != null ? h('span', { class: 'segment__time' }, fmtClock(seg.t)) : null,
         h('input', {
-          type: 'text', class: 'review-segment__speaker', value: seg.speaker, placeholder: 'Speaker',
+          type: 'text', disabled: isDemo, class: 'review-segment__speaker', value: seg.speaker, placeholder: 'Speaker',
           oninput: (e) => store.update((s) => { const t = s.segments.find((x) => x.id === seg.id); if (t) t.speaker = e.target.value; }, { silent: true }),
         }),
         h('select', {
+          disabled: isDemo,
           onchange: (e) => store.update((s) => { const t = s.segments.find((x) => x.id === seg.id); if (t) t.phase = e.target.value; }, { silent: true }),
         }, phases.map((p) => h('option', { value: p, selected: p === seg.phase }, p))),
-        h('button', { class: 'icon-btn', title: 'Delete segment', onclick: () => store.update((s) => { s.segments = s.segments.filter((x) => x.id !== seg.id); }, { reason: 'segments' }) }, '✕'),
+        h('button', { class: 'icon-btn', disabled: isDemo, title: 'Delete segment', onclick: () => store.update((s) => { s.segments = s.segments.filter((x) => x.id !== seg.id); }, { reason: 'segments' }) }, '✕'),
       ),
       h('textarea', {
+        disabled: isDemo,
         rows: 2,
         oninput: (e) => store.update((s) => { const t = s.segments.find((x) => x.id === seg.id); if (t) t.text = e.target.value; }, { silent: true }),
       }, seg.text),
@@ -54,29 +58,33 @@ function transcriptPanel(session, phases) {
 }
 
 function findingsPanel(session, phases) {
+  const isDemo = session.isDemo;
   return h('section', { class: 'panel' },
     h('h2', {}, `Findings (${session.findings.length})`),
     h('div', { class: 'review-findings' }, session.findings.map((f) => h('div', { class: `review-finding review-finding--${f.category}` },
       h('div', { class: 'review-finding__meta' },
         h('select', {
+          disabled: isDemo,
           onchange: (e) => store.update((s) => { const t = s.findings.find((x) => x.id === f.id); if (t) t.category = e.target.value; }, { silent: true }),
         }, CATEGORIES.map((c) => h('option', { value: c.id, selected: c.id === f.category }, c.label))),
         h('select', {
+          disabled: isDemo,
           onchange: (e) => store.update((s) => { const t = s.findings.find((x) => x.id === f.id); if (t) t.phase = e.target.value; }, { silent: true }),
         }, phases.map((p) => h('option', { value: p, selected: p === f.phase }, p))),
         h('span', { class: `chip ${f.source === 'ai' ? 'chip--ai' : 'chip--manual'}` }, f.source),
-        h('button', { class: 'icon-btn', title: 'Delete finding', onclick: () => deleteFinding(f) }, '✕'),
+        h('button', { class: 'icon-btn', disabled: isDemo, title: 'Delete finding', onclick: () => deleteFinding(f) }, '✕'),
       ),
       h('textarea', {
+        disabled: isDemo,
         rows: 2,
         oninput: (e) => store.update((s) => { const t = s.findings.find((x) => x.id === f.id); if (t) t.text = e.target.value; }, { silent: true }),
       }, f.text),
       h('input', {
-        type: 'text', class: 'review-finding__quote', value: f.quote, placeholder: 'Verbatim quote (optional)',
+        type: 'text', disabled: isDemo, class: 'review-finding__quote', value: f.quote, placeholder: 'Verbatim quote (optional)',
         oninput: (e) => store.update((s) => { const t = s.findings.find((x) => x.id === f.id); if (t) t.quote = e.target.value; }, { silent: true }),
       }),
     ))),
-    h('button', { class: 'btn', onclick: () => {
+    h('button', { class: 'btn', disabled: isDemo, onclick: () => {
       store.update((s) => { s.findings.push(createFinding({ category: 'happened', phase: s.currentPhase })); }, { reason: 'findings' });
       toast('Empty finding added — fill it in');
     } }, '+ Add finding'),
@@ -93,12 +101,12 @@ export function render(container) {
     || session.segments.some((s) => s.speaker);
   mount(container,
     h('h1', {}, 'Edit findings'),
-    h('p', { class: 'muted' }, 'Shape the insights the AI surfaced — edit the wording, category, phase or unit, or add your own. This is where the review is made.'),
+    h('p', { class: 'muted' }, session.isDemo ? 'This is a sample demo — review the findings below and try opening a new review to get started.' : 'Shape the insights the AI surfaced — edit the wording, category, phase or unit, or add your own. This is where the review is made.'),
     findingsPanel(session, phases),
     hasTranscript
       ? h('details', { class: 'advanced' },
           h('summary', {}, 'Advanced: fix the raw transcript & speaker names'),
-          h('p', { class: 'muted' }, 'Usually unnecessary — the AI reads through garbled words on its own. Only dive in here if a finding is wrong because a word was badly misheard.'),
+          h('p', { class: 'muted' }, session.isDemo ? 'Sample demo — read-only' : 'Usually unnecessary — the AI reads through garbled words on its own. Only dive in here if a finding is wrong because a word was badly misheard.'),
           speakerPanel(session),
           transcriptPanel(session, phases),
         )

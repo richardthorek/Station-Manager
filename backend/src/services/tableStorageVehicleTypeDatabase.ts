@@ -40,8 +40,10 @@ interface VehicleTypeEntity extends TableEntity {
   name: string;
   description?: string;
   category?: string;
+  agency?: string;
   standardItems: string; // JSON
   createdBy?: string;
+  seedVersion?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -81,8 +83,10 @@ export class TableStorageVehicleTypeDatabase implements IVehicleTypeDatabase {
       name: row.name,
       description: row.description,
       category: row.category,
+      agency: row.agency,
       standardItems: JSON.stringify(row.standardItems),
       createdBy: row.createdBy,
+      seedVersion: row.seedVersion,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     };
@@ -97,8 +101,10 @@ export class TableStorageVehicleTypeDatabase implements IVehicleTypeDatabase {
       name: entity.name,
       description: entity.description || undefined,
       category: entity.category || undefined,
+      agency: entity.agency || undefined,
       standardItems: entity.standardItems ? JSON.parse(entity.standardItems) : [],
       createdBy: entity.createdBy || undefined,
+      seedVersion: entity.seedVersion,
       createdAt: new Date(entity.createdAt),
       updatedAt: new Date(entity.updatedAt),
     };
@@ -114,6 +120,7 @@ export class TableStorageVehicleTypeDatabase implements IVehicleTypeDatabase {
       name: input.name,
       description: input.description,
       category: input.category,
+      agency: input.agency,
       standardItems: normaliseStandardItems(input.standardItems),
       createdBy: input.createdBy,
       createdAt: now,
@@ -160,6 +167,11 @@ export class TableStorageVehicleTypeDatabase implements IVehicleTypeDatabase {
       if (err.statusCode === 404) return false;
       throw err;
     }
+  }
+
+  async upsert(type: VehicleType): Promise<VehicleType> {
+    await this.table.upsertEntity(this.toEntity(type), 'Replace');
+    return type;
   }
 
   async listForOrganization(organizationId?: string): Promise<VehicleType[]> {

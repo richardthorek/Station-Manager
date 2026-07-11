@@ -66,6 +66,7 @@ import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
 import { getRFSFacilitiesParser } from './services/rfsFacilitiesParser';
 import { getVersionInfo } from './services/version';
 import { seedDemoStationIfNeeded } from './services/demoStationSeeder';
+import { seedStandardVehicleTypesIfNeeded } from './services/standardVehicleTypeSeeder';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 import { requireFeature } from './middleware/entitlements';
 import { requireSession } from './middleware/flexibleAuth';
@@ -78,7 +79,7 @@ import { initializeOrganizationDatabase } from './services/organizationDbFactory
 import { initializeUsageDatabase } from './services/usageDbFactory';
 import { initializeBillingEventDatabase } from './services/billingEventDbFactory';
 import { initializeAarSessionDatabase } from './services/aarSessionDbFactory';
-import { initializeVehicleTypeDatabase } from './services/vehicleTypeDbFactory';
+import { initializeVehicleTypeDatabase, getVehicleTypeDb } from './services/vehicleTypeDbFactory';
 import { initializeApplianceZoneDatabase } from './services/applianceZoneDbFactory';
 import { initializeDeviceDatabase } from './services/deviceDbFactory';
 import { initializeApplianceEquipmentDatabase } from './services/applianceEquipmentDbFactory';
@@ -156,6 +157,7 @@ app.use(helmet({
         "ws:", "wss:", // WebSocket connections for Socket.io
         "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
         "https://z.clarity.ms", // Microsoft Clarity data collection endpoint
+        "https://e.clarity.ms", // Microsoft Clarity collection endpoint
         "https://fonts.googleapis.com", // Google Fonts CSS (Fetch API)
         "https://fonts.gstatic.com", // Google Fonts files — the service worker fetch()es
                                      // these to cache them; connect-src governs SW fetch,
@@ -692,7 +694,11 @@ async function initializeDatabasesInBackground() {
     
     // Seed demo station data (for in-memory database or on first startup)
     await seedDemoStationIfNeeded();
-    
+
+    // Seed standard vehicle type templates
+    const vehicleTypeDb = getVehicleTypeDb();
+    await seedStandardVehicleTypesIfNeeded(vehicleTypeDb);
+
     // Mark as initialized
     databaseInitialized = true;
     databaseInitializing = false;

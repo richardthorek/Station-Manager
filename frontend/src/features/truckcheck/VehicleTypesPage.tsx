@@ -29,6 +29,7 @@ export function VehicleTypesPage() {
   // Form state
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
+  const [agency, setAgency] = useState('');
   const [description, setDescription] = useState('');
   const [isStandard, setIsStandard] = useState(true);
   const [items, setItems] = useState<DraftItem[]>([]);
@@ -54,6 +55,7 @@ export function VehicleTypesPage() {
     setEditing(null);
     setName('');
     setCategory('');
+    setAgency('');
     setDescription('');
     setIsStandard(true);
     setItems([{ id: `d-${Date.now()}`, name: '', description: '' }]);
@@ -64,6 +66,7 @@ export function VehicleTypesPage() {
     setEditing(type);
     setName(type.name);
     setCategory(type.category || '');
+    setAgency(type.agency || '');
     setDescription(type.description || '');
     setIsStandard(type.isStandard);
     setItems(type.standardItems.map((i) => ({ id: i.id || `d-${Math.random()}`, name: i.name, description: i.description })));
@@ -103,7 +106,7 @@ export function VehicleTypesPage() {
 
     try {
       setSaving(true);
-      const payload = { name: name.trim(), category: category.trim() || undefined, description: description.trim() || undefined, isStandard, standardItems };
+      const payload = { name: name.trim(), category: category.trim() || undefined, agency: agency.trim() || undefined, description: description.trim() || undefined, isStandard, standardItems };
       if (editing) {
         await api.updateVehicleType(editing.id, payload);
       } else {
@@ -151,19 +154,23 @@ export function VehicleTypesPage() {
           <p className="muted">No vehicle types yet. Create one (e.g. “Cat 1 Tanker”) and add its standard checks.</p>
         ) : (
           <div className="vt-grid">
-            {types.map((t) => (
-              <article key={t.id} className="vt-card">
-                <div className="vt-card__body">
-                  <h3>{t.name} {t.isStandard && <span className="vt-badge">standard</span>}</h3>
-                  {t.category && <p className="vt-card__meta">{t.category}</p>}
-                  <p className="vt-card__stat">{t.standardItems.length} standard check{t.standardItems.length === 1 ? '' : 's'}</p>
-                </div>
-                <div className="vt-card__actions">
-                  <button className="btn-edit" onClick={() => openEdit(t)}>✏️ Edit</button>
-                  <button className="btn-delete" onClick={() => handleDelete(t)}>🗑️ Delete</button>
-                </div>
-              </article>
-            ))}
+            {types.map((t) => {
+              const isBuiltIn = !t.organizationId;
+              return (
+                <article key={t.id} className={`vt-card ${isBuiltIn ? 'vt-card--builtin' : ''}`}>
+                  <div className="vt-card__body">
+                    <h3>{t.name} {isBuiltIn && <span className="vt-badge vt-badge--builtin">Built-in</span>} {t.isStandard && !isBuiltIn && <span className="vt-badge">standard</span>}</h3>
+                    {t.agency && <p className="vt-card__agency">{t.agency}</p>}
+                    {t.category && <p className="vt-card__meta">{t.category}</p>}
+                    <p className="vt-card__stat">{t.standardItems.length} standard check{t.standardItems.length === 1 ? '' : 's'}</p>
+                  </div>
+                  <div className="vt-card__actions">
+                    <button className="btn-edit" onClick={() => openEdit(t)} disabled={isBuiltIn} title={isBuiltIn ? 'Built-in templates cannot be edited' : ''}>✏️ Edit</button>
+                    <button className="btn-delete" onClick={() => handleDelete(t)} disabled={isBuiltIn} title={isBuiltIn ? 'Built-in templates cannot be deleted' : ''}>🗑️ Delete</button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </main>
@@ -189,12 +196,16 @@ export function VehicleTypesPage() {
                 <label htmlFor="vt-category">Category</label>
                 <input id="vt-category" type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g., tanker" />
               </div>
-              <div className="form-group vt-checkbox">
-                <label htmlFor="vt-standard">
-                  <input id="vt-standard" type="checkbox" checked={isStandard} onChange={(e) => setIsStandard(e.target.checked)} />
-                  {' '}Publish as a shared standard
-                </label>
+              <div className="form-group">
+                <label htmlFor="vt-agency">Agency</label>
+                <input id="vt-agency" type="text" value={agency} onChange={(e) => setAgency(e.target.value)} placeholder="e.g., NSW RFS" />
               </div>
+            </div>
+            <div className="form-group vt-checkbox">
+              <label htmlFor="vt-standard">
+                <input id="vt-standard" type="checkbox" checked={isStandard} onChange={(e) => setIsStandard(e.target.checked)} />
+                {' '}Publish as a shared standard
+              </label>
             </div>
             <div className="form-group">
               <label htmlFor="vt-desc">Description</label>

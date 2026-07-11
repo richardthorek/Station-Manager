@@ -321,9 +321,11 @@ export interface VehicleType {
   name: string;                  // human label, e.g. 'Cat 1 Tanker'
   description?: string;
   category?: string;             // optional grouping, e.g. 'tanker' | 'pumper' | 'support'
+  agency?: string;               // e.g. 'NSW RFS' | 'Fire and Rescue NSW' | 'NSW SES' | 'Marine Rescue NSW' | 'Generic'
   /** Locked canonical checklist. Each item carries a stable itemCode for comparison. */
   standardItems: ChecklistItem[];
   createdBy?: string;            // userId of the author
+  seedVersion?: number;          // provenance marker for seeded templates; absent on org-authored types
   createdAt: Date;
   updatedAt: Date;
 }
