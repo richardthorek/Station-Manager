@@ -17,6 +17,35 @@ interface QRScannerModalProps {
   isLoading?: boolean;
 }
 
+/**
+ * Extract device token from QR code content (URL or token)
+ */
+function extractTokenFromQR(content: string): string | null {
+  try {
+    if (!content) return null;
+
+    // If it looks like a URL, try to extract brigade parameter
+    if (content.includes('http://') || content.includes('https://') || content.includes('?') || content.includes('&')) {
+      try {
+        const url = new URL(content, window.location.origin);
+        const token = url.searchParams.get('brigade');
+        if (token) return token;
+      } catch {
+        // If URL parsing fails, fall through to token check
+      }
+    }
+
+    // If it's a UUID token directly
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(content.trim())) {
+      return content.trim();
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScannerModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [scanned, setScanned] = useState(false);
@@ -62,13 +91,13 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
               (decodedText) => {
                 setScanned(true);
                 try {
-                  const [token, stationId] = decodedText.split('|');
-                  if (!token || !stationId) {
-                    setError('Invalid QR code format. Expected: token|stationId');
+                  const token = extractTokenFromQR(decodedText);
+                  if (!token) {
+                    setError('Invalid QR code format. Expected a device sign-in URL or token');
                     return;
                   }
-                  onScan(token.trim(), stationId.trim());
-                } catch {
+                  onScan(token, '');
+                } catch (err) {
                   setError('Failed to parse QR code');
                 }
               },
@@ -130,13 +159,13 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
           (decodedText) => {
             setScanned(true);
             try {
-              const [token, stationId] = decodedText.split('|');
-              if (!token || !stationId) {
-                setError('Invalid QR code format. Expected: token|stationId');
+              const token = extractTokenFromQR(decodedText);
+              if (!token) {
+                setError('Invalid QR code format. Expected a device sign-in URL or token');
                 return;
               }
-              onScan(token.trim(), stationId.trim());
-            } catch {
+              onScan(token, '');
+            } catch (err) {
               setError('Failed to parse QR code');
             }
           },

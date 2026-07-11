@@ -203,10 +203,15 @@ router.delete(
  * Public — resolve a device token to its station (called by the device
  * itself, e.g. a kiosk on load). Not gated by auth: the token IS the
  * credential. Updates the device's lastSeenAt audit trail on success.
+ *
+ * stationId parameter is optional — if not provided, it's looked up from the token.
  */
 router.post(
   '/validate',
-  [body('token').trim().notEmpty().isUUID().withMessage('token must be a valid UUID')],
+  [
+    body('token').trim().notEmpty().isUUID().withMessage('token must be a valid UUID'),
+    body('stationId').optional().trim(),
+  ],
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {

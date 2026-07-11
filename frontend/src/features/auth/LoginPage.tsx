@@ -63,7 +63,7 @@ export function LoginPage() {
       const response = await fetch(`${API_BASE}/devices/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, stationId }),
+        body: JSON.stringify({ token, ...(stationId && { stationId }) }),
       });
 
       if (!response.ok) {
@@ -73,7 +73,7 @@ export function LoginPage() {
 
       const data = await response.json();
       localStorage.setItem('deviceToken', token);
-      localStorage.setItem('stationId', stationId);
+      localStorage.setItem('stationId', data.stationId);
       localStorage.setItem('deviceContext', JSON.stringify(data.device));
 
       setShowQRScanner(false);

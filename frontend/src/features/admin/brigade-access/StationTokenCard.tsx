@@ -211,7 +211,7 @@ export function StationTokenCard({
                   <div className="qr-code-section">
                     <div className="qr-code-container">
                       <QRCodeSVG
-                        value={`${token.token}|${token.stationId}`}
+                        value={token.kioskUrl}
                         size={256}
                         level="M"
                         marginSize={4}
@@ -329,7 +329,7 @@ export function StationTokenCard({
               {showDeviceQR === device.id && device.status === 'active' && (
                 <div className="qr-code-section">
                   <div className="qr-code-container">
-                    <QRCodeSVG value={`${device.token}|${device.stationId}`} size={256} level="M" marginSize={4} />
+                    <QRCodeSVG value={deviceKioskUrl(device)} size={256} level="M" marginSize={4} />
                   </div>
                   <p className="qr-code-caption">Scan with mobile device to access sign-in page</p>
                 </div>
