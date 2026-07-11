@@ -133,3 +133,38 @@
   gap: 0.35rem;
   font-weight: 500;
 }
+
+.btn-view {
+  background: var(--rfs-lime, #F6A609);
+  color: #1a1a1a;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-view:hover {
+  opacity: 0.9;
+}
+
+.vt-view-text {
+  margin: 0;
+  padding: 0.5rem 0;
+  color: var(--color-text-secondary, #666);
+  font-size: 0.9rem;
+}
+
+.vt-item--readonly {
+  border-color: var(--color-border, #eee);
+  background: var(--color-surface, #fff);
+}
+
+.vt-item__desc {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #666);
+  line-height: 1.4;
+}

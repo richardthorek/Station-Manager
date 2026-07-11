@@ -860,7 +860,10 @@ class ApiService {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
-    if (!response.ok) throw new Error('Failed to delete vehicle type');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to delete vehicle type');
+    }
   }
 
   // Issue follow-up (TC-4)
