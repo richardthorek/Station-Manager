@@ -145,6 +145,56 @@
   cursor: not-allowed;
 }
 
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  color: var(--rfs-dark-grey);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rfs-light-grey);
+}
+
+.qr-scan-button {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--rfs-core-red);
+  background: transparent;
+  border: 2px solid var(--rfs-core-red);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.qr-scan-button:hover:not(:disabled) {
+  background: rgba(216, 35, 42, 0.05);
+  transform: translateY(-2px);
+}
+
+.qr-scan-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.qr-scan-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .back-link {
   display: inline-flex;
   align-items: center;
@@ -222,4 +272,22 @@
 
 [data-theme="dark"] .form-group input:disabled {
   background: var(--surface-elevated);
+}
+
+[data-theme="dark"] .login-divider {
+  color: var(--rfs-light-grey);
+}
+
+[data-theme="dark"] .login-divider::before,
+[data-theme="dark"] .login-divider::after {
+  background: #333;
+}
+
+[data-theme="dark"] .qr-scan-button {
+  color: var(--rfs-core-red-light);
+  border-color: var(--rfs-core-red-light);
+}
+
+[data-theme="dark"] .qr-scan-button:hover:not(:disabled) {
+  background: rgba(224, 85, 90, 0.1);
 }

@@ -1,23 +1,20 @@
 /**
  * Login Page Component
- * 
+ *
  * Provides authentication UI for admin users to log in.
- * Displays a simple form with username and password fields.
- * 
- * Features:
- * - Username and password input
- * - Error handling
- * - Loading state
- * - Redirect after successful login
+ * Supports both username/password and QR code device scanning.
  */
 
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { LockKeyhole } from 'lucide-react';
+import { LockKeyhole, QrCode } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageTransition } from '../../components/PageTransition';
+import { QRScannerModal } from '../../components/QRScannerModal';
 import './LoginPage.css';
+
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -28,6 +25,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [isProcessingQR, setIsProcessingQR] = useState(false);
 
   // Get the redirect path from location state, or default to the app picker
   // (the post-login home) — a deep link that required auth sets `from`.
@@ -54,6 +53,35 @@ export function LoginPage() {
     }
   };
 
+  const handleQRScan = async (token: string, stationId: string) => {
+    setError('');
+    setIsProcessingQR(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/devices/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, stationId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Device not found');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('deviceToken', token);
+      localStorage.setItem('stationId', stationId);
+      localStorage.setItem('deviceContext', JSON.stringify(data.device));
+
+      setShowQRScanner(false);
+      navigate('/signin', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to activate device');
+      setIsProcessingQR(false);
+    }
+  };
+
   return (
     <PageTransition variant="fade">
       <div className="login-page">
@@ -71,13 +99,13 @@ export function LoginPage() {
                 Enter your credentials to access admin functions
               </p>
 
-              <form onSubmit={handleSubmit} className="login-form">
-                {error && (
-                  <div className="error-message" role="alert">
-                    {error}
-                  </div>
-                )}
+              {error && (
+                <div className="error-message" role="alert">
+                  {error}
+                </div>
+              )}
 
+              <form onSubmit={handleSubmit} className="login-form">
                 <div className="form-group">
                   <label htmlFor="username">Username</label>
                   <input
@@ -87,7 +115,7 @@ export function LoginPage() {
                     onChange={(e) => setUsername(e.target.value)}
                     required
                     autoComplete="username"
-                    disabled={isLoading}
+                    disabled={isLoading || isProcessingQR}
                   />
                 </div>
 
@@ -100,21 +128,42 @@ export function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    disabled={isLoading}
+                    disabled={isLoading || isProcessingQR}
                   />
                 </div>
 
                 <button
                   type="submit"
                   className="login-button"
-                  disabled={isLoading}
+                  disabled={isLoading || isProcessingQR}
                 >
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </button>
               </form>
+
+              <div className="login-divider">
+                <span>Or</span>
+              </div>
+
+              <button
+                type="button"
+                className="qr-scan-button"
+                onClick={() => setShowQRScanner(true)}
+                disabled={isLoading || isProcessingQR}
+              >
+                <QrCode size={24} strokeWidth={2} aria-hidden />
+                <span>Scan Device QR Code</span>
+              </button>
             </div>
           </div>
         </main>
+
+        <QRScannerModal
+          isOpen={showQRScanner}
+          onClose={() => setShowQRScanner(false)}
+          onScan={handleQRScan}
+          isLoading={isProcessingQR}
+        />
       </div>
     </PageTransition>
   );

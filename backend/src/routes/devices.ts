@@ -140,6 +140,39 @@ router.patch(
 );
 
 /**
+ * GET /api/devices/:id/qrcode
+ * Generate QR code data for a device (owner/admin only).
+ * Returns the string that should be encoded: "token|stationId"
+ */
+router.get(
+  '/:id/qrcode',
+  deviceAuth,
+  [param('id').trim().notEmpty()],
+  handleValidationErrors,
+  async (req: Request, res: Response) => {
+    try {
+      const db = ensureDeviceDatabase();
+      const device = await db.getById(req.params.id);
+      if (!device) return res.status(404).json({ error: 'Device not found' });
+      if (device.organizationId && device.organizationId !== req.user?.organizationId) {
+        return res.status(403).json({ error: 'You can only view QR codes for devices your organisation owns' });
+      }
+
+      const qrString = `${device.token}|${device.stationId}`;
+      res.json({
+        qrString,
+        deviceName: device.name,
+        stationId: device.stationId,
+        token: device.token,
+      });
+    } catch (error) {
+      logger.error('Error generating QR code:', error);
+      res.status(500).json({ error: 'Failed to generate QR code' });
+    }
+  }
+);
+
+/**
  * DELETE /api/devices/:id
  * Remove a device your org owns.
  */
@@ -189,6 +222,14 @@ router.post(
 
       res.json({
         valid: true,
+        device: {
+          id: device.id,
+          name: device.name,
+          type: device.type,
+          stationId: device.stationId,
+          brigadeId: station?.brigadeId,
+          organizationId: device.organizationId,
+        },
         deviceId: device.id,
         deviceName: device.name,
         deviceType: device.type,
