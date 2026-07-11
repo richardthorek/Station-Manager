@@ -283,7 +283,7 @@ export function TemplateEditorPage() {
                   </div>
 
                   <div className="form-group-large">
-                    <label className="form-label">Reference Photo (Optional)</label>
+                    <p className="form-label">Reference Photo (Optional)</p>
                     {items[selectedItemIndex].referencePhotoUrl ? (
                       <div className="photo-preview-large">
                         <img src={items[selectedItemIndex].referencePhotoUrl} alt="Reference" />

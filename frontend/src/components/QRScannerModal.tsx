@@ -97,7 +97,7 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
                     return;
                   }
                   onScan(token, '');
-                } catch (err) {
+                } catch {
                   setError('Failed to parse QR code');
                 }
               },
@@ -165,7 +165,7 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
                 return;
               }
               onScan(token, '');
-            } catch (err) {
+            } catch {
               setError('Failed to parse QR code');
             }
           },

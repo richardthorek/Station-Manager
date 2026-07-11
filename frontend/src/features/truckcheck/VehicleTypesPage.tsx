@@ -196,17 +196,17 @@ export function VehicleTypesPage() {
             <h2 id="vt-view-modal-title">{viewing.name} {!viewing.organizationId && <span className="vt-badge vt-badge--builtin">Built-in</span>}</h2>
 
             <div className="form-group">
-              <label>Agency</label>
+              <p><strong>Agency</strong></p>
               <p className="vt-view-text">{viewing.agency || '(not specified)'}</p>
             </div>
 
             <div className="form-group">
-              <label>Category</label>
+              <p><strong>Category</strong></p>
               <p className="vt-view-text">{viewing.category || '(not specified)'}</p>
             </div>
 
             <div className="form-group">
-              <label>Description</label>
+              <p><strong>Description</strong></p>
               <p className="vt-view-text">{viewing.description || '(not specified)'}</p>
             </div>
 
