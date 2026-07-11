@@ -16,99 +16,99 @@ export const SEED_VERSION = 1;
 
 // Reusable checklist item groups (mutable references merged per-template)
 const FLUIDS: ChecklistItem[] = [
-  { name: 'Engine Oil', itemCode: 'engine-oil' },
-  { name: 'Coolant', itemCode: 'coolant' },
-  { name: 'Brake Fluid', itemCode: 'brake-fluid' },
-  { name: 'Power Steering', itemCode: 'power-steering' },
-  { name: 'Washer Fluid', itemCode: 'washer-fluid' },
+  { name: 'Engine Oil', description: '', itemCode: 'engine-oil' },
+  { name: 'Coolant', description: '', itemCode: 'coolant' },
+  { name: 'Brake Fluid', description: '', itemCode: 'brake-fluid' },
+  { name: 'Power Steering', description: '', itemCode: 'power-steering' },
+  { name: 'Washer Fluid', description: '', itemCode: 'washer-fluid' },
 ];
 
 const TYRES: ChecklistItem[] = [
-  { name: 'Tyre Condition', itemCode: 'tyre-condition' },
-  { name: 'Tyre Pressure (PSI)', itemCode: 'tyre-pressure', itemType: 'numeric' },
-  { name: 'Spare Tyre Present', itemCode: 'spare-tyre' },
+  { name: 'Tyre Condition', description: '', itemCode: 'tyre-condition' },
+  { name: 'Tyre Pressure (PSI)', description: '', itemCode: 'tyre-pressure' },
+  { name: 'Spare Tyre Present', description: '', itemCode: 'spare-tyre' },
 ];
 
 const FUEL: ChecklistItem[] = [
-  { name: 'Fuel Level', itemCode: 'fuel-level', itemType: 'level' },
-  { name: 'AdBlue Level', itemCode: 'adblue-level', itemType: 'level' },
+  { name: 'Fuel Level', description: '', itemCode: 'fuel-level' },
+  { name: 'AdBlue Level', description: '', itemCode: 'adblue-level' },
 ];
 
 const ROAD_LIGHTS: ChecklistItem[] = [
-  { name: 'Headlights', itemCode: 'headlights' },
-  { name: 'Indicator Lights', itemCode: 'indicator-lights' },
-  { name: 'Brake Lights', itemCode: 'brake-lights' },
-  { name: 'Reverse Lights', itemCode: 'reverse-lights' },
-  { name: 'Hazard Lights', itemCode: 'hazard-lights' },
+  { name: 'Headlights', description: '', itemCode: 'headlights' },
+  { name: 'Indicator Lights', description: '', itemCode: 'indicator-lights' },
+  { name: 'Brake Lights', description: '', itemCode: 'brake-lights' },
+  { name: 'Reverse Lights', description: '', itemCode: 'reverse-lights' },
+  { name: 'Hazard Lights', description: '', itemCode: 'hazard-lights' },
 ];
 
 const EMERGENCY_WARNING: ChecklistItem[] = [
-  { name: 'Beacons & Lightbar', itemCode: 'beacons-lightbar' },
-  { name: 'Siren', itemCode: 'siren' },
-  { name: 'Scene Lights', itemCode: 'scene-lights' },
+  { name: 'Beacons & Lightbar', description: '', itemCode: 'beacons-lightbar' },
+  { name: 'Siren', description: '', itemCode: 'siren' },
+  { name: 'Scene Lights', description: '', itemCode: 'scene-lights' },
 ];
 
 const CONSUMABLES: ChecklistItem[] = [
-  { name: 'Spare Fuel', itemCode: 'spare-fuel' },
-  { name: 'Drinking Water', itemCode: 'drinking-water' },
-  { name: 'First Aid Kit', itemCode: 'first-aid-kit' },
-  { name: 'PPE Stock', itemCode: 'ppe-stock' },
+  { name: 'Spare Fuel', description: '', itemCode: 'spare-fuel' },
+  { name: 'Drinking Water', description: '', itemCode: 'drinking-water' },
+  { name: 'First Aid Kit', description: '', itemCode: 'first-aid-kit' },
+  { name: 'PPE Stock', description: '', itemCode: 'ppe-stock' },
 ];
 
 const LOCKERS: ChecklistItem[] = [
-  { name: 'Locker Inventory Complete', itemCode: 'locker-inventory' },
-  { name: 'Lockers Secure', itemCode: 'lockers-secure' },
+  { name: 'Locker Inventory Complete', description: '', itemCode: 'locker-inventory' },
+  { name: 'Lockers Secure', description: '', itemCode: 'lockers-secure' },
 ];
 
 // NSW RFS specific
 const PUMP_WATER: ChecklistItem[] = [
-  { name: 'Pump Prime Function', itemCode: 'pump-prime' },
-  { name: 'Tank Level', itemCode: 'tank-level', itemType: 'level' },
-  { name: 'Hoses & Branches', itemCode: 'hoses-branches' },
-  { name: 'Foam Stock', itemCode: 'foam-stock' },
+  { name: 'Pump Prime Function', description: '', itemCode: 'pump-prime' },
+  { name: 'Tank Level', description: '', itemCode: 'tank-level' },
+  { name: 'Hoses & Branches', description: '', itemCode: 'hoses-branches' },
+  { name: 'Foam Stock', description: '', itemCode: 'foam-stock' },
 ];
 
 // NSW SES / Rescue specific
 const RESCUE_EQUIPMENT: ChecklistItem[] = [
-  { name: 'Hydraulic Extrication Tools', itemCode: 'hydraulic-tools' },
-  { name: 'Generator', itemCode: 'generator' },
-  { name: 'Portable Lighting', itemCode: 'portable-lighting' },
-  { name: 'Rope & Rigging', itemCode: 'rope-rigging' },
+  { name: 'Hydraulic Extrication Tools', description: '', itemCode: 'hydraulic-tools' },
+  { name: 'Generator', description: '', itemCode: 'generator' },
+  { name: 'Portable Lighting', description: '', itemCode: 'portable-lighting' },
+  { name: 'Rope & Rigging', description: '', itemCode: 'rope-rigging' },
 ];
 
 // Marine Rescue specific
 const VESSEL_HULL: ChecklistItem[] = [
-  { name: 'Hull Integrity', itemCode: 'hull-integrity' },
-  { name: 'Bilge Pump', itemCode: 'bilge-pump' },
-  { name: 'Drain Plug Secure', itemCode: 'drain-plug' },
-  { name: 'Seals & Gaskets', itemCode: 'seals-gaskets' },
+  { name: 'Hull Integrity', description: '', itemCode: 'hull-integrity' },
+  { name: 'Bilge Pump', description: '', itemCode: 'bilge-pump' },
+  { name: 'Drain Plug Secure', description: '', itemCode: 'drain-plug' },
+  { name: 'Seals & Gaskets', description: '', itemCode: 'seals-gaskets' },
 ];
 
 const VESSEL_ENGINE: ChecklistItem[] = [
-  { name: 'Engine Oil', itemCode: 'engine-oil-marine' },
-  { name: 'Coolant', itemCode: 'coolant-marine' },
-  { name: 'Fuel Condition', itemCode: 'fuel-condition' },
-  { name: 'Battery Voltage', itemCode: 'battery-voltage', itemType: 'numeric' },
+  { name: 'Engine Oil', description: '', itemCode: 'engine-oil-marine' },
+  { name: 'Coolant', description: '', itemCode: 'coolant-marine' },
+  { name: 'Fuel Condition', description: '', itemCode: 'fuel-condition' },
+  { name: 'Battery Voltage', description: '', itemCode: 'battery-voltage' },
 ];
 
 const NAV_SAFETY: ChecklistItem[] = [
-  { name: 'Navigation Lights', itemCode: 'nav-lights' },
-  { name: 'Radio / VHF', itemCode: 'radio-vhf' },
-  { name: 'EPIRB & Beacons', itemCode: 'epirb-beacons' },
-  { name: 'Life Jackets', itemCode: 'life-jackets' },
-  { name: 'Flares & Signalling', itemCode: 'flares-signalling' },
+  { name: 'Navigation Lights', description: '', itemCode: 'nav-lights' },
+  { name: 'Radio / VHF', description: '', itemCode: 'radio-vhf' },
+  { name: 'EPIRB & Beacons', description: '', itemCode: 'epirb-beacons' },
+  { name: 'Life Jackets', description: '', itemCode: 'life-jackets' },
+  { name: 'Flares & Signalling', description: '', itemCode: 'flares-signalling' },
 ];
 
 const SUPPORT_VEHICLE: ChecklistItem[] = [
-  { name: 'Communication Equipment', itemCode: 'comms-equipment' },
-  { name: 'Maps & Reference Materials', itemCode: 'maps-materials' },
-  { name: 'Portable Power', itemCode: 'portable-power' },
+  { name: 'Communication Equipment', description: '', itemCode: 'comms-equipment' },
+  { name: 'Maps & Reference Materials', description: '', itemCode: 'maps-materials' },
+  { name: 'Portable Power', description: '', itemCode: 'portable-power' },
 ];
 
 const COMMUNICATION_EQUIPMENT: ChecklistItem[] = [
-  { name: 'Radio Equipment', itemCode: 'radio-equipment' },
-  { name: 'Antenna System', itemCode: 'antenna-system' },
-  { name: 'Power Supply', itemCode: 'power-supply' },
+  { name: 'Radio Equipment', description: '', itemCode: 'radio-equipment' },
+  { name: 'Antenna System', description: '', itemCode: 'antenna-system' },
+  { name: 'Power Supply', description: '', itemCode: 'power-supply' },
 ];
 
 // NSW RFS templates (5)
