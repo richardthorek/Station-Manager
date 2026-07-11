@@ -8,10 +8,11 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { LockKeyhole, QrCode } from 'lucide-react';
+import { LockKeyhole, QrCode, HelpCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageTransition } from '../../components/PageTransition';
 import { QRScannerModal } from '../../components/QRScannerModal';
+import { DeviceSetupGuide } from '../../components/DeviceSetupGuide';
 import './LoginPage.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
@@ -27,6 +28,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [isProcessingQR, setIsProcessingQR] = useState(false);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
 
   // Get the redirect path from location state, or default to the app picker
   // (the post-login home) — a deep link that required auth sets `from`.
@@ -86,8 +88,20 @@ export function LoginPage() {
     <PageTransition variant="fade">
       <div className="login-page">
         <header className="login-header">
-          <Link to="/" className="back-link">← Back to Home</Link>
+          <div className="login-header-left">
+            <Link to="/" className="back-link">← Back to Home</Link>
+          </div>
           <h1>Admin Login</h1>
+          <button
+            type="button"
+            className="setup-guide-btn"
+            onClick={() => setShowSetupGuide(true)}
+            aria-label="Open device setup guide"
+            title="How to set up a device"
+          >
+            <HelpCircle size={20} strokeWidth={2} aria-hidden />
+            <span className="sr-only">Setup Guide</span>
+          </button>
         </header>
 
         <main className="login-main">
@@ -163,6 +177,11 @@ export function LoginPage() {
           onClose={() => setShowQRScanner(false)}
           onScan={handleQRScan}
           isLoading={isProcessingQR}
+        />
+
+        <DeviceSetupGuide
+          isOpen={showSetupGuide}
+          onClose={() => setShowSetupGuide(false)}
         />
       </div>
     </PageTransition>

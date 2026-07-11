@@ -10,11 +10,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn, Truck, BarChart3, Mic, Settings2, GraduationCap, LockKeyhole, LogOut, Moon, Sun, Lock, Heart } from 'lucide-react';
+import { LogIn, Truck, BarChart3, Mic, Settings2, GraduationCap, LockKeyhole, LogOut, Moon, Sun, Lock, Heart, HelpCircle } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../contexts/AuthContext';
 import { OnboardingWizard } from '../../components/OnboardingWizard';
 import { PageTransition } from '../../components/PageTransition';
+import { DeviceSetupGuide } from '../../components/DeviceSetupGuide';
 import { staggerVariants, getVariants, getTransition, transitions } from '../../utils/animations';
 import { SUITE_SIBLING_APPS } from '../../config/suiteApps';
 import './LandingPage.css';
@@ -24,6 +25,7 @@ export function LandingPage() {
   const { isAuthenticated, user, logout, requireAuth, hasFeature, entitlements } = useAuth();
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
 
   const containerVariants = getVariants(staggerVariants.container);
   const itemVariants = getVariants(staggerVariants.item);
@@ -90,6 +92,15 @@ export function LandingPage() {
             >
               <span className="btn-icon"><GraduationCap size={20} strokeWidth={2} aria-hidden /></span>
               <span className="btn-text">Guided tour</span>
+            </button>
+            <button
+              className="header-cta"
+              onClick={() => setShowSetupGuide(true)}
+              aria-label="Open device setup guide"
+              title="How to set up a device"
+            >
+              <span className="btn-icon"><HelpCircle size={20} strokeWidth={2} aria-hidden /></span>
+              <span className="btn-text">Setup Guide</span>
             </button>
             {requireAuth && !isAuthenticated && (
               <button
@@ -271,6 +282,11 @@ export function LandingPage() {
         {showOnboarding && (
           <OnboardingWizard onClose={() => setShowOnboarding(false)} />
         )}
+
+        <DeviceSetupGuide
+          isOpen={showSetupGuide}
+          onClose={() => setShowSetupGuide(false)}
+        />
       </div>
     </PageTransition>
   );
