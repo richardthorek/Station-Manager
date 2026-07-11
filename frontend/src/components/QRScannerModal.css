@@ -20,7 +20,7 @@
   display: flex;
   flex-direction: column;
   max-height: 90vh;
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-md);
   animation: slideUp 0.3s ease-out;
 }
 
@@ -45,6 +45,7 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
+  font-family: 'Archivo', 'Public Sans', sans-serif;
   color: var(--rfs-black);
 }
 
