@@ -102,7 +102,7 @@ class DatabaseService {
       };
     }
 
-    // Create default station
+    // Create default station (empty, no demo members)
     const defaultStation: Station = {
       id: DEFAULT_STATION_ID,
       name: 'Default Station',
@@ -120,8 +120,12 @@ class DatabaseService {
       updatedAt: new Date(),
     };
     this.stations.set(defaultStation.id, defaultStation);
+  }
 
-    // Seed default station with a small sample of 10 members
+  private initializeDevData() {
+    logger.info('Initializing development data');
+
+    // Seed default station with sample members for demo/testing
     DEFAULT_MEMBERS.slice(0, 10).forEach(seedMember => {
       const member: Member = {
         id: uuidv4(),
@@ -130,7 +134,7 @@ class DatabaseService {
         firstName: seedMember.firstName,
         lastName: seedMember.lastName,
         rank: seedMember.rank,
-        stationId: DEFAULT_STATION_ID, // Explicitly set to default station
+        stationId: DEFAULT_STATION_ID,
         isActive: true,
         isDeleted: false,
         createdAt: new Date(),
@@ -138,11 +142,7 @@ class DatabaseService {
       };
       this.members.set(member.id, member);
     });
-  }
 
-  private initializeDevData() {
-    logger.info('Initializing development data');
-    
     // Create demo station
     const demoStation: Station = {
       id: DEMO_STATION_ID,
@@ -171,7 +171,7 @@ class DatabaseService {
     };
     this.stations.set(demoStation.id, demoStation);
     logger.info('Created demo station', { stationName: demoStation.name });
-    
+
     const members = Array.from(this.members.values());
     const activities = Array.from(this.activities.values());
     
