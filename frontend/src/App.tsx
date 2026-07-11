@@ -15,6 +15,7 @@ import { AccessRoute } from './components/AccessRoute';
 import { TrialBanner } from './components/TrialBanner';
 import { initDB } from './services/offlineStorage';
 import { activateDemo, isDemoActive } from './utils/demoMode';
+import { restoreKioskModeFromPersistent } from './utils/kioskMode';
 
 // Lazy load all route components for better code splitting
 const LandingPage = lazy(() => import('./features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -117,6 +118,9 @@ function AnimatedRoutes() {
 
 function App() {
   useEffect(() => {
+    // Restore kiosk mode from persistent storage (device token persistence)
+    restoreKioskModeFromPersistent();
+
     // Initialize IndexedDB for offline storage
     initDB().catch(err => {
       console.error('Failed to initialize offline database:', err);

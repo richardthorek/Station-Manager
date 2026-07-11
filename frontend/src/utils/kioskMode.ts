@@ -16,10 +16,29 @@
 const KIOSK_TOKEN_KEY = 'kioskBrigadeToken';
 const KIOSK_STATION_KEY = 'kioskStationId';
 const KIOSK_BRIGADE_KEY = 'kioskBrigadeId';
+// Persistent storage for device tokens (survives app closure)
+const KIOSK_TOKEN_PERSISTENT_KEY = 'kioskBrigadeToken_persistent';
+
+/**
+ * Restore kiosk mode from persistent storage (localStorage)
+ * Call this on app initialization to restore the session after app restart
+ */
+export function restoreKioskModeFromPersistent(): void {
+  // If there's a token in the URL, it takes precedence
+  if (getBrigadeTokenFromUrl()) {
+    return;
+  }
+
+  // Restore from localStorage if available and not already in sessionStorage
+  const persistentToken = localStorage.getItem(KIOSK_TOKEN_PERSISTENT_KEY);
+  if (persistentToken && !sessionStorage.getItem(KIOSK_TOKEN_KEY)) {
+    sessionStorage.setItem(KIOSK_TOKEN_KEY, persistentToken);
+  }
+}
 
 /**
  * Check if the current session is in kiosk mode
- * 
+ *
  * @returns True if in kiosk mode, false otherwise
  */
 export function isKioskMode(): boolean {
@@ -28,9 +47,14 @@ export function isKioskMode(): boolean {
   if (urlToken) {
     return true;
   }
-  
+
   // Check sessionStorage
-  return !!sessionStorage.getItem(KIOSK_TOKEN_KEY);
+  if (sessionStorage.getItem(KIOSK_TOKEN_KEY)) {
+    return true;
+  }
+
+  // Check localStorage (persistent)
+  return !!localStorage.getItem(KIOSK_TOKEN_PERSISTENT_KEY);
 }
 
 /**
@@ -45,7 +69,8 @@ export function getBrigadeTokenFromUrl(): string | null {
 
 /**
  * Get the active kiosk brigade token
- * 
+ * Checks URL, sessionStorage, and localStorage (persistent) in order
+ *
  * @returns The brigade token, or null if not in kiosk mode
  */
 export function getKioskToken(): string | null {
@@ -54,15 +79,21 @@ export function getKioskToken(): string | null {
   if (urlToken) {
     return urlToken;
   }
-  
+
   // Fall back to sessionStorage
-  return sessionStorage.getItem(KIOSK_TOKEN_KEY);
+  const sessionToken = sessionStorage.getItem(KIOSK_TOKEN_KEY);
+  if (sessionToken) {
+    return sessionToken;
+  }
+
+  // Fall back to localStorage (for app shortcuts / persistence)
+  return localStorage.getItem(KIOSK_TOKEN_PERSISTENT_KEY);
 }
 
 /**
- * Initialize kiosk mode from URL
- * Stores token and station info in sessionStorage
- * 
+ * Initialize kiosk mode from URL or localStorage
+ * Stores token and station info in sessionStorage and localStorage for persistence
+ *
  * @param stationId - The station ID to lock to
  * @param brigadeId - The brigade ID
  */
@@ -71,8 +102,10 @@ export function initializeKioskMode(stationId: string, brigadeId: string): void 
   if (!token) {
     return;
   }
-  
+
+  // Store in both sessionStorage (current session) and localStorage (persistence)
   sessionStorage.setItem(KIOSK_TOKEN_KEY, token);
+  localStorage.setItem(KIOSK_TOKEN_PERSISTENT_KEY, token);
   sessionStorage.setItem(KIOSK_STATION_KEY, stationId);
   sessionStorage.setItem(KIOSK_BRIGADE_KEY, brigadeId);
 }
@@ -103,6 +136,23 @@ export function exitKioskMode(): void {
   sessionStorage.removeItem(KIOSK_TOKEN_KEY);
   sessionStorage.removeItem(KIOSK_STATION_KEY);
   sessionStorage.removeItem(KIOSK_BRIGADE_KEY);
+  localStorage.removeItem(KIOSK_TOKEN_PERSISTENT_KEY);
+}
+
+/**
+ * Generate a shareable URL that includes the device token
+ * Used for creating home screen shortcuts that retain kiosk access
+ *
+ * @param path - The path to link to (e.g., '/signin', '/truckcheck')
+ * @returns Full URL with token as query parameter, or just the path if no token
+ */
+export function generateKioskUrl(path: string = '/'): string {
+  const token = getKioskToken();
+  if (!token) {
+    return path;
+  }
+  const separator = path.includes('?') ? '&' : '?';
+  return `${path}${separator}brigade=${encodeURIComponent(token)}`;
 }
 
 /**
