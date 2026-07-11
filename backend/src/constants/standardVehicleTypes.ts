@@ -15,7 +15,8 @@ import type { ChecklistItem, VehicleType } from '../types';
 export const SEED_VERSION = 1;
 
 // Reusable checklist item groups (mutable references merged per-template)
-const FLUIDS: ChecklistItem[] = [
+// Using Partial<ChecklistItem> since normaliseStandardItems will fill in id/order
+const FLUIDS: Partial<ChecklistItem>[] = [
   { name: 'Engine Oil', description: '', itemCode: 'engine-oil' },
   { name: 'Coolant', description: '', itemCode: 'coolant' },
   { name: 'Brake Fluid', description: '', itemCode: 'brake-fluid' },
@@ -23,18 +24,18 @@ const FLUIDS: ChecklistItem[] = [
   { name: 'Washer Fluid', description: '', itemCode: 'washer-fluid' },
 ];
 
-const TYRES: ChecklistItem[] = [
+const TYRES: Partial<ChecklistItem>[] = [
   { name: 'Tyre Condition', description: '', itemCode: 'tyre-condition' },
   { name: 'Tyre Pressure (PSI)', description: '', itemCode: 'tyre-pressure' },
   { name: 'Spare Tyre Present', description: '', itemCode: 'spare-tyre' },
 ];
 
-const FUEL: ChecklistItem[] = [
+const FUEL: Partial<ChecklistItem>[] = [
   { name: 'Fuel Level', description: '', itemCode: 'fuel-level' },
   { name: 'AdBlue Level', description: '', itemCode: 'adblue-level' },
 ];
 
-const ROAD_LIGHTS: ChecklistItem[] = [
+const ROAD_LIGHTS: Partial<ChecklistItem>[] = [
   { name: 'Headlights', description: '', itemCode: 'headlights' },
   { name: 'Indicator Lights', description: '', itemCode: 'indicator-lights' },
   { name: 'Brake Lights', description: '', itemCode: 'brake-lights' },
@@ -42,26 +43,26 @@ const ROAD_LIGHTS: ChecklistItem[] = [
   { name: 'Hazard Lights', description: '', itemCode: 'hazard-lights' },
 ];
 
-const EMERGENCY_WARNING: ChecklistItem[] = [
+const EMERGENCY_WARNING: Partial<ChecklistItem>[] = [
   { name: 'Beacons & Lightbar', description: '', itemCode: 'beacons-lightbar' },
   { name: 'Siren', description: '', itemCode: 'siren' },
   { name: 'Scene Lights', description: '', itemCode: 'scene-lights' },
 ];
 
-const CONSUMABLES: ChecklistItem[] = [
+const CONSUMABLES: Partial<ChecklistItem>[] = [
   { name: 'Spare Fuel', description: '', itemCode: 'spare-fuel' },
   { name: 'Drinking Water', description: '', itemCode: 'drinking-water' },
   { name: 'First Aid Kit', description: '', itemCode: 'first-aid-kit' },
   { name: 'PPE Stock', description: '', itemCode: 'ppe-stock' },
 ];
 
-const LOCKERS: ChecklistItem[] = [
+const LOCKERS: Partial<ChecklistItem>[] = [
   { name: 'Locker Inventory Complete', description: '', itemCode: 'locker-inventory' },
   { name: 'Lockers Secure', description: '', itemCode: 'lockers-secure' },
 ];
 
 // NSW RFS specific
-const PUMP_WATER: ChecklistItem[] = [
+const PUMP_WATER: Partial<ChecklistItem>[] = [
   { name: 'Pump Prime Function', description: '', itemCode: 'pump-prime' },
   { name: 'Tank Level', description: '', itemCode: 'tank-level' },
   { name: 'Hoses & Branches', description: '', itemCode: 'hoses-branches' },
@@ -69,7 +70,7 @@ const PUMP_WATER: ChecklistItem[] = [
 ];
 
 // NSW SES / Rescue specific
-const RESCUE_EQUIPMENT: ChecklistItem[] = [
+const RESCUE_EQUIPMENT: Partial<ChecklistItem>[] = [
   { name: 'Hydraulic Extrication Tools', description: '', itemCode: 'hydraulic-tools' },
   { name: 'Generator', description: '', itemCode: 'generator' },
   { name: 'Portable Lighting', description: '', itemCode: 'portable-lighting' },
@@ -77,21 +78,21 @@ const RESCUE_EQUIPMENT: ChecklistItem[] = [
 ];
 
 // Marine Rescue specific
-const VESSEL_HULL: ChecklistItem[] = [
+const VESSEL_HULL: Partial<ChecklistItem>[] = [
   { name: 'Hull Integrity', description: '', itemCode: 'hull-integrity' },
   { name: 'Bilge Pump', description: '', itemCode: 'bilge-pump' },
   { name: 'Drain Plug Secure', description: '', itemCode: 'drain-plug' },
   { name: 'Seals & Gaskets', description: '', itemCode: 'seals-gaskets' },
 ];
 
-const VESSEL_ENGINE: ChecklistItem[] = [
+const VESSEL_ENGINE: Partial<ChecklistItem>[] = [
   { name: 'Engine Oil', description: '', itemCode: 'engine-oil-marine' },
   { name: 'Coolant', description: '', itemCode: 'coolant-marine' },
   { name: 'Fuel Condition', description: '', itemCode: 'fuel-condition' },
   { name: 'Battery Voltage', description: '', itemCode: 'battery-voltage' },
 ];
 
-const NAV_SAFETY: ChecklistItem[] = [
+const NAV_SAFETY: Partial<ChecklistItem>[] = [
   { name: 'Navigation Lights', description: '', itemCode: 'nav-lights' },
   { name: 'Radio / VHF', description: '', itemCode: 'radio-vhf' },
   { name: 'EPIRB & Beacons', description: '', itemCode: 'epirb-beacons' },
@@ -99,13 +100,13 @@ const NAV_SAFETY: ChecklistItem[] = [
   { name: 'Flares & Signalling', description: '', itemCode: 'flares-signalling' },
 ];
 
-const SUPPORT_VEHICLE: ChecklistItem[] = [
+const SUPPORT_VEHICLE: Partial<ChecklistItem>[] = [
   { name: 'Communication Equipment', description: '', itemCode: 'comms-equipment' },
   { name: 'Maps & Reference Materials', description: '', itemCode: 'maps-materials' },
   { name: 'Portable Power', description: '', itemCode: 'portable-power' },
 ];
 
-const COMMUNICATION_EQUIPMENT: ChecklistItem[] = [
+const COMMUNICATION_EQUIPMENT: Partial<ChecklistItem>[] = [
   { name: 'Radio Equipment', description: '', itemCode: 'radio-equipment' },
   { name: 'Antenna System', description: '', itemCode: 'antenna-system' },
   { name: 'Power Supply', description: '', itemCode: 'power-supply' },
@@ -121,7 +122,7 @@ const CAT1_TANKER: VehicleType = {
   name: 'Cat 1 Tanker',
   description: 'NSW RFS Category 1 tanker for rural fire suppression',
   category: 'tanker',
-  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS],
+  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS] as ChecklistItem[],
   seedVersion: SEED_VERSION,
   createdBy: 'system',
   createdAt: new Date('2026-01-01'),
@@ -137,7 +138,7 @@ const CAT7_TANKER: VehicleType = {
   name: 'Cat 7 Tanker',
   description: 'NSW RFS Category 7 tanker for rural fire suppression',
   category: 'tanker',
-  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS],
+  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS] as ChecklistItem[],
   seedVersion: SEED_VERSION,
   createdBy: 'system',
   createdAt: new Date('2026-01-01'),
@@ -153,7 +154,7 @@ const CAT9_TANKER: VehicleType = {
   name: 'Cat 9 Tanker (Light)',
   description: 'NSW RFS Category 9 light tanker for rapid response',
   category: 'tanker',
-  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS],
+  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS] as ChecklistItem[],
   seedVersion: SEED_VERSION,
   createdBy: 'system',
   createdAt: new Date('2026-01-01'),
@@ -169,7 +170,7 @@ const URBAN_PUMPER: VehicleType = {
   name: 'Urban Pumper (Cat 10/11)',
   description: 'NSW RFS urban structure fire pumper',
   category: 'pumper',
-  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS],
+  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS] as ChecklistItem[],
   seedVersion: SEED_VERSION,
   createdBy: 'system',
   createdAt: new Date('2026-01-01'),
@@ -202,7 +203,7 @@ const CLASS3_PUMPER: VehicleType = {
   name: 'Class 3 Pumper',
   description: 'Fire and Rescue NSW Class 3 structure fire pumper',
   category: 'pumper',
-  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS],
+  standardItems: [...FLUIDS, ...TYRES, ...FUEL, ...ROAD_LIGHTS, ...EMERGENCY_WARNING, ...PUMP_WATER, ...LOCKERS] as ChecklistItem[],
   seedVersion: SEED_VERSION,
   createdBy: 'system',
   createdAt: new Date('2026-01-01'),
@@ -430,13 +431,13 @@ const LOGISTICS_TRAILER: VehicleType = {
   description: 'Generic logistics and supply support trailer',
   category: 'support',
   standardItems: [
-    { name: 'Tyre Condition', itemCode: 'tyre-condition' },
-    { name: 'Lighting', itemCode: 'lighting' },
-    { name: 'Coupling System', itemCode: 'coupling-system' },
-    { name: 'Load Secure', itemCode: 'load-secure' },
+    { name: 'Tyre Condition', description: '', itemCode: 'tyre-condition' },
+    { name: 'Lighting', description: '', itemCode: 'lighting' },
+    { name: 'Coupling System', description: '', itemCode: 'coupling-system' },
+    { name: 'Load Secure', description: '', itemCode: 'load-secure' },
     ...CONSUMABLES,
     ...LOCKERS,
-  ],
+  ] as ChecklistItem[],
   seedVersion: SEED_VERSION,
   createdBy: 'system',
   createdAt: new Date('2026-01-01'),
