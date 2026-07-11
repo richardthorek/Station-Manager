@@ -1,11 +1,17 @@
-import { seedStandardVehicleTypesIfNeeded } from '../services/standardVehicleTypeSeeder';
+import { seedStandardVehicleTypesIfNeeded, resetForTesting } from '../services/standardVehicleTypeSeeder';
 import { VehicleTypeDatabase } from '../services/vehicleTypeDatabase';
 import { STANDARD_VEHICLE_TYPES, SEED_VERSION } from '../constants/standardVehicleTypes';
+
+// Helper to simulate seed version change
+function simulateSeedVersionChange(db: VehicleTypeDatabase): void {
+  resetForTesting();
+}
 
 describe('standardVehicleTypeSeeder', () => {
   let db: VehicleTypeDatabase;
 
   beforeEach(() => {
+    resetForTesting();
     db = new VehicleTypeDatabase();
   });
 
@@ -62,6 +68,7 @@ describe('standardVehicleTypeSeeder', () => {
 
     // Simulate seed version bump by clearing and reseeding with updated version
     await db.clear();
+    simulateSeedVersionChange(db);
     await seedStandardVehicleTypesIfNeeded(db);
     const typeAfterSecondSeed = await db.getById('std-cat1-tanker');
     expect(typeAfterSecondSeed?.seedVersion).toBe(SEED_VERSION);

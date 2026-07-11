@@ -17,6 +17,11 @@ import type { IVehicleTypeDatabase } from './vehicleTypeDatabase';
 let seeded = false;
 let seedingInProgress = false;
 
+export function resetForTesting(): void {
+  seeded = false;
+  seedingInProgress = false;
+}
+
 export async function seedStandardVehicleTypesIfNeeded(db: IVehicleTypeDatabase): Promise<void> {
   if (seeded || seedingInProgress) return;
   if (process.env.SEED_STANDARD_VEHICLE_TYPES === 'false') {
