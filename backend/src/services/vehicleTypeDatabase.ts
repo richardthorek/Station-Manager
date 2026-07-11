@@ -20,17 +20,20 @@ export interface VehicleTypeInput {
   name: string;
   description?: string;
   category?: string;
+  agency?: string;
   standardItems: ChecklistItem[];
   createdBy?: string;
 }
 
-export type VehicleTypePatch = Partial<Omit<VehicleType, 'id' | 'organizationId' | 'createdAt' | 'updatedAt'>>;
+export type VehicleTypePatch = Partial<Omit<VehicleType, 'id' | 'organizationId' | 'seedVersion' | 'createdAt' | 'updatedAt'>>;
 
 export interface IVehicleTypeDatabase {
   create(input: VehicleTypeInput): Promise<VehicleType>;
   getById(id: string): Promise<VehicleType | null>;
   update(id: string, patch: VehicleTypePatch): Promise<VehicleType | null>;
   delete(id: string): Promise<boolean>;
+  /** Idempotent insert-or-update: create if missing, update if present. Used by seeders. */
+  upsert(type: VehicleType): Promise<VehicleType>;
   /** Types an org may use: its own + all published standards, by name. */
   listForOrganization(organizationId?: string): Promise<VehicleType[]>;
   listStandards(): Promise<VehicleType[]>;
@@ -61,6 +64,7 @@ export class VehicleTypeDatabase implements IVehicleTypeDatabase {
       name: input.name,
       description: input.description,
       category: input.category,
+      agency: input.agency,
       standardItems: normaliseStandardItems(input.standardItems),
       createdBy: input.createdBy,
       createdAt: now,
@@ -89,6 +93,11 @@ export class VehicleTypeDatabase implements IVehicleTypeDatabase {
 
   async delete(id: string): Promise<boolean> {
     return this.rows.delete(id);
+  }
+
+  async upsert(type: VehicleType): Promise<VehicleType> {
+    this.rows.set(type.id, type);
+    return type;
   }
 
   async listForOrganization(organizationId?: string): Promise<VehicleType[]> {

@@ -342,7 +342,7 @@ router.get('/vehicle-types', authMiddleware, attachOrganization, async (req: Req
  */
 router.post('/vehicle-types', vehicleTypeAuth, async (req: Request, res: Response) => {
   try {
-    const { name, code, description, category, standardItems, isStandard } = req.body ?? {};
+    const { name, code, description, category, agency, standardItems, isStandard } = req.body ?? {};
     if (typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ error: 'name is required' });
     }
@@ -356,6 +356,7 @@ router.post('/vehicle-types', vehicleTypeAuth, async (req: Request, res: Respons
       name: name.trim(),
       description: typeof description === 'string' ? description : undefined,
       category: typeof category === 'string' ? category : undefined,
+      agency: typeof agency === 'string' ? agency : undefined,
       standardItems,
       createdBy: req.user?.userId,
     });
@@ -376,15 +377,19 @@ router.put('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: Resp
     const db = ensureVehicleTypeDatabase();
     const existing = await db.getById(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Vehicle type not found' });
-    if (existing.organizationId && existing.organizationId !== req.user?.organizationId) {
+    if (!existing.organizationId) {
+      return res.status(403).json({ error: 'Built-in standard templates cannot be edited. To modify templates, edit the seed source and redeploy.' });
+    }
+    if (existing.organizationId !== req.user?.organizationId) {
       return res.status(403).json({ error: 'You can only edit vehicle types your organisation owns' });
     }
-    const { name, code, description, category, standardItems, isStandard } = req.body ?? {};
+    const { name, code, description, category, agency, standardItems, isStandard } = req.body ?? {};
     const updated = await db.update(req.params.id, {
       ...(name !== undefined ? { name } : {}),
       ...(code !== undefined ? { code: slugify(code) } : {}),
       ...(description !== undefined ? { description } : {}),
       ...(category !== undefined ? { category } : {}),
+      ...(agency !== undefined ? { agency } : {}),
       ...(isStandard !== undefined ? { isStandard: Boolean(isStandard) } : {}),
       ...(standardItems !== undefined ? { standardItems } : {}),
     });
@@ -404,7 +409,10 @@ router.delete('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: R
     const db = ensureVehicleTypeDatabase();
     const existing = await db.getById(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Vehicle type not found' });
-    if (existing.organizationId && existing.organizationId !== req.user?.organizationId) {
+    if (!existing.organizationId) {
+      return res.status(403).json({ error: 'Built-in standard templates cannot be deleted. To remove templates, edit the seed source and redeploy.' });
+    }
+    if (existing.organizationId !== req.user?.organizationId) {
       return res.status(403).json({ error: 'You can only delete vehicle types your organisation owns' });
     }
     await db.delete(req.params.id);

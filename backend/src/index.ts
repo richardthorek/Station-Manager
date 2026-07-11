@@ -66,6 +66,7 @@ import { ensureTruckChecksDatabase } from './services/truckChecksDbFactory';
 import { getRFSFacilitiesParser } from './services/rfsFacilitiesParser';
 import { getVersionInfo } from './services/version';
 import { seedDemoStationIfNeeded } from './services/demoStationSeeder';
+import { seedStandardVehicleTypesIfNeeded } from './services/standardVehicleTypeSeeder';
 import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 import { requireFeature } from './middleware/entitlements';
 import { requireSession } from './middleware/flexibleAuth';
@@ -693,7 +694,11 @@ async function initializeDatabasesInBackground() {
     
     // Seed demo station data (for in-memory database or on first startup)
     await seedDemoStationIfNeeded();
-    
+
+    // Seed standard vehicle type templates
+    const vehicleTypeDb = getVehicleTypeDb();
+    await seedStandardVehicleTypesIfNeeded(vehicleTypeDb);
+
     // Mark as initialized
     databaseInitialized = true;
     databaseInitializing = false;
