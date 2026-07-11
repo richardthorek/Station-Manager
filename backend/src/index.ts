@@ -79,7 +79,7 @@ import { initializeOrganizationDatabase } from './services/organizationDbFactory
 import { initializeUsageDatabase } from './services/usageDbFactory';
 import { initializeBillingEventDatabase } from './services/billingEventDbFactory';
 import { initializeAarSessionDatabase } from './services/aarSessionDbFactory';
-import { initializeVehicleTypeDatabase } from './services/vehicleTypeDbFactory';
+import { initializeVehicleTypeDatabase, getVehicleTypeDb } from './services/vehicleTypeDbFactory';
 import { initializeApplianceZoneDatabase } from './services/applianceZoneDbFactory';
 import { initializeDeviceDatabase } from './services/deviceDbFactory';
 import { initializeApplianceEquipmentDatabase } from './services/applianceEquipmentDbFactory';
