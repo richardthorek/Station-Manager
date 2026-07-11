@@ -2,12 +2,12 @@
  * QR Scanner Modal Component
  *
  * Allows users to scan a QR code containing a device token.
- * Uses html5-qrcode for camera access and scanning.
+ * Uses native camera with Html5Qrcode for minimal UI and better iPad experience.
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
-import { X, Smartphone } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { X, Smartphone, RefreshCw } from 'lucide-react';
 import './QRScannerModal.css';
 
 interface QRScannerModalProps {
@@ -17,10 +17,42 @@ interface QRScannerModalProps {
   isLoading?: boolean;
 }
 
+/**
+ * Extract device token from QR code content (URL or token)
+ */
+function extractTokenFromQR(content: string): string | null {
+  try {
+    if (!content) return null;
+
+    // If it looks like a URL, try to extract brigade parameter
+    if (content.includes('http://') || content.includes('https://') || content.includes('?') || content.includes('&')) {
+      try {
+        const url = new URL(content, window.location.origin);
+        const token = url.searchParams.get('brigade');
+        if (token) return token;
+      } catch {
+        // If URL parsing fails, fall through to token check
+      }
+    }
+
+    // If it's a UUID token directly
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(content.trim())) {
+      return content.trim();
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScannerModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [scanned, setScanned] = useState(false);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const cameraIdRef = useRef<string | undefined>();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -28,50 +60,141 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
     setError(null);
     setScanned(false);
 
-    const scanner = new Html5QrcodeScanner(
-      'qr-scanner-container',
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        disableFlip: false,
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-      },
-      false
-    );
+    const initScanner = async () => {
+      try {
+        // Get available cameras
+        const devices = await Html5Qrcode.getCameras();
+        const camerasOnly = devices.filter(d => d.kind === 'videoinput');
 
-    scannerRef.current = scanner;
+        if (camerasOnly.length === 0) {
+          setError('No camera available on this device');
+          return;
+        }
 
-    scanner.render(
-      (decodedText) => {
-        setScanned(true);
-        try {
-          const [token, stationId] = decodedText.split('|');
-          if (!token || !stationId) {
-            setError('Invalid QR code format. Expected: token|stationId');
-            return;
+        setCameras(camerasOnly);
+        cameraIdRef.current = camerasOnly[0].id;
+
+        const scanner = new Html5Qrcode('qr-scanner-container');
+        scannerRef.current = scanner;
+
+        const startScanning = async () => {
+          if (!cameraIdRef.current) return;
+
+          try {
+            await scanner.start(
+              cameraIdRef.current,
+              {
+                fps: 15,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1,
+              },
+              (decodedText) => {
+                setScanned(true);
+                try {
+                  const token = extractTokenFromQR(decodedText);
+                  if (!token) {
+                    setError('Invalid QR code format. Expected a device sign-in URL or token');
+                    return;
+                  }
+                  onScan(token, '');
+                } catch (err) {
+                  setError('Failed to parse QR code');
+                }
+              },
+              (errorMessage) => {
+                // Ignore "No QR code detected" messages to reduce noise
+                if (!errorMessage.includes('No QR code found') && !errorMessage.includes('NotFoundException')) {
+                  console.debug('QR scan error:', errorMessage);
+                }
+              }
+            );
+          } catch (err) {
+            console.error('Error starting scanner:', err);
+            setError('Failed to start camera');
           }
-          onScan(token.trim(), stationId.trim());
-        } catch {
-          setError('Failed to parse QR code');
-        }
-      },
-      (error) => {
-        if (!error.includes('No QR code found')) {
-          console.debug('QR scan error:', error);
-        }
+        };
+
+        await startScanning();
+      } catch (err) {
+        console.error('Error initializing scanner:', err);
+        setError('Failed to access camera');
       }
-    );
+    };
+
+    initScanner();
 
     return () => {
-      scanner.clear().catch((err) => console.debug('Scanner cleanup error:', err));
-      scannerRef.current = null;
+      const cleanup = async () => {
+        if (scannerRef.current) {
+          try {
+            await scannerRef.current.stop();
+            await scannerRef.current.clear();
+          } catch (err) {
+            console.debug('Scanner cleanup error:', err);
+          }
+        }
+        scannerRef.current = null;
+      };
+      cleanup();
     };
   }, [isOpen, onScan]);
 
-  const handleClose = () => {
+  const handleSwitchCamera = async () => {
+    if (cameras.length < 2) return;
+
+    const newIndex = (currentCameraIndex + 1) % cameras.length;
+    setCurrentCameraIndex(newIndex);
+    cameraIdRef.current = cameras[newIndex].id;
+
     if (scannerRef.current) {
-      scannerRef.current.clear().catch(() => {});
+      try {
+        await scannerRef.current.stop();
+        await scannerRef.current.start(
+          cameras[newIndex].id,
+          {
+            fps: 15,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1,
+          },
+          (decodedText) => {
+            setScanned(true);
+            try {
+              const token = extractTokenFromQR(decodedText);
+              if (!token) {
+                setError('Invalid QR code format. Expected a device sign-in URL or token');
+                return;
+              }
+              onScan(token, '');
+            } catch (err) {
+              setError('Failed to parse QR code');
+            }
+          },
+          (errorMessage) => {
+            if (!errorMessage.includes('No QR code found') && !errorMessage.includes('NotFoundException')) {
+              console.debug('QR scan error:', errorMessage);
+            }
+          }
+        );
+      } catch (err) {
+        console.error('Error switching camera:', err);
+        setError('Failed to switch camera');
+      }
     }
+  };
+
+  const handleClose = () => {
+    const cleanup = async () => {
+      if (scannerRef.current) {
+        try {
+          await scannerRef.current.stop();
+          await scannerRef.current.clear();
+        } catch (err) {
+          console.debug('Scanner cleanup error:', err);
+        }
+      }
+      scannerRef.current = null;
+    };
+    cleanup();
     onClose();
   };
 
@@ -100,14 +223,27 @@ export function QRScannerModal({ isOpen, onClose, onScan, isLoading }: QRScanner
       >
         <div className="qr-scanner-header">
           <h2 id="qr-scanner-title">Scan Device QR Code</h2>
-          <button
-            onClick={handleClose}
-            className="qr-scanner-close"
-            aria-label="Close scanner"
-            disabled={isLoading}
-          >
-            <X size={24} strokeWidth={2} />
-          </button>
+          <div className="qr-scanner-header-actions">
+            {cameras.length > 1 && (
+              <button
+                onClick={handleSwitchCamera}
+                className="qr-scanner-switch-camera"
+                aria-label="Switch camera"
+                disabled={isLoading}
+                title="Switch camera"
+              >
+                <RefreshCw size={20} strokeWidth={2} />
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className="qr-scanner-close"
+              aria-label="Close scanner"
+              disabled={isLoading}
+            >
+              <X size={24} strokeWidth={2} />
+            </button>
+          </div>
         </div>
 
         <div className="qr-scanner-content">
