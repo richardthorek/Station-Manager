@@ -24,8 +24,14 @@ let persistentPresentStatusBar = null;
  * instant and unrecoverable while deleting a whole review asks for confirmation,
  * an inverted weight (AAR Studio hero review 2026-07-03, AAR-18). Restores at
  * the original position if Undo is tapped.
+ * Disabled in demo mode.
  */
 export function deleteFinding(f) {
+  const session = store.getSession();
+  if (session?.isDemo) {
+    toast('This is a sample demo — you can\'t edit it. Try opening a new review.', 'error');
+    return;
+  }
   let removed = null;
   let index = -1;
   store.update((s) => {
@@ -73,11 +79,12 @@ function mergeSuggestionsPanel(session) {
   if (!suggestions.length) return null;
 
   const catLabel = (id) => (CATEGORIES.find((c) => c.id === id)?.label ?? id);
+  const isDemo = session.isDemo;
 
   return h('section', { class: 'merge-panel', role: 'region', 'aria-label': 'Possible duplicate findings' },
     h('div', { class: 'merge-panel__head' },
       h('span', { class: 'merge-panel__title' }, `⚠ ${suggestions.length} possible duplicate${suggestions.length > 1 ? 's' : ''}`),
-      h('span', { class: 'muted' }, 'Merge to combine, or keep both.'),
+      h('span', { class: 'muted' }, isDemo ? 'Sample demo — read-only' : 'Merge to combine, or keep both.'),
     ),
     h('ul', { class: 'merge-panel__list', role: 'list' }, suggestions.map((p) => {
       const item = h('li', { class: 'merge-suggestion', role: 'listitem', 'aria-label': `Possible duplicate in ${catLabel(p.a.category)}` },
@@ -88,6 +95,7 @@ function mergeSuggestionsPanel(session) {
         h('div', { class: 'merge-suggestion__actions btn-row' },
           h('button', {
             class: 'btn btn--small btn--primary',
+            disabled: isDemo,
             'aria-label': 'Merge these two findings into one',
             onclick: () => {
               store.update((s) => {
@@ -102,6 +110,7 @@ function mergeSuggestionsPanel(session) {
           }, 'Merge'),
           h('button', {
             class: 'btn btn--small',
+            disabled: isDemo,
             'aria-label': 'Keep both findings',
             onclick: () => { dismissedPairs.add(pairKey(p.a, p.b)); store.update(() => {}, { reason: 'findings' }); },
           }, 'Keep both'),
@@ -113,15 +122,18 @@ function mergeSuggestionsPanel(session) {
 }
 
 function findingCard(f, phases, units) {
+  const session = store.getSession();
   const card = h('div', { class: `finding finding--${f.category}`, role: 'listitem' });
   // The card is the primary edit surface — tap the text to refine the insight
   // (the whole point of AAR Studio is shaping findings, not transcript). The
   // meta-row buttons stopPropagation so a delete tap doesn't also open the
   // editor (AAR insight-quality rework 2026-07-04).
+  // Disabled in demo mode.
+  const editDisabled = session?.isDemo;
   const body = h('div', {
-    class: 'finding__text', role: 'button', tabindex: '0', title: 'Tap to edit this finding',
-    onclick: () => editInline(),
-    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editInline(); } },
+    class: `finding__text${editDisabled ? ' finding__text--readonly' : ''}`, role: editDisabled ? '' : 'button', tabindex: editDisabled ? '-1' : '0', title: editDisabled ? 'Sample demo — read-only' : 'Tap to edit this finding',
+    onclick: editDisabled ? null : () => editInline(),
+    onkeydown: editDisabled ? null : (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editInline(); } },
   }, f.text);
   const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
   mount(card,
@@ -129,13 +141,13 @@ function findingCard(f, phases, units) {
     h('div', { class: 'finding__meta' },
       h('span', { class: 'chip chip--phase' }, f.phase),
       f.unit ? h('span', { class: 'chip chip--unit', title: `Attributed to ${f.unit}` }, f.unit) : null,
-      f.source === 'ai' ? h('span', { class: 'chip chip--ai', title: f.quote ? `“${f.quote}”` : 'AI extracted' }, 'AI') : null,
+      f.source === 'ai' ? h('span', { class: 'chip chip--ai', title: f.quote ? `”${f.quote}”` : 'AI extracted' }, 'AI') : null,
       h('span', { class: 'finding__tools' },
-        h('button', { class: 'icon-btn', title: 'Edit', 'aria-label': 'Edit finding', onclick: stop(() => editInline()) }, '✎'),
-        h('button', { class: 'icon-btn', title: 'Delete', 'aria-label': 'Delete finding', onclick: stop(() => deleteFinding(f)) }, '✕'),
+        h('button', { class: 'icon-btn', title: editDisabled ? 'Sample demo — read-only' : 'Edit', 'aria-label': 'Edit finding', disabled: editDisabled, onclick: stop(() => editInline()) }, '✎'),
+        h('button', { class: 'icon-btn', title: editDisabled ? 'Sample demo — read-only' : 'Delete', 'aria-label': 'Delete finding', disabled: editDisabled, onclick: stop(() => deleteFinding(f)) }, '✕'),
       ),
     ),
-    f.quote ? h('div', { class: 'finding__quote' }, `“${f.quote}”`) : null,
+    f.quote ? h('div', { class: 'finding__quote' }, `”${f.quote}”`) : null,
   );
 
   function editInline() {
@@ -166,11 +178,17 @@ function findingCard(f, phases, units) {
 }
 
 function quickAdd(phases, units) {
-  const input = h('input', { type: 'text', placeholder: 'Quick-add a finding…', class: 'quick-add__input' });
-  const catSel = h('select', {}, CATEGORIES.map((c) => h('option', { value: c.id }, c.label)));
-  const phaseSel = h('select', {}, phases.map((p) => h('option', { value: p, selected: p === store.getSession().currentPhase }, p)));
-  const unitSel = units.length ? unitSelect(units) : null;
+  const session = store.getSession();
+  const isDemo = session?.isDemo;
+  const input = h('input', { type: 'text', placeholder: isDemo ? 'Sample demo — read-only' : 'Quick-add a finding…', class: 'quick-add__input', disabled: isDemo });
+  const catSel = h('select', { disabled: isDemo }, CATEGORIES.map((c) => h('option', { value: c.id }, c.label)));
+  const phaseSel = h('select', { disabled: isDemo }, phases.map((p) => h('option', { value: p, selected: p === session.currentPhase }, p)));
+  const unitSel = units.length ? h('select', { disabled: isDemo }, h('option', { value: '' }, '— no unit'), units.map((u) => h('option', { value: u }, u))) : null;
   const add = () => {
+    if (isDemo) {
+      toast('This is a sample demo — you can\'t edit it. Try opening a new review.', 'error');
+      return;
+    }
     if (!input.value.trim()) return;
     store.update((s) => {
       s.findings.push(createFinding({ category: catSel.value, phase: phaseSel.value, unit: unitSel ? unitSel.value : '', text: input.value.trim(), source: 'manual' }));
@@ -178,7 +196,7 @@ function quickAdd(phases, units) {
     toast('Finding added');
   };
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
-  return h('div', { class: 'quick-add' }, input, catSel, phaseSel, unitSel, h('button', { class: 'btn btn--primary', onclick: add }, 'Add'));
+  return h('div', { class: 'quick-add' }, input, catSel, phaseSel, unitSel, h('button', { class: 'btn btn--primary', disabled: isDemo, onclick: add }, 'Add'));
 }
 
 /**

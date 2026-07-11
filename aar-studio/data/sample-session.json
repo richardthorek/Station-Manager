@@ -1,26 +1,27 @@
 {
-  "id": "sample-wamboin-2026",
+  "id": "sample-demo-2026",
   "schemaVersion": 1,
   "createdAt": "2026-06-12T09:05:00.000Z",
   "updatedAt": "2026-06-12T10:02:00.000Z",
+  "isDemo": true,
   "incident": {
-    "title": "Wamboin Structure Fire — 412 Macs Reef Road",
+    "title": "Example: Rural Structure Fire — Long Driveway Access",
     "date": "2026-06-06",
-    "location": "412 Macs Reef Road, Wamboin NSW",
+    "location": "Rural property with challenging access (sample data)",
     "type": "Structure Fire"
   },
   "aar": {
     "date": "2026-06-12",
-    "location": "Bungendore Station",
-    "facilitator": "Duty Officer (unclear)"
+    "location": "Example Station",
+    "facilitator": "Example Facilitator"
   },
   "units": [
-    { "unit": "Wamboin", "role": "First on scene — pump, initial attack" },
-    { "unit": "Jerrabomberra Creek", "role": "Relief truck — overnight overhaul & watching" },
-    { "unit": "Queanbeyan / Ridgeway / Bungendore", "role": "BA crews, suppression, water shuttle" },
-    { "unit": "Support Brigade", "role": "Logistics — BA cylinder resupply" },
-    { "unit": "Fire & Rescue NSW", "role": "Two appliances; interior crews under RFS control" },
-    { "unit": "Police / Essential Energy / FI", "role": "Scene control, power isolation, investigation" }
+    { "unit": "First Response", "role": "First on scene — pump, initial attack" },
+    { "unit": "Relief Unit", "role": "Relief truck — overnight overhaul & watching" },
+    { "unit": "Support Units", "role": "BA crews, suppression, water shuttle" },
+    { "unit": "Logistics Brigade", "role": "Logistics — BA cylinder resupply" },
+    { "unit": "Metro Fire Service", "role": "Two appliances; interior crews under state control" },
+    { "unit": "Support Agencies", "role": "Scene control, utilities, investigation" }
   ],
   "phases": ["Arrival", "Rescue", "Suppression", "Overhaul"],
   "currentPhase": "Overhaul",
@@ -60,8 +61,8 @@
     { "id": "f-016", "category": "didnt", "phase": "General", "text": "The BA cylinder refurbishment program plus the long weekend left no refill capacity until Tuesday — pre-notice logistics on any confirmed structure fire.", "quote": "", "segmentIds": [], "source": "manual", "createdAt": "2026-06-12T09:22:00.000Z" }
   ],
   "report": {
-    "headline": "Wamboin Structure Fire — 412 Macs Reef Road",
-    "contextBar": "The property: rural block up a medium–long driveway (~200 m) · steep terrain, sharp drop-off on the western side · tight access, no vehicle route to the rear · no mains water · shed uphill of the house, trees within 0.5 m",
+    "headline": "Example: Rural Structure Fire — Long Driveway Access",
+    "contextBar": "The property: rural block up a medium–long driveway (~200 m) · steep terrain, sharp drop-off on western side · tight access, no vehicle route to rear · no mains water · shed uphill of house, trees within 0.5 m",
     "stats": [
       { "value": "8", "label": "Appliances on initial dispatch" },
       { "value": "10", "label": "BA operators at peak" },

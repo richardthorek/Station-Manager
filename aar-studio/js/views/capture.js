@@ -84,33 +84,40 @@ let pendingAutoStart = null;
 export function requestAutoStart(kind = 'mic') { pendingAutoStart = kind; }
 
 function ingestPaste(textarea) {
+  const session = store.getSession();
+  if (session.isDemo) {
+    toast(‘This is a sample demo — you can\’t add new content. Try opening a new review.’, ‘error’);
+    return;
+  }
   const raw = textarea.value;
   if (!raw.trim()) {
-    toast('Paste a transcript first', 'error');
+    toast(‘Paste a transcript first’, ‘error’);
     return;
   }
   const { format, rows } = parseTranscript(raw);
   if (!rows.length) {
-    toast('Couldn’t find any conversation in that text', 'error');
+    toast(‘Couldn’t find any conversation in that text’, ‘error’);
     return;
   }
   store.update((s) => {
     for (const row of rows) {
-      s.segments.push(createSegment({ t: row.t, speaker: row.speaker, text: row.text, phase: GENERAL_PHASE, source: 'paste' }));
+      s.segments.push(createSegment({ t: row.t, speaker: row.speaker, text: row.text, phase: GENERAL_PHASE, source: ‘paste’ }));
     }
-  }, { reason: 'segments' });
-  textarea.value = '';
+  }, { reason: ‘segments’ });
+  textarea.value = ‘’;
   toast(`Added ${rows.length} line(s) (${format})`);
   analyseNow(null, { quiet: true });
 }
 
 function audioPanel() {
+  const session = store.getSession();
   const ls = live.getState();
-  const findingCount = store.getSession().findings.length;
+  const findingCount = session.findings.length;
 
   const startBtn = (kind, primary = false) => h('button', {
     class: `btn ${primary ? 'btn--primary btn--hero' : 'btn--big'}`,
-    disabled: ls.status !== 'idle',
+    disabled: ls.status !== 'idle' || session.isDemo,
+    title: session.isDemo ? 'Recording is disabled in the sample demo' : '',
     onclick: kind === 'file'
       ? async () => { const file = await pickFile('audio/*'); if (file) live.start('file', { file }); }
       : () => live.start(kind, { backup: true }),
