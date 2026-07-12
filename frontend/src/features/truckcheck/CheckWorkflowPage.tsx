@@ -732,8 +732,9 @@ function CheckItemCard({ item, itemIcon, isActive, result, onResult, onPhotoClic
         </div>
         <p className="item-description">{item.description}</p>
         
-        {/* Reference photo if available */}
-        {item.referencePhotoUrl ? (
+        {/* Reference photo if available — no placeholder when there isn't one:
+            an empty dashed box on every card just adds bulk to the walk-around. */}
+        {item.referencePhotoUrl && (
           <div className="reference-photo">
             <button
               className="photo-button"
@@ -746,11 +747,6 @@ function CheckItemCard({ item, itemIcon, isActive, result, onResult, onPhotoClic
               </div>
             </button>
             <p className="photo-caption">Reference Photo (click to enlarge)</p>
-          </div>
-        ) : (
-          <div className="reference-photo-placeholder">
-            <div className="photo-icon"><Camera size={28} strokeWidth={2} aria-hidden /></div>
-            <p className="photo-text">No reference photo available</p>
           </div>
         )}
         

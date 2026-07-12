@@ -278,15 +278,22 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible {
 @keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 .live__state { font-weight: 700; }
 .live__elapsed { font-family: ui-monospace, Consolas, monospace; color: var(--muted); }
-.meter {
-  flex: 1; min-width: 120px; max-width: 320px; height: 12px;
-  background: #e8edf1; border-radius: 999px; overflow: hidden;
+/* Live waveform — a rolling history of real input levels. Each bar scales
+   from a resting stub to full height via --l (0..1), set directly by the
+   capture view on every audio frame. Transform-only, so it stays cheap. */
+.wave {
+  flex: 1; min-width: 140px; max-width: 340px; height: 34px;
+  display: flex; align-items: center; gap: 3px;
 }
-.meter__bar {
-  --level: 0;
-  height: 100%; width: calc(var(--level) * 100%);
-  background: linear-gradient(90deg, var(--good), var(--gold) 70%, var(--red));
-  transition: width 80ms linear;
+.wave__bar {
+  --l: 0;
+  flex: 1; min-width: 3px; height: 100%;
+  border-radius: 999px;
+  background: var(--red);
+  opacity: calc(0.35 + var(--l) * 0.6);
+  transform: scaleY(calc(0.12 + var(--l) * 0.88));
+  transform-origin: center;
+  transition: transform 90ms linear, opacity 90ms linear;
 }
 .live__interim { min-height: 1.5em; margin-top: 0.6rem; color: var(--muted); font-style: italic; }
 .live__error { color: var(--red); font-weight: 600; }
