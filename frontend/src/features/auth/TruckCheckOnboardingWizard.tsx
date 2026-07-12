@@ -287,8 +287,10 @@ export function TruckCheckOnboardingWizard() {
                 <fieldset className="vehicles-grid">
                   <legend>Which vehicles do you operate? (select at least one)</legend>
                   {VEHICLE_TEMPLATES.map((vehicle) => (
-                    <label key={vehicle.id} className="vehicle-option">
+                    // eslint-disable-next-line jsx-a11y/label-has-associated-control
+                    <label key={vehicle.id} className="vehicle-option" htmlFor={`vehicle-${vehicle.id}`}>
                       <input
+                        id={`vehicle-${vehicle.id}`}
                         type="checkbox"
                         value={vehicle.id}
                         checked={selectedVehicles.has(vehicle.id)}
