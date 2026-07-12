@@ -82,7 +82,7 @@ Each suite app is gated by a dedicated boolean on `Entitlements`
 |---|---|---|
 | `aarStudioEnabled` | AAR Studio (`/aar`) | AI Pro |
 | `santaRunEnabled` | Fire Santa Run | reserved (no plan grants it yet) |
-| `fireBreakEnabled` | Fire Break Calculator | reserved (no plan grants it yet) |
+| `fireBreakEnabled` | Fire Break Calculator | Basic and AI Pro |
 
 Plan → entitlement mapping lives in `backend/src/constants/plans.ts`.
 `clampEntitlements()` guarantees an owner override can never enable a flag the

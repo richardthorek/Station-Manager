@@ -237,6 +237,18 @@ describe('Authentication Routes', () => {
       expect(res.body.planCode).toBe('community');
       expect(res.body.entitlements.signInEnabled).toBe(true);
       expect(res.body.entitlements.aarStudioEnabled).toBe(false);
+      expect(res.body.entitlements.fireBreakEnabled).toBe(false);
+    });
+
+    it('returns fireBreakEnabled=true for Basic-plan org', async () => {
+      const org = await orgDb.createOrganization({ name: 'Basic Org', billingEmail: 'b@x.com', planCode: 'basic' });
+      const token = jwt.sign({ userId: 'u4', username: 'u4', role: 'owner', organizationId: org.id }, JWT_SECRET, { expiresIn: '1h' });
+      const res = await request(app)
+        .get('/api/auth/entitlements')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.planCode).toBe('basic');
+      expect(res.body.entitlements.fireBreakEnabled).toBe(true);
     });
 
     it('returns aarStudioEnabled=true for AI-plan org', async () => {
@@ -249,6 +261,7 @@ describe('Authentication Routes', () => {
       expect(res.body.planCode).toBe('ai');
       expect(res.body.entitlements.aarStudioEnabled).toBe(true);
       expect(res.body.entitlements.aiEnabled).toBe(true);
+      expect(res.body.entitlements.fireBreakEnabled).toBe(true);
       expect(res.body.status).toBeDefined();
     });
   });

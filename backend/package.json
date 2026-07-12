@@ -16,6 +16,7 @@
     "purge:prod": "NODE_ENV=production PURGE_CONFIRM=YES ts-node src/scripts/purgeProdTestData.ts",
     "purge:prod:truck": "NODE_ENV=production PURGE_CONFIRM=YES PURGE_TRUCK_CHECKS=true ts-node src/scripts/purgeProdTestData.ts",
     "upload:csv": "ts-node src/scripts/uploadCsvToBlobStorage.ts",
+    "grant:firebreak": "NODE_ENV=production USE_TABLE_STORAGE=true ts-node src/scripts/grantFireBreakEntitlement.ts",
     "start": "node dist/index.js",
     "test": "NODE_ENV=test jest",
     "test:watch": "jest --watch",
