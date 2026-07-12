@@ -33,6 +33,23 @@ npm run seed:prod
 - `TABLE_STORAGE_TABLE_SUFFIX`: Optional table suffix (auto-set: 'Test' for test, 'Dev' for development)
 - `AZURE_STORAGE_CONNECTION_STRING`: Required for Table Storage
 
+### `grantFireBreakEntitlement.ts` - Fire Break Calculator entitlement backfill
+
+Grants `fireBreakEnabled` to existing organizations whose plan now includes it
+(Basic and AI Pro). Stored entitlements are a snapshot, so the plan-catalog
+change alone does not reach existing subscribers — run this once after
+deploying the plan change.
+
+```bash
+# Preview (dry run is the default)
+npm run grant:firebreak
+
+# Apply
+DRY_RUN=false npm run grant:firebreak
+```
+
+Requires `AZURE_STORAGE_CONNECTION_STRING` to reach the production store.
+
 ### `seedActivities.ts` - Legacy Activity Seeding
 
 Legacy script that seeds only activities. Use `seedDatabase.ts` for comprehensive seeding.

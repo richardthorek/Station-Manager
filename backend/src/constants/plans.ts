@@ -76,9 +76,9 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
       aiIncludedSessions: 0,
       aarStudioEnabled: false,
       santaRunEnabled: false,
-      fireBreakEnabled: false,
+      fireBreakEnabled: true,
     },
-    description: 'Full manual suite: sign-in, truck checks, reports & CSV export. Unlimited members & vehicles, multiple stations.',
+    description: 'Full manual suite: sign-in, truck checks, reports & CSV export, plus the Fire Break Calculator. Unlimited members & vehicles, multiple stations.',
   },
   ai: {
     code: 'ai',
@@ -99,7 +99,7 @@ export const PLANS: Record<PlanCode, PlanDefinition> = {
       aiIncludedSessions: 25, // fair-use allowance; overage metering is a future enhancement
       aarStudioEnabled: true,
       santaRunEnabled: false,
-      fireBreakEnabled: false,
+      fireBreakEnabled: true,
     },
     description: 'Everything in Basic plus AI-powered After Action Reviews via AAR Studio. ~25 sessions/month included.',
   },
