@@ -52,7 +52,7 @@ describe('TruckCheckOnboardingWizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
 
     await waitFor(() => {
-      expect(screen.getByText(/which agency or organisation/i)).toBeInTheDocument()
+      expect(screen.getByRole('radio', { name: /other/i })).toBeInTheDocument()
     })
   })
 
@@ -67,7 +67,7 @@ describe('TruckCheckOnboardingWizard', () => {
     fireEvent.click(screen.getByRole('radio', { name: /other/i }))
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/please specify your agency/i)).toBeInTheDocument()
+      expect(screen.getByPlaceholderText(/e\.g\. local volunteer/i)).toBeInTheDocument()
     })
   })
 
@@ -78,14 +78,14 @@ describe('TruckCheckOnboardingWizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
 
     await waitFor(() => {
-      expect(screen.getByText(/which agency or organisation/i)).toBeInTheDocument()
+      expect(screen.getByRole('radio', { name: /other/i })).toBeInTheDocument()
     })
 
     // Step 2: Select agency (NSW RFS is default)
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
 
     await waitFor(() => {
-      expect(screen.getByText(/which vehicles do you operate/i)).toBeInTheDocument()
+      expect(screen.getByRole('checkbox', { name: /cat 1 tanker/i })).toBeInTheDocument()
     })
   })
 
@@ -94,7 +94,7 @@ describe('TruckCheckOnboardingWizard', () => {
 
     // Navigate to vehicle selection step
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
-    await waitFor(() => screen.getByText(/which agency or organisation/i))
+    await waitFor(() => screen.getByRole('radio', { name: /other/i }))
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
 
     await waitFor(() => {
@@ -111,10 +111,10 @@ describe('TruckCheckOnboardingWizard', () => {
 
     // Navigate through steps
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
-    await waitFor(() => screen.getByText(/which agency or organisation/i))
+    await waitFor(() => screen.getByRole('radio', { name: /other/i }))
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
 
-    await waitFor(() => screen.getByText(/which vehicles do you operate/i))
+    await waitFor(() => screen.getByRole('checkbox', { name: /cat 1 tanker/i }))
     fireEvent.click(screen.getByRole('checkbox', { name: /cat 1 tanker/i }))
     fireEvent.click(screen.getByRole('button', { name: /review/i }))
 
@@ -127,10 +127,10 @@ describe('TruckCheckOnboardingWizard', () => {
     renderWizard()
 
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
-    await waitFor(() => screen.getByText(/which agency or organisation/i))
+    await waitFor(() => screen.getByRole('radio', { name: /other/i }))
 
     fireEvent.click(screen.getByRole('button', { name: /back/i }))
-    await waitFor(() => screen.getByText(/where does your brigade operate/i))
+    await waitFor(() => screen.getByRole('radio', { name: /new south wales/i }))
   })
 
   it('shows error when no vehicles are selected', async () => {
@@ -138,10 +138,10 @@ describe('TruckCheckOnboardingWizard', () => {
 
     // Navigate to vehicle selection step
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
-    await waitFor(() => screen.getByText(/which agency or organisation/i))
+    await waitFor(() => screen.getByRole('radio', { name: /other/i }))
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
 
-    await waitFor(() => screen.getByText(/which vehicles do you operate/i))
+    await waitFor(() => screen.getByRole('checkbox', { name: /cat 1 tanker/i }))
 
     // Try to review without selecting vehicles
     fireEvent.click(screen.getByRole('button', { name: /review/i }))
@@ -157,9 +157,9 @@ describe('TruckCheckOnboardingWizard', () => {
 
     // Navigate to confirmation
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
-    await waitFor(() => screen.getByText(/which agency or organisation/i))
+    await waitFor(() => screen.getByRole('radio', { name: /other/i }))
     fireEvent.click(screen.getByRole('button', { name: /next/i }))
-    await waitFor(() => screen.getByText(/which vehicles do you operate/i))
+    await waitFor(() => screen.getByRole('checkbox', { name: /cat 1 tanker/i }))
     fireEvent.click(screen.getByRole('checkbox', { name: /cat 1 tanker/i }))
     fireEvent.click(screen.getByRole('button', { name: /review/i }))
 
