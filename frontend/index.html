@@ -69,8 +69,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Public+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     
-    <!-- Analytics -->
-    <script type="text/javascript" src="/clarity.js"></script>
+    <!-- Analytics — deferred so it never blocks first paint on kiosk tablets -->
+    <script type="text/javascript" src="/clarity.js" defer></script>
   </head>
   <body>
     <div id="root"></div>

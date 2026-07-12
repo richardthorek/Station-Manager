@@ -16,6 +16,7 @@ import { Link } from 'react-router-dom';
 import { Moon, Sun, Flame, Mic, Heart } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { PageTransition } from '../../components/PageTransition';
+import { ShowcaseSection } from './showcase/ShowcaseSection';
 import './MarketingPage.css';
 
 type BillingInterval = 'monthly' | 'annual';
@@ -216,6 +217,9 @@ export function MarketingPage() {
               </article>
             </div>
           </section>
+
+          {/* Live demos — screen-recording-style showcase of each module */}
+          <ShowcaseSection />
 
           {/* Pricing */}
           <section id="pricing" className="mkt-pricing" aria-labelledby="pricing-heading">

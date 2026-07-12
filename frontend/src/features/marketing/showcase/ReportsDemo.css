@@ -1,0 +1,180 @@
+/* ReportsDemo — dashboard-loading recording on the marketing showcase */
+
+.reports-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+}
+
+.reports-demo__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.reports-demo__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.reports-demo__export {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-info-strong);
+  background: var(--surface-info);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-full);
+}
+
+.reports-demo__kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.reports-demo__kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-color);
+}
+
+.reports-demo__kpi-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.reports-demo__kpi-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.reports-demo__chart-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.reports-demo__chart-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.reports-demo__chart {
+  flex: 1;
+  min-height: 150px;
+  display: flex;
+  align-items: stretch;
+  gap: 0.625rem;
+  padding: 0 0.25rem;
+}
+
+.reports-demo__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.reports-demo__bar-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.reports-demo__bar {
+  width: 100%;
+  max-width: 44px;
+  border-radius: 4px 4px 0 0;
+  background: var(--ui-blue);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  cursor: default;
+}
+
+.reports-demo__bar--peak {
+  background: var(--text-info-strong);
+}
+
+.reports-demo__chart--grown .reports-demo__bar {
+  transform: scaleY(1);
+}
+
+/* Stagger the grow left-to-right so the chart "loads". */
+.reports-demo__col:nth-child(2) .reports-demo__bar { transition-delay: 0.08s; }
+.reports-demo__col:nth-child(3) .reports-demo__bar { transition-delay: 0.16s; }
+.reports-demo__col:nth-child(4) .reports-demo__bar { transition-delay: 0.24s; }
+.reports-demo__col:nth-child(5) .reports-demo__bar { transition-delay: 0.32s; }
+.reports-demo__col:nth-child(6) .reports-demo__bar { transition-delay: 0.4s; }
+
+.reports-demo__tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--rfs-neutral-dark);
+  color: var(--rfs-white);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 2;
+}
+
+.reports-demo__bar:hover .reports-demo__tooltip,
+.reports-demo__bar:focus-visible .reports-demo__tooltip {
+  opacity: 1;
+}
+
+.reports-demo__bar:focus-visible {
+  outline: 2px solid var(--rfs-core-red);
+  outline-offset: 2px;
+}
+
+.reports-demo__axis-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reports-demo__bar {
+    transition: none;
+    transform: scaleY(1);
+  }
+}

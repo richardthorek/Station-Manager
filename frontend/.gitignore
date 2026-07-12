@@ -25,3 +25,6 @@ dev-dist
 *.njsproj
 *.sln
 *.sw?
+
+# Bundle analyzer report (rollup-plugin-visualizer)
+bundle-stats.html

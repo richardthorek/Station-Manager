@@ -247,9 +247,25 @@ app.use(requestIdMiddleware); // Add unique request ID to each request
 app.use(requestLoggingMiddleware); // Log all HTTP requests and responses
 app.use(kioskModeMiddleware); // Detect and validate kiosk mode from brigade token
 
-// Serve static files from frontend build (for production)
+// Serve static files from frontend build (for production).
+// Vite emits content-hashed filenames under /assets, so those are immutable —
+// let browsers and the kiosk tablets cache them for a year instead of
+// revalidating every asset on each load. Everything else (index.html, sw.js,
+// manifest, icons) keeps no-cache/short caching so app updates roll out
+// promptly via the usual SW update flow.
 const frontendPath = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(frontendPath));
+app.use(express.static(frontendPath, {
+  setHeaders: (res, filePath) => {
+    if (/[\\/]assets[\\/]/.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (filePath.endsWith('.html') || filePath.endsWith('sw.js') || filePath.endsWith('.webmanifest') || filePath.endsWith('manifest.json')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else {
+      // Icons, robots.txt, workbox runtime, etc — cache for a day.
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  },
+}));
 
 // Serve the AAR Studio companion app (a no-build vanilla static bundle) as part
 // of this single App Service deployment, reachable from the app picker at /aar.
@@ -578,6 +594,9 @@ io.on('connection', (socket: SocketWithStation) => {
 // Exclude /assets/* (frontend static assets) and /aar/* (the AAR Studio sub-app,
 // served above) so neither gets the React index.html.
 app.get(/^\/(?!api|assets|aar).*/, spaRateLimiter, (req, res) => {
+  // The SPA shell must never be cached hard — a stale index.html would point
+  // at purged hashed assets after the next deploy.
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
