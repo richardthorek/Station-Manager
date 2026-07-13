@@ -59,6 +59,7 @@ const PLAN_CARDS: PlanCard[] = [
       'Everything in Community',
       'Unlimited members & vehicles',
       'Reports & history + CSV export',
+      'Fire Break Calculator',
       'Multiple stations',
     ],
     cta: 'Get Basic',
@@ -203,11 +204,13 @@ export function MarketingPage() {
                   findings, and hands you a finished report — no note-taker needed.
                 </p>
               </article>
-              <article className="mkt-app-card mkt-app-card--soon">
+              <article className="mkt-app-card">
                 <div className="mkt-app-icon" aria-hidden="true">📐</div>
                 <h3>Fire Break Calculator</h3>
-                <p>Plan and size containment lines. Coming to the kit soon.</p>
-                <span className="mkt-badge">Coming soon</span>
+                <p>
+                  Draw a containment line on the map and get grounded time,
+                  cost and resource estimates. Included with Basic and AI Pro.
+                </p>
               </article>
               <article className="mkt-app-card mkt-app-card--soon">
                 <div className="mkt-app-icon" aria-hidden="true">🎅</div>
