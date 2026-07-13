@@ -271,6 +271,10 @@ jobs:
           GIT_COMMIT_SHA: ${{ github.sha }}
           GIT_COMMIT_SHORT: ${{ github.sha }}
           BUILD_TIMESTAMP: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          # Suite sibling-app URLs baked into the frontend build (empty falls
+          # back to the defaults in frontend/src/config/suiteApps.ts).
+          VITE_FIREBREAK_URL: ${{ vars.VITE_FIREBREAK_URL }}
+          VITE_SANTA_RUN_URL: ${{ vars.VITE_SANTA_RUN_URL }}
         run: |
           # Set short commit SHA (first 7 characters)
           export GIT_COMMIT_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
