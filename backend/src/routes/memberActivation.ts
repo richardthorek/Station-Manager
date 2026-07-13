@@ -10,10 +10,9 @@ import { ensureAdminUserDatabase } from '../services/adminUserDbFactory';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { ensureOrgAccessDatabase } from '../services/orgAccessDbFactory';
 import { logger } from '../services/logger';
+import { isValidEmail } from '../utils/emailValidation';
 
 const router = Router();
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // GET /api/members/activate/:token — validate token and return member name for the form
 router.get('/activate/:token', async (req: Request, res: Response) => {
@@ -71,7 +70,7 @@ router.post('/activate/:token', async (req: Request, res: Response) => {
     }
     // Email is preferred but tolerated absent for legacy invite flows; when
     // supplied it must be valid. The invite's recorded email is the fallback.
-    if (email !== undefined && (typeof email !== 'string' || !EMAIL_RE.test(email))) {
+    if (email !== undefined && !isValidEmail(email)) {
       return res.status(400).json({ error: 'A valid email address is required' });
     }
 

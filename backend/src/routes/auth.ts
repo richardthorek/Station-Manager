@@ -24,6 +24,7 @@ import { isPlatformAdmin } from '../middleware/platformAdmin';
 import { logger } from '../services/logger';
 import { authMiddleware } from '../middleware/auth';
 import { sensitiveActionRateLimiter } from '../middleware/rateLimiter';
+import { isValidEmail } from '../utils/emailValidation';
 import type { AdminUser, FacilityServiceType } from '../types';
 import type { CreateOrganizationInput } from '../services/organizationDatabase';
 
@@ -32,8 +33,6 @@ const router = Router();
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '24h';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Canonical blocked-claim message — the frontend renders this verbatim. */
 export const FACILITY_ALREADY_CLAIMED_MESSAGE =
@@ -75,7 +74,7 @@ router.post('/signup', sensitiveActionRateLimiter, async (req: Request, res: Res
     if (typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
-    if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ error: 'A valid email address is required' });
     }
 
@@ -424,7 +423,7 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { email } = req.body ?? {};
-    if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ error: 'A valid email address is required' });
     }
     const adminDb = getAdminDb();

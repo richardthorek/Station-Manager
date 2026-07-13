@@ -18,11 +18,10 @@ import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { getAdminDb } from '../services/adminUserDbFactory';
 import { signToken } from './auth';
 import { logger } from '../services/logger';
+import { isValidEmail } from '../utils/emailValidation';
 import type { OrgInvite } from '../types';
 
 const router = Router();
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Load a usable invite or send the right error (404 unknown, 410 dead). */
 async function loadUsableInvite(token: string, res: Response): Promise<OrgInvite | null> {
@@ -107,7 +106,7 @@ router.post('/:token/signup', sensitiveActionRateLimiter, async (req: Request, r
     if (!password || typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
-    if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ error: 'A valid email address is required' });
     }
 

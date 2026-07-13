@@ -14,6 +14,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
+import { isValidEmail } from '../../utils/emailValidation';
 import './ActivatePage.css';
 
 export function OrgInvitePage() {
@@ -76,7 +77,7 @@ export function OrgInvitePage() {
       setFormError('Username must be at least 3 characters.');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!isValidEmail(email.trim())) {
       setFormError('A valid email address is required.');
       return;
     }

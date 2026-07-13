@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { isValidEmail } from '../../utils/emailValidation';
 import './ActivatePage.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
@@ -49,7 +50,7 @@ export function ActivatePage() {
       setFormError('Username must be at least 3 characters.');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!isValidEmail(email.trim())) {
       setFormError('A valid email address is required.');
       return;
     }
