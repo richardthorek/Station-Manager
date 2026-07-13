@@ -7,14 +7,47 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import type { Organization, PlanCode, Entitlements } from '../types';
+import type { Organization, PlanCode, Entitlements, FacilityServiceType } from '../types';
 import { getDefaultEntitlements } from '../constants/plans';
 
 export interface CreateOrganizationInput {
   name: string;
   billingEmail: string;
   planCode?: PlanCode;
+  // Facility claim (org onboarding) — see the Organization type for semantics.
+  facilityKey?: string;
+  facilityObjectId?: string;
+  facilityServiceType?: FacilityServiceType;
+  facilityName?: string;
+  facilityState?: string;
+  facilityCustom?: boolean;
+  claimedByUserId?: string;
+  claimedAt?: Date;
 }
+
+/** Organization fields updatable via updateOrganization. */
+export type OrganizationUpdate = Partial<
+  Pick<
+    Organization,
+    | 'name'
+    | 'billingEmail'
+    | 'planCode'
+    | 'status'
+    | 'entitlements'
+    | 'stripeCustomerId'
+    | 'stripeSubscriptionId'
+    | 'trialEndsAt'
+    | 'aiBonusSessions'
+    | 'facilityKey'
+    | 'facilityObjectId'
+    | 'facilityServiceType'
+    | 'facilityName'
+    | 'facilityState'
+    | 'facilityCustom'
+    | 'claimedByUserId'
+    | 'claimedAt'
+  >
+>;
 
 /** Generate a url-safe slug from an organization name. */
 export function slugify(name: string): string {
@@ -32,11 +65,12 @@ export interface IOrganizationDatabase {
   createOrganization(input: CreateOrganizationInput): Promise<Organization>;
   getOrganizationById(id: string): Promise<Organization | null>;
   getOrganizationBySlug(slug: string): Promise<Organization | null>;
-  updateOrganization(
-    id: string,
-    updates: Partial<Pick<Organization, 'name' | 'billingEmail' | 'planCode' | 'status' | 'entitlements' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'trialEndsAt' | 'aiBonusSessions'>>,
-  ): Promise<Organization | null>;
+  updateOrganization(id: string, updates: OrganizationUpdate): Promise<Organization | null>;
   getAllOrganizations(): Promise<Organization[]>;
+  /** All orgs holding a given Digital Atlas facility key (should be 0 or 1). */
+  getOrganizationsByFacilityKey(facilityKey: string): Promise<Organization[]>;
+  /** Every claimed facility key — used by the public lookup's claimed badge. */
+  getAllFacilityKeys(): Promise<Set<string>>;
   clear(): Promise<void>;
 }
 
@@ -63,6 +97,14 @@ export class OrganizationDatabase implements IOrganizationDatabase {
       planCode,
       status: planCode === 'community' ? 'active' : 'trialing',
       entitlements: getDefaultEntitlements(planCode),
+      facilityKey: input.facilityKey,
+      facilityObjectId: input.facilityObjectId,
+      facilityServiceType: input.facilityServiceType,
+      facilityName: input.facilityName,
+      facilityState: input.facilityState,
+      facilityCustom: input.facilityCustom,
+      claimedByUserId: input.claimedByUserId,
+      claimedAt: input.claimedAt,
       createdAt: now,
       updatedAt: now,
     };
@@ -80,10 +122,7 @@ export class OrganizationDatabase implements IOrganizationDatabase {
     return this.orgsBySlug.get(slug) ?? null;
   }
 
-  async updateOrganization(
-    id: string,
-    updates: Partial<Pick<Organization, 'name' | 'billingEmail' | 'planCode' | 'status' | 'entitlements' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'trialEndsAt' | 'aiBonusSessions'>>,
-  ): Promise<Organization | null> {
+  async updateOrganization(id: string, updates: OrganizationUpdate): Promise<Organization | null> {
     const org = this.orgs.get(id);
     if (!org) return null;
 
@@ -96,6 +135,18 @@ export class OrganizationDatabase implements IOrganizationDatabase {
 
   async getAllOrganizations(): Promise<Organization[]> {
     return Array.from(this.orgs.values());
+  }
+
+  async getOrganizationsByFacilityKey(facilityKey: string): Promise<Organization[]> {
+    return Array.from(this.orgs.values()).filter((o) => o.facilityKey === facilityKey);
+  }
+
+  async getAllFacilityKeys(): Promise<Set<string>> {
+    const keys = new Set<string>();
+    for (const org of this.orgs.values()) {
+      if (org.facilityKey) keys.add(org.facilityKey);
+    }
+    return keys;
   }
 
   async clear(): Promise<void> {

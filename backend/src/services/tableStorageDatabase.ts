@@ -530,13 +530,14 @@ export class TableStorageDatabase {
 
   async updateMemberAuth(
     id: string,
-    updates: { authStatus?: Member['authStatus']; inviteToken?: string | null; inviteEmail?: string },
+    updates: { authStatus?: Member['authStatus']; inviteToken?: string | null; inviteEmail?: string; inviteOrganizationId?: string },
   ): Promise<Member | null> {
     try {
       const entity = await this.membersTable.getEntity<TableEntity>('Member', id);
       if (updates.authStatus !== undefined) entity.authStatus = updates.authStatus;
       if (updates.inviteToken !== undefined) entity.inviteToken = updates.inviteToken ?? '';
       if (updates.inviteEmail !== undefined) entity.inviteEmail = updates.inviteEmail;
+      if (updates.inviteOrganizationId !== undefined) entity.inviteOrganizationId = updates.inviteOrganizationId;
       entity.updatedAt = new Date().toISOString();
       await this.membersTable.updateEntity(entity, 'Replace');
       return this.entityToMember(entity);
@@ -583,6 +584,7 @@ export class TableStorageDatabase {
       authStatus: (entity.authStatus as Member['authStatus']) || undefined,
       inviteToken: (entity.inviteToken as string) || undefined,
       inviteEmail: (entity.inviteEmail as string) || undefined,
+      inviteOrganizationId: (entity.inviteOrganizationId as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };

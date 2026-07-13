@@ -1620,6 +1620,7 @@ class ApiService {
     username: string;
     password: string;
     role: 'owner' | 'admin' | 'viewer';
+    email?: string;
   }): Promise<{ user: OrganizationUser }> {
     const response = await fetch(`${API_BASE_URL}/organizations/current/users`, {
       method: 'POST',
@@ -1700,6 +1701,206 @@ class ApiService {
     const data = await response.json();
     return data.turns;
   }
+
+  // ============================================
+  // Facility lookup (org onboarding) — public
+  // ============================================
+
+  /** GET /api/facilities/lookup — public, used by the signup facility-search step. */
+  async lookupFacilities(params: {
+    q?: string;
+    serviceType?: FacilityServiceType;
+    state?: string;
+    lat?: number;
+    lon?: number;
+    limit?: number;
+  }): Promise<{ results: FacilitySearchResult[]; count: number }> {
+    const search = new URLSearchParams();
+    if (params.q) search.set('q', params.q);
+    if (params.serviceType) search.set('serviceType', params.serviceType);
+    if (params.state) search.set('state', params.state);
+    if (params.lat !== undefined) search.set('lat', params.lat.toString());
+    if (params.lon !== undefined) search.set('lon', params.lon.toString());
+    if (params.limit !== undefined) search.set('limit', params.limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/facilities/lookup?${search}`);
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Facility lookup failed');
+    }
+    return response.json();
+  }
+
+  // ============================================
+  // Organization invites & membership (multi-org)
+  // ============================================
+
+  async getOrgInvites(): Promise<{ invites: OrgInvite[] }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current/invites`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to load invites');
+    return response.json();
+  }
+
+  async createOrgInvite(input: {
+    role: 'owner' | 'admin' | 'viewer';
+    email?: string;
+    expiresInDays?: number;
+  }): Promise<{ invite: OrgInvite; inviteUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current/invites`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create invite');
+    }
+    return response.json();
+  }
+
+  async revokeOrgInvite(inviteId: string): Promise<{ invite: OrgInvite }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current/invites/${inviteId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to revoke invite');
+    }
+    return response.json();
+  }
+
+  async getOrgMembers(): Promise<{ members: OrgMember[] }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current/members`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to load members');
+    return response.json();
+  }
+
+  async updateOrgMemberRole(userId: string, role: 'owner' | 'admin' | 'viewer'): Promise<{ membership: OrganizationMembership }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current/members/${userId}`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ role }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to update member role');
+    }
+    return response.json();
+  }
+
+  async removeOrgMember(userId: string): Promise<{ success: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current/members/${userId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to remove member');
+    }
+    return response.json();
+  }
+
+  /** GET /api/org-invites/:token — public invite preview. */
+  async getInviteInfo(token: string): Promise<{ organizationName: string; role: string; expiresAt: string }> {
+    const response = await fetch(`${API_BASE_URL}/org-invites/${token}`);
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Invite not found');
+    }
+    return response.json();
+  }
+
+  /** POST /api/org-invites/:token/accept — signed-in user joins the org. */
+  async acceptInvite(token: string): Promise<{ membership: OrganizationMembership; memberships: OrganizationMembership[] }> {
+    const response = await fetch(`${API_BASE_URL}/org-invites/${token}/accept`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to accept invite');
+    }
+    return response.json();
+  }
+
+  /** POST /api/org-invites/:token/signup — new account created directly into the org. */
+  async signupViaInvite(
+    token: string,
+    input: { username: string; password: string; email: string },
+  ): Promise<{ token: string; user: OrganizationUser; organization: Organization }> {
+    const response = await fetch(`${API_BASE_URL}/org-invites/${token}/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to sign up via invite');
+    }
+    return response.json();
+  }
+
+  /** POST /api/auth/switch-org — re-issues the JWT scoped to a different org the user belongs to. */
+  async switchOrg(organizationId: string): Promise<{ token: string; user: OrganizationUser; organization: Organization }> {
+    const response = await fetch(`${API_BASE_URL}/auth/switch-org`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ organizationId }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to switch organisation');
+    }
+    return response.json();
+  }
+
+  /** PUT /api/auth/profile — legacy-account email backfill. */
+  async updateProfile(input: { email: string }): Promise<{ user: OrganizationUser }> {
+    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to update profile');
+    }
+    return response.json();
+  }
+
+  // ============================================
+  // Platform administration (claim conflicts)
+  // ============================================
+
+  async getClaimConflicts(status?: 'open' | 'resolved'): Promise<{ conflicts: ClaimConflict[] }> {
+    const search = status ? `?status=${status}` : '';
+    const response = await fetch(`${API_BASE_URL}/platform/claim-conflicts${search}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to load claim conflicts');
+    return response.json();
+  }
+
+  async resolveClaimConflict(
+    conflictId: string,
+    input: { resolution: 'dismissed' | 'contacted' | 'reassigned'; notes?: string; reassignToOrganizationId?: string },
+  ): Promise<{ conflict: ClaimConflict }> {
+    const response = await fetch(`${API_BASE_URL}/platform/claim-conflicts/${conflictId}/resolve`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to resolve conflict');
+    }
+    return response.json();
+  }
 }
 
 export interface PlanDefinition {
@@ -1743,6 +1944,81 @@ export interface AgentTurnSummary {
   role: 'user' | 'agent' | 'system' | 'tool';
   text?: string;
   sequence: number;
+}
+
+// ============================================
+// Org onboarding: facility lookup, invites, membership
+// ============================================
+
+export type FacilityServiceType = 'rural-fire' | 'metro-fire' | 'ses' | 'ambulance' | 'police' | 'other';
+
+export interface FacilitySearchResult {
+  facilityKey: string;
+  objectid: string;
+  serviceType: FacilityServiceType;
+  name: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+  latitude: number;
+  longitude: number;
+  operationalStatus: string;
+  claimed: boolean;
+  distance?: number;
+}
+
+/** Selected/claimed facility, or a custom/unlisted unit — sent to POST /api/auth/signup. */
+export type FacilitySelection =
+  | { facilityKey: string }
+  | { custom: { name: string; serviceType: FacilityServiceType; suburb?: string; state?: string; postcode?: string } };
+
+export interface OrgInvite {
+  id: string;
+  token: string;
+  organizationId: string;
+  role: 'owner' | 'admin' | 'viewer';
+  email?: string;
+  expiresAt: string;
+  status: 'active' | 'revoked' | 'expired';
+  usageCount: number;
+  createdBy: string;
+  createdAt: string;
+  inviteUrl?: string;
+}
+
+export interface OrgMember {
+  userId: string;
+  username: string;
+  email: string | null;
+  role: 'owner' | 'admin' | 'viewer';
+  status: string;
+  lastLoginAt?: string;
+  createdAt: string;
+}
+
+export interface OrganizationMembership {
+  id: string;
+  userId: string;
+  organizationId: string;
+  role: 'owner' | 'admin' | 'viewer';
+  status: 'active' | 'removed';
+}
+
+export interface ClaimConflict {
+  id: string;
+  facilityKey: string;
+  facilityName: string;
+  existingOrganizationId: string;
+  existingOrganization?: { id: string; name: string; slug: string; billingEmail: string } | null;
+  attemptedOrgName: string;
+  attemptedByUsername: string;
+  attemptedByEmail: string;
+  status: 'open' | 'resolved';
+  resolution?: 'dismissed' | 'reassigned' | 'contacted';
+  resolutionNotes?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  createdAt: string;
 }
 
 export const api = new ApiService();

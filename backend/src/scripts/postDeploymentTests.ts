@@ -423,6 +423,31 @@ async function testFrontendLoads(): Promise<void> {
 }
 
 /**
+ * Functional Test: Facility lookup endpoint (org onboarding).
+ * Public — either 200 (results, possibly empty) or 503 (snapshot not yet
+ * uploaded to blob storage; see backend/src/scripts/README.md). Never a
+ * 4xx/5xx that would indicate the route isn't mounted.
+ */
+async function testFacilityLookup(): Promise<void> {
+  const response = await makeRequest(`${APP_URL}/api/facilities/lookup?q=fire`);
+
+  if (response.statusCode !== 200 && response.statusCode !== 503) {
+    throw new Error(`Expected 200 or 503, got ${response.statusCode}`);
+  }
+}
+
+/**
+ * Functional Test: Public org-invite lookup returns 404 for an unknown token.
+ */
+async function testOrgInviteUnknownToken(): Promise<void> {
+  const response = await makeRequest(`${APP_URL}/api/org-invites/unknown-token-smoke-test`);
+
+  if (response.statusCode !== 404) {
+    throw new Error(`Expected 404 for an unknown invite token, got ${response.statusCode}`);
+  }
+}
+
+/**
  * Functional Test 7: Rate Limiting Check
  */
 async function testRateLimiting(): Promise<void> {
@@ -484,6 +509,8 @@ async function runTests(): Promise<void> {
     await test('Activities API', testGetActivities);
     await test('Members API', testGetMembers);
     await test('Check-ins API', testGetCheckins);
+    await test('Facility lookup API', testFacilityLookup);
+    await test('Org invite unknown token', testOrgInviteUnknownToken);
     await test('Frontend SPA loads', testFrontendLoads);
     await test('Rate limiting', testRateLimiting);
 

@@ -4,10 +4,23 @@ import { MemoryRouter } from 'react-router-dom';
 import { AdminNav } from './AdminNav';
 
 const logout = vi.fn();
+const switchOrg = vi.fn();
 let user: { username: string } | null = { username: 'captain' };
+let isPlatformAdmin = false;
 
 vi.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({ user, logout }),
+  useAuth: () => ({
+    user,
+    logout,
+    isPlatformAdmin,
+    organization: null,
+    memberships: [],
+    switchOrg,
+  }),
+}));
+
+vi.mock('../hooks/useToast', () => ({
+  useToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
 }));
 
 function renderNav(path = '/admin/stations') {
@@ -22,6 +35,7 @@ describe('AdminNav', () => {
   beforeEach(() => {
     logout.mockReset();
     user = { username: 'captain' };
+    isPlatformAdmin = false;
   });
 
   it('links to the app picker as home, not another admin page', () => {
@@ -47,5 +61,14 @@ describe('AdminNav', () => {
     user = null;
     renderNav();
     expect(screen.queryByRole('button', { name: /sign out/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the Platform link only for platform admins', () => {
+    renderNav();
+    expect(screen.queryByRole('link', { name: 'Platform' })).not.toBeInTheDocument();
+
+    isPlatformAdmin = true;
+    renderNav();
+    expect(screen.getByRole('link', { name: 'Platform' })).toBeInTheDocument();
   });
 });

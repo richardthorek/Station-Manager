@@ -27,17 +27,37 @@ vi.mock('../../utils/onboardingUtils', () => ({
   markTruckCheckOnboardingComplete: vi.fn(),
 }))
 
+// FacilitySearch does its own debounced API lookups — stub it with a simple
+// button so signup-flow tests aren't coupled to that behaviour (covered by
+// FacilitySearch.test.tsx).
+vi.mock('../../components/FacilitySearch', () => ({
+  FacilitySearch: ({ onSelect }: { onSelect: (selection: unknown, label: string) => void }) => (
+    <button type="button" onClick={() => onSelect({ facilityKey: 'rural-fire:101' }, 'Bungendore RFS — Bungendore, NSW')}>
+      Mock select facility
+    </button>
+  ),
+}))
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return { ...actual, useNavigate: () => navigate }
 })
 
-function renderPage() {
+function renderPage(initialEntries: string[] = ['/signup']) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <SignupPage />
     </MemoryRouter>,
   )
+}
+
+/** Fill step 1 and advance to step 2 (facility search). */
+function completeStepOne(overrides: { org?: string; email?: string; username?: string; password?: string } = {}) {
+  fireEvent.change(screen.getByLabelText(/brigade \/ organisation name/i), { target: { value: overrides.org ?? 'Bungendore RFS' } })
+  fireEvent.change(screen.getByLabelText(/your email/i), { target: { value: overrides.email ?? 'a@b.org' } })
+  fireEvent.change(screen.getByLabelText(/owner username/i), { target: { value: overrides.username ?? 'captain' } })
+  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: overrides.password ?? 'supersecret1' } })
+  fireEvent.click(screen.getByRole('button', { name: /next: find your station/i }))
 }
 
 describe('SignupPage', () => {
@@ -48,30 +68,48 @@ describe('SignupPage', () => {
     createCheckoutSession.mockReset()
   })
 
-  it('renders the sign-up form', () => {
+  it('renders step 1 of the sign-up form', () => {
     renderPage()
     expect(screen.getByRole('heading', { name: /sign up/i })).toBeInTheDocument()
+    expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/brigade \/ organisation name/i)).toBeInTheDocument()
   })
 
-  it('submits and navigates to the app picker on success (no billing intent)', async () => {
+  it('rejects a short password before advancing to step 2', () => {
+    renderPage()
+    completeStepOne({ password: 'short' })
+    expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument()
+    expect(screen.queryByText(/mock select facility/i)).not.toBeInTheDocument()
+  })
+
+  it('advances to step 2 and submits with the selected facility (no billing intent)', async () => {
     signup.mockResolvedValue(undefined)
     renderPage()
 
-    fireEvent.change(screen.getByLabelText(/brigade \/ organisation name/i), { target: { value: 'Bungendore RFS' } })
-    fireEvent.change(screen.getByLabelText(/contact \/ billing email/i), { target: { value: 'a@b.org' } })
-    fireEvent.change(screen.getByLabelText(/owner username/i), { target: { value: 'captain' } })
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'supersecret1' } })
-    fireEvent.click(screen.getByRole('button', { name: /create account/i }))
+    completeStepOne()
+    expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText(/mock select facility/i))
+    expect(screen.getByText(/selected:/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }))
 
     await waitFor(() => expect(signup).toHaveBeenCalledWith({
       organizationName: 'Bungendore RFS',
       billingEmail: 'a@b.org',
       username: 'captain',
       password: 'supersecret1',
+      email: 'a@b.org',
+      facility: { facilityKey: 'rural-fire:101' },
     }))
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }))
     expect(showSuccess).toHaveBeenCalled()
+  })
+
+  it('blocks submit on step 2 until a facility is selected', () => {
+    renderPage()
+    completeStepOne()
+    expect(screen.getByRole('button', { name: /^create account$/i })).toBeDisabled()
   })
 
   it('starts Stripe checkout when a paid plan is pre-selected', async () => {
@@ -85,16 +123,10 @@ describe('SignupPage', () => {
       value: { ...window.location, set href(v: string) { hrefSetter(v) } },
     })
 
-    render(
-      <MemoryRouter initialEntries={['/signup?plan=basic&interval=annual']}>
-        <SignupPage />
-      </MemoryRouter>,
-    )
+    renderPage(['/signup?plan=basic&interval=annual'])
 
-    fireEvent.change(screen.getByLabelText(/brigade \/ organisation name/i), { target: { value: 'Bungendore RFS' } })
-    fireEvent.change(screen.getByLabelText(/contact \/ billing email/i), { target: { value: 'a@b.org' } })
-    fireEvent.change(screen.getByLabelText(/owner username/i), { target: { value: 'captain' } })
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'supersecret1' } })
+    completeStepOne()
+    fireEvent.click(screen.getByText(/mock select facility/i))
     fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }))
 
     await waitFor(() => expect(createCheckoutSession).toHaveBeenCalledWith('basic', 'annual'))
@@ -106,30 +138,39 @@ describe('SignupPage', () => {
     signup.mockResolvedValue(undefined)
     createCheckoutSession.mockRejectedValue(new Error('Billing not configured'))
 
-    render(
-      <MemoryRouter initialEntries={['/signup?plan=ai']}>
-        <SignupPage />
-      </MemoryRouter>,
-    )
+    renderPage(['/signup?plan=ai'])
 
-    fireEvent.change(screen.getByLabelText(/brigade \/ organisation name/i), { target: { value: 'X RFS' } })
-    fireEvent.change(screen.getByLabelText(/contact \/ billing email/i), { target: { value: 'a@b.org' } })
-    fireEvent.change(screen.getByLabelText(/owner username/i), { target: { value: 'cap' } })
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'supersecret1' } })
+    completeStepOne({ org: 'X RFS', username: 'cap' })
+    fireEvent.click(screen.getByText(/mock select facility/i))
     fireEvent.click(screen.getByRole('button', { name: /continue to payment/i }))
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/admin/organization?billing=unavailable', { replace: true }))
   })
 
-  it('rejects a short password before calling signup', async () => {
+  it('shows the exact claim-conflict copy and lets the user pick a different facility', async () => {
+    signup.mockRejectedValue(new Error(
+      "This facility has already been claimed by another organisation. Discuss with your brigade members to get an invite link, or contact support — we've flagged this for review.",
+    ))
     renderPage()
-    fireEvent.change(screen.getByLabelText(/brigade \/ organisation name/i), { target: { value: 'X' } })
-    fireEvent.change(screen.getByLabelText(/contact \/ billing email/i), { target: { value: 'a@b.org' } })
-    fireEvent.change(screen.getByLabelText(/owner username/i), { target: { value: 'cap' } })
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'short' } })
-    fireEvent.click(screen.getByRole('button', { name: /create account/i }))
 
-    expect(await screen.findByText(/at least 8 characters/i)).toBeInTheDocument()
-    expect(signup).not.toHaveBeenCalled()
+    completeStepOne()
+    fireEvent.click(screen.getByText(/mock select facility/i))
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }))
+
+    expect(await screen.findByText(/already been claimed/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /choose a different facility/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /contact support/i })).toHaveAttribute('href', 'mailto:support@bushietools.com.au')
+
+    // Choosing a different facility clears the selection and disables submit again.
+    fireEvent.click(screen.getByRole('button', { name: /choose a different facility/i }))
+    expect(screen.getByRole('button', { name: /^create account$/i })).toBeDisabled()
+  })
+
+  it('supports going back to step 1 from step 2', () => {
+    renderPage()
+    completeStepOne()
+    fireEvent.click(screen.getByRole('button', { name: /^back$/i }))
+    expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/brigade \/ organisation name/i)).toHaveValue('Bungendore RFS')
   })
 })

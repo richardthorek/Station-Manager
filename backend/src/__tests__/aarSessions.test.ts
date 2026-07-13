@@ -56,6 +56,7 @@ describe('AAR Sessions', () => {
         billingEmail: `aar${userSeq}@rfs.org`,
         username: `owner${userSeq}`,
         password: 'supersecret1',
+        email: `aar${userSeq}@rfs.org`,
         ...overrides,
       });
     return res.body.token as string;

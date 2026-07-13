@@ -84,6 +84,12 @@ export interface Member<TDate = string> {
   inviteToken?: string;
   /** Email address the invite was sent to. */
   inviteEmail?: string;
+  /**
+   * Organization the invite was minted under (from the inviting admin's JWT),
+   * so activation attaches the new account to the right org instead of the
+   * legacy first-org fallback. Absent on invites generated before this field.
+   */
+  inviteOrganizationId?: string;
   createdAt: TDate;
   updatedAt: TDate;
 }

@@ -9,12 +9,13 @@
 import { TableClient, TableEntity, odata } from '@azure/data-tables';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './logger';
-import type { Organization, PlanCode, Entitlements, OrganizationStatus } from '../types';
+import type { Organization, PlanCode, Entitlements, OrganizationStatus, FacilityServiceType } from '../types';
 import { getDefaultEntitlements } from '../constants/plans';
 import {
   slugify,
   type IOrganizationDatabase,
   type CreateOrganizationInput,
+  type OrganizationUpdate,
 } from './organizationDatabase';
 
 function buildTableName(baseName: string): string {
@@ -39,6 +40,14 @@ interface OrganizationEntity extends TableEntity {
   stripeSubscriptionId?: string;
   trialEndsAt?: string;
   aiBonusSessions?: number;
+  facilityKey?: string;
+  facilityObjectId?: string;
+  facilityServiceType?: string;
+  facilityName?: string;
+  facilityState?: string;
+  facilityCustom?: boolean;
+  claimedByUserId?: string;
+  claimedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -82,6 +91,14 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       stripeSubscriptionId: org.stripeSubscriptionId,
       trialEndsAt: org.trialEndsAt?.toISOString(),
       aiBonusSessions: org.aiBonusSessions,
+      facilityKey: org.facilityKey,
+      facilityObjectId: org.facilityObjectId,
+      facilityServiceType: org.facilityServiceType,
+      facilityName: org.facilityName,
+      facilityState: org.facilityState,
+      facilityCustom: org.facilityCustom,
+      claimedByUserId: org.claimedByUserId,
+      claimedAt: org.claimedAt?.toISOString(),
       createdAt: org.createdAt.toISOString(),
       updatedAt: org.updatedAt.toISOString(),
     };
@@ -100,6 +117,14 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       stripeSubscriptionId: entity.stripeSubscriptionId,
       trialEndsAt: entity.trialEndsAt ? new Date(entity.trialEndsAt) : undefined,
       aiBonusSessions: entity.aiBonusSessions,
+      facilityKey: entity.facilityKey,
+      facilityObjectId: entity.facilityObjectId,
+      facilityServiceType: entity.facilityServiceType as FacilityServiceType | undefined,
+      facilityName: entity.facilityName,
+      facilityState: entity.facilityState,
+      facilityCustom: entity.facilityCustom,
+      claimedByUserId: entity.claimedByUserId,
+      claimedAt: entity.claimedAt ? new Date(entity.claimedAt) : undefined,
       createdAt: new Date(entity.createdAt),
       updatedAt: new Date(entity.updatedAt),
     };
@@ -124,6 +149,14 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       planCode,
       status: planCode === 'community' ? 'active' : 'trialing',
       entitlements: getDefaultEntitlements(planCode),
+      facilityKey: input.facilityKey,
+      facilityObjectId: input.facilityObjectId,
+      facilityServiceType: input.facilityServiceType,
+      facilityName: input.facilityName,
+      facilityState: input.facilityState,
+      facilityCustom: input.facilityCustom,
+      claimedByUserId: input.claimedByUserId,
+      claimedAt: input.claimedAt,
       createdAt: now,
       updatedAt: now,
     };
@@ -154,10 +187,7 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
     return null;
   }
 
-  async updateOrganization(
-    id: string,
-    updates: Partial<Pick<Organization, 'name' | 'billingEmail' | 'planCode' | 'status' | 'entitlements' | 'stripeCustomerId' | 'stripeSubscriptionId' | 'trialEndsAt' | 'aiBonusSessions'>>,
-  ): Promise<Organization | null> {
+  async updateOrganization(id: string, updates: OrganizationUpdate): Promise<Organization | null> {
     const existing = await this.getOrganizationById(id);
     if (!existing) return null;
     const updated: Organization = { ...existing, ...updates, updatedAt: new Date() };
@@ -172,6 +202,28 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       result.push(this.fromEntity(entity as OrganizationEntity));
     }
     return result;
+  }
+
+  async getOrganizationsByFacilityKey(facilityKey: string): Promise<Organization[]> {
+    const result: Organization[] = [];
+    const iterator = this.table.listEntities<OrganizationEntity>({
+      queryOptions: { filter: odata`facilityKey eq ${facilityKey}` },
+    });
+    for await (const entity of iterator) {
+      result.push(this.fromEntity(entity as OrganizationEntity));
+    }
+    return result;
+  }
+
+  async getAllFacilityKeys(): Promise<Set<string>> {
+    const keys = new Set<string>();
+    const iterator = this.table.listEntities<OrganizationEntity>({
+      queryOptions: { select: ['facilityKey'] },
+    });
+    for await (const entity of iterator) {
+      if (entity.facilityKey) keys.add(entity.facilityKey);
+    }
+    return keys;
   }
 
   async clear(): Promise<void> {

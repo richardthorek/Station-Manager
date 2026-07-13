@@ -43,7 +43,7 @@ export interface IDatabase {
   getMemberByInviteToken(token: string): Promise<Member | null | undefined> | Member | null | undefined;
   createMember(name: string, details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; membershipStartDate?: Date | null; stationId?: string }): Promise<Member> | Member;
   updateMember(id: string, name: string, rank?: string | null, membershipStartDate?: Date | null): Promise<Member | null | undefined> | Member | null | undefined;
-  updateMemberAuth(id: string, updates: { authStatus?: Member['authStatus']; inviteToken?: string | null; inviteEmail?: string }): Promise<Member | null | undefined> | Member | null | undefined;
+  updateMemberAuth(id: string, updates: { authStatus?: Member['authStatus']; inviteToken?: string | null; inviteEmail?: string; inviteOrganizationId?: string }): Promise<Member | null | undefined> | Member | null | undefined;
   deleteMember(id: string): Promise<Member | null> | Member | null;
   
   // Activities

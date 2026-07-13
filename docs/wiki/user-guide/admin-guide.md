@@ -8,10 +8,15 @@ Access**, and **Organization**.
 
 | Role | Who | Can do |
 |---|---|---|
-| **Owner** | Whoever created the organisation | Everything — plan, billing, users, plus all admin abilities |
+| **Owner** | Whoever claimed/created the organisation | Everything — plan, billing, users, plus all admin abilities |
 | **Admin** | Trusted brigade officers | Manage stations, members, vehicles, brigade access, resolve issues |
 | **Viewer** | Invited members | View their profile and brigade data; no management actions |
 | **Kiosk** | The station tablet (via brigade access token) | Sign-in book and truck-check actions — no admin pages |
+
+Roles are per-organisation — if you belong to more than one (see
+[Inviting members & multiple organisations](getting-started.md#inviting-members--multiple-organisations)),
+you can hold a different role in each, and a switcher next to your username
+lets you pick which one you're working in.
 
 ## Stations (`Admin → Stations`)
 
@@ -55,7 +60,13 @@ The owner's page for the business side:
 - **Modules** — toggle features on or off for your organisation (e.g. a
   maintenance-only brigade can turn the sign-in book off). Toggles above your
   plan's ceiling are rejected with a clear message.
-- **Users** — list and create owner/admin logins for the organisation.
+- **Members** — list of everyone in the organisation with their role; owners
+  and admins can change roles or remove someone (an organisation always keeps
+  at least one owner). You can also create a login directly with a username
+  and password.
+- **Invite links** — generate a shareable link (role + expiry) instead of
+  creating logins one by one — see
+  [Inviting members & multiple organisations](getting-started.md#inviting-members--multiple-organisations).
 - **AI usage meter** (AI Pro) — sessions used this month, your included
   allowance, and any bonus sessions. When you're low or out, a **"Buy more
   sessions"** button purchases a one-time top-up pack (bonus sessions don't

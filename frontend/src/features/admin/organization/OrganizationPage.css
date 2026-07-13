@@ -105,6 +105,21 @@
   font-size: inherit;
 }
 
+.org-email-banner-form {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.org-email-banner-form input {
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
 .org-interval-toggle {
   display: flex;
   gap: 0.5rem;

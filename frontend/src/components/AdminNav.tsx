@@ -10,6 +10,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { Flame } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { OrgSwitcher } from './OrgSwitcher';
 import './AdminNav.css';
 
 const ADMIN_LINKS = [
@@ -18,8 +19,11 @@ const ADMIN_LINKS = [
   { to: '/admin/organization', label: 'Organization' },
 ];
 
+const PLATFORM_ADMIN_LINK = { to: '/admin/platform', label: 'Platform' };
+
 export function AdminNav() {
-  const { user, logout } = useAuth();
+  const { user, logout, isPlatformAdmin } = useAuth();
+  const links = isPlatformAdmin ? [...ADMIN_LINKS, PLATFORM_ADMIN_LINK] : ADMIN_LINKS;
 
   return (
     <nav className="admin-nav" aria-label="Admin">
@@ -27,7 +31,7 @@ export function AdminNav() {
         <span aria-hidden="true"><Flame size={18} strokeWidth={2} /></span> Bushie Tools
       </Link>
       <div className="admin-nav__links">
-        {ADMIN_LINKS.map((link) => (
+        {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
@@ -37,6 +41,7 @@ export function AdminNav() {
           </NavLink>
         ))}
       </div>
+      <OrgSwitcher />
       {user && (
         <div className="admin-nav__user">
           <span className="admin-nav__username" title={`Signed in as ${user.username}`}>{user.username}</span>

@@ -69,6 +69,7 @@ describe('Billing', () => {
         billingEmail: 'billing@rfs.org',
         username: 'owner',
         password: 'supersecret1',
+        email: 'billing@rfs.org',
         ...overrides,
       });
     return res.body.token as string;

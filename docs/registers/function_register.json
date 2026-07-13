@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.4.0",
-  "lastUpdated": "2026-07-03",
+  "version": "1.14.0",
+  "lastUpdated": "2026-07-13",
   "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager\n\nMulti-Station Support: Database methods now accept optional stationId parameter for filtering. All methods filter by stationId when provided, default to 'default-station' otherwise.",
   "services": {
     "database": {
@@ -1531,6 +1531,136 @@
           "async": true
         }
       }
+    },
+    "orgMembershipRules": {
+      "file": "backend/src/services/orgMembershipRules.ts",
+      "description": "Pure functions (zero I/O) for org-membership invariants: invite role limits, role-change permissions, removal permissions, and the last-owner-must-remain rule. Used by routes/organizations.ts and routes/orgInvites.ts.",
+      "functions": {
+        "canInviteRole": {
+          "signature": "canInviteRole(inviterRole: OrgRole, inviteRole: OrgRole): boolean",
+          "description": "Owner may invite any role; admin may invite admin/viewer; viewer cannot invite",
+          "async": false
+        },
+        "canChangeRole": {
+          "signature": "canChangeRole(actorRole: OrgRole, targetRole: OrgRole, newRole: OrgRole): boolean",
+          "description": "Only an owner may grant/revoke the owner role or change an existing owner",
+          "async": false
+        },
+        "canRemoveMember": {
+          "signature": "canRemoveMember(actorRole: OrgRole, targetRole: OrgRole, isSelf: boolean): boolean",
+          "description": "Anyone may remove themself; owner removes anyone; admin removes non-owners",
+          "async": false
+        },
+        "violatesLastOwner": {
+          "signature": "violatesLastOwner(memberships: OrganizationMembership[], change: MembershipChange): boolean",
+          "description": "True when a role change or removal would leave the org with zero active owners",
+          "async": false
+        }
+      }
+    },
+    "orgAccessDatabase": {
+      "file": "backend/src/services/orgAccessDatabase.ts",
+      "description": "In-memory store for the three org-onboarding tables: OrganizationMembership (per-user-per-org role), OrgInvite (multi-use invite links), ClaimConflict (blocked facility-claim attempts). Production twin: tableStorageOrgAccessDatabase.ts (excluded from coverage — Azure SDK). Selected via orgAccessDbFactory.ts (ensureOrgAccessDatabase/initializeOrgAccessDatabase/getOrgAccessDb).",
+      "functions": {
+        "createMembership": {
+          "signature": "createMembership(input: CreateMembershipInput): Promise<OrganizationMembership>",
+          "description": "Creates an active membership, or revives a previously-removed one in place",
+          "async": true
+        },
+        "getMembershipsByUser": {
+          "signature": "getMembershipsByUser(userId: string): Promise<OrganizationMembership[]>",
+          "description": "All memberships (any status) for a user — the multi-org membership list",
+          "async": true
+        },
+        "getMembershipsByOrganization": {
+          "signature": "getMembershipsByOrganization(organizationId: string): Promise<OrganizationMembership[]>",
+          "description": "All memberships for an org — used for the members table and last-owner checks",
+          "async": true
+        },
+        "createInvite": {
+          "signature": "createInvite(input: CreateInviteInput): Promise<OrgInvite>",
+          "description": "Creates a multi-use invite link with a default 7-day expiry",
+          "async": true
+        },
+        "getInviteByToken": {
+          "signature": "getInviteByToken(token: string): Promise<OrgInvite | null>",
+          "description": "Lookup for the public /invite/:token acceptance flow",
+          "async": true
+        },
+        "createClaimConflict": {
+          "signature": "createClaimConflict(input: CreateClaimConflictInput): Promise<ClaimConflict>",
+          "description": "Records a blocked facility-claim attempt (open status) for the platform admin to review",
+          "async": true
+        },
+        "getClaimConflicts": {
+          "signature": "getClaimConflicts(status?: 'open' | 'resolved'): Promise<ClaimConflict[]>",
+          "description": "Lists claim conflicts, optionally filtered by status",
+          "async": true
+        }
+      }
+    },
+    "orgMembershipService": {
+      "file": "backend/src/services/orgMembershipService.ts",
+      "description": "Membership resolution with lazy migration: legacy users (only AdminUser.organizationId + global role) get an OrganizationMembership row materialized on first resolution, falling back to a virtual row if the write fails so a legacy user is never locked out.",
+      "functions": {
+        "resolveMemberships": {
+          "signature": "resolveMemberships(user: AdminUser): Promise<OrganizationMembership[]>",
+          "description": "All active memberships for a user, lazily materializing the legacy AdminUser.organizationId row",
+          "async": true
+        },
+        "resolveActiveRole": {
+          "signature": "resolveActiveRole(user: AdminUser, organizationId: string): Promise<OrgRole | null>",
+          "description": "The user's role within one org (membership row, else legacy AdminUser.role fallback), or null if not a member",
+          "async": true
+        }
+      }
+    },
+    "facilitiesParser": {
+      "file": "backend/src/services/facilitiesParser.ts",
+      "description": "Loads the bundled multi-service snapshot of the Digital Atlas of Australia 'Emergency Management Facilities' dataset (rural/country fire, metro fire, SES, ambulance, police, other) from src/data/emergency-facilities.csv or the 'data-files' blob container. Same graceful-degradation pattern as rfsFacilitiesParser.ts (untouched, still serves /api/stations/lookup — converging them is a queued follow-up). Singleton via getFacilitiesParser().",
+      "functions": {
+        "loadData": {
+          "signature": "loadData(): Promise<boolean>",
+          "description": "Loads and header-parses the CSV; returns false (lookup route 503s) if the snapshot is unavailable",
+          "async": true
+        },
+        "search": {
+          "signature": "search(query: string, opts?: FacilitySearchOptions): FacilitySearchResult[]",
+          "description": "Substring/postcode/multi-token scoring search, optional serviceType/state filters",
+          "async": false
+        },
+        "lookup": {
+          "signature": "lookup(query?: string, latitude?: number, longitude?: number, opts?: FacilitySearchOptions): FacilitySearchResult[]",
+          "description": "Query-first (typing overrides location), else nearest-facility fallback",
+          "async": false
+        },
+        "getByKey": {
+          "signature": "getByKey(facilityKey: string): Facility | null",
+          "description": "Lookup by the composite '<serviceType>:<objectid>' key used for claiming",
+          "async": false
+        }
+      }
+    },
+    "organizationDatabase (updated)": {
+      "file": "backend/src/services/organizationDatabase.ts",
+      "description": "Organization now carries facility-claim fields (facilityKey, facilityObjectId, facilityServiceType, facilityName, facilityState, facilityCustom, claimedByUserId, claimedAt) — all optional for back-compat with pre-existing stored rows. New methods for the claim-conflict flow.",
+      "functions": {
+        "getOrganizationsByFacilityKey": {
+          "signature": "getOrganizationsByFacilityKey(facilityKey: string): Promise<Organization[]>",
+          "description": "Orgs holding a given Digital Atlas facility key (should be 0 or 1) — the first-come-first-served claim check",
+          "async": true
+        },
+        "getAllFacilityKeys": {
+          "signature": "getAllFacilityKeys(): Promise<Set<string>>",
+          "description": "Every claimed facility key, for the public lookup's 'claimed' badge (60s cache in the route)",
+          "async": true
+        }
+      }
+    },
+    "adminUserDatabase (updated)": {
+      "file": "backend/src/services/adminUserDatabase.ts",
+      "description": "AdminUser now carries an optional `email` (required at signup/invite-acceptance, nullable for legacy accounts). createAdminUser gained an optional trailing `options?: {email?: string}` parameter — existing call sites compile unchanged.",
+      "functions": {}
     }
   },
   "routes": {
@@ -1766,6 +1896,31 @@
         "line": 140,
         "description": "Upgrades on pathname match, then in order: Origin check (A3 code review F6) -> JWT verify (query string token) -> per-user connection cap (F4) -> applianceId presence -> tenancy check (appliance's station org vs token org, F1) -> aiEnabled entitlement check (F3) -> optional resumeSessionId resolution (F9). Frames: client sends audio-start/audio-chunk/audio-end/user-text/end-session; server sends session-started (resumed flag), transcript, agent-text, agent-audio, error, busy. Pong-timeout liveness check terminates dead connections (F9); maxPayload caps a single WS message at 256KB (F5)."
       }
+    },
+    "auth (updated)": {
+      "file": "backend/src/routes/auth.ts",
+      "description": "signup now validates + persists email and resolves the facility claim/conflict/custom flow (see api_register.json). login and /me resolve multi-org memberships via orgMembershipService. New: PUT /profile (email backfill), POST /switch-org (reissue JWT scoped to a different org the user belongs to).",
+      "functions": {}
+    },
+    "organizations (updated)": {
+      "file": "backend/src/routes/organizations.ts",
+      "description": "New invite-link CRUD (POST/GET/DELETE .../invites) and membership management (GET .../members, PUT/DELETE .../members/:userId) built on orgAccessDatabase + orgMembershipRules. POST .../users now also accepts email and writes a membership row.",
+      "functions": {}
+    },
+    "orgInvites": {
+      "file": "backend/src/routes/orgInvites.ts",
+      "description": "Public org-invite acceptance: GET preview, POST accept (existing signed-in user), POST signup (new account straight into the org). Mounted at /api/org-invites.",
+      "functions": {}
+    },
+    "facilities": {
+      "file": "backend/src/routes/facilities.ts",
+      "description": "Public GET /lookup over the facilitiesParser snapshot, annotating results with a `claimed` boolean from organizationDatabase.getAllFacilityKeys() (60s in-process cache). Mounted at /api/facilities.",
+      "functions": {}
+    },
+    "platform": {
+      "file": "backend/src/routes/platform.ts",
+      "description": "Platform-admin claim-conflict review (list/resolve, incl. reassigning a facility link between orgs). Gated by middleware/platformAdmin.ts's PLATFORM_ADMIN_USERNAMES allowlist, not org role. Mounted at /api/platform.",
+      "functions": {}
     }
   },
   "utilities": {

@@ -24,7 +24,12 @@ Authorization: Bearer <JWT>
 JWTs are signed with `JWT_SECRET` and include the following claims: `userId`,
 `username`, `role` (`owner | admin | viewer`) and `organizationId`. The
 `organizationId` claim scopes the caller to a SaaS **organization** (the billing
-tenant) and drives feature gating.
+tenant) and drives feature gating. `role` is the caller's role **within that
+active org** — a user can belong to multiple organizations (`OrganizationMembership`
+rows) with a different role in each; `POST /api/auth/switch-org` re-issues the
+JWT for a different org the user belongs to. Legacy single-org users (only
+`AdminUser.organizationId` + a global role, no membership row yet) are
+supported transparently via lazy migration (`services/orgMembershipService.ts`).
 
 ### Auth modes (environment-driven)
 
@@ -152,41 +157,66 @@ rate-limited; login/signup additionally use `sensitiveActionRateLimiter`.
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| `POST` | `/api/auth/signup` | none | Create a new organization (free Community plan) + its first owner; returns a JWT. |
-| `POST` | `/api/auth/login` | none | Exchange username/password for a JWT. |
+| `POST` | `/api/auth/signup` | none | Create a new organization (free Community plan) + its first owner, claiming an emergency-services facility; returns a JWT. |
+| `POST` | `/api/auth/login` | none | Exchange username/password for a JWT (resolves the default active org from memberships). |
 | `POST` | `/api/auth/logout` | none | Client-side logout (token discarded by client; logged for audit). |
-| `GET` | `/api/auth/me` | Bearer | Current user + resolved organization + entitlements. |
+| `GET` | `/api/auth/me` | Bearer | Current user + resolved organization + entitlements + all active org memberships. |
 | `GET` | `/api/auth/entitlements` | Bearer | Lightweight entitlements probe for sibling apps. |
+| `PUT` | `/api/auth/profile` | Bearer | Update the caller's own email (legacy-account backfill). |
+| `POST` | `/api/auth/switch-org` | Bearer | Re-issue the JWT scoped to a different org the caller belongs to (multi-org). |
 | `GET` | `/api/auth/config` | none | Reports `{ requireAuth }` (whether `REQUIRE_AUTH=true`). |
 
 ### `POST /api/auth/signup`
 
-**Request Body**:
+**Request Body** — `email` and `facility` are required by the frontend (a
+`facility`-less request is tolerated for back-compat API callers and creates
+an unlinked/custom org):
 ```json
 {
   "organizationName": "Bungendore RFS",
   "billingEmail": "captain@example.org",
   "username": "captain",
-  "password": "min-8-chars"
+  "password": "min-8-chars",
+  "email": "captain@example.org",
+  "facility": { "facilityKey": "rural-fire:4711" }
 }
 ```
-**Response** (201 Created): `{ "token": "...", "user": { id, username, role, organizationId }, "organization": { ... } }`
+`facility` is either `{ "facilityKey": "<serviceType>:<objectid>" }` — claims a
+Digital Atlas of Australia emergency-services facility, **first-come-first-served**
+— or `{ "custom": { "name", "serviceType", "suburb"?, "state"?, "postcode"? } }`
+for an unlisted unit (no review needed).
 
-**Errors**: `400` (missing fields / password < 8 chars), `409` (username taken).
+**Response** (201 Created): `{ "token": "...", "user": { id, username, role, organizationId, email }, "organization": { ..., facilityKey, facilityName, facilityCustom } }`
+
+**Errors**: `400` (missing/invalid fields, unknown `facilityKey`, missing custom
+facility details), `409` (username taken, **or** `code: "FACILITY_ALREADY_CLAIMED"`
+when the facility is already claimed — a `ClaimConflict` is recorded for the
+platform admin and the message is the exact copy the frontend renders: *"This
+facility has already been claimed by another organisation. Discuss with your
+brigade members to get an invite link, or contact support — we've flagged this
+for review."*), `503` (facility dataset snapshot not loaded).
 
 ### `POST /api/auth/login`
 
 **Request Body**: `{ "username": "captain", "password": "..." }`
 
-**Response** (200 OK): `{ "token": "...", "user": { id, username, role, organizationId, lastLoginAt } }`
+**Response** (200 OK): `{ "token": "...", "user": { id, username, role, organizationId, email, lastLoginAt } }`
+— `role`/`organizationId` reflect the user's default active org (their
+`AdminUser.organizationId` if still a member, else their first active
+membership).
 
 **Errors**: `400` (missing fields), `401` (invalid credentials).
 
 ### `GET /api/auth/me`
 
 **Auth**: Bearer JWT.
-**Response** (200 OK): `{ id, username, role, organizationId, lastLoginAt, organization, entitlements }`
-(`organization`/`entitlements` are `null` when the user has no org context.)
+**Response** (200 OK): `{ id, username, role, organizationId, email, lastLoginAt, organization, entitlements, memberships, isPlatformAdmin }`
+(`organization`/`entitlements` are `null` when the user has no org context;
+`email` is `null` for legacy accounts.) `memberships` is
+`[{ organizationId, organizationName, role }]` for every org the user actively
+belongs to (multi-org). **This is a suite contract** — Fire Break Calculator
+reads `id`/`username`/`organizationId`/`organization.planCode`/`entitlements.fireBreakEnabled`;
+all additions here are additive and must stay that way.
 
 ### `GET /api/auth/entitlements`
 
@@ -195,19 +225,40 @@ rate-limited; login/signup additionally use `sensitiveActionRateLimiter`.
 (`entitlements`/`planCode` are `null` for users with no organization.) See
 `docs/wiki/developer/suite-token-validation.md` for the full sibling-app contract.
 
+### `PUT /api/auth/profile`
+
+**Auth**: Bearer JWT. **Request Body**: `{ "email": "you@example.com" }`.
+**Response** (200 OK): `{ "user": { id, username, role, organizationId, email } }`.
+**Errors**: `400` (invalid email).
+
+### `POST /api/auth/switch-org`
+
+**Auth**: Bearer JWT. **Request Body**: `{ "organizationId": "..." }`.
+Verifies an active membership in the target org, then re-issues the JWT with
+that org + the membership's role — `attachOrganization` and every suite
+consumer keep reading the same claim shape.
+**Response** (200 OK): `{ "token": "...", "user": { ... }, "organization": { ... } }`.
+**Errors**: `403` (not a member of that org), `404` (org not found).
+
 ---
 
 ## Organizations (SaaS Tenant Management)
 
-Manage the organization (billing tenant), its plan/module toggles, and its
-users. All endpoints require a Bearer JWT and use `sensitiveActionRateLimiter`.
+Manage the organization (billing tenant), its plan/module toggles, its users,
+invite links, and multi-org memberships. All endpoints require a Bearer JWT.
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | `GET` | `/api/organizations/current` | any member | Current org + entitlements + plan catalog. |
 | `PUT` | `/api/organizations/current` | owner | Update name/email/plan and narrow module toggles. |
-| `GET` | `/api/organizations/current/users` | admin/owner | List users in the org. |
-| `POST` | `/api/organizations/current/users` | admin/owner | Create a user in the org. |
+| `GET` | `/api/organizations/current/users` | admin/owner | List users in the org (legacy; superseded by `.../members`). |
+| `POST` | `/api/organizations/current/users` | admin/owner | Create a user directly in the org (now accepts `email`). |
+| `POST` | `/api/organizations/current/invites` | admin/owner | Create a multi-use invite link (default 7-day expiry). |
+| `GET` | `/api/organizations/current/invites` | admin/owner | List invite links for the org. |
+| `DELETE` | `/api/organizations/current/invites/:id` | admin/owner | Revoke an invite link. |
+| `GET` | `/api/organizations/current/members` | admin/owner | List members with their per-org role (multi-org). |
+| `PUT` | `/api/organizations/current/members/:userId` | any | Change a member's role (rules-gated; last owner protected). |
+| `DELETE` | `/api/organizations/current/members/:userId` | any | Remove a member, or leave (rules-gated; last owner protected). |
 
 ### `GET /api/organizations/current`
 
@@ -237,9 +288,92 @@ may only **disable** modules; values are clamped to the plan ceiling
 
 ### `POST /api/organizations/current/users` (admin/owner)
 
-**Request Body**: `{ "username": "...", "password": "min-8-chars", "role": "admin|viewer|owner" }`
-Only an `owner` may create another `owner`. **Response** (201): `{ "user": { id, username, role, organizationId } }`.
+**Request Body**: `{ "username": "...", "password": "min-8-chars", "role": "admin|viewer|owner", "email"?: "..." }`
+Only an `owner` may create another `owner`. Also writes an `OrganizationMembership`
+row. **Response** (201): `{ "user": { id, username, role, organizationId, email } }`.
 **Errors**: `400` (missing fields / short password), `403` (non-owner creating owner), `409` (username taken).
+
+### `POST /api/organizations/current/invites` (admin/owner)
+
+**Request Body**: `{ "role"?: "owner"|"admin"|"viewer", "email"?: "...", "expiresInDays"?: 1-30 }`
+(default role `viewer`, default expiry 7 days). Role limits: owner may mint any
+role; admin may mint admin/viewer; viewer cannot invite.
+**Response** (201): `{ "invite": { ... }, "inviteUrl": "https://.../invite/<token>" }`.
+**Errors**: `400` (`expiresInDays` out of range), `403` (role not permitted for the inviter).
+
+### `GET` / `DELETE /api/organizations/current/invites` (admin/owner)
+
+`GET` lists invites (each with a live `inviteUrl`); `DELETE /:id` revokes one.
+Invite links are **multi-use** until expiry or revocation — meant to be pasted
+into a brigade group chat.
+
+### `GET /api/organizations/current/members` (admin/owner)
+
+**Response** (200 OK): `{ "members": [{ userId, username, email, role, status, lastLoginAt, createdAt }] }`.
+Legacy users (pre-dating the membership model) are lazily materialized into a
+membership row on first read.
+
+### `PUT` / `DELETE /api/organizations/current/members/:userId`
+
+Change role or remove/leave. Enforced by `orgMembershipRules` (`canChangeRole`,
+`canRemoveMember`, `violatesLastOwner`) — **an organization must always retain
+at least one active owner**.
+**Errors**: `403` (actor lacks permission, or the change would remove the last owner), `404` (member not in this org).
+
+---
+
+## Public Org-Invite Acceptance (`/api/org-invites`)
+
+Mounted before any session gate — the invite link itself is the credential.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/api/org-invites/:token` | none | Preview: `{ organizationName, role, expiresAt }`. |
+| `POST` | `/api/org-invites/:token/accept` | Bearer | Existing signed-in user joins the org. |
+| `POST` | `/api/org-invites/:token/signup` | none | New account created directly into the org with the invite's role. |
+
+`GET`/`accept` return `404` for an unknown token and `410` once expired/revoked;
+`accept` returns `409` if already an active member. `signup` has the same
+response shape as `POST /api/auth/signup` (`{ token, user, organization }`).
+
+---
+
+## Facility Lookup (`/api/facilities`)
+
+Public, rate-limited — powers the signup facility-claim step. Backed by a
+bundled snapshot of the Digital Atlas of Australia / Geoscience Australia
+"Emergency Management Facilities" dataset (rural/country fire, metro fire,
+SES, ambulance, police, other).
+
+### `GET /api/facilities/lookup`
+
+**Query params**: `q` (min 2 chars) and/or `lat`+`lon`; optional `serviceType`
+(`rural-fire|metro-fire|ses|ambulance|police|other`), `state`, `limit` (max 50).
+**Response** (200 OK): `{ "results": [{ facilityKey, serviceType, name, suburb, state, postcode, claimed, distance? }], "count" }`.
+`claimed` is `true` when an Organization already holds that `facilityKey` — the
+claiming org's identity is **never** exposed publicly.
+**Errors**: `400` (no query/location, or invalid `serviceType`), `503`
+(dataset snapshot not loaded — see `backend/src/scripts/README.md` for the
+`facilities:fetch`/`facilities:upload` ops steps).
+
+---
+
+## Platform Administration (`/api/platform`)
+
+Not per-org — this is for the operator of the whole deployment, gated by the
+`PLATFORM_ADMIN_USERNAMES` env allowlist (comma-separated usernames), not org
+role. Currently: facility claim-conflict review.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/platform/claim-conflicts?status=open\|resolved` | List claim conflicts. |
+| `POST` | `/api/platform/claim-conflicts/:id/resolve` | Dismiss, mark contacted, or reassign the facility to another org. |
+
+**Resolve body**: `{ "resolution": "dismissed"|"contacted"|"reassigned", "notes"?, "reassignToOrganizationId"? }`
+(`reassignToOrganizationId` required for `reassigned` — clears the facility
+link from the current holder, which becomes a custom/unlinked org, and sets it
+on the target).
+**Errors**: `403` (not a platform admin), `404` (conflict/target not found), `409` (already resolved).
 
 ---
 

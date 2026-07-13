@@ -9,6 +9,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import type { FacilitySelection } from '../services/api';
 
 export type EntitlementFeature =
   | 'signInEnabled'
@@ -50,7 +51,15 @@ interface User {
   username: string;
   role: 'owner' | 'admin' | 'viewer';
   organizationId?: string;
+  email?: string | null;
   lastLoginAt?: Date;
+}
+
+/** One organisation the current user belongs to (multi-org membership). */
+export interface UserMembership {
+  organizationId: string;
+  organizationName: string;
+  role: 'owner' | 'admin' | 'viewer';
 }
 
 interface SignupInput {
@@ -58,6 +67,8 @@ interface SignupInput {
   billingEmail: string;
   username: string;
   password: string;
+  email: string;
+  facility: FacilitySelection;
 }
 
 interface AuthContextType {
@@ -65,12 +76,16 @@ interface AuthContextType {
   token: string | null;
   organization: Organization | null;
   entitlements: Entitlements | null;
+  memberships: UserMembership[];
+  isPlatformAdmin: boolean;
   requireAuth: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   signup: (input: SignupInput) => Promise<void>;
   logout: () => void;
   refreshOrganization: () => Promise<void>;
+  /** Switch the active organisation for a multi-org member; reissues the session. */
+  switchOrg: (organizationId: string) => Promise<void>;
   /** Feature gate. Defaults to allowed when there is no org context (single-tenant / back-compat). */
   hasFeature: (feature: EntitlementFeature) => boolean;
   isAuthenticated: boolean;
@@ -90,6 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [entitlements, setEntitlements] = useState<Entitlements | null>(null);
+  const [memberships, setMemberships] = useState<UserMembership[]>([]);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState<boolean>(false);
   const [requireAuth, setRequireAuth] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -105,10 +122,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: me.username,
       role: me.role,
       organizationId: me.organizationId,
+      email: me.email ?? null,
       lastLoginAt: me.lastLoginAt,
     });
     setOrganization(me.organization ?? null);
     setEntitlements(me.entitlements ?? null);
+    setMemberships(me.memberships ?? []);
+    setIsPlatformAdmin(Boolean(me.isPlatformAdmin));
     setToken(authToken);
     localStorage.setItem(
       USER_KEY,
@@ -173,11 +193,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const data = await response.json();
     localStorage.setItem(TOKEN_KEY, data.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-    setToken(data.token);
-    setUser(data.user);
-    setOrganization(data.organization ?? null);
-    setEntitlements(data.organization?.entitlements ?? null);
+    // Populate memberships/isPlatformAdmin via /auth/me (signup response omits them).
+    await loadMe(data.token);
   };
 
   const logout = () => {
@@ -188,6 +205,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setOrganization(null);
     setEntitlements(null);
+    setMemberships([]);
+    setIsPlatformAdmin(false);
     if (currentToken) {
       fetch(`${apiBase()}/auth/logout`, {
         method: 'POST',
@@ -201,6 +220,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await loadMe(token);
     }
   }, [token, loadMe]);
+
+  /** Switch the active organisation (multi-org membership) and reissue the JWT. */
+  const switchOrg = useCallback(
+    async (organizationId: string) => {
+      const response = await fetch(`${apiBase()}/auth/switch-org`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ organizationId }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to switch organisation');
+      }
+      const data = await response.json();
+      localStorage.setItem(TOKEN_KEY, data.token);
+      await loadMe(data.token);
+    },
+    [token, loadMe],
+  );
 
   const hasFeature = useCallback(
     (feature: EntitlementFeature): boolean => {
@@ -220,12 +261,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         organization,
         entitlements,
+        memberships,
+        isPlatformAdmin,
         requireAuth,
         isLoading,
         login,
         signup,
         logout,
         refreshOrganization,
+        switchOrg,
         hasFeature,
         isAuthenticated,
       }}

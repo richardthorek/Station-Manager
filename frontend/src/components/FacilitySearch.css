@@ -1,0 +1,233 @@
+/**
+ * Facility Search Styles
+ *
+ * Used inside the signup stepper's "Find your station" step. Reuses the
+ * form-group/input conventions from LoginPage.css but is self-contained so it
+ * can be dropped into other admin surfaces later (e.g. platform reassignment).
+ */
+
+.facility-search {
+  text-align: left;
+}
+
+.facility-search__input-row {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.facility-search__icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--rfs-dark-grey);
+  pointer-events: none;
+}
+
+.facility-search__input-row input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 2.75rem;
+  font-size: 1rem;
+  min-height: 44px;
+  border: 2px solid var(--rfs-light-grey);
+  border-radius: 8px;
+  background: var(--rfs-white);
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.facility-search__input-row input:focus {
+  outline: none;
+  border-color: var(--rfs-core-red);
+  box-shadow: 0 0 0 3px rgba(229, 40, 27, 0.1);
+}
+
+.facility-search__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.facility-search__chip {
+  padding: 0.5rem 0.875rem;
+  min-height: 44px;
+  border: 2px solid var(--rfs-light-grey);
+  border-radius: 999px;
+  background: var(--rfs-white);
+  color: var(--rfs-black);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.facility-search__chip:hover {
+  border-color: var(--rfs-core-red);
+}
+
+.facility-search__chip--active {
+  background: var(--rfs-core-red);
+  border-color: var(--rfs-core-red);
+  color: var(--rfs-white);
+}
+
+.facility-search__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--rfs-dark-grey);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.facility-search__status--error {
+  color: var(--text-error-strong);
+}
+
+.facility-search__results {
+  list-style: none;
+  margin: 0 0 1rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.facility-search__result {
+  width: 100%;
+  text-align: left;
+  padding: 0.875rem 1rem;
+  min-height: 44px;
+  border: 2px solid var(--rfs-light-grey);
+  border-radius: 8px;
+  background: var(--rfs-white);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: all 0.15s ease;
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.facility-search__result:hover:not(:disabled) {
+  border-color: var(--rfs-core-red);
+}
+
+.facility-search__result--selected {
+  border-color: var(--rfs-core-red);
+  background: rgba(229, 40, 27, 0.05);
+}
+
+.facility-search__result--claimed {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.facility-search__result-name {
+  font-weight: 700;
+  color: var(--rfs-black);
+}
+
+.facility-search__result-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--rfs-dark-grey);
+  font-size: 0.875rem;
+}
+
+.facility-search__result-type {
+  align-self: flex-start;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-secondary, #f0f0f0);
+  color: var(--rfs-dark-grey);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.facility-search__claimed-badge {
+  color: var(--text-error-strong);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.facility-search__custom-link {
+  background: none;
+  border: none;
+  color: var(--rfs-core-red);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  min-height: 44px;
+  text-decoration: underline;
+}
+
+.facility-search__custom-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.facility-search__custom-form select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  min-height: 44px;
+  font-size: 1rem;
+  border: 2px solid var(--rfs-light-grey);
+  border-radius: 8px;
+  background: var(--rfs-white);
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.facility-search__nudge {
+  margin-bottom: 1rem;
+}
+
+.facility-search__nudge p {
+  font-size: 0.875rem;
+  color: var(--rfs-dark-grey);
+  margin: 0 0 0.5rem 0;
+}
+
+.facility-search__custom-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.facility-search__use-custom-button {
+  padding: 0.75rem 1.25rem;
+  min-height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.facility-search__use-custom-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .facility-search__input-row input,
+[data-theme="dark"] .facility-search__chip,
+[data-theme="dark"] .facility-search__result,
+[data-theme="dark"] .facility-search__custom-form select {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .facility-search__result-name {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .facility-search__chip--active {
+  background: var(--rfs-core-red);
+  border-color: var(--rfs-core-red);
+  color: var(--rfs-white);
+}

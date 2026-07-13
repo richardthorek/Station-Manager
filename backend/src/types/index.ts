@@ -77,11 +77,79 @@ export interface AdminUser {
   username: string;
   passwordHash: string;
   role: 'owner' | 'admin' | 'viewer';
-  organizationId?: string;       // SaaS tenancy: which Organization this user belongs to
+  organizationId?: string;       // SaaS tenancy: default/active Organization for this user
+  /**
+   * Contact email. Required at signup and invite acceptance; optional in
+   * storage because accounts created before the org-onboarding rework have
+   * none (they are prompted to add one).
+   */
+  email?: string;
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt?: Date;
   isActive: boolean;
+}
+
+/** Role a user holds within one organization (per-org, not global). */
+export type OrgRole = 'owner' | 'admin' | 'viewer';
+
+/**
+ * Per-(user, organization) membership row — the source of truth for which
+ * orgs a user belongs to and their role in each. `AdminUser.organizationId`
+ * remains the user's default/active org; legacy users get a membership row
+ * lazily materialized from it on first resolution.
+ */
+export interface OrganizationMembership {
+  id: string;
+  userId: string;
+  organizationId: string;
+  role: OrgRole;
+  status: 'active' | 'removed';
+  invitedBy?: string;            // userId who created the invite (absent for founders/legacy)
+  inviteId?: string;             // OrgInvite that produced this membership
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Shareable org invite link. Multi-use until expiry or revocation (meant to
+ * be pasted into a brigade group chat); each acceptance bumps usageCount.
+ */
+export interface OrgInvite {
+  id: string;
+  token: string;                 // unguessable (UUID) — the /invite/<token> URL
+  organizationId: string;
+  role: OrgRole;
+  email?: string;                // optional intended recipient (display only, no delivery)
+  expiresAt: Date;
+  status: 'active' | 'revoked' | 'expired';
+  usageCount: number;
+  createdBy: string;             // userId
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Record of a blocked facility-claim attempt at signup. First-come-first-served:
+ * the second signup for an already-claimed facility gets a 409 and this row is
+ * written for the platform administrator to review/resolve/reassign. The
+ * attempting user account is NOT created on a blocked signup.
+ */
+export interface ClaimConflict {
+  id: string;
+  facilityKey: string;
+  facilityName: string;
+  existingOrganizationId: string;
+  attemptedOrgName: string;
+  attemptedByUsername: string;
+  attemptedByEmail: string;
+  status: 'open' | 'resolved';
+  resolution?: 'dismissed' | 'reassigned' | 'contacted';
+  resolutionNotes?: string;
+  resolvedBy?: string;           // platform admin username
+  resolvedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -131,6 +199,18 @@ export type EntitlementFeature =
  * stations/brigades, holds the (future) Stripe subscription, and carries the
  * resolved feature entitlements used for gating.
  */
+/**
+ * Emergency service type slug, derived from the source layer of the Digital
+ * Atlas of Australia "Emergency Management Facilities" dataset.
+ */
+export type FacilityServiceType =
+  | 'rural-fire'
+  | 'metro-fire'
+  | 'ses'
+  | 'ambulance'
+  | 'police'
+  | 'other';
+
 export interface Organization {
   id: string;
   name: string;
@@ -139,6 +219,22 @@ export interface Organization {
   planCode: PlanCode;
   status: OrganizationStatus;
   entitlements: Entitlements;
+  // ─── Facility claim (org onboarding) — all optional for stored-row back-compat ───
+  /**
+   * Canonical claim key `"<serviceType>:<objectid>"` into the Digital Atlas
+   * Emergency Management Facilities dataset (objectid is only unique per
+   * layer). Absent for custom/unlinked orgs. First-come-first-served: at most
+   * one org should hold a given key; a duplicate claim writes a ClaimConflict.
+   */
+  facilityKey?: string;
+  facilityObjectId?: string;     // raw dataset objectid (per-layer) — reconciles with Santa Run's rfsStationId
+  facilityServiceType?: FacilityServiceType;
+  facilityName?: string;
+  facilityState?: string;
+  /** True when the founder chose "my unit isn't listed" (no dataset link, no review). */
+  facilityCustom?: boolean;
+  claimedByUserId?: string;
+  claimedAt?: Date;
   stripeCustomerId?: string;     // reserved for Stripe Billing (not yet wired)
   stripeSubscriptionId?: string;
   trialEndsAt?: Date;

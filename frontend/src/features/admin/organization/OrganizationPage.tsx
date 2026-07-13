@@ -12,7 +12,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth, type EntitlementFeature } from '../../../contexts/AuthContext';
-import { api, type PlanDefinition, type OrganizationUser, type AiUsage, type BillingStatus } from '../../../services/api';
+import {
+  api,
+  type PlanDefinition,
+  type AiUsage,
+  type BillingStatus,
+  type OrgMember,
+  type OrgInvite,
+} from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
 import { AdminNav } from '../../../components/AdminNav';
 import './OrganizationPage.css';
@@ -31,7 +38,8 @@ export function OrganizationPage() {
   const [searchParams] = useSearchParams();
 
   const [plans, setPlans] = useState<PlanDefinition[]>([]);
-  const [users, setUsers] = useState<OrganizationUser[]>([]);
+  const [members, setMembers] = useState<OrgMember[]>([]);
+  const [invites, setInvites] = useState<OrgInvite[]>([]);
   const [aiUsage, setAiUsage] = useState<AiUsage | null>(null);
   const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
   const [saving, setSaving] = useState(false);
@@ -41,17 +49,27 @@ export function OrganizationPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [newUsername, setNewUsername] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'viewer'>('viewer');
 
+  const [inviteRole, setInviteRole] = useState<'owner' | 'admin' | 'viewer'>('viewer');
+  const [inviteExpiresInDays, setInviteExpiresInDays] = useState(7);
+  const [creatingInvite, setCreatingInvite] = useState(false);
+
+  const [profileEmail, setProfileEmail] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
+
   const load = useCallback(async () => {
     try {
-      const [orgRes, usersRes] = await Promise.all([
+      const [orgRes, membersRes, invitesRes] = await Promise.all([
         api.getCurrentOrganization(),
-        isAdmin ? api.getOrganizationUsers() : Promise.resolve({ users: [] }),
+        isAdmin ? api.getOrgMembers() : Promise.resolve({ members: [] }),
+        isAdmin ? api.getOrgInvites() : Promise.resolve({ invites: [] }),
       ]);
       setPlans(orgRes.plans);
-      setUsers(usersRes.users);
+      setMembers(membersRes.members);
+      setInvites(invitesRes.invites);
     } catch {
       setMessage({ type: 'error', text: 'Failed to load organization' });
     }
@@ -155,17 +173,88 @@ export function OrganizationPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.createOrganizationUser({ username: newUsername, password: newPassword, role: newRole });
+      await api.createOrganizationUser({ username: newUsername, password: newPassword, role: newRole, email: newEmail || undefined });
       setNewUsername('');
+      setNewEmail('');
       setNewPassword('');
       setNewRole('viewer');
-      const usersRes = await api.getOrganizationUsers();
-      setUsers(usersRes.users);
+      const membersRes = await api.getOrgMembers();
+      setMembers(membersRes.members);
       flash('success', 'User added');
     } catch (err) {
       flash('error', err instanceof Error ? err.message : 'Could not add user');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function createInvite(e: React.FormEvent) {
+    e.preventDefault();
+    setCreatingInvite(true);
+    try {
+      await api.createOrgInvite({ role: inviteRole, expiresInDays: inviteExpiresInDays });
+      const invitesRes = await api.getOrgInvites();
+      setInvites(invitesRes.invites);
+      flash('success', 'Invite link created');
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not create invite');
+    } finally {
+      setCreatingInvite(false);
+    }
+  }
+
+  async function revokeInvite(inviteId: string) {
+    try {
+      await api.revokeOrgInvite(inviteId);
+      const invitesRes = await api.getOrgInvites();
+      setInvites(invitesRes.invites);
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not revoke invite');
+    }
+  }
+
+  async function copyInviteLink(inviteUrl: string) {
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      flash('success', 'Invite link copied');
+    } catch {
+      flash('error', 'Could not copy link — copy it manually');
+    }
+  }
+
+  async function changeMemberRole(userId: string, role: 'owner' | 'admin' | 'viewer') {
+    try {
+      await api.updateOrgMemberRole(userId, role);
+      const membersRes = await api.getOrgMembers();
+      setMembers(membersRes.members);
+      flash('success', 'Role updated');
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not update role');
+    }
+  }
+
+  async function removeMember(userId: string) {
+    try {
+      await api.removeOrgMember(userId);
+      const membersRes = await api.getOrgMembers();
+      setMembers(membersRes.members);
+      flash('success', 'Member removed');
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not remove member');
+    }
+  }
+
+  async function saveProfileEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingEmail(true);
+    try {
+      await api.updateProfile({ email: profileEmail });
+      await refreshOrganization();
+      flash('success', 'Email saved');
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not save email');
+    } finally {
+      setSavingEmail(false);
     }
   }
 
@@ -204,6 +293,24 @@ export function OrganizationPage() {
           {message && (
             <div className={`org-message org-message--${message.type}`} role="status">
               {message.text}
+            </div>
+          )}
+
+          {user && !user.email && (
+            <div className="org-trial-notice" role="status">
+              <form className="org-email-banner-form" onSubmit={saveProfileEmail}>
+                <span>Add an email to your account — it helps with invites and support.</span>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={profileEmail}
+                  onChange={(e) => setProfileEmail(e.target.value)}
+                  required
+                />
+                <button className="org-btn" type="submit" disabled={savingEmail}>
+                  {savingEmail ? 'Saving…' : 'Save'}
+                </button>
+              </form>
             </div>
           )}
 
@@ -369,30 +476,55 @@ export function OrganizationPage() {
 
           {isAdmin && (
             <section className="org-section">
-              <h2>Users</h2>
+              <h2>Members</h2>
               <table className="org-users">
                 <thead>
-                  <tr><th>Username</th><th>Role</th><th>Status</th></tr>
+                  <tr><th>Username</th><th>Email</th><th>Role</th><th></th></tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id}>
-                      <td>{u.username}</td>
-                      <td>{u.role}</td>
-                      <td>{u.isActive ? 'Active' : 'Inactive'}</td>
+                  {members.map((m) => (
+                    <tr key={m.userId}>
+                      <td>{m.username}</td>
+                      <td>{m.email ?? '—'}</td>
+                      <td>
+                        <select
+                          value={m.role}
+                          disabled={!isOwner && !(isAdmin && m.role !== 'owner')}
+                          onChange={(e) => changeMemberRole(m.userId, e.target.value as 'owner' | 'admin' | 'viewer')}
+                        >
+                          <option value="owner">Owner</option>
+                          <option value="admin">Admin</option>
+                          <option value="viewer">Viewer</option>
+                        </select>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="org-link-btn"
+                          onClick={() => removeMember(m.userId)}
+                        >
+                          Remove
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
               <form className="org-adduser" onSubmit={addUser}>
-                <h3>Add a user</h3>
+                <h3>Add a user directly</h3>
                 <input
                   type="text"
                   placeholder="Username"
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   required
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
                 />
                 <input
                   type="password"
@@ -408,6 +540,71 @@ export function OrganizationPage() {
                 </select>
                 <button className="org-btn" type="submit" disabled={saving}>Add user</button>
               </form>
+            </section>
+          )}
+
+          {isAdmin && (
+            <section className="org-section">
+              <h2>Invite links</h2>
+              <p className="org-hint">
+                Anyone with this link can join until it expires — links are copy-paste for now, no emails are sent.
+              </p>
+
+              <form className="org-adduser" onSubmit={createInvite}>
+                <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as 'owner' | 'admin' | 'viewer')}>
+                  <option value="viewer">Viewer</option>
+                  <option value="admin">Admin</option>
+                  {isOwner && <option value="owner">Owner</option>}
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={inviteExpiresInDays}
+                  onChange={(e) => setInviteExpiresInDays(Number(e.target.value))}
+                  aria-label="Expires in days"
+                />
+                <span className="org-hint">days</span>
+                <button className="org-btn" type="submit" disabled={creatingInvite}>
+                  {creatingInvite ? 'Creating…' : 'Generate link'}
+                </button>
+              </form>
+
+              <table className="org-users">
+                <thead>
+                  <tr><th>Role</th><th>Status</th><th>Uses</th><th>Expires</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {invites.map((invite) => (
+                    <tr key={invite.id}>
+                      <td>{invite.role}</td>
+                      <td>{invite.status}</td>
+                      <td>{invite.usageCount}</td>
+                      <td>{new Date(invite.expiresAt).toLocaleDateString()}</td>
+                      <td>
+                        {invite.status === 'active' && invite.inviteUrl && (
+                          <>
+                            <button
+                              type="button"
+                              className="org-link-btn"
+                              onClick={() => copyInviteLink(invite.inviteUrl!)}
+                            >
+                              Copy link
+                            </button>{' '}
+                            <button
+                              type="button"
+                              className="org-link-btn"
+                              onClick={() => revokeInvite(invite.id)}
+                            >
+                              Revoke
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </section>
           )}
         </main>
