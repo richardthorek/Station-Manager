@@ -57,6 +57,9 @@ import devicesRouter from './routes/devices';
 import exportRouter from './routes/export';
 import authRouter from './routes/auth';
 import organizationsRouter from './routes/organizations';
+import orgInvitesRouter from './routes/orgInvites';
+import facilitiesRouter from './routes/facilities';
+import platformRouter from './routes/platform';
 import billingRouter from './routes/billing';
 import aiRouter from './routes/ai';
 import aarSessionsRouter from './routes/aarSessions';
@@ -76,6 +79,7 @@ import { requestLoggingMiddleware } from './middleware/requestLogging';
 import { logger } from './services/logger';
 import { ensureAdminUserDatabase, initializeAdminUserDatabase } from './services/adminUserDbFactory';
 import { initializeOrganizationDatabase } from './services/organizationDbFactory';
+import { initializeOrgAccessDatabase } from './services/orgAccessDbFactory';
 import { initializeUsageDatabase } from './services/usageDbFactory';
 import { initializeBillingEventDatabase } from './services/billingEventDbFactory';
 import { initializeAarSessionDatabase } from './services/aarSessionDbFactory';
@@ -423,6 +427,11 @@ app.get('/api/status', apiRateLimiter, async (req, res) => {
 // have AI gated off.
 app.use('/api/auth', apiRateLimiter, authRouter);
 app.use('/api/organizations', apiRateLimiter, organizationsRouter);
+// Public: invite-link preview/accept/signup and the signup facility lookup.
+app.use('/api/org-invites', apiRateLimiter, orgInvitesRouter);
+app.use('/api/facilities', apiRateLimiter, facilitiesRouter);
+// Platform admin (PLATFORM_ADMIN_USERNAMES allowlist): claim-conflict review.
+app.use('/api/platform', apiRateLimiter, platformRouter);
 app.use('/api/billing', apiRateLimiter, billingRouter);
 app.use('/api/ai', apiRateLimiter, aiRouter);
 app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'), aarSessionsRouter);
@@ -666,6 +675,7 @@ async function initializeDatabasesInBackground() {
     // Ensure the Organization store and Admin User store are available for
     // self-service signup, regardless of whether a default admin is configured.
     await initializeOrganizationDatabase();
+    await initializeOrgAccessDatabase();
     await initializeUsageDatabase();
     await initializeBillingEventDatabase();
     await initializeAarSessionDatabase();

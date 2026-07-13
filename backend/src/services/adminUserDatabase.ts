@@ -31,7 +31,8 @@ class AdminUserDatabase {
     username: string,
     password: string,
     role: 'owner' | 'admin' | 'viewer' = 'admin',
-    organizationId?: string
+    organizationId?: string,
+    options?: { email?: string }
   ): Promise<AdminUser> {
     // Check if username already exists
     if (this.usersByUsername.has(username)) {
@@ -47,6 +48,7 @@ class AdminUserDatabase {
       passwordHash,
       role,
       organizationId,
+      email: options?.email,
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true,

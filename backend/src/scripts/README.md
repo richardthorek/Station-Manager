@@ -48,6 +48,29 @@ npm run grant:firebreak
 DRY_RUN=false npm run grant:firebreak
 ```
 
+### `fetchEmergencyFacilitiesSnapshot.ts` + `uploadFacilitiesToBlobStorage.ts` — emergency-facilities dataset
+
+Signup's facility-claim step (`GET /api/facilities/lookup`) is backed by a
+bundled snapshot of the Digital Atlas of Australia / Geoscience Australia
+"Emergency Management Facilities" dataset (rural/country fire, metro fire,
+SES, ambulance, police, other), the same national dataset Fire Santa Run
+claims brigades from.
+
+**⚠️ `facilities:fetch` requires internet access to `services.ga.gov.au` —
+run it from an operator machine, not CI or a sandboxed agent environment.**
+
+```bash
+# 1. Fetch the latest snapshot (writes src/data/emergency-facilities.csv)
+npm run facilities:fetch
+
+# 2. Upload it so the app can download it at runtime
+npm run facilities:upload
+```
+
+If the snapshot is missing, `GET /api/facilities/lookup` returns 503 and
+signup falls back to the "my unit isn't listed" custom path — the app degrades
+gracefully rather than blocking signup entirely.
+
 Requires `AZURE_STORAGE_CONNECTION_STRING` to reach the production store.
 
 ### `seedActivities.ts` - Legacy Activity Seeding

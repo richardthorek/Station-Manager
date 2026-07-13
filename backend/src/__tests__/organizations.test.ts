@@ -49,6 +49,7 @@ describe('SaaS foundation', () => {
         billingEmail: 'captain@bungendorerfs.org',
         username: 'captain',
         password: 'supersecret1',
+        email: 'captain@bungendorerfs.org',
         ...overrides,
       });
   }

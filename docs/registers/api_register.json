@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.13.1",
-  "lastUpdated": "2026-07-03",
+  "version": "1.14.0",
+  "lastUpdated": "2026-07-13",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -1532,6 +1532,328 @@
           }
         },
         "implementation": "backend/src/routes/agentCheck.ts:73"
+      }
+    },
+    "organizations": {
+      "description": "SaaS tenant management: plan/entitlements, direct user creation, invite links, and per-org membership (multi-org). All routes require authMiddleware; admin-only routes additionally require requireAdmin (owner is a superset).",
+      "authentication": "Bearer JWT",
+      "POST /api/organizations/current/invites": {
+        "method": "POST",
+        "path": "/api/organizations/current/invites",
+        "description": "Create a shareable, multi-use invite link (default 7-day expiry, max 30) for the current org. Role limits enforced by orgMembershipRules.canInviteRole (owner mints any role; admin mints admin/viewer; viewer cannot invite).",
+        "authentication": "JWT (admin/owner)",
+        "rateLimit": "sensitive-action limiter",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": [
+                "owner",
+                "admin",
+                "viewer"
+              ],
+              "default": "viewer"
+            },
+            "email": {
+              "type": "string",
+              "description": "Optional intended recipient — display only, no email is sent"
+            },
+            "expiresInDays": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 30,
+              "default": 7
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "{ invite, inviteUrl } — inviteUrl is <frontend origin>/invite/<token>"
+          },
+          "400": {
+            "description": "expiresInDays out of range"
+          },
+          "403": {
+            "description": "Inviter's role cannot mint the requested invite role"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
+      "GET /api/organizations/current/invites": {
+        "method": "GET",
+        "path": "/api/organizations/current/invites",
+        "description": "List invite links for the current org (active/revoked/expired), with a live-computed inviteUrl per invite.",
+        "authentication": "JWT (admin/owner)",
+        "responses": {
+          "200": {
+            "description": "{ invites: OrgInvite[] }"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
+      "DELETE /api/organizations/current/invites/:id": {
+        "method": "DELETE",
+        "path": "/api/organizations/current/invites/:id",
+        "description": "Revoke an invite link (sets status='revoked').",
+        "authentication": "JWT (admin/owner)",
+        "responses": {
+          "200": {
+            "description": "{ invite }"
+          },
+          "404": {
+            "description": "Invite not found in caller's org"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
+      "GET /api/organizations/current/members": {
+        "method": "GET",
+        "path": "/api/organizations/current/members",
+        "description": "List members of the current org from OrganizationMembership rows joined with AdminUser, lazily materializing a membership row for any legacy user whose AdminUser.organizationId matches but has no row yet.",
+        "authentication": "JWT (admin/owner)",
+        "responses": {
+          "200": {
+            "description": "{ members: [{userId, username, email, role, status, lastLoginAt, createdAt}] }"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
+      "PUT /api/organizations/current/members/:userId": {
+        "method": "PUT",
+        "path": "/api/organizations/current/members/:userId",
+        "description": "Change a member's role. Enforced by orgMembershipRules.canChangeRole and violatesLastOwner (an org must always retain ≥1 active owner). Also syncs AdminUser.role when this org is the target's default org.",
+        "authentication": "JWT",
+        "rateLimit": "sensitive-action limiter",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": [
+                "owner",
+                "admin",
+                "viewer"
+              ]
+            }
+          },
+          "required": [
+            "role"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "{ membership }"
+          },
+          "403": {
+            "description": "Actor lacks permission for that role change, or it would remove the last owner"
+          },
+          "404": {
+            "description": "Member not found in this organisation"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
+      "DELETE /api/organizations/current/members/:userId": {
+        "method": "DELETE",
+        "path": "/api/organizations/current/members/:userId",
+        "description": "Remove a member (or self — leave). Enforced by orgMembershipRules.canRemoveMember and violatesLastOwner. If the removed org was the user's default, repoints AdminUser.organizationId to their next active membership.",
+        "authentication": "JWT",
+        "rateLimit": "sensitive-action limiter",
+        "responses": {
+          "200": {
+            "description": "{ success: true }"
+          },
+          "403": {
+            "description": "Actor lacks permission, or it would remove the last owner"
+          },
+          "404": {
+            "description": "Member not found in this organisation"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
+      "POST /api/organizations/current/users (updated)": {
+        "method": "POST",
+        "path": "/api/organizations/current/users",
+        "description": "Pre-existing direct user-creation endpoint now also accepts optional `email` and writes an OrganizationMembership row (previously only set AdminUser fields).",
+        "authentication": "JWT (admin/owner)",
+        "implementation": "backend/src/routes/organizations.ts"
+      }
+    },
+    "org-invites": {
+      "description": "Public org-invite acceptance routes (mounted at /api/org-invites, before any session gate). An invite link is multi-use until expiry/revocation.",
+      "authentication": "None for GET/:token/signup; Bearer JWT for /accept",
+      "GET /api/org-invites/:token": {
+        "method": "GET",
+        "path": "/api/org-invites/:token",
+        "description": "Public invite preview.",
+        "authentication": "None",
+        "responses": {
+          "200": {
+            "description": "{ organizationName, role, expiresAt }"
+          },
+          "404": {
+            "description": "Unknown token"
+          },
+          "410": {
+            "description": "Expired or revoked"
+          }
+        },
+        "implementation": "backend/src/routes/orgInvites.ts"
+      },
+      "POST /api/org-invites/:token/accept": {
+        "method": "POST",
+        "path": "/api/org-invites/:token/accept",
+        "description": "Signed-in existing user joins the invite's organisation. Bumps usageCount and records invitedBy/inviteId on the new membership.",
+        "authentication": "Bearer JWT",
+        "responses": {
+          "200": {
+            "description": "{ membership, memberships }"
+          },
+          "404": {
+            "description": "Unknown token"
+          },
+          "409": {
+            "description": "Already an active member"
+          },
+          "410": {
+            "description": "Expired or revoked"
+          }
+        },
+        "implementation": "backend/src/routes/orgInvites.ts"
+      },
+      "POST /api/org-invites/:token/signup": {
+        "method": "POST",
+        "path": "/api/org-invites/:token/signup",
+        "description": "New account created directly into the invite's organisation with the invite's role. Same response shape as POST /api/auth/signup.",
+        "authentication": "None",
+        "rateLimit": "sensitive-action limiter",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "username": {
+              "type": "string",
+              "minLength": 3
+            },
+            "password": {
+              "type": "string",
+              "minLength": 8
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            }
+          },
+          "required": [
+            "username",
+            "password",
+            "email"
+          ]
+        },
+        "responses": {
+          "201": {
+            "description": "{ token, user, organization }"
+          },
+          "400": {
+            "description": "Invalid username/password/email"
+          },
+          "409": {
+            "description": "Username already taken"
+          },
+          "410": {
+            "description": "Expired or revoked"
+          }
+        },
+        "implementation": "backend/src/routes/orgInvites.ts"
+      }
+    },
+    "facilities": {
+      "description": "Public emergency-services facility lookup backed by a bundled snapshot of the Digital Atlas of Australia \"Emergency Management Facilities\" dataset (rural/country fire, metro fire, SES, ambulance, police, other). Used by the signup facility-claim step.",
+      "authentication": "None (public, rate-limited)",
+      "GET /api/facilities/lookup": {
+        "method": "GET",
+        "path": "/api/facilities/lookup",
+        "description": "Search/lookup facilities. Requires `q` (min 2 chars) and/or `lat`+`lon`. Each result is annotated with `claimed` (an Organization already holds its facilityKey) — the claiming org's identity is never exposed.",
+        "authentication": "None",
+        "responses": {
+          "200": {
+            "description": "{ results: FacilitySearchResult[], count }"
+          },
+          "400": {
+            "description": "Missing query/location, or invalid serviceType"
+          },
+          "503": {
+            "description": "Facility dataset snapshot not loaded"
+          }
+        },
+        "implementation": "backend/src/routes/facilities.ts"
+      }
+    },
+    "platform": {
+      "description": "Platform-operator administration (not per-org). Gated by the PLATFORM_ADMIN_USERNAMES allowlist (middleware/platformAdmin.ts), not by org role. Currently: facility claim-conflict review/resolution.",
+      "authentication": "Bearer JWT + PLATFORM_ADMIN_USERNAMES allowlist",
+      "GET /api/platform/claim-conflicts": {
+        "method": "GET",
+        "path": "/api/platform/claim-conflicts",
+        "description": "List facility claim conflicts (optionally filtered by ?status=open|resolved), joined with the current holder's org identity.",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ conflicts: ClaimConflict[] }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "POST /api/platform/claim-conflicts/:id/resolve": {
+        "method": "POST",
+        "path": "/api/platform/claim-conflicts/:id/resolve",
+        "description": "Resolve a conflict: dismiss, mark contacted, or reassign the facility link from the current holder (which becomes a custom/unlinked org) to a target organisation.",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "resolution": {
+              "type": "string",
+              "enum": [
+                "dismissed",
+                "contacted",
+                "reassigned"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            },
+            "reassignToOrganizationId": {
+              "type": "string",
+              "description": "Required when resolution=reassigned"
+            }
+          },
+          "required": [
+            "resolution"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "{ conflict }"
+          },
+          "400": {
+            "description": "Invalid resolution, or missing reassignToOrganizationId"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Conflict or reassignment target not found"
+          },
+          "409": {
+            "description": "Conflict already resolved"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
       }
     }
   },
@@ -6243,6 +6565,198 @@
           "description": "Internal server error"
         }
       }
+    },
+    "GET /api/auth/me": {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "description": "Current user + organisation + entitlements. Additive fields for multi-org membership and org onboarding: `email` (nullable), `memberships` (all active orgs the user belongs to, each `{organizationId, organizationName, role}`), `isPlatformAdmin`. The existing contract fields (`id`, `username`, `role`, `organizationId`, `organization`, `entitlements`) are unchanged and are relied on by suite siblings (e.g. Fire Break Calculator).",
+      "authentication": "Bearer JWT",
+      "responses": {
+        "200": {
+          "description": "User + org context, including the new `email`, `memberships`, `isPlatformAdmin` fields"
+        },
+        "401": {
+          "description": "Not authenticated"
+        },
+        "404": {
+          "description": "User not found"
+        }
+      },
+      "implementation": "backend/src/routes/auth.ts"
+    },
+    "POST /api/auth/signup": {
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "description": "Self-service sign-up: creates a Community-plan Organization and its owner account. As of the org-onboarding rework, requires `email` and a `facility` selection: either `{facilityKey}` (claims a Digital Atlas of Australia emergency-services facility, first-come-first-served) or `{custom: {name, serviceType, suburb?, state?, postcode?}}` (an unlisted unit — no review needed). Omitting `facility` entirely keeps the legacy behaviour (creates an unlinked/custom org) for back-compat callers.",
+      "authentication": "None (public, rate-limited)",
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "organizationName": {
+            "type": "string"
+          },
+          "billingEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Required — the owner's contact email"
+          },
+          "facility": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "facilityKey": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "facilityKey"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "custom": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "serviceType": {
+                        "type": "string",
+                        "enum": [
+                          "rural-fire",
+                          "metro-fire",
+                          "ses",
+                          "ambulance",
+                          "police",
+                          "other"
+                        ]
+                      },
+                      "suburb": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "postcode": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "serviceType"
+                    ]
+                  }
+                },
+                "required": [
+                  "custom"
+                ]
+              }
+            ],
+            "description": "Optional for back-compat; the frontend always sends one variant"
+          }
+        },
+        "required": [
+          "organizationName",
+          "billingEmail",
+          "username",
+          "password",
+          "email"
+        ]
+      },
+      "responses": {
+        "201": {
+          "description": "{ token, user, organization } — organization includes facilityKey/facilityName/facilityCustom when a facility was resolved"
+        },
+        "400": {
+          "description": "Missing/invalid fields, unknown facilityKey, or missing custom facility details"
+        },
+        "409": {
+          "description": "Username already taken, or code=FACILITY_ALREADY_CLAIMED (409) when the chosen facility is already claimed by another organisation — a ClaimConflict row is recorded for the platform admin"
+        },
+        "503": {
+          "description": "Facility dataset snapshot not loaded (only when a facilityKey is supplied)"
+        }
+      },
+      "implementation": "backend/src/routes/auth.ts"
+    },
+    "PUT /api/auth/profile": {
+      "method": "PUT",
+      "path": "/api/auth/profile",
+      "description": "Update the caller's own profile. Currently just `email` — lets legacy accounts (created before email was required) backfill it.",
+      "authentication": "Bearer JWT",
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "responses": {
+        "200": {
+          "description": "{ user } with the updated email"
+        },
+        "400": {
+          "description": "Invalid email"
+        },
+        "401": {
+          "description": "Not authenticated"
+        },
+        "404": {
+          "description": "User not found"
+        }
+      },
+      "implementation": "backend/src/routes/auth.ts"
+    },
+    "POST /api/auth/switch-org": {
+      "method": "POST",
+      "path": "/api/auth/switch-org",
+      "description": "Switch the caller's active organisation (multi-org membership). Verifies an active OrganizationMembership in the target org, persists it as the user's default org, and re-issues the JWT with the target organizationId and the membership's per-org role. attachOrganization and all suite consumers keep reading the same claim shape.",
+      "authentication": "Bearer JWT",
+      "rateLimit": "sensitive-action limiter",
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "organizationId"
+        ]
+      },
+      "responses": {
+        "200": {
+          "description": "{ token, user, organization } scoped to the target org"
+        },
+        "400": {
+          "description": "organizationId missing"
+        },
+        "403": {
+          "description": "Caller is not an active member of that organisation"
+        },
+        "404": {
+          "description": "Organization not found"
+        }
+      },
+      "implementation": "backend/src/routes/auth.ts"
     }
   },
   "maintenance": {

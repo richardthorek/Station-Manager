@@ -37,6 +37,7 @@ interface AdminUserEntity extends TableEntity {
   passwordHash: string;
   role: 'owner' | 'admin' | 'viewer';
   organizationId?: string;
+  email?: string;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
@@ -106,6 +107,7 @@ export class TableStorageAdminUserDatabase {
       passwordHash: user.passwordHash,
       role: user.role,
       organizationId: user.organizationId,
+      email: user.email,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
       lastLoginAt: user.lastLoginAt?.toISOString(),
@@ -123,6 +125,7 @@ export class TableStorageAdminUserDatabase {
       passwordHash: entity.passwordHash,
       role: entity.role,
       organizationId: entity.organizationId,
+      email: entity.email,
       createdAt: new Date(entity.createdAt),
       updatedAt: new Date(entity.updatedAt),
       lastLoginAt: entity.lastLoginAt ? new Date(entity.lastLoginAt) : undefined,
@@ -154,7 +157,8 @@ export class TableStorageAdminUserDatabase {
     username: string,
     password: string,
     role: 'owner' | 'admin' | 'viewer' = 'admin',
-    organizationId?: string
+    organizationId?: string,
+    options?: { email?: string }
   ): Promise<AdminUser> {
     if (!this.isConnected) {
       await this.connect();
@@ -175,6 +179,7 @@ export class TableStorageAdminUserDatabase {
       passwordHash,
       role,
       organizationId,
+      email: options?.email,
       createdAt: new Date(),
       updatedAt: new Date(),
       isActive: true,

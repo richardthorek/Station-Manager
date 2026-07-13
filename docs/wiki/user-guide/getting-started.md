@@ -11,10 +11,30 @@ demo affects a real brigade, and demo data resets periodically.
 
 1. Open the app and choose **Sign up** (or follow a pricing link from the
    landing page — picking a paid plan there carries through to signup).
-2. Enter your organisation (brigade) name and create the **owner** account.
-   The owner controls the plan, billing, and user accounts.
-3. You start on the free **Community** plan. Upgrading to Basic or AI Pro
-   happens from **Admin → Organization** and includes a 14-day trial.
+2. Enter your organisation (brigade) name, your email, a username and
+   password, then continue to **Find your station**.
+3. Search for your brigade or unit — sign-up covers rural/country fire, fire &
+   rescue, SES, ambulance, police, and other emergency services. Pick your
+   unit from the list to claim it (first brigade to sign up owns it), or
+   choose **"My unit isn't listed"** to enter it manually if it's not in the
+   list (search still nudges you toward a known match first).
+   - If your unit shows as **already claimed**, someone from your brigade has
+     already signed up — ask them for an invite link (see below) rather than
+     creating a second account, or contact support if you think that's wrong.
+4. Create the account. You start on the free **Community** plan; upgrading to
+   Basic or AI Pro happens from **Admin → Organization** and includes a
+   14-day trial.
+
+## Inviting members & multiple organisations
+
+- From **Admin → Organization → Invite links**, an owner or admin can
+  generate a shareable link (with a role and an expiry, 7 days by default).
+  Paste it into your brigade group chat — anyone with the link can create an
+  account or join with their existing one, until it expires or you revoke it.
+- A user can belong to **more than one organisation** (e.g. helping out a
+  neighbouring brigade). If you belong to more than one, an organisation
+  switcher appears next to your username in the admin bar — pick which one
+  you're currently working in.
 
 ## Logging in
 

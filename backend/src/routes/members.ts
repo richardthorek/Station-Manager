@@ -460,6 +460,9 @@ router.post('/:id/invite', authMiddleware, requireAdmin, validateMemberId, handl
       authStatus: 'invited',
       inviteToken: token,
       ...(email ? { inviteEmail: email } : {}),
+      // Scope activation to the inviting admin's org so the new account joins
+      // the right tenant (fixes the legacy first-org fallback in multi-org).
+      ...(req.user?.organizationId ? { inviteOrganizationId: req.user.organizationId } : {}),
     });
     const base = (process.env.FRONTEND_URLS || 'http://localhost:5173').split(',')[0].trim().replace(/\/$/, '');
     const inviteUrl = `${base}/activate/${token}`;

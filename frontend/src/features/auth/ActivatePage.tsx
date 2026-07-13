@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { isValidEmail } from '../../utils/emailValidation';
 import './ActivatePage.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
@@ -14,6 +15,7 @@ export function ActivatePage() {
   const [tokenError, setTokenError] = useState<string | null>(null);
 
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -31,9 +33,10 @@ export function ActivatePage() {
         if (!res.ok) return res.json().then(d => { throw new Error(d.error || 'Invalid invite'); });
         return res.json();
       })
-      .then((data: { memberName: string; orgName?: string }) => {
+      .then((data: { memberName: string; orgName?: string; inviteEmail?: string }) => {
         setMemberName(data.memberName);
         setOrgName(data.orgName ?? null);
+        if (data.inviteEmail) setEmail(data.inviteEmail);
       })
       .catch((err: Error) => setTokenError(err.message))
       .finally(() => setValidating(false));
@@ -45,6 +48,10 @@ export function ActivatePage() {
 
     if (username.trim().length < 3) {
       setFormError('Username must be at least 3 characters.');
+      return;
+    }
+    if (!isValidEmail(email.trim())) {
+      setFormError('A valid email address is required.');
       return;
     }
     if (password.length < 8) {
@@ -61,7 +68,7 @@ export function ActivatePage() {
       const res = await fetch(`${API_BASE}/members/activate/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
+        body: JSON.stringify({ username: username.trim(), password, email: email.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Activation failed');
@@ -134,6 +141,18 @@ export function ActivatePage() {
               disabled={submitting}
               required
               minLength={3}
+            />
+          </div>
+          <div className="activate-field">
+            <label htmlFor="activate-email">Email</label>
+            <input
+              id="activate-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              disabled={submitting}
+              required
             />
           </div>
           <div className="activate-field">

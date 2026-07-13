@@ -46,15 +46,16 @@ When updating this document, also update:
 3. [Technology Stack](#technology-stack)
 4. [Database Design](#database-design)
 5. [Application Components](#application-components)
-6. [National Fire Service Facilities Dataset](#national-fire-service-facilities-dataset)
-7. [Multi-Station Architecture](#multi-station-architecture)
-8. [API Endpoints](#api-endpoints)
-9. [Real-Time Communication](#real-time-communication)
-10. [Security & Authentication](#security--authentication)
-11. [Deployment Architecture](#deployment-architecture)
-12. [Performance Characteristics](#performance-characteristics)
-13. [Testing Coverage](#testing-coverage)
-14. [Monitoring & Maintenance](#monitoring--maintenance)
+6. [SaaS Tenancy — Org Onboarding & Multi-Org Membership](#saas-tenancy--org-onboarding--multi-org-membership)
+7. [National Fire Service Facilities Dataset](#national-fire-service-facilities-dataset)
+8. [Multi-Station Architecture](#multi-station-architecture)
+9. [API Endpoints](#api-endpoints)
+10. [Real-Time Communication](#real-time-communication)
+11. [Security & Authentication](#security--authentication)
+12. [Deployment Architecture](#deployment-architecture)
+13. [Performance Characteristics](#performance-characteristics)
+14. [Testing Coverage](#testing-coverage)
+15. [Monitoring & Maintenance](#monitoring--maintenance)
 
 ---
 
@@ -876,6 +877,138 @@ intentionally **not** shrunk: the Azure Speech SDK still opens a browser-direct
 connection to `*.stt.speech.microsoft.com`/`*.cognitiveservices.azure.com` (the
 gateway only vends a token) and BYO-Azure direct mode is still supported, so those
 `connect-src` hosts remain required until a streaming-audio gateway exists.
+
+---
+
+## SaaS Tenancy — Org Onboarding & Multi-Org Membership
+
+### Overview
+
+**Status:** ✅ Implemented (July 2026) — signup now anchors a new Organization to
+a real-world facility, first-come-first-served, with conflict review, invite
+links, and multi-org membership.
+
+Previously, `POST /api/auth/signup` created an Organization from a free-text
+name with no duplicate detection (slug collisions were silently suffixed), a
+user belonged to at most one org (`AdminUser.organizationId`, a single global
+`role`), and the only invite path (member activation) hardcoded the *first*
+organization in the store — actively wrong once more than one org exists. This
+also meant the Organizations table stayed empty in production, so the
+`grant:firebreak` entitlement backfill (`backend/src/scripts/grantFireBreakEntitlement.ts`)
+had nothing to act on.
+
+### Facility claim at signup
+
+Signup (`routes/auth.ts`) now requires an `email` and a `facility` selection,
+resolved against the same national **Digital Atlas of Australia / Geoscience
+Australia "Emergency Management Facilities"** dataset the section below
+describes, but covering **all emergency service types** (rural/country fire,
+metropolitan fire, SES, ambulance, police, other) rather than just rural fire:
+
+- **Dataset variant** — `{ facilityKey }`. The canonical claim key is
+  `"<serviceType>:<objectid>"` (`services/facilitiesParser.ts`,
+  `types/facilities.ts`) since a dataset `objectid` is only unique *within* its
+  source layer. First-come-first-served: `organizationDatabase.getOrganizationsByFacilityKey`
+  is checked before creating the org; a duplicate claim is rejected with
+  `409 { code: "FACILITY_ALREADY_CLAIMED" }` and a `ClaimConflict` row is
+  written for the platform admin to review (see below). A post-create re-check
+  guards the (millisecond) race window between the check and the write.
+- **Custom variant** — `{ custom: { name, serviceType, ... } }`. The founder's
+  "my unit isn't listed" path — no dataset link, **no admin review** — while
+  the frontend's `FacilitySearch` component still runs the same lookup
+  underneath as they type, nudging them toward a known facility first.
+
+The Organization stores `facilityKey` / `facilityObjectId` / `facilityServiceType`
+/ `facilityName` / `facilityState` / `facilityCustom` / `claimedByUserId` /
+`claimedAt` (all optional, for back-compat with pre-existing rows). Storing the
+raw `facilityObjectId` alongside the composite key lets a future pass reconcile
+claims with Fire Santa Run's `rfsStationId` (same dataset, rural-fire layer) —
+tracked as a follow-up in `docs/MASTER_PLAN.md`, not built here.
+
+The facility snapshot (`src/data/emergency-facilities.csv`, blob
+`data-files/emergency-facilities.csv`) follows the same bundled-CSV /
+blob-download pattern as the existing `rfsFacilitiesParser.ts` below, produced
+by `scripts/fetchEmergencyFacilitiesSnapshot.ts` (ArcGIS REST, per-layer →
+serviceType mapping) — **that script requires internet access to
+`services.ga.gov.au` and must be run from an operator machine**, not CI or a
+sandboxed agent. See `backend/src/scripts/README.md`.
+
+### Multi-org membership
+
+`OrganizationMembership` (`services/orgAccessDatabase.ts` + Table Storage twin
++ `orgAccessDbFactory.ts`) is the source of truth for which orgs a user
+belongs to and their **per-org role** — `AdminUser.organizationId` /
+`AdminUser.role` become just the user's *default* org, retained for back-compat.
+Legacy users are migrated lazily: the first time `services/orgMembershipService.ts`
+resolves a user's memberships and finds none, it materializes one from their
+`AdminUser` fields (falling back to a virtual in-memory row if the write
+fails, so a legacy user is never locked out).
+
+The JWT claim shape is unchanged (`{ userId, username, role, organizationId }`)
+— `role`/`organizationId` now mean "role in the *active* org." Switching orgs
+(`POST /api/auth/switch-org`) re-issues the JWT for a different org the user
+belongs to, rather than changing what the claims mean. `GET /api/auth/me`
+gained additive fields only (`email`, `memberships[]`, `isPlatformAdmin`) —
+the existing contract fields Fire Break Calculator depends on
+(`id`, `username`, `organizationId`, `organization.planCode`,
+`entitlements.fireBreakEnabled`) are untouched.
+
+Role-change/removal/invite-role invariants are centralized in
+`services/orgMembershipRules.ts` (pure functions, unit-tested): an organization
+must always retain at least one active owner; owners may mint/change any role;
+admins may mint/change admin↔viewer for non-owners; viewers cannot invite or
+change anyone.
+
+### Invite links
+
+`OrgInvite` rows (same DB triple as memberships) back `/api/organizations/current/invites`
+(admin/owner: create/list/revoke) and the public `/api/org-invites/:token`
+routes (preview, accept as an existing user, or sign up directly into the
+org). Unlike Fire Santa Run's single-use brigade invites, these are
+**multi-use until expiry (default 7 days) or revocation** — deliberately
+shareable in a brigade group chat. The frontend's `/invite/:token` page
+(`OrgInvitePage.tsx`) handles both the signed-in (join) and signed-out
+(create account / sign in first) cases.
+
+The pre-existing member-activation invite flow (`routes/memberActivation.ts`,
+distinct from org invites — it creates a `viewer` `AdminUser` for a sign-in
+book `Member`) had the first-org bug described above; it's fixed by recording
+`inviteOrganizationId` on the member at invite-generation time
+(`routes/members.ts`'s `POST /:id/invite`), with the legacy first-org lookup
+kept only as a fallback for invites generated before this field existed.
+
+### Claim conflicts & platform administration
+
+A blocked signup writes a `ClaimConflict` (facility, the org that already
+holds it, and the attempted org/username/email — the attempting user account
+is **not** created). `routes/platform.ts`, gated by
+`middleware/platformAdmin.ts`'s `PLATFORM_ADMIN_USERNAMES` env allowlist (a
+comma-separated username list — mirrors Fire Santa Run's `SITE_ADMIN_USER_IDS`
+approach; **not** an org role), lets the platform operator list open/resolved
+conflicts and resolve one by dismissing it, marking it contacted, or
+reassigning the facility link to a different organization. The frontend page
+is `/admin/platform` (`PlatformAdminPage.tsx`), self-gated on
+`isPlatformAdmin` from `/auth/me` — the backend allowlist is the real
+enforcement.
+
+### Files
+
+- **Types:** `types/index.ts` (`AdminUser.email`, `OrgRole`,
+  `OrganizationMembership`, `OrgInvite`, `ClaimConflict`, `Organization`
+  facility fields), `types/facilities.ts` (`Facility`, `FacilitySearchResult`).
+- **Services:** `orgMembershipRules.ts`, `orgAccessDatabase.ts` +
+  `tableStorageOrgAccessDatabase.ts` + `orgAccessDbFactory.ts`,
+  `orgMembershipService.ts`, `facilitiesParser.ts`.
+- **Routes:** `auth.ts` (signup/me/login/profile/switch-org), `organizations.ts`
+  (invites + members), `orgInvites.ts` (public), `facilities.ts` (public),
+  `platform.ts`.
+- **Middleware:** `platformAdmin.ts`.
+- **Scripts:** `fetchEmergencyFacilitiesSnapshot.ts`, `uploadFacilitiesToBlobStorage.ts`.
+- **Frontend:** `contexts/AuthContext.tsx` (email/memberships/isPlatformAdmin/switchOrg),
+  `components/FacilitySearch.tsx`, `components/OrgSwitcher.tsx`,
+  `features/auth/SignupPage.tsx` (stepper), `features/auth/OrgInvitePage.tsx`,
+  `features/admin/organization/OrganizationPage.tsx` (Members + Invite links),
+  `features/admin/platform/PlatformAdminPage.tsx`.
 
 ---
 
@@ -2764,6 +2897,7 @@ JWT_SECRET=<secret>
 DEFAULT_ADMIN_USERNAME=<admin>
 DEFAULT_ADMIN_PASSWORD=<password>
 ENABLE_ENTITLEMENTS=true                      # default on; never disable in prod
+PLATFORM_ADMIN_USERNAMES=<comma-separated usernames>  # /admin/platform claim-conflict review; unset = nobody
 ```
 
 **Backend — optional integrations:** Stripe (`STRIPE_*`), AI gateway

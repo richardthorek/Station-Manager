@@ -434,13 +434,14 @@ class DatabaseService {
 
   updateMemberAuth(
     id: string,
-    updates: { authStatus?: Member['authStatus']; inviteToken?: string | null; inviteEmail?: string },
+    updates: { authStatus?: Member['authStatus']; inviteToken?: string | null; inviteEmail?: string; inviteOrganizationId?: string },
   ): Member | undefined {
     const member = this.members.get(id);
     if (!member) return undefined;
     if (updates.authStatus !== undefined) member.authStatus = updates.authStatus;
     if (updates.inviteToken !== undefined) member.inviteToken = updates.inviteToken ?? undefined;
     if (updates.inviteEmail !== undefined) member.inviteEmail = updates.inviteEmail;
+    if (updates.inviteOrganizationId !== undefined) member.inviteOrganizationId = updates.inviteOrganizationId;
     member.updatedAt = new Date();
     return member;
   }

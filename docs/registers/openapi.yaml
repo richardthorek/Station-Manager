@@ -44,6 +44,12 @@ tags:
     description: Vehicle inspection operations
   - name: Achievements
     description: Member achievement operations
+  - name: Organizations
+    description: SaaS tenant management — signup, invites, multi-org membership (full detail in docs/registers/api_register.json)
+  - name: Facilities
+    description: Public emergency-services facility lookup (Digital Atlas of Australia) used by the signup facility-claim step
+  - name: Platform Admin
+    description: Platform-operator administration (PLATFORM_ADMIN_USERNAMES allowlist) — facility claim-conflict review
 
 paths:
   /health:
@@ -773,6 +779,136 @@ paths:
                   $ref: '#/components/schemas/Achievement'
         '500':
           $ref: '#/components/responses/InternalServerError'
+
+  /api/auth/signup:
+    post:
+      tags:
+        - Organizations
+      summary: Self-service sign-up with facility claim
+      description: >
+        Creates a Community-plan Organization and its owner account. Requires `email` and a
+        `facility` selection — either `{facilityKey}` (first-come-first-served claim of a Digital
+        Atlas facility) or `{custom: {name, serviceType, ...}}` (an unlisted unit, no review needed).
+        Full request/response schema: docs/registers/api_register.json → auth["POST /api/auth/signup"].
+      operationId: signup
+      responses:
+        '201':
+          description: Account + organization created
+        '400':
+          description: Invalid input, unknown facilityKey, or missing custom facility details
+        '409':
+          description: Username taken, or code=FACILITY_ALREADY_CLAIMED (a ClaimConflict is recorded)
+
+  /api/auth/switch-org:
+    post:
+      tags:
+        - Organizations
+      summary: Switch active organization (multi-org membership)
+      description: >
+        Reissues the JWT scoped to a different organization the caller is an active member of.
+        Full schema: docs/registers/api_register.json → auth["POST /api/auth/switch-org"].
+      operationId: switchOrg
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: New token + organization
+        '403':
+          description: Not a member of the target organization
+
+  /api/organizations/current/invites:
+    post:
+      tags:
+        - Organizations
+      summary: Create a multi-use org invite link
+      description: Full schema in docs/registers/api_register.json → endpoints.organizations.
+      operationId: createOrgInvite
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Invite created
+    get:
+      tags:
+        - Organizations
+      summary: List org invite links
+      operationId: listOrgInvites
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Invite list
+
+  /api/organizations/current/members:
+    get:
+      tags:
+        - Organizations
+      summary: List org members (multi-org memberships)
+      operationId: listOrgMembers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Member list
+
+  /api/org-invites/{token}:
+    get:
+      tags:
+        - Organizations
+      summary: Public invite preview
+      operationId: getInviteInfo
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Organization name + role
+        '404':
+          description: Unknown token
+        '410':
+          description: Expired or revoked
+
+  /api/facilities/lookup:
+    get:
+      tags:
+        - Facilities
+      summary: Search the Digital Atlas emergency-services facility dataset
+      description: >
+        Requires `q` (min 2 chars) and/or `lat`+`lon`. Optional `serviceType`/`state` filters.
+        Full schema: docs/registers/api_register.json → endpoints.facilities.
+      operationId: lookupFacilities
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: serviceType
+          in: query
+          schema:
+            type: string
+            enum: [rural-fire, metro-fire, ses, ambulance, police, other]
+      responses:
+        '200':
+          description: Matching facilities, each annotated with `claimed`
+        '503':
+          description: Facility dataset snapshot not loaded
+
+  /api/platform/claim-conflicts:
+    get:
+      tags:
+        - Platform Admin
+      summary: List facility claim conflicts
+      operationId: listClaimConflicts
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Conflict list
+        '403':
+          description: Not a platform admin
 
 components:
   schemas:

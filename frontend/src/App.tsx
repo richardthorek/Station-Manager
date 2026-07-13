@@ -28,7 +28,9 @@ const BrigadeAccessPage = lazy(() => import('./features/admin/brigade-access/Bri
 const LoginPage = lazy(() => import('./features/auth/LoginPage').then(m => ({ default: m.LoginPage })));
 const SignupPage = lazy(() => import('./features/auth/SignupPage').then(m => ({ default: m.SignupPage })));
 const ActivatePage = lazy(() => import('./features/auth/ActivatePage').then(m => ({ default: m.ActivatePage })));
+const OrgInvitePage = lazy(() => import('./features/auth/OrgInvitePage').then(m => ({ default: m.OrgInvitePage })));
 const OrganizationPage = lazy(() => import('./features/admin/organization/OrganizationPage').then(m => ({ default: m.OrganizationPage })));
+const PlatformAdminPage = lazy(() => import('./features/admin/platform/PlatformAdminPage').then(m => ({ default: m.PlatformAdminPage })));
 
 // Truck Check routes (v1.1)
 const TruckCheckPage = lazy(() => import('./features/truckcheck/TruckCheckPage').then(m => ({ default: m.TruckCheckPage })));
@@ -84,6 +86,7 @@ function AnimatedRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/activate/:token" element={<ActivatePage />} />
+        <Route path="/invite/:token" element={<OrgInvitePage />} />
 
         {/* Sign-In — AccessRoute first (must arrive with a brigade code, an account,
             or the demo), then the signInEnabled entitlement (maintenance-only brigades can hide it) */}
@@ -111,6 +114,7 @@ function AnimatedRoutes() {
         <Route path="/admin/stations" element={<ProtectedRoute><StationManagementPage /></ProtectedRoute>} />
         <Route path="/admin/brigade-access" element={<ProtectedRoute><BrigadeAccessPage /></ProtectedRoute>} />
         <Route path="/admin/organization" element={<ProtectedRoute><OrganizationPage /></ProtectedRoute>} />
+        <Route path="/admin/platform" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
       </Routes>
     </AnimatePresence>
   );

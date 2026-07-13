@@ -1,0 +1,85 @@
+/**
+ * Signup Page — stepper-specific additions on top of LoginPage.css.
+ */
+
+.signup-step-indicator {
+  color: var(--rfs-dark-grey);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem 0;
+}
+
+.signup-checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.signup-checkbox-group input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+}
+
+.signup-selected-facility {
+  color: var(--rfs-black);
+  font-size: 0.95rem;
+  margin: 0.5rem 0 1rem 0;
+}
+
+.signup-step-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.signup-step-actions .login-button {
+  flex: 1;
+}
+
+.signup-back-button {
+  padding: 1rem 1.25rem;
+  min-height: 44px;
+  border: 2px solid var(--rfs-light-grey);
+  border-radius: 8px;
+  background: var(--rfs-white);
+  color: var(--rfs-black);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.signup-back-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.signup-conflict-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.signup-conflict-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-error-strong);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .signup-selected-facility {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .signup-back-button {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
