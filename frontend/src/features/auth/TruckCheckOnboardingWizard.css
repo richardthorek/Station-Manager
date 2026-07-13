@@ -1,0 +1,528 @@
+.truck-check-onboarding {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background-secondary);
+}
+
+.onboarding-header {
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #e5281B 0%, #c71511 100%);
+  color: white;
+  text-align: center;
+}
+
+.onboarding-header h1 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+}
+
+.onboarding-subtitle {
+  font-size: 1rem;
+  margin: 0.5rem 0 1.5rem 0;
+  opacity: 0.95;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin-top: 1rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #cbdb2a;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.onboarding-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 600px;
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.error-message {
+  padding: 1rem;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: #c33;
+  font-size: 0.9rem;
+}
+
+/* Jurisdiction Grid */
+.jurisdiction-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.jurisdiction-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.jurisdiction-option input:checked + .jurisdiction-label {
+  background: #e5281B;
+  color: white;
+  border-color: #c71511;
+}
+
+.jurisdiction-label {
+  display: block;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.jurisdiction-option input:focus + .jurisdiction-label {
+  outline: 2px solid #e5281B;
+  outline-offset: -2px;
+}
+
+.jurisdiction-option:hover .jurisdiction-label {
+  border-color: #e5281B;
+}
+
+/* Agency List */
+.agency-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.agency-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.agency-option input:checked + .agency-label {
+  background: #e5281B;
+  color: white;
+  border-color: #c71511;
+}
+
+.agency-label {
+  display: block;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.agency-option input:focus + .agency-label {
+  outline: 2px solid #e5281B;
+  outline-offset: -2px;
+}
+
+.agency-option:hover .agency-label {
+  border-color: #e5281B;
+}
+
+/* Vehicle Grid */
+.vehicles-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.vehicles-grid > legend {
+  grid-column: 1 / -1;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+  padding: 0;
+}
+
+@media (min-width: 600px) {
+  .vehicles-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.vehicle-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.vehicle-option input:checked + .vehicle-card {
+  border-color: #e5281B;
+  background: #ffe8e6;
+  box-shadow: 0 0 0 3px rgba(229, 40, 27, 0.1);
+}
+
+.vehicle-option input:checked + .vehicle-card .vehicle-checkbox {
+  background: #e5281B;
+  border-color: #c71511;
+}
+
+.vehicle-option input:checked + .vehicle-card .vehicle-checkbox::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+.vehicle-card {
+  padding: 1rem;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 140px;
+}
+
+.vehicle-option:hover .vehicle-card {
+  border-color: #e5281B;
+}
+
+.vehicle-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  position: relative;
+}
+
+.vehicle-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.vehicle-description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+  flex: 1;
+}
+
+.vehicle-agency {
+  display: inline-block;
+  background: #f0f0f0;
+  color: #666;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.vehicles-hint {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 1rem 0 0 0;
+  text-align: center;
+}
+
+/* Form Group */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.form-input {
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #e5281B;
+  box-shadow: 0 0 0 3px rgba(229, 40, 27, 0.1);
+}
+
+.form-input:disabled {
+  background: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.onboarding-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.onboarding-button.primary {
+  background: #e5281B;
+  color: white;
+}
+
+.onboarding-button.primary:hover:not(:disabled) {
+  background: #c71511;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 40, 27, 0.3);
+}
+
+.onboarding-button.secondary {
+  background: #f0f0f0;
+  color: #1a1a1a;
+  border: 2px solid #ddd;
+}
+
+.onboarding-button.secondary:hover:not(:disabled) {
+  background: #e8e8e8;
+  border-color: #e5281B;
+}
+
+.onboarding-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Confirm Summary */
+.confirm-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border-left: 4px solid #e5281B;
+}
+
+.summary-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.summary-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-value {
+  margin: 0;
+  font-size: 1rem;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.summary-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.summary-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 0.95rem;
+  color: #1a1a1a;
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+}
+
+.confirm-note {
+  font-size: 0.85rem;
+  color: #999;
+  text-align: center;
+  margin: 1rem 0 0 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .onboarding-card {
+    background: #2a2a2a;
+    color: #e0e0e0;
+  }
+
+  .vehicles-grid > legend {
+    color: #e0e0e0;
+  }
+
+  .jurisdiction-label,
+  .agency-label,
+  .vehicle-card {
+    background: #1a1a1a;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+
+  .jurisdiction-label:hover,
+  .agency-label:hover,
+  .vehicle-card:hover {
+    border-color: #e5281B;
+  }
+
+  .vehicle-title {
+    color: #e0e0e0;
+  }
+
+  .vehicle-description {
+    color: #999;
+  }
+
+  .vehicle-agency {
+    background: #333;
+    color: #999;
+  }
+
+  .form-input {
+    background: #1a1a1a;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+
+  .form-input:focus {
+    border-color: #e5281B;
+  }
+
+  .form-input:disabled {
+    background: #333;
+    color: #666;
+  }
+
+  .onboarding-button.secondary {
+    background: #333;
+    color: #e0e0e0;
+    border-color: #444;
+  }
+
+  .onboarding-button.secondary:hover:not(:disabled) {
+    background: #444;
+  }
+
+  .confirm-summary {
+    background: #1a1a1a;
+    border-left-color: #e5281B;
+  }
+
+  .summary-value {
+    color: #e0e0e0;
+  }
+
+  .summary-item {
+    border-color: #333;
+    color: #e0e0e0;
+  }
+
+  .error-message {
+    background: #3d1515;
+    border-color: #663333;
+    color: #ff9999;
+  }
+
+  .vehicles-hint {
+    color: #999;
+  }
+
+  .confirm-note {
+    color: #666;
+  }
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .onboarding-header {
+    padding: 3rem 2rem;
+  }
+
+  .onboarding-header h1 {
+    font-size: 2.5rem;
+  }
+
+  .onboarding-card {
+    padding: 3rem;
+  }
+
+  .form-actions {
+    gap: 1.5rem;
+  }
+
+  .onboarding-button {
+    min-width: 140px;
+  }
+}

@@ -14,6 +14,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import { PageTransition } from '../../components/PageTransition';
 import { useToast } from '../../hooks/useToast';
+import { TruckCheckOnboardingWizard } from './TruckCheckOnboardingWizard';
+import { hasCompletedTruckCheckOnboarding } from '../../utils/onboardingUtils';
 import './LoginPage.css';
 
 export function SignupPage() {
@@ -35,6 +37,7 @@ export function SignupPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [signupComplete, setSignupComplete] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -48,6 +51,7 @@ export function SignupPage() {
     setIsLoading(true);
     try {
       await signup({ organizationName, billingEmail, username, password });
+      setSignupComplete(true);
 
       // If the visitor picked a paid plan on the marketing page, take them
       // straight to Stripe Checkout. If billing isn't available, fall back to
@@ -63,8 +67,13 @@ export function SignupPage() {
         }
       }
 
-      // No billing intent — drop them at the app picker (the post-login home)
-      // rather than an admin console; the picker already surfaces upgrade paths.
+      // Show truck check onboarding if not already completed
+      if (!hasCompletedTruckCheckOnboarding()) {
+        // Stay on this page but show the wizard via conditional render
+        return;
+      }
+
+      // No billing intent and onboarding complete — drop them at the app picker
       showSuccess('Account created — welcome to Bushie Tools!');
       navigate('/', { replace: true });
     } catch (err) {
@@ -73,6 +82,11 @@ export function SignupPage() {
       setIsLoading(false);
     }
   };
+
+  // Show truck check onboarding wizard if signup just completed
+  if (signupComplete && !hasCompletedTruckCheckOnboarding() && !selectedPlan) {
+    return <TruckCheckOnboardingWizard />;
+  }
 
   return (
     <PageTransition variant="fade">

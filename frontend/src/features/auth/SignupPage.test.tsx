@@ -7,6 +7,7 @@ const signup = vi.fn()
 const navigate = vi.fn()
 const showSuccess = vi.fn()
 const { createCheckoutSession } = vi.hoisted(() => ({ createCheckoutSession: vi.fn() }))
+const { hasCompletedTruckCheckOnboarding } = vi.hoisted(() => ({ hasCompletedTruckCheckOnboarding: vi.fn(() => true) }))
 
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({ signup }),
@@ -19,6 +20,11 @@ vi.mock('../../hooks/useToast', () => ({
 // Mock the API module so the real fetch-based client isn't loaded in jsdom.
 vi.mock('../../services/api', () => ({
   api: { createCheckoutSession },
+}))
+
+vi.mock('../../utils/onboardingUtils', () => ({
+  hasCompletedTruckCheckOnboarding,
+  markTruckCheckOnboardingComplete: vi.fn(),
 }))
 
 vi.mock('react-router-dom', async () => {
