@@ -32,7 +32,9 @@ export default defineConfig({
     react(),
     visualizer({
       open: false,
-      filename: 'dist/stats.html',
+      // Keep the bundle report OUT of dist/ — everything in dist ships in the
+      // deploy zip and lands in the service-worker precache.
+      filename: 'bundle-stats.html',
       gzipSize: true,
       brotliSize: true,
     }),
@@ -79,8 +81,19 @@ export default defineConfig({
       workbox: {
         // Cache all static assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        // Ensure dev builds with minimal assets don't warn by allowing the generated SW bundle
-        globIgnores: ['**/node_modules/**/*'],
+        // Ensure dev builds with minimal assets don't warn by allowing the generated SW bundle.
+        // Also keep the rarely-used heavyweight chunks OUT of the install-time
+        // precache (vendor-export ~1.5 MB, vendor-charts ~430 KB, the QR
+        // scanner's html5-qrcode chunk ~370 KB) — a kiosk tablet on rural 4G
+        // shouldn't download export libraries it may never open. The
+        // assets-cache runtimeCaching rule below still caches them after
+        // first use (hashed filenames are immutable, so CacheFirst is safe).
+        globIgnores: [
+          '**/node_modules/**/*',
+          '**/vendor-export-*.js',
+          '**/vendor-charts-*.js',
+          '**/QRScannerModal-*.js',
+        ],
         // Don't serve the React app shell (navigateFallback) for the AAR Studio
         // sub-app or the API. The SW is scoped to '/', so without this denylist it
         // intercepts /aar navigations and returns the main index.html, leaving a
@@ -89,6 +102,23 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/aar/, /^\/api/],
         // Network-first strategy for API calls
         runtimeCaching: [
+          // Hashed build assets excluded from the precache (see globIgnores):
+          // immutable filenames, so cache-first is safe and gives offline
+          // support after first use.
+          {
+            urlPattern: /\/assets\/.*\.(?:js|css)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'assets-cache',
+              expiration: {
+                maxEntries: 40,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
           {
             urlPattern: /^https?:\/\/.*\/api\/.*/i,
             handler: 'NetworkFirst',

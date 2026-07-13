@@ -5,15 +5,20 @@
  * Supports both username/password and QR code device scanning.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { LockKeyhole, QrCode, HelpCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageTransition } from '../../components/PageTransition';
-import { QRScannerModal } from '../../components/QRScannerModal';
 import { DeviceSetupGuide } from '../../components/DeviceSetupGuide';
 import './LoginPage.css';
+
+// The QR scanner drags in the ~350 KB html5-qrcode library; only fetch it
+// when the visitor actually opens the scanner, not on every login view.
+const QRScannerModal = lazy(() =>
+  import('../../components/QRScannerModal').then((m) => ({ default: m.QRScannerModal }))
+);
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
@@ -172,12 +177,16 @@ export function LoginPage() {
           </div>
         </main>
 
-        <QRScannerModal
-          isOpen={showQRScanner}
-          onClose={() => setShowQRScanner(false)}
-          onScan={handleQRScan}
-          isLoading={isProcessingQR}
-        />
+        {showQRScanner && (
+          <Suspense fallback={null}>
+            <QRScannerModal
+              isOpen={showQRScanner}
+              onClose={() => setShowQRScanner(false)}
+              onScan={handleQRScan}
+              isLoading={isProcessingQR}
+            />
+          </Suspense>
+        )}
 
         <DeviceSetupGuide
           isOpen={showSetupGuide}

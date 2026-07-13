@@ -1,0 +1,314 @@
+/* ShowcaseSection — Apple-style scroll showcase on the marketing page */
+
+.showcase {
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 3.5rem 1.25rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4.5rem;
+}
+
+/* Intro */
+
+.showcase__intro {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.showcase__intro-eyebrow {
+  margin: 0;
+  color: var(--rfs-core-red);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.85rem;
+}
+
+.showcase__intro-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+
+.showcase__intro-lead {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Alternating blocks */
+
+.showcase-block {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.showcase-block--reverse .showcase-block__copy {
+  order: 2;
+}
+
+.showcase-block--reverse .showcase-block__stage {
+  order: 1;
+}
+
+.showcase-block__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.showcase-block__eyebrow {
+  margin: 0;
+  color: var(--rfs-core-red);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+}
+
+.showcase-block__title {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.showcase-block__lead {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.showcase-block__points {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.showcase-block__point {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.showcase-block__point-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-success);
+  color: var(--text-success-strong);
+  margin-top: 1px;
+}
+
+/* Device frame — the "screen recording" chrome */
+
+.showcase-block__stage {
+  min-width: 0;
+}
+
+.showcase-frame {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.showcase-frame__chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.625rem 0.875rem;
+  background: var(--rfs-neutral-dark);
+}
+
+.showcase-frame__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.showcase-frame__chrome-label {
+  flex: 1;
+  margin-left: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.showcase-frame__live {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-amber);
+  white-space: nowrap;
+}
+
+.showcase-frame__screen {
+  padding: 1rem;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* CTA */
+
+.showcase-cta {
+  text-align: center;
+  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
+  border-radius: var(--radius-xl);
+  padding: clamp(2rem, 5vw, 3.5rem);
+  color: var(--rfs-white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--shadow-xl);
+}
+
+.showcase-cta__title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  line-height: 1.15;
+  color: var(--rfs-white);
+}
+
+.showcase-cta__lead {
+  margin: 0;
+  max-width: 560px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.showcase-cta__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.showcase-cta__primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 60px;
+  padding: 1rem 2rem;
+  background: var(--rfs-white);
+  color: var(--rfs-core-red);
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  font-size: 1.05rem;
+  text-decoration: none;
+  box-shadow: var(--shadow-lg);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.showcase-cta__primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+.showcase-cta__primary .arrow {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.showcase-cta__primary:hover .arrow {
+  transform: translateX(5px);
+}
+
+.showcase-cta__secondary {
+  color: var(--rfs-white);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.5rem;
+}
+
+.showcase-cta__secondary:hover {
+  opacity: 0.85;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .showcase {
+    gap: 3rem;
+    padding: 2.5rem 1rem 3rem;
+  }
+
+  .showcase-block {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Stack copy above frame on small screens regardless of alternation. */
+  .showcase-block--reverse .showcase-block__copy {
+    order: 0;
+  }
+
+  .showcase-block--reverse .showcase-block__stage {
+    order: 1;
+  }
+
+  .showcase-frame__screen {
+    min-height: 320px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showcase-cta__primary,
+  .showcase-cta__primary .arrow {
+    transition: none;
+  }
+
+  .showcase-cta__primary:hover {
+    transform: none;
+  }
+
+  .showcase-cta__primary:hover .arrow {
+    transform: none;
+  }
+}

@@ -86,25 +86,25 @@ export function requestAutoStart(kind = 'mic') { pendingAutoStart = kind; }
 function ingestPaste(textarea) {
   const session = store.getSession();
   if (session.isDemo) {
-    toast(‘This is a sample demo — you can\’t add new content. Try opening a new review.’, ‘error’);
+    toast('This is a sample demo — you can’t add new content. Try opening a new review.', 'error');
     return;
   }
   const raw = textarea.value;
   if (!raw.trim()) {
-    toast(‘Paste a transcript first’, ‘error’);
+    toast('Paste a transcript first', 'error');
     return;
   }
   const { format, rows } = parseTranscript(raw);
   if (!rows.length) {
-    toast(‘Couldn’t find any conversation in that text’, ‘error’);
+    toast('Couldn’t find any conversation in that text', 'error');
     return;
   }
   store.update((s) => {
     for (const row of rows) {
-      s.segments.push(createSegment({ t: row.t, speaker: row.speaker, text: row.text, phase: GENERAL_PHASE, source: ‘paste’ }));
+      s.segments.push(createSegment({ t: row.t, speaker: row.speaker, text: row.text, phase: GENERAL_PHASE, source: 'paste' }));
     }
-  }, { reason: ‘segments’ });
-  textarea.value = ‘’;
+  }, { reason: 'segments' });
+  textarea.value = '';
   toast(`Added ${rows.length} line(s) (${format})`);
   analyseNow(null, { quiet: true });
 }
@@ -139,8 +139,12 @@ function audioPanel() {
   );
 
   // Live elements updated directly by the controller (no re-render per frame).
-  const meterBar = h('div', { class: 'meter__bar' });
-  const meter = h('div', { class: 'meter', title: 'Input level' }, meterBar);
+  // The waveform is a rolling history of real input levels — the room can see
+  // the app hearing them, not just a single meter bar.
+  const WAVE_BARS = 24;
+  const waveBars = Array.from({ length: WAVE_BARS }, () => h('span', { class: 'wave__bar' }));
+  const wave = h('div', { class: 'wave', title: 'Input level', 'aria-hidden': 'true' }, ...waveBars);
+  const waveLevels = new Array(WAVE_BARS).fill(0);
   const elapsed = h('span', { class: 'live__elapsed' }, '0:00');
   const interimEl = h('div', { class: 'live__interim', 'aria-live': 'off' });
   const stateText = ls.status === 'starting' ? 'Connecting…'
@@ -153,7 +157,7 @@ function audioPanel() {
       h('span', { class: `live__dot${ls.status === 'reconnecting' ? ' live__dot--reconnecting' : ''}`, 'aria-hidden': 'true' }),
       h('span', { class: 'live__state' }, stateText),
       elapsed,
-      meter,
+      wave,
       h('button', { class: 'btn btn--primary', disabled: ls.status !== 'listening' && ls.status !== 'reconnecting', onclick: () => live.stop() }, '■ Stop & see findings'),
     ),
     h('p', { class: 'live__progress muted' }, findingCount
@@ -176,7 +180,13 @@ function audioPanel() {
 
   live.setUiListener((event, s) => {
     if (event === 'level') {
-      meterBar.style.setProperty('--level', String(Math.min(1, s.level * 6)));
+      // Shift the rolling level history left and paint the newest level on
+      // the right — direct style writes, no re-render per audio frame.
+      waveLevels.shift();
+      waveLevels.push(Math.min(1, s.level * 6));
+      for (let i = 0; i < WAVE_BARS; i++) {
+        waveBars[i].style.setProperty('--l', waveLevels[i].toFixed(3));
+      }
       if (s.startedAt) elapsed.textContent = fmtClock((Date.now() - s.startedAt) / 1000);
     } else if (event === 'interim') {
       interimEl.textContent = s.interim ? `${s.interimSpeaker ? s.interimSpeaker + ': ' : ''}${s.interim}…` : '';

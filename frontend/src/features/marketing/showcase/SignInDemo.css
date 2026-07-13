@@ -1,0 +1,232 @@
+/* SignInDemo — miniature kiosk sign-in board on the marketing showcase */
+
+.signin-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+}
+
+.signin-demo__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.signin-demo__title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.signin-demo__sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-success-strong);
+  background: var(--surface-success);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-full);
+}
+
+.signin-demo__sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ui-green);
+  animation: signin-demo-pulse 2s ease-in-out infinite;
+}
+
+@keyframes signin-demo-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.signin-demo__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.signin-demo__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 60px;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.25s ease, background 0.25s ease, transform 0.15s ease;
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.signin-demo__chip:hover {
+  border-color: var(--rfs-core-red);
+  transform: translateY(-1px);
+}
+
+.signin-demo__chip:active {
+  transform: scale(0.97);
+}
+
+.signin-demo__chip--in {
+  background: var(--surface-success);
+  border-color: var(--ui-green);
+  animation: signin-demo-land 0.35s ease;
+  position: relative;
+}
+
+/* Tap ripple — makes the autoplay loop read like a screen recording of a
+   finger tapping the kiosk. */
+.signin-demo__chip--in::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--ui-green);
+  animation: signin-demo-ripple 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes signin-demo-ripple {
+  0% { opacity: 0.9; transform: scale(0.96); }
+  100% { opacity: 0; transform: scale(1.12); }
+}
+
+@keyframes signin-demo-land {
+  0% { transform: scale(0.94); }
+  55% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.signin-demo__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
+  font-weight: 800;
+  font-size: 0.95rem;
+  transition: background 0.25s ease;
+}
+
+.signin-demo__chip--in .signin-demo__avatar {
+  background: var(--ui-green);
+}
+
+.signin-demo__chip-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.signin-demo__chip-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signin-demo__chip-role {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signin-demo__chip--in .signin-demo__chip-role {
+  color: var(--text-success-strong);
+  font-weight: 600;
+}
+
+.signin-demo__chip-status {
+  color: var(--text-success-strong);
+  font-weight: 800;
+  font-size: 1rem;
+  width: 1rem;
+  text-align: center;
+}
+
+.signin-demo__footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.signin-demo__count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.signin-demo__feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 3.6rem;
+}
+
+.signin-demo__feed-item {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding-left: 0.875rem;
+  position: relative;
+  animation: signin-demo-feed-in 0.3s ease;
+}
+
+.signin-demo__feed-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ui-green);
+}
+
+.signin-demo__feed-item--empty::before {
+  background: var(--rfs-core-red);
+}
+
+@keyframes signin-demo-feed-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signin-demo__sync-dot,
+  .signin-demo__chip--in,
+  .signin-demo__chip--in::after,
+  .signin-demo__feed-item {
+    animation: none;
+  }
+
+  .signin-demo__chip,
+  .signin-demo__chip:hover,
+  .signin-demo__chip:active {
+    transition: none;
+    transform: none;
+  }
+}
