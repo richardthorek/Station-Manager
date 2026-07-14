@@ -425,11 +425,10 @@ router.delete('/current/members/:userId', sensitiveActionRateLimiter, authMiddle
 
 /**
  * GET current organization's data as a downloadable JSON bundle — owner only.
- * Covers the org record, its stations, members, and event/attendance history
- * (the sign-in data that matters for privacy requests and for a brigade's own
- * record-keeping — e.g. proving a member's attendance for a workers-comp or
- * presumptive-illness claim). Does not yet include truck-check history or
- * device records — see MASTER_PLAN.md for that follow-up.
+ * Covers the org record, its stations, members, and event/attendance history —
+ * for privacy/retention requests and a brigade's own record-keeping. Does not
+ * yet include truck-check history or device records — see MASTER_PLAN.md for
+ * that follow-up.
  */
 router.get('/current/export', sensitiveActionRateLimiter, authMiddleware, requireOwner, async (req: Request, res: Response) => {
   const id = orgId(req, res);
