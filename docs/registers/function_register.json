@@ -777,7 +777,7 @@
       "file": "backend/src/services/tableStorageDatabase.ts",
       "description": "Azure Table Storage implementation (production database)",
       "type": "class",
-      "note": "All methods are async and use @azure/data-tables SDK. Fixed Feb 2026: getAllMembers now properly filters by stationId.",
+      "note": "All methods are async and use @azure/data-tables SDK. Fixed Feb 2026: getAllMembers now properly filters by stationId. Fixed 2026-07-14: (1) getEventsByDateRange no longer delegates to getEvents() (which only ever scans the last 3 calendar months) — it now scans the month partitions the requested range actually spans, fixing silent truncation in getAttendanceSummary/getMemberParticipation/getActivityBreakdown; getEvents()/getEventsWithParticipants() themselves are unchanged and still 3-month-capped (tracked as MASTER_PLAN Q25). (2) Added private updateEntityOptimistic() — ETag-based optimistic concurrency with refetch-and-retry on a 412, applied to endEvent/reactivateEvent/deleteEvent and updateMember/updateMemberAuth/deleteMember, replacing unconditional last-write-wins Replace calls.",
       "methods": {
         "getAllMembers": {
           "signature": "getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Promise<Member[]>",
@@ -1904,7 +1904,7 @@
     },
     "organizations (updated)": {
       "file": "backend/src/routes/organizations.ts",
-      "description": "New invite-link CRUD (POST/GET/DELETE .../invites) and membership management (GET .../members, PUT/DELETE .../members/:userId) built on orgAccessDatabase + orgMembershipRules. POST .../users now also accepts email and writes a membership row.",
+      "description": "New invite-link CRUD (POST/GET/DELETE .../invites) and membership management (GET .../members, PUT/DELETE .../members/:userId) built on orgAccessDatabase + orgMembershipRules. POST .../users now also accepts email and writes a membership row. New: GET .../export (owner only) — JSON data export (org, stations, members, event/attendance history) for privacy/retention requests; event history currently limited to ~3 months on the Table Storage backend (see tableStorageDatabase.getEventsByDateRange below).",
       "functions": {}
     },
     "orgInvites": {

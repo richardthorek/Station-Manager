@@ -19,6 +19,7 @@
     "facilities:fetch": "ts-node src/scripts/fetchEmergencyFacilitiesSnapshot.ts",
     "facilities:upload": "ts-node src/scripts/uploadFacilitiesToBlobStorage.ts",
     "grant:firebreak": "NODE_ENV=production USE_TABLE_STORAGE=true ts-node src/scripts/grantFireBreakEntitlement.ts",
+    "backup:prod": "NODE_ENV=production ts-node src/scripts/backupTableStorage.ts",
     "start": "node dist/index.js",
     "test": "NODE_ENV=test jest",
     "test:watch": "jest --watch",

@@ -122,6 +122,32 @@ Automatically runs after deployment to validate successful deployments:
   run: cd backend && npm run test:post-deploy
 ```
 
+### `backupTableStorage.ts` - Table Storage backup/export
+
+Azure Table Storage has **no native point-in-time restore** (that's a Blob
+Storage feature — Tables only get geo-replication, which protects against
+Azure losing a datacenter, not against a bad script or operator mistake
+deleting or corrupting rows). This script exports every table in the target
+storage account to newline-delimited JSON blobs, so there's something to
+restore from if that ever happens.
+
+Tables are discovered dynamically via `TableServiceClient.listTables()` — the
+script does not need updating when a new table-backed service is added.
+
+```bash
+# Back up the production storage account
+AZURE_STORAGE_CONNECTION_STRING=<prod-connection-string> npm run backup:prod
+```
+
+Writes to a `table-backups` blob container (override with
+`BACKUP_CONTAINER_NAME`) under a `<ISO-timestamp>/<TableName>.ndjson` prefix.
+Runs nightly via `.github/workflows/nightly-backup.yml` — **requires the
+`AZURE_STORAGE_CONNECTION_STRING` repo secret to be set** (one-time ops step;
+the deploy pipeline itself doesn't need this secret since App Service reads
+it from its own app settings). Restoring from a backup is a manual step:
+download the relevant `.ndjson` blob(s) and re-upsert entities with a small
+script.
+
 ### `purgeProdTestData.ts` - Clear Production Test Records
 
 Removes historical test data from production tables while leaving members and activities intact.

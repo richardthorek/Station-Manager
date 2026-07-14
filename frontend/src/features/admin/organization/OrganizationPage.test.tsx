@@ -13,6 +13,7 @@ const removeOrgMember = vi.fn();
 const updateProfile = vi.fn();
 const getAiUsage = vi.fn();
 const getBillingStatus = vi.fn();
+const exportOrganizationData = vi.fn();
 
 vi.mock('../../../services/api', () => ({
   api: {
@@ -26,6 +27,7 @@ vi.mock('../../../services/api', () => ({
     updateProfile: (...a: unknown[]) => updateProfile(...a),
     getAiUsage: (...a: unknown[]) => getAiUsage(...a),
     getBillingStatus: (...a: unknown[]) => getBillingStatus(...a),
+    exportOrganizationData: (...a: unknown[]) => exportOrganizationData(...a),
     getOrganizationUsers: vi.fn().mockResolvedValue({ users: [] }),
   },
 }));
@@ -146,5 +148,23 @@ describe('OrganizationPage', () => {
     fireEvent.click(within(row).getByRole('button', { name: /remove/i }));
 
     await waitFor(() => expect(removeOrgMember).toHaveBeenCalledWith('u2'));
+  });
+
+  it('lets the owner export organization data', async () => {
+    exportOrganizationData.mockResolvedValue(undefined);
+    renderPage();
+    await screen.findByText('captain');
+
+    fireEvent.click(screen.getByRole('button', { name: /export organisation data/i }));
+
+    await waitFor(() => expect(exportOrganizationData).toHaveBeenCalled());
+  });
+
+  it('hides the export button for a non-owner', async () => {
+    authUser = { role: 'admin', email: 'a@b.org' };
+    renderPage();
+    await screen.findByText('captain');
+
+    expect(screen.queryByRole('button', { name: /export organisation data/i })).not.toBeInTheDocument();
   });
 });

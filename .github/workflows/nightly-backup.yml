@@ -1,0 +1,43 @@
+name: Nightly Table Storage Backup
+
+# Exports every Azure Table Storage table (members, events, check-ins, truck
+# checks, etc.) to newline-delimited JSON blobs in a dedicated backup
+# container. Table Storage has no native point-in-time restore, so this is
+# the recovery mechanism if data is ever lost or corrupted by a bad script,
+# a bug, or an operator mistake.
+#
+# Requires the AZURE_STORAGE_CONNECTION_STRING repo secret to be set to the
+# production storage account connection string — this workflow does nothing
+# useful until that's configured.
+
+on:
+  schedule:
+    # 03:00 UTC daily (~13:00 AEST / 14:00 AEDT) — outside NSW RFS peak hours
+    - cron: '0 3 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run backup
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+        run: npm run backup:prod

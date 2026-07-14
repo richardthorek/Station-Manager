@@ -1608,6 +1608,26 @@ class ApiService {
     return response.json();
   }
 
+  /** Downloads the org's full data export (owner-only) as a JSON file. */
+  async exportOrganizationData(): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/organizations/current/export`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to export organization data');
+    }
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `org-export-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
   async getOrganizationUsers(): Promise<{ users: OrganizationUser[] }> {
     const response = await fetch(`${API_BASE_URL}/organizations/current/users`, {
       headers: this.getHeaders(),

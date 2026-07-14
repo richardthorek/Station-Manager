@@ -463,6 +463,36 @@ export class TableStorageDatabase {
     return null;
   }
 
+  /**
+   * Read-modify-write with optimistic concurrency: retries on a 412
+   * (etag mismatch, i.e. another writer updated the row in between) by
+   * re-fetching and re-applying `mutate` to the fresh entity. Table Storage
+   * defaults to unconditional last-write-wins when no etag is supplied, which
+   * silently drops concurrent edits from two devices touching the same row
+   * (e.g. an event being ended and reactivated within the same second).
+   */
+  private async updateEntityOptimistic(
+    table: TableClient,
+    refetch: () => Promise<TableEntity & { etag: string }>,
+    mutate: (entity: TableEntity) => void,
+    maxRetries: number = 3
+  ): Promise<TableEntity> {
+    let entity = await refetch();
+    for (let attempt = 0; ; attempt++) {
+      mutate(entity);
+      try {
+        await table.updateEntity(entity, 'Replace', { etag: entity.etag });
+        return entity;
+      } catch (error: any) {
+        if (error.statusCode === 412 && attempt < maxRetries) {
+          entity = await refetch();
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
+
   async createMember(
     name: string,
     details?: { rank?: string | null; firstName?: string; lastName?: string; preferredName?: string; memberNumber?: string; membershipStartDate?: Date | null; stationId?: string }
@@ -510,16 +540,18 @@ export class TableStorageDatabase {
 
   async updateMember(id: string, name: string, rank?: string | null, membershipStartDate?: Date | null): Promise<Member | null> {
     try {
-      const entity = await this.membersTable.getEntity<TableEntity>('Member', id);
-
-      entity.name = name;
-      entity.rank = rank || '';
-      if (membershipStartDate !== undefined) {
-        entity.membershipStartDate = membershipStartDate ? membershipStartDate.toISOString() : '';
-      }
-      entity.updatedAt = new Date().toISOString();
-
-      await this.membersTable.updateEntity(entity, 'Replace');
+      const entity = await this.updateEntityOptimistic(
+        this.membersTable,
+        () => this.membersTable.getEntity<TableEntity>('Member', id),
+        (entity) => {
+          entity.name = name;
+          entity.rank = rank || '';
+          if (membershipStartDate !== undefined) {
+            entity.membershipStartDate = membershipStartDate ? membershipStartDate.toISOString() : '';
+          }
+          entity.updatedAt = new Date().toISOString();
+        }
+      );
 
       return this.entityToMember(entity);
     } catch (error: any) {
@@ -533,13 +565,17 @@ export class TableStorageDatabase {
     updates: { authStatus?: Member['authStatus']; inviteToken?: string | null; inviteEmail?: string; inviteOrganizationId?: string },
   ): Promise<Member | null> {
     try {
-      const entity = await this.membersTable.getEntity<TableEntity>('Member', id);
-      if (updates.authStatus !== undefined) entity.authStatus = updates.authStatus;
-      if (updates.inviteToken !== undefined) entity.inviteToken = updates.inviteToken ?? '';
-      if (updates.inviteEmail !== undefined) entity.inviteEmail = updates.inviteEmail;
-      if (updates.inviteOrganizationId !== undefined) entity.inviteOrganizationId = updates.inviteOrganizationId;
-      entity.updatedAt = new Date().toISOString();
-      await this.membersTable.updateEntity(entity, 'Replace');
+      const entity = await this.updateEntityOptimistic(
+        this.membersTable,
+        () => this.membersTable.getEntity<TableEntity>('Member', id),
+        (entity) => {
+          if (updates.authStatus !== undefined) entity.authStatus = updates.authStatus;
+          if (updates.inviteToken !== undefined) entity.inviteToken = updates.inviteToken ?? '';
+          if (updates.inviteEmail !== undefined) entity.inviteEmail = updates.inviteEmail;
+          if (updates.inviteOrganizationId !== undefined) entity.inviteOrganizationId = updates.inviteOrganizationId;
+          entity.updatedAt = new Date().toISOString();
+        }
+      );
       return this.entityToMember(entity);
     } catch (error: any) {
       if (error.statusCode === 404) return null;
@@ -549,13 +585,15 @@ export class TableStorageDatabase {
 
   async deleteMember(id: string): Promise<Member | null> {
     try {
-      const entity = await this.membersTable.getEntity<TableEntity>('Member', id);
-
-      entity.isDeleted = true;
-      entity.isActive = false;
-      entity.updatedAt = new Date().toISOString();
-
-      await this.membersTable.updateEntity(entity, 'Replace');
+      const entity = await this.updateEntityOptimistic(
+        this.membersTable,
+        () => this.membersTable.getEntity<TableEntity>('Member', id),
+        (entity) => {
+          entity.isDeleted = true;
+          entity.isActive = false;
+          entity.updatedAt = new Date().toISOString();
+        }
+      );
 
       // Ensure any active check-ins are closed for this member
       await this.deactivateCheckInByMember(id);
@@ -874,15 +912,18 @@ export class TableStorageDatabase {
     if (!event) return null;
 
     const monthKey = event.startTime.toISOString().slice(0, 7);
-    
-    try {
-      const entity = await this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId);
-      entity.endTime = new Date().toISOString();
-      entity.isActive = false;
-      entity.updatedAt = new Date().toISOString();
 
-      await this.eventsTable.updateEntity(entity, 'Replace');
-      
+    try {
+      const entity = await this.updateEntityOptimistic(
+        this.eventsTable,
+        () => this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId),
+        (entity) => {
+          entity.endTime = new Date().toISOString();
+          entity.isActive = false;
+          entity.updatedAt = new Date().toISOString();
+        }
+      );
+
       return this.entityToEvent(entity);
     } catch (error) {
       return null;
@@ -894,15 +935,18 @@ export class TableStorageDatabase {
     if (!event) return null;
 
     const monthKey = event.startTime.toISOString().slice(0, 7);
-    
-    try {
-      const entity = await this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId);
-      entity.endTime = undefined;
-      entity.isActive = true;
-      entity.updatedAt = new Date().toISOString();
 
-      await this.eventsTable.updateEntity(entity, 'Replace');
-      
+    try {
+      const entity = await this.updateEntityOptimistic(
+        this.eventsTable,
+        () => this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId),
+        (entity) => {
+          entity.endTime = undefined;
+          entity.isActive = true;
+          entity.updatedAt = new Date().toISOString();
+        }
+      );
+
       return this.entityToEvent(entity);
     } catch (error) {
       return null;
@@ -914,14 +958,17 @@ export class TableStorageDatabase {
     if (!event) return null;
 
     const monthKey = event.startTime.toISOString().slice(0, 7);
-    
-    try {
-      const entity = await this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId);
-      entity.isDeleted = true;
-      entity.updatedAt = new Date().toISOString();
 
-      await this.eventsTable.updateEntity(entity, 'Replace');
-      
+    try {
+      const entity = await this.updateEntityOptimistic(
+        this.eventsTable,
+        () => this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId),
+        (entity) => {
+          entity.isDeleted = true;
+          entity.updatedAt = new Date().toISOString();
+        }
+      );
+
       return this.entityToEvent(entity);
     } catch (error) {
       return null;
@@ -1725,7 +1772,36 @@ export class TableStorageDatabase {
    * Helper method to get events by date range
    */
   private async getEventsByDateRange(startDate: Date, endDate: Date, stationId?: string): Promise<Event[]> {
-    const allEvents = await this.getEvents(10000, 0, stationId); // Get a large number of events
+    // getEvents() only ever scans the last 3 calendar months, so delegating
+    // to it here silently truncated any report/export requesting a wider
+    // range. Scan the month partitions the requested range actually spans.
+    const months: string[] = [];
+    const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+    while (cursor <= end) {
+      months.push(cursor.toISOString().slice(0, 7));
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    let allEvents: Event[] = [];
+    for (const month of months) {
+      const entities = this.eventsTable.listEntities<TableEntity>({
+        queryOptions: { filter: odata`PartitionKey eq ${'Event_' + month}` }
+      });
+
+      for await (const entity of entities) {
+        const event = this.entityToEvent(entity);
+        if (!event.isDeleted) {
+          allEvents.push(event);
+        }
+      }
+    }
+
+    if (stationId) {
+      const effectiveStationId = getEffectiveStationId(stationId);
+      allEvents = allEvents.filter(event => getEffectiveStationId(event.stationId) === effectiveStationId);
+    }
+
     return allEvents.filter(e => {
       const eventTime = new Date(e.startTime);
       return eventTime >= startDate && eventTime <= endDate;

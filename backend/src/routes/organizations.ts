@@ -5,6 +5,7 @@
  * - PUT  /api/organizations/current        → update name/email/plan/module toggles (owner)
  * - GET  /api/organizations/current/users  → list users in the org (admin/owner)
  * - POST /api/organizations/current/users  → invite/create a user (admin/owner)
+ * - GET  /api/organizations/current/export → full data export as JSON (owner)
  *
  * Plan changes here set entitlements from the plan defaults; Stripe billing
  * (which would drive plan changes via webhooks) is a follow-up. Owners may
@@ -18,6 +19,7 @@ import { sensitiveActionRateLimiter } from '../middleware/rateLimiter';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { ensureOrgAccessDatabase } from '../services/orgAccessDbFactory';
 import { getAdminDb } from '../services/adminUserDbFactory';
+import { ensureDatabase } from '../services/dbFactory';
 import {
   canChangeRole,
   canInviteRole,
@@ -417,6 +419,61 @@ router.delete('/current/members/:userId', sensitiveActionRateLimiter, authMiddle
     return res.json({ success: true });
   } catch (error) {
     logger.error('Error removing org member', { error });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET current organization's data as a downloadable JSON bundle — owner only.
+ * Covers the org record, its stations, members, and event/attendance history —
+ * for privacy/retention requests and a brigade's own record-keeping. Does not
+ * yet include truck-check history or device records — see MASTER_PLAN.md for
+ * that follow-up.
+ */
+router.get('/current/export', sensitiveActionRateLimiter, authMiddleware, requireOwner, async (req: Request, res: Response) => {
+  const id = orgId(req, res);
+  if (!id) return;
+  try {
+    const orgDb = ensureOrganizationDatabase();
+    const organization = await orgDb.getOrganizationById(id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+
+    const db = await ensureDatabase();
+    const allStations = await db.getAllStations();
+    const stations = allStations.filter((s) => s.organizationId === id);
+
+    const members = (
+      await Promise.all(stations.map((s) => db.getAllMembers(s.id)))
+    ).flat();
+
+    // A large limit rather than true unbounded pagination — Table Storage's
+    // getEventsWithParticipants currently only scans the last ~3 months
+    // regardless of limit (see MASTER_PLAN.md), so older event history is
+    // known to be missing from this export until that's fixed.
+    const EVENTS_EXPORT_LIMIT = 5000;
+    const events = (
+      await Promise.all(stations.map((s) => db.getEventsWithParticipants(EVENTS_EXPORT_LIMIT, 0, s.id)))
+    ).flat();
+
+    logger.info('Org data export generated', { organizationId: id, stationCount: stations.length, memberCount: members.length, eventCount: events.length });
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="org-export-${id}-${new Date().toISOString().split('T')[0]}.json"`);
+    return res.json({
+      exportedAt: new Date().toISOString(),
+      organization,
+      stations,
+      members,
+      events,
+      limitations: [
+        'Event/attendance history may be incomplete beyond roughly the last 3 months on some deployments — see MASTER_PLAN.md.',
+        'Truck-check history and device records are not yet included in this export.',
+      ],
+    });
+  } catch (error) {
+    logger.error('Error generating org data export', { error, organizationId: id });
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

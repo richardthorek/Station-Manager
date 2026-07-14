@@ -851,6 +851,25 @@ paths:
         '200':
           description: Member list
 
+  /api/organizations/current/export:
+    get:
+      tags:
+        - Organizations
+      summary: Download a full data export (owner only)
+      description: >
+        JSON bundle of the org's stations, members, and event/attendance history — for
+        privacy/retention requests and a brigade's own record-keeping. Event history is
+        currently limited to roughly the last 3 months on the Table Storage backend.
+        Full schema: docs/registers/api_register.json → endpoints.organizations.
+      operationId: exportOrganizationData
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Data export (downloadable attachment)
+        '403':
+          description: Caller is not the org owner
+
   /api/org-invites/{token}:
     get:
       tags:

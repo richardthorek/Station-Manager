@@ -23,8 +23,8 @@ import jwt from 'jsonwebtoken';
 import { resolveKioskAccess } from '../services/kioskAccessResolver';
 import { logger } from '../services/logger';
 import { DEMO_STATION_ID } from '../constants/stations';
+import { JWT_SECRET } from '../config/jwtSecret';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const ENABLE_DATA_PROTECTION = process.env.ENABLE_DATA_PROTECTION === 'true';
 
 /**

@@ -26,10 +26,10 @@ import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 import { flexibleAuth } from '../middleware/flexibleAuth';
 import { logger } from '../services/logger';
+import { JWT_SECRET } from '../config/jwtSecret';
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const MEMBER_SESSION_EXPIRY = '8h'; // a shift-length read session, not a persistent credential
 
 /**

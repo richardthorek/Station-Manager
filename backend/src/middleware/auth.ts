@@ -24,6 +24,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../services/logger';
+import { JWT_SECRET } from '../config/jwtSecret';
 
 // Extend Express Request type to include user
 declare global {
@@ -40,7 +41,6 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
 /**
  * Extract JWT token from Authorization header

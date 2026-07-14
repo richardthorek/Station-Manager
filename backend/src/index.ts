@@ -33,6 +33,18 @@ candidateEnvPaths.forEach(envPath => {
   dotenv.config({ path: envPath, override: false });
 });
 
+// Fail fast in production if JWT_SECRET is missing or still the dev default —
+// every auth token (admin JWT, brigade token, member session, device token) is
+// forgeable otherwise. Must run before any other module reads JWT_SECRET.
+import { isJwtSecretUnconfigured } from './config/jwtSecret';
+if (process.env.NODE_ENV === 'production' && isJwtSecretUnconfigured()) {
+  // eslint-disable-next-line no-console
+  console.error(
+    'FATAL: JWT_SECRET is not set (or is the dev default) in production. Refusing to start.'
+  );
+  process.exit(1);
+}
+
 // Initialize Azure Application Insights early (before other imports)
 // This ensures all subsequent operations can be tracked
 import { initializeAppInsights } from './services/appInsights';
