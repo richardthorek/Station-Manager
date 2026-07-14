@@ -1679,6 +1679,25 @@
         "description": "Pre-existing direct user-creation endpoint now also accepts optional `email` and writes an OrganizationMembership row (previously only set AdminUser fields).",
         "authentication": "JWT (admin/owner)",
         "implementation": "backend/src/routes/organizations.ts"
+      },
+      "GET /api/organizations/current/export": {
+        "method": "GET",
+        "path": "/api/organizations/current/export",
+        "description": "Downloads a JSON bundle of the org's stations, members, and event/attendance history (privacy/retention data export). Event history coverage is currently limited to roughly the last 3 months on the Table Storage backend (see MASTER_PLAN.md Q25) — does not yet include truck-check history or device records.",
+        "authentication": "JWT (owner only)",
+        "rateLimit": "sensitive-action limiter",
+        "responses": {
+          "200": {
+            "description": "{ exportedAt, organization, stations, members, events, limitations } — served as a downloadable attachment"
+          },
+          "403": {
+            "description": "Caller is not the org owner"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
       }
     },
     "org-invites": {

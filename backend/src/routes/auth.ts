@@ -27,11 +27,11 @@ import { sensitiveActionRateLimiter } from '../middleware/rateLimiter';
 import { isValidEmail } from '../utils/emailValidation';
 import type { AdminUser, FacilityServiceType } from '../types';
 import type { CreateOrganizationInput } from '../services/organizationDatabase';
+import { JWT_SECRET } from '../config/jwtSecret';
 
 const router = Router();
 
 // JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '24h';
 
 /** Canonical blocked-claim message — the frontend renders this verbatim. */

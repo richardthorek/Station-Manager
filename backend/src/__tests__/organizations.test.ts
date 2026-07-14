@@ -156,6 +156,45 @@ describe('SaaS foundation', () => {
     });
   });
 
+  describe('GET /api/organizations/current/export', () => {
+    it('lets the owner download a data export', async () => {
+      const token = (await signup()).body.token as string;
+      const res = await request(app)
+        .get('/api/organizations/current/export')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.organization.name).toBe('Bungendore RFS');
+      expect(Array.isArray(res.body.stations)).toBe(true);
+      expect(Array.isArray(res.body.members)).toBe(true);
+      expect(Array.isArray(res.body.events)).toBe(true);
+      expect(Array.isArray(res.body.limitations)).toBe(true);
+      expect(res.body.exportedAt).toBeTruthy();
+    });
+
+    it('rejects a non-owner', async () => {
+      const ownerToken = (await signup()).body.token as string;
+      const adminRes = await request(app)
+        .post('/api/organizations/current/users')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ username: 'admin-user', password: 'anothersecret1', role: 'admin' });
+
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'admin-user', password: 'anothersecret1' });
+
+      const res = await request(app)
+        .get('/api/organizations/current/export')
+        .set('Authorization', `Bearer ${loginRes.body.token}`);
+      expect(adminRes.status).toBe(201);
+      expect(res.status).toBe(403);
+    });
+
+    it('rejects an unauthenticated request', async () => {
+      const res = await request(app).get('/api/organizations/current/export');
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('entitlement gating', () => {
     it('allows a gated route when ENABLE_ENTITLEMENTS=false, even if the feature is disabled (back-compat)', async () => {
       process.env.ENABLE_ENTITLEMENTS = 'false'; // explicitly opt-out

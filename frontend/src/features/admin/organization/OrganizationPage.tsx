@@ -45,6 +45,7 @@ export function OrganizationPage() {
   const [saving, setSaving] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const [topupLoading, setTopupLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -166,6 +167,18 @@ export function OrganizationPage() {
     } catch (err) {
       flash('error', err instanceof Error ? err.message : 'Could not start top-up checkout');
       setTopupLoading(false);
+    }
+  }
+
+  async function exportData() {
+    if (!isOwner) return;
+    setExportLoading(true);
+    try {
+      await api.exportOrganizationData();
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not export organization data');
+    } finally {
+      setExportLoading(false);
     }
   }
 
@@ -605,6 +618,18 @@ export function OrganizationPage() {
                   ))}
                 </tbody>
               </table>
+            </section>
+          )}
+
+          {isOwner && (
+            <section className="org-section">
+              <h2>Data & privacy</h2>
+              <p className="org-hint">
+                Download a copy of your organisation's stations, members, and event/attendance history as a JSON file.
+              </p>
+              <button className="org-btn org-btn--secondary" type="button" onClick={exportData} disabled={exportLoading}>
+                {exportLoading ? 'Preparing export…' : 'Export organisation data'}
+              </button>
             </section>
           )}
         </main>
