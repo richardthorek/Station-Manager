@@ -383,16 +383,40 @@ jobs:
           tenant-id: ff11f578-2330-478f-b3f1-f97fe351ea94
           subscription-id: 67fb0ac0-a5bf-4906-bf1f-5756416dc98b
 
+      - name: Determine deployment slot
+        id: determine-slot
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          # Try to determine if staging slot exists
+          # If it does, deploy to staging; if not, deploy to Production (graceful fallback)
+
+          SLOT_NAME="staging"
+
+          # Check if the staging slot exists
+          if az webapp deployment slot list \
+            --resource-group bungrfsstation_group \
+            --name bungrfs-linux \
+            --query "[?name=='$SLOT_NAME']" \
+            --output json | grep -q .; then
+            echo "✅ Staging slot exists - will deploy to staging"
+            echo "slot_name=staging" >> $GITHUB_OUTPUT
+            echo "slot_url=https://bungrfs-linux-staging.azurewebsites.net" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️  Staging slot not found - will deploy to Production (graceful fallback)"
+            echo "slot_name=Production" >> $GITHUB_OUTPUT
+            echo "slot_url=https://bungrfs-linux.azurewebsites.net" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bungrfs-linux'
-          slot-name: 'Production'
+          slot-name: ${{ steps.determine-slot.outputs.slot_name }}
           package: release.zip
         continue-on-error: true
-      
+
       - name: Check deployment result
         id: check-deploy
         if: steps.deploy-to-webapp.outcome == 'failure'
@@ -401,28 +425,30 @@ jobs:
           echo "Common causes: 409 Conflict (Oryx build), Azure updates, concurrent deployments"
           echo "Will retry once after a delay..."
           echo "deployment_failed=true" >> $GITHUB_OUTPUT
-      
+
       - name: Wait before retry
         if: steps.check-deploy.outputs.deployment_failed == 'true'
         run: |
           echo "🔄 Waiting 60 seconds to allow Azure operations to complete..."
           sleep 60
           echo "🚀 Retrying deployment..."
-      
+
       - name: Deploy to Azure Web App (Retry)
         if: steps.check-deploy.outputs.deployment_failed == 'true'
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'bungrfs-linux'
-          slot-name: 'Production'
+          slot-name: ${{ steps.determine-slot.outputs.slot_name }}
           package: release.zip
 
       - name: Set Azure App Service environment variables
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          SLOT_NAME: ${{ steps.determine-slot.outputs.slot_name }}
         run: |
           # Set version environment variables in Azure App Service
           # These override any .env file values to ensure correct version reporting
-          
+
           # Determine build timestamp with fallback (handle empty strings and null)
           BUILD_TS="${{ github.event.head_commit.timestamp }}"
           if [ -z "$BUILD_TS" ] || [ "$BUILD_TS" = "null" ]; then
@@ -431,23 +457,32 @@ jobs:
           if [ -z "$BUILD_TS" ] || [ "$BUILD_TS" = "null" ]; then
             BUILD_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           fi
-          
+
           # WEBSITE_RUN_FROM_PACKAGE=1 makes Azure mount the deployment zip
           # read-only instead of extracting backend/node_modules (tens of
           # thousands of files) onto the /home Azure Files share — that
           # extraction was taking ~8 min per deploy. Set here (idempotent) so it
           # takes effect from the NEXT deploy onward, by which point the
           # writable-log-path fix (logger.ts → /home/LogFiles) is already live.
+
+          # Determine slot flag for az cli (empty string for Production slot, otherwise --slot)
+          if [ "$SLOT_NAME" = "Production" ]; then
+            SLOT_FLAG=""
+          else
+            SLOT_FLAG="--slot $SLOT_NAME"
+          fi
+
           az webapp config appsettings set \
             --resource-group bungrfsstation_group \
             --name bungrfs-linux \
+            $SLOT_FLAG \
             --settings \
               GIT_COMMIT_SHA="${{ github.sha }}" \
               GIT_COMMIT_SHORT="$(echo "${{ github.sha }}" | cut -c1-7)" \
               BUILD_TIMESTAMP="$BUILD_TS" \
               WEBSITE_RUN_FROM_PACKAGE="1" \
             --output none
-          echo "✅ Environment variables set in Azure App Service"
+          echo "✅ Environment variables set in Azure App Service (slot: $SLOT_NAME)"
           echo "   - GIT_COMMIT_SHA: ${{ github.sha }}"
           echo "   - GIT_COMMIT_SHORT: $(echo "${{ github.sha }}" | cut -c1-7)"
           echo "   - BUILD_TIMESTAMP: $BUILD_TS"
@@ -458,9 +493,10 @@ jobs:
           az webapp restart \
             --resource-group bungrfsstation_group \
             --name bungrfs-linux \
+            $SLOT_FLAG \
             --output none
           echo "✅ App restart initiated"
-          
+
           # Wait for Azure to complete the restart before running smoke tests
           # Azure App Service restarts typically take 2-3 minutes
           echo ""
@@ -471,18 +507,28 @@ jobs:
 
       - name: Deployment summary
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          SLOT_NAME: ${{ steps.determine-slot.outputs.slot_name }}
         run: |
+          SLOT_DISPLAY=$SLOT_NAME
+          if [ "$SLOT_NAME" = "Production" ]; then
+            SLOT_DISPLAY="Production (default — no staging slot enabled yet)"
+          else
+            SLOT_DISPLAY="Staging"
+          fi
+
           echo "## 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: $SLOT_DISPLAY" >> $GITHUB_STEP_SUMMARY
           echo "- **App Name**: bungrfs-linux" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ steps.determine-slot.outputs.slot_url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Run post-deployment smoke tests
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
-          APP_URL: https://bungrfs-linux.azurewebsites.net
+          APP_URL: ${{ steps.determine-slot.outputs.slot_url }}
           TABLE_STORAGE_TABLE_SUFFIX: Test
           STABILIZATION_TIMEOUT: 1200
           STABILIZATION_INTERVAL: 10
@@ -509,9 +555,11 @@ jobs:
 
       - name: Post-deployment test summary
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          SLOT_URL: ${{ steps.determine-slot.outputs.slot_url }}
         run: |
           echo "## 🧪 Post-Deployment Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Target URL**: https://bungrfs-linux.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target URL**: $SLOT_URL" >> $GITHUB_STEP_SUMMARY
           echo "- **Test Environment**: TABLE_STORAGE_TABLE_SUFFIX=Test" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
