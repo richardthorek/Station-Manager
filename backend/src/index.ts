@@ -120,6 +120,14 @@ attachAgentCheckWs(httpServer);
 // circular (A3 code review F6).
 
 const io = new Server(httpServer, {
+  // engine.io's default destroyUpgrade behaviour ends ANY upgrade socket it
+  // didn't handle itself after 1 s with no bytes written — including a
+  // /ws/agent-check upgrade still awaiting its pre-upgrade DB validation
+  // (several Table Storage round trips in prod), which killed voice-check
+  // connections mid-handshake whenever validation outlasted the timer. The
+  // agent-check handler (attached above) takes over the cleanup duty instead,
+  // rejecting upgrade paths nobody handles with an immediate 404.
+  destroyUpgrade: false,
   cors: {
     origin: (origin, callback) => {
       // Allow requests with no origin or from allowed origins

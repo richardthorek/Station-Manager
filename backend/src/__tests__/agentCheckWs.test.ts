@@ -18,6 +18,7 @@ import { createServer, Server } from 'http';
 import { AddressInfo } from 'net';
 import jwt from 'jsonwebtoken';
 import WebSocket from 'ws';
+import { Server as SocketIOServer } from 'socket.io';
 import { attachAgentCheckWs } from '../routes/agentCheck';
 import { runAgentTurn } from '../services/agentLoop';
 import { recognizeSpeech, synthesizeSpeech } from '../services/agentSpeech';
@@ -576,5 +577,81 @@ describe('push-to-talk audio turns', () => {
     const wav: Buffer = recognizeSpeechMock.mock.calls[0][0];
     expect(wav.readUInt32LE(40)).toBe(6); // data chunk size = 4 + 2 bytes, not just 2
     client.close();
+  });
+});
+
+describe('coexistence with Socket.io on the same HTTP server (prod shape)', () => {
+  // index.ts attaches BOTH this WS handler and a Socket.io server to one
+  // httpServer. engine.io also listens on 'upgrade' and — unless told not to —
+  // ends any upgrade socket it didn't handle itself once destroyUpgradeTimeout
+  // (default 1000 ms) passes with no handshake bytes written. Our handler
+  // awaits several DB lookups (Table Storage round trips in prod) before
+  // writing the 101, so a slow validation lost the race and the client saw
+  // the connection die mid-handshake — but only in prod, never against the
+  // bare test server every other test in this file uses.
+  let comboServer: Server;
+  let comboPort: number;
+  let io: SocketIOServer;
+
+  beforeAll(async () => {
+    comboServer = createServer();
+    attachAgentCheckWs(comboServer); // registered first, exactly as in index.ts
+    // destroyUpgrade: false mirrors index.ts — the fix under test. Without it,
+    // the slow-validation test below fails with "socket hang up" at ~1 s.
+    io = new SocketIOServer(comboServer, { destroyUpgrade: false });
+    await new Promise<void>((resolve) => comboServer.listen(0, resolve));
+    comboPort = (comboServer.address() as AddressInfo).port;
+  });
+
+  afterAll(async () => {
+    io.close();
+    await new Promise<void>((resolve) => comboServer.close(() => resolve()));
+  });
+
+  function comboConnect(query: string): WebSocket {
+    return new WebSocket(`ws://127.0.0.1:${comboPort}/ws/agent-check${query}`);
+  }
+
+  it('completes the upgrade even when pre-upgrade validation outlasts engine.io destroyUpgradeTimeout (1s)', async () => {
+    const truckChecksDb = await ensureTruckChecksDatabase();
+    const original = truckChecksDb.getApplianceById.bind(truckChecksDb);
+    const spy = jest.spyOn(truckChecksDb, 'getApplianceById').mockImplementation(async (id: string) => {
+      await new Promise((r) => setTimeout(r, 1300)); // > engine.io's 1000 ms destroyUpgradeTimeout
+      return original(id);
+    });
+    try {
+      const ws = comboConnect(`?${new URLSearchParams({ token: token(), applianceId }).toString()}`);
+      const sessionStarted = new Promise<Record<string, unknown>>((resolve, reject) => {
+        ws.on('message', (data) => resolve(JSON.parse(data.toString()) as Record<string, unknown>));
+        ws.on('error', reject);
+        ws.on('close', (code) => reject(new Error(`closed before session-started (code ${code})`)));
+      });
+      const started = await sessionStarted;
+      expect(started.type).toBe('session-started');
+      ws.terminate();
+    } finally {
+      spy.mockRestore();
+    }
+  }, 10000);
+
+  it('still rejects fast-path failures with an HTTP status (bad token) when Socket.io is attached', async () => {
+    const ws = comboConnect('?token=not-a-jwt&applianceId=x');
+    const opened = new Promise<void>((resolve, reject) => {
+      ws.once('open', () => resolve());
+      ws.once('error', reject);
+    });
+    await expect(opened).rejects.toThrow(/401/);
+  });
+
+  it('rejects an upgrade for a path nothing handles with 404 instead of leaving it hanging', async () => {
+    // With destroyUpgrade disabled on the Socket.io server (see index.ts), the
+    // agent-check handler takes over engine.io's cleanup duty for upgrade
+    // requests nobody claims — otherwise they would sit open forever.
+    const ws = new WebSocket(`ws://127.0.0.1:${comboPort}/ws/nothing-here`);
+    const opened = new Promise<void>((resolve, reject) => {
+      ws.once('open', () => resolve());
+      ws.once('error', reject);
+    });
+    await expect(opened).rejects.toThrow(/404/);
   });
 });

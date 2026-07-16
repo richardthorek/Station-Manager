@@ -448,6 +448,52 @@ async function testOrgInviteUnknownToken(): Promise<void> {
 }
 
 /**
+ * Functional Test: Voice-check WebSocket upgrade endpoint answers.
+ *
+ * Sends a real same-origin WebSocket Upgrade request to /ws/agent-check with a
+ * deliberately invalid token and expects the handler's own **401**. Each wrong
+ * answer pinpoints a past (fixed) regression, so this asserts the whole chain:
+ *   - 200 + HTML → the SPA fallback regex swallowed /ws again;
+ *   - 403        → the upgrade origin gate rejected a same-origin caller again;
+ *   - socket destroyed with no response → engine.io's destroyUpgrade killed the
+ *     upgrade before our handler answered (Socket.io coexistence regression).
+ */
+async function testVoiceCheckWsUpgradeAnswers(): Promise<void> {
+  const urlObj = new URL(`${APP_URL}/ws/agent-check?token=post-deploy-smoke&applianceId=post-deploy-smoke`);
+  const client = urlObj.protocol === 'https:' ? https : http;
+
+  const statusCode = await new Promise<number>((resolve, reject) => {
+    const req = client.request(
+      urlObj,
+      {
+        headers: {
+          Connection: 'Upgrade',
+          Upgrade: 'websocket',
+          Origin: urlObj.origin,
+          'Sec-WebSocket-Version': '13',
+          'Sec-WebSocket-Key': Buffer.from('post-deploy-smoke').toString('base64'),
+        },
+        timeout: REQUEST_TIMEOUT,
+      },
+      // Resolve on headers — rejectUpgrade() destroys the socket right after
+      // writing the status line, so waiting for a body/end would be flaky.
+      (res) => resolve(res.statusCode || 0)
+    );
+    req.on('upgrade', (res) => resolve(res.statusCode || 0)); // 101 would mean auth is broken — caught by the assert below
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('No response to the upgrade request (socket destroyed or hanging — engine.io destroyUpgrade regression?)'));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+
+  if (statusCode !== 401) {
+    throw new Error(`Expected 401 from the voice-check WS upgrade handler, got ${statusCode}`);
+  }
+}
+
+/**
  * Functional Test 7: Rate Limiting Check
  */
 async function testRateLimiting(): Promise<void> {
@@ -511,6 +557,7 @@ async function runTests(): Promise<void> {
     await test('Check-ins API', testGetCheckins);
     await test('Facility lookup API', testFacilityLookup);
     await test('Org invite unknown token', testOrgInviteUnknownToken);
+    await test('Voice-check WS upgrade answers', testVoiceCheckWsUpgradeAnswers);
     await test('Frontend SPA loads', testFrontendLoads);
     await test('Rate limiting', testRateLimiting);
 
