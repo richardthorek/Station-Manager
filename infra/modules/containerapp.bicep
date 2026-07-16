@@ -36,6 +36,10 @@ param storageConnectionString string
 @description('Comma-separated allowed CORS origins (FRONTEND_URLS).')
 param frontendUrls string = ''
 
+@description('JWT secret for signing authentication tokens (required for production).')
+@secure()
+param jwtSecret string
+
 @description('Container registry login server (e.g. ghcr.io). Leave empty for a public image.')
 param registryServer string = ''
 
@@ -107,6 +111,10 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             name: 'storage-connection-string'
             value: storageConnectionString
           }
+          {
+            name: 'jwt-secret'
+            value: jwtSecret
+          }
         ],
         usePrivateRegistry ? [
           {
@@ -152,6 +160,10 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'FRONTEND_URLS'
               value: frontendUrls
+            }
+            {
+              name: 'JWT_SECRET'
+              secretRef: 'jwt-secret'
             }
           ]
           probes: [

@@ -28,3 +28,10 @@ param registryPassword = '' // pass at deploy time: az ... -p registryPassword=$
 // Allowed CORS origins for the API / Socket.io. Add the two experiment hosts'
 // URLs once their names are known (they are deterministic from namePrefix).
 param frontendUrls = ''
+
+// JWT secret for signing authentication tokens (REQUIRED for production).
+// DO NOT commit the actual secret to version control. Pass it at deploy time:
+//   az deployment group create ... -p jwtSecret=$JWT_SECRET_VALUE
+// Generate a new secret:
+//   openssl rand -base64 64
+param jwtSecret = '' // pass at deploy time: az ... -p jwtSecret=$JWT_SECRET_VALUE

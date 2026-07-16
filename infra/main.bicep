@@ -51,6 +51,10 @@ param registryPassword string = ''
 @description('Comma-separated allowed CORS origins (FRONTEND_URLS) shared by both hosts.')
 param frontendUrls string = ''
 
+@description('JWT secret for signing authentication tokens (required for production).')
+@secure()
+param jwtSecret string = ''
+
 @description('Tags applied to every resource.')
 param tags object = {
   application: 'station-manager'
@@ -86,6 +90,7 @@ module linux 'modules/appservice-linux.bicep' = if (deployLinuxAppService) {
     webAppName: '${namePrefix}-linux'
     storageConnectionString: storageConnectionString
     frontendUrls: frontendUrls
+    jwtSecret: jwtSecret
     tags: tags
   }
 }
@@ -104,6 +109,7 @@ module containerApp 'modules/containerapp.bicep' = if (deployContainerApp) {
     image: containerImage
     storageConnectionString: storageConnectionString
     frontendUrls: frontendUrls
+    jwtSecret: jwtSecret
     registryServer: registryServer
     registryUsername: registryUsername
     registryPassword: registryPassword

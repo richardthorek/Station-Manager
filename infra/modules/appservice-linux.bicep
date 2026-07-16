@@ -27,6 +27,10 @@ param storageConnectionString string
 @description('Comma-separated allowed CORS origins for the API / Socket.io (FRONTEND_URLS).')
 param frontendUrls string = ''
 
+@description('JWT secret for signing authentication tokens (required for production).')
+@secure()
+param jwtSecret string
+
 @description('Tags applied to all resources.')
 param tags object = {}
 
@@ -103,6 +107,10 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'FRONTEND_URLS'
           value: frontendUrls
+        }
+        {
+          name: 'JWT_SECRET'
+          value: jwtSecret
         }
       ]
     }

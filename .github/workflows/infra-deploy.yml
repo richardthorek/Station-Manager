@@ -110,6 +110,7 @@ jobs:
                 deployContainerApp=${{ inputs.deploy_container_app }} \
                 containerImage="${{ needs.build-image.outputs.image }}" \
                 registryServer="" \
+                jwtSecret="${{ secrets.JWT_SECRET_PROD }}" \
               || echo "what-if reported differences (continuing)"
 
       - name: Deploy infrastructure
@@ -125,6 +126,7 @@ jobs:
                 deployContainerApp=${{ inputs.deploy_container_app }} \
                 containerImage="${{ needs.build-image.outputs.image }}" \
                 registryServer="" \
+                jwtSecret="${{ secrets.JWT_SECRET_PROD }}" \
               --query "properties.outputs" -o json | tee deployment-outputs.json
 
   deploy-linux-app:
