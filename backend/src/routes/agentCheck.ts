@@ -170,12 +170,28 @@ function isUpgradeOriginAllowed(req: IncomingMessage): boolean {
   }
 }
 
+// Socket.io/engine.io's own upgrade path — the one other legitimate WebSocket
+// endpoint on this HTTP server. Everything else is nobody's, and must be
+// closed by us (see below).
+const SOCKET_IO_PATH_PREFIX = '/socket.io/';
+
 export function attachAgentCheckWs(httpServer: HttpServer): void {
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_MESSAGE_BYTES });
 
   httpServer.on('upgrade', async (req: IncomingMessage, socket, head) => {
     const url = new URL(req.url ?? '', 'ws://localhost');
-    if (url.pathname !== '/ws/agent-check') return;
+    if (url.pathname !== '/ws/agent-check') {
+      // index.ts disables engine.io's destroyUpgrade (its 1 s kill-timer ended
+      // our own slow-validating upgrades mid-handshake), which also disables
+      // engine.io's cleanup of upgrade requests nobody claims. Take that duty
+      // over here: anything that isn't ours and isn't Socket.io's gets an
+      // immediate 404 instead of an open socket that would otherwise hang
+      // (and leak a connection) forever.
+      if (!url.pathname.startsWith(SOCKET_IO_PATH_PREFIX)) {
+        rejectUpgrade(socket, 404, 'Not Found');
+      }
+      return;
+    }
 
     // A3 code review F6: Socket.io on this same httpServer already runs every
     // connection through this same allowlist; the raw WS upgrade had no
