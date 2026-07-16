@@ -108,8 +108,7 @@ export class VoiceAgentClient {
     ws.binaryType = 'arraybuffer';
     ws.onmessage = (event: MessageEvent) => this.handleMessage(event.data);
     ws.onclose = () => this.handleClose();
-    ws.onerror = (event: Event) => {
-      const error = event as Event;
+    ws.onerror = () => {
       // WebSocket onerror typically fires before onclose on connection failure;
       // the error object provides minimal info (just the Event type), but logging
       // it helps identify when the handshake failed vs. an active connection dropped.
@@ -232,11 +231,12 @@ export class VoiceAgentClient {
       case 'busy':
         this.events.onBusy?.();
         break;
-      case 'error':
+      case 'error': {
         const errorMessage = frame.error ?? 'Unknown error';
         console.error('[VoiceAgentClient] Server error', { error: errorMessage });
         this.events.onError?.(errorMessage);
         break;
+      }
       default:
         break; // pong etc.
     }
