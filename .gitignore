@@ -56,3 +56,7 @@ bungendore_members.csv
 backend/src/data/rfs-facilities.csv
 backend/src/data/emergency-facilities.csv
 2026-02-07_Brigade Administration Report (Bungendore).csv
+
+# Deployment artifacts
+deploy/
+release.zip
