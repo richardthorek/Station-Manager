@@ -137,6 +137,39 @@ function rejectUpgrade(socket: { write: (data: string) => void; destroy: () => v
 // force the server to buffer + JSON.parse a huge payload (A3 code review F5).
 const MAX_WS_MESSAGE_BYTES = 256 * 1024;
 
+/**
+ * Whether this upgrade's Origin is permitted. Mirrors the app-wide origin
+ * convention (Express CORS + Socket.io in index.ts), which allows: a request
+ * with no Origin (non-browser client), an allow-listed Origin, and — crucially
+ * — any **same-origin** request even when it isn't on the allowlist.
+ *
+ * Express and Socket.io tolerate a missing/incomplete FRONTEND_URLS because
+ * their origin callbacks merely *withhold CORS headers* for unlisted origins
+ * (`callback(null, false)`); a same-origin caller needs no CORS headers and
+ * still succeeds. This raw upgrade handler instead *rejects* the socket, so
+ * before this it was the one endpoint that hard-403'd a same-origin voice-check
+ * upgrade whenever FRONTEND_URLS didn't list the live domain — e.g. after the
+ * app moved to a custom domain, on which Socket.io kept working (same-origin
+ * soft-allow) while the voice check broke. Genuine cross-origin callers that
+ * aren't allow-listed are still rejected: that cross-site-WebSocket-hijacking
+ * protection is the reason to inspect Origin at all.
+ */
+function isUpgradeOriginAllowed(req: IncomingMessage): boolean {
+  const origin = req.headers.origin;
+  if (!origin) return true; // non-browser client (matches Express/Socket.io)
+  if (allowedOriginsList.includes(origin)) return true;
+  try {
+    const originHost = new URL(origin).host;
+    // App Service/Cloudflare preserve the custom-domain Host; prefer the
+    // forwarded host when a trusted proxy rewrote it.
+    const forwardedHost = (req.headers['x-forwarded-host'] as string | undefined)?.split(',')[0]?.trim();
+    const host = forwardedHost || req.headers.host;
+    return Boolean(host) && originHost === host; // same-origin
+  } catch {
+    return false; // malformed Origin — reject
+  }
+}
+
 export function attachAgentCheckWs(httpServer: HttpServer): void {
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_MESSAGE_BYTES });
 
@@ -148,11 +181,11 @@ export function attachAgentCheckWs(httpServer: HttpServer): void {
     // connection through this same allowlist; the raw WS upgrade had no
     // equivalent check, so the app's CORS/origin policy silently didn't apply
     // here. Browsers always send Origin on a WS handshake; a missing Origin
-    // (non-browser client) is allowed through, matching the existing Express/
-    // Socket.io convention.
-    const origin = req.headers.origin;
-    if (origin && !allowedOriginsList.includes(origin)) {
-      logger.warn('Agent check WS: origin not allowed', { origin });
+    // (non-browser client) and any same-origin request are allowed through,
+    // matching the existing Express/Socket.io convention (see
+    // isUpgradeOriginAllowed).
+    if (!isUpgradeOriginAllowed(req)) {
+      logger.warn('Agent check WS: origin not allowed', { origin: req.headers.origin, host: req.headers.host });
       rejectUpgrade(socket, 403, 'Forbidden');
       return;
     }

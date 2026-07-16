@@ -176,6 +176,22 @@ describe('connection & auth', () => {
     await expect(opened).rejects.toThrow(/403/);
   });
 
+  it('allows a same-origin upgrade even when the Origin is absent from FRONTEND_URLS', async () => {
+    // Reproduces the production failure: on a custom domain that FRONTEND_URLS
+    // doesn't list, Socket.io keeps connecting (same-origin soft-allow) but the
+    // voice-check WS used to hard-403 the identical same-origin upgrade. Here
+    // the Origin host matches the request Host (127.0.0.1:<port>) yet is NOT in
+    // allowedOriginsList (which defaults to localhost:5173), so this would have
+    // been rejected before the same-origin allowance was added.
+    const params = new URLSearchParams({ token: token(), applianceId });
+    const client = new WebSocket(`ws://127.0.0.1:${port}/ws/agent-check?${params.toString()}`, { origin: `http://127.0.0.1:${port}` });
+    await new Promise<void>((resolve, reject) => {
+      client.once('open', () => resolve());
+      client.once('error', reject);
+    });
+    client.close();
+  });
+
   it('creates a session and announces it on connect', async () => {
     const { client, sessionId } = await openSession();
     const session = await ensureAgentSessionDatabase().getSession(sessionId);
