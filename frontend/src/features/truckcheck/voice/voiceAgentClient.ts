@@ -96,27 +96,53 @@ export class VoiceAgentClient {
     const host = base.replace(/^https?:\/\//, '');
     const url = options.url ?? `${scheme}://${host}/ws/agent-check?${params.toString()}`;
 
+    // Log connection attempt to help debug connection failures
+    console.debug('[VoiceAgentClient] Attempting connection', {
+      url: url.replace(/token=[^&]*/, 'token=***'),
+      applianceId: options.applianceId,
+      hasAuth: !!token,
+      isResuming: !!this.lastSessionId,
+    });
+
     const ws = this.wsFactory(url);
     ws.binaryType = 'arraybuffer';
     ws.onmessage = (event: MessageEvent) => this.handleMessage(event.data);
     ws.onclose = () => this.handleClose();
-    ws.onerror = () => this.events.onError?.('Connection error');
+    ws.onerror = () => {
+      // WebSocket onerror typically fires before onclose on connection failure;
+      // the error object provides minimal info (just the Event type), but logging
+      // it helps identify when the handshake failed vs. an active connection dropped.
+      console.error('[VoiceAgentClient] Connection error', {
+        url: url.replace(/token=[^&]*/, 'token=***'),
+        readyState: ws.readyState,
+      });
+      this.events.onError?.('Failed to connect to voice agent — check your network and try again');
+    };
+    ws.onopen = () => {
+      console.debug('[VoiceAgentClient] WebSocket opened (awaiting session-started)');
+    };
     this.ws = ws;
   }
 
   /** Unexpected disconnect: retry with backoff up to a cap; a deliberate close never reaches here reconnecting. */
   private handleClose(): void {
     if (this.intentionalClose || !this.lastOptions) {
+      console.debug('[VoiceAgentClient] Connection closed intentionally');
       this.events.onClose?.();
       return;
     }
     if (this.reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+      console.error('[VoiceAgentClient] Reconnection attempts exhausted after', MAX_RECONNECT_ATTEMPTS, 'tries');
       this.events.onClose?.();
       return;
     }
     this.reconnectAttempt += 1;
-    this.events.onReconnecting?.(this.reconnectAttempt);
     const delay = Math.min(RECONNECT_BASE_DELAY_MS * 2 ** (this.reconnectAttempt - 1), RECONNECT_MAX_DELAY_MS);
+    console.warn('[VoiceAgentClient] Unexpected disconnect; attempting reconnect', {
+      attempt: this.reconnectAttempt,
+      delayMs: delay,
+    });
+    this.events.onReconnecting?.(this.reconnectAttempt);
     this.reconnectTimer = setTimeout(() => {
       if (this.lastOptions) this.openSocket(this.lastOptions);
     }, delay);
@@ -186,6 +212,10 @@ export class VoiceAgentClient {
         if (frame.sessionId) {
           this.lastSessionId = frame.sessionId;
           this.reconnectAttempt = 0;
+          console.info('[VoiceAgentClient] Session started', {
+            sessionId: frame.sessionId,
+            resumed: frame.resumed === true,
+          });
           this.events.onSessionStarted?.(frame.sessionId, frame.resumed === true);
         }
         break;
@@ -201,9 +231,12 @@ export class VoiceAgentClient {
       case 'busy':
         this.events.onBusy?.();
         break;
-      case 'error':
-        this.events.onError?.(frame.error ?? 'Unknown error');
+      case 'error': {
+        const errorMessage = frame.error ?? 'Unknown error';
+        console.error('[VoiceAgentClient] Server error', { error: errorMessage });
+        this.events.onError?.(errorMessage);
         break;
+      }
       default:
         break; // pong etc.
     }
