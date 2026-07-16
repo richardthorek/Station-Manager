@@ -5,7 +5,8 @@
   grid-template-rows: auto 1fr auto;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   color: var(--text-primary);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
 }
 
@@ -187,7 +188,7 @@
   gap: 0.6rem;
   min-height: 0;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   z-index: 1;
 }
@@ -195,7 +196,13 @@
 .cards-area {
   flex: 1;
   display: flex;
-  align-items: flex-end;
+  /* flex-start, not flex-end: with flex-end, a grid taller than the available
+     space (e.g. tablet widths where fewer columns fit per row, pushing the
+     card grid to 2+ rows) gets pushed above the container's top edge. The
+     browser's default scroll anchor starts at the flex-start edge, so that
+     overflow is clipped and unreachable — the exact "top row hidden under the
+     header, page anchored to the bottom" bug on tablet-sized screens. */
+  align-items: flex-start;
   min-height: 0;
 }
 

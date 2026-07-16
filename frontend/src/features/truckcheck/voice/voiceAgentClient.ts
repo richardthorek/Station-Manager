@@ -8,6 +8,8 @@
  * jsdom without a server.
  */
 
+import { getKioskToken } from '../../../utils/kioskMode';
+
 export interface VoiceAgentEvents {
   /** `resumed` is true when this reconnected into an existing session — fetch its turn history to rehydrate the transcript. */
   onSessionStarted?: (sessionId: string, resumed: boolean) => void;
@@ -70,7 +72,13 @@ export class VoiceAgentClient {
   }
 
   private openSocket(options: VoiceAgentConnectOptions): void {
-    const token = localStorage.getItem('auth_token') ?? '';
+    // Voice Check sits behind FeatureRoute alone (no ProtectedRoute), so a
+    // walk-up kiosk/tablet reaches this page with no admin JWT — only its
+    // brigade/device token. Fall back to that (the backend now accepts it,
+    // see agentCheck.ts's resolveKioskAccess fallback) instead of always
+    // sending an empty token, which the server rejected outright and the
+    // client surfaced as a bare "Connection error".
+    const token = localStorage.getItem('auth_token') || getKioskToken() || '';
     const params = new URLSearchParams({ token, applianceId: options.applianceId });
     if (options.stationId) params.set('stationId', options.stationId);
     // A3 code review F9: resume the previous session (server rehydrates it by
