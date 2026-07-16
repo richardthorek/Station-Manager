@@ -612,9 +612,9 @@ io.on('connection', (socket: SocketWithStation) => {
 });
 
 // Serve frontend for all other GET routes (SPA fallback) - Must be last!
-// Exclude /assets/* (frontend static assets) and /aar/* (the AAR Studio sub-app,
-// served above) so neither gets the React index.html.
-app.get(/^\/(?!api|assets|aar).*/, spaRateLimiter, (req, res) => {
+// Exclude /assets/* (frontend static assets), /aar/* (the AAR Studio sub-app,
+// served above), and /ws/* (WebSocket upgrade handler) so they don't get the React index.html.
+app.get(/^\/(?!api|assets|aar|ws).*/, spaRateLimiter, (req, res) => {
   // The SPA shell must never be cached hard — a stale index.html would point
   // at purged hashed assets after the next deploy.
   res.setHeader('Cache-Control', 'no-cache');
