@@ -60,29 +60,33 @@ export function LoginPage() {
     }
   };
 
-  const handleQRScan = async (token: string, stationId: string) => {
+  const handleQRScan = async (token: string) => {
     setError('');
     setIsProcessingQR(true);
 
     try {
-      const response = await fetch(`${API_BASE}/devices/validate`, {
+      // The QR scanned here encodes a kiosk sign-in URL (`/signin?brigade=<token>`,
+      // see StationTokenCard's kioskUrl/deviceKioskUrl) — the same token space
+      // AccessRoute/StationContext already know how to activate when it arrives
+      // as a URL param. Validate through the same endpoint they use
+      // (`/api/brigade-access/validate`, which resolves both device and legacy
+      // brigade tokens) rather than `/api/devices/validate`, and hand off to
+      // `/signin?brigade=<token>` instead of writing ad-hoc localStorage keys —
+      // otherwise isKioskMode()/hasMemberSession() find nothing and AccessRoute
+      // bounces the visitor straight back to '/'.
+      const response = await fetch(`${API_BASE}/brigade-access/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, ...(stationId && { stationId }) }),
+        body: JSON.stringify({ token }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+      if (!response.ok || !data.valid) {
         throw new Error(data.error || 'Device not found');
       }
 
-      const data = await response.json();
-      localStorage.setItem('deviceToken', token);
-      localStorage.setItem('stationId', data.stationId);
-      localStorage.setItem('deviceContext', JSON.stringify(data.device));
-
       setShowQRScanner(false);
-      navigate('/signin', { replace: true });
+      navigate(`/signin?brigade=${encodeURIComponent(token)}`, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to activate device');
       setIsProcessingQR(false);

@@ -28,6 +28,7 @@ import { ensureAgentSessionDatabase } from '../services/agentSessionDbFactory';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { ensureDatabase } from '../services/dbFactory';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
+import { resolveKioskAccess } from '../services/kioskAccessResolver';
 import { AgentToolExecutor } from '../services/agentTools';
 import { runAgentTurn } from '../services/agentLoop';
 import { recognizeSpeech, synthesizeSpeech, buildWavFile, TTS_MIME_TYPE } from '../services/agentSpeech';
@@ -170,11 +171,32 @@ export function attachAgentCheckWs(httpServer: HttpServer): void {
     }
 
     let payload: { userId?: string; username?: string; organizationId?: string } = {};
+    // Kiosk-scoped connections (resolved below, once we know the JWT didn't
+    // verify) are restricted to their own station once the appliance is
+    // looked up — a station-scoped token must not open a voice session for
+    // another station's appliance.
+    let kioskStationId: string | undefined;
     try {
       payload = jwt.verify(token, JWT_SECRET) as typeof payload;
     } catch {
-      rejectUpgrade(socket, 401, 'Unauthorized');
-      return;
+      // Not an admin JWT — Voice Check is reachable via FeatureRoute alone
+      // (no ProtectedRoute), so a walk-up kiosk/tablet signed in with its
+      // brigade/device token, never an admin JWT, must still be able to open
+      // this socket. Fall back to the same kiosk-token resolver every other
+      // endpoint uses (flexibleAuth/requireSession) — without this, any
+      // non-admin visitor hit an unconditional 401 on connect, surfaced to
+      // them as a bare "Connection error".
+      const resolved = await resolveKioskAccess(token);
+      if (!resolved) {
+        rejectUpgrade(socket, 401, 'Unauthorized');
+        return;
+      }
+      kioskStationId = resolved.stationId;
+      if (resolved.stationId) {
+        const mainDb = await ensureDatabase();
+        const station = await mainDb.getStationById(resolved.stationId);
+        payload = { organizationId: station?.organizationId, username: 'kiosk' };
+      }
     }
 
     if (payload.userId) {
@@ -216,6 +238,16 @@ export function attachAgentCheckWs(httpServer: HttpServer): void {
         return;
       }
       stationIdFromAppliance = appliance.stationId;
+
+      if (kioskStationId && appliance.stationId && kioskStationId !== appliance.stationId) {
+        logger.warn('Agent check WS: kiosk token station does not match appliance station', {
+          applianceId,
+          kioskStationId,
+          applianceStationId: appliance.stationId,
+        });
+        rejectUpgrade(socket, 403, 'Forbidden');
+        return;
+      }
 
       if (payload.organizationId && appliance.stationId) {
         const mainDb = await ensureDatabase();
