@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useStation } from '../contexts/StationContext';
 import { getKioskToken } from '../utils/kioskMode';
 import { getMemberSessionToken } from '../utils/memberSession';
+import { debugLog } from '../utils/debugLog';
 
 // Use current location in production, localhost in development
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ||
@@ -40,12 +41,12 @@ export function useSocket() {
     const socket = socketRef.current;
 
     socket.on('connect', () => {
-      console.log('Socket connected');
+      debugLog('Socket connected');
       setIsConnected(true);
       
       // Join station room if station is selected
       if (selectedStation) {
-        console.log('Joining station room:', selectedStation.id);
+        debugLog('Joining station room:', selectedStation.id);
         socket.emit('join-station', {
           stationId: selectedStation.id,
           brigadeId: selectedStation.brigadeId,
@@ -55,12 +56,12 @@ export function useSocket() {
     });
 
     socket.on('disconnect', () => {
-      console.log('Socket disconnected');
+      debugLog('Socket disconnected');
       setIsConnected(false);
     });
 
     socket.on('joined-station', (data) => {
-      console.log('Successfully joined station room:', data);
+      debugLog('Successfully joined station room:', data);
     });
 
     socket.on('join-error', (data) => {
@@ -76,7 +77,7 @@ export function useSocket() {
   // Re-join when station changes
   useEffect(() => {
     if (socketRef.current && isConnected && selectedStation) {
-      console.log('Station changed, joining new room:', selectedStation.id);
+      debugLog('Station changed, joining new room:', selectedStation.id);
       socketRef.current.emit('join-station', {
         stationId: selectedStation.id,
         brigadeId: selectedStation.brigadeId,

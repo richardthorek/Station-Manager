@@ -836,35 +836,36 @@ export class TableStorageDatabase {
   }
 
   async getEvents(limit: number = 50, offset: number = 0, stationId?: string): Promise<Event[]> {
-    // Query recent months
-    const now = new Date();
-    const months = [];
-    for (let i = 0; i < 3; i++) { // Last 3 months
-      const date = new Date(now);
-      date.setMonth(date.getMonth() - i);
-      months.push(date.toISOString().slice(0, 7));
-    }
+    // Q25 (found 2026-07-14): used to hard-scan only the last 3 calendar
+    // months, so deep pagination (and any caller needing older history)
+    // silently came back empty regardless of `limit`. Page backward through
+    // month partitions, newest first, until we've collected enough events to
+    // satisfy offset+limit — once a full month's scan puts us at or past
+    // that count, every older month can only contain older events, so the
+    // requested page is already fully determined. Bounded to avoid an
+    // unbounded scan against a deployment with no event history at all.
+    const effectiveStationId = stationId ? getEffectiveStationId(stationId) : undefined;
+    const needed = offset + limit;
+    const MAX_MONTHS_BACK = 120; // 10 years — far beyond any realistic brigade history
 
     let allEvents: Event[] = [];
-    
-    for (const month of months) {
+    const cursor = new Date();
+
+    for (let i = 0; i < MAX_MONTHS_BACK; i++) {
+      const month = cursor.toISOString().slice(0, 7);
       const entities = this.eventsTable.listEntities<TableEntity>({
         queryOptions: { filter: odata`PartitionKey eq ${'Event_' + month}` }
       });
 
       for await (const entity of entities) {
         const event = this.entityToEvent(entity);
-        // Filter out deleted events
-        if (!event.isDeleted) {
-          allEvents.push(event);
-        }
+        if (event.isDeleted) continue;
+        if (effectiveStationId && getEffectiveStationId(event.stationId) !== effectiveStationId) continue;
+        allEvents.push(event);
       }
-    }
 
-    // Filter by station when provided
-    if (stationId) {
-      const effectiveStationId = getEffectiveStationId(stationId);
-      allEvents = allEvents.filter(event => getEffectiveStationId(event.stationId) === effectiveStationId);
+      if (allEvents.length >= needed) break;
+      cursor.setMonth(cursor.getMonth() - 1);
     }
 
     // Sort by startTime descending

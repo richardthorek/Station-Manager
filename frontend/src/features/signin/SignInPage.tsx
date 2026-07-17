@@ -15,7 +15,7 @@
  * Real-time synchronization ensures all connected devices see updates instantly.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 
 // Constants
 const STATION_SWITCH_DELAY_MS = 300; // Match CSS animation duration
@@ -25,7 +25,6 @@ import { CurrentEventParticipants } from '../../components/CurrentEventParticipa
 import { MemberList } from '../../components/MemberList';
 import { MemberNameGrid } from '../../components/MemberNameGrid';
 import { UserManagement } from '../../components/UserManagement';
-import { BulkImportModal } from '../../components/BulkImportModal';
 import { NewEventModal } from '../../components/NewEventModal';
 import { ExportData } from '../../components/ExportData';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
@@ -41,6 +40,11 @@ import { announce } from '../../utils/announcer';
 import { formatErrorMessage } from '../../utils/errorHandler';
 import type { Member, Activity, EventWithParticipants } from '../../types';
 import './SignInPage.css';
+
+// Lazy-loaded (Q20): pulls in papaparse, unrelated to the rest of the
+// sign-in book — deferring it means landing on /signin no longer downloads
+// a CSV-parsing library that most visits (kiosk sign-in/out) never touch.
+const BulkImportModal = lazy(() => import('../../components/BulkImportModal').then(m => ({ default: m.BulkImportModal })));
 
 export function SignInPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -691,12 +695,14 @@ export function SignInPage() {
       )}
 
       {showBulkImport && (
-        <BulkImportModal
-          existingMembers={members}
-          onClose={() => setShowBulkImport(false)}
-          onImportComplete={handleCloseBulkImport}
-          onImport={handleBulkImport}
-        />
+        <Suspense fallback={null}>
+          <BulkImportModal
+            existingMembers={members}
+            onClose={() => setShowBulkImport(false)}
+            onImportComplete={handleCloseBulkImport}
+            onImport={handleBulkImport}
+          />
+        </Suspense>
       )}
 
       <NewEventModal

@@ -14,6 +14,8 @@
  * activities/checkins/events were found relying solely on the
  * ENABLE_DATA_PROTECTION-conditional flexibleAuth and are now also gated by
  * the unconditional requireSession, matching members/truck-checks/reports/export).
+ * Also covers achievements (Q36, found 2026-07-17 investigating Q9) — it had
+ * no auth gate at all, the same PII class (attendance/streak patterns).
  */
 
 import request from 'supertest';
@@ -30,6 +32,7 @@ import eventsRouter from '../routes/events';
 import truckChecksRouter from '../routes/truckChecks';
 import reportsRouter from '../routes/reports';
 import exportRouter from '../routes/export';
+import { createAchievementRoutes } from '../routes/achievements';
 import { requireSession } from '../middleware/flexibleAuth';
 import { requireFeature } from '../middleware/entitlements';
 import { authHeader } from './helpers/authHelpers';
@@ -88,6 +91,12 @@ const mounts: Array<{ name: string; path: string; mount: (app: Express) => void 
     path: '/api/export',
     mount: (app) =>
       app.use('/api/export', requireSession({ readsOnly: true }), requireFeature('reportsEnabled'), exportRouter),
+  },
+  {
+    name: 'achievements',
+    path: '/api/achievements/some-member-id',
+    mount: (app) =>
+      app.use('/api/achievements', requireSession({ readsOnly: true }), createAchievementRoutes()),
   },
 ];
 

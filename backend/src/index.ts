@@ -491,8 +491,12 @@ app.use('/api/devices', apiRateLimiter, devicesRouter);
 // requests (it passes through when there is no org context).
 app.use('/api/export', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('reportsEnabled'), exportRouter);
 
-// Achievement routes (now handles database selection per-request based on demo mode)
-app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());
+// Achievement routes (now handles database selection per-request based on demo mode).
+// Q36 (found 2026-07-17 investigating Q9): this had no auth gate at all — unlike
+// members/checkins/events, achievement/streak data reveals attendance patterns,
+// the same PII class the F1/AC-4 fixes closed elsewhere. requireSession
+// (readsOnly, unconditional) matches the members mount's treatment.
+app.use('/api/achievements', apiRateLimiter, requireSession({ readsOnly: true }), createAchievementRoutes());
 app.use('/api/agent-sessions', apiRateLimiter, requireFeature('aiEnabled'), agentCheckRouter);
 
 // Socket.io connection handling with room-based isolation

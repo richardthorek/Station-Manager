@@ -448,10 +448,10 @@ router.get('/current/export', sensitiveActionRateLimiter, authMiddleware, requir
       await Promise.all(stations.map((s) => db.getAllMembers(s.id)))
     ).flat();
 
-    // A large limit rather than true unbounded pagination — Table Storage's
-    // getEventsWithParticipants currently only scans the last ~3 months
-    // regardless of limit (see MASTER_PLAN.md), so older event history is
-    // known to be missing from this export until that's fixed.
+    // A large limit rather than true unbounded pagination. getEventsWithParticipants
+    // (Table Storage) used to hard-cap its scan at the last ~3 months regardless
+    // of limit (Q25) — fixed 2026-07-17, it now pages back through month
+    // partitions until this limit is satisfied.
     const EVENTS_EXPORT_LIMIT = 5000;
     const events = (
       await Promise.all(stations.map((s) => db.getEventsWithParticipants(EVENTS_EXPORT_LIMIT, 0, s.id)))
@@ -468,7 +468,7 @@ router.get('/current/export', sensitiveActionRateLimiter, authMiddleware, requir
       members,
       events,
       limitations: [
-        'Event/attendance history may be incomplete beyond roughly the last 3 months on some deployments — see MASTER_PLAN.md.',
+        `Event/attendance history is limited to the most recent ${EVENTS_EXPORT_LIMIT.toLocaleString()} events per station.`,
         'Truck-check history and device records are not yet included in this export.',
       ],
     });

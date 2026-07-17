@@ -6,6 +6,7 @@ import {
   clearSyncedActions,
   type QueuedAction,
 } from './offlineStorage';
+import { debugLog } from '../utils/debugLog';
 
 type SyncCallback = (success: boolean, error?: string) => void;
 
@@ -24,7 +25,7 @@ class OfflineQueueManager {
    */
   private setupEventListeners() {
     this.onlineListener = () => {
-      console.log('[OfflineQueue] Connection restored, syncing pending actions...');
+      debugLog('[OfflineQueue] Connection restored, syncing pending actions...');
       this.syncPendingActions();
     };
 
@@ -76,21 +77,21 @@ class OfflineQueueManager {
    */
   public async syncPendingActions(): Promise<void> {
     if (this.syncInProgress) {
-      console.log('[OfflineQueue] Sync already in progress, skipping...');
+      debugLog('[OfflineQueue] Sync already in progress, skipping...');
       return;
     }
 
     if (!this.isOnline()) {
-      console.log('[OfflineQueue] Device is offline, cannot sync');
+      debugLog('[OfflineQueue] Device is offline, cannot sync');
       return;
     }
 
     this.syncInProgress = true;
-    console.log('[OfflineQueue] Starting sync...');
+    debugLog('[OfflineQueue] Starting sync...');
 
     try {
       const pendingActions = await getPendingActions();
-      console.log(`[OfflineQueue] Found ${pendingActions.length} pending actions`);
+      debugLog(`[OfflineQueue] Found ${pendingActions.length} pending actions`);
 
       let successCount = 0;
       let failCount = 0;
@@ -120,7 +121,7 @@ class OfflineQueueManager {
         }
       }
 
-      console.log(`[OfflineQueue] Sync complete. Success: ${successCount}, Failed: ${failCount}`);
+      debugLog(`[OfflineQueue] Sync complete. Success: ${successCount}, Failed: ${failCount}`);
 
       // Clear synced actions
       await clearSyncedActions();
@@ -139,7 +140,7 @@ class OfflineQueueManager {
    * Sync a single action
    */
   private async syncAction(action: QueuedAction): Promise<void> {
-    console.log('[OfflineQueue] Syncing action:', action);
+    debugLog('[OfflineQueue] Syncing action:', action);
 
     // Mark as syncing
     await updateQueuedAction(action.id, { status: 'syncing' });

@@ -38,6 +38,8 @@ export interface AuthResult {
   role?: 'admin' | 'viewer';
   brigadeId?: string;
   stationId?: string;
+  /** Only set for credentialType 'jwt' — the signed-in admin's organization. */
+  organizationId?: string;
 }
 
 /** Claims minted into a member-session token — see routes/checkins.ts's /url-checkin. */
@@ -68,6 +70,7 @@ export function verifyJwtAuthResult(token: string): AuthResult | null {
       userId: string;
       username: string;
       role: 'admin' | 'viewer';
+      organizationId?: string;
     };
 
     return {
@@ -76,6 +79,7 @@ export function verifyJwtAuthResult(token: string): AuthResult | null {
       userId: decoded.userId,
       username: decoded.username,
       role: decoded.role,
+      organizationId: decoded.organizationId,
     };
   } catch (error) {
     return null;

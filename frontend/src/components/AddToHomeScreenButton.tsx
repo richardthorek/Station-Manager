@@ -8,6 +8,7 @@ import { useLocation } from 'react-router-dom';
 import { getKioskToken } from '../utils/kioskMode';
 import { createShortcutLink } from '../utils/shortcutUtils';
 import './AddToHomeScreenButton.css';
+import { debugLog } from '../utils/debugLog';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -46,7 +47,7 @@ export function AddToHomeScreenButton() {
       const { outcome } = await deferredPrompt.userChoice;
 
       if (outcome === 'accepted') {
-        console.log('[AddToHomeScreen] Shortcut created:', shortcutLink);
+        debugLog('[AddToHomeScreen] Shortcut created:', shortcutLink);
       }
 
       setDeferredPrompt(null);

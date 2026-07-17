@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { offlineQueue } from '../services/offlineQueue';
 import { getAllQueuedActions, type QueuedAction } from '../services/offlineStorage';
+import { debugLog } from '../utils/debugLog';
 import './OfflineIndicator.css';
 
 export function OfflineIndicator() {
@@ -40,7 +41,7 @@ export function OfflineIndicator() {
       setSyncing(false);
       updateQueuedActions();
       if (success) {
-        console.log('[OfflineIndicator] Sync completed successfully');
+        debugLog('[OfflineIndicator] Sync completed successfully');
       }
     });
 

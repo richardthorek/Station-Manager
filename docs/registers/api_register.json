@@ -856,8 +856,8 @@
       "GET /api/members/:id": {
         "method": "GET",
         "path": "/api/members/:id",
-        "description": "Get specific member by ID",
-        "authentication": "none",
+        "description": "Get specific member by ID. Requires a session (requireSession — admin JWT/brigade-token/member-session, or the public demo station). Station-scoped for brigade-token/member-session callers; an admin JWT instead matches on organizationId (Q9, 2026-07-17) so a deep link works regardless of the caller's currently-selected station.",
+        "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
         "parameters": {
           "path": {
             "id": {
@@ -1010,7 +1010,7 @@
     "POST /api/members/:id/invite": {
       "method": "POST",
       "path": "/api/members/:id/invite",
-      "description": "Generate a one-time activation invite URL for a member (admin-only). Sets authStatus='invited' and inviteToken on the member. The returned inviteUrl points to /activate/:token. Token is consumed on first successful activation.",
+      "description": "Generate a one-time activation invite URL for a member (admin-only). Sets authStatus='invited' and inviteToken on the member. The returned inviteUrl points to /activate/:token. Token is consumed on first successful activation. Station-scoped, with the same organizationId-based cross-station allowance for admin JWTs as GET /api/members/:id (Q9, 2026-07-17).",
       "authentication": "JWT (admin or owner)",
       "parameters": {
         "path": {
@@ -1177,8 +1177,8 @@
     "DELETE /api/members/:id": {
       "method": "DELETE",
       "path": "/api/members/:id",
-      "description": "Soft delete a member (mark inactive, hide from UI, retain history)",
-      "authentication": "none",
+      "description": "Soft delete a member (mark inactive, hide from UI, retain history). Station-scoped, with the same organizationId-based cross-station allowance for admin JWTs as GET /api/members/:id (Q9, 2026-07-17). Note: not itself behind requireSession (non-GET/HEAD, so only gated when ENABLE_DATA_PROTECTION=true) — kiosk write-path pass-through, matching the rest of the write surface.",
+      "authentication": "flexibleAuth (station scope) when ENABLE_DATA_PROTECTION=true",
       "parameters": {
         "path": {
           "id": {
@@ -1230,8 +1230,8 @@
     "GET /api/members/:id/history": {
       "method": "GET",
       "path": "/api/members/:id/history",
-      "description": "Get member's check-in history",
-      "authentication": "none",
+      "description": "Get member's check-in history. Requires a session (requireSession); same organizationId-based cross-station allowance for admin JWTs as GET /api/members/:id (Q9, 2026-07-17).",
+      "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
       "parameters": {
         "path": {
           "id": {
@@ -1683,7 +1683,7 @@
       "GET /api/organizations/current/export": {
         "method": "GET",
         "path": "/api/organizations/current/export",
-        "description": "Downloads a JSON bundle of the org's stations, members, and event/attendance history (privacy/retention data export). Event history coverage is currently limited to roughly the last 3 months on the Table Storage backend (see MASTER_PLAN.md Q25) — does not yet include truck-check history or device records.",
+        "description": "Downloads a JSON bundle of the org's stations, members, and event/attendance history (privacy/retention data export). Event history is capped at the most recent 5000 events per station (Q25's 3-month scan cap was fixed 2026-07-17) — does not yet include truck-check history or device records (Q26).",
         "authentication": "JWT (owner only)",
         "rateLimit": "sensitive-action limiter",
         "responses": {
@@ -3216,8 +3216,8 @@
     "GET /api/achievements/member/:memberId": {
       "method": "GET",
       "path": "/api/achievements/member/:memberId",
-      "description": "Get achievements for specific member",
-      "authentication": "none",
+      "description": "Get achievements for specific member. Requires a session (requireSession — admin JWT/brigade-token/member-session, or the public demo station); previously ungated (Q36, fixed 2026-07-17).",
+      "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
       "parameters": {
         "path": {
           "memberId": {
@@ -3264,8 +3264,8 @@
     "GET /api/achievements/recent": {
       "method": "GET",
       "path": "/api/achievements/recent",
-      "description": "Get recently unlocked achievements (all members)",
-      "authentication": "none",
+      "description": "Get recently unlocked achievements (all members). Requires a session (requireSession); previously ungated (Q36, fixed 2026-07-17).",
+      "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
       "parameters": {
         "query": {
           "limit": {
