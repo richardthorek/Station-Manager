@@ -36,7 +36,8 @@ longer-form material.
 | [ci-pipeline.md](ci-pipeline.md) | CI/CD pipeline gates and behaviour *(same staleness caveat)* |
 | [app-insights.md](app-insights.md) | Azure Application Insights setup |
 | [post-deployment-testing.md](post-deployment-testing.md) | Post-deploy smoke tests against production |
-| [qa-walkthrough.md](qa-walkthrough.md) | Browser-driven manual QA script |
+| [qa-walkthrough.md](qa-walkthrough.md) | Browser-driven manual QA script (deep, narrow — Truck Check + AAR sync) |
+| [uat-checklist.md](uat-checklist.md) | Master UAT checklist (broad — every route/feature); run results go in `history/reviews/` |
 
 ## History
 
