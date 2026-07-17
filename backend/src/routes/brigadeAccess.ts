@@ -1,16 +1,21 @@
 /**
  * Brigade Access Token Routes
- * 
+ *
  * API endpoints for managing brigade access tokens for kiosk mode.
  * These endpoints allow administrators to:
  * - Generate new kiosk access tokens
  * - List tokens for a brigade or station
  * - Revoke tokens
  * - Validate tokens
- * 
+ *
  * Authentication:
- * - POST, DELETE operations protected with optionalAuth middleware
- * - Auth required only when REQUIRE_AUTH=true
+ * - All admin operations (generate/revoke/list/stats) require an
+ *   authenticated admin/owner unconditionally — see MASTER_PLAN Q29 / review
+ *   F5. `optionalAuth` only enforced auth when REQUIRE_AUTH=true, so an
+ *   unset env var let anyone mint or enumerate kiosk credentials for any
+ *   station.
+ * - `/validate` stays public — it's called by the kiosk itself when it
+ *   loads `/signin?brigade=<token>`.
  */
 
 import { Router, Request, Response } from 'express';
@@ -26,15 +31,18 @@ import {
 } from '../services/brigadeAccessService';
 import { resolveKioskAccess } from '../services/kioskAccessResolver';
 import { logger } from '../services/logger';
-import { optionalAuth } from '../middleware/auth';
+import { authMiddleware, requireAdmin } from '../middleware/auth';
 
 const router = Router();
+
+// All brigade-access admin operations require an authenticated org admin.
+const brigadeAccessAdminAuth = [authMiddleware, requireAdmin];
 
 /**
  * POST /api/brigade-access/generate
  * Generate a new brigade access token for kiosk mode
- * Protected by optionalAuth middleware
- * 
+ * Protected by authMiddleware + requireAdmin
+ *
  * Body:
  * - brigadeId: string (required)
  * - stationId: string (required)
@@ -43,7 +51,7 @@ const router = Router();
  */
 router.post(
   '/generate',
-  optionalAuth,
+  brigadeAccessAdminAuth,
   [
     body('brigadeId')
       .trim()
@@ -161,11 +169,11 @@ router.post(
 /**
  * DELETE /api/brigade-access/:token
  * Revoke a brigade access token
- * Protected by optionalAuth middleware
+ * Protected by authMiddleware + requireAdmin
  */
 router.delete(
   '/:token',
-  optionalAuth,
+  brigadeAccessAdminAuth,
   [
     param('token')
       .trim()
@@ -205,11 +213,11 @@ router.delete(
 /**
  * GET /api/brigade-access/brigade/:brigadeId
  * Get all active tokens for a brigade
- * Protected by optionalAuth middleware
+ * Protected by authMiddleware + requireAdmin
  */
 router.get(
   '/brigade/:brigadeId',
-  optionalAuth,
+  brigadeAccessAdminAuth,
   [
     param('brigadeId')
       .trim()
@@ -249,11 +257,11 @@ router.get(
 /**
  * GET /api/brigade-access/station/:stationId
  * Get all active tokens for a station
- * Protected by optionalAuth middleware
+ * Protected by authMiddleware + requireAdmin
  */
 router.get(
   '/station/:stationId',
-  optionalAuth,
+  brigadeAccessAdminAuth,
   [
     param('stationId')
       .trim()
@@ -293,9 +301,9 @@ router.get(
 /**
  * GET /api/brigade-access/stats
  * Get statistics about active tokens
- * Protected by optionalAuth middleware
+ * Protected by authMiddleware + requireAdmin
  */
-router.get('/stats', optionalAuth, async (req: Request, res: Response) => {
+router.get('/stats', brigadeAccessAdminAuth, async (req: Request, res: Response) => {
   try {
     const totalTokens = getActiveTokenCount();
     
@@ -316,9 +324,9 @@ router.get('/stats', optionalAuth, async (req: Request, res: Response) => {
  * GET /api/brigade-access/all-tokens
  * Get all active tokens across all stations (for admin utility)
  * Returns a map of tokens with their associated station info
- * Protected by optionalAuth middleware
+ * Protected by authMiddleware + requireAdmin
  */
-router.get('/all-tokens', optionalAuth, async (req: Request, res: Response) => {
+router.get('/all-tokens', brigadeAccessAdminAuth, async (req: Request, res: Response) => {
   try {
     const allTokens = getAllBrigadeAccessTokens();
     

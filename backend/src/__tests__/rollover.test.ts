@@ -14,6 +14,7 @@ import express, { Express } from 'express';
 import eventsRouter from '../routes/events';
 import activitiesRouter from '../routes/activities';
 import { isEventExpired, autoExpireEvents, EVENT_EXPIRY_HOURS } from '../services/rolloverService';
+import { authHeader } from './helpers/authHelpers';
 import type { Event } from '../types';
 
 let app: Express;
@@ -186,9 +187,16 @@ describe('Events API - Rollover Features', () => {
   });
 
   describe('POST /api/events/admin/rollover', () => {
-    it('should successfully trigger manual rollover', async () => {
+    it('should reject an unauthenticated request', async () => {
+      await request(app)
+        .post('/api/events/admin/rollover')
+        .expect(401);
+    });
+
+    it('should successfully trigger manual rollover for an admin', async () => {
       const response = await request(app)
         .post('/api/events/admin/rollover')
+        .set(authHeader())
         .expect(200);
 
       expect(response.body).toHaveProperty('message');
@@ -211,6 +219,7 @@ describe('Events API - Rollover Features', () => {
       // Trigger rollover
       const response = await request(app)
         .post('/api/events/admin/rollover')
+        .set(authHeader())
         .expect(200);
 
       // Should not deactivate the recently created event
@@ -220,6 +229,7 @@ describe('Events API - Rollover Features', () => {
     it('should return correct expiry hours configuration', async () => {
       const response = await request(app)
         .post('/api/events/admin/rollover')
+        .set(authHeader())
         .expect(200);
 
       expect(response.body.expiryHours).toBe(EVENT_EXPIRY_HOURS);

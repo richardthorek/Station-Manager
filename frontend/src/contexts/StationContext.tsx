@@ -13,13 +13,14 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { api, setCurrentStationId } from '../services/api';
 import type { Station } from '../types';
-import { 
-  isKioskMode, 
-  getKioskStationId, 
-  initializeKioskMode, 
+import {
+  isKioskMode,
+  getKioskStationId,
+  initializeKioskMode,
   validateKioskToken,
-  canSwitchStation 
+  canSwitchStation
 } from '../utils/kioskMode';
+import { isDemoActive } from '../utils/demoMode';
 import { useAuth } from './AuthContext';
 
 // LocalStorage key for persisting station selection
@@ -143,6 +144,28 @@ export function StationProvider({ children }: StationProviderProps) {
         return;
       }
       
+      // Normal mode, anonymous demo visitor (Q34, found 2026-07-17): explicitly
+      // resolve to the demo station so requests carry X-Station-Id: demo-station.
+      // Without this, currentStationId stayed null for every anonymous demo
+      // request, so requireSession's demo bypass (which requires the request to
+      // explicitly target DEMO_STATION_ID) never matched — every
+      // requireSession-gated read (members, checkins, events, truck-checks,
+      // reports) 401'd for a signed-out demo visitor.
+      if (isDemoActive() && !isAuthenticated) {
+        try {
+          const demoStation = await api.getDemoStation();
+          setSelectedStation(demoStation);
+          setCurrentStationId(demoStation.id);
+        } catch {
+          // Best-effort — fall through to the no-station default below rather
+          // than blocking the app on a failed demo-station lookup.
+          setSelectedStation(null);
+          setCurrentStationId(null);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       // Normal mode: Just use demo/default station - NO API CALL
       // Station is determined automatically based on authentication/requirements
       // No persisted selection needed - always use demo/default

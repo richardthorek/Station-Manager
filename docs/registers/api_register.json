@@ -192,8 +192,8 @@
       }
     },
     "ai": {
-      "description": "Server-side AI gateway. Provider credentials live server-side; AAR Studio and the SPA call these instead of Azure browser-direct. When org context is present the aiEnabled entitlement is required; the monthly allowance (aiIncludedSessions) is metered in sessions and enforced at the speech-token endpoint.",
-      "authentication": "JWT bearer (org context optional — no org context passes through, consistent with entitlement back-compat)",
+      "description": "Server-side AI gateway. Provider credentials live server-side; AAR Studio and the SPA call these instead of Azure browser-direct. When org context is present the aiEnabled entitlement is required; the monthly allowance (aiIncludedSessions) is metered in sessions and enforced at the speech-token endpoint. Anonymous calls (no org context) pass through deliberately — AAR Studio is local-first and usable signed-out (A2) — bounded instead by a dedicated per-IP aiRateLimiter (MASTER_PLAN Q31 / review F4), tighter than the general apiRateLimiter.",
+      "authentication": "JWT bearer (org context optional — no org context passes through, consistent with entitlement back-compat); all routes behind aiRateLimiter (30 req / 5 min per IP, tighter than the general apiRateLimiter)",
       "POST /api/ai/chat": {
         "method": "POST",
         "path": "/api/ai/chat",
@@ -1881,7 +1881,7 @@
       "method": "GET",
       "path": "/api/activities",
       "description": "Get all activities (default + custom)",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -1973,7 +1973,7 @@
       "method": "GET",
       "path": "/api/activities/active",
       "description": "Get currently active activity for station",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2126,7 +2126,7 @@
       "method": "GET",
       "path": "/api/checkins",
       "description": "Get all check-ins (both active and inactive)",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2162,7 +2162,7 @@
       "method": "GET",
       "path": "/api/checkins/active",
       "description": "Get all currently active check-ins",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2458,7 +2458,7 @@
       "method": "GET",
       "path": "/api/events",
       "description": "Get all events (active and historical)",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2494,7 +2494,7 @@
       "method": "GET",
       "path": "/api/events/active",
       "description": "Get currently active events",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2530,7 +2530,7 @@
       "method": "GET",
       "path": "/api/events/:id",
       "description": "Get event with participants",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {
         "path": {
           "id": {
@@ -2737,7 +2737,7 @@
       "method": "POST",
       "path": "/api/events/admin/rollover",
       "description": "Manually trigger event expiry check (marks expired events as inactive)",
-      "authentication": "none",
+      "authentication": "required (owner/admin) — MASTER_PLAN F6",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -3153,7 +3153,7 @@
       "method": "GET",
       "path": "/api/events/:eventId/audit",
       "description": "Get audit log of all participant additions and removals for an event. Returns chronological sequence of membership changes.",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {
         "path": {
           "eventId": {
@@ -4160,7 +4160,7 @@
     "POST /api/stations": {
       "method": "POST",
       "path": "/api/stations",
-      "description": "Create a new station. Validates that brigade ID is unique to prevent duplicate station creation. Returns 409 if a station with the same brigade ID already exists.",
+      "description": "Create a new station. Validates that brigade ID is unique to prevent duplicate station creation. Returns 409 if a station with the same brigade ID already exists. Tags the new station with the caller's organizationId (from their JWT), if any (Q33, 2026-07-17) — used to scope enforceStationLimit/enforceMemberLimit/enforceVehicleLimit per-org instead of across the whole deployment.",
       "authentication": "none",
       "parameters": {},
       "requestBody": {
@@ -4557,7 +4557,7 @@
       "method": "POST",
       "path": "/api/brigade-access/generate",
       "description": "Generate a new brigade access token for kiosk mode. Tokens lock the sign-in interface to a specific station.",
-      "authentication": "none",
+      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
       "parameters": {},
       "requestBody": {
         "required": true,
@@ -4742,7 +4742,7 @@
       "method": "DELETE",
       "path": "/api/brigade-access/:token",
       "description": "Revoke a brigade access token",
-      "authentication": "none",
+      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
       "parameters": {
         "path": {
           "token": {
@@ -4794,7 +4794,7 @@
       "method": "GET",
       "path": "/api/brigade-access/brigade/:brigadeId",
       "description": "Get all active tokens for a brigade",
-      "authentication": "none",
+      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
       "parameters": {
         "path": {
           "brigadeId": {
@@ -4846,7 +4846,7 @@
       "method": "GET",
       "path": "/api/brigade-access/station/:stationId",
       "description": "Get all active tokens for a station",
-      "authentication": "none",
+      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
       "parameters": {
         "path": {
           "stationId": {
@@ -4898,7 +4898,7 @@
       "method": "GET",
       "path": "/api/brigade-access/stats",
       "description": "Get statistics about active tokens",
-      "authentication": "none",
+      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -4934,7 +4934,7 @@
       "method": "GET",
       "path": "/api/brigade-access/all-tokens",
       "description": "Get all active tokens across all stations (admin utility). Returns tokens with full kiosk URLs for easy distribution.",
-      "authentication": "none",
+      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
       "parameters": {},
       "requestBody": null,
       "responses": {

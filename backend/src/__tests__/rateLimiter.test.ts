@@ -10,7 +10,7 @@
 
 import request from 'supertest';
 import express, { Express } from 'express';
-import { apiRateLimiter, authRateLimiter, spaRateLimiter } from '../middleware/rateLimiter';
+import { apiRateLimiter, authRateLimiter, aiRateLimiter, spaRateLimiter } from '../middleware/rateLimiter';
 
 describe('Rate Limiter Middleware', () => {
   let app: Express;
@@ -109,6 +109,36 @@ describe('Rate Limiter Middleware', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({ username: 'test', password: 'test' })
+        .expect(200);
+
+      expect(response.headers).toHaveProperty('ratelimit-limit');
+      expect(response.headers).toHaveProperty('ratelimit-remaining');
+      expect(response.headers).toHaveProperty('ratelimit-reset');
+    });
+  });
+
+  describe('AI Rate Limiter', () => {
+    beforeEach(() => {
+      app.post('/api/ai/chat', aiRateLimiter, (req, res) => {
+        res.json({ message: 'ok' });
+      });
+    });
+
+    it('should have a tighter limit than the general API limiter (review F4 / Q31)', async () => {
+      const response = await request(app)
+        .post('/api/ai/chat')
+        .send({})
+        .expect(200);
+
+      expect(response.headers).toHaveProperty('ratelimit-limit');
+      expect(response.headers['ratelimit-limit']).toBe('30');
+      expect(Number(response.headers['ratelimit-limit'])).toBeLessThan(84);
+    });
+
+    it('should include rate limit headers', async () => {
+      const response = await request(app)
+        .post('/api/ai/chat')
+        .send({})
         .expect(200);
 
       expect(response.headers).toHaveProperty('ratelimit-limit');

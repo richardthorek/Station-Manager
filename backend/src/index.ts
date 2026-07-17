@@ -47,12 +47,12 @@ if (process.env.NODE_ENV === 'production' && isJwtSecretUnconfigured()) {
 
 // Initialize Azure Application Insights early (before other imports)
 // This ensures all subsequent operations can be tracked
-import { initializeAppInsights } from './services/appInsights';
+import { initializeAppInsights, flushAppInsights } from './services/appInsights';
 initializeAppInsights();
 
 import express from 'express';
 import { createServer } from 'http';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -82,7 +82,7 @@ import { getRFSFacilitiesParser } from './services/rfsFacilitiesParser';
 import { getVersionInfo } from './services/version';
 import { seedDemoStationIfNeeded } from './services/demoStationSeeder';
 import { seedStandardVehicleTypesIfNeeded } from './services/standardVehicleTypeSeeder';
-import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
+import { apiRateLimiter, aiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 import { requireFeature } from './middleware/entitlements';
 import { requireSession } from './middleware/flexibleAuth';
 import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
@@ -102,8 +102,11 @@ import { initializeApplianceEquipmentDatabase } from './services/applianceEquipm
 import { initializeAgentSessionDatabase } from './services/agentSessionDbFactory';
 import { agentCheckRouter, attachAgentCheckWs } from './routes/agentCheck';
 import { allowedOriginsList } from './utils/allowedOrigins';
+import { CORS_ALLOWED_HEADERS } from './config/corsHeaders';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
+import { registerStationSocketHandlers, type SocketWithStation } from './services/stationSocketHandlers';
+import { handleFatalProcessError } from './services/fatalErrorHandler';
 
 const app = express();
 const httpServer = createServer(app);
@@ -242,7 +245,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID'],
+  allowedHeaders: CORS_ALLOWED_HEADERS,
 }));
 
 // Stripe webhook needs the raw (unparsed) body to verify its signature.
@@ -453,7 +456,7 @@ app.use('/api/facilities', apiRateLimiter, facilitiesRouter);
 // Platform admin (PLATFORM_ADMIN_USERNAMES allowlist): claim-conflict review.
 app.use('/api/platform', apiRateLimiter, platformRouter);
 app.use('/api/billing', apiRateLimiter, billingRouter);
-app.use('/api/ai', apiRateLimiter, aiRouter);
+app.use('/api/ai', aiRateLimiter, aiRouter);
 app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'), aarSessionsRouter);
 // requireSession({ readsOnly:true }) closes the anonymous data-exposure hole
 // (UAT 2026-06-22): reads on members/truck-checks/reports now require a signed-in
@@ -462,9 +465,18 @@ app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'),
 // Public activation routes must be mounted before requireSession so no token is required
 app.use('/api/members', apiRateLimiter, memberActivationRouter);
 app.use('/api/members', apiRateLimiter, requireSession({ readsOnly: true }), membersRouter);
-app.use('/api/activities', apiRateLimiter, activitiesRouter);
-app.use('/api/checkins', apiRateLimiter, requireFeature('signInEnabled'), checkinsRouter);
-app.use('/api/events', apiRateLimiter, requireFeature('signInEnabled'), eventsRouter);
+// AC-4 walk-up sweep (2026-07-17): activities/checkins/events relied solely on
+// their internal flexibleAuth, which only enforces auth when
+// ENABLE_DATA_PROTECTION=true — the same env-conditional footgun Q29 flagged
+// for REQUIRE_AUTH. checkins/events in particular return member names, ranks,
+// check-in timestamps and location (EventParticipant/CheckIn) — the same
+// class of anonymous PII leak the F1 fix closed on members/reports/truck-checks,
+// just not caught by that sweep. requireSession (readsOnly) is unconditional,
+// so reads are gated regardless of that env var; kiosk writes (check-in,
+// event create/end, participant add) keep their existing pass-through.
+app.use('/api/activities', apiRateLimiter, requireSession({ readsOnly: true }), activitiesRouter);
+app.use('/api/checkins', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('signInEnabled'), checkinsRouter);
+app.use('/api/events', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('signInEnabled'), eventsRouter);
 app.use('/api/stations', apiRateLimiter, stationsRouter);
 app.use('/api/truck-checks', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('truckCheckEnabled'), truckChecksRouter);
 app.use('/api/reports', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('reportsEnabled'), reportsRouter);
@@ -483,12 +495,6 @@ app.use('/api/export', apiRateLimiter, requireSession({ readsOnly: true }), requ
 app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());
 app.use('/api/agent-sessions', apiRateLimiter, requireFeature('aiEnabled'), agentCheckRouter);
 
-// Extend Socket interface to include station context
-interface SocketWithStation extends Socket {
-  stationId?: string;
-  brigadeId?: string;
-}
-
 // Socket.io connection handling with room-based isolation
 io.on('connection', (socket: SocketWithStation) => {
   logger.info('WebSocket client connected', { socketId: socket.id });
@@ -496,134 +502,10 @@ io.on('connection', (socket: SocketWithStation) => {
   // AAR Studio collaborative session notes (ephemeral room relay).
   registerAarCollabHandlers(io, socket);
 
-  // Handle station room joining
-  socket.on('join-station', async (data: { stationId: string; brigadeId?: string }) => {
-    const { stationId, brigadeId } = data;
-    
-    // Validate stationId is provided
-    if (!stationId) {
-      logger.warn('Client attempted to join without stationId', { socketId: socket.id });
-      socket.emit('join-error', { message: 'stationId is required' });
-      return;
-    }
-    
-    // Leave previous station rooms if any
-    if (socket.stationId) {
-      socket.leave(`station-${socket.stationId}`);
-      if (socket.brigadeId) {
-        socket.leave(`brigade-${socket.brigadeId}`);
-      }
-    }
-    
-    // Store station context on socket instance
-    socket.stationId = stationId;
-    socket.brigadeId = brigadeId;
-    
-    // Join station-specific room
-    socket.join(`station-${stationId}`);
-    
-    // Join brigade-specific room if provided
-    if (brigadeId) {
-      socket.join(`brigade-${brigadeId}`);
-    }
-    
-    logger.info('Client joined station room', { 
-      socketId: socket.id, 
-      stationId, 
-      brigadeId,
-      rooms: Array.from(socket.rooms)
-    });
-    
-    // Acknowledge successful join
-    socket.emit('joined-station', { stationId, brigadeId });
-  });
-
-  socket.on('disconnect', () => {
-    logger.info('WebSocket client disconnected', { 
-      socketId: socket.id,
-      stationId: socket.stationId,
-      brigadeId: socket.brigadeId
-    });
-  });
-
-  // Handle check-in events - now station-scoped
-  socket.on('checkin', (data) => {
-    logger.debug('WebSocket event: checkin', { data, stationId: socket.stationId });
-    
-    // Validate socket has joined a station
-    if (!socket.stationId) {
-      logger.warn('Socket attempted checkin without joining station', { socketId: socket.id });
-      return;
-    }
-    
-    // Broadcast only to same station
-    io.to(`station-${socket.stationId}`).emit('checkin-update', data);
-  });
-
-  // Handle activity change events - now station-scoped
-  socket.on('activity-change', (data) => {
-    logger.debug('WebSocket event: activity-change', { data, stationId: socket.stationId });
-    
-    if (!socket.stationId) {
-      logger.warn('Socket attempted activity-change without joining station', { socketId: socket.id });
-      return;
-    }
-    
-    // Broadcast only to same station
-    io.to(`station-${socket.stationId}`).emit('activity-update', data);
-  });
-
-  // Handle member addition - now station-scoped
-  socket.on('member-added', (data) => {
-    logger.debug('WebSocket event: member-added', { data, stationId: socket.stationId });
-    
-    if (!socket.stationId) {
-      logger.warn('Socket attempted member-added without joining station', { socketId: socket.id });
-      return;
-    }
-    
-    // Broadcast only to same station
-    io.to(`station-${socket.stationId}`).emit('member-update', data);
-  });
-
-  // Handle event creation - now station-scoped
-  socket.on('event-created', (data) => {
-    logger.debug('WebSocket event: event-created', { data, stationId: socket.stationId });
-    
-    if (!socket.stationId) {
-      logger.warn('Socket attempted event-created without joining station', { socketId: socket.id });
-      return;
-    }
-    
-    // Broadcast only to same station
-    io.to(`station-${socket.stationId}`).emit('event-update', data);
-  });
-
-  // Handle event end - now station-scoped
-  socket.on('event-ended', (data) => {
-    logger.debug('WebSocket event: event-ended', { data, stationId: socket.stationId });
-    
-    if (!socket.stationId) {
-      logger.warn('Socket attempted event-ended without joining station', { socketId: socket.id });
-      return;
-    }
-    
-    // Broadcast only to same station
-    io.to(`station-${socket.stationId}`).emit('event-update', data);
-  });
-
-  // Handle participant added/removed - now station-scoped
-  socket.on('participant-change', (data) => {
-    logger.debug('WebSocket event: participant-change', { data, stationId: socket.stationId });
-    
-    if (!socket.stationId) {
-      logger.warn('Socket attempted participant-change without joining station', { socketId: socket.id });
-      return;
-    }
-    
-    // Broadcast only to same station
-    io.to(`station-${socket.stationId}`).emit('event-update', data);
-  });
+  // Station room join/leave + check-in/activity/member/event broadcast relay
+  // (review F7 — join-station now requires the same credential model the
+  // equivalent REST reads use; see services/stationSocketHandlers.ts).
+  registerStationSocketHandlers(io, socket);
 });
 
 // Serve frontend for all other GET routes (SPA fallback) - Must be last!
@@ -768,6 +650,17 @@ async function initializeDatabasesInBackground() {
     logger.warn('Server is running but database operations may fail');
   }
 }
+
+// Process-level crash handlers (review F3 / MASTER_PLAN Q30) — see
+// services/fatalErrorHandler.ts for why these exist and why they exit rather
+// than try to keep serving requests.
+process.on('uncaughtException', (error) => {
+  handleFatalProcessError('uncaughtException', error, flushAppInsights, (code) => process.exit(code));
+});
+
+process.on('unhandledRejection', (reason) => {
+  handleFatalProcessError('unhandledRejection', reason, flushAppInsights, (code) => process.exit(code));
+});
 
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {

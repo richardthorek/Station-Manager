@@ -29,7 +29,7 @@ import { getRFSFacilitiesParser } from '../services/rfsFacilitiesParser';
 import { logger } from '../services/logger';
 import { optionalAuth } from '../middleware/auth';
 import { stationMiddleware } from '../middleware/stationMiddleware';
-import { enforceStationLimit } from '../middleware/entitlements';
+import { enforceStationLimit, attachOrganization } from '../middleware/entitlements';
 
 const router = Router();
 router.use(stationMiddleware);
@@ -276,7 +276,7 @@ router.get('/:id', optionalAuth, validateStationId, handleValidationErrors, asyn
  * Validates that brigade ID is unique to prevent duplicate station creation
  * Protected by optionalAuth middleware
  */
-router.post('/', optionalAuth, enforceStationLimit(), validateCreateStation, handleValidationErrors, async (req: Request, res: Response) => {
+router.post('/', optionalAuth, attachOrganization, enforceStationLimit(), validateCreateStation, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const {
@@ -287,19 +287,19 @@ router.post('/', optionalAuth, enforceStationLimit(), validateCreateStation, han
       location,
       contactInfo,
     } = req.body;
-    
+
     // Check for duplicate brigade ID
     const existingStations = await db.getStationsByBrigade(brigadeId);
     const activeExistingStations = existingStations.filter(s => s.isActive);
-    
+
     if (activeExistingStations.length > 0) {
-      return res.status(409).json({ 
+      return res.status(409).json({
         error: 'Station already exists',
         message: `A station with brigade ID "${brigadeId}" already exists: ${activeExistingStations[0].name}`,
         existingStation: activeExistingStations[0],
       });
     }
-    
+
     const newStation = await db.createStation({
       name,
       brigadeName,
@@ -308,6 +308,12 @@ router.post('/', optionalAuth, enforceStationLimit(), validateCreateStation, han
       location,
       contactInfo,
       isActive: true,
+      // Q33 (found 2026-07-17): tag the station to its creating org so
+      // enforceStationLimit/enforceMemberLimit/enforceVehicleLimit can scope
+      // counts per-org instead of across the whole deployment. Undefined for
+      // anonymous/kiosk creation (no JWT), matching this field's existing
+      // back-compat-optional design.
+      organizationId: req.organization?.id,
     });
     
     // Emit WebSocket event - brigade-scoped

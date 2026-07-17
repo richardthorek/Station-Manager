@@ -94,16 +94,18 @@ function AnimatedRoutes() {
         <Route path="/sign-in" element={<SignInLinkPage />} />
         <Route path="/profile/:memberId" element={<UserProfilePage />} />
 
-        {/* Truck Check (v1.1) — gated by truckCheckEnabled */}
-        <Route path="/truckcheck" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TruckCheckPage /></FeatureRoute>} />
-        <Route path="/truckcheck/admin" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><AdminDashboardPage /></FeatureRoute>} />
-        <Route path="/truckcheck/check/:applianceId" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><CheckWorkflowPage /></FeatureRoute>} />
-        <Route path="/truckcheck/summary/:runId" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><CheckSummaryPage /></FeatureRoute>} />
-        <Route path="/truckcheck/select" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateSelectionPage /></FeatureRoute>} />
-        <Route path="/truckcheck/templates/:applianceId" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateEditorPage /></FeatureRoute>} />
-        <Route path="/truckcheck/vehicle-types" element={<FeatureRoute feature="truckCheckEnabled" title="Truck check"><VehicleTypesPage /></FeatureRoute>} />
-        <Route path="/truckcheck/comparative" element={<FeatureRoute feature="reportsEnabled" title="Truck check"><TruckCheckComparativePage /></FeatureRoute>} />
-        <Route path="/truckcheck/voice/:applianceId" element={<FeatureRoute feature="aiEnabled" title="Voice check"><VoiceCheckPage /></FeatureRoute>} />
+        {/* Truck Check (v1.1) — AccessRoute first (AC-3: a brigade device/kiosk
+            token, an account, a share link's device token, or the demo — never
+            a bare URL), then the truckCheckEnabled entitlement */}
+        <Route path="/truckcheck" element={<AccessRoute><FeatureRoute feature="truckCheckEnabled" title="Truck check"><TruckCheckPage /></FeatureRoute></AccessRoute>} />
+        <Route path="/truckcheck/admin" element={<AccessRoute><FeatureRoute feature="truckCheckEnabled" title="Truck check"><AdminDashboardPage /></FeatureRoute></AccessRoute>} />
+        <Route path="/truckcheck/check/:applianceId" element={<AccessRoute><FeatureRoute feature="truckCheckEnabled" title="Truck check"><CheckWorkflowPage /></FeatureRoute></AccessRoute>} />
+        <Route path="/truckcheck/summary/:runId" element={<AccessRoute><FeatureRoute feature="truckCheckEnabled" title="Truck check"><CheckSummaryPage /></FeatureRoute></AccessRoute>} />
+        <Route path="/truckcheck/select" element={<AccessRoute><FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateSelectionPage /></FeatureRoute></AccessRoute>} />
+        <Route path="/truckcheck/templates/:applianceId" element={<AccessRoute><FeatureRoute feature="truckCheckEnabled" title="Truck check"><TemplateEditorPage /></FeatureRoute></AccessRoute>} />
+        <Route path="/truckcheck/vehicle-types" element={<AccessRoute><FeatureRoute feature="truckCheckEnabled" title="Truck check"><VehicleTypesPage /></FeatureRoute></AccessRoute>} />
+        <Route path="/truckcheck/comparative" element={<AccessRoute><FeatureRoute feature="reportsEnabled" title="Truck check"><TruckCheckComparativePage /></FeatureRoute></AccessRoute>} />
+        <Route path="/truckcheck/voice/:applianceId" element={<AccessRoute><FeatureRoute feature="aiEnabled" title="Voice check"><VoiceCheckPage /></FeatureRoute></AccessRoute>} />
 
         {/* Reports (v1.1) — gated by reportsEnabled */}
         <Route path="/reports" element={<FeatureRoute feature="reportsEnabled" title="Reports"><ReportsPageEnhanced /></FeatureRoute>} />

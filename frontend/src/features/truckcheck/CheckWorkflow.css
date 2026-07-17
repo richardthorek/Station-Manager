@@ -25,6 +25,12 @@
   margin-bottom: 0.25rem;
 }
 
+.workflow-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .workflow-header h1 {
   margin: 0;
   font-size: 1.1rem;

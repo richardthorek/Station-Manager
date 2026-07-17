@@ -23,6 +23,24 @@ describe('Brigade Access API Routes', () => {
   beforeEach(() => {
     authAgent.set(authHeader());
   });
+
+  describe('Unauthenticated requests', () => {
+    it('should reject POST /generate without a session', async () => {
+      await request(app)
+        .post('/api/brigade-access/generate')
+        .send({ brigadeId: 'test-brigade', stationId: 'test-station' })
+        .expect(401);
+    });
+
+    it('should reject GET /all-tokens without a session', async () => {
+      await request(app).get('/api/brigade-access/all-tokens').expect(401);
+    });
+
+    it('should reject GET /stats without a session', async () => {
+      await request(app).get('/api/brigade-access/stats').expect(401);
+    });
+  });
+
   describe('POST /api/brigade-access/generate', () => {
     it('should generate a new token', async () => {
       const response = await authAgent

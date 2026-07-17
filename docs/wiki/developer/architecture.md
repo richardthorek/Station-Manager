@@ -1319,7 +1319,7 @@ Kiosk mode provides strict brigade/station locking for shared devices (iPads, ta
 - `components/StationSelector.tsx` - Shows locked UI in kiosk mode, disables dropdown
 
 **Frontend route guards (compose outer→inner):**
-- `components/AccessRoute.tsx` — "is this visitor allowed in at all?" Wraps the walk-up sign-in surface (`/signin`); allows a signed-in account, a brigade device code (kiosk `?brigade=<token>`), a member-session (AC-1, from checking in via a personal link), or the public demo, else redirects to the front door (`/`). Stricter than FeatureRoute (which is default-open with no org context).
+- `components/AccessRoute.tsx` — "is this visitor allowed in at all?" Wraps the walk-up sign-in surface (`/signin`) and, since AC-3 (2026-07-17), every `/truckcheck*` route; allows a signed-in account, a brigade device code (kiosk `?brigade=<token>`, including a truck-check share link — see `TruckCheckShareModal`), a member-session (AC-1, from checking in via a personal link), or the public demo, else redirects to the front door (`/`). Stricter than FeatureRoute (which is default-open with no org context).
 - `components/FeatureRoute.tsx` — "does this brigade's plan include the module?" (entitlement gate; default-open for kiosk/demo/back-compat).
 - `components/ProtectedRoute.tsx` — "is this an authenticated admin?" (auth gate for `/admin/*`).
 
@@ -1520,22 +1520,55 @@ The API register contains:
 
 ### Socket.io Events
 
+Room-based isolation: every client joins `station-<stationId>` (and
+`brigade-<brigadeId>` if provided) via `join-station`; broadcasts are scoped
+to that room. Handlers live in `backend/src/services/stationSocketHandlers.ts`
+(registered from `index.ts`'s `io.on('connection', ...)`).
+
+**`join-station` credential model (review F7, 2026-07-17):** the public demo
+station (`demo-station`) stays open with no credential (consistent with
+`requireSession`/`flexibleAuth`'s demo bypass). Every other station requires
+one of the same three credentials the equivalent REST reads accept, sent as
+extra fields on the `join-station` payload:
+
+| Field | Credential | Scope |
+|-------|------------|-------|
+| `authToken` | Admin JWT (any role) | Any station |
+| `brigadeToken` | Brigade/kiosk access token | Only the station it was minted for |
+| `memberSessionToken` | Member-session token (AC-1) | Only the station it was minted for |
+
+A join with no valid credential, or a brigade/member-session token for a
+different station than requested, is rejected with a `join-error` event and
+the socket is not added to the room. Before this fix, `join-station` accepted
+any client-claimed `stationId` with no credential at all — see
+`docs/wiki/developer/history/reviews/PRE_LAUNCH_STABILITY_SECURITY_REVIEW_20260717.md`.
+
 **Client → Server Events:**
-None currently (server-initiated broadcasts only)
+
+| Event | Payload | Purpose |
+|-------|---------|---------|
+| `join-station` | `{ stationId, brigadeId?, authToken?, brigadeToken?, memberSessionToken? }` | Join a station's real-time room (see credential model above) |
+| `checkin` | *(shape-validated only — plain object, ≤32KB)* | Rebroadcast as `checkin-update` to the joined station room |
+| `activity-change` | *(shape-validated only)* | Rebroadcast as `activity-update` |
+| `member-added` | *(shape-validated only)* | Rebroadcast as `member-update` |
+| `event-created` | *(shape-validated only)* | Rebroadcast as `event-update` |
+| `event-ended` | *(shape-validated only)* | Rebroadcast as `event-update` |
+| `participant-change` | *(shape-validated only)* | Rebroadcast as `event-update` |
+
+All six broadcast events require the socket to have already joined a station
+(`socket.stationId` set) and a payload that is a plain object under the size
+cap — otherwise the event is dropped and logged, never rebroadcast.
 
 **Server → Client Events:**
 
 | Event | Payload | Purpose |
 |-------|---------|---------|
-| `member-added` | `{ member: Member }` | New member registered |
-| `member-updated` | `{ member: Member }` | Member details changed |
-| `checkin` | `{ checkIn: CheckIn }` | New check-in created |
-| `checkout` | `{ checkIn: CheckIn }` | Member checked out |
-| `activity-change` | `{ activeActivity: ActiveActivity }` | Active activity changed |
-| `event-created` | `{ event: Event }` | New event started |
-| `event-ended` | `{ event: Event }` | Event completed |
-| `participant-added` | `{ participant: EventParticipant }` | Member joined event |
-| `participant-removed` | `{ participantId: string }` | Member left event |
+| `joined-station` | `{ stationId, brigadeId? }` | Acknowledges a successful `join-station` |
+| `join-error` | `{ message }` | `join-station` rejected (missing stationId, no/invalid credential, wrong station) |
+| `checkin-update` | *(the rebroadcast `checkin` payload)* | A check-in changed at this station |
+| `activity-update` | *(the rebroadcast `activity-change` payload)* | Active activity changed |
+| `member-update` | *(the rebroadcast `member-added` payload)* | New member registered |
+| `event-update` | *(the rebroadcast `event-created`/`event-ended`/`participant-change` payload)* | Event or participant state changed |
 | `achievement-unlocked` | `{ achievement: Achievement }` | Member unlocked achievement |
 
 ### Connection Management
@@ -2445,7 +2478,11 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID'],
+  // X-Brigade-Token (kiosk/device credential) and X-Member-Session (AC-1)
+  // added 2026-07-17 — missing them silently breaks any cross-origin caller
+  // using those credentials (invisible in prod today since the SPA and API
+  // share one origin). See backend/src/config/corsHeaders.ts.
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID', 'X-Brigade-Token', 'X-Member-Session'],
 }));
 
 // Socket.io CORS (matches Express CORS)
