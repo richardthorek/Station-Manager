@@ -38,7 +38,7 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 |---|---|---|---|
 | 1 | Sign-in & check-in/out (kiosk, mobile, QR, real-time sync) | ✅ | — |
 | 2 | Events & activities (create/end, participants, audit trail) | ✅ | — |
-| 3 | Member profiles & achievements (QR codes, stats, 20 achievements) | ✅ | Q36 |
+| 3 | Member profiles & achievements (QR codes, stats, 20 achievements) | ✅ | — |
 | 4 | Member management (search/filter/sort, CSV import, invite/activation) | ✅ | — |
 | 5 | Truck check — manual (vehicle types, locked checklists, zones/equipment, issue lifecycle, cross-brigade reporting) | ✅ | Q8 |
 | 6 | Truck check — voice agent (hold-to-talk → STT → tool loop → TTS) | 🟡 | Q3, Q4, Q12, Q13 |
@@ -50,7 +50,7 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 | 12 | AI gateway & metering | ✅ | — |
 | 13 | Suite federation — Bushie Tools Phase 1 (SM as suite IdP, Fire Break Calculator) | ✅ | Suite ops (below), Q14/Q15 |
 | 14 | PWA / offline (service worker, install prompt, offline queue) | ✅ | — |
-| 15 | Auth & security (JWT + brigade tokens, `requireSession`, rate limiting, CSP/Helmet) | 🟡 | Q29 (prod verification), Q36 |
+| 15 | Auth & security (JWT + brigade tokens, `requireSession`, rate limiting, CSP/Helmet) | 🟡 | Q29 (prod verification) |
 | 16 | Infra & deploy (Bicep IaC, GitHub Actions, run-from-package, smoke tests) | ✅ | D6 |
 | 17 | Notifications (email/SMS) | ⬜ | Q10 |
 | 18 | Documentation | 🟡 | Q6 |
@@ -67,7 +67,7 @@ The prioritised queue. Each item keeps its historical `Q…`/`F…`/`AC…` id s
 Nothing reachable without a credential, least privilege everywhere, tenant data walled off from the platform operator. Closed out 2026-07-17: Q31, F1, F6, F7, AC-3, AC-4, Q29 (code portion) all shipped — see changelog for what each fixed.
 
 - **Q29 (residual) — confirm `REQUIRE_AUTH=true` in the prod App Service settings.** Needs owner/operator Azure access this session doesn't have; the brigade-access routes are hardened either way, but other `optionalAuth` routes (e.g. `stations.ts`) still depend on this flag being correct in prod.
-- **Q36 (found 2026-07-17, after L1 closed) — gate `GET /api/achievements/:memberId*`.** It has no auth gate at all today, unlike members/checkins/events/reports — achievement/streak data reveals attendance patterns, the same PII class F1/AC-4 closed elsewhere. Add `requireSession({readsOnly:true})` to the `/api/achievements` mount in `index.ts`, matching the established pattern.
+- ~~**Q36 — gate `GET /api/achievements/:memberId*`.**~~ **Done 2026-07-17:** added `requireSession({readsOnly:true})` to the `/api/achievements` mount in `index.ts`, matching members/checkins/events. Verified live: anonymous now 401s, a valid session still resolves normally.
 
 ### Block L2 — Rock solid & fast — ✅ done in code
 

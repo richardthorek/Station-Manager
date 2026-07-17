@@ -3216,8 +3216,8 @@
     "GET /api/achievements/member/:memberId": {
       "method": "GET",
       "path": "/api/achievements/member/:memberId",
-      "description": "Get achievements for specific member",
-      "authentication": "none",
+      "description": "Get achievements for specific member. Requires a session (requireSession — admin JWT/brigade-token/member-session, or the public demo station); previously ungated (Q36, fixed 2026-07-17).",
+      "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
       "parameters": {
         "path": {
           "memberId": {
@@ -3264,8 +3264,8 @@
     "GET /api/achievements/recent": {
       "method": "GET",
       "path": "/api/achievements/recent",
-      "description": "Get recently unlocked achievements (all members)",
-      "authentication": "none",
+      "description": "Get recently unlocked achievements (all members). Requires a session (requireSession); previously ungated (Q36, fixed 2026-07-17).",
+      "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
       "parameters": {
         "query": {
           "limit": {
