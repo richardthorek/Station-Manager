@@ -47,7 +47,7 @@ if (process.env.NODE_ENV === 'production' && isJwtSecretUnconfigured()) {
 
 // Initialize Azure Application Insights early (before other imports)
 // This ensures all subsequent operations can be tracked
-import { initializeAppInsights } from './services/appInsights';
+import { initializeAppInsights, flushAppInsights } from './services/appInsights';
 initializeAppInsights();
 
 import express from 'express';
@@ -106,6 +106,7 @@ import { CORS_ALLOWED_HEADERS } from './config/corsHeaders';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
 import { registerStationSocketHandlers, type SocketWithStation } from './services/stationSocketHandlers';
+import { handleFatalProcessError } from './services/fatalErrorHandler';
 
 const app = express();
 const httpServer = createServer(app);
@@ -649,6 +650,17 @@ async function initializeDatabasesInBackground() {
     logger.warn('Server is running but database operations may fail');
   }
 }
+
+// Process-level crash handlers (review F3 / MASTER_PLAN Q30) — see
+// services/fatalErrorHandler.ts for why these exist and why they exit rather
+// than try to keep serving requests.
+process.on('uncaughtException', (error) => {
+  handleFatalProcessError('uncaughtException', error, flushAppInsights, (code) => process.exit(code));
+});
+
+process.on('unhandledRejection', (reason) => {
+  handleFatalProcessError('unhandledRejection', reason, flushAppInsights, (code) => process.exit(code));
+});
 
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
