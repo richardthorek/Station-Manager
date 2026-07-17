@@ -797,7 +797,8 @@ and a safe no-op until a meter is configured.
 the `stripe` SDK from `STRIPE_SECRET_KEY` (`isStripeConfigured()` gates every
 route → 503 when unset) and resolves price IDs from `STRIPE_PRICE_{PLAN}_{INTERVAL}`
 env vars. `routes/billing.ts` exposes owner-only `POST /api/billing/checkout`
-(Checkout session, 14-day trial), `POST /api/billing/portal` (Customer Portal),
+(Checkout session, 14-day trial via `constants/plans.ts`'s `TRIAL_PERIOD_DAYS`),
+`POST /api/billing/portal` (Customer Portal),
 `GET /api/billing/status`, owner-only `GET /api/billing/events` (audit trail), and
 a signature-verified `POST /api/billing/webhook` (raw body, registered before
 `express.json()`) that syncs org `planCode`/`status`/`entitlements` on
@@ -807,6 +808,17 @@ persisted `BillingEvent` audit store (`services/billingEventDatabase.ts` +
 Table Storage twin `tableStorageBillingEventDatabase.ts` + `billingEventDbFactory.ts`,
 partitioned by org); the handler is idempotent — an already-recorded `stripeEventId`
 is acknowledged without reprocessing.
+
+**Trial without Stripe configured (D1, 2026-07-17).** `PUT /api/organizations/current`
+is the only functional plan-upgrade path while Stripe is unconfigured (the common
+case pre-launch) — it changes `planCode`/`entitlements` directly, no checkout
+involved. It now also starts/ends the same `TRIAL_PERIOD_DAYS`-day trial the
+Checkout flow gives a paying customer: a genuine plan change with no
+`stripeSubscriptionId` on the org sets `status: 'trialing'` + `trialEndsAt` on
+upgrade to a paid plan, or `status: 'active'` + clears `trialEndsAt` on
+downgrade to Community. An org with a real Stripe subscription is untouched by
+this route — its `status`/`trialEndsAt` stay governed exclusively by the
+webhook handler above.
 
 **AAR Studio** runs in gateway mode by default: `lib/llm.js` posts to
 `/api/ai/chat`|`/report` (Bearer token read from the same-origin SPA's

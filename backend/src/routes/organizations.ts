@@ -29,9 +29,9 @@ import {
   isOrgRole,
   violatesLastOwner,
 } from '../services/orgMembershipRules';
-import { clampEntitlements, getDefaultEntitlements, isPlanCode, PLANS } from '../constants/plans';
+import { clampEntitlements, getDefaultEntitlements, isPlanCode, PLANS, trialEndDate } from '../constants/plans';
 import { logger } from '../services/logger';
-import type { Entitlements, OrgInvite, OrgRole, PlanCode } from '../types';
+import type { Entitlements, OrganizationStatus, OrgInvite, OrgRole, PlanCode } from '../types';
 
 const router = Router();
 
@@ -109,14 +109,29 @@ router.put('/current', sensitiveActionRateLimiter, authMiddleware, requireOwner,
 
   const entitlements = clampEntitlements(effectivePlan, desired);
 
+  // D1: a genuine plan change with no live Stripe subscription driving status
+  // (billing unconfigured, or the org hasn't checked out yet) starts/ends a
+  // trial here directly — otherwise a self-serve upgrade to a paid plan would
+  // never get a trial deadline at all. A real subscription's status/trialEndsAt
+  // stays governed by Stripe webhooks (routes/billing.ts), untouched by this route.
+  let statusUpdate: { status?: OrganizationStatus; trialEndsAt?: Date } = {};
+  const isRealPlanChange = planCode !== undefined && planCode !== organization.planCode;
+  if (isRealPlanChange && !organization.stripeSubscriptionId) {
+    statusUpdate =
+      effectivePlan === 'community'
+        ? { status: 'active', trialEndsAt: undefined }
+        : { status: 'trialing', trialEndsAt: trialEndDate() };
+  }
+
   const updated = await db.updateOrganization(id, {
     ...(typeof name === 'string' && name.trim() ? { name: name.trim() } : {}),
     ...(typeof billingEmail === 'string' && billingEmail.trim() ? { billingEmail: billingEmail.trim() } : {}),
     planCode: effectivePlan,
     entitlements,
+    ...statusUpdate,
   });
 
-  logger.info('Organization updated', { organizationId: id, planCode: effectivePlan });
+  logger.info('Organization updated', { organizationId: id, planCode: effectivePlan, status: statusUpdate.status });
   return res.json({ organization: updated });
 });
 

@@ -19,6 +19,20 @@ import type { Entitlements, PlanCode } from '../types';
  */
 export const UNLIMITED = 100_000;
 
+/**
+ * D1 pricing decision (2026-07-17): a new paid-plan trial runs 14 days before
+ * requiring a payment method. Shared by the Stripe Checkout trial
+ * (`subscription_data.trial_period_days`) and the self-serve plan-change path
+ * (`PUT /api/organizations/current`, which has no Stripe subscription to
+ * carry a trial itself while billing isn't configured).
+ */
+export const TRIAL_PERIOD_DAYS = 14;
+
+/** A Date `TRIAL_PERIOD_DAYS` from now — the trial deadline for a newly-started paid plan. */
+export function trialEndDate(): Date {
+  return new Date(Date.now() + TRIAL_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+}
+
 export interface PlanDefinition {
   code: PlanCode;
   name: string;

@@ -139,6 +139,54 @@ describe('SaaS foundation', () => {
       expect(res.body.organization.entitlements.aiEnabled).toBe(true);
       expect(res.body.organization.entitlements.aiIncludedSessions).toBeGreaterThan(0);
     });
+
+    it('D1: starts a 14-day trial on a self-serve upgrade to a paid plan (no Stripe subscription)', async () => {
+      const token = await ownerToken();
+      const before = Date.now();
+      const res = await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ planCode: 'basic' });
+      expect(res.status).toBe(200);
+      expect(res.body.organization.status).toBe('trialing');
+      const trialEndsAt = new Date(res.body.organization.trialEndsAt).getTime();
+      const days = (trialEndsAt - before) / (24 * 60 * 60 * 1000);
+      expect(days).toBeGreaterThan(13.9);
+      expect(days).toBeLessThan(14.1);
+    });
+
+    it('D1: clears the trial and reactivates when downgrading back to community', async () => {
+      const token = await ownerToken();
+      await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ planCode: 'ai' });
+
+      const res = await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ planCode: 'community' });
+      expect(res.status).toBe(200);
+      expect(res.body.organization.status).toBe('active');
+      expect(res.body.organization.trialEndsAt).toBeFalsy();
+    });
+
+    it('D1: does not restart the trial when only toggling modules on the same plan', async () => {
+      const token = await ownerToken();
+      const upgrade = await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ planCode: 'basic' });
+      const firstTrialEndsAt = upgrade.body.organization.trialEndsAt;
+
+      const res = await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ moduleToggles: { reportsEnabled: false } });
+      expect(res.status).toBe(200);
+      expect(res.body.organization.status).toBe('trialing');
+      expect(res.body.organization.trialEndsAt).toBe(firstTrialEndsAt);
+    });
   });
 
   describe('organization users', () => {

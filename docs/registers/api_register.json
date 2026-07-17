@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "lastUpdated": "2026-07-17",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
@@ -1537,6 +1537,66 @@
     "organizations": {
       "description": "SaaS tenant management: plan/entitlements, direct user creation, invite links, and per-org membership (multi-org). All routes require authMiddleware; admin-only routes additionally require requireAdmin (owner is a superset).",
       "authentication": "Bearer JWT",
+      "GET /api/organizations/current": {
+        "method": "GET",
+        "path": "/api/organizations/current",
+        "description": "The caller's organization plus the plan catalog (for the upgrade UI).",
+        "authentication": "JWT",
+        "responses": {
+          "200": {
+            "description": "{ organization, plans: PlanDefinition[] }"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
+      "PUT /api/organizations/current": {
+        "method": "PUT",
+        "path": "/api/organizations/current",
+        "description": "Update name/billingEmail/planCode/moduleToggles (owner only). Entitlements reset to the new plan's defaults on a real plan change, then owner module toggles are applied and clamped to the plan ceiling. D1 (2026-07-17): this is the only functional plan-upgrade path while Stripe billing is unconfigured, so a genuine plan change with no stripeSubscriptionId on the org also starts/ends a 14-day trial directly here — status: 'trialing' + trialEndsAt set on upgrade to a paid plan, status: 'active' + trialEndsAt cleared on downgrade to community. An org with a live Stripe subscription is untouched by this — its status/trialEndsAt stay governed exclusively by POST /api/billing/webhook.",
+        "authentication": "JWT (owner only)",
+        "rateLimit": "sensitive-action limiter",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "billingEmail": {
+              "type": "string"
+            },
+            "planCode": {
+              "type": "string",
+              "enum": [
+                "community",
+                "basic",
+                "ai"
+              ]
+            },
+            "moduleToggles": {
+              "type": "object",
+              "description": "Partial<{signInEnabled, truckCheckEnabled, reportsEnabled, aiEnabled}> — narrows only, never exceeds the plan ceiling"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ organization }"
+          },
+          "400": {
+            "description": "Invalid planCode"
+          },
+          "403": {
+            "description": "Caller is not the org owner"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
       "POST /api/organizations/current/invites": {
         "method": "POST",
         "path": "/api/organizations/current/invites",

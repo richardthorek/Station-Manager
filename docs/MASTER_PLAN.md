@@ -46,7 +46,7 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 | 8 | AAR Studio — THE HERO (AI-facilitated After Action Reviews) | 🟡 | Q1, Q7 |
 | 9 | Multi-station (isolation, station mgmt UI, national dataset lookup, demo station) | ✅ | — |
 | 10 | SaaS tenancy & entitlements (plans, gating, org onboarding) | ✅ | Q21, Q22 |
-| 11 | Stripe billing (Checkout, Portal, webhooks, trial, audit trail) | 🟡 | Q5 (blocked on D1) |
+| 11 | Stripe billing (Checkout, Portal, webhooks, trial, audit trail) | 🟡 | Q5 (blocked on Stripe test-mode credentials) |
 | 12 | AI gateway & metering | ✅ | — |
 | 13 | Suite federation — Bushie Tools Phase 1 (SM as suite IdP, Fire Break Calculator) | ✅ | Suite ops (below), Q14/Q15 |
 | 14 | PWA / offline (service worker, install prompt, offline queue) | ✅ | — |
@@ -82,8 +82,8 @@ The operator can see and manage every account without ever seeing tenant content
 - ~~**Q32 — Platform-owner console.**~~ **Done 2026-07-17:** cross-org visibility (aggregate counts only — stations/members/vehicles/AI sessions, plan/status/billing email) and management (plan/entitlements/status, membership/role, facility-claim clearing, soft-deactivate + confirm-gated hard-delete of orgs and accounts) shipped at `/api/platform` + `/admin/platform`, with every mutation audited. See changelog.
 - ~~**Q26 — Org data export completeness.**~~ **Done 2026-07-17:** `GET /api/organizations/current/export` now also bundles `vehicles`, `truckCheckRuns` (capped at 5,000, newest-first), and `devices`. See changelog.
 - ~~**Q35 — Backfill `organizationId` onto pre-existing stations (Q33 follow-up).**~~ **Done 2026-07-17:** manual, operator-reviewed backfill tool shipped — `GET/PATCH /api/platform/stations/orphaned|:id/organization` + an "Orphaned stations" tab in `/admin/platform`. See changelog.
-- **Q2 / D1 — Pricing decisions (owner).** Trial length, AI metering unit (session vs audio-minute), top-up pack size/price, per-org vs per-station billing, grant/PO invoicing, AAR-in-Basic. Decision, not code — blocks Q5.
-- **Q5 — Metered AI overage end-to-end.** `meteredUsageReporter.ts` is a safe no-op until a Stripe meter exists. After Q2: create the meter, map `UsageRecord` → meter events, verify an overage invoice in test mode.
+- ~~**Q2 / D1 (partial) — Trial length, AI metering unit, top-up pack, AAR-in-Basic.**~~ **Decided 2026-07-17 (owner):** 14-day trial, metering unit = session (matches the existing `speech`-row counting, no new tracking needed), top-up pack stays 25 sessions / A$15, AAR Studio stays AI Pro-only (no plan change). Wired into code — see changelog. Still open: per-org vs per-station billing, grant/PO invoicing, Santa Run seasonal billing (none of these gate Q5).
+- **Q5 — Metered AI overage end-to-end.** `meteredUsageReporter.ts` already maps `UsageRecord` → Stripe meter events correctly for the decided session-based unit (was built pre-Q32; just needed the unit decision confirming it). What's left is infrastructure, not code: create the actual Stripe Billing Meter (dashboard/API) matching `STRIPE_AI_METER_EVENT`, then verify an overage invoice in Stripe test mode. Needs live Stripe test-mode credentials this environment doesn't have — owner/operator action.
 - **Q21 — Ops: fetch + upload the emergency-facilities dataset.** `npm run facilities:fetch` (needs internet to `services.ga.gov.au` — run from an operator machine, not CI) + `facilities:upload`, once, against prod. Until then signup's facility-claim step degrades gracefully to "my unit isn't listed."
 - **Suite ops (feature #13).** Run `npm run grant:firebreak` against prod (stored entitlement snapshots predate the #638 grant) and add the FBC origin to `FRONTEND_URLS`. One-time ops, unblocks already-built wiring.
 
@@ -110,7 +110,7 @@ Improves the platform but isn't required to launch. Do not pull forward ahead of
 
 | ID | Decision | State |
 |---|---|---|
-| **D1** | Pricing details: trial length, AI metering unit, top-up sizes, org- vs station-level billing, grant/PO invoicing, AAR-in-Basic, Santa Run seasonal billing. *Fire Break tier provisionally settled: included in Basic + AI Pro* | 🔵 Open — owner. Blocks Q5 |
+| **D1** | Pricing details: trial length, AI metering unit, top-up sizes, org- vs station-level billing, grant/PO invoicing, AAR-in-Basic, Santa Run seasonal billing. *Fire Break tier provisionally settled: included in Basic + AI Pro* | 🟡 Partially resolved 2026-07-17 — trial length (14 days), metering unit (session), top-up pack (25/A$15), AAR-in-Basic (no) decided and wired into code. Still open: org- vs station-level billing, grant/PO invoicing, Santa Run seasonal billing — none block Q5 |
 | **D2** | Suite auth standard: SM JWT vs Entra External ID | ✅ Resolved — keep SM JWT (kiosk brigade-token model needs it) |
 | **D3** | Streaming-voice architecture | ✅ Resolved — backend proxies audio; Azure OpenAI function calling |
 | **D4** | Real-time transport at scale: Socket.io vs Azure Web PubSub | 🔵 Open, not urgent — lean: *Web PubSub for Socket.IO* when multi-brigade scale needs a backplane |

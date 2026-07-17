@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "lastUpdated": "2026-07-17",
   "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager\n\nMulti-Station Support: Database methods now accept optional stationId parameter for filtering. All methods filter by stationId when provided, default to 'default-station' otherwise.",
   "services": {
@@ -1919,7 +1919,7 @@
     },
     "organizations (updated)": {
       "file": "backend/src/routes/organizations.ts",
-      "description": "New invite-link CRUD (POST/GET/DELETE .../invites) and membership management (GET .../members, PUT/DELETE .../members/:userId) built on orgAccessDatabase + orgMembershipRules. POST .../users now also accepts email and writes a membership row. GET .../export (owner only) — JSON data export (org, stations, members, event/attendance history, truck-check history via truckChecksDbFactory, device records via deviceDbFactory — Q26, 2026-07-17) for privacy/retention requests; events capped at 5000/station, truck-check runs at 5000 across all stations combined, both newest-first.",
+      "description": "New invite-link CRUD (POST/GET/DELETE .../invites) and membership management (GET .../members, PUT/DELETE .../members/:userId) built on orgAccessDatabase + orgMembershipRules. POST .../users now also accepts email and writes a membership row. GET .../export (owner only) — JSON data export (org, stations, members, event/attendance history, truck-check history via truckChecksDbFactory, device records via deviceDbFactory — Q26, 2026-07-17) for privacy/retention requests; events capped at 5000/station, truck-check runs at 5000 across all stations combined, both newest-first. PUT .../current (D1, 2026-07-17): a genuine plan change with no stripeSubscriptionId now starts/ends a TRIAL_PERIOD_DAYS-day trial (constants/plans.ts) directly — status: 'trialing' + trialEndsAt on upgrade to a paid plan, status: 'active' + cleared trialEndsAt on downgrade to community — since this route is the only functional upgrade path while Stripe billing is unconfigured.",
       "functions": {}
     },
     "orgInvites": {
