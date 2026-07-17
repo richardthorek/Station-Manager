@@ -676,7 +676,8 @@ frontend/src/
 │   │   ├── AdminDashboardPage.tsx
 │   │   ├── TemplateEditorPage.tsx
 │   │   ├── TemplateSelectionPage.tsx
-│   │   ├── VehicleManagement.tsx
+│   │   ├── VehicleManagement.tsx      # Admin Dashboard's vehicle grid (template/zones/delete)
+│   │   ├── VehicleFormModal.tsx       # Q8: shared add/edit modal — also used directly from TruckCheckPage's roster
 │   │   └── [styles]
 │   ├── reports/               # Reports & Analytics
 │   │   ├── ReportsPage.tsx

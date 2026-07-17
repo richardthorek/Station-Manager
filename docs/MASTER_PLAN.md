@@ -40,7 +40,7 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 | 2 | Events & activities (create/end, participants, audit trail) | ✅ | — |
 | 3 | Member profiles & achievements (QR codes, stats, 20 achievements) | ✅ | — |
 | 4 | Member management (search/filter/sort, CSV import, invite/activation) | ✅ | — |
-| 5 | Truck check — manual (vehicle types, locked checklists, zones/equipment, issue lifecycle, cross-brigade reporting) | ✅ | Q8 |
+| 5 | Truck check — manual (vehicle types, locked checklists, zones/equipment, issue lifecycle, cross-brigade reporting) | ✅ | — |
 | 6 | Truck check — voice agent (hold-to-talk → STT → tool loop → TTS) | 🟡 | Q3, Q4, Q12, Q13 |
 | 7 | Reports & analytics (dashboard, cross-station, CSV/PDF export) | ✅ | Q11 |
 | 8 | AAR Studio — THE HERO (AI-facilitated After Action Reviews) | 🟡 | Q1, Q7 |
@@ -95,7 +95,7 @@ Improves the platform but isn't required to launch. Do not pull forward ahead of
 - **Q3 / Q4 — Voice agent: iPad on-device verification, then pilot rollout.** Physical iPad run (portrait + landscape); then enable for 1–2 pilot AI-plan brigades.
 - **Q6 / Q6a — Wiki content refresh; finish the emoji → Lucide sweep.** Stale dev pages + user-guide screenshots; decide per-spot on remaining emoji.
 - **Q7 — Shrink the `/aar` CSP.** Blocked until AAR moves live transcription to a backend speech proxy.
-- **Q8 — Surface vehicle management in the truck-check roster.** Fold vehicle CRUD into `/truckcheck` so it isn't admin-only.
+- ~~**Q8 — Surface vehicle management in the truck-check roster.**~~ **Done 2026-07-17:** add/edit a vehicle directly from `/truckcheck` (an "Add Vehicle" action + a per-card edit pencil) — no more forced hop to `/truckcheck/admin` for basic CRUD. Delete/template/zones editing deliberately stay on the Admin Dashboard (more specialized, higher-risk actions). See changelog.
 - **Q10 / Q23 — Notifications (email/SMS); org invite emails.** Design the provider choice (ACS vs SendGrid vs Twilio) first — shared by both consumers.
 - **Q11 — Advanced analytics dashboard.** Value unproven — validate demand with pilot brigades first.
 - **Q12 / Q13 — Voice agent VAD (continuous listening); A4 vision + offline agent.** Both wait on voice-agent pilot mileage.
