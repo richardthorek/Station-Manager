@@ -12,7 +12,8 @@
 #   3. Tests with coverage reporting
 #   4. Build artifacts
 #   5. Deploy (main branch only)
-#   Note: Post-deployment smoke tests temporarily disabled (see comments below)
+#   Note: Post-deployment smoke tests run against the live app after deploy
+#   (see "Post-Deployment Testing Strategy" below)
 #
 # Quality Gates:
 #   - All linting must pass (zero errors, zero warnings)
@@ -33,7 +34,7 @@
 #     - Ships package.json and package-lock.json (for reference)
 #     - Does NOT ship source code (.ts files)
 #
-#   Azure App Service Deployment (Windows/IIS):
+#   Azure App Service Deployment (Linux):
 #     - SCM_DO_BUILD_DURING_DEPLOYMENT=false (all dependencies pre-installed)
 #     - No post-deploy npm install (dependencies included in package)
 #     - Faster deployment (no dependency installation or native module compilation)
@@ -45,7 +46,6 @@
 #     - Eliminates native module compilation issues (bcrypt requires node-gyp)
 #     - Faster Azure startup (no npm install = no 230s container timeout)
 #     - Deterministic deployments (exact same dependencies as CI build)
-#     - Works on Windows without C++ build tools
 #     - Larger package size (~100MB) but much more reliable
 #
 #   Deployment Reliability:
@@ -357,7 +357,6 @@ jobs:
           cp -r frontend/dist deploy/frontend/
           cp -r aar-studio deploy/aar-studio
           cp startup.sh deploy/ 2>/dev/null || true
-          cp web.config deploy/ 2>/dev/null || true
 
           echo "📦 Package contents:"
           du -sh deploy/backend/node_modules
