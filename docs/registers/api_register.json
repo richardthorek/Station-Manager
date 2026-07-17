@@ -4160,7 +4160,7 @@
     "POST /api/stations": {
       "method": "POST",
       "path": "/api/stations",
-      "description": "Create a new station. Validates that brigade ID is unique to prevent duplicate station creation. Returns 409 if a station with the same brigade ID already exists.",
+      "description": "Create a new station. Validates that brigade ID is unique to prevent duplicate station creation. Returns 409 if a station with the same brigade ID already exists. Tags the new station with the caller's organizationId (from their JWT), if any (Q33, 2026-07-17) — used to scope enforceStationLimit/enforceMemberLimit/enforceVehicleLimit per-org instead of across the whole deployment.",
       "authentication": "none",
       "parameters": {},
       "requestBody": {

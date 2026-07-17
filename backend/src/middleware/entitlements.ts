@@ -15,7 +15,7 @@ import { ensureDatabase } from '../services/dbFactory';
 import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
 import { getDefaultEntitlements } from '../constants/plans';
 import { DEFAULT_STATION_ID, DEMO_STATION_ID } from '../constants/stations';
-import type { EntitlementFeature } from '../types';
+import type { EntitlementFeature, Organization } from '../types';
 import { JWT_SECRET } from '../config/jwtSecret';
 
 export function entitlementsEnabled(): boolean {
@@ -118,10 +118,16 @@ export function enforceStationLimit() {
     try {
       const db = await ensureDatabase(req.isDemoMode);
       const all = await db.getAllStations();
-      // Exclude the built-in default/demo stations from the org's quota count.
-      // Once stations carry organizationId this filter can be org-scoped instead.
+      // Scope to this org's own stations (Q33, found 2026-07-17 while
+      // verifying AC-3): this used to count every station across every
+      // organisation, only excluding the built-in demo/default ids, so one
+      // org's quota was checked against the whole deployment's station count.
+      // Also keep the system-id exclusion as a defensive belt-and-braces
+      // (a demo/default station should never count even if it were somehow
+      // mistagged with a real organizationId).
       const SYSTEM_IDS = new Set([DEFAULT_STATION_ID, DEMO_STATION_ID]);
-      const activeCount = all.filter((s) => s.isActive && !SYSTEM_IDS.has(s.id)).length;
+      const orgId = req.organization.id;
+      const activeCount = all.filter((s) => s.isActive && !SYSTEM_IDS.has(s.id) && s.organizationId === orgId).length;
       if (activeCount >= maxStations) {
         logger.info('Station limit reached', {
           organizationId: req.organization.id,
@@ -147,6 +153,24 @@ export function enforceStationLimit() {
 }
 
 /**
+ * The set of station ids belonging to an organisation, for scoping
+ * member/vehicle counts to that org's own data (Q33, found 2026-07-17 while
+ * verifying AC-3). A station created before this fix — or any station a
+ * caller never explicitly tagged with an organizationId — belongs to no
+ * org's count; this fails open (undercounts) rather than closed, matching
+ * this module's existing "no org context → pass through" convention, so a
+ * pre-existing station never falsely blocks a *different* org and a legacy
+ * station's members/vehicles simply don't count until it's tagged (a
+ * one-time ops reconciliation, tracked in MASTER_PLAN — not a per-request
+ * concern here).
+ */
+async function getOrgStationIds(organizationId: string, isDemoMode: boolean): Promise<Set<string>> {
+  const db = await ensureDatabase(isDemoMode);
+  const allStations = await db.getAllStations();
+  return new Set(allStations.filter((s) => s.organizationId === organizationId).map((s) => s.id));
+}
+
+/**
  * Shared count-based limit gate. No-op when entitlements are disabled or there
  * is no org context (kiosk/demo/back-compat). Falls back to the plan default
  * when a persisted org predates the limit field, so existing free orgs still
@@ -156,7 +180,7 @@ function enforceCountLimit(opts: {
   limitKey: 'maxMembers' | 'maxVehicles';
   errorMessage: string;
   label: string;
-  count: (req: Request) => Promise<number>;
+  count: (req: Request, organization: Organization, orgStationIds: Set<string>) => Promise<number>;
 }) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!entitlementsEnabled()) {
@@ -177,7 +201,8 @@ function enforceCountLimit(opts: {
       getDefaultEntitlements(req.organization.planCode)[opts.limitKey];
 
     try {
-      const current = await opts.count(req);
+      const orgStationIds = await getOrgStationIds(req.organization.id, req.isDemoMode ?? false);
+      const current = await opts.count(req, req.organization, orgStationIds);
       if (current >= limit) {
         logger.info(`${opts.label} limit reached`, {
           organizationId: req.organization.id,
@@ -211,10 +236,10 @@ export function enforceMemberLimit() {
     limitKey: 'maxMembers',
     errorMessage: 'Member limit reached for your plan',
     label: 'Member',
-    count: async (req) => {
+    count: async (req, _organization, orgStationIds) => {
       const db = await ensureDatabase(req.isDemoMode);
       const members = await db.getAllMembers();
-      return members.length;
+      return members.filter((m) => m.stationId && orgStationIds.has(m.stationId)).length;
     },
   });
 }
@@ -228,10 +253,10 @@ export function enforceVehicleLimit() {
     limitKey: 'maxVehicles',
     errorMessage: 'Vehicle limit reached for your plan',
     label: 'Vehicle',
-    count: async (req) => {
+    count: async (req, _organization, orgStationIds) => {
       const db = await ensureTruckChecksDatabase(req.isDemoMode);
       const appliances = await db.getAllAppliances();
-      return appliances.length;
+      return appliances.filter((a) => a.stationId && orgStationIds.has(a.stationId)).length;
     },
   });
 }
