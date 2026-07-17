@@ -21,6 +21,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Moon, Sun, Settings2, Wrench, Truck, TriangleAlert, Mic, Plus, Pencil } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../contexts/AuthContext';
+import { useStation } from '../../contexts/StationContext';
 import { useSocket } from '../../hooks/useSocket';
 import { PageTransition } from '../../components/PageTransition';
 import { api } from '../../services/api';
@@ -39,6 +40,7 @@ interface LastCheck {
 export function TruckCheckPage() {
   const { theme, toggleTheme } = useTheme();
   const { hasFeature } = useAuth();
+  const { isDefaultStation } = useStation();
   const { on, off } = useSocket();
   const navigate = useNavigate();
   const [appliances, setAppliances] = useState<Appliance[]>([]);
@@ -327,7 +329,7 @@ export function TruckCheckPage() {
                           <button className="btn-primary" onClick={() => handleStartCheck(appliance.id)}>
                             Start Check
                           </button>
-                          {hasFeature('aiEnabled') && (
+                          {hasFeature('aiEnabled') && !isDefaultStation() && (
                             <button
                               className="btn-voice-check"
                               onClick={() => navigate(`/truckcheck/voice/${appliance.id}`)}

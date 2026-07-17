@@ -40,6 +40,14 @@ vi.mock('../../../services/api', () => ({
   },
 }));
 
+// Q28: voice check needs a real station context — default to "yes, one is
+// selected" so the existing connect-on-mount tests below are unaffected;
+// the no-station-context case gets its own test.
+const isDefaultStationMock = vi.fn().mockReturnValue(false);
+vi.mock('../../../contexts/StationContext', () => ({
+  useStation: () => ({ isDefaultStation: isDefaultStationMock }),
+}));
+
 import { VoiceCheckPage } from './VoiceCheckPage';
 import { api } from '../../../services/api';
 
@@ -66,6 +74,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   micMock.start.mockResolvedValue(undefined);
   getAgentSessionTurnsMock.mockResolvedValue([]);
+  isDefaultStationMock.mockReturnValue(false);
 });
 
 describe('VoiceCheckPage', () => {
@@ -249,6 +258,17 @@ describe('VoiceCheckPage', () => {
       await renderReady();
       act(() => capturedEvents.onSessionStarted?.('sess-1', true));
       expect(await screen.findByText(/could not restore the earlier transcript/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('no station context (Q28)', () => {
+    it('shows a redirect message instead of connecting', () => {
+      isDefaultStationMock.mockReturnValue(true);
+      renderPage();
+
+      expect(screen.getByText(/needs a station selected/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /go back to the vehicle roster/i })).toBeInTheDocument();
+      expect(clientMock.connect).not.toHaveBeenCalled();
     });
   });
 });

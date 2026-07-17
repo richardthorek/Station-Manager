@@ -102,7 +102,7 @@ Improves the platform but isn't required to launch. Do not pull forward ahead of
 - **Q14 / Q15 / Q16 — Suite consolidation.** Shared packages, monorepo/Turborepo, shared truck-check domain types. Depends on a commercial reason.
 - **Q17 — aar-studio responsive-breakpoint convention.** Add shared breakpoint vars to `rfs-tokens.css` next time aar-studio gets sustained work.
 - **Q22 / Q24 — Reconcile facility identity with Fire Santa Run; converge the two national facility parsers.** Merge when there's one concrete need for a canonical facility table.
-- **Q28 — Voice check 404s in demo mode.** `/ws/agent-check` always uses production truck-check tables while demo-mode lists from Test-suffix tables. Scope decision: support demo, or hide the voice entry point when there's no station context.
+- ~~**Q28 — Voice check 404s in demo mode.**~~ **Done 2026-07-17:** took the "hide the entry point" branch of the scope decision (not "support demo") — touching the WS handler's DB resolution felt too close to its existing cross-tenant/entitlement checks to change speculatively. The roster's Voice button and the `/truckcheck/voice/:id` route itself now both check `useStation().isDefaultStation()` and stay hidden / show a redirect message when there's no real station context, instead of opening a socket that's guaranteed to 404. See changelog.
 
 ---
 
