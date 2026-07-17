@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../../services/api';
+import { useStation } from '../../../contexts/StationContext';
 import { VoiceAgentClient } from './voiceAgentClient';
 import { MicCapture, playAudioBlob, unlockAudioPlayback } from './audioIO';
 import './VoiceCheckPage.css';
@@ -26,6 +27,7 @@ type ConnectionState = 'connecting' | 'ready' | 'reconnecting' | 'closed';
 
 export function VoiceCheckPage() {
   const { applianceId } = useParams<{ applianceId: string }>();
+  const { isDefaultStation } = useStation();
   const [applianceName, setApplianceName] = useState<string>('');
   const [connection, setConnection] = useState<ConnectionState>('connecting');
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
@@ -47,6 +49,12 @@ export function VoiceCheckPage() {
 
   useEffect(() => {
     if (!applianceId) return;
+    // Q28: the WS backend resolves the appliance from the caller's active
+    // station context; with no station selected (or on the legacy default
+    // fallback) that lookup can miss entirely, surfacing as a bare connection
+    // error. Voice check is a station-scoped agent session, not a bookmarkable
+    // global page — skip connecting and show a friendly redirect instead.
+    if (isDefaultStation()) return;
 
     api.getAppliance(applianceId)
       .then((appliance) => setApplianceName(appliance.name))
@@ -118,7 +126,7 @@ export function VoiceCheckPage() {
       client.endSession();
       client.close();
     };
-  }, [applianceId, addEntry]);
+  }, [applianceId, addEntry, isDefaultStation]);
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
@@ -176,6 +184,23 @@ export function VoiceCheckPage() {
     setDraft('');
     clientRef.current?.sendText(text, false);
   }, [draft, canInteract, addEntry]);
+
+  if (isDefaultStation()) {
+    return (
+      <div className="voice-check-page">
+        <header className="voice-check-header">
+          <Link to="/truckcheck" className="back-link">← Vehicle Check</Link>
+          <h1>Voice Check</h1>
+        </header>
+        <main className="voice-check-main">
+          <p className="voice-transcript-hint">
+            Voice check needs a station selected first.{' '}
+            <Link to="/truckcheck">Go back to the vehicle roster</Link> and select your station.
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   const connectionLabels: Record<ConnectionState, string> = {
     connecting: 'Connecting…',

@@ -1,9 +1,9 @@
-import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
-import { api, ApiLimitError } from '../../services/api';
-import type { Appliance, ChecklistTemplate, ChecklistItem, VehicleType } from '../../types';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { api } from '../../services/api';
+import type { Appliance, ChecklistTemplate, ChecklistItem } from '../../types';
 import { ITEM_CODES, SECTIONS, resolveVocabSlug } from './checklistVocabulary';
 import { ApplianceZonesModal } from './ApplianceZonesModal';
+import { VehicleFormModal } from './VehicleFormModal';
 import './VehicleManagement.css';
 
 interface VehicleManagementProps {
@@ -17,46 +17,9 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
-  const [vehicleName, setVehicleName] = useState('');
-  const [vehicleDescription, setVehicleDescription] = useState('');
-  const [vehicleTypeId, setVehicleTypeId] = useState('');
-  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
-  const [agencyId, setAgencyId] = useState('');
-  const [registration, setRegistration] = useState('');
-  const [vin, setVin] = useState('');
-  const [make, setMake] = useState('');
-  const [model, setModel] = useState('');
-  const [year, setYear] = useState('');
-  const [vehiclePhotoUrl, setVehiclePhotoUrl] = useState('');
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [vehicleModalError, setVehicleModalError] = useState<string | null>(null);
-  const [vehicleModalUpgrade, setVehicleModalUpgrade] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   // Standard items from the linked VehicleType, shown read-only in the template editor.
   const [standardItemsForEditor, setStandardItemsForEditor] = useState<ChecklistItem[]>([]);
-  const modalRef = useFocusTrap<HTMLDivElement>(showVehicleModal);
-  const modalIdSuffix = selectedVehicle?.id ?? 'new';
-
-  // Load the vehicle types this org can use (its own + shared standards) so a
-  // vehicle can be linked to a standard checklist.
-  useEffect(() => {
-    api.getVehicleTypes().then(setVehicleTypes).catch(() => setVehicleTypes([]));
-  }, []);
-
-  const handleVehicleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) return;
-    if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      setShowVehicleModal(false);
-    }
-  };
-
-  const handleVehicleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      setShowVehicleModal(false);
-    }
-  };
 
   const handleTemplateOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;
@@ -72,60 +35,14 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     }
   };
 
-  /**
-   * Handle Escape key to close modal
-   */
-  useEffect(() => {
-    if (!showVehicleModal) return;
-
-    const handleEscape = (event: Event) => {
-      if ((event as globalThis.KeyboardEvent).key === 'Escape' && !uploading) {
-        setShowVehicleModal(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [showVehicleModal, uploading]);
-
-  function resetVehicleForm() {
-    setVehicleName('');
-    setVehicleDescription('');
-    setVehicleTypeId('');
-    setAgencyId('');
-    setRegistration('');
-    setVin('');
-    setMake('');
-    setModel('');
-    setYear('');
-    setVehiclePhotoUrl('');
-    setPhotoFile(null);
-  }
-
   function handleNewVehicle() {
     setSelectedVehicle(null);
-    resetVehicleForm();
-    setVehicleModalError(null);
-    setVehicleModalUpgrade(false);
     setIsEditMode(false);
     setShowVehicleModal(true);
   }
 
   function handleEditVehicle(vehicle: Appliance) {
     setSelectedVehicle(vehicle);
-    setVehicleName(vehicle.name);
-    setVehicleDescription(vehicle.description || '');
-    setVehicleTypeId(vehicle.vehicleTypeId || '');
-    setAgencyId(vehicle.agencyId || '');
-    setRegistration(vehicle.registration || '');
-    setVin(vehicle.vin || '');
-    setMake(vehicle.make || '');
-    setModel(vehicle.model || '');
-    setYear(vehicle.year ? String(vehicle.year) : '');
-    setVehiclePhotoUrl(vehicle.photoUrl || '');
-    setPhotoFile(null);
-    setVehicleModalError(null);
-    setVehicleModalUpgrade(false);
     setIsEditMode(true);
     setShowVehicleModal(true);
   }
@@ -155,75 +72,6 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
     } catch (err) {
       alert('Failed to load template');
       console.error(err);
-    }
-  }
-
-  async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Image must be smaller than 10MB');
-      return;
-    }
-
-    setPhotoFile(file);
-  }
-
-  async function handleSaveVehicle() {
-    if (!vehicleName.trim()) {
-      setVehicleModalError('Vehicle name is required');
-      return;
-    }
-
-    setVehicleModalError(null);
-    try {
-      setUploading(true);
-      
-      let photoUrl = vehiclePhotoUrl;
-      if (photoFile) {
-        const uploadResponse = await api.uploadAppliancePhoto(photoFile);
-        photoUrl = uploadResponse.photoUrl;
-      }
-
-      // Keep the legacy vehicleType slug in step with the chosen type's code so
-      // existing report grouping keeps working alongside the new vehicleTypeId link.
-      const chosenType = vehicleTypes.find((t) => t.id === vehicleTypeId);
-      const legacySlug = chosenType?.code || undefined;
-      const details = {
-        vehicleTypeId: vehicleTypeId || undefined,
-        agencyId: agencyId.trim() || undefined,
-        registration: registration.trim() || undefined,
-        vin: vin.trim() || undefined,
-        make: make.trim() || undefined,
-        model: model.trim() || undefined,
-        year: year.trim() ? Number(year) : undefined,
-      };
-
-      if (isEditMode && selectedVehicle) {
-        await api.updateAppliance(selectedVehicle.id, vehicleName, vehicleDescription || undefined, photoUrl || undefined, legacySlug, details);
-      } else {
-        await api.createAppliance(vehicleName, vehicleDescription || undefined, photoUrl || undefined, legacySlug, details);
-      }
-
-      setShowVehicleModal(false);
-      onUpdate();
-    } catch (err) {
-      const fallback = `Failed to ${isEditMode ? 'update' : 'create'} vehicle`;
-      if (err instanceof ApiLimitError) {
-        setVehicleModalError(err.message);
-        setVehicleModalUpgrade(true);
-      } else {
-        setVehicleModalError(err instanceof Error && err.message ? err.message : fallback);
-        setVehicleModalUpgrade(false);
-      }
-    } finally {
-      setUploading(false);
     }
   }
 
@@ -363,158 +211,11 @@ export function VehicleManagement({ appliances, onUpdate }: VehicleManagementPro
 
       {/* Vehicle Modal */}
       {showVehicleModal && (
-        <div
-          className="modal-overlay"
-          onClick={handleVehicleOverlayClick}
-          onKeyDown={handleVehicleOverlayKeyDown}
-          role="button"
-          tabIndex={0}
-          aria-label="Close vehicle modal"
-        >
-          <div 
-            ref={modalRef}
-            className="modal-content" 
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="vehicle-modal-title"
-          >
-            <h2 id="vehicle-modal-title">{isEditMode ? 'Edit Vehicle' : 'Add New Vehicle'}</h2>
-            
-            <div className="form-group">
-              <label htmlFor={`vehicle-name-${modalIdSuffix}`}>Name *</label>
-              <input
-                id={`vehicle-name-${modalIdSuffix}`}
-                type="text"
-                value={vehicleName}
-                onChange={(e) => setVehicleName(e.target.value)}
-                placeholder="e.g., Tanker 1"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor={`vehicle-description-${modalIdSuffix}`}>Description</label>
-              <textarea
-                id={`vehicle-description-${modalIdSuffix}`}
-                value={vehicleDescription}
-                onChange={(e) => setVehicleDescription(e.target.value)}
-                placeholder="Optional description..."
-                rows={3}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor={`vehicle-type-${modalIdSuffix}`}>Vehicle Type</label>
-              <select
-                id={`vehicle-type-${modalIdSuffix}`}
-                value={vehicleTypeId}
-                onChange={(e) => setVehicleTypeId(e.target.value)}
-              >
-                <option value="">— No standard type (custom checklist only) —</option>
-                {vehicleTypes.map((vt) => (
-                  <option key={vt.id} value={vt.id}>
-                    {vt.name}{vt.isStandard ? ' (standard)' : ''}
-                  </option>
-                ))}
-              </select>
-              <small>
-                Link to a standard type so this vehicle inherits its locked checklist and
-                its checks can be compared with the same type at other brigades. Manage
-                types under “Vehicle Types”.
-              </small>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor={`vehicle-agency-${modalIdSuffix}`}>Fleet / agency no.</label>
-                <input
-                  id={`vehicle-agency-${modalIdSuffix}`}
-                  type="text"
-                  value={agencyId}
-                  onChange={(e) => setAgencyId(e.target.value)}
-                  placeholder="e.g., RFS fleet number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor={`vehicle-rego-${modalIdSuffix}`}>Registration</label>
-                <input
-                  id={`vehicle-rego-${modalIdSuffix}`}
-                  type="text"
-                  value={registration}
-                  onChange={(e) => setRegistration(e.target.value)}
-                  placeholder="Number plate"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor={`vehicle-make-${modalIdSuffix}`}>Make</label>
-                <input id={`vehicle-make-${modalIdSuffix}`} type="text" value={make} onChange={(e) => setMake(e.target.value)} placeholder="e.g., Isuzu" />
-              </div>
-              <div className="form-group">
-                <label htmlFor={`vehicle-model-${modalIdSuffix}`}>Model</label>
-                <input id={`vehicle-model-${modalIdSuffix}`} type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g., FTS 800" />
-              </div>
-              <div className="form-group">
-                <label htmlFor={`vehicle-year-${modalIdSuffix}`}>Year</label>
-                <input id={`vehicle-year-${modalIdSuffix}`} type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g., 2019" min={1950} max={2100} />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor={`vehicle-vin-${modalIdSuffix}`}>VIN</label>
-              <input id={`vehicle-vin-${modalIdSuffix}`} type="text" value={vin} onChange={(e) => setVin(e.target.value)} placeholder="Vehicle Identification Number (optional)" />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor={`vehicle-photo-${modalIdSuffix}`}>Vehicle Photo</label>
-              {(vehiclePhotoUrl || photoFile) && (
-                <div className="photo-preview">
-                  {photoFile ? (
-                    <img src={URL.createObjectURL(photoFile)} alt="Preview" />
-                  ) : vehiclePhotoUrl ? (
-                    <img src={vehiclePhotoUrl} alt="Current" />
-                  ) : null}
-                </div>
-              )}
-              <input
-                id={`vehicle-photo-${modalIdSuffix}`}
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                disabled={uploading}
-              />
-              <small>Optional: Upload a photo to display instead of the default icon</small>
-            </div>
-
-            {vehicleModalError && (
-              <p className="vehicle-modal-error" role="alert">
-                {vehicleModalError}
-                {vehicleModalUpgrade && (
-                  <> <a href="/admin/organization" className="vehicle-modal-upgrade-link">Upgrade plan →</a></>
-                )}
-              </p>
-            )}
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setShowVehicleModal(false)}
-                disabled={uploading}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={handleSaveVehicle}
-                disabled={uploading}
-              >
-                {uploading ? 'Saving...' : isEditMode ? 'Update' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <VehicleFormModal
+          vehicle={isEditMode ? selectedVehicle : null}
+          onClose={() => setShowVehicleModal(false)}
+          onSaved={onUpdate}
+        />
       )}
 
       {/* Zones & Equipment Modal */}

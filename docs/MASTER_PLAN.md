@@ -40,7 +40,7 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 | 2 | Events & activities (create/end, participants, audit trail) | ✅ | — |
 | 3 | Member profiles & achievements (QR codes, stats, 20 achievements) | ✅ | — |
 | 4 | Member management (search/filter/sort, CSV import, invite/activation) | ✅ | — |
-| 5 | Truck check — manual (vehicle types, locked checklists, zones/equipment, issue lifecycle, cross-brigade reporting) | ✅ | Q8 |
+| 5 | Truck check — manual (vehicle types, locked checklists, zones/equipment, issue lifecycle, cross-brigade reporting) | ✅ | — |
 | 6 | Truck check — voice agent (hold-to-talk → STT → tool loop → TTS) | 🟡 | Q3, Q4, Q12, Q13 |
 | 7 | Reports & analytics (dashboard, cross-station, CSV/PDF export) | ✅ | Q11 |
 | 8 | AAR Studio — THE HERO (AI-facilitated After Action Reviews) | 🟡 | Q1, Q7 |
@@ -93,16 +93,16 @@ Improves the platform but isn't required to launch. Do not pull forward ahead of
 
 - **Q1 — AAR insight-quality validation on a live debrief.** Confirm topic-vs-segment consolidation lands in the 3–8-findings sweet spot; batch with Q3.
 - **Q3 / Q4 — Voice agent: iPad on-device verification, then pilot rollout.** Physical iPad run (portrait + landscape); then enable for 1–2 pilot AI-plan brigades.
-- **Q6 / Q6a — Wiki content refresh; finish the emoji → Lucide sweep.** Stale dev pages + user-guide screenshots; decide per-spot on remaining emoji.
+- **Q6 / Q6a — Wiki content refresh; finish the emoji → Lucide sweep.** User-guide screenshots + remaining emoji still outstanding. **Partial 2026-07-17:** the one concretely-stale dev page found — `deployment-optimization.md` (a v2.0 "pre-install node_modules" strategy write-up that still described prod as Windows/IIS, actively misleading despite the OS having migrated to Linux months ago) — archived to `history/archive/` (its outage post-mortem is still valuable, just not current guidance); fixed `docs/wiki/developer/README.md`'s stale/misattributed staleness caveats and several broken relative links in `history/archive/README.md` left over from the pre-restructure doc renames. See changelog.
 - **Q7 — Shrink the `/aar` CSP.** Blocked until AAR moves live transcription to a backend speech proxy.
-- **Q8 — Surface vehicle management in the truck-check roster.** Fold vehicle CRUD into `/truckcheck` so it isn't admin-only.
+- ~~**Q8 — Surface vehicle management in the truck-check roster.**~~ **Done 2026-07-17:** add/edit a vehicle directly from `/truckcheck` (an "Add Vehicle" action + a per-card edit pencil) — no more forced hop to `/truckcheck/admin` for basic CRUD. Delete/template/zones editing deliberately stay on the Admin Dashboard (more specialized, higher-risk actions). See changelog.
 - **Q10 / Q23 — Notifications (email/SMS); org invite emails.** Design the provider choice (ACS vs SendGrid vs Twilio) first — shared by both consumers.
 - **Q11 — Advanced analytics dashboard.** Value unproven — validate demand with pilot brigades first.
 - **Q12 / Q13 — Voice agent VAD (continuous listening); A4 vision + offline agent.** Both wait on voice-agent pilot mileage.
 - **Q14 / Q15 / Q16 — Suite consolidation.** Shared packages, monorepo/Turborepo, shared truck-check domain types. Depends on a commercial reason.
 - **Q17 — aar-studio responsive-breakpoint convention.** Add shared breakpoint vars to `rfs-tokens.css` next time aar-studio gets sustained work.
 - **Q22 / Q24 — Reconcile facility identity with Fire Santa Run; converge the two national facility parsers.** Merge when there's one concrete need for a canonical facility table.
-- **Q28 — Voice check 404s in demo mode.** `/ws/agent-check` always uses production truck-check tables while demo-mode lists from Test-suffix tables. Scope decision: support demo, or hide the voice entry point when there's no station context.
+- ~~**Q28 — Voice check 404s in demo mode.**~~ **Done 2026-07-17:** took the "hide the entry point" branch of the scope decision (not "support demo") — touching the WS handler's DB resolution felt too close to its existing cross-tenant/entitlement checks to change speculatively. The roster's Voice button and the `/truckcheck/voice/:id` route itself now both check `useStation().isDefaultStation()` and stay hidden / show a redirect message when there's no real station context, instead of opening a socket that's guaranteed to 404. See changelog.
 
 ---
 

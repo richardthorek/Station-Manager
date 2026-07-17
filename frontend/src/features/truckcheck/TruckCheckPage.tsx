@@ -18,12 +18,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Moon, Sun, Settings2, Wrench, Truck, TriangleAlert, Mic } from 'lucide-react';
+import { Moon, Sun, Settings2, Wrench, Truck, TriangleAlert, Mic, Plus, Pencil } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../contexts/AuthContext';
+import { useStation } from '../../contexts/StationContext';
 import { useSocket } from '../../hooks/useSocket';
 import { PageTransition } from '../../components/PageTransition';
 import { api } from '../../services/api';
+import { VehicleFormModal } from './VehicleFormModal';
 import type { Appliance, CheckRun, CheckRunWithResults, IssueResult } from '../../types';
 import './TruckCheckPage.css';
 
@@ -38,6 +40,7 @@ interface LastCheck {
 export function TruckCheckPage() {
   const { theme, toggleTheme } = useTheme();
   const { hasFeature } = useAuth();
+  const { isDefaultStation } = useStation();
   const { on, off } = useSocket();
   const navigate = useNavigate();
   const [appliances, setAppliances] = useState<Appliance[]>([]);
@@ -47,6 +50,10 @@ export function TruckCheckPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  // Q8: vehicle CRUD folded directly into the roster (no admin-page hop
+  // needed to add or fix a vehicle's details). null = adding a new vehicle;
+  // an Appliance = editing that one. undefined = modal closed.
+  const [vehicleModal, setVehicleModal] = useState<Appliance | null | undefined>(undefined);
 
   const loadAppliances = useCallback(async () => {
     try {
@@ -204,6 +211,9 @@ export function TruckCheckPage() {
 
         <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="view-tabs">
+            <button type="button" className="tab-link" onClick={() => setVehicleModal(null)}>
+              <Plus size={16} strokeWidth={2} aria-hidden /> Add Vehicle
+            </button>
             <Link to="/truckcheck/admin" className="tab-link">
               <Settings2 size={16} strokeWidth={2} aria-hidden /> Admin Dashboard
             </Link>
@@ -216,8 +226,10 @@ export function TruckCheckPage() {
             <div className="roster-empty">
               <div className="roster-empty__icon"><Truck size={40} strokeWidth={2} aria-hidden /></div>
               <h2>No vehicles yet</h2>
-              <p>Add your brigade's vehicles from the Admin Dashboard to start running weekly checks.</p>
-              <Link to="/truckcheck/admin" className="btn-primary">Go to Admin Dashboard</Link>
+              <p>Add your brigade's first vehicle to start running weekly checks.</p>
+              <button type="button" className="btn-primary" onClick={() => setVehicleModal(null)}>
+                <Plus size={16} strokeWidth={2} aria-hidden /> Add Vehicle
+              </button>
             </div>
           ) : (
             <div className="roster-grid">
@@ -251,6 +263,15 @@ export function TruckCheckPage() {
                             <TriangleAlert size={14} strokeWidth={2} aria-hidden /> {issueCount}
                           </span>
                         )}
+                        <button
+                          type="button"
+                          className="roster-card__edit-btn"
+                          onClick={() => setVehicleModal(appliance)}
+                          aria-label={`Edit ${appliance.name}`}
+                          title="Edit vehicle details"
+                        >
+                          <Pencil size={14} strokeWidth={2} aria-hidden />
+                        </button>
                       </div>
                       {identity && <p className="roster-card__identity">{identity}</p>}
 
@@ -308,7 +329,7 @@ export function TruckCheckPage() {
                           <button className="btn-primary" onClick={() => handleStartCheck(appliance.id)}>
                             Start Check
                           </button>
-                          {hasFeature('aiEnabled') && (
+                          {hasFeature('aiEnabled') && !isDefaultStation() && (
                             <button
                               className="btn-voice-check"
                               onClick={() => navigate(`/truckcheck/voice/${appliance.id}`)}
@@ -325,6 +346,14 @@ export function TruckCheckPage() {
             </div>
           )}
         </main>
+
+        {vehicleModal !== undefined && (
+          <VehicleFormModal
+            vehicle={vehicleModal}
+            onClose={() => setVehicleModal(undefined)}
+            onSaved={loadAppliances}
+          />
+        )}
       </div>
     </PageTransition>
   );

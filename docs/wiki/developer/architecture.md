@@ -676,7 +676,8 @@ frontend/src/
 │   │   ├── AdminDashboardPage.tsx
 │   │   ├── TemplateEditorPage.tsx
 │   │   ├── TemplateSelectionPage.tsx
-│   │   ├── VehicleManagement.tsx
+│   │   ├── VehicleManagement.tsx      # Admin Dashboard's vehicle grid (template/zones/delete)
+│   │   ├── VehicleFormModal.tsx       # Q8: shared add/edit modal — also used directly from TruckCheckPage's roster
 │   │   └── [styles]
 │   ├── reports/               # Reports & Analytics
 │   │   ├── ReportsPage.tsx
@@ -2654,10 +2655,11 @@ Brigade access tokens enable secure cross-domain linking:
 
 > **OS discrepancy (June 2026) — resolved.** The diagram above lists the App
 > Service OS as Linux; at the time this was written the live `bungrfsstation`
-> plan was still Windows/IIS/iisnode (`docs/wiki/developer/deployment-optimization.md`
-> documents a prod outage caused by assuming Linux prematurely). Prod has since
-> migrated to the Linux App Service (`bungrfs-linux`, provisioned via the Bicep
-> IaC below) — the diagram is now accurate. The now-dead `web.config`
+> plan was still Windows/IIS/iisnode (`docs/wiki/developer/history/archive/deployment-optimization.md`
+> documents a prod outage caused by assuming Linux prematurely — archived 2026-07-17,
+> Q6, since it described the since-superseded Windows/IIS strategy as current).
+> Prod has since migrated to the Linux App Service (`bungrfs-linux`, provisioned
+> via the Bicep IaC below) — the diagram is now accurate. The now-dead `web.config`
 > (IIS-only, ignored on Linux) was removed 2026-07-17 (review F9).
 
 ### Infrastructure-as-Code (June 2026)
