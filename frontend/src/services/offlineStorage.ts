@@ -1,6 +1,7 @@
 import type { DBSchema, IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
 import { getCurrentStationId } from './api';
+import { debugLog } from '../utils/debugLog';
 
 // Define the database schema
 interface StationManagerDB extends DBSchema {
@@ -90,7 +91,7 @@ export async function addToQueue(action: Omit<QueuedAction, 'id' | 'timestamp' |
   };
 
   await database.add('offline-queue', queuedAction);
-  console.log('[OfflineQueue] Added to queue with station context:', { 
+  debugLog('[OfflineQueue] Added to queue with station context:', { 
     id, 
     stationId, 
     type: queuedAction.type 
@@ -134,7 +135,7 @@ export async function updateQueuedAction(id: string, updates: Partial<QueuedActi
 export async function removeFromQueue(id: string): Promise<void> {
   const database = await initDB();
   await database.delete('offline-queue', id);
-  console.log('[OfflineQueue] Removed from queue:', id);
+  debugLog('[OfflineQueue] Removed from queue:', id);
 }
 
 /**
@@ -170,7 +171,7 @@ export async function cacheData(key: string, data: unknown, expiresInMs?: number
   };
 
   await database.put('cached-data', cachedData);
-  console.log('[OfflineStorage] Cached data with station context:', { 
+  debugLog('[OfflineStorage] Cached data with station context:', { 
     originalKey: key,
     scopedKey, 
     stationId 
@@ -189,18 +190,18 @@ export async function getCachedData<T = unknown>(key: string): Promise<T | null>
   const cached = await database.get('cached-data', scopedKey);
   
   if (!cached) {
-    console.log('[OfflineStorage] No cached data found:', { scopedKey, stationId });
+    debugLog('[OfflineStorage] No cached data found:', { scopedKey, stationId });
     return null;
   }
 
   // Check if expired
   if (cached.expiresAt && cached.expiresAt < Date.now()) {
     await database.delete('cached-data', scopedKey);
-    console.log('[OfflineStorage] Cached data expired:', { scopedKey });
+    debugLog('[OfflineStorage] Cached data expired:', { scopedKey });
     return null;
   }
 
-  console.log('[OfflineStorage] Retrieved cached data:', { scopedKey, stationId });
+  debugLog('[OfflineStorage] Retrieved cached data:', { scopedKey, stationId });
   return cached.data as T;
 }
 
@@ -222,7 +223,7 @@ export async function clearCacheForStation(stationId: string): Promise<void> {
     }
   }
   
-  console.log('[OfflineStorage] Cleared cache for station:', { stationId, clearedCount });
+  debugLog('[OfflineStorage] Cleared cache for station:', { stationId, clearedCount });
 }
 
 /**

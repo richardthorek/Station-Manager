@@ -1,6 +1,7 @@
 import { offlineQueue } from './offlineQueue';
 import { cacheData, getCachedData } from './offlineStorage';
 import type { Member, CheckIn, EventWithParticipants } from '../types';
+import { debugLog } from '../utils/debugLog';
 
 /**
  * Wrapper around API service calls to add offline support
@@ -48,7 +49,7 @@ export async function withOfflineSupport<T>(
     }
   } else {
     // Queue for later
-    console.log('[OfflineSupport] Offline, queueing action');
+    debugLog('[OfflineSupport] Offline, queueing action');
     await offlineQueue.queueAction(
       offlineQueueAction.type,
       offlineQueueAction.endpoint,
@@ -84,7 +85,7 @@ export async function withCaching<T>(
       // Try to return cached data
       const cached = await getCachedData<T>(cacheKey);
       if (cached) {
-        console.log('[OfflineSupport] Returning cached data for:', cacheKey);
+        debugLog('[OfflineSupport] Returning cached data for:', cacheKey);
         return cached;
       }
       throw error;
@@ -93,7 +94,7 @@ export async function withCaching<T>(
     // Return cached data
     const cached = await getCachedData<T>(cacheKey);
     if (cached) {
-      console.log('[OfflineSupport] Offline, returning cached data for:', cacheKey);
+      debugLog('[OfflineSupport] Offline, returning cached data for:', cacheKey);
       return cached;
     }
     throw new Error('Device is offline and no cached data available.');
@@ -220,7 +221,7 @@ export async function offlineEndEvent(eventId: string): Promise<void> {
  */
 export function showOfflineNotification(message: string = 'Action queued. Will sync when connection is restored.') {
   // This could be enhanced with a toast library
-  console.log('[OfflineSupport]', message);
+  debugLog('[OfflineSupport]', message);
   
   // Simple browser notification (could be replaced with a better toast)
   if ('Notification' in window && Notification.permission === 'granted') {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { debugLog } from '../utils/debugLog';
 import './InstallPrompt.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -53,7 +54,7 @@ export function InstallPrompt() {
     };
 
     const handleAppInstalled = () => {
-      console.log('[InstallPrompt] PWA was installed');
+      debugLog('[InstallPrompt] PWA was installed');
       setIsInstalled(true);
       setShowPrompt(false);
       setDeferredPrompt(null);
@@ -79,14 +80,14 @@ export function InstallPrompt() {
     // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
     
-    console.log(`[InstallPrompt] User response: ${outcome}`);
+    debugLog(`[InstallPrompt] User response: ${outcome}`);
 
     // Clear the deferred prompt
     setDeferredPrompt(null);
     setShowPrompt(false);
 
     if (outcome === 'accepted') {
-      console.log('[InstallPrompt] User accepted the install prompt');
+      debugLog('[InstallPrompt] User accepted the install prompt');
     } else {
       // User dismissed, store timestamp
       localStorage.setItem('install-prompt-dismissed', Date.now().toString());

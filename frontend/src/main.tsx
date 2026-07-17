@@ -4,19 +4,20 @@ import './index.css'
 import './animations.css'
 import App from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
+import { debugLog } from './utils/debugLog';
 
 // Register service worker
 const updateSW = registerSW({
   onNeedRefresh() {
-    console.log('[PWA] New content available, reloading...')
+    debugLog('[PWA] New content available, reloading...')
     // Auto-reload on update for seamless experience
     updateSW(true)
   },
   onOfflineReady() {
-    console.log('[PWA] App ready to work offline')
+    debugLog('[PWA] App ready to work offline')
   },
   onRegisteredSW(swUrl, registration) {
-    console.log('[PWA] Service worker registered:', swUrl)
+    debugLog('[PWA] Service worker registered:', swUrl)
     
     // Check for updates every hour
     if (registration) {
