@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.14.0",
-  "lastUpdated": "2026-07-13",
+  "version": "1.17.0",
+  "lastUpdated": "2026-07-17",
   "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager\n\nMulti-Station Support: Database methods now accept optional stationId parameter for filtering. All methods filter by stationId when provided, default to 'default-station' otherwise.",
   "services": {
     "database": {
@@ -1596,6 +1596,16 @@
           "signature": "getClaimConflicts(status?: 'open' | 'resolved'): Promise<ClaimConflict[]>",
           "description": "Lists claim conflicts, optionally filtered by status",
           "async": true
+        },
+        "createPlatformAuditLog": {
+          "signature": "createPlatformAuditLog(input: CreatePlatformAuditLogInput): Promise<PlatformAuditLog>",
+          "description": "Records one platform-admin mutation (Q32) — the sole accountability trail given the console's hard privacy wall",
+          "async": true
+        },
+        "getPlatformAuditLogs": {
+          "signature": "getPlatformAuditLogs(limit?: number, offset?: number): Promise<PlatformAuditLog[]>",
+          "description": "Platform audit log, newest first",
+          "async": true
         }
       }
     },
@@ -1653,6 +1663,11 @@
         "getAllFacilityKeys": {
           "signature": "getAllFacilityKeys(): Promise<Set<string>>",
           "description": "Every claimed facility key, for the public lookup's 'claimed' badge (60s cache in the route)",
+          "async": true
+        },
+        "deleteOrganization": {
+          "signature": "deleteOrganization(id: string): Promise<boolean>",
+          "description": "Hard-deletes the organization record itself (Q32 platform console). Does not cascade to stations/members/events.",
           "async": true
         }
       }
@@ -1904,7 +1919,7 @@
     },
     "organizations (updated)": {
       "file": "backend/src/routes/organizations.ts",
-      "description": "New invite-link CRUD (POST/GET/DELETE .../invites) and membership management (GET .../members, PUT/DELETE .../members/:userId) built on orgAccessDatabase + orgMembershipRules. POST .../users now also accepts email and writes a membership row. New: GET .../export (owner only) — JSON data export (org, stations, members, event/attendance history) for privacy/retention requests; event history currently limited to ~3 months on the Table Storage backend (see tableStorageDatabase.getEventsByDateRange below).",
+      "description": "New invite-link CRUD (POST/GET/DELETE .../invites) and membership management (GET .../members, PUT/DELETE .../members/:userId) built on orgAccessDatabase + orgMembershipRules. POST .../users now also accepts email and writes a membership row. GET .../export (owner only) — JSON data export (org, stations, members, event/attendance history, truck-check history via truckChecksDbFactory, device records via deviceDbFactory — Q26, 2026-07-17) for privacy/retention requests; events capped at 5000/station, truck-check runs at 5000 across all stations combined, both newest-first. PUT .../current (D1, 2026-07-17): a genuine plan change with no stripeSubscriptionId now starts/ends a TRIAL_PERIOD_DAYS-day trial (constants/plans.ts) directly — status: 'trialing' + trialEndsAt on upgrade to a paid plan, status: 'active' + cleared trialEndsAt on downgrade to community — since this route is the only functional upgrade path while Stripe billing is unconfigured.",
       "functions": {}
     },
     "orgInvites": {
@@ -1919,7 +1934,7 @@
     },
     "platform": {
       "file": "backend/src/routes/platform.ts",
-      "description": "Platform-admin claim-conflict review (list/resolve, incl. reassigning a facility link between orgs). Gated by middleware/platformAdmin.ts's PLATFORM_ADMIN_USERNAMES allowlist, not org role. Mounted at /api/platform.",
+      "description": "Platform-admin console: claim-conflict review, cross-org visibility (aggregate-only), management (plan/status/entitlements, membership, destructive delete with confirmation — Q32), and the station→organization backfill tool (GET .../stations/orphaned, PATCH .../stations/:id/organization — Q35, 2026-07-17). Gated by middleware/platformAdmin.ts's PLATFORM_ADMIN_USERNAMES allowlist, not org role. Mounted at /api/platform. Every mutation writes a PlatformAuditLog row via orgAccessDatabase.",
       "functions": {}
     }
   },

@@ -24,7 +24,7 @@ import {
 import { authMiddleware, requireOwner } from '../middleware/auth';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { ensureBillingEventDatabase } from '../services/billingEventDbFactory';
-import { getDefaultEntitlements, isPlanCode } from '../constants/plans';
+import { getDefaultEntitlements, isPlanCode, TRIAL_PERIOD_DAYS } from '../constants/plans';
 import { logger } from '../services/logger';
 import type Stripe from 'stripe';
 import type { PlanCode, OrganizationStatus } from '../types';
@@ -84,7 +84,7 @@ router.post('/checkout', authMiddleware, requireOwner, async (req: Request, res:
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
-        trial_period_days: 14,
+        trial_period_days: TRIAL_PERIOD_DAYS,
         metadata: { organizationId: org.id, planCode },
       },
       success_url: `${base}/admin/organization?billing=success`,

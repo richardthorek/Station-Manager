@@ -20,6 +20,8 @@ import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 import { ensureOrgAccessDatabase } from '../services/orgAccessDbFactory';
 import { getAdminDb } from '../services/adminUserDbFactory';
 import { ensureDatabase } from '../services/dbFactory';
+import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
+import { ensureDeviceDatabase } from '../services/deviceDbFactory';
 import {
   canChangeRole,
   canInviteRole,
@@ -27,9 +29,9 @@ import {
   isOrgRole,
   violatesLastOwner,
 } from '../services/orgMembershipRules';
-import { clampEntitlements, getDefaultEntitlements, isPlanCode, PLANS } from '../constants/plans';
+import { clampEntitlements, getDefaultEntitlements, isPlanCode, PLANS, trialEndDate } from '../constants/plans';
 import { logger } from '../services/logger';
-import type { Entitlements, OrgInvite, OrgRole, PlanCode } from '../types';
+import type { Entitlements, OrganizationStatus, OrgInvite, OrgRole, PlanCode } from '../types';
 
 const router = Router();
 
@@ -107,14 +109,29 @@ router.put('/current', sensitiveActionRateLimiter, authMiddleware, requireOwner,
 
   const entitlements = clampEntitlements(effectivePlan, desired);
 
+  // D1: a genuine plan change with no live Stripe subscription driving status
+  // (billing unconfigured, or the org hasn't checked out yet) starts/ends a
+  // trial here directly — otherwise a self-serve upgrade to a paid plan would
+  // never get a trial deadline at all. A real subscription's status/trialEndsAt
+  // stays governed by Stripe webhooks (routes/billing.ts), untouched by this route.
+  let statusUpdate: { status?: OrganizationStatus; trialEndsAt?: Date } = {};
+  const isRealPlanChange = planCode !== undefined && planCode !== organization.planCode;
+  if (isRealPlanChange && !organization.stripeSubscriptionId) {
+    statusUpdate =
+      effectivePlan === 'community'
+        ? { status: 'active', trialEndsAt: undefined }
+        : { status: 'trialing', trialEndsAt: trialEndDate() };
+  }
+
   const updated = await db.updateOrganization(id, {
     ...(typeof name === 'string' && name.trim() ? { name: name.trim() } : {}),
     ...(typeof billingEmail === 'string' && billingEmail.trim() ? { billingEmail: billingEmail.trim() } : {}),
     planCode: effectivePlan,
     entitlements,
+    ...statusUpdate,
   });
 
-  logger.info('Organization updated', { organizationId: id, planCode: effectivePlan });
+  logger.info('Organization updated', { organizationId: id, planCode: effectivePlan, status: statusUpdate.status });
   return res.json({ organization: updated });
 });
 
@@ -425,10 +442,9 @@ router.delete('/current/members/:userId', sensitiveActionRateLimiter, authMiddle
 
 /**
  * GET current organization's data as a downloadable JSON bundle — owner only.
- * Covers the org record, its stations, members, and event/attendance history —
- * for privacy/retention requests and a brigade's own record-keeping. Does not
- * yet include truck-check history or device records — see MASTER_PLAN.md for
- * that follow-up.
+ * Covers the org record, its stations, members, event/attendance history,
+ * truck-check history (vehicles + check runs with results), and device
+ * records — for privacy/retention requests and a brigade's own record-keeping.
  */
 router.get('/current/export', sensitiveActionRateLimiter, authMiddleware, requireOwner, async (req: Request, res: Response) => {
   const id = orgId(req, res);
@@ -457,7 +473,32 @@ router.get('/current/export', sensitiveActionRateLimiter, authMiddleware, requir
       await Promise.all(stations.map((s) => db.getEventsWithParticipants(EVENTS_EXPORT_LIMIT, 0, s.id)))
     ).flat();
 
-    logger.info('Org data export generated', { organizationId: id, stationCount: stations.length, memberCount: members.length, eventCount: events.length });
+    // Q26: truck-check history (vehicles + check runs with results) and device
+    // records, completing the export beyond org/stations/members/events.
+    const truckDb = await ensureTruckChecksDatabase();
+    const vehicles = (
+      await Promise.all(stations.map((s) => truckDb.getAllAppliances(s.id)))
+    ).flat();
+
+    const TRUCK_CHECK_RUNS_EXPORT_LIMIT = 5000;
+    let truckCheckRuns = (
+      await Promise.all(stations.map((s) => truckDb.getAllRunsWithResults(s.id)))
+    ).flat();
+    truckCheckRuns.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+    const truckCheckRunsTruncated = truckCheckRuns.length > TRUCK_CHECK_RUNS_EXPORT_LIMIT;
+    truckCheckRuns = truckCheckRuns.slice(0, TRUCK_CHECK_RUNS_EXPORT_LIMIT);
+
+    const devices = await ensureDeviceDatabase().listForOrganization(id);
+
+    logger.info('Org data export generated', {
+      organizationId: id,
+      stationCount: stations.length,
+      memberCount: members.length,
+      eventCount: events.length,
+      vehicleCount: vehicles.length,
+      truckCheckRunCount: truckCheckRuns.length,
+      deviceCount: devices.length,
+    });
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="org-export-${id}-${new Date().toISOString().split('T')[0]}.json"`);
@@ -467,9 +508,14 @@ router.get('/current/export', sensitiveActionRateLimiter, authMiddleware, requir
       stations,
       members,
       events,
+      vehicles,
+      truckCheckRuns,
+      devices,
       limitations: [
         `Event/attendance history is limited to the most recent ${EVENTS_EXPORT_LIMIT.toLocaleString()} events per station.`,
-        'Truck-check history and device records are not yet included in this export.',
+        ...(truckCheckRunsTruncated
+          ? [`Truck-check history is limited to the most recent ${TRUCK_CHECK_RUNS_EXPORT_LIMIT.toLocaleString()} check runs across all stations.`]
+          : []),
       ],
     });
   } catch (error) {

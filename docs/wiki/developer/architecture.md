@@ -797,7 +797,8 @@ and a safe no-op until a meter is configured.
 the `stripe` SDK from `STRIPE_SECRET_KEY` (`isStripeConfigured()` gates every
 route → 503 when unset) and resolves price IDs from `STRIPE_PRICE_{PLAN}_{INTERVAL}`
 env vars. `routes/billing.ts` exposes owner-only `POST /api/billing/checkout`
-(Checkout session, 14-day trial), `POST /api/billing/portal` (Customer Portal),
+(Checkout session, 14-day trial via `constants/plans.ts`'s `TRIAL_PERIOD_DAYS`),
+`POST /api/billing/portal` (Customer Portal),
 `GET /api/billing/status`, owner-only `GET /api/billing/events` (audit trail), and
 a signature-verified `POST /api/billing/webhook` (raw body, registered before
 `express.json()`) that syncs org `planCode`/`status`/`entitlements` on
@@ -807,6 +808,17 @@ persisted `BillingEvent` audit store (`services/billingEventDatabase.ts` +
 Table Storage twin `tableStorageBillingEventDatabase.ts` + `billingEventDbFactory.ts`,
 partitioned by org); the handler is idempotent — an already-recorded `stripeEventId`
 is acknowledged without reprocessing.
+
+**Trial without Stripe configured (D1, 2026-07-17).** `PUT /api/organizations/current`
+is the only functional plan-upgrade path while Stripe is unconfigured (the common
+case pre-launch) — it changes `planCode`/`entitlements` directly, no checkout
+involved. It now also starts/ends the same `TRIAL_PERIOD_DAYS`-day trial the
+Checkout flow gives a paying customer: a genuine plan change with no
+`stripeSubscriptionId` on the org sets `status: 'trialing'` + `trialEndsAt` on
+upgrade to a paid plan, or `status: 'active'` + clears `trialEndsAt` on
+downgrade to Community. An org with a real Stripe subscription is untouched by
+this route — its `status`/`trialEndsAt` stay governed exclusively by the
+webhook handler above.
 
 **AAR Studio** runs in gateway mode by default: `lib/llm.js` posts to
 `/api/ai/chat`|`/report` (Bearer token read from the same-origin SPA's
@@ -991,24 +1003,87 @@ is `/admin/platform` (`PlatformAdminPage.tsx`), self-gated on
 `isPlatformAdmin` from `/auth/me` — the backend allowlist is the real
 enforcement.
 
+**The organizations console (Q32).** The same `/api/platform` router (and
+`/admin/platform` page, now tabbed: Organizations / Claim conflicts / Audit
+log) also gives the platform operator cross-org visibility and management,
+built around one hard rule — **the operator never reads tenant content.**
+
+- **Visibility** (`GET /organizations`, `GET /organizations/:id`) computes
+  aggregate rollups server-side (station/member/vehicle counts via the same
+  station-id scoping `middleware/entitlements.ts` uses for plan limits, AI
+  sessions this month via `usageDatabase.countUsage`) and returns *only*
+  those numbers plus plan/status/billing email/facility — never a member,
+  check-in, truck-check, or event record. Org detail also lists memberships
+  (username/email/role/lastLoginAt — account info, not tenant content).
+- **Management**: `PATCH /organizations/:id` changes plan/entitlement module
+  toggles or sets `status` directly (something the owner-facing
+  `PUT /organizations/current` cannot do) and can clear a facility claim;
+  `POST/PUT/DELETE .../members[/:userId]` add/change-role/remove org
+  memberships (reusing `orgMembershipRules.violatesLastOwner`, since a
+  platform admin can still orphan an org of owners); `DELETE
+  /organizations/:id` and `DELETE /accounts/:userId` soft-deactivate by
+  default and require a matching `confirm` string (the org's slug / the
+  account's username) plus `?hard=true` to permanently delete — hard-deleting
+  an org removes the `Organization` row and its memberships but does **not**
+  cascade to stations/members/events (those aren't reliably org-scoped yet —
+  see Q35 — and destroying operational data automatically is out of scope).
+- **Audit trail**: every mutation writes a `PlatformAuditLog` row
+  (`orgAccessDatabase.createPlatformAuditLog`, a fourth table alongside
+  memberships/invites/claim-conflicts in the same in-memory + Table Storage
+  twin), surfaced at `GET /audit-log`. This is deliberately the *only*
+  accountability mechanism — the privacy wall means there's no tenant-data
+  browsing to cross-check against instead.
+
+**Station → organization backfill (Q35).** Stations created before Q33 tagged
+`organizationId` at creation time have none, so their members/vehicles
+silently don't count toward any org's plan limits (fails open — safe, but
+under-enforces), and there's no reliable automatic signal to map an orphan
+station to the right org. `GET /api/platform/stations/orphaned` lists active
+stations with no `organizationId` (name/brigade/hierarchy plus member/vehicle
+counts, so the operator can identify the real-world brigade) and
+`PATCH /api/platform/stations/:id/organization` assigns one — audited as
+`station.organization_assigned`. Deliberately manual: matching a station to
+its org needs human judgement (there's no reliable key to automate it on),
+same reasoning as the claim-conflict reassignment flow. Frontend: the
+"Orphaned stations" tab in `/admin/platform` (`PlatformStationsTab.tsx`).
+
+### Org data export (Q26)
+
+`GET /api/organizations/current/export` (owner-only, `routes/organizations.ts`)
+bundles a full downloadable JSON snapshot for privacy/retention requests and a
+brigade's own record-keeping: the `Organization` row, its `stations`,
+`members`, `events` (participants included, capped at 5,000 per station,
+newest-first), `vehicles` (all appliances across the org's stations),
+`truckCheckRuns` (`CheckRunWithResults[]` — check runs with their item
+results — capped at 5,000 across all stations combined, newest-first, with a
+`limitations` note when truncated), and `devices`
+(`ensureDeviceDatabase().listForOrganization(id)` — org-scoped natively via
+`Device.organizationId`).
+
 ### Files
 
 - **Types:** `types/index.ts` (`AdminUser.email`, `OrgRole`,
   `OrganizationMembership`, `OrgInvite`, `ClaimConflict`, `Organization`
-  facility fields), `types/facilities.ts` (`Facility`, `FacilitySearchResult`).
-- **Services:** `orgMembershipRules.ts`, `orgAccessDatabase.ts` +
-  `tableStorageOrgAccessDatabase.ts` + `orgAccessDbFactory.ts`,
-  `orgMembershipService.ts`, `facilitiesParser.ts`.
+  facility fields, `PlatformAuditLog`/`PlatformAuditAction`), `types/facilities.ts`
+  (`Facility`, `FacilitySearchResult`).
+- **Services:** `orgMembershipRules.ts`, `orgAccessDatabase.ts` (also the
+  platform audit log) + `tableStorageOrgAccessDatabase.ts` +
+  `orgAccessDbFactory.ts`, `orgMembershipService.ts`, `facilitiesParser.ts`,
+  `organizationDatabase.ts`'s `deleteOrganization`.
 - **Routes:** `auth.ts` (signup/me/login/profile/switch-org), `organizations.ts`
-  (invites + members), `orgInvites.ts` (public), `facilities.ts` (public),
-  `platform.ts`.
+  (invites + members + Q26 data export), `orgInvites.ts` (public),
+  `facilities.ts` (public), `platform.ts` (claim conflicts + Q32 organizations
+  console + Q35 station backfill + audit log).
 - **Middleware:** `platformAdmin.ts`.
 - **Scripts:** `fetchEmergencyFacilitiesSnapshot.ts`, `uploadFacilitiesToBlobStorage.ts`.
 - **Frontend:** `contexts/AuthContext.tsx` (email/memberships/isPlatformAdmin/switchOrg),
   `components/FacilitySearch.tsx`, `components/OrgSwitcher.tsx`,
   `features/auth/SignupPage.tsx` (stepper), `features/auth/OrgInvitePage.tsx`,
   `features/admin/organization/OrganizationPage.tsx` (Members + Invite links),
-  `features/admin/platform/PlatformAdminPage.tsx`.
+  `features/admin/platform/PlatformAdminPage.tsx` (tab shell),
+  `features/admin/platform/PlatformOrganizationsTab.tsx`,
+  `features/admin/platform/PlatformStationsTab.tsx`,
+  `features/admin/platform/PlatformAuditLogTab.tsx`.
 
 ---
 
@@ -2477,7 +2552,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   // X-Brigade-Token (kiosk/device credential) and X-Member-Session (AC-1)
   // added 2026-07-17 — missing them silently breaks any cross-origin caller
   // using those credentials (invisible in prod today since the SPA and API

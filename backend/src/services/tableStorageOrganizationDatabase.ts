@@ -195,6 +195,16 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
     return updated;
   }
 
+  async deleteOrganization(id: string): Promise<boolean> {
+    try {
+      await this.table.deleteEntity('Organization', id);
+      return true;
+    } catch (err: any) {
+      if (err.statusCode === 404) return false;
+      throw err;
+    }
+  }
+
   async getAllOrganizations(): Promise<Organization[]> {
     const result: Organization[] = [];
     const iterator = this.table.listEntities<OrganizationEntity>();

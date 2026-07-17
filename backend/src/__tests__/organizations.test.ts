@@ -10,6 +10,9 @@ import { authMiddleware } from '../middleware/auth';
 import { ensureAdminUserDatabase, initializeAdminUserDatabase, getAdminDb } from '../services/adminUserDbFactory';
 import { ensureOrganizationDatabase, initializeOrganizationDatabase } from '../services/organizationDbFactory';
 import { requireFeature } from '../middleware/entitlements';
+import { ensureDatabase } from '../services/dbFactory';
+import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
+import { ensureDeviceDatabase } from '../services/deviceDbFactory';
 
 function buildApp() {
   const app = express();
@@ -136,6 +139,54 @@ describe('SaaS foundation', () => {
       expect(res.body.organization.entitlements.aiEnabled).toBe(true);
       expect(res.body.organization.entitlements.aiIncludedSessions).toBeGreaterThan(0);
     });
+
+    it('D1: starts a 14-day trial on a self-serve upgrade to a paid plan (no Stripe subscription)', async () => {
+      const token = await ownerToken();
+      const before = Date.now();
+      const res = await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ planCode: 'basic' });
+      expect(res.status).toBe(200);
+      expect(res.body.organization.status).toBe('trialing');
+      const trialEndsAt = new Date(res.body.organization.trialEndsAt).getTime();
+      const days = (trialEndsAt - before) / (24 * 60 * 60 * 1000);
+      expect(days).toBeGreaterThan(13.9);
+      expect(days).toBeLessThan(14.1);
+    });
+
+    it('D1: clears the trial and reactivates when downgrading back to community', async () => {
+      const token = await ownerToken();
+      await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ planCode: 'ai' });
+
+      const res = await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ planCode: 'community' });
+      expect(res.status).toBe(200);
+      expect(res.body.organization.status).toBe('active');
+      expect(res.body.organization.trialEndsAt).toBeFalsy();
+    });
+
+    it('D1: does not restart the trial when only toggling modules on the same plan', async () => {
+      const token = await ownerToken();
+      const upgrade = await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ planCode: 'basic' });
+      const firstTrialEndsAt = upgrade.body.organization.trialEndsAt;
+
+      const res = await request(app)
+        .put('/api/organizations/current')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ moduleToggles: { reportsEnabled: false } });
+      expect(res.status).toBe(200);
+      expect(res.body.organization.status).toBe('trialing');
+      expect(res.body.organization.trialEndsAt).toBe(firstTrialEndsAt);
+    });
   });
 
   describe('organization users', () => {
@@ -169,6 +220,37 @@ describe('SaaS foundation', () => {
       expect(Array.isArray(res.body.events)).toBe(true);
       expect(Array.isArray(res.body.limitations)).toBe(true);
       expect(res.body.exportedAt).toBeTruthy();
+    });
+
+    it('includes truck-check history and device records', async () => {
+      const signupRes = await signup();
+      const token = signupRes.body.token as string;
+      const organizationId = signupRes.body.organization.id as string;
+
+      const db = await ensureDatabase();
+      const station = await db.createStation({
+        name: 'Bungendore Station',
+        brigadeName: 'Bungendore',
+        brigadeId: 'bungendore',
+        hierarchy: { jurisdiction: 'NSW', district: 'D', area: 'A', brigade: 'Bungendore', station: 'Bungendore Station' },
+        location: { address: '1 Fire Rd' },
+        isActive: true,
+        organizationId,
+      });
+
+      const truckDb = await ensureTruckChecksDatabase();
+      const appliance = await truckDb.createAppliance('Pumper 1', undefined, undefined, station.id);
+      await truckDb.createCheckRun(appliance.id, 'captain', 'Captain', station.id);
+
+      await ensureDeviceDatabase().create({ organizationId, stationId: station.id, type: 'kiosk', name: 'Main shed kiosk' });
+
+      const res = await request(app)
+        .get('/api/organizations/current/export')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.vehicles.some((v: { id: string }) => v.id === appliance.id)).toBe(true);
+      expect(res.body.truckCheckRuns.some((r: { applianceId: string }) => r.applianceId === appliance.id)).toBe(true);
+      expect(res.body.devices.some((d: { name: string }) => d.name === 'Main shed kiosk')).toBe(true);
     });
 
     it('rejects a non-owner', async () => {

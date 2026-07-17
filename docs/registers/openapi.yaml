@@ -816,6 +816,39 @@ paths:
         '403':
           description: Not a member of the target organization
 
+  /api/organizations/current:
+    get:
+      tags:
+        - Organizations
+      summary: The caller's organization plus the plan catalog
+      operationId: getCurrentOrganization
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '{ organization, plans }'
+        '404':
+          description: Organization not found
+    put:
+      tags:
+        - Organizations
+      summary: Update name/billingEmail/planCode/moduleToggles (owner only)
+      description: >
+        D1 (2026-07-17): the only functional plan-upgrade path while Stripe billing is
+        unconfigured, so a genuine plan change with no live Stripe subscription also
+        starts/ends a 14-day trial directly. Full schema:
+        docs/registers/api_register.json → endpoints.organizations.
+      operationId: updateCurrentOrganization
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '{ organization }'
+        '400':
+          description: Invalid planCode
+        '403':
+          description: Caller is not the org owner
+
   /api/organizations/current/invites:
     post:
       tags:
@@ -857,9 +890,12 @@ paths:
         - Organizations
       summary: Download a full data export (owner only)
       description: >
-        JSON bundle of the org's stations, members, and event/attendance history — for
-        privacy/retention requests and a brigade's own record-keeping. Event history is
-        currently limited to roughly the last 3 months on the Table Storage backend.
+        JSON bundle of the org's stations, members, event/attendance history,
+        truck-check history (vehicles + check runs with results), and device
+        records — for privacy/retention requests and a brigade's own
+        record-keeping. Event history is capped at 5000 events per station;
+        truck-check runs at 5000 across all stations combined (both
+        newest-first).
         Full schema: docs/registers/api_register.json → endpoints.organizations.
       operationId: exportOrganizationData
       security:
@@ -926,6 +962,260 @@ paths:
       responses:
         '200':
           description: Conflict list
+        '403':
+          description: Not a platform admin
+
+  /api/platform/organizations:
+    get:
+      tags:
+        - Platform Admin
+      summary: List every organization (aggregate counts only, never row-level tenant data)
+      operationId: listPlatformOrganizations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: |
+            { organizations }. Full schema: docs/registers/api_register.json → endpoints.platform.
+        '403':
+          description: Not a platform admin
+
+  /api/platform/organizations/{id}:
+    get:
+      tags:
+        - Platform Admin
+      summary: Organization detail + memberships (account info, not tenant content)
+      operationId: getPlatformOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ organization, members, plans }'
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Organization not found
+    patch:
+      tags:
+        - Platform Admin
+      summary: Update plan/status/entitlements, or clear a facility claim
+      operationId: updatePlatformOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ organization }'
+        '400':
+          description: Invalid planCode or status
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Organization not found
+    delete:
+      tags:
+        - Platform Admin
+      summary: Soft-deactivate (default), or hard-delete with ?hard=true + confirm
+      operationId: deletePlatformOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: hard
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: '{ organization }' for soft delete, '{ success: true }' for hard delete
+        '400':
+          description: Hard delete requested without a matching confirm string
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Organization not found
+
+  /api/platform/organizations/{id}/members:
+    post:
+      tags:
+        - Platform Admin
+      summary: Create an account and membership it into this organization
+      operationId: addPlatformOrgMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: '{ user }'
+        '403':
+          description: Not a platform admin
+        '409':
+          description: Username already taken
+
+  /api/platform/organizations/{id}/members/{userId}:
+    put:
+      tags:
+        - Platform Admin
+      summary: Change a member's role in this organization
+      operationId: changePlatformOrgMemberRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ membership }'
+        '403':
+          description: Not a platform admin
+        '409':
+          description: Would leave the organisation with no owner
+    delete:
+      tags:
+        - Platform Admin
+      summary: Remove a member from this organization
+      operationId: removePlatformOrgMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ success: true }'
+        '403':
+          description: Not a platform admin
+        '409':
+          description: Would leave the organisation with no owner
+
+  /api/platform/accounts/{userId}:
+    delete:
+      tags:
+        - Platform Admin
+      summary: Soft-deactivate (default), or hard-delete with ?hard=true + confirm
+      operationId: deletePlatformAccount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: hard
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: '{ success: true }'
+        '400':
+          description: Hard delete requested without a matching confirm string
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Account not found
+
+  /api/platform/stations/orphaned:
+    get:
+      tags:
+        - Platform Admin
+      summary: List active stations with no owning organization (Q35 backfill)
+      description: >
+        Stations created before Q33 tagged organizationId on creation have
+        none, so their members/vehicles don't count toward any org's plan
+        limits until backfilled. Returns name/brigade/hierarchy plus
+        member/vehicle counts so the operator can identify the real-world
+        brigade.
+      operationId: getOrphanedStations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '{ stations: PlatformOrphanedStation[] }'
+        '403':
+          description: Not a platform admin
+
+  /api/platform/stations/{id}/organization:
+    patch:
+      tags:
+        - Platform Admin
+      summary: Assign (or reassign) a station's owning organization
+      operationId: assignStationOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ station }'
+        '400':
+          description: Missing organizationId, or target is a system station
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Station or target organization not found
+
+  /api/platform/audit-log:
+    get:
+      tags:
+        - Platform Admin
+      summary: Platform-admin audit log, newest first
+      operationId: getPlatformAuditLog
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: '{ logs }'
         '403':
           description: Not a platform admin
 

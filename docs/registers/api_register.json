@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.14.0",
-  "lastUpdated": "2026-07-13",
+  "version": "1.17.0",
+  "lastUpdated": "2026-07-17",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -1537,6 +1537,66 @@
     "organizations": {
       "description": "SaaS tenant management: plan/entitlements, direct user creation, invite links, and per-org membership (multi-org). All routes require authMiddleware; admin-only routes additionally require requireAdmin (owner is a superset).",
       "authentication": "Bearer JWT",
+      "GET /api/organizations/current": {
+        "method": "GET",
+        "path": "/api/organizations/current",
+        "description": "The caller's organization plus the plan catalog (for the upgrade UI).",
+        "authentication": "JWT",
+        "responses": {
+          "200": {
+            "description": "{ organization, plans: PlanDefinition[] }"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
+      "PUT /api/organizations/current": {
+        "method": "PUT",
+        "path": "/api/organizations/current",
+        "description": "Update name/billingEmail/planCode/moduleToggles (owner only). Entitlements reset to the new plan's defaults on a real plan change, then owner module toggles are applied and clamped to the plan ceiling. D1 (2026-07-17): this is the only functional plan-upgrade path while Stripe billing is unconfigured, so a genuine plan change with no stripeSubscriptionId on the org also starts/ends a 14-day trial directly here — status: 'trialing' + trialEndsAt set on upgrade to a paid plan, status: 'active' + trialEndsAt cleared on downgrade to community. An org with a live Stripe subscription is untouched by this — its status/trialEndsAt stay governed exclusively by POST /api/billing/webhook.",
+        "authentication": "JWT (owner only)",
+        "rateLimit": "sensitive-action limiter",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "billingEmail": {
+              "type": "string"
+            },
+            "planCode": {
+              "type": "string",
+              "enum": [
+                "community",
+                "basic",
+                "ai"
+              ]
+            },
+            "moduleToggles": {
+              "type": "object",
+              "description": "Partial<{signInEnabled, truckCheckEnabled, reportsEnabled, aiEnabled}> — narrows only, never exceeds the plan ceiling"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ organization }"
+          },
+          "400": {
+            "description": "Invalid planCode"
+          },
+          "403": {
+            "description": "Caller is not the org owner"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/organizations.ts"
+      },
       "POST /api/organizations/current/invites": {
         "method": "POST",
         "path": "/api/organizations/current/invites",
@@ -1683,12 +1743,12 @@
       "GET /api/organizations/current/export": {
         "method": "GET",
         "path": "/api/organizations/current/export",
-        "description": "Downloads a JSON bundle of the org's stations, members, and event/attendance history (privacy/retention data export). Event history is capped at the most recent 5000 events per station (Q25's 3-month scan cap was fixed 2026-07-17) — does not yet include truck-check history or device records (Q26).",
+        "description": "Downloads a JSON bundle of the org's stations, members, event/attendance history, truck-check history (vehicles + check runs with results), and device records (privacy/retention data export). Event history is capped at the most recent 5000 events per station (Q25's 3-month scan cap was fixed 2026-07-17); truck-check runs are capped at the most recent 5000 across all stations combined (Q26, 2026-07-17).",
         "authentication": "JWT (owner only)",
         "rateLimit": "sensitive-action limiter",
         "responses": {
           "200": {
-            "description": "{ exportedAt, organization, stations, members, events, limitations } — served as a downloadable attachment"
+            "description": "{ exportedAt, organization, stations, members, events, vehicles, truckCheckRuns, devices, limitations } — served as a downloadable attachment"
           },
           "403": {
             "description": "Caller is not the org owner"
@@ -1810,8 +1870,326 @@
       }
     },
     "platform": {
-      "description": "Platform-operator administration (not per-org). Gated by the PLATFORM_ADMIN_USERNAMES allowlist (middleware/platformAdmin.ts), not by org role. Currently: facility claim-conflict review/resolution.",
+      "description": "Platform-operator administration (not per-org). Gated by the PLATFORM_ADMIN_USERNAMES allowlist (middleware/platformAdmin.ts), not by org role. Covers facility claim-conflict review/resolution, the Q32 organizations console (cross-org visibility — aggregate counts only, never row-level tenant data — plan/status/entitlement management, membership, and destructive delete with a confirm string), and the Q35 station→organization backfill tool. Every mutation writes a PlatformAuditLog row (GET /api/platform/audit-log).",
       "authentication": "Bearer JWT + PLATFORM_ADMIN_USERNAMES allowlist",
+      "GET /api/platform/organizations": {
+        "method": "GET",
+        "path": "/api/platform/organizations",
+        "description": "List every organization with aggregate, non-PII counts only (stationCount, memberCount, vehicleCount, aiSessionsUsedThisMonth) plus plan/status/billing email. Never returns row-level member/check-in/truck-check/event data.",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ organizations: PlatformOrganizationSummary[] }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "GET /api/platform/organizations/:id": {
+        "method": "GET",
+        "path": "/api/platform/organizations/:id",
+        "description": "Organization detail (entitlements, facility, aggregate counts) plus its memberships (account username/email/role/lastLoginAt — account info, not tenant content).",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ organization: PlatformOrganizationDetail, members: PlatformOrgMember[], plans: PlanDefinition[] }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "PATCH /api/platform/organizations/:id": {
+        "method": "PATCH",
+        "path": "/api/platform/organizations/:id",
+        "description": "Update an organization's plan, entitlement module toggles, status, or clear its facility claim. Unlike the owner-facing PUT /api/organizations/current, a platform admin may set status directly (e.g. trialing/active/past_due/canceled). Writes an audit log row per changed field group.",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "planCode": {
+              "type": "string",
+              "enum": [
+                "community",
+                "basic",
+                "ai"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "trialing",
+                "active",
+                "past_due",
+                "canceled"
+              ]
+            },
+            "moduleToggles": {
+              "type": "object",
+              "description": "Partial<{signInEnabled, truckCheckEnabled, reportsEnabled, aiEnabled}>"
+            },
+            "clearFacilityClaim": {
+              "type": "boolean"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ organization }"
+          },
+          "400": {
+            "description": "Invalid planCode or status"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "DELETE /api/platform/organizations/:id": {
+        "method": "DELETE",
+        "path": "/api/platform/organizations/:id",
+        "description": "Default: soft-deactivate (status -> canceled). Pass ?hard=true and body {confirm: '<org slug>'} to permanently delete the organization record (does not cascade to stations/members/events).",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "confirm": {
+              "type": "string",
+              "description": "Must equal the org's slug; required only when ?hard=true"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ organization } for soft delete, { success: true } for hard delete"
+          },
+          "400": {
+            "description": "Hard delete requested without a matching confirm string"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "POST /api/platform/organizations/:id/members": {
+        "method": "POST",
+        "path": "/api/platform/organizations/:id/members",
+        "description": "Create a new account and membership it into this organization with the given role.",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "username": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string",
+              "minLength": 8
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "owner",
+                "admin",
+                "viewer"
+              ]
+            },
+            "email": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "username",
+            "password",
+            "role"
+          ]
+        },
+        "responses": {
+          "201": {
+            "description": "{ user }"
+          },
+          "400": {
+            "description": "Missing/invalid fields"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Organization not found"
+          },
+          "409": {
+            "description": "Username already taken"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "PUT /api/platform/organizations/:id/members/:userId": {
+        "method": "PUT",
+        "path": "/api/platform/organizations/:id/members/:userId",
+        "description": "Change a member's role within this organization. Refuses a change that would leave the org with no active owner.",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": [
+                "owner",
+                "admin",
+                "viewer"
+              ]
+            }
+          },
+          "required": [
+            "role"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "{ membership }"
+          },
+          "400": {
+            "description": "Invalid role"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Member not found in this organisation"
+          },
+          "409": {
+            "description": "Would leave the organisation with no owner"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "DELETE /api/platform/organizations/:id/members/:userId": {
+        "method": "DELETE",
+        "path": "/api/platform/organizations/:id/members/:userId",
+        "description": "Remove a member's active membership from this organization. Refuses removal of the last active owner.",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ success: true }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Member not found in this organisation"
+          },
+          "409": {
+            "description": "Would leave the organisation with no owner"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "DELETE /api/platform/accounts/:userId": {
+        "method": "DELETE",
+        "path": "/api/platform/accounts/:userId",
+        "description": "Default: soft-deactivate the account. Pass ?hard=true and body {confirm: '<username>'} to permanently delete it (removed from every org's membership list first).",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "confirm": {
+              "type": "string",
+              "description": "Must equal the account's username; required only when ?hard=true"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ success: true }"
+          },
+          "400": {
+            "description": "Hard delete requested without a matching confirm string"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Account not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "GET /api/platform/stations/orphaned": {
+        "method": "GET",
+        "path": "/api/platform/stations/orphaned",
+        "description": "Q35 — list active stations with no organizationId (created before Q33 tagged it on creation), whose members/vehicles don't count toward any org's plan limits until backfilled. Returns name/brigade/hierarchy plus member/vehicle counts so the operator can identify the real-world brigade.",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ stations: PlatformOrphanedStation[] }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "PATCH /api/platform/stations/:id/organization": {
+        "method": "PATCH",
+        "path": "/api/platform/stations/:id/organization",
+        "description": "Q35 — assign (or reassign) a station's owning organization. System stations (demo/default) are rejected. Writes a station.organization_assigned audit log row.",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "organizationId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "organizationId"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "{ station }"
+          },
+          "400": {
+            "description": "Missing organizationId, or target is a system station"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Station or target organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "GET /api/platform/audit-log": {
+        "method": "GET",
+        "path": "/api/platform/audit-log",
+        "description": "List platform-admin audit log entries, newest first (?limit=&offset=, max limit 500). The accountability trail for every mutation made through /api/platform — the hard privacy wall means it is the only record of this access level.",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ logs: PlatformAuditLog[] }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
       "GET /api/platform/claim-conflicts": {
         "method": "GET",
         "path": "/api/platform/claim-conflicts",
@@ -2866,6 +3244,23 @@
         }
       },
       "responses": {
+        "200": {
+          "description": "Participant removed (toggle undo)",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "removed"
+                ]
+              },
+              "participant": {
+                "$ref": "#/definitions/EventParticipant"
+              }
+            }
+          }
+        },
         "201": {
           "description": "Participant added",
           "schema": {
@@ -2878,23 +3273,6 @@
                   "removed"
                 ],
                 "description": "Action performed (added or removed if toggled)"
-              },
-              "participant": {
-                "$ref": "#/definitions/EventParticipant"
-              }
-            }
-          }
-        },
-        "200": {
-          "description": "Participant removed (toggle undo)",
-          "schema": {
-            "type": "object",
-            "properties": {
-              "action": {
-                "type": "string",
-                "enum": [
-                  "removed"
-                ]
               },
               "participant": {
                 "$ref": "#/definitions/EventParticipant"
@@ -4706,6 +5084,9 @@
             }
           }
         },
+        "400": {
+          "description": "Validation error"
+        },
         "404": {
           "description": "Token not found or expired",
           "schema": {
@@ -4722,9 +5103,6 @@
               }
             }
           }
-        },
-        "400": {
-          "description": "Validation error"
         },
         "500": {
           "description": "Server error"
@@ -4773,11 +5151,11 @@
             }
           }
         },
-        "404": {
-          "description": "Token not found"
-        },
         "400": {
           "description": "Validation error"
+        },
+        "404": {
+          "description": "Token not found"
         },
         "500": {
           "description": "Server error"
@@ -5271,11 +5649,11 @@
             }
           }
         },
-        "404": {
-          "description": "Token not found, revoked, or expired"
-        },
         "400": {
           "description": "Validation error"
+        },
+        "404": {
+          "description": "Token not found, revoked, or expired"
         }
       },
       "implementation": "backend/src/routes/devices.ts",

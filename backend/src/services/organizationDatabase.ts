@@ -66,6 +66,8 @@ export interface IOrganizationDatabase {
   getOrganizationById(id: string): Promise<Organization | null>;
   getOrganizationBySlug(slug: string): Promise<Organization | null>;
   updateOrganization(id: string, updates: OrganizationUpdate): Promise<Organization | null>;
+  /** Hard-delete the organization record itself (Q32 platform console). Does NOT cascade to stations/members/events. */
+  deleteOrganization(id: string): Promise<boolean>;
   getAllOrganizations(): Promise<Organization[]>;
   /** All orgs holding a given Digital Atlas facility key (should be 0 or 1). */
   getOrganizationsByFacilityKey(facilityKey: string): Promise<Organization[]>;
@@ -131,6 +133,14 @@ export class OrganizationDatabase implements IOrganizationDatabase {
     // slug never changes here, but keep the secondary index consistent
     this.orgsBySlug.set(updated.slug, updated);
     return updated;
+  }
+
+  async deleteOrganization(id: string): Promise<boolean> {
+    const org = this.orgs.get(id);
+    if (!org) return false;
+    this.orgs.delete(id);
+    this.orgsBySlug.delete(org.slug);
+    return true;
   }
 
   async getAllOrganizations(): Promise<Organization[]> {
