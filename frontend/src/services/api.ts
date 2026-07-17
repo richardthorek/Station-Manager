@@ -2047,6 +2047,26 @@ class ApiService {
     if (!response.ok) throw new Error('Failed to load audit log');
     return response.json();
   }
+
+  // Q35 — station → organization backfill tool
+  async getOrphanedStations(): Promise<{ stations: PlatformOrphanedStation[] }> {
+    const response = await fetch(`${API_BASE_URL}/platform/stations/orphaned`, { headers: this.getHeaders() });
+    if (!response.ok) throw new Error('Failed to load orphaned stations');
+    return response.json();
+  }
+
+  async assignStationOrganization(stationId: string, organizationId: string): Promise<{ station: unknown }> {
+    const response = await fetch(`${API_BASE_URL}/platform/stations/${stationId}/organization`, {
+      method: 'PATCH',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ organizationId }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to assign station to organization');
+    }
+    return response.json();
+  }
 }
 
 export interface PlanDefinition {
@@ -2210,6 +2230,19 @@ export interface PlatformAuditLogEntry {
   targetUserId?: string;
   details?: string;
   createdAt: string;
+}
+
+/** Q35 — an active station with no owning organization, awaiting a manual backfill assignment. */
+export interface PlatformOrphanedStation {
+  id: string;
+  name: string;
+  brigadeName: string;
+  brigadeId: string;
+  hierarchy: { jurisdiction: string; area: string; district: string; brigade: string; station: string };
+  isActive: boolean;
+  createdAt: string;
+  memberCount: number;
+  vehicleCount: number;
 }
 
 export const api = new ApiService();

@@ -10,6 +10,9 @@ import { authMiddleware } from '../middleware/auth';
 import { ensureAdminUserDatabase, initializeAdminUserDatabase, getAdminDb } from '../services/adminUserDbFactory';
 import { ensureOrganizationDatabase, initializeOrganizationDatabase } from '../services/organizationDbFactory';
 import { requireFeature } from '../middleware/entitlements';
+import { ensureDatabase } from '../services/dbFactory';
+import { ensureTruckChecksDatabase } from '../services/truckChecksDbFactory';
+import { ensureDeviceDatabase } from '../services/deviceDbFactory';
 
 function buildApp() {
   const app = express();
@@ -169,6 +172,37 @@ describe('SaaS foundation', () => {
       expect(Array.isArray(res.body.events)).toBe(true);
       expect(Array.isArray(res.body.limitations)).toBe(true);
       expect(res.body.exportedAt).toBeTruthy();
+    });
+
+    it('includes truck-check history and device records', async () => {
+      const signupRes = await signup();
+      const token = signupRes.body.token as string;
+      const organizationId = signupRes.body.organization.id as string;
+
+      const db = await ensureDatabase();
+      const station = await db.createStation({
+        name: 'Bungendore Station',
+        brigadeName: 'Bungendore',
+        brigadeId: 'bungendore',
+        hierarchy: { jurisdiction: 'NSW', district: 'D', area: 'A', brigade: 'Bungendore', station: 'Bungendore Station' },
+        location: { address: '1 Fire Rd' },
+        isActive: true,
+        organizationId,
+      });
+
+      const truckDb = await ensureTruckChecksDatabase();
+      const appliance = await truckDb.createAppliance('Pumper 1', undefined, undefined, station.id);
+      await truckDb.createCheckRun(appliance.id, 'captain', 'Captain', station.id);
+
+      await ensureDeviceDatabase().create({ organizationId, stationId: station.id, type: 'kiosk', name: 'Main shed kiosk' });
+
+      const res = await request(app)
+        .get('/api/organizations/current/export')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.vehicles.some((v: { id: string }) => v.id === appliance.id)).toBe(true);
+      expect(res.body.truckCheckRuns.some((r: { applianceId: string }) => r.applianceId === appliance.id)).toBe(true);
+      expect(res.body.devices.some((d: { name: string }) => d.name === 'Main shed kiosk')).toBe(true);
     });
 
     it('rejects a non-owner', async () => {

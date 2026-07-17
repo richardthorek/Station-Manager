@@ -6,9 +6,10 @@
  * enforcement is the backend's PLATFORM_ADMIN_USERNAMES allowlist, so this
  * page is a convenience gate, not a security boundary.
  *
- * Three sections (Q32): the organizations console (cross-org visibility +
- * management — the launch-requirement scope), facility claim-conflict
- * review (original scope), and the platform-admin audit log.
+ * Sections: the organizations console (cross-org visibility + management —
+ * Q32's launch-requirement scope), facility claim-conflict review (original
+ * scope), the station→organization backfill tool (Q35), and the
+ * platform-admin audit log.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -17,6 +18,7 @@ import { api, type ClaimConflict } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
 import { AdminNav } from '../../../components/AdminNav';
 import { PlatformOrganizationsTab } from './PlatformOrganizationsTab';
+import { PlatformStationsTab } from './PlatformStationsTab';
 import { PlatformAuditLogTab } from './PlatformAuditLogTab';
 import './PlatformAdminPage.css';
 
@@ -160,11 +162,12 @@ function ClaimConflictsTab() {
   );
 }
 
-const SECTIONS = ['organizations', 'conflicts', 'audit'] as const;
+const SECTIONS = ['organizations', 'conflicts', 'stations', 'audit'] as const;
 type Section = (typeof SECTIONS)[number];
 const SECTION_LABELS: Record<Section, string> = {
   organizations: 'Organizations',
   conflicts: 'Claim conflicts',
+  stations: 'Orphaned stations',
   audit: 'Audit log',
 };
 
@@ -210,6 +213,7 @@ export function PlatformAdminPage() {
 
           {section === 'organizations' && <PlatformOrganizationsTab />}
           {section === 'conflicts' && <ClaimConflictsTab />}
+          {section === 'stations' && <PlatformStationsTab />}
           {section === 'audit' && <PlatformAuditLogTab />}
         </main>
       </div>

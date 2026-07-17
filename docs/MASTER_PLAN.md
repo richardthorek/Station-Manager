@@ -45,7 +45,7 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 | 7 | Reports & analytics (dashboard, cross-station, CSV/PDF export) | ✅ | Q11 |
 | 8 | AAR Studio — THE HERO (AI-facilitated After Action Reviews) | 🟡 | Q1, Q7 |
 | 9 | Multi-station (isolation, station mgmt UI, national dataset lookup, demo station) | ✅ | — |
-| 10 | SaaS tenancy & entitlements (plans, gating, org onboarding) | ✅ | Q21, Q22, Q26, Q35 |
+| 10 | SaaS tenancy & entitlements (plans, gating, org onboarding) | ✅ | Q21, Q22 |
 | 11 | Stripe billing (Checkout, Portal, webhooks, trial, audit trail) | 🟡 | Q5 (blocked on D1) |
 | 12 | AI gateway & metering | ✅ | — |
 | 13 | Suite federation — Bushie Tools Phase 1 (SM as suite IdP, Fire Break Calculator) | ✅ | Suite ops (below), Q14/Q15 |
@@ -75,17 +75,17 @@ No single failure takes the platform down, deploys cause no downtime, the app lo
 
 - **Q30 (residual) / D6 — the two remaining items are owner spend decisions, not code.** Scaling to ≥2 App Service instances (Q30) and creating the staging slot for zero-downtime swaps (D6) — see **Open decisions** below for both.
 
-### Block L3 — Run the business — 🔵 in progress (current focus)
+### Block L3 — Run the business — ✅ done in code
 
-The operator can see and manage every account without ever seeing tenant content; billing and plans are correct; onboarding data is seeded. This is what turns the platform into a business we can charge for.
+The operator can see and manage every account without ever seeing tenant content; billing and plans are correct; onboarding data is seeded. This is what turns the platform into a business we can charge for. Closed out in code 2026-07-17: Q32, Q26, Q35 all shipped — see changelog. The four items left are owner pricing decisions or one-time production ops, not code.
 
 - ~~**Q32 — Platform-owner console.**~~ **Done 2026-07-17:** cross-org visibility (aggregate counts only — stations/members/vehicles/AI sessions, plan/status/billing email) and management (plan/entitlements/status, membership/role, facility-claim clearing, soft-deactivate + confirm-gated hard-delete of orgs and accounts) shipped at `/api/platform` + `/admin/platform`, with every mutation audited. See changelog.
+- ~~**Q26 — Org data export completeness.**~~ **Done 2026-07-17:** `GET /api/organizations/current/export` now also bundles `vehicles`, `truckCheckRuns` (capped at 5,000, newest-first), and `devices`. See changelog.
+- ~~**Q35 — Backfill `organizationId` onto pre-existing stations (Q33 follow-up).**~~ **Done 2026-07-17:** manual, operator-reviewed backfill tool shipped — `GET/PATCH /api/platform/stations/orphaned|:id/organization` + an "Orphaned stations" tab in `/admin/platform`. See changelog.
 - **Q2 / D1 — Pricing decisions (owner).** Trial length, AI metering unit (session vs audio-minute), top-up pack size/price, per-org vs per-station billing, grant/PO invoicing, AAR-in-Basic. Decision, not code — blocks Q5.
 - **Q5 — Metered AI overage end-to-end.** `meteredUsageReporter.ts` is a safe no-op until a Stripe meter exists. After Q2: create the meter, map `UsageRecord` → meter events, verify an overage invoice in test mode.
 - **Q21 — Ops: fetch + upload the emergency-facilities dataset.** `npm run facilities:fetch` (needs internet to `services.ga.gov.au` — run from an operator machine, not CI) + `facilities:upload`, once, against prod. Until then signup's facility-claim step degrades gracefully to "my unit isn't listed."
-- **Q26 — Org data export completeness.** `GET /api/organizations/current/export` bundles org/stations/members/events only (event coverage's Q25 cap is now fixed) — extend to truck-check history and device records.
 - **Suite ops (feature #13).** Run `npm run grant:firebreak` against prod (stored entitlement snapshots predate the #638 grant) and add the FBC origin to `FRONTEND_URLS`. One-time ops, unblocks already-built wiring.
-- **Q35 — Backfill `organizationId` onto pre-existing stations (Q33 follow-up).** Q33 fixed count-limit scoping going forward, but stations created before that fix have no `organizationId` and their members/vehicles don't count toward any org's limit until reconciled (fails open — safe, but under-enforces). No reliable automatic signal exists to backfill this safely — needs a manual, owner-reviewed one-time mapping (or a small admin tool/script if there's more than one real org to reconcile).
 
 ### Post-launch — iterate & expand
 

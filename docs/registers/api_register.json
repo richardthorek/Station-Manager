@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "lastUpdated": "2026-07-17",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
@@ -1683,12 +1683,12 @@
       "GET /api/organizations/current/export": {
         "method": "GET",
         "path": "/api/organizations/current/export",
-        "description": "Downloads a JSON bundle of the org's stations, members, and event/attendance history (privacy/retention data export). Event history is capped at the most recent 5000 events per station (Q25's 3-month scan cap was fixed 2026-07-17) — does not yet include truck-check history or device records (Q26).",
+        "description": "Downloads a JSON bundle of the org's stations, members, event/attendance history, truck-check history (vehicles + check runs with results), and device records (privacy/retention data export). Event history is capped at the most recent 5000 events per station (Q25's 3-month scan cap was fixed 2026-07-17); truck-check runs are capped at the most recent 5000 across all stations combined (Q26, 2026-07-17).",
         "authentication": "JWT (owner only)",
         "rateLimit": "sensitive-action limiter",
         "responses": {
           "200": {
-            "description": "{ exportedAt, organization, stations, members, events, limitations } — served as a downloadable attachment"
+            "description": "{ exportedAt, organization, stations, members, events, vehicles, truckCheckRuns, devices, limitations } — served as a downloadable attachment"
           },
           "403": {
             "description": "Caller is not the org owner"
@@ -1810,7 +1810,7 @@
       }
     },
     "platform": {
-      "description": "Platform-operator administration (not per-org). Gated by the PLATFORM_ADMIN_USERNAMES allowlist (middleware/platformAdmin.ts), not by org role. Covers facility claim-conflict review/resolution and the Q32 organizations console: cross-org visibility (aggregate counts only, never row-level tenant data — the hard privacy wall), plan/status/entitlement management, membership, and destructive delete (soft-deactivate by default; hard delete requires a confirm string). Every mutation writes a PlatformAuditLog row (GET /api/platform/audit-log).",
+      "description": "Platform-operator administration (not per-org). Gated by the PLATFORM_ADMIN_USERNAMES allowlist (middleware/platformAdmin.ts), not by org role. Covers facility claim-conflict review/resolution, the Q32 organizations console (cross-org visibility — aggregate counts only, never row-level tenant data — plan/status/entitlement management, membership, and destructive delete with a confirm string), and the Q35 station→organization backfill tool. Every mutation writes a PlatformAuditLog row (GET /api/platform/audit-log).",
       "authentication": "Bearer JWT + PLATFORM_ADMIN_USERNAMES allowlist",
       "GET /api/platform/organizations": {
         "method": "GET",
@@ -2064,6 +2064,53 @@
           },
           "404": {
             "description": "Account not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "GET /api/platform/stations/orphaned": {
+        "method": "GET",
+        "path": "/api/platform/stations/orphaned",
+        "description": "Q35 — list active stations with no organizationId (created before Q33 tagged it on creation), whose members/vehicles don't count toward any org's plan limits until backfilled. Returns name/brigade/hierarchy plus member/vehicle counts so the operator can identify the real-world brigade.",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ stations: PlatformOrphanedStation[] }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "PATCH /api/platform/stations/:id/organization": {
+        "method": "PATCH",
+        "path": "/api/platform/stations/:id/organization",
+        "description": "Q35 — assign (or reassign) a station's owning organization. System stations (demo/default) are rejected. Writes a station.organization_assigned audit log row.",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "organizationId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "organizationId"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "{ station }"
+          },
+          "400": {
+            "description": "Missing organizationId, or target is a system station"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Station or target organization not found"
           }
         },
         "implementation": "backend/src/routes/platform.ts"

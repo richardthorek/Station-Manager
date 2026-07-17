@@ -169,7 +169,8 @@ export type PlatformAuditAction =
   | 'org.membership_role_changed'
   | 'org.membership_removed'
   | 'account.deactivated'
-  | 'account.deleted';
+  | 'account.deleted'
+  | 'station.organization_assigned';
 
 export interface PlatformAuditLog {
   id: string;

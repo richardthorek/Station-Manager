@@ -1022,6 +1022,32 @@ built around one hard rule — **the operator never reads tenant content.**
   accountability mechanism — the privacy wall means there's no tenant-data
   browsing to cross-check against instead.
 
+**Station → organization backfill (Q35).** Stations created before Q33 tagged
+`organizationId` at creation time have none, so their members/vehicles
+silently don't count toward any org's plan limits (fails open — safe, but
+under-enforces), and there's no reliable automatic signal to map an orphan
+station to the right org. `GET /api/platform/stations/orphaned` lists active
+stations with no `organizationId` (name/brigade/hierarchy plus member/vehicle
+counts, so the operator can identify the real-world brigade) and
+`PATCH /api/platform/stations/:id/organization` assigns one — audited as
+`station.organization_assigned`. Deliberately manual: matching a station to
+its org needs human judgement (there's no reliable key to automate it on),
+same reasoning as the claim-conflict reassignment flow. Frontend: the
+"Orphaned stations" tab in `/admin/platform` (`PlatformStationsTab.tsx`).
+
+### Org data export (Q26)
+
+`GET /api/organizations/current/export` (owner-only, `routes/organizations.ts`)
+bundles a full downloadable JSON snapshot for privacy/retention requests and a
+brigade's own record-keeping: the `Organization` row, its `stations`,
+`members`, `events` (participants included, capped at 5,000 per station,
+newest-first), `vehicles` (all appliances across the org's stations),
+`truckCheckRuns` (`CheckRunWithResults[]` — check runs with their item
+results — capped at 5,000 across all stations combined, newest-first, with a
+`limitations` note when truncated), and `devices`
+(`ensureDeviceDatabase().listForOrganization(id)` — org-scoped natively via
+`Device.organizationId`).
+
 ### Files
 
 - **Types:** `types/index.ts` (`AdminUser.email`, `OrgRole`,
@@ -1033,8 +1059,9 @@ built around one hard rule — **the operator never reads tenant content.**
   `orgAccessDbFactory.ts`, `orgMembershipService.ts`, `facilitiesParser.ts`,
   `organizationDatabase.ts`'s `deleteOrganization`.
 - **Routes:** `auth.ts` (signup/me/login/profile/switch-org), `organizations.ts`
-  (invites + members), `orgInvites.ts` (public), `facilities.ts` (public),
-  `platform.ts` (claim conflicts + Q32 organizations console + audit log).
+  (invites + members + Q26 data export), `orgInvites.ts` (public),
+  `facilities.ts` (public), `platform.ts` (claim conflicts + Q32 organizations
+  console + Q35 station backfill + audit log).
 - **Middleware:** `platformAdmin.ts`.
 - **Scripts:** `fetchEmergencyFacilitiesSnapshot.ts`, `uploadFacilitiesToBlobStorage.ts`.
 - **Frontend:** `contexts/AuthContext.tsx` (email/memberships/isPlatformAdmin/switchOrg),
@@ -1043,6 +1070,7 @@ built around one hard rule — **the operator never reads tenant content.**
   `features/admin/organization/OrganizationPage.tsx` (Members + Invite links),
   `features/admin/platform/PlatformAdminPage.tsx` (tab shell),
   `features/admin/platform/PlatformOrganizationsTab.tsx`,
+  `features/admin/platform/PlatformStationsTab.tsx`,
   `features/admin/platform/PlatformAuditLogTab.tsx`.
 
 ---

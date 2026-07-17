@@ -857,9 +857,12 @@ paths:
         - Organizations
       summary: Download a full data export (owner only)
       description: >
-        JSON bundle of the org's stations, members, and event/attendance history — for
-        privacy/retention requests and a brigade's own record-keeping. Event history is
-        currently limited to roughly the last 3 months on the Table Storage backend.
+        JSON bundle of the org's stations, members, event/attendance history,
+        truck-check history (vehicles + check runs with results), and device
+        records — for privacy/retention requests and a brigade's own
+        record-keeping. Event history is capped at 5000 events per station;
+        truck-check runs at 5000 across all stations combined (both
+        newest-first).
         Full schema: docs/registers/api_register.json → endpoints.organizations.
       operationId: exportOrganizationData
       security:
@@ -1115,6 +1118,50 @@ paths:
           description: Not a platform admin
         '404':
           description: Account not found
+
+  /api/platform/stations/orphaned:
+    get:
+      tags:
+        - Platform Admin
+      summary: List active stations with no owning organization (Q35 backfill)
+      description: >
+        Stations created before Q33 tagged organizationId on creation have
+        none, so their members/vehicles don't count toward any org's plan
+        limits until backfilled. Returns name/brigade/hierarchy plus
+        member/vehicle counts so the operator can identify the real-world
+        brigade.
+      operationId: getOrphanedStations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '{ stations: PlatformOrphanedStation[] }'
+        '403':
+          description: Not a platform admin
+
+  /api/platform/stations/{id}/organization:
+    patch:
+      tags:
+        - Platform Admin
+      summary: Assign (or reassign) a station's owning organization
+      operationId: assignStationOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ station }'
+        '400':
+          description: Missing organizationId, or target is a system station
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Station or target organization not found
 
   /api/platform/audit-log:
     get:

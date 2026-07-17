@@ -290,6 +290,97 @@ router.post('/claim-conflicts/:id/resolve', async (req: Request, res: Response) 
 });
 
 // ─────────────────────────────────────────────────────────────
+// Station → organization backfill (Q35). Stations created before Q33 tagged
+// organizationId on creation have none, so their members/vehicles don't count
+// toward any org's plan limits (fails open — safe, but under-enforces). No
+// reliable automatic signal exists to map these, so this is a manual,
+// operator-reviewed tool: list the orphans, then assign each to the right org.
+// ─────────────────────────────────────────────────────────────
+
+/** GET /api/platform/stations/orphaned — active stations with no organizationId. */
+router.get('/stations/orphaned', async (_req: Request, res: Response) => {
+  try {
+    const db = await ensureDatabase();
+    const truckDb = await ensureTruckChecksDatabase();
+    const [allStations, allMembers, allAppliances] = await Promise.all([
+      db.getAllStations(),
+      db.getAllMembers(),
+      truckDb.getAllAppliances(),
+    ]);
+
+    const orphans = allStations.filter((s) => !s.organizationId && !SYSTEM_STATION_IDS.has(s.id));
+    const stations = orphans
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        brigadeName: s.brigadeName,
+        brigadeId: s.brigadeId,
+        hierarchy: s.hierarchy,
+        isActive: s.isActive,
+        createdAt: s.createdAt,
+        memberCount: allMembers.filter((m) => m.stationId === s.id).length,
+        vehicleCount: allAppliances.filter((a) => a.stationId === s.id).length,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return res.json({ stations });
+  } catch (error) {
+    logger.error('Error listing orphaned stations', { error });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * PATCH /api/platform/stations/:id/organization
+ * Body: { organizationId } — assigns (or reassigns) the station's owning org,
+ * so its members/vehicles start counting toward that org's plan limits.
+ */
+router.patch('/stations/:id/organization', async (req: Request, res: Response) => {
+  try {
+    const { organizationId } = req.body ?? {};
+    if (typeof organizationId !== 'string' || !organizationId.trim()) {
+      return res.status(400).json({ error: 'organizationId is required' });
+    }
+
+    const orgDb = ensureOrganizationDatabase();
+    const org = await orgDb.getOrganizationById(organizationId);
+    if (!org) {
+      return res.status(404).json({ error: 'Target organization not found' });
+    }
+
+    const db = await ensureDatabase();
+    const allStations = await db.getAllStations();
+    const station = allStations.find((s) => s.id === req.params.id);
+    if (!station) {
+      return res.status(404).json({ error: 'Station not found' });
+    }
+    if (SYSTEM_STATION_IDS.has(station.id)) {
+      return res.status(400).json({ error: 'Cannot assign an organization to a system station' });
+    }
+
+    const previousOrganizationId = station.organizationId;
+    const updated = await db.updateStation(station.id, { organizationId });
+
+    await auditLog(
+      req,
+      'station.organization_assigned',
+      { organizationId },
+      `${station.name} (${station.id})${previousOrganizationId ? ` reassigned from ${previousOrganizationId}` : ''}`,
+    );
+    logger.info('Platform admin assigned station to organization', {
+      stationId: station.id,
+      organizationId,
+      previousOrganizationId,
+      actor: req.user?.username,
+    });
+    return res.json({ station: updated });
+  } catch (error) {
+    logger.error('Error assigning station organization', { error });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // Management (Q32) — plan/status/entitlements, membership, destructive delete.
 // Every mutation writes a PlatformAuditLog row.
 // ─────────────────────────────────────────────────────────────
