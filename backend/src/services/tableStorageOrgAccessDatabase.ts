@@ -13,11 +13,12 @@
 import { TableClient, TableEntity, odata } from '@azure/data-tables';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './logger';
-import type { ClaimConflict, OrgInvite, OrgRole, OrganizationMembership } from '../types';
+import type { ClaimConflict, OrgInvite, OrgRole, OrganizationMembership, PlatformAuditAction, PlatformAuditLog } from '../types';
 import type {
   CreateClaimConflictInput,
   CreateInviteInput,
   CreateMembershipInput,
+  CreatePlatformAuditLogInput,
   IOrgAccessDatabase,
 } from './orgAccessDatabase';
 
@@ -73,11 +74,23 @@ interface ClaimConflictEntity extends TableEntity {
   updatedAt: string;
 }
 
+interface PlatformAuditLogEntity extends TableEntity {
+  logId: string;
+  actorUserId: string;
+  actorUsername: string;
+  action: string;
+  targetOrganizationId?: string;
+  targetUserId?: string;
+  details?: string;
+  createdAt: string;
+}
+
 export class TableStorageOrgAccessDatabase implements IOrgAccessDatabase {
   private connectionString: string;
   private membershipsTable!: TableClient;
   private invitesTable!: TableClient;
   private conflictsTable!: TableClient;
+  private auditLogsTable!: TableClient;
   private isConnected = false;
 
   constructor(connectionString: string) {
@@ -91,6 +104,7 @@ export class TableStorageOrgAccessDatabase implements IOrgAccessDatabase {
       ['OrganizationMemberships', (c) => (this.membershipsTable = c)],
       ['OrgInvites', (c) => (this.invitesTable = c)],
       ['ClaimConflicts', (c) => (this.conflictsTable = c)],
+      ['PlatformAuditLogs', (c) => (this.auditLogsTable = c)],
     ];
     for (const [baseName, assign] of tables) {
       const tableName = buildTableName(baseName);
@@ -421,9 +435,71 @@ export class TableStorageOrgAccessDatabase implements IOrgAccessDatabase {
     }
   }
 
+  // ─── Platform audit log mapping ───
+  // PartitionKey = 'PlatformAudit' (single partition; audit volume from one
+  // platform-admin operator is low, and this needs to list newest-first
+  // across everything, not scoped to one org).
+
+  private auditLogToEntity(log: PlatformAuditLog): PlatformAuditLogEntity {
+    return {
+      partitionKey: 'PlatformAudit',
+      rowKey: log.id,
+      logId: log.id,
+      actorUserId: log.actorUserId,
+      actorUsername: log.actorUsername,
+      action: log.action,
+      targetOrganizationId: log.targetOrganizationId,
+      targetUserId: log.targetUserId,
+      details: log.details,
+      createdAt: log.createdAt.toISOString(),
+    };
+  }
+
+  private auditLogFromEntity(entity: PlatformAuditLogEntity): PlatformAuditLog {
+    return {
+      id: entity.logId,
+      actorUserId: entity.actorUserId,
+      actorUsername: entity.actorUsername,
+      action: entity.action as PlatformAuditAction,
+      targetOrganizationId: entity.targetOrganizationId,
+      targetUserId: entity.targetUserId,
+      details: entity.details,
+      createdAt: new Date(entity.createdAt),
+    };
+  }
+
+  async createPlatformAuditLog(input: CreatePlatformAuditLogInput): Promise<PlatformAuditLog> {
+    await this.ensureConnected();
+    const log: PlatformAuditLog = {
+      id: uuidv4(),
+      actorUserId: input.actorUserId,
+      actorUsername: input.actorUsername,
+      action: input.action,
+      targetOrganizationId: input.targetOrganizationId,
+      targetUserId: input.targetUserId,
+      details: input.details,
+      createdAt: new Date(),
+    };
+    await this.auditLogsTable.createEntity(this.auditLogToEntity(log));
+    return log;
+  }
+
+  async getPlatformAuditLogs(limit = 100, offset = 0): Promise<PlatformAuditLog[]> {
+    await this.ensureConnected();
+    const all: PlatformAuditLog[] = [];
+    const iterator = this.auditLogsTable.listEntities<PlatformAuditLogEntity>({
+      queryOptions: { filter: odata`PartitionKey eq ${'PlatformAudit'}` },
+    });
+    for await (const entity of iterator) {
+      all.push(this.auditLogFromEntity(entity as PlatformAuditLogEntity));
+    }
+    all.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return all.slice(offset, offset + limit);
+  }
+
   async clear(): Promise<void> {
     await this.ensureConnected();
-    for (const table of [this.membershipsTable, this.invitesTable, this.conflictsTable]) {
+    for (const table of [this.membershipsTable, this.invitesTable, this.conflictsTable, this.auditLogsTable]) {
       const iterator = table.listEntities<TableEntity>();
       for await (const entity of iterator) {
         await table.deleteEntity(entity.partitionKey as string, entity.rowKey as string);

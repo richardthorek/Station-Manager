@@ -991,24 +991,59 @@ is `/admin/platform` (`PlatformAdminPage.tsx`), self-gated on
 `isPlatformAdmin` from `/auth/me` — the backend allowlist is the real
 enforcement.
 
+**The organizations console (Q32).** The same `/api/platform` router (and
+`/admin/platform` page, now tabbed: Organizations / Claim conflicts / Audit
+log) also gives the platform operator cross-org visibility and management,
+built around one hard rule — **the operator never reads tenant content.**
+
+- **Visibility** (`GET /organizations`, `GET /organizations/:id`) computes
+  aggregate rollups server-side (station/member/vehicle counts via the same
+  station-id scoping `middleware/entitlements.ts` uses for plan limits, AI
+  sessions this month via `usageDatabase.countUsage`) and returns *only*
+  those numbers plus plan/status/billing email/facility — never a member,
+  check-in, truck-check, or event record. Org detail also lists memberships
+  (username/email/role/lastLoginAt — account info, not tenant content).
+- **Management**: `PATCH /organizations/:id` changes plan/entitlement module
+  toggles or sets `status` directly (something the owner-facing
+  `PUT /organizations/current` cannot do) and can clear a facility claim;
+  `POST/PUT/DELETE .../members[/:userId]` add/change-role/remove org
+  memberships (reusing `orgMembershipRules.violatesLastOwner`, since a
+  platform admin can still orphan an org of owners); `DELETE
+  /organizations/:id` and `DELETE /accounts/:userId` soft-deactivate by
+  default and require a matching `confirm` string (the org's slug / the
+  account's username) plus `?hard=true` to permanently delete — hard-deleting
+  an org removes the `Organization` row and its memberships but does **not**
+  cascade to stations/members/events (those aren't reliably org-scoped yet —
+  see Q35 — and destroying operational data automatically is out of scope).
+- **Audit trail**: every mutation writes a `PlatformAuditLog` row
+  (`orgAccessDatabase.createPlatformAuditLog`, a fourth table alongside
+  memberships/invites/claim-conflicts in the same in-memory + Table Storage
+  twin), surfaced at `GET /audit-log`. This is deliberately the *only*
+  accountability mechanism — the privacy wall means there's no tenant-data
+  browsing to cross-check against instead.
+
 ### Files
 
 - **Types:** `types/index.ts` (`AdminUser.email`, `OrgRole`,
   `OrganizationMembership`, `OrgInvite`, `ClaimConflict`, `Organization`
-  facility fields), `types/facilities.ts` (`Facility`, `FacilitySearchResult`).
-- **Services:** `orgMembershipRules.ts`, `orgAccessDatabase.ts` +
-  `tableStorageOrgAccessDatabase.ts` + `orgAccessDbFactory.ts`,
-  `orgMembershipService.ts`, `facilitiesParser.ts`.
+  facility fields, `PlatformAuditLog`/`PlatformAuditAction`), `types/facilities.ts`
+  (`Facility`, `FacilitySearchResult`).
+- **Services:** `orgMembershipRules.ts`, `orgAccessDatabase.ts` (also the
+  platform audit log) + `tableStorageOrgAccessDatabase.ts` +
+  `orgAccessDbFactory.ts`, `orgMembershipService.ts`, `facilitiesParser.ts`,
+  `organizationDatabase.ts`'s `deleteOrganization`.
 - **Routes:** `auth.ts` (signup/me/login/profile/switch-org), `organizations.ts`
   (invites + members), `orgInvites.ts` (public), `facilities.ts` (public),
-  `platform.ts`.
+  `platform.ts` (claim conflicts + Q32 organizations console + audit log).
 - **Middleware:** `platformAdmin.ts`.
 - **Scripts:** `fetchEmergencyFacilitiesSnapshot.ts`, `uploadFacilitiesToBlobStorage.ts`.
 - **Frontend:** `contexts/AuthContext.tsx` (email/memberships/isPlatformAdmin/switchOrg),
   `components/FacilitySearch.tsx`, `components/OrgSwitcher.tsx`,
   `features/auth/SignupPage.tsx` (stepper), `features/auth/OrgInvitePage.tsx`,
   `features/admin/organization/OrganizationPage.tsx` (Members + Invite links),
-  `features/admin/platform/PlatformAdminPage.tsx`.
+  `features/admin/platform/PlatformAdminPage.tsx` (tab shell),
+  `features/admin/platform/PlatformOrganizationsTab.tsx`,
+  `features/admin/platform/PlatformAuditLogTab.tsx`.
 
 ---
 
@@ -2477,7 +2512,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   // X-Brigade-Token (kiosk/device credential) and X-Member-Session (AC-1)
   // added 2026-07-17 — missing them silently breaks any cross-origin caller
   // using those credentials (invisible in prod today since the SPA and API

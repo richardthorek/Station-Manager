@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.14.0",
-  "lastUpdated": "2026-07-13",
+  "version": "1.15.0",
+  "lastUpdated": "2026-07-17",
   "description": "Machine-readable registry of all backend functions, service methods, and business logic for the RFS Station Manager\n\nMulti-Station Support: Database methods now accept optional stationId parameter for filtering. All methods filter by stationId when provided, default to 'default-station' otherwise.",
   "services": {
     "database": {
@@ -1596,6 +1596,16 @@
           "signature": "getClaimConflicts(status?: 'open' | 'resolved'): Promise<ClaimConflict[]>",
           "description": "Lists claim conflicts, optionally filtered by status",
           "async": true
+        },
+        "createPlatformAuditLog": {
+          "signature": "createPlatformAuditLog(input: CreatePlatformAuditLogInput): Promise<PlatformAuditLog>",
+          "description": "Records one platform-admin mutation (Q32) — the sole accountability trail given the console's hard privacy wall",
+          "async": true
+        },
+        "getPlatformAuditLogs": {
+          "signature": "getPlatformAuditLogs(limit?: number, offset?: number): Promise<PlatformAuditLog[]>",
+          "description": "Platform audit log, newest first",
+          "async": true
         }
       }
     },
@@ -1653,6 +1663,11 @@
         "getAllFacilityKeys": {
           "signature": "getAllFacilityKeys(): Promise<Set<string>>",
           "description": "Every claimed facility key, for the public lookup's 'claimed' badge (60s cache in the route)",
+          "async": true
+        },
+        "deleteOrganization": {
+          "signature": "deleteOrganization(id: string): Promise<boolean>",
+          "description": "Hard-deletes the organization record itself (Q32 platform console). Does not cascade to stations/members/events.",
           "async": true
         }
       }
@@ -1919,7 +1934,7 @@
     },
     "platform": {
       "file": "backend/src/routes/platform.ts",
-      "description": "Platform-admin claim-conflict review (list/resolve, incl. reassigning a facility link between orgs). Gated by middleware/platformAdmin.ts's PLATFORM_ADMIN_USERNAMES allowlist, not org role. Mounted at /api/platform.",
+      "description": "Platform-admin console (Q32): claim-conflict review, cross-org visibility (aggregate-only), and management (plan/status/entitlements, membership, destructive delete with confirmation). Gated by middleware/platformAdmin.ts's PLATFORM_ADMIN_USERNAMES allowlist, not org role. Mounted at /api/platform. Every mutation writes a PlatformAuditLog row via orgAccessDatabase.",
       "functions": {}
     }
   },

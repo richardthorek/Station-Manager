@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "version": "1.14.0",
-  "lastUpdated": "2026-07-13",
+  "version": "1.15.0",
+  "lastUpdated": "2026-07-17",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -1810,8 +1810,279 @@
       }
     },
     "platform": {
-      "description": "Platform-operator administration (not per-org). Gated by the PLATFORM_ADMIN_USERNAMES allowlist (middleware/platformAdmin.ts), not by org role. Currently: facility claim-conflict review/resolution.",
+      "description": "Platform-operator administration (not per-org). Gated by the PLATFORM_ADMIN_USERNAMES allowlist (middleware/platformAdmin.ts), not by org role. Covers facility claim-conflict review/resolution and the Q32 organizations console: cross-org visibility (aggregate counts only, never row-level tenant data — the hard privacy wall), plan/status/entitlement management, membership, and destructive delete (soft-deactivate by default; hard delete requires a confirm string). Every mutation writes a PlatformAuditLog row (GET /api/platform/audit-log).",
       "authentication": "Bearer JWT + PLATFORM_ADMIN_USERNAMES allowlist",
+      "GET /api/platform/organizations": {
+        "method": "GET",
+        "path": "/api/platform/organizations",
+        "description": "List every organization with aggregate, non-PII counts only (stationCount, memberCount, vehicleCount, aiSessionsUsedThisMonth) plus plan/status/billing email. Never returns row-level member/check-in/truck-check/event data.",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ organizations: PlatformOrganizationSummary[] }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "GET /api/platform/organizations/:id": {
+        "method": "GET",
+        "path": "/api/platform/organizations/:id",
+        "description": "Organization detail (entitlements, facility, aggregate counts) plus its memberships (account username/email/role/lastLoginAt — account info, not tenant content).",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ organization: PlatformOrganizationDetail, members: PlatformOrgMember[], plans: PlanDefinition[] }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "PATCH /api/platform/organizations/:id": {
+        "method": "PATCH",
+        "path": "/api/platform/organizations/:id",
+        "description": "Update an organization's plan, entitlement module toggles, status, or clear its facility claim. Unlike the owner-facing PUT /api/organizations/current, a platform admin may set status directly (e.g. trialing/active/past_due/canceled). Writes an audit log row per changed field group.",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "planCode": {
+              "type": "string",
+              "enum": [
+                "community",
+                "basic",
+                "ai"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "trialing",
+                "active",
+                "past_due",
+                "canceled"
+              ]
+            },
+            "moduleToggles": {
+              "type": "object",
+              "description": "Partial<{signInEnabled, truckCheckEnabled, reportsEnabled, aiEnabled}>"
+            },
+            "clearFacilityClaim": {
+              "type": "boolean"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ organization }"
+          },
+          "400": {
+            "description": "Invalid planCode or status"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "DELETE /api/platform/organizations/:id": {
+        "method": "DELETE",
+        "path": "/api/platform/organizations/:id",
+        "description": "Default: soft-deactivate (status -> canceled). Pass ?hard=true and body {confirm: '<org slug>'} to permanently delete the organization record (does not cascade to stations/members/events).",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "confirm": {
+              "type": "string",
+              "description": "Must equal the org's slug; required only when ?hard=true"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ organization } for soft delete, { success: true } for hard delete"
+          },
+          "400": {
+            "description": "Hard delete requested without a matching confirm string"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "POST /api/platform/organizations/:id/members": {
+        "method": "POST",
+        "path": "/api/platform/organizations/:id/members",
+        "description": "Create a new account and membership it into this organization with the given role.",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "username": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string",
+              "minLength": 8
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "owner",
+                "admin",
+                "viewer"
+              ]
+            },
+            "email": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "username",
+            "password",
+            "role"
+          ]
+        },
+        "responses": {
+          "201": {
+            "description": "{ user }"
+          },
+          "400": {
+            "description": "Missing/invalid fields"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Organization not found"
+          },
+          "409": {
+            "description": "Username already taken"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "PUT /api/platform/organizations/:id/members/:userId": {
+        "method": "PUT",
+        "path": "/api/platform/organizations/:id/members/:userId",
+        "description": "Change a member's role within this organization. Refuses a change that would leave the org with no active owner.",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": [
+                "owner",
+                "admin",
+                "viewer"
+              ]
+            }
+          },
+          "required": [
+            "role"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "{ membership }"
+          },
+          "400": {
+            "description": "Invalid role"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Member not found in this organisation"
+          },
+          "409": {
+            "description": "Would leave the organisation with no owner"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "DELETE /api/platform/organizations/:id/members/:userId": {
+        "method": "DELETE",
+        "path": "/api/platform/organizations/:id/members/:userId",
+        "description": "Remove a member's active membership from this organization. Refuses removal of the last active owner.",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ success: true }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Member not found in this organisation"
+          },
+          "409": {
+            "description": "Would leave the organisation with no owner"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "DELETE /api/platform/accounts/:userId": {
+        "method": "DELETE",
+        "path": "/api/platform/accounts/:userId",
+        "description": "Default: soft-deactivate the account. Pass ?hard=true and body {confirm: '<username>'} to permanently delete it (removed from every org's membership list first).",
+        "authentication": "JWT (platform admin)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "confirm": {
+              "type": "string",
+              "description": "Must equal the account's username; required only when ?hard=true"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ success: true }"
+          },
+          "400": {
+            "description": "Hard delete requested without a matching confirm string"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Account not found"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
+      "GET /api/platform/audit-log": {
+        "method": "GET",
+        "path": "/api/platform/audit-log",
+        "description": "List platform-admin audit log entries, newest first (?limit=&offset=, max limit 500). The accountability trail for every mutation made through /api/platform — the hard privacy wall means it is the only record of this access level.",
+        "authentication": "JWT (platform admin)",
+        "responses": {
+          "200": {
+            "description": "{ logs: PlatformAuditLog[] }"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          }
+        },
+        "implementation": "backend/src/routes/platform.ts"
+      },
       "GET /api/platform/claim-conflicts": {
         "method": "GET",
         "path": "/api/platform/claim-conflicts",
@@ -2866,6 +3137,23 @@
         }
       },
       "responses": {
+        "200": {
+          "description": "Participant removed (toggle undo)",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "removed"
+                ]
+              },
+              "participant": {
+                "$ref": "#/definitions/EventParticipant"
+              }
+            }
+          }
+        },
         "201": {
           "description": "Participant added",
           "schema": {
@@ -2878,23 +3166,6 @@
                   "removed"
                 ],
                 "description": "Action performed (added or removed if toggled)"
-              },
-              "participant": {
-                "$ref": "#/definitions/EventParticipant"
-              }
-            }
-          }
-        },
-        "200": {
-          "description": "Participant removed (toggle undo)",
-          "schema": {
-            "type": "object",
-            "properties": {
-              "action": {
-                "type": "string",
-                "enum": [
-                  "removed"
-                ]
               },
               "participant": {
                 "$ref": "#/definitions/EventParticipant"
@@ -4706,6 +4977,9 @@
             }
           }
         },
+        "400": {
+          "description": "Validation error"
+        },
         "404": {
           "description": "Token not found or expired",
           "schema": {
@@ -4722,9 +4996,6 @@
               }
             }
           }
-        },
-        "400": {
-          "description": "Validation error"
         },
         "500": {
           "description": "Server error"
@@ -4773,11 +5044,11 @@
             }
           }
         },
-        "404": {
-          "description": "Token not found"
-        },
         "400": {
           "description": "Validation error"
+        },
+        "404": {
+          "description": "Token not found"
         },
         "500": {
           "description": "Server error"
@@ -5271,11 +5542,11 @@
             }
           }
         },
-        "404": {
-          "description": "Token not found, revoked, or expired"
-        },
         "400": {
           "description": "Validation error"
+        },
+        "404": {
+          "description": "Token not found, revoked, or expired"
         }
       },
       "implementation": "backend/src/routes/devices.ts",

@@ -9,7 +9,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import type { ClaimConflict, OrgInvite, OrgRole, OrganizationMembership } from '../types';
+import type { ClaimConflict, OrgInvite, OrgRole, OrganizationMembership, PlatformAuditAction, PlatformAuditLog } from '../types';
 
 export interface CreateMembershipInput {
   userId: string;
@@ -34,6 +34,15 @@ export interface CreateClaimConflictInput {
   attemptedOrgName: string;
   attemptedByUsername: string;
   attemptedByEmail: string;
+}
+
+export interface CreatePlatformAuditLogInput {
+  actorUserId: string;
+  actorUsername: string;
+  action: PlatformAuditAction;
+  targetOrganizationId?: string;
+  targetUserId?: string;
+  details?: string;
 }
 
 export interface IOrgAccessDatabase {
@@ -63,6 +72,10 @@ export interface IOrgAccessDatabase {
       Pick<ClaimConflict, 'status' | 'resolution' | 'resolutionNotes' | 'resolvedBy' | 'resolvedAt'>
     >,
   ): Promise<ClaimConflict | null>;
+  // Platform audit log (Q32)
+  createPlatformAuditLog(input: CreatePlatformAuditLogInput): Promise<PlatformAuditLog>;
+  /** Newest first. */
+  getPlatformAuditLogs(limit?: number, offset?: number): Promise<PlatformAuditLog[]>;
   clear(): Promise<void>;
 }
 
@@ -70,6 +83,7 @@ export class OrgAccessDatabase implements IOrgAccessDatabase {
   private memberships: Map<string, OrganizationMembership> = new Map();
   private invites: Map<string, OrgInvite> = new Map();
   private conflicts: Map<string, ClaimConflict> = new Map();
+  private auditLogs: Map<string, PlatformAuditLog> = new Map();
 
   // ─── Memberships ───
 
@@ -215,10 +229,35 @@ export class OrgAccessDatabase implements IOrgAccessDatabase {
     return updated;
   }
 
+  // ─── Platform audit log ───
+
+  async createPlatformAuditLog(input: CreatePlatformAuditLogInput): Promise<PlatformAuditLog> {
+    const log: PlatformAuditLog = {
+      id: uuidv4(),
+      actorUserId: input.actorUserId,
+      actorUsername: input.actorUsername,
+      action: input.action,
+      targetOrganizationId: input.targetOrganizationId,
+      targetUserId: input.targetUserId,
+      details: input.details,
+      createdAt: new Date(),
+    };
+    this.auditLogs.set(log.id, log);
+    return log;
+  }
+
+  async getPlatformAuditLogs(limit = 100, offset = 0): Promise<PlatformAuditLog[]> {
+    const all = Array.from(this.auditLogs.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+    return all.slice(offset, offset + limit);
+  }
+
   async clear(): Promise<void> {
     this.memberships.clear();
     this.invites.clear();
     this.conflicts.clear();
+    this.auditLogs.clear();
   }
 }
 

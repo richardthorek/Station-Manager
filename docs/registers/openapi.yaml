@@ -929,6 +929,216 @@ paths:
         '403':
           description: Not a platform admin
 
+  /api/platform/organizations:
+    get:
+      tags:
+        - Platform Admin
+      summary: List every organization (aggregate counts only, never row-level tenant data)
+      operationId: listPlatformOrganizations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: |
+            { organizations }. Full schema: docs/registers/api_register.json → endpoints.platform.
+        '403':
+          description: Not a platform admin
+
+  /api/platform/organizations/{id}:
+    get:
+      tags:
+        - Platform Admin
+      summary: Organization detail + memberships (account info, not tenant content)
+      operationId: getPlatformOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ organization, members, plans }'
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Organization not found
+    patch:
+      tags:
+        - Platform Admin
+      summary: Update plan/status/entitlements, or clear a facility claim
+      operationId: updatePlatformOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ organization }'
+        '400':
+          description: Invalid planCode or status
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Organization not found
+    delete:
+      tags:
+        - Platform Admin
+      summary: Soft-deactivate (default), or hard-delete with ?hard=true + confirm
+      operationId: deletePlatformOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: hard
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: '{ organization }' for soft delete, '{ success: true }' for hard delete
+        '400':
+          description: Hard delete requested without a matching confirm string
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Organization not found
+
+  /api/platform/organizations/{id}/members:
+    post:
+      tags:
+        - Platform Admin
+      summary: Create an account and membership it into this organization
+      operationId: addPlatformOrgMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: '{ user }'
+        '403':
+          description: Not a platform admin
+        '409':
+          description: Username already taken
+
+  /api/platform/organizations/{id}/members/{userId}:
+    put:
+      tags:
+        - Platform Admin
+      summary: Change a member's role in this organization
+      operationId: changePlatformOrgMemberRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ membership }'
+        '403':
+          description: Not a platform admin
+        '409':
+          description: Would leave the organisation with no owner
+    delete:
+      tags:
+        - Platform Admin
+      summary: Remove a member from this organization
+      operationId: removePlatformOrgMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ success: true }'
+        '403':
+          description: Not a platform admin
+        '409':
+          description: Would leave the organisation with no owner
+
+  /api/platform/accounts/{userId}:
+    delete:
+      tags:
+        - Platform Admin
+      summary: Soft-deactivate (default), or hard-delete with ?hard=true + confirm
+      operationId: deletePlatformAccount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: hard
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: '{ success: true }'
+        '400':
+          description: Hard delete requested without a matching confirm string
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Account not found
+
+  /api/platform/audit-log:
+    get:
+      tags:
+        - Platform Admin
+      summary: Platform-admin audit log, newest first
+      operationId: getPlatformAuditLog
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: '{ logs }'
+        '403':
+          description: Not a platform admin
+
 components:
   schemas:
     Member:

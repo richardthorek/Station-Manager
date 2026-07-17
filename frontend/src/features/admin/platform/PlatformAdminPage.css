@@ -146,3 +146,165 @@
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
+
+.org-btn--danger {
+  background: var(--surface-error);
+  color: var(--text-error-strong);
+  border: 2px solid transparent;
+}
+
+.platform-org-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.platform-org-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.platform-org-summary {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 44px;
+  color: var(--text-primary);
+}
+
+.platform-org-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.platform-org-badges {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.platform-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.platform-badge--past_due,
+.platform-badge--canceled {
+  background: var(--surface-error);
+  color: var(--text-error-strong);
+}
+
+.platform-org-stats {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.platform-org-detail {
+  padding: 0 1.25rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.platform-detail-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+}
+
+.platform-detail-row select {
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.platform-detail-heading {
+  margin: 1rem 0 0.5rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.platform-member-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.platform-member-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.platform-member-row select {
+  min-height: 44px;
+}
+
+.platform-danger-zone {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.platform-audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.platform-audit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+}
+
+.platform-audit-time {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.platform-audit-actor {
+  font-weight: 600;
+}
+
+.platform-audit-action {
+  font-family: monospace;
+}
+
+.platform-audit-details {
+  color: var(--text-secondary);
+}

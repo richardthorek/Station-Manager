@@ -6,8 +6,9 @@
  * enforcement is the backend's PLATFORM_ADMIN_USERNAMES allowlist, so this
  * page is a convenience gate, not a security boundary.
  *
- * Currently: review facility claim conflicts (first-come-first-served
- * signups blocked because a Digital Atlas facility was already claimed).
+ * Three sections (Q32): the organizations console (cross-org visibility +
+ * management — the launch-requirement scope), facility claim-conflict
+ * review (original scope), and the platform-admin audit log.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -15,10 +16,11 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { api, type ClaimConflict } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
 import { AdminNav } from '../../../components/AdminNav';
+import { PlatformOrganizationsTab } from './PlatformOrganizationsTab';
+import { PlatformAuditLogTab } from './PlatformAuditLogTab';
 import './PlatformAdminPage.css';
 
-export function PlatformAdminPage() {
-  const { isPlatformAdmin } = useAuth();
+function ClaimConflictsTab() {
   const [tab, setTab] = useState<'open' | 'resolved'>('open');
   const [conflicts, setConflicts] = useState<ClaimConflict[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -37,8 +39,8 @@ export function PlatformAdminPage() {
   }, [tab]);
 
   useEffect(() => {
-    if (isPlatformAdmin) load();
-  }, [isPlatformAdmin, load]);
+    load();
+  }, [load]);
 
   function flash(type: 'success' | 'error', text: string) {
     setMessage({ type, text });
@@ -62,6 +64,114 @@ export function PlatformAdminPage() {
     }
   }
 
+  return (
+    <>
+      {message && (
+        <div className={`org-message org-message--${message.type}`} role="status">
+          {message.text}
+        </div>
+      )}
+
+      <div className="platform-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'open'}
+          className={`platform-tab${tab === 'open' ? ' platform-tab--active' : ''}`}
+          onClick={() => setTab('open')}
+        >
+          Open
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'resolved'}
+          className={`platform-tab${tab === 'resolved' ? ' platform-tab--active' : ''}`}
+          onClick={() => setTab('resolved')}
+        >
+          Resolved
+        </button>
+      </div>
+
+      {conflicts.length === 0 && <p className="org-hint">No {tab} conflicts.</p>}
+
+      <ul className="platform-conflict-list">
+        {conflicts.map((conflict) => (
+          <li key={conflict.id} className="platform-conflict-card">
+            <div className="platform-conflict-facility">
+              <strong>{conflict.facilityName}</strong> ({conflict.facilityKey})
+            </div>
+            <div className="platform-conflict-row">
+              <span className="platform-conflict-label">Currently held by:</span>{' '}
+              {conflict.existingOrganization?.name ?? conflict.existingOrganizationId}
+              {conflict.existingOrganization?.billingEmail && ` (${conflict.existingOrganization.billingEmail})`}
+            </div>
+            <div className="platform-conflict-row">
+              <span className="platform-conflict-label">Attempted by:</span>{' '}
+              {conflict.attemptedOrgName} — {conflict.attemptedByUsername} ({conflict.attemptedByEmail})
+            </div>
+            <div className="platform-conflict-row">
+              <span className="platform-conflict-label">Reported:</span>{' '}
+              {new Date(conflict.createdAt).toLocaleString()}
+            </div>
+
+            {conflict.status === 'resolved' ? (
+              <div className="platform-conflict-row">
+                <span className="platform-conflict-label">Resolution:</span> {conflict.resolution}
+                {conflict.resolutionNotes && ` — ${conflict.resolutionNotes}`}
+              </div>
+            ) : resolvingId === conflict.id ? (
+              <div className="platform-resolve-form">
+                <select value={resolution} onChange={(e) => setResolution(e.target.value as typeof resolution)}>
+                  <option value="dismissed">Dismiss</option>
+                  <option value="contacted">Mark as contacted</option>
+                  <option value="reassigned">Reassign facility</option>
+                </select>
+                {resolution === 'reassigned' && (
+                  <input
+                    type="text"
+                    placeholder="Target organisation ID"
+                    value={reassignToOrganizationId}
+                    onChange={(e) => setReassignToOrganizationId(e.target.value)}
+                  />
+                )}
+                <input
+                  type="text"
+                  placeholder="Notes (optional)"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+                <button className="org-btn" type="button" onClick={() => submitResolution(conflict.id)}>
+                  Confirm
+                </button>
+                <button className="org-link-btn" type="button" onClick={() => setResolvingId(null)}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button className="org-btn org-btn--secondary" type="button" onClick={() => setResolvingId(conflict.id)}>
+                Resolve
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+const SECTIONS = ['organizations', 'conflicts', 'audit'] as const;
+type Section = (typeof SECTIONS)[number];
+const SECTION_LABELS: Record<Section, string> = {
+  organizations: 'Organizations',
+  conflicts: 'Claim conflicts',
+  audit: 'Audit log',
+};
+
+export function PlatformAdminPage() {
+  const { isPlatformAdmin } = useAuth();
+  const [section, setSection] = useState<Section>('organizations');
+
   if (!isPlatformAdmin) {
     return (
       <div className="platform-page">
@@ -79,100 +189,28 @@ export function PlatformAdminPage() {
         <AdminNav />
         <header className="platform-header">
           <h1>Platform administration</h1>
-          <p className="platform-subtitle">Facility claim conflicts</p>
+          <p className="platform-subtitle">Operator console — every organization, no tenant content</p>
         </header>
 
         <main className="platform-main" id="main-content" tabIndex={-1}>
-          {message && (
-            <div className={`org-message org-message--${message.type}`} role="status">
-              {message.text}
-            </div>
-          )}
-
           <div className="platform-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'open'}
-              className={`platform-tab${tab === 'open' ? ' platform-tab--active' : ''}`}
-              onClick={() => setTab('open')}
-            >
-              Open
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'resolved'}
-              className={`platform-tab${tab === 'resolved' ? ' platform-tab--active' : ''}`}
-              onClick={() => setTab('resolved')}
-            >
-              Resolved
-            </button>
+            {SECTIONS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                role="tab"
+                aria-selected={section === s}
+                className={`platform-tab${section === s ? ' platform-tab--active' : ''}`}
+                onClick={() => setSection(s)}
+              >
+                {SECTION_LABELS[s]}
+              </button>
+            ))}
           </div>
 
-          {conflicts.length === 0 && <p className="org-hint">No {tab} conflicts.</p>}
-
-          <ul className="platform-conflict-list">
-            {conflicts.map((conflict) => (
-              <li key={conflict.id} className="platform-conflict-card">
-                <div className="platform-conflict-facility">
-                  <strong>{conflict.facilityName}</strong> ({conflict.facilityKey})
-                </div>
-                <div className="platform-conflict-row">
-                  <span className="platform-conflict-label">Currently held by:</span>{' '}
-                  {conflict.existingOrganization?.name ?? conflict.existingOrganizationId}
-                  {conflict.existingOrganization?.billingEmail && ` (${conflict.existingOrganization.billingEmail})`}
-                </div>
-                <div className="platform-conflict-row">
-                  <span className="platform-conflict-label">Attempted by:</span>{' '}
-                  {conflict.attemptedOrgName} — {conflict.attemptedByUsername} ({conflict.attemptedByEmail})
-                </div>
-                <div className="platform-conflict-row">
-                  <span className="platform-conflict-label">Reported:</span>{' '}
-                  {new Date(conflict.createdAt).toLocaleString()}
-                </div>
-
-                {conflict.status === 'resolved' ? (
-                  <div className="platform-conflict-row">
-                    <span className="platform-conflict-label">Resolution:</span> {conflict.resolution}
-                    {conflict.resolutionNotes && ` — ${conflict.resolutionNotes}`}
-                  </div>
-                ) : resolvingId === conflict.id ? (
-                  <div className="platform-resolve-form">
-                    <select value={resolution} onChange={(e) => setResolution(e.target.value as typeof resolution)}>
-                      <option value="dismissed">Dismiss</option>
-                      <option value="contacted">Mark as contacted</option>
-                      <option value="reassigned">Reassign facility</option>
-                    </select>
-                    {resolution === 'reassigned' && (
-                      <input
-                        type="text"
-                        placeholder="Target organisation ID"
-                        value={reassignToOrganizationId}
-                        onChange={(e) => setReassignToOrganizationId(e.target.value)}
-                      />
-                    )}
-                    <input
-                      type="text"
-                      placeholder="Notes (optional)"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                    />
-                    <button className="org-btn" type="button" onClick={() => submitResolution(conflict.id)}>
-                      Confirm
-                    </button>
-                    <button className="org-link-btn" type="button" onClick={() => setResolvingId(null)}>
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button className="org-btn org-btn--secondary" type="button" onClick={() => setResolvingId(conflict.id)}>
-                    Resolve
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+          {section === 'organizations' && <PlatformOrganizationsTab />}
+          {section === 'conflicts' && <ClaimConflictsTab />}
+          {section === 'audit' && <PlatformAuditLogTab />}
         </main>
       </div>
     </PageTransition>

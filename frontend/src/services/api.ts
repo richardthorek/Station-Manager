@@ -1924,6 +1924,129 @@ class ApiService {
     }
     return response.json();
   }
+
+  // ============================================
+  // Platform administration (Q32 — organizations console)
+  // ============================================
+
+  async getPlatformOrganizations(): Promise<{ organizations: PlatformOrganizationSummary[] }> {
+    const response = await fetch(`${API_BASE_URL}/platform/organizations`, { headers: this.getHeaders() });
+    if (!response.ok) throw new Error('Failed to load organizations');
+    return response.json();
+  }
+
+  async getPlatformOrganization(
+    id: string,
+  ): Promise<{ organization: PlatformOrganizationDetail; members: PlatformOrgMember[]; plans: PlanDefinition[] }> {
+    const response = await fetch(`${API_BASE_URL}/platform/organizations/${id}`, { headers: this.getHeaders() });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to load organization');
+    }
+    return response.json();
+  }
+
+  async updatePlatformOrganization(
+    id: string,
+    input: {
+      planCode?: 'community' | 'basic' | 'ai';
+      status?: 'trialing' | 'active' | 'past_due' | 'canceled';
+      moduleToggles?: Partial<Record<'signInEnabled' | 'truckCheckEnabled' | 'reportsEnabled' | 'aiEnabled', boolean>>;
+      clearFacilityClaim?: boolean;
+    },
+  ): Promise<{ organization: PlatformOrganizationDetail }> {
+    const response = await fetch(`${API_BASE_URL}/platform/organizations/${id}`, {
+      method: 'PATCH',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to update organization');
+    }
+    return response.json();
+  }
+
+  /** Soft-deactivate by default; pass hard:true + confirm:<slug> to permanently delete. */
+  async deletePlatformOrganization(id: string, opts?: { hard?: boolean; confirm?: string }): Promise<{ success?: boolean }> {
+    const search = opts?.hard ? '?hard=true' : '';
+    const response = await fetch(`${API_BASE_URL}/platform/organizations/${id}${search}`, {
+      method: 'DELETE',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(opts?.confirm ? { confirm: opts.confirm } : {}),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to delete organization');
+    }
+    return response.json();
+  }
+
+  async addPlatformOrgMember(
+    organizationId: string,
+    input: { username: string; password: string; role: 'owner' | 'admin' | 'viewer'; email?: string },
+  ): Promise<{ user: { id: string; username: string; role: string; email: string | null } }> {
+    const response = await fetch(`${API_BASE_URL}/platform/organizations/${organizationId}/members`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to add member');
+    }
+    return response.json();
+  }
+
+  async changePlatformOrgMemberRole(
+    organizationId: string,
+    userId: string,
+    role: 'owner' | 'admin' | 'viewer',
+  ): Promise<{ membership: OrganizationMembership }> {
+    const response = await fetch(`${API_BASE_URL}/platform/organizations/${organizationId}/members/${userId}`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ role }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to change member role');
+    }
+    return response.json();
+  }
+
+  async removePlatformOrgMember(organizationId: string, userId: string): Promise<{ success: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/platform/organizations/${organizationId}/members/${userId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to remove member');
+    }
+    return response.json();
+  }
+
+  /** Soft-deactivate by default; pass hard:true + confirm:<username> to permanently delete. */
+  async deletePlatformAccount(userId: string, opts?: { hard?: boolean; confirm?: string }): Promise<{ success: boolean }> {
+    const search = opts?.hard ? '?hard=true' : '';
+    const response = await fetch(`${API_BASE_URL}/platform/accounts/${userId}${search}`, {
+      method: 'DELETE',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(opts?.confirm ? { confirm: opts.confirm } : {}),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to delete account');
+    }
+    return response.json();
+  }
+
+  async getPlatformAuditLog(limit = 100): Promise<{ logs: PlatformAuditLogEntry[] }> {
+    const response = await fetch(`${API_BASE_URL}/platform/audit-log?limit=${limit}`, { headers: this.getHeaders() });
+    if (!response.ok) throw new Error('Failed to load audit log');
+    return response.json();
+  }
 }
 
 export interface PlanDefinition {
@@ -2041,6 +2164,51 @@ export interface ClaimConflict {
   resolutionNotes?: string;
   resolvedBy?: string;
   resolvedAt?: string;
+  createdAt: string;
+}
+
+// ============================================
+// Platform administration (Q32 — organizations console)
+// ============================================
+
+/** Aggregate-only — the hard privacy wall means this never carries row-level tenant data. */
+export interface PlatformOrganizationSummary {
+  id: string;
+  name: string;
+  slug: string;
+  billingEmail: string;
+  planCode: 'community' | 'basic' | 'ai';
+  status: 'trialing' | 'active' | 'past_due' | 'canceled';
+  createdAt: string;
+  facilityName: string | null;
+  stationCount: number;
+  memberCount: number;
+  vehicleCount: number;
+  aiSessionsUsedThisMonth: number;
+}
+
+export interface PlatformOrganizationDetail extends PlatformOrganizationSummary {
+  entitlements: Record<string, unknown>;
+  facilityCustom: boolean;
+  trialEndsAt: string | null;
+}
+
+export interface PlatformOrgMember {
+  userId: string;
+  username: string;
+  email: string | null;
+  role: 'owner' | 'admin' | 'viewer';
+  isActive: boolean;
+  lastLoginAt?: string | null;
+}
+
+export interface PlatformAuditLogEntry {
+  id: string;
+  actorUsername: string;
+  action: string;
+  targetOrganizationId?: string;
+  targetUserId?: string;
+  details?: string;
   createdAt: string;
 }
 

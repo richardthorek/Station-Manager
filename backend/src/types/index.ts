@@ -153,6 +153,37 @@ export interface ClaimConflict {
 }
 
 /**
+ * Audit trail for platform-owner console actions (Q32). One row per mutation
+ * a platform admin makes — the console's hard privacy wall means the
+ * *only* accountability trail for this level of access is this log, so every
+ * mutating endpoint under /api/platform must write one.
+ */
+export type PlatformAuditAction =
+  | 'org.plan_changed'
+  | 'org.status_changed'
+  | 'org.entitlements_changed'
+  | 'org.facility_claim_cleared'
+  | 'org.deactivated'
+  | 'org.deleted'
+  | 'org.membership_added'
+  | 'org.membership_role_changed'
+  | 'org.membership_removed'
+  | 'account.deactivated'
+  | 'account.deleted';
+
+export interface PlatformAuditLog {
+  id: string;
+  actorUserId: string;
+  actorUsername: string;
+  action: PlatformAuditAction;
+  targetOrganizationId?: string;
+  targetUserId?: string;
+  /** Free-text summary, e.g. "planCode: community -> basic". Never row-level tenant data. */
+  details?: string;
+  createdAt: Date;
+}
+
+/**
  * SaaS plan codes. Plans map to a default set of Entitlements
  * (see backend/src/constants/plans.ts).
  */

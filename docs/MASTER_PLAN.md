@@ -54,7 +54,7 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 | 16 | Infra & deploy (Bicep IaC, GitHub Actions, run-from-package, smoke tests) | ✅ | D6 |
 | 17 | Notifications (email/SMS) | ⬜ | Q10 |
 | 18 | Documentation | 🟡 | Q6 |
-| 19 | Platform-owner console (SaaS operator super-admin) | ⬜ | Q32 (launch requirement) |
+| 19 | Platform-owner console (SaaS operator super-admin) | ✅ | — |
 
 ---
 
@@ -79,10 +79,7 @@ No single failure takes the platform down, deploys cause no downtime, the app lo
 
 The operator can see and manage every account without ever seeing tenant content; billing and plans are correct; onboarding data is seeded. This is what turns the platform into a business we can charge for.
 
-- **Q32 — Platform-owner console (LAUNCH REQUIREMENT, owner 2026-07-17).** One platform-owner account (mine), granted via the `PLATFORM_ADMIN_USERNAMES` allowlist only — never an assignable org role. Extends existing plumbing (`requirePlatformAdmin`, `/api/platform` router, `isPlatformAdmin` flag, `/admin/platform` page).
-  - **Visibility:** cross-org — users, org memberships/roles, plan/status/billing email, aggregate usage (member/vehicle/station counts, AI sessions used, sign-in volume, last-active). Never row-level tenant data.
-  - **Management (v1 scope confirmed by owner):** add/remove org membership + role; change plan/entitlements/status; reassign/clear a facility claim; **destructive delete of orgs and accounts is in scope** (confirmation step + audit trail; prefer soft-deactivate as default, hard-delete as a separately-confirmed action). All mutations through dedicated `/api/platform` endpoints gated by `requirePlatformAdmin`, touching both DB twins, emitting an audit row.
-  - **Hard privacy wall (non-negotiable):** the platform owner must never read member PII, sign-in/check-in records, truck-check results, event/AAR content, or exports. Dedicated read-only aggregate endpoints compute rollups server-side and cannot return row-level tenant records — don't reuse/widen tenant data routes for this. Keep aggregates to counts/shape only (per-member breakdowns on tiny orgs are re-identifying). Audit every platform-owner action.
+- ~~**Q32 — Platform-owner console.**~~ **Done 2026-07-17:** cross-org visibility (aggregate counts only — stations/members/vehicles/AI sessions, plan/status/billing email) and management (plan/entitlements/status, membership/role, facility-claim clearing, soft-deactivate + confirm-gated hard-delete of orgs and accounts) shipped at `/api/platform` + `/admin/platform`, with every mutation audited. See changelog.
 - **Q2 / D1 — Pricing decisions (owner).** Trial length, AI metering unit (session vs audio-minute), top-up pack size/price, per-org vs per-station billing, grant/PO invoicing, AAR-in-Basic. Decision, not code — blocks Q5.
 - **Q5 — Metered AI overage end-to-end.** `meteredUsageReporter.ts` is a safe no-op until a Stripe meter exists. After Q2: create the meter, map `UsageRecord` → meter events, verify an overage invoice in test mode.
 - **Q21 — Ops: fetch + upload the emergency-facilities dataset.** `npm run facilities:fetch` (needs internet to `services.ga.gov.au` — run from an operator machine, not CI) + `facilities:upload`, once, against prod. Until then signup's facility-claim step degrades gracefully to "my unit isn't listed."
