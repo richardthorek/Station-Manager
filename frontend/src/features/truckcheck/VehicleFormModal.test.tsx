@@ -2,23 +2,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { VehicleFormModal } from './VehicleFormModal';
-import { ApiLimitError } from '../../services/api';
 import type { Appliance } from '../../types';
 
-vi.mock('../../services/api', async () => {
-  const actual = await vi.importActual<typeof import('../../services/api')>('../../services/api');
-  return {
-    ...actual,
-    api: {
-      getVehicleTypes: vi.fn(),
-      createAppliance: vi.fn(),
-      updateAppliance: vi.fn(),
-      uploadAppliancePhoto: vi.fn(),
-    },
-  };
-});
+// Mirrors the real ApiLimitError shape (services/api.ts) without importActual —
+// importActual would load and execute the entire (large, otherwise-untouched)
+// api.ts module for real, which blew up global coverage denominators for a
+// file no other test exercises. Defined inline (not hoisted above vi.mock) so
+// Vitest's mock-factory hoisting doesn't hit a temporal-dead-zone reference;
+// VehicleFormModal.tsx's `instanceof` check only needs the same class
+// identity as this mocked module, satisfied by importing it back below.
+vi.mock('../../services/api', () => ({
+  ApiLimitError: class ApiLimitError extends Error {
+    readonly upgradeRequired = true;
+    constructor(message: string) {
+      super(message);
+      this.name = 'ApiLimitError';
+    }
+  },
+  api: {
+    getVehicleTypes: vi.fn(),
+    createAppliance: vi.fn(),
+    updateAppliance: vi.fn(),
+    uploadAppliancePhoto: vi.fn(),
+  },
+}));
 
-import { api } from '../../services/api';
+import { api, ApiLimitError } from '../../services/api';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 

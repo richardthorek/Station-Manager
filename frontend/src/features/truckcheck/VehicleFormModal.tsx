@@ -8,7 +8,7 @@
  * basic CRUD — this modal only covers a vehicle's own fields.
  */
 
-import { useState, useEffect, type KeyboardEvent, type MouseEvent } from 'react';
+import { useState, useEffect, useMemo, type KeyboardEvent, type MouseEvent } from 'react';
 import { api, ApiLimitError } from '../../services/api';
 import type { Appliance, VehicleType } from '../../types';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
@@ -41,6 +41,16 @@ export function VehicleFormModal({ vehicle, onClose, onSaved }: VehicleFormModal
   const [error, setError] = useState<string | null>(null);
   const [upgradeAvailable, setUpgradeAvailable] = useState(false);
   const modalRef = useFocusTrap<HTMLDivElement>(true);
+
+  // A local preview URL for a newly-picked photo, revoked whenever the file
+  // changes or the modal unmounts so it doesn't leak (createObjectURL blobs
+  // are never garbage-collected on their own).
+  const photoPreviewUrl = useMemo(() => (photoFile ? URL.createObjectURL(photoFile) : null), [photoFile]);
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [photoPreviewUrl]);
 
   useEffect(() => {
     api.getVehicleTypes().then(setVehicleTypes).catch(() => setVehicleTypes([]));
@@ -230,8 +240,8 @@ export function VehicleFormModal({ vehicle, onClose, onSaved }: VehicleFormModal
           <label htmlFor={`vehicle-photo-${modalIdSuffix}`}>Vehicle Photo</label>
           {(vehiclePhotoUrl || photoFile) && (
             <div className="photo-preview">
-              {photoFile ? (
-                <img src={URL.createObjectURL(photoFile)} alt="Preview" />
+              {photoPreviewUrl ? (
+                <img src={photoPreviewUrl} alt="Preview" />
               ) : vehiclePhotoUrl ? (
                 <img src={vehiclePhotoUrl} alt="Current" />
               ) : null}
