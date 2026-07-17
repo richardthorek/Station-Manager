@@ -192,8 +192,8 @@
       }
     },
     "ai": {
-      "description": "Server-side AI gateway. Provider credentials live server-side; AAR Studio and the SPA call these instead of Azure browser-direct. When org context is present the aiEnabled entitlement is required; the monthly allowance (aiIncludedSessions) is metered in sessions and enforced at the speech-token endpoint.",
-      "authentication": "JWT bearer (org context optional — no org context passes through, consistent with entitlement back-compat)",
+      "description": "Server-side AI gateway. Provider credentials live server-side; AAR Studio and the SPA call these instead of Azure browser-direct. When org context is present the aiEnabled entitlement is required; the monthly allowance (aiIncludedSessions) is metered in sessions and enforced at the speech-token endpoint. Anonymous calls (no org context) pass through deliberately — AAR Studio is local-first and usable signed-out (A2) — bounded instead by a dedicated per-IP aiRateLimiter (MASTER_PLAN Q31 / review F4), tighter than the general apiRateLimiter.",
+      "authentication": "JWT bearer (org context optional — no org context passes through, consistent with entitlement back-compat); all routes behind aiRateLimiter (30 req / 5 min per IP, tighter than the general apiRateLimiter)",
       "POST /api/ai/chat": {
         "method": "POST",
         "path": "/api/ai/chat",

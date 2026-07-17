@@ -23,6 +23,7 @@ import { logger } from '../services/logger';
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '300000', 10); // 5 minutes
 const RATE_LIMIT_API_MAX = parseInt(process.env.RATE_LIMIT_API_MAX || '84', 10); // ~1,000 requests/hour spread over 5-minute windows
 const RATE_LIMIT_AUTH_MAX = parseInt(process.env.RATE_LIMIT_AUTH_MAX || '5', 10);
+const RATE_LIMIT_AI_MAX = parseInt(process.env.RATE_LIMIT_AI_MAX || '30', 10); // per-IP cap on the LLM/speech cost surface
 
 /**
  * Custom key generator that extracts clean IP address from request
@@ -147,6 +148,39 @@ export const sensitiveActionRateLimiter = rateLimit({
     res.status(429).json({
       error: 'Too many requests',
       message: 'You have exceeded the rate limit. Please try again later.',
+      retryAfter,
+    });
+  },
+});
+
+/**
+ * Rate limiter for the AI gateway (`/api/ai/*`). Chat/report/speech-token
+ * calls proxy a paid Azure OpenAI/Speech backend and are reachable without a
+ * session (anonymous AAR Studio use is a deliberate, local-first product
+ * feature — see A2), so the generous general-purpose `apiRateLimiter` isn't
+ * enough of a bound on cost/abuse for this specific surface (review F4 /
+ * MASTER_PLAN Q31). Much tighter per-IP cap than `apiRateLimiter`, applied
+ * instead of it on the `/api/ai` mount.
+ */
+export const aiRateLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: RATE_LIMIT_AI_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many AI requests from this IP, please try again later.',
+  keyGenerator: getClientIp,
+  validate: { keyGeneratorIpFallback: false },
+  handler: (req, res) => {
+    const retryAfter = res.getHeader('RateLimit-Reset');
+    logger.warn('AI gateway rate limit exceeded', {
+      clientIp: getClientIp(req),
+      path: req.path,
+      method: req.method,
+      requestId: req.id,
+    });
+    res.status(429).json({
+      error: 'Too many requests',
+      message: 'You have exceeded the AI request rate limit. Please try again later.',
       retryAfter,
     });
   },

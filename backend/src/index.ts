@@ -82,7 +82,7 @@ import { getRFSFacilitiesParser } from './services/rfsFacilitiesParser';
 import { getVersionInfo } from './services/version';
 import { seedDemoStationIfNeeded } from './services/demoStationSeeder';
 import { seedStandardVehicleTypesIfNeeded } from './services/standardVehicleTypeSeeder';
-import { apiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
+import { apiRateLimiter, aiRateLimiter, spaRateLimiter } from './middleware/rateLimiter';
 import { requireFeature } from './middleware/entitlements';
 import { requireSession } from './middleware/flexibleAuth';
 import { kioskModeMiddleware } from './middleware/kioskModeMiddleware';
@@ -453,7 +453,7 @@ app.use('/api/facilities', apiRateLimiter, facilitiesRouter);
 // Platform admin (PLATFORM_ADMIN_USERNAMES allowlist): claim-conflict review.
 app.use('/api/platform', apiRateLimiter, platformRouter);
 app.use('/api/billing', apiRateLimiter, billingRouter);
-app.use('/api/ai', apiRateLimiter, aiRouter);
+app.use('/api/ai', aiRateLimiter, aiRouter);
 app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'), aarSessionsRouter);
 // requireSession({ readsOnly:true }) closes the anonymous data-exposure hole
 // (UAT 2026-06-22): reads on members/truck-checks/reports now require a signed-in
