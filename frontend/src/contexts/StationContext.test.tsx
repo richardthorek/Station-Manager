@@ -137,13 +137,47 @@ describe('StationContext', () => {
 
   it('should default to null station when no selection', async () => {
     const { result } = await renderStationHook();
-    
+
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
-    
+
     expect(result.current.selectedStation).toBe(null);
     expect(setCurrentStationId).toHaveBeenCalledWith(null);
+  });
+
+  it('resolves to the demo station when demo mode is active (Q34, found 2026-07-17)', async () => {
+    // Without this, currentStationId stayed null for an anonymous demo
+    // visitor, so no X-Station-Id header was ever sent and requireSession's
+    // demo bypass (which requires the request to explicitly target
+    // DEMO_STATION_ID) never matched — every requireSession-gated read
+    // 401'd for a signed-out demo visitor.
+    sessionStorage.setItem('demoMode', 'true');
+    const demoStation = mockStations.find((s) => s.id === DEMO_STATION_ID)!;
+    vi.mocked(api.getDemoStation).mockResolvedValue(demoStation);
+
+    const { result } = await renderStationHook();
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(api.getDemoStation).toHaveBeenCalled();
+    expect(result.current.selectedStation).toEqual(demoStation);
+    expect(setCurrentStationId).toHaveBeenCalledWith(DEMO_STATION_ID);
+  });
+
+  it('falls back to no station if the demo-station lookup fails, without blocking load', async () => {
+    sessionStorage.setItem('demoMode', 'true');
+    vi.mocked(api.getDemoStation).mockRejectedValue(new Error('network error'));
+
+    const { result } = await renderStationHook();
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.selectedStation).toBe(null);
   });
 
   it('should restore station selection from localStorage', async () => {

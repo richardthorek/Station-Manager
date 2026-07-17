@@ -464,9 +464,18 @@ app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'),
 // Public activation routes must be mounted before requireSession so no token is required
 app.use('/api/members', apiRateLimiter, memberActivationRouter);
 app.use('/api/members', apiRateLimiter, requireSession({ readsOnly: true }), membersRouter);
-app.use('/api/activities', apiRateLimiter, activitiesRouter);
-app.use('/api/checkins', apiRateLimiter, requireFeature('signInEnabled'), checkinsRouter);
-app.use('/api/events', apiRateLimiter, requireFeature('signInEnabled'), eventsRouter);
+// AC-4 walk-up sweep (2026-07-17): activities/checkins/events relied solely on
+// their internal flexibleAuth, which only enforces auth when
+// ENABLE_DATA_PROTECTION=true — the same env-conditional footgun Q29 flagged
+// for REQUIRE_AUTH. checkins/events in particular return member names, ranks,
+// check-in timestamps and location (EventParticipant/CheckIn) — the same
+// class of anonymous PII leak the F1 fix closed on members/reports/truck-checks,
+// just not caught by that sweep. requireSession (readsOnly) is unconditional,
+// so reads are gated regardless of that env var; kiosk writes (check-in,
+// event create/end, participant add) keep their existing pass-through.
+app.use('/api/activities', apiRateLimiter, requireSession({ readsOnly: true }), activitiesRouter);
+app.use('/api/checkins', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('signInEnabled'), checkinsRouter);
+app.use('/api/events', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('signInEnabled'), eventsRouter);
 app.use('/api/stations', apiRateLimiter, stationsRouter);
 app.use('/api/truck-checks', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('truckCheckEnabled'), truckChecksRouter);
 app.use('/api/reports', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('reportsEnabled'), reportsRouter);

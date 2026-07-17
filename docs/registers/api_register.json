@@ -1881,7 +1881,7 @@
       "method": "GET",
       "path": "/api/activities",
       "description": "Get all activities (default + custom)",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -1973,7 +1973,7 @@
       "method": "GET",
       "path": "/api/activities/active",
       "description": "Get currently active activity for station",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2126,7 +2126,7 @@
       "method": "GET",
       "path": "/api/checkins",
       "description": "Get all check-ins (both active and inactive)",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2162,7 +2162,7 @@
       "method": "GET",
       "path": "/api/checkins/active",
       "description": "Get all currently active check-ins",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2458,7 +2458,7 @@
       "method": "GET",
       "path": "/api/events",
       "description": "Get all events (active and historical)",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2494,7 +2494,7 @@
       "method": "GET",
       "path": "/api/events/active",
       "description": "Get currently active events",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2530,7 +2530,7 @@
       "method": "GET",
       "path": "/api/events/:id",
       "description": "Get event with participants",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {
         "path": {
           "id": {
@@ -3153,7 +3153,7 @@
       "method": "GET",
       "path": "/api/events/:eventId/audit",
       "description": "Get audit log of all participant additions and removals for an event. Returns chronological sequence of membership changes.",
-      "authentication": "none",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {
         "path": {
           "eventId": {

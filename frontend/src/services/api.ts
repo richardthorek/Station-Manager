@@ -153,7 +153,10 @@ class ApiService {
   }
 
   async getDemoStation(): Promise<Station> {
-    const response = await fetch(`${API_BASE_URL}/stations/demo`, {
+    // Not GET /stations/demo — the real id is 'demo-station' (StationContext's
+    // DEMO_STATION_ID); GET /stations/:id treats "demo" as a literal id, which
+    // never matches, so this always 404'd (found 2026-07-17 while fixing Q34).
+    const response = await fetch(`${API_BASE_URL}/stations/demo-station`, {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch demo station');
