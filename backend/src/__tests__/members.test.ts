@@ -14,6 +14,7 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import membersRouter from '../routes/members';
 import { ensureDatabase } from '../services/dbFactory';
+import { authHeader } from './helpers/authHelpers';
 
 let app: Express;
 
@@ -507,6 +508,75 @@ Jane,Smith,,`;
       expect(response.body.successCount).toBeGreaterThan(0);
       expect(response.body.failureCount).toBeGreaterThan(0);
       expect(response.body.failed.length).toBeGreaterThan(0);
+    });
+  });
+
+  // Found 2026-07-17 investigating Q9: an authenticated admin JWT got
+  // "Member not found" for any member whose station didn't match whatever
+  // X-Station-Id the client happened to have selected (or none at all, e.g.
+  // a deep link to /profile/:memberId) — even for a member in the admin's
+  // own organization. Member ids are already globally unique, so a valid
+  // org JWT should be able to look a member up directly by id.
+  describe('Cross-station access for an authenticated org JWT', () => {
+    it('allows a JWT to reach a member on a different station within the same org', async () => {
+      const db = await ensureDatabase();
+      const orgA = 'org-a-' + Date.now();
+      const stationA = await db.createStation({
+        name: 'Station A', brigadeName: 'Brigade A', brigadeId: 'brigade-a',
+        hierarchy: { jurisdiction: 'NSW', district: 'D', area: 'A', brigade: 'Brigade A', station: 'Station A' },
+        location: { address: '1 A St' },
+        isActive: true,
+        organizationId: orgA,
+      });
+      const member = await db.createMember('Cross Station Member', { stationId: stationA.id });
+
+      const response = await request(app)
+        .get(`/api/members/${member.id}`)
+        // No X-Station-Id header at all — simulates a deep link with no prior station context.
+        .set(authHeader('admin', orgA))
+        .expect(200);
+
+      expect(response.body.id).toBe(member.id);
+
+      const historyResponse = await request(app)
+        .get(`/api/members/${member.id}/history`)
+        .set(authHeader('admin', orgA))
+        .expect(200);
+      expect(Array.isArray(historyResponse.body)).toBe(true);
+    });
+
+    it('still 404s a member belonging to a different organization', async () => {
+      const db = await ensureDatabase();
+      const orgB = 'org-b-' + Date.now();
+      const stationB = await db.createStation({
+        name: 'Station B', brigadeName: 'Brigade B', brigadeId: 'brigade-b',
+        hierarchy: { jurisdiction: 'NSW', district: 'D', area: 'A', brigade: 'Brigade B', station: 'Station B' },
+        location: { address: '1 B St' },
+        isActive: true,
+        organizationId: orgB,
+      });
+      const member = await db.createMember('Other Org Member', { stationId: stationB.id });
+
+      await request(app)
+        .get(`/api/members/${member.id}`)
+        .set(authHeader('admin', 'a-totally-different-org'))
+        .expect(404);
+    });
+
+    it('still 404s a cross-station member when the JWT carries no organizationId', async () => {
+      const db = await ensureDatabase();
+      const stationC = await db.createStation({
+        name: 'Station C', brigadeName: 'Brigade C', brigadeId: 'brigade-c',
+        hierarchy: { jurisdiction: 'NSW', district: 'D', area: 'A', brigade: 'Brigade C', station: 'Station C' },
+        location: { address: '1 C St' },
+        isActive: true,
+      });
+      const member = await db.createMember('No Org Context Member', { stationId: stationC.id });
+
+      await request(app)
+        .get(`/api/members/${member.id}`)
+        .set(authHeader('admin')) // no organizationId in the token
+        .expect(404);
     });
   });
 });

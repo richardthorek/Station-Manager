@@ -856,8 +856,8 @@
       "GET /api/members/:id": {
         "method": "GET",
         "path": "/api/members/:id",
-        "description": "Get specific member by ID",
-        "authentication": "none",
+        "description": "Get specific member by ID. Requires a session (requireSession — admin JWT/brigade-token/member-session, or the public demo station). Station-scoped for brigade-token/member-session callers; an admin JWT instead matches on organizationId (Q9, 2026-07-17) so a deep link works regardless of the caller's currently-selected station.",
+        "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
         "parameters": {
           "path": {
             "id": {
@@ -1010,7 +1010,7 @@
     "POST /api/members/:id/invite": {
       "method": "POST",
       "path": "/api/members/:id/invite",
-      "description": "Generate a one-time activation invite URL for a member (admin-only). Sets authStatus='invited' and inviteToken on the member. The returned inviteUrl points to /activate/:token. Token is consumed on first successful activation.",
+      "description": "Generate a one-time activation invite URL for a member (admin-only). Sets authStatus='invited' and inviteToken on the member. The returned inviteUrl points to /activate/:token. Token is consumed on first successful activation. Station-scoped, with the same organizationId-based cross-station allowance for admin JWTs as GET /api/members/:id (Q9, 2026-07-17).",
       "authentication": "JWT (admin or owner)",
       "parameters": {
         "path": {
@@ -1177,8 +1177,8 @@
     "DELETE /api/members/:id": {
       "method": "DELETE",
       "path": "/api/members/:id",
-      "description": "Soft delete a member (mark inactive, hide from UI, retain history)",
-      "authentication": "none",
+      "description": "Soft delete a member (mark inactive, hide from UI, retain history). Station-scoped, with the same organizationId-based cross-station allowance for admin JWTs as GET /api/members/:id (Q9, 2026-07-17). Note: not itself behind requireSession (non-GET/HEAD, so only gated when ENABLE_DATA_PROTECTION=true) — kiosk write-path pass-through, matching the rest of the write surface.",
+      "authentication": "flexibleAuth (station scope) when ENABLE_DATA_PROTECTION=true",
       "parameters": {
         "path": {
           "id": {
@@ -1230,8 +1230,8 @@
     "GET /api/members/:id/history": {
       "method": "GET",
       "path": "/api/members/:id/history",
-      "description": "Get member's check-in history",
-      "authentication": "none",
+      "description": "Get member's check-in history. Requires a session (requireSession); same organizationId-based cross-station allowance for admin JWTs as GET /api/members/:id (Q9, 2026-07-17).",
+      "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
       "parameters": {
         "path": {
           "id": {

@@ -92,7 +92,13 @@ function AnimatedRoutes() {
             or the demo), then the signInEnabled entitlement (maintenance-only brigades can hide it) */}
         <Route path="/signin" element={<AccessRoute><FeatureRoute feature="signInEnabled" title="Sign-in book"><SignInPage /></FeatureRoute></AccessRoute>} />
         <Route path="/sign-in" element={<SignInLinkPage />} />
-        <Route path="/profile/:memberId" element={<UserProfilePage />} />
+        {/* Member profile — AccessRoute gated (found 2026-07-17, Q9 follow-up):
+            a bare/anonymous visit must not reach full profile data (edit/delete,
+            check-in history, achievements). Someone with no credential at all
+            gets sent to the front door instead of a broken "Failed to load"
+            error; the personal QR/sign-in link (`/sign-in`) is the intended
+            walk-up entry point for a cold visitor. */}
+        <Route path="/profile/:memberId" element={<AccessRoute><UserProfilePage /></AccessRoute>} />
 
         {/* Truck Check (v1.1) — AccessRoute first (AC-3: a brigade device/kiosk
             token, an account, a share link's device token, or the demo — never

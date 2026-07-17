@@ -32,16 +32,61 @@ import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 import { enforceMemberLimit } from '../middleware/entitlements';
 import { getEffectiveStationId } from '../constants/stations';
-import { flexibleAuth } from '../middleware/flexibleAuth';
+import { flexibleAuth, verifyJwtAuthResult } from '../middleware/flexibleAuth';
 import { authMiddleware, requireAdmin } from '../middleware/auth';
 import { ensureAdminUserDatabase } from '../services/adminUserDbFactory';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../services/logger';
+import type { ensureDatabase as EnsureDatabase } from '../services/dbFactory';
 
 const router = Router();
 
 function memberMatchesStation(member: { stationId?: string }, stationId: string): boolean {
   return getEffectiveStationId(member.stationId) === getEffectiveStationId(stationId);
+}
+
+/**
+ * A signed-in admin JWT's organization, read directly off the Authorization
+ * header — independent of flexibleAuth/requireSession, whose auth checks are
+ * conditionally skipped (ENABLE_DATA_PROTECTION unset, or non-GET methods on
+ * requireSession's readsOnly gate). Granting broader access to a *verified*
+ * credential is safe to evaluate unconditionally; it never widens what an
+ * anonymous caller can do.
+ */
+function getJwtOrganizationId(req: Request): string | undefined {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return undefined;
+  }
+  return verifyJwtAuthResult(authHeader.substring(7))?.organizationId;
+}
+
+/**
+ * Whether `member` is reachable by this request: either it belongs to the
+ * request's currently-selected station (the existing kiosk/brigade-token
+ * model — those credentials are inherently station-scoped), or the caller
+ * holds a valid admin JWT for the same organization the member's station
+ * belongs to (an org admin can look up any of their org's members directly
+ * by id, regardless of which station happens to be selected client-side —
+ * ids are already globally unique, so the station match was never a real
+ * security boundary for JWT callers, just an accidental one from a client
+ * that hadn't set X-Station-Id to match).
+ */
+async function isMemberAccessible(
+  db: Awaited<ReturnType<typeof EnsureDatabase>>,
+  member: { stationId?: string },
+  stationId: string,
+  req: Request
+): Promise<boolean> {
+  if (memberMatchesStation(member, stationId)) {
+    return true;
+  }
+  const organizationId = getJwtOrganizationId(req);
+  if (!organizationId || !member.stationId) {
+    return false;
+  }
+  const station = await db.getStationById(member.stationId);
+  return !!station && station.organizationId === organizationId;
 }
 
 // Configure multer for CSV upload (memory storage)
@@ -98,12 +143,12 @@ router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
-    if (!memberMatchesStation(member, stationId)) {
+    if (!(await isMemberAccessible(db, member, stationId, req))) {
       return res.status(404).json({ error: 'Member not found' });
     }
     res.json(member);
   } catch (error) {
-    logger.error('Error fetching member', { 
+    logger.error('Error fetching member', {
       error, 
       memberId: req.params.id,
       requestId: req.id,
@@ -190,7 +235,7 @@ router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Req
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
     const existing = await db.getMemberById(req.params.id);
-    if (!existing || !memberMatchesStation(existing, stationId)) {
+    if (!existing || !(await isMemberAccessible(db, existing, stationId, req))) {
       return res.status(404).json({ error: 'Member not found' });
     }
     const { name, rank, membershipStartDate } = req.body;
@@ -235,7 +280,7 @@ router.get('/:id/history', validateMemberId, handleValidationErrors, async (req:
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
-    if (!memberMatchesStation(member, stationId)) {
+    if (!(await isMemberAccessible(db, member, stationId, req))) {
       return res.status(404).json({ error: 'Member not found' });
     }
     // Check-ins are filtered by the member's station (member already filtered by getMemberById)
@@ -451,7 +496,7 @@ router.post('/:id/invite', authMiddleware, requireAdmin, validateMemberId, handl
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
     const member = await db.getMemberById(req.params.id);
-    if (!member || !memberMatchesStation(member, stationId)) {
+    if (!member || !(await isMemberAccessible(db, member, stationId, req))) {
       return res.status(404).json({ error: 'Member not found' });
     }
     const token = uuidv4();
@@ -480,7 +525,7 @@ router.delete('/:id', validateMemberId, handleValidationErrors, async (req: Requ
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
     const existing = await db.getMemberById(req.params.id);
-    if (!existing || !memberMatchesStation(existing, stationId)) {
+    if (!existing || !(await isMemberAccessible(db, existing, stationId, req))) {
       return res.status(404).json({ error: 'Member not found' });
     }
     const deleted = await db.deleteMember(req.params.id);
