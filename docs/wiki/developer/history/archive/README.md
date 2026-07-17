@@ -18,7 +18,7 @@ Documents are moved here when they are no longer current, have been superseded b
 
 These were standalone planning/design documents. Per the "one plan" policy, their
 forward work was consolidated into the **Consolidation & Standardisation Roadmap**
-in [`docs/MASTER_PLAN.md`](../MASTER_PLAN.md). They remain here for their detailed
+in [`docs/MASTER_PLAN.md`](../../../../MASTER_PLAN.md). They remain here for their detailed
 design content (schemas, pricing analysis, tool contracts) as reference only — they
 are **not** live plans.
 - **CONSOLIDATION_REVIEW.md** - cross-app coherence analysis, AI-gateway direction
@@ -76,7 +76,7 @@ are **not** live plans.
 - **TABLE_STORAGE_DEPLOYMENT_CHECKLIST.md** - Cosmos→Table Storage cutover checklist (completed; archived June 2026)
 - **COSMOS_DB_OPTIMIZATION_GUIDE.md** - Cosmos DB RU/cost optimization (superseded by the Table Storage migration; archived June 2026)
 
-**Note:** These documents describe analysis and planning for migrating to Azure Table Storage. The migration was successfully completed in January 2026. For current storage implementation, see [AS_BUILT.md](../AS_BUILT.md).
+**Note:** These documents describe analysis and planning for migrating to Azure Table Storage. The migration was successfully completed in January 2026. For current storage implementation, see [architecture.md](../../architecture.md).
 
 ### Historical Deployment Guides (Superseded)
 
@@ -84,8 +84,9 @@ are **not** live plans.
 - **DEPLOYMENT_FIX.md** - Deployment workflow fixes
 - **PRODUCTION_DATABASE_FIX.md** - Production database connectivity fixes
 - **AZURE_RESOURCE_CONFIGURATION.md** - Initial Azure resource configuration
+- **deployment-optimization.md** - v2.0 "pre-install node_modules" deploy strategy, written when prod was still Windows/IIS (archived 2026-07-17, Q6 — the strategy and OS it describes are both superseded)
 
-**Note:** For current deployment procedures, see [AZURE_DEPLOYMENT.md](../AZURE_DEPLOYMENT.md).
+**Note:** For current deployment procedures, see [deployment.md](../../deployment.md).
 
 ### Project Reviews & Summaries
 
@@ -117,23 +118,22 @@ Point-in-time fix write-ups and code audits whose work is complete and merged:
 For current, up-to-date documentation, please refer to:
 
 ### Core Documents
-- [MASTER_PLAN.md](../MASTER_PLAN.md) - **Single source of truth** for planning and roadmap
-- [AS_BUILT.md](../AS_BUILT.md) - Current system architecture and implementation
-- [API_DOCUMENTATION.md](../API_DOCUMENTATION.md) - API reference documentation
+- [MASTER_PLAN.md](../../../../MASTER_PLAN.md) - **Single source of truth** for planning and roadmap
+- [architecture.md](../../architecture.md) - Current system architecture and implementation
+- [api-reference.md](../../api-reference.md) - API reference documentation
 
 ### Guides
-- [GETTING_STARTED.md](../GETTING_STARTED.md) - Local development setup
-- [FEATURE_DEVELOPMENT_GUIDE.md](../FEATURE_DEVELOPMENT_GUIDE.md) - How to add features
-- [AZURE_DEPLOYMENT.md](../AZURE_DEPLOYMENT.md) - Current deployment guide
-- [AZURE_DEPLOYMENT_OPTIMIZATION.md](../AZURE_DEPLOYMENT_OPTIMIZATION.md) - Deployment optimization strategies
+- [getting-started.md](../../getting-started.md) - Local development setup
+- [feature-development.md](../../feature-development.md) - How to add features
+- [deployment.md](../../deployment.md) - Current deployment guide
 
 ### Implementation Notes
 - [implementation-notes/](../implementation-notes/) - Detailed technical references and configuration guides
 
 ### Active Features
-- [ACHIEVEMENTS.md](../ACHIEVEMENTS.md) - Gamification system documentation
-- [KEYBOARD_SHORTCUTS.md](../KEYBOARD_SHORTCUTS.md) - User keyboard shortcuts
-- [SCREEN_READER_GUIDE.md](../SCREEN_READER_GUIDE.md) - Accessibility user guide
+- [achievements.md](../../../user-guide/achievements.md) - Gamification system documentation
+- [keyboard-shortcuts.md](../../../user-guide/keyboard-shortcuts.md) - User keyboard shortcuts
+- [screen-reader-guide.md](../../../user-guide/screen-reader-guide.md) - Accessibility user guide
 
 ## Why Are These Archived?
 

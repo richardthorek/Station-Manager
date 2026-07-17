@@ -32,8 +32,7 @@ longer-form material.
 | Page | What it covers |
 |---|---|
 | [deployment.md](deployment.md) | Azure deployment guide |
-| [deployment-optimization.md](deployment-optimization.md) | Deploy performance notes *(some pre-Linux-migration framing is stale — see plan Q7)* |
-| [ci-pipeline.md](ci-pipeline.md) | CI/CD pipeline gates and behaviour *(same staleness caveat)* |
+| [ci-pipeline.md](ci-pipeline.md) | CI/CD pipeline gates and behaviour |
 | [app-insights.md](app-insights.md) | Azure Application Insights setup |
 | [post-deployment-testing.md](post-deployment-testing.md) | Post-deploy smoke tests against production |
 | [qa-walkthrough.md](qa-walkthrough.md) | Browser-driven manual QA script |
