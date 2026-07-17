@@ -1,10 +1,26 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useStation } from '../contexts/StationContext';
+import { getKioskToken } from '../utils/kioskMode';
+import { getMemberSessionToken } from '../utils/memberSession';
 
 // Use current location in production, localhost in development
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ||
   (import.meta.env.PROD ? window.location.origin : 'http://localhost:3000');
+
+/**
+ * Whichever credential this device currently holds (admin JWT, kiosk/brigade
+ * token, or a personal-link member session), for the server to verify on
+ * join-station (review F7 — join-station previously accepted any
+ * client-claimed stationId with no credential at all).
+ */
+function buildJoinCredentials() {
+  return {
+    authToken: localStorage.getItem('auth_token') ?? undefined,
+    brigadeToken: getKioskToken() ?? undefined,
+    memberSessionToken: getMemberSessionToken() ?? undefined,
+  };
+}
 
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
@@ -32,7 +48,8 @@ export function useSocket() {
         console.log('Joining station room:', selectedStation.id);
         socket.emit('join-station', {
           stationId: selectedStation.id,
-          brigadeId: selectedStation.brigadeId
+          brigadeId: selectedStation.brigadeId,
+          ...buildJoinCredentials(),
         });
       }
     });
@@ -62,7 +79,8 @@ export function useSocket() {
       console.log('Station changed, joining new room:', selectedStation.id);
       socketRef.current.emit('join-station', {
         stationId: selectedStation.id,
-        brigadeId: selectedStation.brigadeId
+        brigadeId: selectedStation.brigadeId,
+        ...buildJoinCredentials(),
       });
     }
   }, [selectedStation, isConnected]);

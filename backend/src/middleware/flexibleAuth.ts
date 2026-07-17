@@ -30,7 +30,7 @@ const ENABLE_DATA_PROTECTION = process.env.ENABLE_DATA_PROTECTION === 'true';
 /**
  * Authorization result with credential type and access scope
  */
-interface AuthResult {
+export interface AuthResult {
   authenticated: boolean;
   credentialType: 'jwt' | 'brigade-token' | 'member-session' | 'none';
   userId?: string;
@@ -58,16 +58,12 @@ interface FlexibleAuthOptions {
 }
 
 /**
- * Extract and validate JWT token from Authorization header
+ * Verify a raw JWT string (no Express dependency) — the pure form reused by
+ * both `validateJWT` (Express request) and the Socket.io `join-station`
+ * handler (review F7), so both surfaces trust exactly the same credential.
  */
-function validateJWT(req: Request): AuthResult | null {
+export function verifyJwtAuthResult(token: string): AuthResult | null {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-
-    const token = authHeader.substring(7); // Remove "Bearer "
     const decoded = jwt.verify(token, JWT_SECRET) as {
       userId: string;
       username: string;
@@ -82,25 +78,30 @@ function validateJWT(req: Request): AuthResult | null {
       role: decoded.role,
     };
   } catch (error) {
-    // Token validation failed
     return null;
   }
 }
 
 /**
- * Extract and validate Brigade Access Token from headers or query
+ * Extract and validate JWT token from Authorization header
  */
-async function validateBrigadeToken(req: Request): Promise<AuthResult | null> {
+function validateJWT(req: Request): AuthResult | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  return verifyJwtAuthResult(authHeader.substring(7)); // Remove "Bearer "
+}
+
+/**
+ * Resolve a raw brigade/kiosk access token string (no Express dependency) —
+ * the pure form reused by `validateBrigadeToken` and the Socket.io
+ * `join-station` handler (review F7).
+ */
+export async function resolveBrigadeTokenAuthResult(token: string): Promise<AuthResult | null> {
   try {
-    // Check X-Brigade-Token header first, then query param
-    const token = req.headers['x-brigade-token'] as string || req.query.brigadeToken as string;
-    
-    if (!token) {
-      return null;
-    }
-
     const resolved = await resolveKioskAccess(token);
-
     if (!resolved) {
       return null;
     }
@@ -117,19 +118,30 @@ async function validateBrigadeToken(req: Request): Promise<AuthResult | null> {
 }
 
 /**
- * Extract and validate a member-session token (AC-1) from the X-Member-Session
- * header. Minted by POST /api/checkins/url-checkin when a member checks in via
- * their personal link, so the same visitor can then read that station's live
- * book (grid, active event) without a full admin/kiosk credential. Station-wide
- * read scope, same as a brigade/kiosk token — never elevates beyond that.
+ * Extract and validate Brigade Access Token from headers or query
  */
-function validateMemberSession(req: Request): AuthResult | null {
-  try {
-    const token = req.headers['x-member-session'] as string | undefined;
-    if (!token) {
-      return null;
-    }
+async function validateBrigadeToken(req: Request): Promise<AuthResult | null> {
+  // Check X-Brigade-Token header first, then query param
+  const token = req.headers['x-brigade-token'] as string || req.query.brigadeToken as string;
 
+  if (!token) {
+    return null;
+  }
+
+  return resolveBrigadeTokenAuthResult(token);
+}
+
+/**
+ * Verify a raw member-session token string (no Express dependency) — the pure
+ * form reused by `validateMemberSession` and the Socket.io `join-station`
+ * handler (review F7). Minted by POST /api/checkins/url-checkin when a member
+ * checks in via their personal link, so the same visitor can then read that
+ * station's live book (grid, active event) without a full admin/kiosk
+ * credential. Station-wide read scope, same as a brigade/kiosk token — never
+ * elevates beyond that.
+ */
+export function verifyMemberSessionAuthResult(token: string): AuthResult | null {
+  try {
     const decoded = jwt.verify(token, JWT_SECRET) as MemberSessionClaims;
     if (decoded.credentialType !== 'member-session' || !decoded.stationId) {
       return null;
@@ -145,6 +157,19 @@ function validateMemberSession(req: Request): AuthResult | null {
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * Extract and validate a member-session token (AC-1) from the X-Member-Session
+ * header.
+ */
+function validateMemberSession(req: Request): AuthResult | null {
+  const token = req.headers['x-member-session'] as string | undefined;
+  if (!token) {
+    return null;
+  }
+
+  return verifyMemberSessionAuthResult(token);
 }
 
 /**
