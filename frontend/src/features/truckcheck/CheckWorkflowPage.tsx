@@ -4,13 +4,14 @@ import { motion } from 'framer-motion';
 import {
   Moon, Sun, Check, CircleCheckBig, TriangleAlert, Users, PartyPopper, Search, Camera, Upload,
   Wrench, Droplet, CircleGauge, Lightbulb, ShowerHead, Radio, Fuel, BatteryFull,
-  FlameKindling, HeartPulse, Settings2,
+  FlameKindling, HeartPulse, Settings2, Share2,
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import { Lightbox } from '../../components/Lightbox';
 import { Confetti } from '../../components/Confetti';
+import { TruckCheckShareModal } from './TruckCheckShareModal';
 import type { Appliance, ChecklistTemplate, CheckRun, CheckResult, CheckStatus, Member } from '../../types';
 import './CheckWorkflow.css';
 
@@ -19,7 +20,9 @@ export function CheckWorkflowPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { on, off } = useSocket();
-  
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareStation, setShareStation] = useState<{ id: string; brigadeId: string } | null>(null);
+
   const [appliance, setAppliance] = useState<Appliance | null>(null);
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
   const [checkRun, setCheckRun] = useState<CheckRun | null>(null);
@@ -143,6 +146,12 @@ export function CheckWorkflowPage() {
       setAppliance(applianceData);
       // Roster for member attribution (best-effort; free-text fallback if it fails).
       api.getMembers().then(setMembers).catch(() => setMembers([]));
+      // The vehicle's own station (not the global station-selector context,
+      // which this per-appliance workflow page doesn't set) — needed for the
+      // AC-3 share link.
+      api.getStation(applianceData.stationId || 'default-station')
+        .then((station) => setShareStation({ id: station.id, brigadeId: station.brigadeId }))
+        .catch(() => setShareStation(null));
       setTemplate({
         id: applianceId!,
         applianceId: checklist.applianceId,
@@ -464,12 +473,30 @@ export function CheckWorkflowPage() {
           onClose={() => setLightboxImage(null)}
         />
       )}
+      {showShareModal && applianceId && shareStation && (
+        <TruckCheckShareModal
+          applianceId={applianceId}
+          stationId={shareStation.id}
+          brigadeId={shareStation.brigadeId}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
       <header className="workflow-header">
         <div className="header-top">
           <Link to="/truckcheck" className="back-link">← Cancel</Link>
-          <button className="theme-toggle-btn" onClick={toggleTheme}>
-            {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
-          </button>
+          <div className="header-actions">
+            <button
+              className="theme-toggle-btn"
+              onClick={() => setShowShareModal(true)}
+              aria-label="Share this check"
+              title="Share this check"
+            >
+              <Share2 size={20} strokeWidth={2} aria-hidden />
+            </button>
+            <button className="theme-toggle-btn" onClick={toggleTheme}>
+              {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
+            </button>
+          </div>
         </div>
         <h1>{appliance.name} Check</h1>
         

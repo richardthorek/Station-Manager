@@ -102,6 +102,7 @@ import { initializeApplianceEquipmentDatabase } from './services/applianceEquipm
 import { initializeAgentSessionDatabase } from './services/agentSessionDbFactory';
 import { agentCheckRouter, attachAgentCheckWs } from './routes/agentCheck';
 import { allowedOriginsList } from './utils/allowedOrigins';
+import { CORS_ALLOWED_HEADERS } from './config/corsHeaders';
 import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
 import { registerStationSocketHandlers, type SocketWithStation } from './services/stationSocketHandlers';
@@ -243,7 +244,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID'],
+  allowedHeaders: CORS_ALLOWED_HEADERS,
 }));
 
 // Stripe webhook needs the raw (unparsed) body to verify its signature.

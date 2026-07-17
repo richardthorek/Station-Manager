@@ -1319,7 +1319,7 @@ Kiosk mode provides strict brigade/station locking for shared devices (iPads, ta
 - `components/StationSelector.tsx` - Shows locked UI in kiosk mode, disables dropdown
 
 **Frontend route guards (compose outer→inner):**
-- `components/AccessRoute.tsx` — "is this visitor allowed in at all?" Wraps the walk-up sign-in surface (`/signin`); allows a signed-in account, a brigade device code (kiosk `?brigade=<token>`), a member-session (AC-1, from checking in via a personal link), or the public demo, else redirects to the front door (`/`). Stricter than FeatureRoute (which is default-open with no org context).
+- `components/AccessRoute.tsx` — "is this visitor allowed in at all?" Wraps the walk-up sign-in surface (`/signin`) and, since AC-3 (2026-07-17), every `/truckcheck*` route; allows a signed-in account, a brigade device code (kiosk `?brigade=<token>`, including a truck-check share link — see `TruckCheckShareModal`), a member-session (AC-1, from checking in via a personal link), or the public demo, else redirects to the front door (`/`). Stricter than FeatureRoute (which is default-open with no org context).
 - `components/FeatureRoute.tsx` — "does this brigade's plan include the module?" (entitlement gate; default-open for kiosk/demo/back-compat).
 - `components/ProtectedRoute.tsx` — "is this an authenticated admin?" (auth gate for `/admin/*`).
 
@@ -2478,7 +2478,11 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID'],
+  // X-Brigade-Token (kiosk/device credential) and X-Member-Session (AC-1)
+  // added 2026-07-17 — missing them silently breaks any cross-origin caller
+  // using those credentials (invisible in prod today since the SPA and API
+  // share one origin). See backend/src/config/corsHeaders.ts.
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Station-Id', 'X-Request-ID', 'X-Brigade-Token', 'X-Member-Session'],
 }));
 
 // Socket.io CORS (matches Express CORS)

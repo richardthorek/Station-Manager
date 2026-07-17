@@ -1,0 +1,116 @@
+/* AC-3 — share-this-check modal (QR + link, no-login join) */
+
+.truck-check-share-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.truck-check-share-modal {
+  background: var(--bg-card, #fff);
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.22);
+  width: 100%;
+  max-width: 420px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.truck-check-share-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.truck-check-share-modal__header h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.truck-check-share-modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.truck-check-share-modal__close:hover {
+  background: var(--bg-secondary);
+}
+
+.truck-check-share-modal__hint {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.truck-check-share-modal__error {
+  color: var(--rfs-core-red);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.truck-check-share-modal__loading {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.truck-check-share-modal__qr {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.truck-check-share-modal__link-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.truck-check-share-modal__link-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.truck-check-share-modal__copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.9rem;
+  min-height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: var(--rfs-core-red);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.truck-check-share-modal__copy-btn:hover {
+  background: var(--rfs-core-red-dark);
+}
