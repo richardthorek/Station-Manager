@@ -30,6 +30,7 @@ import { handleValidationErrors } from '../middleware/validationHandler';
 import { stationMiddleware, getStationIdFromRequest } from '../middleware/stationMiddleware';
 import { getEffectiveStationId } from '../constants/stations';
 import { flexibleAuth } from '../middleware/flexibleAuth';
+import { authMiddleware, requireAdmin } from '../middleware/auth';
 import { logger } from '../services/logger';
 import { extractDeviceInfo, extractLocationInfo, sanitizeNotes } from '../utils/auditUtils';
 
@@ -514,8 +515,10 @@ router.delete('/:eventId', validateEventId, handleValidationErrors, async (req: 
 /**
  * Manual rollover trigger - deactivates all expired events
  * POST /api/events/admin/rollover
+ * Protected by authMiddleware + requireAdmin (review F6 — this state-changing
+ * admin route was previously unauthenticated).
  */
-router.post('/admin/rollover', async (req: Request, res: Response) => {
+router.post('/admin/rollover', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const deactivatedEventIds = await deactivateExpiredEvents(db);
