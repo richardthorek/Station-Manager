@@ -470,7 +470,14 @@ app.use('/api/truck-checks', apiRateLimiter, requireSession({ readsOnly: true })
 app.use('/api/reports', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('reportsEnabled'), reportsRouter);
 app.use('/api/brigade-access', apiRateLimiter, brigadeAccessRouter);
 app.use('/api/devices', apiRateLimiter, devicesRouter);
-app.use('/api/export', apiRateLimiter, requireFeature('reportsEnabled'), exportRouter);
+// Same anonymous-read gate as /api/reports above: the export endpoints return
+// the full member roster (name, rank, member number, QR check-in code) and
+// check-in/event/truck-check history as CSV. Without requireSession they were
+// reachable by fully credential-less callers — the same class of hole the
+// 2026-06-22 UAT fix closed on members/reports/truck-checks, but /api/export
+// was missed in that sweep. requireFeature alone does NOT gate anonymous
+// requests (it passes through when there is no org context).
+app.use('/api/export', apiRateLimiter, requireSession({ readsOnly: true }), requireFeature('reportsEnabled'), exportRouter);
 
 // Achievement routes (now handles database selection per-request based on demo mode)
 app.use('/api/achievements', apiRateLimiter, createAchievementRoutes());
