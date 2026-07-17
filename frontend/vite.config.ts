@@ -83,14 +83,18 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         // Ensure dev builds with minimal assets don't warn by allowing the generated SW bundle.
         // Also keep the rarely-used heavyweight chunks OUT of the install-time
-        // precache (vendor-export ~1.5 MB, vendor-charts ~430 KB, the QR
-        // scanner's html5-qrcode chunk ~370 KB) — a kiosk tablet on rural 4G
-        // shouldn't download export libraries it may never open. The
-        // assets-cache runtimeCaching rule below still caches them after
-        // first use (hashed filenames are immutable, so CacheFirst is safe).
+        // precache (the export chunks below split per format, Q20, so a user
+        // who exports Excel only downloads exceljs, not jsPDF too;
+        // vendor-charts ~430 KB, the QR scanner's html5-qrcode chunk
+        // ~370 KB) — a kiosk tablet on rural 4G shouldn't download export/
+        // CSV-import libraries it may never open. The assets-cache
+        // runtimeCaching rule below still caches them after first use
+        // (hashed filenames are immutable, so CacheFirst is safe).
         globIgnores: [
           '**/node_modules/**/*',
           '**/vendor-export-*.js',
+          '**/vendor-canvas-*.js',
+          '**/vendor-csv-import-*.js',
           '**/vendor-charts-*.js',
           '**/QRScannerModal-*.js',
         ],
@@ -205,7 +209,23 @@ export default defineConfig({
           if (id.includes('/node_modules/framer-motion/')) return 'vendor-motion';
           if (id.includes('/node_modules/socket.io-client/')) return 'vendor-socket';
           if (id.includes('/node_modules/date-fns/')) return 'vendor-date';
-          if (id.includes('/node_modules/exceljs/') || id.includes('/node_modules/jspdf/') || id.includes('/node_modules/html2canvas/') || id.includes('/node_modules/papaparse/')) return 'vendor-export';
+          // Q20: split per export format so choosing one doesn't download
+          // the others — exportUtils.pdf/.excel/.png.ts each only
+          // statically import the library their format needs, and
+          // exportUtils.lazy.ts dynamically imports the specific one.
+          // html2canvas is shared by PDF (embedded chart images) and PNG
+          // (chart-as-image) export, so it gets its own chunk rather than
+          // living inside either.
+          if (id.includes('/node_modules/exceljs/')) return 'vendor-export-excel';
+          if (id.includes('/node_modules/jspdf/')) return 'vendor-export-pdf';
+          if (id.includes('/node_modules/html2canvas/')) return 'vendor-canvas';
+          // papaparse is CSV *import* (BulkImportModal), unrelated to the
+          // export formats above — previously bundled into the same
+          // "vendor-export" chunk just because both start with "export"/
+          // "csv", so visiting /signin (which statically needs it) pulled
+          // in jsPDF/ExcelJS/html2canvas too even though sign-in never
+          // touches exports.
+          if (id.includes('/node_modules/papaparse/')) return 'vendor-csv-import';
         },
       },
     },

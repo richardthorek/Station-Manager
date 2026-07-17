@@ -1683,7 +1683,7 @@
       "GET /api/organizations/current/export": {
         "method": "GET",
         "path": "/api/organizations/current/export",
-        "description": "Downloads a JSON bundle of the org's stations, members, and event/attendance history (privacy/retention data export). Event history coverage is currently limited to roughly the last 3 months on the Table Storage backend (see MASTER_PLAN.md Q25) — does not yet include truck-check history or device records.",
+        "description": "Downloads a JSON bundle of the org's stations, members, and event/attendance history (privacy/retention data export). Event history is capped at the most recent 5000 events per station (Q25's 3-month scan cap was fixed 2026-07-17) — does not yet include truck-check history or device records (Q26).",
         "authentication": "JWT (owner only)",
         "rateLimit": "sensitive-action limiter",
         "responses": {

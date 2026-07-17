@@ -1,14 +1,11 @@
 /**
- * Export Utilities
+ * PDF Export Utility
  *
- * Functions for exporting reports in various formats:
- * - PDF with RFS branding
- * - Excel spreadsheet
- * - PNG chart images
+ * Split out of exportUtils.ts (Q20) so a PDF export doesn't also pull in
+ * ExcelJS. Still needs html2canvas to rasterize embedded charts.
  */
 
 import jsPDF from 'jspdf';
-import ExcelJS, { type FillPattern, type Row } from 'exceljs';
 import html2canvas from 'html2canvas';
 
 // RFS brand colors
@@ -204,130 +201,4 @@ export async function exportAsPDF(
   // Save PDF
   const filename = `RFS_${title.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
   pdf.save(filename);
-}
-
-/**
- * Export data as Excel spreadsheet
- */
-export async function exportAsExcel(
-  filename: string,
-  sheets: Array<{
-    name: string;
-    data: Array<Record<string, string | number | boolean | null | undefined>>;
-  }>
-): Promise<void> {
-  const workbook = new ExcelJS.Workbook();
-
-  // Set workbook properties
-  workbook.creator = 'RFS Station Manager';
-  workbook.created = new Date();
-
-  sheets.forEach((sheet) => {
-    const worksheet = workbook.addWorksheet(sheet.name);
-
-    if (sheet.data.length === 0) return;
-
-    // Get column headers from first row
-    const headers = Object.keys(sheet.data[0]);
-
-    // Set up columns with headers and width
-    worksheet.columns = headers.map((header) => ({
-      header: header,
-      key: header,
-      width: 20,
-    }));
-
-    // Style the header row
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE5281B' }, // RFS red
-    };
-    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }; // White text
-    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'left' };
-
-    // Add data rows
-    sheet.data.forEach((row) => {
-      worksheet.addRow(row);
-    });
-
-    // Add alternating row colors
-    worksheet.eachRow((row: Row, rowNumber: number) => {
-      if (rowNumber > 1 && rowNumber % 2 === 0) {
-        const fill: FillPattern = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFF5F5F5' }, // Light gray
-        };
-        row.fill = fill;
-      }
-    });
-
-    // Freeze header row
-    worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
-  });
-
-  // Generate Excel file and trigger download
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${filename}_${Date.now()}.xlsx`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-/**
- * Export chart as PNG image
- */
-export async function exportChartAsPNG(
-  elementId: string,
-  filename: string
-): Promise<void> {
-  const element = document.getElementById(elementId);
-  if (!element) {
-    throw new Error(`Element with id "${elementId}" not found`);
-  }
-
-  const canvas = await html2canvas(element, {
-    backgroundColor: '#ffffff',
-    scale: 2,
-  });
-
-  canvas.toBlob((blob) => {
-    if (blob) {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${filename}_${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
-  });
-}
-
-/**
- * Export all charts on page as PNG
- */
-export async function exportAllChartsAsPNG(
-  chartElements: Array<{ id: string; name: string }>
-): Promise<void> {
-  for (const chart of chartElements) {
-    try {
-      await exportChartAsPNG(chart.id, chart.name);
-      // Add small delay between exports
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    } catch (error) {
-      console.error(`Failed to export chart ${chart.name}:`, error);
-    }
-  }
 }

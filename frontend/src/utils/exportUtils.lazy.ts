@@ -5,9 +5,17 @@
  * (jsPDF, ExcelJS, html2canvas) to avoid loading them in the initial bundle.
  * The actual export functions are only loaded when the user attempts to export.
  *
+ * Q20 (2026-07-17): each format is dynamically imported from its own module
+ * (exportUtils.pdf/.excel/.png.ts, each with only that format's static
+ * imports) so choosing one export format doesn't also pull the other two
+ * formats' libraries — previously all three lived in one exportUtils.ts,
+ * so a CSV/PDF/PNG export downloaded all of jsPDF+ExcelJS+html2canvas
+ * together regardless of which one was actually used.
+ *
  * Bundle size impact:
  * - Without lazy loading: ~1.5 MB (452 KB gzipped) loaded upfront
- * - With lazy loading: Only loaded when export features are used
+ * - With lazy loading + per-format split: only the chosen format's library
+ *   (plus html2canvas, shared by PDF/PNG) loads when that export is used
  */
 
 /**
@@ -25,8 +33,7 @@ export async function exportAsPDF(
     stationName?: string;
   } = {}
 ): Promise<void> {
-  // Dynamically import the actual implementation only when needed
-  const { exportAsPDF: exportAsPDFImpl } = await import('./exportUtils');
+  const { exportAsPDF: exportAsPDFImpl } = await import('./exportUtils.pdf');
   return exportAsPDFImpl(title, data, options);
 }
 
@@ -40,7 +47,7 @@ export async function exportAsExcel(
     data: Array<Record<string, string | number | boolean | null | undefined>>;
   }>
 ): Promise<void> {
-  const { exportAsExcel: exportAsExcelImpl } = await import('./exportUtils');
+  const { exportAsExcel: exportAsExcelImpl } = await import('./exportUtils.excel');
   return exportAsExcelImpl(filename, sheets);
 }
 
@@ -50,6 +57,6 @@ export async function exportAsExcel(
 export async function exportAllChartsAsPNG(
   chartElements: Array<{ id: string; name: string }>
 ): Promise<void> {
-  const { exportAllChartsAsPNG: exportAllChartsAsPNGImpl } = await import('./exportUtils');
+  const { exportAllChartsAsPNG: exportAllChartsAsPNGImpl } = await import('./exportUtils.png');
   return exportAllChartsAsPNGImpl(chartElements);
 }
