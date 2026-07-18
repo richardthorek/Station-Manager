@@ -8,11 +8,10 @@
  * absolute URL configured at build time. The URL falls back to a sensible
  * default so the launcher still renders in local dev.
  *
- * The fallback hrefs below still point at their bushietools.com.au
+ * The fallback hrefs below point at the sibling apps' stationkit.com.au
  * subdomains — those are separate repos/deployments this repo doesn't
- * control, and haven't been confirmed to have moved to stationkit.com.au
- * yet. Update once they do (or set VITE_SANTA_RUN_URL/VITE_FIREBREAK_URL
- * in the meantime).
+ * control. Override with VITE_SANTA_RUN_URL/VITE_FIREBREAK_URL for local
+ * dev or while a sibling app's own domain move is still in flight.
  *
  * Each sibling app validates the same SM-issued JWT and reads the same
  * entitlements via GET /api/auth/entitlements — see
@@ -49,7 +48,7 @@ export const SUITE_SIBLING_APPS: SuiteApp[] = [
     name: 'Fire Santa Run',
     description: 'Plan the brigade Santa run and share a live public GPS tracking map with the community.',
     icon: '🎅',
-    href: import.meta.env.VITE_SANTA_RUN_URL || 'https://santa.bushietools.com.au',
+    href: import.meta.env.VITE_SANTA_RUN_URL || 'https://santa.stationkit.com.au',
     feature: 'santaRunEnabled',
     seasonal: true,
   },
@@ -58,7 +57,7 @@ export const SUITE_SIBLING_APPS: SuiteApp[] = [
     name: 'Fire Break Calculator',
     description: 'Draw a containment line and get time, cost and resource estimates for your fire-break plan.',
     icon: '🔥',
-    href: import.meta.env.VITE_FIREBREAK_URL || 'https://firebreak.bushietools.com.au',
+    href: import.meta.env.VITE_FIREBREAK_URL || 'https://firebreak.stationkit.com.au',
     feature: 'fireBreakEnabled',
   },
 ];
