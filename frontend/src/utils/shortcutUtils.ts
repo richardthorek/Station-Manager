@@ -53,8 +53,8 @@ export function getShortcutForPath(pathname: string): ShortcutInfo {
 
   // Default fallback
   return {
-    name: 'Bushie Tools',
-    shortName: 'Bushie Tools',
+    name: 'StationKit',
+    shortName: 'StationKit',
     description: 'Simple tools for volunteer emergency crews',
     path: '/',
   };

@@ -211,7 +211,7 @@ export interface Entitlements {
   /** Max vehicles/appliances for truck checks (free tier is capped). */
   maxVehicles: number;
   aiIncludedSessions: number;
-  /** Per-app suite flags — controls which Bushie Tools apps are accessible. */
+  /** Per-app suite flags — controls which StationKit apps are accessible. */
   aarStudioEnabled: boolean;
   santaRunEnabled: boolean;
   fireBreakEnabled: boolean;

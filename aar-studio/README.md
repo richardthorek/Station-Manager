@@ -1,9 +1,9 @@
-# AAR Studio — part of Bushie Tools
+# AAR Studio — part of StationKit
 
-AI-facilitated After Action Reviews for fire brigade incidents — run the
-session, capture the room, watch findings appear on a live board, then package
-a one-page executive snapshot and full summary. AAR Studio is one of the
-**Bushie Tools** — the suite of simple tools built for the average bushie.
+AI-facilitated After Action Reviews for volunteer emergency-services crews —
+run the session, capture the room, watch findings appear on a live board,
+then package a one-page executive snapshot and full summary. AAR Studio is
+one of the **StationKit** apps — a suite of simple tools built for the crew.
 
 Static web app: plain HTML/CSS/ES modules, **no build step**. By default,
 speech-to-text and AI analysis go through the Station Manager backend's

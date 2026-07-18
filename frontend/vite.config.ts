@@ -54,8 +54,8 @@ export default defineConfig({
         'robots.txt',
       ],
       manifest: {
-        name: 'Bushie Tools',
-        short_name: 'Bushie Tools',
+        name: 'StationKit',
+        short_name: 'StationKit',
         description: 'Simple tools for volunteer emergency crews — sign-in book, vehicle checks, reports, and AI-facilitated After Action Reviews',
         theme_color: '#D8232A',
         background_color: '#ffffff',

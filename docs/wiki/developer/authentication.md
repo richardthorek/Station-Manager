@@ -26,7 +26,7 @@ below.
 
 Admin/owner JWTs carry `{ id, username, role, organizationId }`. The
 `organizationId` claim is the tenant boundary: middleware loads the org and reads
-its entitlements from it. Sibling Bushie Tools apps validate this **same** SM JWT
+its entitlements from it. Sibling StationKit apps validate this **same** SM JWT
 and read entitlements via `GET /api/auth/entitlements` — see
 [`SUITE_TOKEN_VALIDATION.md`](suite-token-validation.md). Station Manager is the
 suite's identity provider and licensing service.

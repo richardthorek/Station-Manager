@@ -1,7 +1,7 @@
 /**
  * Landing Page Component
  *
- * The logged-in hub — and the Bushie Tools suite app-launcher. Surfaces
+ * The logged-in hub — and the StationKit suite app-launcher. Surfaces
  * Station Manager's own modules (sign-in, truck check, reports, AAR Studio,
  * admin) plus the sibling suite apps (Fire Santa Run, Fire Break Calculator),
  * each unlocked by the org's entitlements.
@@ -71,7 +71,7 @@ export function LandingPage() {
           <div className="brand-row">
             <img
               src="/apple-touch-icon.png"
-              alt="Bushie Tools logo"
+              alt="StationKit logo"
               className="brand-mark"
               width={72}
               height={72}
@@ -79,7 +79,7 @@ export function LandingPage() {
               decoding="async"
             />
             <div className="brand-block">
-              <p className="eyebrow">Bushie Tools</p>
+              <p className="eyebrow">StationKit</p>
               <h1 className="headline">Your crew toolkit</h1>
               <p className="subheadline">Sign-in book, vehicle checks, reports and AI-facilitated reviews — all in one place.</p>
             </div>
@@ -225,7 +225,7 @@ export function LandingPage() {
               )}
             </motion.article>
 
-            {/* Bushie Tools sibling apps — separate deployments, unlocked by entitlements. */}
+            {/* StationKit sibling apps — separate deployments, unlocked by entitlements. */}
             {SUITE_SIBLING_APPS.map((suiteApp) => {
               const locked = Boolean(entitlements && suiteApp.feature && !hasFeature(suiteApp.feature));
               return (

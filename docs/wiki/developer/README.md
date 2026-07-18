@@ -24,7 +24,7 @@ longer-form material.
 | [security.md](security.md) | Security deployment guide |
 | [security-advisory-xlsx.md](security-advisory-xlsx.md) | XLSX dependency advisory |
 | [logging.md](logging.md) | Structured logging (winston) |
-| [suite-token-validation.md](suite-token-validation.md) | Contract for sibling Bushie Tools apps validating the SM JWT |
+| [suite-token-validation.md](suite-token-validation.md) | Contract for sibling StationKit apps validating the SM JWT |
 | [accessibility-checklist.md](accessibility-checklist.md) | Developer accessibility checklist (WCAG 2.1 AA) |
 
 ## Operations

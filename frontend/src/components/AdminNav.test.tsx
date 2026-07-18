@@ -40,7 +40,7 @@ describe('AdminNav', () => {
 
   it('links to the app picker as home, not another admin page', () => {
     renderNav();
-    expect(screen.getByRole('link', { name: /back to bushie tools home/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /back to stationkit home/i })).toHaveAttribute('href', '/');
   });
 
   it('lists the three admin sections and marks the current one active', () => {

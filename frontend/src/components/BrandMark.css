@@ -1,0 +1,34 @@
+/* StationKit "SK" monogram tile — see BrandMark.tsx. Named sk-mark, not
+   brand-mark, to avoid colliding with the raster-logo .brand-mark class in
+   LandingPage.css (plain global CSS, no module scoping in this project). */
+
+.sk-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--rfs-core-red);
+  border-radius: var(--radius-md);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+
+.sk-mark__letters {
+  font-family: 'Archivo', 'Arial Black', Helvetica, sans-serif;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  transform: translateY(-8%);
+}
+
+.sk-mark__bar {
+  position: absolute;
+  left: 29%;
+  right: 29%;
+  bottom: 16%;
+  height: 8%;
+  min-height: 2px;
+  border-radius: 999px;
+  background: var(--accent-amber);
+}

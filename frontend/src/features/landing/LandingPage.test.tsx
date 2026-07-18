@@ -55,7 +55,7 @@ describe('LandingPage', () => {
   it('renders the landing page', () => {
     render(<LandingPage />)
 
-    expect(screen.getByText('Bushie Tools')).toBeInTheDocument()
+    expect(screen.getByText('StationKit')).toBeInTheDocument()
     // Verify the main heading is present (text may vary)
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
   })
@@ -64,7 +64,7 @@ describe('LandingPage', () => {
     render(<LandingPage />)
 
     // Verify brand name is present
-    expect(screen.getByText('Bushie Tools')).toBeInTheDocument()
+    expect(screen.getByText('StationKit')).toBeInTheDocument()
   })
 
   it('displays theme toggle button', () => {
@@ -105,7 +105,7 @@ describe('LandingPage', () => {
   it('renders the suite sibling-app launcher cards', () => {
     render(<LandingPage />)
 
-    // Bushie Tools suite apps appear on the launcher.
+    // StationKit suite apps appear on the launcher.
     expect(screen.getByText('Fire Santa Run')).toBeInTheDocument()
     expect(screen.getByText('Fire Break Calculator')).toBeInTheDocument()
     // The seasonal badge surfaces on Fire Santa Run.

@@ -1,19 +1,19 @@
 /**
  * Marketing / Pricing Landing Page
  *
- * The logged-out front door for Bushie Tools. Explains what the suite is and
+ * The logged-out front door for StationKit. Explains what the suite is and
  * who it's for, shows the plan tiers, and funnels visitors into self-service
  * sign-up → Stripe Checkout. Once a visitor is signed in, the app-picker
  * (LandingPage) becomes their home instead — see HomeRoute in App.tsx.
  *
- * Copy follows the "bushie ethos": plain, warm, direct language aimed at the
- * crew on the ground — fire brigades, SES units, and other volunteer services —
- * not the IT manager. No jargon (SaaS / multi-tenant / API).
+ * Copy is plain, warm, direct language aimed at the crew on the ground —
+ * fire, SES, marine rescue, and other volunteer services — not the IT
+ * manager. No jargon (SaaS / multi-tenant / API).
  */
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Moon, Sun, Flame, Mic, Heart } from 'lucide-react';
+import { Moon, Sun, LogIn, Mic, Heart } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { PageTransition } from '../../components/PageTransition';
 import { ShowcaseSection } from './showcase/ShowcaseSection';
@@ -129,14 +129,16 @@ export function MarketingPage() {
             <div className="mkt-brand">
               <img
                 src="/apple-touch-icon.png"
-                alt="Bushie Tools logo"
+                alt="StationKit logo"
                 className="mkt-brand-mark"
                 width={48}
                 height={48}
                 loading="eager"
                 decoding="async"
               />
-              <span className="mkt-brand-name">Bushie Tools</span>
+              <span className="mkt-brand-name">
+                <span className="mkt-brand-name__station">Station</span><span className="mkt-brand-name__kit">Kit</span>
+              </span>
             </div>
             <nav className="mkt-nav" aria-label="Primary">
               <a href="#pricing" className="mkt-nav-link">Pricing</a>
@@ -164,9 +166,9 @@ export function MarketingPage() {
               Run your station the easy way
             </h1>
             <p className="mkt-hero-sub">
-              Bushie Tools is a simple set of tools for volunteer brigades and
+              StationKit is a simple set of tools for volunteer brigades and
               units — a digital sign-in book, vehicle checks, and an AI helper
-              that writes up your After Action Reviews. Built for the shed, not
+              that writes up your After Action Reviews. Built for the crew, not
               the office.
             </p>
             <div className="mkt-hero-actions">
@@ -188,7 +190,7 @@ export function MarketingPage() {
             <h2 id="apps-heading" className="mkt-section-title">What’s in the kit</h2>
             <div className="mkt-apps-grid">
               <article className="mkt-app-card">
-                <div className="mkt-app-icon" aria-hidden="true"><Flame size={32} strokeWidth={2} /></div>
+                <div className="mkt-app-icon" aria-hidden="true"><LogIn size={32} strokeWidth={2} /></div>
                 <h3>Station Manager</h3>
                 <p>
                   Sign members in and out, see who’s out on the job, and run
@@ -279,17 +281,17 @@ export function MarketingPage() {
               ))}
 
               <article className="mkt-plan mkt-plan--suite">
-                <h3 className="mkt-plan-name">Bushie Suite</h3>
+                <h3 className="mkt-plan-name">Complete Kit</h3>
                 <p className="mkt-plan-tagline">All the tools, one bill</p>
                 <p className="mkt-plan-price">
                   <span className="mkt-plan-amount">Coming soon</span>
                 </p>
                 <ul className="mkt-plan-features">
-                  <li>Every Bushie tool together</li>
+                  <li>Every StationKit app together</li>
                   <li>One login, one subscription</li>
                   <li>Best value for active crews</li>
                 </ul>
-                <a href="mailto:hello@bushietools.au?subject=Bushie%20Suite%20waitlist" className="mkt-btn mkt-btn--ghost mkt-plan-cta">
+                <a href="mailto:hello@stationkit.com.au?subject=Complete%20Kit%20waitlist" className="mkt-btn mkt-btn--ghost mkt-plan-cta">
                   Join the waitlist
                 </a>
               </article>
@@ -297,7 +299,7 @@ export function MarketingPage() {
 
             <p className="mkt-gst-note">
               All prices in Australian dollars and include GST. Need to pay by
-              invoice? <a href="mailto:hello@bushietools.au?subject=Invoice%20billing">Get in touch</a>.
+              invoice? <a href="mailto:hello@stationkit.com.au?subject=Invoice%20billing">Get in touch</a>.
             </p>
           </section>
 

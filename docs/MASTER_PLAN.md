@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-17 · **Status:** Living document — the single plan for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
+**Last updated:** 2026-07-18 · **Status:** Living document — the single plan for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the StationKit suite.
 
 ---
 
@@ -14,7 +14,7 @@
 
 ## Product snapshot (July 2026)
 
-**RFS Station Manager** is a real-time digital sign-in and station-management system for NSW Rural Fire Service brigades, in production at `bungrfs-linux.azurewebsites.net` as one Azure App Service deployment containing three apps:
+**RFS Station Manager** is a real-time digital sign-in and station-management system for NSW Rural Fire Service brigades, in production at `bungrfs-linux.azurewebsites.net` (now also reachable at the custom domain `stationkit.com.au`, live via Cloudflare DNS since 2026-07-18 — see changelog) as one Azure App Service deployment containing three apps:
 
 | App | Serves | Stack |
 |---|---|---|
@@ -48,7 +48,7 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 | 10 | SaaS tenancy & entitlements (plans, gating, org onboarding) | ✅ | Q22 |
 | 11 | Stripe billing (Checkout, Portal, webhooks, trial, audit trail) | ✅ | — |
 | 12 | AI gateway & metering | ✅ | — |
-| 13 | Suite federation — Bushie Tools Phase 1 (SM as suite IdP, Fire Break Calculator) | ✅ | Suite ops (below), Q14/Q15 |
+| 13 | Suite federation — StationKit Phase 1 (SM as suite IdP, Fire Break Calculator) | ✅ | Suite ops (below), Q14/Q15 |
 | 14 | PWA / offline (service worker, install prompt, offline queue) | ✅ | — |
 | 15 | Auth & security (JWT + brigade tokens, `requireSession`, rate limiting, CSP/Helmet) | 🟡 | Q29 (prod verification) |
 | 16 | Infra & deploy (Bicep IaC, GitHub Actions, run-from-package, smoke tests) | ✅ | D6 |
@@ -86,6 +86,7 @@ The operator can see and manage every account without ever seeing tenant content
 - ~~**Q5 — Metered AI overage end-to-end.**~~ **Closed 2026-07-18, retired rather than shipped:** the owner supplied live + test restricted Stripe keys mid-session to finish this. Investigating turned up a real double-billing bug before any live meter/price was created: `meteredUsageReporter.ts` reported *every* AI session to Stripe unconditionally, but `backend/src/routes/ai.ts` already hard-stops usage with a 402 once `aiIncludedSessions` is exhausted — there was never any genuine "overage" for the meter to bill, so attaching a metered price to a real subscription would have billed customers a second time for sessions already covered by their flat monthly fee. Owner decision: keep the hard-block + one-time top-up pack (`STRIPE_PRICE_AI_TOPUP`, already live) as the only paid path past the included allowance, and retire the metered-billing code path entirely rather than half-fix it. **What shipped:** deleted `meteredUsageReporter.ts` and its `index.ts` wiring; removed the now-dead `listUnreported`/`markReported`/`reportedToStripe` from both `usageDatabase.ts` implementations and the `UsageRecord` type; removed the 4 tests that exercised it from `ai.test.ts`; updated `architecture.md`/`security.md`/`deployment.md`/`.env.example` to describe the top-up-only model. Separately — unrelated to the metered path — found the **live** Stripe account had webhook endpoints configured for two other businesses on this shared account (Santa Run, AutoPA) but **none pointing at Station Manager's `/api/billing/webhook`**, meaning live Checkout completions/subscription changes/invoices went nowhere; created one scoped to the 5 events `billing.ts` actually handles (`checkout.session.completed`, `customer.subscription.{updated,deleted}`, `invoice.{paid,payment_failed}`), matching the test-mode endpoint that already existed correctly. The returned signing secret was handed to the owner directly (not committed) to set as `STRIPE_WEBHOOK_SECRET` in the live Azure App Service config — that one step remains an owner action since this session has no Azure access. *Backend: tsc clean; 1104 tests green (1103 passing + 1 pre-existing skip, net −4 from removing the retired feature's tests).*
 - ~~**Q21 — Ops: fetch + upload the emergency-facilities dataset.**~~ **Done 2026-07-18:** `services.ga.gov.au` turned out to be reachable from this sandbox (contrary to the fetch script's own comment) once the owner supplied a production `AZURE_STORAGE_CONNECTION_STRING`. Fetch found `fetchEmergencyFacilitiesSnapshot.ts`'s layer→serviceType map had gone stale — GA reordered their `MapServer` layers at some point (layer 1 is now `OTHER_EMERGENCY_MANAGEMENT_FACILITY`, 2 is `POLICING_FACILITY`, 3 is `METRO_FIRE_FACILITY`, shifted by one from the old hardcoded map, so every fetch would have mislabeled metro-fire facilities as "other," police as "metro-fire," and "other" facilities as "police") — fixed by resolving `serviceType` from the layer's **name** instead of a hardcoded id→type table, with an unrecognized layer name now a hard error instead of a silent mislabel. Upload then failed with `PublicAccessNotPermitted` (409): `uploadFacilitiesToBlobStorage.ts` requested `{ access: 'blob' }` (anonymous public read) when creating the container, but the production storage account has public blob access disabled (correct security posture) — and neither parser needs it, since both authenticate with the connection string already. Fixed by dropping the `access` option (private container). Verified the full round trip end-to-end: fetched 8,888 facilities with correct labels, uploaded to prod blob storage, then — via an isolated script, deliberately *not* the full app, to avoid booting against the production Table Storage DB — confirmed the app downloads the blob fresh and serves correctly-labeled search results. Signup's facility-claim step is now live against the real multi-agency dataset in production.
 - **Suite ops (feature #13).** Run `npm run grant:firebreak` against prod (stored entitlement snapshots predate the #638 grant) and add the FBC origin to `FRONTEND_URLS`. One-time ops, unblocks already-built wiring.
+- ~~**Custom domain + StationKit rebrand (`stationkit.com.au`, live 2026-07-18).**~~ **Done 2026-07-18:** full design-system + rebrand pass per `handoff/StationKit - Design System Handoff.md` — see changelog for the complete breakdown (name, domain, SK monogram brand mark + regenerated favicon/icon set, service-neutral tone sweep, plus the system-theme-follow fix and a marketing-header centering bug found along the way). Still open, both owner/dashboard actions rather than code: (1) confirm `stationkit.com.au` is listed *first* in the live `FRONTEND_URLS` app setting — `organizations.ts`/`billing.ts`/`members.ts` build invite/checkout/sign-in links from whichever origin is first in that list; (2) point the Stripe Dashboard webhook endpoint at `bungrfs-linux.azurewebsites.net` (stable host, decoupled from the brand domain/Cloudflare) rather than the brand domain. Also still open: the Fire Santa Run / Fire Break Calculator sibling apps still live on `bushietools.com.au` subdomains (`suiteApps.ts`) — separate repos/deployments, coordinate their own rebrand+domain move separately.
 
 ### Newly found — 2026-07-17 live UAT pass (triage before next launch review)
 
@@ -147,7 +148,7 @@ The live catalog is code (`backend/src/constants/plans.ts`); this is the intende
 | **Community** (free) | $0 | up to 10 | 1 | Manual sign-in + 1 vehicle check, single station |
 | **Basic** | $10/mo · $100/yr | unlimited | unlimited | Full manual suite + reports & CSV export, multiple stations, Fire Break Calculator |
 | **AI Pro** | $19/mo · $190/yr | unlimited | unlimited | Basic + AAR Studio (~25 AI sessions/mo) + voice agent |
-| **Bushie Suite** *(planned)* | $29/mo · $290/yr | unlimited | unlimited | AI Pro + all Bushie Tools apps (after Q14/Q15) |
+| **Complete Kit** *(planned)* | $29/mo · $290/yr | unlimited | unlimited | AI Pro + all StationKit apps (after Q14/Q15) |
 
 Stripe AU ≈ 1.75% + $0.30; AI ≈ $0.60/AAR session; annual = 2 months free. `maxDevices` remains in the model but is deliberately unenforced (devices dropped from pricing).
 

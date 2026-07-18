@@ -15,9 +15,11 @@ vi.mock('../../hooks/useTheme', () => ({
 }))
 
 describe('MarketingPage', () => {
-  it('renders the Bushie Tools hero and brand', () => {
+  it('renders the StationKit hero and brand', () => {
     render(<MarketingPage />)
-    expect(screen.getAllByText('Bushie Tools').length).toBeGreaterThan(0)
+    // The header wordmark is split across two spans (two-tone "Station"/"Kit"
+    // lockup), so a plain string match won't see it — match on full text content.
+    expect(screen.getAllByText((_, element) => element?.textContent === 'StationKit').length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
   })
 
@@ -26,7 +28,7 @@ describe('MarketingPage', () => {
     expect(screen.getByRole('heading', { name: 'Community' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Basic' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'AI Pro' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Bushie Suite' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Complete Kit' })).toBeInTheDocument()
   })
 
   it('defaults to monthly pricing and points paid CTAs at sign-up with the plan', () => {

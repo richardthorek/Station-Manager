@@ -113,7 +113,7 @@ export function ShowcaseSection() {
           'Activity tracking: incidents, training, maintenance, hazard reductions',
           'Real-time sync across every kiosk, tablet and phone — no refresh, no polling',
         ]}
-        demoLabel="bushietools.au/signin"
+        demoLabel="stationkit.com.au/signin"
         demo={<SignInDemo />}
       />
 
@@ -127,7 +127,7 @@ export function ShowcaseSection() {
           'Issues flagged to the captain instantly, with a full audit trail',
           'Trends across brigades: spot the truck that keeps failing the same check',
         ]}
-        demoLabel="bushietools.au/truckcheck"
+        demoLabel="stationkit.com.au/truckcheck"
         demo={<TruckCheckDemo />}
         reverse
       />
@@ -142,7 +142,7 @@ export function ShowcaseSection() {
           'AI sorts the discussion into Sustain / Improve / Action findings',
           'Export a polished AAR report before the crew has packed up',
         ]}
-        demoLabel="bushietools.au/aar"
+        demoLabel="stationkit.com.au/aar"
         demo={<AarDemo />}
       />
 
@@ -156,7 +156,7 @@ export function ShowcaseSection() {
           'Truck-check compliance at a glance across the whole brigade',
           'One-click CSV exports for grant claims and annual returns',
         ]}
-        demoLabel="bushietools.au/reports"
+        demoLabel="stationkit.com.au/reports"
         demo={<ReportsDemo />}
         reverse
       />
