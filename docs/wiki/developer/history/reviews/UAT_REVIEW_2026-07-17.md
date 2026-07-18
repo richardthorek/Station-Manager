@@ -18,8 +18,8 @@ A full user-acceptance pass against the live production deployment (`bushietools
 | Severity | Count | Examples |
 |---|---|---|
 | Resolved since June 22 | 4 | Anonymous data exposure (reports/members/truck-checks) now 401s; truck-check linked-vehicle save no longer 400s; AAR Studio AI gateway fully working (findings + report generation); Stripe billing portal live |
-| Should-fix (new) | 2 | Vehicle Type link dropdown has indistinguishable duplicate entries (Q39); Delete Station dialog reports another station's data (Q40) |
-| Fixed same session | 4 | Admin `/signin` sessions didn't join the real-time socket room (Q41) — fixed in `StationContext.tsx`, verified live; found while fixing it — `GET /api/stations` had no organization scoping at all (Q45), fixed alongside; sign-in board defaulted to the touch-grid layout on every screen size once an event was active, un-persisted (Q44) — fixed in `SignInPage.tsx`, verified live at both desktop and kiosk widths; unlinked-appliance truck check fake-passed 0/0 (Q38) — fixed in `CheckWorkflowPage.tsx`, verified live |
+| Should-fix (new) | 1 | Delete Station dialog reports another station's data (Q40) |
+| Fixed same session | 5 | Admin `/signin` sessions didn't join the real-time socket room (Q41) — fixed in `StationContext.tsx`, verified live; found while fixing it — `GET /api/stations` had no organization scoping at all (Q45), fixed alongside; sign-in board defaulted to the touch-grid layout on every screen size once an event was active, un-persisted (Q44) — fixed in `SignInPage.tsx`, verified live at both desktop and kiosk widths; unlinked-appliance truck check fake-passed 0/0 (Q38) — fixed in `CheckWorkflowPage.tsx`, verified live; Vehicle Type link dropdown had indistinguishable duplicate entries (Q39) — fixed in `VehicleFormModal.tsx`, verified live |
 | Minor / polish (new) | 2 | Native `confirm()`/`alert()` dialogs still used in 3 flows; analytics beacons (Clarity, Cloudflare Insights) blocked by CSP, plus a stray unauthenticated `/api/billing/status` call on the public marketing page (Q42) |
 | Low-confidence (new) | 1 | One-off duplicate member from a single Add click, not reproduced in 3 follow-up attempts (Q43) |
 | Retracted same session | 1 | "Check-in silently fails for duplicate-named members" (Q37) — a test-methodology false positive, caught and corrected before any fix was attempted; see the retraction note in Section 4 below |
@@ -64,7 +64,7 @@ This is the biggest positive finding of the session. The June 22 review's #1 fun
 
 **Q38 — fixed 2026-07-18 (narrower than the June 22 blocker):** the *unlinked* path was still broken exactly as before: starting a check on any of the 5 pre-seeded appliances before linking a Vehicle Type instantly showed "All Items Completed! 0 of 0 items completed (NaN%)" and saved as a genuine "0/0 OK" pass with no real inspection having occurred. Reproduced on "Bulk Water". Root cause: `CheckWorkflowPage.tsx`'s completion condition (`results.size === template.items.length`) is true at `0 === 0`; the in-memory dev DB auto-seeds a generic legacy template for every unlinked appliance so this state can't be reached locally, but the production Table Storage implementation doesn't, which is why this only ever showed up live. **Fixed:** the workflow now refuses to start on a 0-item checklist, showing a "No checklist to run yet" guidance screen with a direct link to `/truckcheck/vehicle-types` instead. Verified live at both desktop viewport widths — see the changelog entry for full detail.
 
-**Q39 (should-fix, confirmed):** the Vehicle Type link dropdown (Vehicle Management → Edit → "Link to a standard type") lists two entries both labelled exactly `Cat 1 Tanker (standard)` — a custom-authored type (3 checks) and NSW RFS's built-in type (24 checks) — with no distinguishing detail shown, so picking the wrong one is a silent trap.
+**Q39 — fixed 2026-07-18:** the Vehicle Type link dropdown (Vehicle Management → Edit → "Link to a standard type") listed two entries both labelled exactly `Cat 1 Tanker (standard)` — a custom-authored type (3 checks) and NSW RFS's built-in type (24 checks) — with no distinguishing detail shown, so picking the wrong one was a silent trap. Root cause: `isStandard` means "published as a shared standard," not "the official seeded one" — a brigade's own type can be published as a standard too, colliding on name with zero visual difference. **Fixed:** the dropdown now labels each option by actual provenance + item count — e.g. `"Cat 1 Tanker — NSW RFS standard (24 items)"` vs `"Cat 1 Tanker — published by your brigade (3 items)"`. Verified live by reproducing the exact original collision against a local dev server — see the changelog entry for full detail.
 
 Also re-confirmed, unfixed, already tracked in `qa-walkthrough.md` (not re-logged): "Resume" on an in-progress check doesn't resume — it re-prompts for the inspector's name from scratch.
 
@@ -117,10 +117,10 @@ No console errors on any tested page **except** the CSP-blocked analytics beacon
 1. ~~**Q41 — Admin `/signin` sessions don't join the real-time socket room.**~~ Fixed same session — see above.
 2. ~~**Q44 — Persist the three-column/grid view choice.**~~ Fixed 2026-07-18 — see above.
 3. ~~**Q38 — Truck check unlinked-vehicle fake-pass.**~~ Fixed 2026-07-18 — see above.
-   **Q39 — the duplicate Vehicle Type dropdown entries.** A UX trap around the same "vehicles ship unlinked by default" gap; disambiguate the dropdown (show check count and/or custom-vs-built-in inline).
-4. **Q40 — Fix the Delete Station data-count check** to query the station actually being deleted, not whichever station's data happens to be cached.
-5. **Q42 — Polish sweep** (native dialogs, CSP analytics allowlist, stray anonymous `/api/billing/status` call) — low effort, whenever this area is next touched.
-6. **Q43 — Keep an eye out for the duplicate-member-on-Add flake.** Not reproducible on demand; re-open if it recurs.
+4. ~~**Q39 — the duplicate Vehicle Type dropdown entries.**~~ Fixed 2026-07-18 — see above.
+5. **Q40 — Fix the Delete Station data-count check** to query the station actually being deleted, not whichever station's data happens to be cached.
+6. **Q42 — Polish sweep** (native dialogs, CSP analytics allowlist, stray anonymous `/api/billing/status` call) — low effort, whenever this area is next touched.
+7. **Q43 — Keep an eye out for the duplicate-member-on-Add flake.** Not reproducible on demand; re-open if it recurs.
 
 ## What's confirmed fixed since the June 22, 2026 review (no action needed)
 
@@ -135,6 +135,7 @@ No console errors on any tested page **except** the CSP-blocked analytics beacon
 - **Q45** — `GET /api/stations` had no organization scoping at all (found while fixing Q41); scoped to the caller's own org + not-yet-backfilled orphans, left open when there's no org context.
 - **Q44** — the sign-in board force-defaulted to the touch grid on every screen size once an event was active, with no persistence for a manual collapse; fixed in `SignInPage.tsx` (`localStorage`-backed preference + viewport-width-based default), verified live at both desktop and kiosk widths.
 - **Q38** — an appliance with no linked Vehicle Type and no legacy template fake-passed a check with 0 items; fixed in `CheckWorkflowPage.tsx` (refuses to start, shows a "No checklist to run yet" guidance screen instead), verified live against a forced 0-item state.
+- **Q39** — the Vehicle Type link dropdown showed indistinguishable duplicate entries for same-named types; fixed in `VehicleFormModal.tsx` (labels by provenance + item count), verified live by reproducing the exact original name collision.
 
 ## Test data left on the live org
 

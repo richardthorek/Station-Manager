@@ -31,8 +31,8 @@ for the account used) · N/A not applicable to the account/plan under test.
 [UAT_REVIEW_2026-07-17.md](history/reviews/UAT_REVIEW_2026-07-17.md) for full
 narrative, evidence, and the findings list (Q38–Q44 in `MASTER_PLAN.md`; an
 initial Q37 finding was retracted the same session — see the review). Q41/Q45,
-Q44, and Q38 were fixed and re-verified live the same session (2026-07-17/18);
-the remaining findings (Q39, Q40, Q42, Q43) are still open.
+Q44, Q38, and Q39 were fixed and re-verified live the same session
+(2026-07-17/18); the remaining findings (Q40, Q42, Q43) are still open.
 
 ---
 
@@ -120,8 +120,9 @@ the remaining findings (Q39, Q40, Q42, Q43) are still open.
   → resolve, all in-app modals, no native dialogs)
 - [ ] `/truckcheck/templates/:applianceId` — standalone template editor route not
   separately exercised (vehicle-type checklist editing was, via Vehicle Types)
-- [🟡] `/truckcheck/vehicle-types` — vehicle type management — page loads and lists
-  correctly; linking flow has **Q39** (duplicate indistinguishable dropdown entries)
+- [x] `/truckcheck/vehicle-types` — vehicle type management — page loads and lists
+  correctly; linking dropdown now disambiguates same-named entries by provenance
+  + item count — fixed same session (**Q39**), re-verified live
 - [ ] Share/QR link for a truck check — not exercised this run
 - [x] `/truckcheck/comparative` — loads correctly, gated by `reportsEnabled` as
   documented (this account has both, so no mismatch to observe)
