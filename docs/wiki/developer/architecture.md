@@ -1206,6 +1206,8 @@ The system supports multi-tenant operation where each RFS station's data (member
 
 **Recent Fix (February 2026):** Fixed critical bug in Azure Table Storage implementation where `getAllMembers()` was not filtering by `stationId`, causing new brigades to incorrectly show all members from other stations. The fix ensures proper data isolation across all database implementations.
 
+**Recent Fix (Q45, 2026-07-17):** a layer up from the station-scoped isolation above — `GET /api/stations` (the *list of stations themselves*, not a station's data) had no `organizationId` filtering at all, so any caller could enumerate every station across every organization on the platform. Now scoped to the caller's own org's stations plus not-yet-`organizationId`-backfilled orphans when an org context is present; unscoped when there isn't (kiosk/demo back-compat). See `docs/wiki/developer/history/reviews/UAT_REVIEW_2026-07-17.md`.
+
 ### Station Identification
 
 Stations are identified using the `X-Station-Id` HTTP header or `stationId` query parameter:

@@ -18,7 +18,8 @@ A full user-acceptance pass against the live production deployment (`bushietools
 | Severity | Count | Examples |
 |---|---|---|
 | Resolved since June 22 | 4 | Anonymous data exposure (reports/members/truck-checks) now 401s; truck-check linked-vehicle save no longer 400s; AAR Studio AI gateway fully working (findings + report generation); Stripe billing portal live |
-| Should-fix (new) | 5 | Unlinked-appliance truck check still fake-passes 0/0 (Q38); Vehicle Type link dropdown has indistinguishable duplicate entries (Q39); Delete Station dialog reports another station's data (Q40); admin `/signin` sessions don't join the real-time socket room (Q41); sign-in board defaults to the touch-grid layout on every screen size once an event is active, un-persisted (Q44) |
+| Should-fix (new) | 4 | Unlinked-appliance truck check still fake-passes 0/0 (Q38); Vehicle Type link dropdown has indistinguishable duplicate entries (Q39); Delete Station dialog reports another station's data (Q40); sign-in board defaults to the touch-grid layout on every screen size once an event is active, un-persisted (Q44) |
+| Fixed same session | 2 | Admin `/signin` sessions didn't join the real-time socket room (Q41) — fixed in `StationContext.tsx`, verified live; found while fixing it — `GET /api/stations` had no organization scoping at all (Q45), fixed alongside |
 | Minor / polish (new) | 2 | Native `confirm()`/`alert()` dialogs still used in 3 flows; analytics beacons (Clarity, Cloudflare Insights) blocked by CSP, plus a stray unauthenticated `/api/billing/status` call on the public marketing page (Q42) |
 | Low-confidence (new) | 1 | One-off duplicate member from a single Add click, not reproduced in 3 follow-up attempts (Q43) |
 | Retracted same session | 1 | "Check-in silently fails for duplicate-named members" (Q37) — a test-methodology false positive, caught and corrected before any fix was attempted; see the retraction note in Section 4 below |
@@ -99,7 +100,11 @@ Screenshots: `aar-studio-home` (×3 sizes), `aar-studio-record`, `aar-studio-tra
 
 **Confirmed working (the primary deployment pattern):** two independent kiosk/brigade-token sessions (simulating two physical station tablets) synced perfectly — starting an event on device A appeared on device B with no refresh, and checking a member in on A appeared on B within ~1 second via a genuine WebSocket push (verified with raw frame capture: both devices correctly sent `join-station` and received `joined-station`, and B received the `event-update` broadcast after A's check-in).
 
-**Q41 (should-fix, confirmed):** the same test using two **admin-JWT** browser sessions (both logged in as `Richard BT`, both viewing `/signin`) did *not* sync — raw WebSocket frame capture over a 10+ second window showed neither session ever sent a `join-station` frame at all, so neither received the other's live updates. `frontend/src/hooks/useSocket.ts` only emits `join-station` from inside the socket's `connect` handler (closing over `selectedStation` at effect-mount time) plus a second effect keyed on `[selectedStation, isConnected]` meant to catch late resolution — worth checking why neither path fired for an admin session on this route. Lower severity than it first appears: the actual kiosk-to-kiosk path (how real stations are deployed) is unaffected and confirmed solid.
+**Q41 — fixed same session:** the same test using two **admin-JWT** browser sessions (both logged in, both viewing `/signin`) did *not* sync — raw WebSocket frame capture over a 10+ second window showed neither session ever sent a `join-station` frame at all. Root cause: `StationContext.tsx`'s "normal mode" (authenticated, not kiosk/demo) deliberately left `selectedStation` as `null` forever, and `useSocket.ts`'s join-station effect requires a resolved `selectedStation` to have a `stationId` to join — REST calls didn't need this (the server infers the org's station from the JWT when no `X-Station-Id` header is sent), but the socket layer has no equivalent inference. Fixed by having `StationContext` auto-resolve a station for this case: the org's one owned station if it has exactly one, the shared `default-station` fallback if it owns none (the common case for a fresh org), left ambiguous (unchanged) if it owns two or more.
+
+**Q45 — found while fixing Q41, fixed alongside:** `GET /api/stations` had zero `organizationId` filtering — any caller, even anonymous (the route is `optionalAuth`), could list every station across every organization on the platform, and the admin `/admin/stations` management page used this same unscoped endpoint for its own listing. Scoped it: when the caller carries an org context, return (their own org's stations) ∪ (orphaned stations with no `organizationId` yet, per the existing Q35 backfill pattern); left fully open when there's no org context, matching the kiosk/demo back-compat convention already used throughout `entitlements.ts`.
+
+Both fixes verified live end-to-end against a local dev server (not just unit tests): two real admin browser sessions, WebSocket frame capture confirmed both now correctly send `join-station` and receive `joined-station`, and a check-in on one session updated the other's live "signed in" count with no page refresh.
 
 Screenshots: `realtime-sync-kiosk-device-b` (the working kiosk-to-kiosk case); `realtime-sync-device-a`, `realtime-sync-device-b` (the non-syncing admin-session case).
 
@@ -109,7 +114,7 @@ No console errors on any tested page **except** the CSP-blocked analytics beacon
 
 ## Recommendations, in priority order
 
-1. **Q41 — Admin `/signin` sessions don't join the real-time socket room.** Narrower than it sounds (kiosk path is fine) but worth a quick fix in `useSocket.ts` since admins reasonably expect to watch the board live too.
+1. ~~**Q41 — Admin `/signin` sessions don't join the real-time socket room.**~~ Fixed same session — see above.
 2. **Q38 / Q39 — Truck check unlinked-vehicle fake-pass, and the duplicate Vehicle Type dropdown entries.** Both are UX traps around the same "vehicles ship unlinked by default" gap; consider refusing to start a check on an unlinked appliance instead of letting it fake-pass, and disambiguating the dropdown (show check count and/or custom-vs-built-in inline).
 3. **Q40 — Fix the Delete Station data-count check** to query the station actually being deleted, not whichever station's data happens to be cached.
 4. **Q44 — Persist the three-column/grid view choice** (and/or default to three-column above some viewport width) so desktop users aren't forced into the touch-grid layout every time an event starts.
@@ -122,6 +127,11 @@ No console errors on any tested page **except** the CSP-blocked analytics beacon
 - Truck-check save on a Vehicle-Type-linked appliance — was a 400 on the first item, now saves cleanly end to end including issue-flagging and the follow-up lifecycle.
 - AAR Studio's AI gateway — was a 503 ("not set up on the server yet"), now produces real, high-quality findings and reports.
 - Stripe billing — was "not configured," now a live Customer Portal session with the real subscription.
+
+## What was fixed in this session, after the pass (no action needed)
+
+- **Q41** — admin `/signin` sessions weren't joining the real-time socket room; fixed in `StationContext.tsx`, verified live with two real browser sessions.
+- **Q45** — `GET /api/stations` had no organization scoping at all (found while fixing Q41); scoped to the caller's own org + not-yet-backfilled orphans, left open when there's no org context.
 
 ## Test data left on the live org
 

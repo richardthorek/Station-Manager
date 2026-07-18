@@ -4308,7 +4308,7 @@
     "GET /api/stations": {
       "method": "GET",
       "path": "/api/stations",
-      "description": "Get all stations with optional filtering and pagination",
+      "description": "Get stations with optional filtering and pagination. Org-scoped (Q45, 2026-07-17): when the caller carries an org context, results are limited to that org's own stations plus any not-yet-organizationId-backfilled orphans; fully unscoped (all stations) when there is no org context (kiosk/demo back-compat).",
       "authentication": "optional",
       "parameters": {
         "query": {
@@ -4376,7 +4376,7 @@
           "description": "Server error"
         }
       },
-      "implementation": "backend/src/routes/stations.ts:28",
+      "implementation": "backend/src/routes/stations.ts:216",
       "security": {
         "rateLimiting": {
           "enabled": true,

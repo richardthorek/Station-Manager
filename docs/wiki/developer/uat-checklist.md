@@ -207,9 +207,10 @@ initial Q37 finding was retracted the same session — see the review).
   refresh — **confirmed working** for the primary kiosk/brigade-token deployment
   pattern (raw WebSocket frame capture verified `join-station` → `joined-station` →
   live `event-update` push)
-- [🟡] Same test between two **admin-JWT** sessions — **Q41**: neither session ever
-  emitted `join-station`, so neither received live updates; kiosk sessions are
-  unaffected
+- [x] Same test between two **admin-JWT** sessions — fixed same session
+  (**Q41**): `StationContext` now auto-resolves a station for a normal-mode
+  admin, so `join-station` fires correctly; re-verified live against a local
+  dev server with raw WebSocket frame capture
 - [x] Same for starting/ending an event — confirmed working (kiosk path)
 
 ## 15. Cross-cutting / polish
