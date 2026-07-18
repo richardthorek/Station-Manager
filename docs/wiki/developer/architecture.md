@@ -789,10 +789,12 @@ endpoint with a 402 `{ remaining, resetAt }`. `chat`/`report` require `aiEnabled
 but are not hard-gated so analysis already in flight is never cut off. Requests
 with no org context pass through (kiosk/demo/anonymous AAR back-compat); usage is
 recorded only when an org is known. Every billable action writes a `UsageRecord`
-(`services/usageDatabase.ts` + Table Storage twin + `usageDbFactory.ts`).
-`services/meteredUsageReporter.ts` batches sessions to Stripe metered billing on
-an hourly timer — opt-in (`STRIPE_METERED_USAGE_ENABLED` + `STRIPE_AI_METER_EVENT`)
-and a safe no-op until a meter is configured.
+(`services/usageDatabase.ts` + Table Storage twin + `usageDbFactory.ts`), used for
+the allowance check above. The only paid path past the included allowance is the
+one-time top-up pack (`POST /api/billing/topup`, `STRIPE_PRICE_AI_TOPUP`) — usage
+hard-stops at 402 rather than rolling into billed overage; a Stripe-metered
+overage model was built, then retired 2026-07-18 as a second, conflicting billing
+path (it would have double-billed already-included sessions) — see the changelog.
 
 **Stripe billing (Phase B, #553).** `services/stripeClient.ts` lazily initialises
 the `stripe` SDK from `STRIPE_SECRET_KEY` (`isStripeConfigured()` gates every

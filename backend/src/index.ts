@@ -103,7 +103,6 @@ import { initializeAgentSessionDatabase } from './services/agentSessionDbFactory
 import { agentCheckRouter, attachAgentCheckWs } from './routes/agentCheck';
 import { allowedOriginsList } from './utils/allowedOrigins';
 import { CORS_ALLOWED_HEADERS } from './config/corsHeaders';
-import { startMeteredUsageReporter } from './services/meteredUsageReporter';
 import { registerAarCollabHandlers } from './services/aarCollab';
 import { registerStationSocketHandlers, type SocketWithStation } from './services/stationSocketHandlers';
 import { handleFatalProcessError } from './services/fatalErrorHandler';
@@ -610,7 +609,6 @@ async function initializeDatabasesInBackground() {
     await initializeApplianceEquipmentDatabase();
     await initializeDeviceDatabase();
     await initializeAgentSessionDatabase();
-    startMeteredUsageReporter();
     ensureAdminUserDatabase();
 
     // Initialize admin user database with default credentials if configured

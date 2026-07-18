@@ -309,7 +309,6 @@ export interface UsageRecord {
   type: UsageType;
   units: number;                 // sessions for 'speech'; provider calls for chat/report
   createdAt: Date;
-  reportedToStripe?: boolean;    // set once batched metered usage is sent to Stripe
 }
 
 export type Member = SharedMember<Date>;
