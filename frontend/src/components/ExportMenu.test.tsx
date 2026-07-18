@@ -231,7 +231,7 @@ describe('ExportMenu', () => {
     const exportButton = screen.getByText('Export');
     fireEvent.click(exportButton);
 
-    expect(screen.getByText('Formatted report with RFS branding')).toBeInTheDocument();
+    expect(screen.getByText('Formatted, branded report')).toBeInTheDocument();
     expect(screen.getByText('Spreadsheet with formatted data')).toBeInTheDocument();
     expect(screen.getByText('High-resolution chart images')).toBeInTheDocument();
   });

@@ -938,13 +938,31 @@ raw `facilityObjectId` alongside the composite key lets a future pass reconcile
 claims with Fire Santa Run's `rfsStationId` (same dataset, rural-fire layer) —
 tracked as a follow-up in `docs/MASTER_PLAN.md`, not built here.
 
+**Branding** (2026-07-18): `agencyName` / `agencyLogoUrl` (both optional,
+owner-editable from Admin → Organization) default at signup from the claimed
+facility's `facilityServiceType` via `constants/facilityServiceTypes.ts`'s
+`FACILITY_SERVICE_TYPE_LABELS` (e.g. `rural-fire` → "Rural / country fire"),
+but are never auto-changed again once set. Used on exported reports
+(`exportUtils.pdf.ts`'s PDF header) in place of the generic "Station Manager"
+fallback, so an org's exports show its real agency identity rather than
+assuming every customer is NSW RFS.
+
 The facility snapshot (`src/data/emergency-facilities.csv`, blob
 `data-files/emergency-facilities.csv`) follows the same bundled-CSV /
 blob-download pattern as the existing `rfsFacilitiesParser.ts` below, produced
 by `scripts/fetchEmergencyFacilitiesSnapshot.ts` (ArcGIS REST, per-layer →
-serviceType mapping) — **that script requires internet access to
-`services.ga.gov.au` and must be run from an operator machine**, not CI or a
-sandboxed agent. See `backend/src/scripts/README.md`.
+serviceType mapping, resolved by **layer name** rather than numeric layer id
+— GA has silently reordered these layers before, which previously mislabeled
+fetched facilities; an unrecognized layer name now fails loudly instead of
+mislabeling). The script's own comment warns `services.ga.gov.au` needs
+operator-machine internet access, not CI/sandboxed-agent — true in general,
+though not universally: this dataset has been fetched, uploaded to
+production, and validated from a Claude Code sandbox session (2026-07-18).
+`scripts/uploadFacilitiesToBlobStorage.ts` creates the `data-files` container
+**without** public blob access — neither parser needs it, both authenticate
+with the connection string, and the production storage account has public
+access disabled account-wide (requesting it fails the upload outright). See
+`backend/src/scripts/README.md`.
 
 ### Multi-org membership
 
@@ -1205,6 +1223,8 @@ The system supports multi-tenant operation where each RFS station's data (member
 - **Backward compatibility** - Existing single-station deployments unaffected
 
 **Recent Fix (February 2026):** Fixed critical bug in Azure Table Storage implementation where `getAllMembers()` was not filtering by `stationId`, causing new brigades to incorrectly show all members from other stations. The fix ensures proper data isolation across all database implementations.
+
+**Recent Fix (Q45, 2026-07-17):** a layer up from the station-scoped isolation above — `GET /api/stations` (the *list of stations themselves*, not a station's data) had no `organizationId` filtering at all, so any caller could enumerate every station across every organization on the platform. Now scoped to the caller's own org's stations plus not-yet-`organizationId`-backfilled orphans when an org context is present; unscoped when there isn't (kiosk/demo back-compat). See `docs/wiki/developer/history/reviews/UAT_REVIEW_2026-07-17.md`.
 
 ### Station Identification
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { VehicleFormModal } from './VehicleFormModal';
-import type { Appliance } from '../../types';
+import type { Appliance, VehicleType } from '../../types';
 
 // Mirrors the real ApiLimitError shape (services/api.ts) without importActual —
 // importActual would load and execute the entire (large, otherwise-untouched)
@@ -116,5 +116,33 @@ describe('VehicleFormModal', () => {
 
     expect(onClose).toHaveBeenCalled();
     expect(mockApi.createAppliance).not.toHaveBeenCalled();
+  });
+
+  it('disambiguates same-named Vehicle Type entries by provenance and item count (Q39)', async () => {
+    const builtIn: VehicleType = {
+      id: 'vt-builtin', code: 'cat1-tanker', name: 'Cat 1 Tanker',
+      isStandard: true, agency: 'NSW RFS',
+      standardItems: Array.from({ length: 24 }, (_, i) => ({ id: `i${i}`, name: `Item ${i}`, description: '' })),
+      createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
+    };
+    const published: VehicleType = {
+      id: 'vt-published', code: 'cat1-tanker-custom', name: 'Cat 1 Tanker',
+      isStandard: true, organizationId: 'org-1',
+      standardItems: Array.from({ length: 3 }, (_, i) => ({ id: `c${i}`, name: `Custom ${i}`, description: '' })),
+      createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
+    };
+    const privateCustom: VehicleType = {
+      id: 'vt-private', code: 'support-4x4', name: 'Support 4x4',
+      isStandard: false, organizationId: 'org-1',
+      standardItems: [{ id: 's0', name: 'Solo item', description: '' }],
+      createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
+    };
+    mockApi.getVehicleTypes.mockResolvedValue([builtIn, published, privateCustom]);
+
+    render(<VehicleFormModal vehicle={null} onClose={vi.fn()} onSaved={vi.fn()} />);
+
+    expect(await screen.findByText('Cat 1 Tanker — NSW RFS standard (24 items)')).toBeInTheDocument();
+    expect(screen.getByText('Cat 1 Tanker — published by your brigade (3 items)')).toBeInTheDocument();
+    expect(screen.getByText('Support 4x4 — custom (1 item)')).toBeInTheDocument();
   });
 });

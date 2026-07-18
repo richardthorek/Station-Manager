@@ -21,6 +21,28 @@ interface VehicleFormModalProps {
   onSaved: () => void;
 }
 
+/**
+ * Disambiguates the Vehicle Type dropdown (Q39, found 2026-07-17): a globally
+ * seeded standard type and a brigade's own type "published" as a standard
+ * (isStandard: true but organizationId still set — see VehicleType's own
+ * doc comment) can share the exact same name, and both previously rendered
+ * as the identical "{name} (standard)" — no way to tell them apart before
+ * picking one. Distinguishes by provenance (built-in vs. brigade-published
+ * vs. private custom) and item count, since those are the two things that
+ * actually differ between same-named entries.
+ */
+function describeVehicleType(vt: VehicleType): string {
+  const itemCount = vt.standardItems.length;
+  const items = `${itemCount} item${itemCount === 1 ? '' : 's'}`;
+  if (vt.isStandard && !vt.organizationId) {
+    return `${vt.name} — ${vt.agency ? `${vt.agency} standard` : 'standard'} (${items})`;
+  }
+  if (vt.isStandard) {
+    return `${vt.name} — published by your brigade (${items})`;
+  }
+  return `${vt.name} — custom (${items})`;
+}
+
 export function VehicleFormModal({ vehicle, onClose, onSaved }: VehicleFormModalProps) {
   const isEditMode = vehicle !== null;
   const modalIdSuffix = vehicle?.id ?? 'new';
@@ -182,7 +204,7 @@ export function VehicleFormModal({ vehicle, onClose, onSaved }: VehicleFormModal
             <option value="">— No standard type (custom checklist only) —</option>
             {vehicleTypes.map((vt) => (
               <option key={vt.id} value={vt.id}>
-                {vt.name}{vt.isStandard ? ' (standard)' : ''}
+                {describeVehicleType(vt)}
               </option>
             ))}
           </select>

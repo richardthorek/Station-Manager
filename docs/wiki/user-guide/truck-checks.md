@@ -12,6 +12,9 @@ fixed.
    your brigade's vehicles, with a "Last checked" note so overdue trucks stand
    out. A red **⚠ Open issues** badge means something recorded earlier still
    needs attention.
+
+![The vehicle roster, one card per appliance](images/truck-checks-hub.png)
+
 2. Tap the vehicle, then **Start check**.
 3. **Say who you are** — start typing your name and pick yourself from the
    member list (or just type a name if you're not on the roster). The check is
@@ -28,6 +31,8 @@ fixed.
    paper-clipboard speed for a truck that's all good.
 6. Finish the check. The **summary page** shows what was recorded and any
    issues raised.
+
+![Working through a real vehicle checklist, grouped by section](images/truck-checks-checklist.png)
 
 ### Joining a check someone else started
 
@@ -48,17 +53,31 @@ visible until someone deals with it:
 - The full lifecycle (open → acknowledged → resolved, who and when) is kept on
   the record.
 
+![Flagging a checklist item as an issue, with a description field](images/truck-checks-issue-flagged.png)
+
+![The admin dashboard's Follow-ups tab, listing open issues across the fleet](images/truck-checks-followups.png)
+
 ## Setting up vehicles (admins)
 
 From the Vehicle Check admin dashboard:
 
 - **Add a vehicle** with its identity details — fleet/agency number, rego,
   make, model, year — and link it to a **vehicle type**.
+
+![Adding or editing a vehicle's identity details and vehicle type link](images/truck-checks-vehicle-management.png)
+
 - **Vehicle types** (`Vehicle Types` page) carry the *standard checklist* for
   that class of truck. Standard items are locked — every brigade using the
   type checks the same core items, which is what makes results comparable
   across brigades. Your brigade can **add its own items and reorder**, but
   can't remove the standard ones.
+
+![The Vehicle Types page, listing standard and custom checklist types](images/truck-checks-vehicle-types.png)
+
+A vehicle with no linked type has no checklist yet — starting a check on one
+shows a guidance screen instead of letting the check run against nothing:
+
+![The "No checklist to run yet" screen shown for a vehicle with no linked type, with a Link a Vehicle Type button](images/truck-checks-no-checklist.png)
 - **Zones & equipment** — optionally describe the truck's physical layout
   (walk-around zones like "front", "driver side rear locker") and the
   equipment carried in each. Zones can be seeded automatically from the

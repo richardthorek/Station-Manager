@@ -19,6 +19,7 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 
 // Constants
 const STATION_SWITCH_DELAY_MS = 300; // Match CSS animation duration
+
 import { Header } from '../../components/Header';
 import { EventLog } from '../../components/EventLog';
 import { CurrentEventParticipants } from '../../components/CurrentEventParticipants';
@@ -46,6 +47,25 @@ import './SignInPage.css';
 // a CSV-parsing library that most visits (kiosk sign-in/out) never touch.
 const BulkImportModal = lazy(() => import('../../components/BulkImportModal').then(m => ({ default: m.BulkImportModal })));
 
+// Q44 (found 2026-07-17): the sign-in board's grid/three-column choice.
+// GRID_VIEW_BREAKPOINT_PX matches the .content-grid CSS breakpoint
+// (SignInPage.css) where the three-column layout collapses to one stacked
+// column anyway, so it doubles as "kiosk/tablet width" for the JS default.
+const GRID_VIEW_BREAKPOINT_PX = 1024;
+const GRID_VIEW_STORAGE_KEY = 'signin-grid-expanded';
+
+function isKioskWidth(): boolean {
+  return typeof window === 'undefined' || window.innerWidth < GRID_VIEW_BREAKPOINT_PX;
+}
+
+function getStoredGridPreference(): boolean | null {
+  if (typeof window === 'undefined') return null;
+  const stored = window.localStorage.getItem(GRID_VIEW_STORAGE_KEY);
+  if (stored === 'true') return true;
+  if (stored === 'false') return false;
+  return null;
+}
+
 export function SignInPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -67,11 +87,28 @@ export function SignInPage() {
     usingInMemory: boolean;
   } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isGridExpanded, setIsGridExpanded] = useState(true);
+  // Q44: no stored preference yet -> default by viewport width (kiosk/
+  // tablet widths keep the touch grid; desktop starts in three-column).
+  // A stored preference (an explicit manual collapse/expand) always wins.
+  const [isGridExpanded, setIsGridExpandedState] = useState<boolean>(
+    () => getStoredGridPreference() ?? isKioskWidth()
+  );
+  const hasExplicitGridPreference = useRef(getStoredGridPreference() !== null);
   const [isSwitchingStation, setIsSwitchingStation] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
   const hasLoadedInitialData = useRef(false);
+
+  // Persists an explicit user choice (collapse/expand) so it survives a
+  // reload and future events instead of being overridden by the
+  // auto-expand effect below (Q44, found 2026-07-17).
+  const setGridExpandedPreference = useCallback((expanded: boolean) => {
+    setIsGridExpandedState(expanded);
+    hasExplicitGridPreference.current = true;
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(GRID_VIEW_STORAGE_KEY, String(expanded));
+    }
+  }, []);
 
   const { isConnected, emit, on, off } = useSocket();
   const { showSuccess, showError, showWarning } = useToast();
@@ -85,10 +122,16 @@ export function SignInPage() {
   // Check if we have any active events
   const hasActiveEvents = events.some(e => e.isActive);
 
-  // Auto-expand grid when events become active
+  // Auto-expand grid when events become active — kiosk/tablet convenience
+  // only (Q44, found 2026-07-17). Only applies on kiosk-width viewports and
+  // only until the user makes an explicit choice; once they collapse or
+  // re-expand manually, that choice sticks instead of being silently
+  // overridden every time a new event starts. Uses the raw setter (not
+  // setGridExpandedPreference) so this stays a live default, not a stored
+  // preference — it can still auto-trigger for the next event.
   useEffect(() => {
-    if (hasActiveEvents) {
-      setIsGridExpanded(true);
+    if (hasActiveEvents && !hasExplicitGridPreference.current && isKioskWidth()) {
+      setIsGridExpandedState(true);
     }
   }, [hasActiveEvents]);
 
@@ -283,7 +326,12 @@ export function SignInPage() {
       const updatedEvent = await api.reactivateEvent(eventId);
       setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? updatedEvent : e));
       setSelectedEventId(updatedEvent.id);
-      setIsGridExpanded(true);
+      // Same kiosk-only, non-explicit-preference-only auto-expand as
+      // starting a new event (Q44) — don't force a desktop admin back into
+      // the touch grid just for reactivating.
+      if (!hasExplicitGridPreference.current && isKioskWidth()) {
+        setIsGridExpandedState(true);
+      }
       emit('event-update', updatedEvent);
       showSuccess('Event reopened — you can continue updating participants');
     } catch (err) {
@@ -631,7 +679,7 @@ export function SignInPage() {
             onAddVisitor={handleAddVisitor}
             onStartNewEvent={() => setShowNewEventModal(true)}
             onEndEvent={handleEndEvent}
-            onCollapse={() => setIsGridExpanded(false)}
+            onCollapse={() => setGridExpandedPreference(false)}
           />
         ) : (
           /* Show three-column layout when no active events or grid is collapsed */
@@ -647,7 +695,7 @@ export function SignInPage() {
               hasMore={hasMore}
               isLoading={loadingMore}
               onStartNewEvent={() => setShowNewEventModal(true)}
-              onExpandGrid={hasActiveEvents ? () => setIsGridExpanded(true) : undefined}
+              onExpandGrid={hasActiveEvents ? () => setGridExpandedPreference(true) : undefined}
               onReactivateEvent={handleReactivateEvent}
             />
           </div>

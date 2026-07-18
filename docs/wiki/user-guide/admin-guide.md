@@ -31,6 +31,8 @@ multiples; a plan-limit message appears if you hit your ceiling).
 - Every station's data is isolated — brigades never see each other's members,
   checks, or reports.
 
+![The Stations admin page listing an organisation's stations](images/admin-stations.png)
+
 ## Brigade access — setting up kiosks (`Admin → Brigade Access`)
 
 A **brigade access token** is what lets the shared station tablet use the
@@ -48,9 +50,13 @@ day-to-day pages (sign-in, truck checks), never the admin pages. For putting a
 sign-in link on your brigade's website, see
 [linking from your brigade website](brigade-website-linking.md).
 
+![A brigade access token issued, with its sign-in link and QR code](images/admin-brigade-access.png)
+
 ## Organization, plans & billing (`Admin → Organization`)
 
 The owner's page for the business side:
+
+![The Organization admin page: plan, status, entitlements, and members](images/admin-organization.png)
 
 - **Plan** — see your current plan and upgrade/downgrade. Paid plans start
   with a **14-day trial** and are billed through Stripe (card details are
@@ -60,6 +66,11 @@ The owner's page for the business side:
 - **Modules** — toggle features on or off for your organisation (e.g. a
   maintenance-only brigade can turn the sign-in book off). Toggles above your
   plan's ceiling are rejected with a clear message.
+- **Branding** — set your agency's real name and a logo URL (defaults from the
+  facility you picked at signup, e.g. "SES" or "Rural / country fire" — you
+  can always override it here). Shown on exported PDF reports instead of the
+  generic "Station Manager" name, since the platform serves rural/metro fire,
+  SES, ambulance, and police brigades, not just one agency.
 - **Members** — list of everyone in the organisation with their role; owners
   and admins can change roles or remove someone (an organisation always keeps
   at least one owner). You can also create a login directly with a username
@@ -76,7 +87,10 @@ The owner's page for the business side:
 
 Member management happens where the members are:
 
-- **Add members** on the sign-in page, or **import a CSV** for first setup.
+- **Add members** on the sign-in page, or **import a CSV** for first setup —
+  column headers are matched flexibly (e.g. "First Name", "firstname", and
+  "given name" all work), and the preview shows which columns it recognised
+  before you confirm.
 - **Invite a member to their own login** from their profile — they receive a
   one-time activation link and set a password (viewer role).
 - Community plan allows up to 10 members; Basic/AI Pro are unlimited. Limit

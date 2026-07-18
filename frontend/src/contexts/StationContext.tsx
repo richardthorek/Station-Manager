@@ -58,7 +58,7 @@ interface StationProviderProps {
 }
 
 export function StationProvider({ children }: StationProviderProps) {
-  const { isAuthenticated, requireAuth, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, requireAuth, isLoading: authLoading, organization } = useAuth();
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -166,6 +166,48 @@ export function StationProvider({ children }: StationProviderProps) {
         return;
       }
 
+      // Normal mode, authenticated admin with an unambiguous station (Q41,
+      // found 2026-07-17): resolve selectedStation so useSocket's
+      // join-station effect has a stationId to join. REST calls already
+      // work with currentStationId left null here (the server infers the
+      // org's station from the JWT when no X-Station-Id header is sent),
+      // but the real-time socket layer has no equivalent server-side
+      // inference — join-station requires an explicit stationId, so an
+      // admin viewing /signin directly never joined any room and got zero
+      // live updates from other devices, even though the page itself
+      // loaded correctly.
+      //
+      // A fresh org typically owns zero stations of its own and relies
+      // entirely on the shared DEFAULT_STATION_ID fallback (confirmed live:
+      // a brand-new org's own GET /api/stations returned only
+      // default-station, un-owned, until it created its first real one) —
+      // so "own stations" here means organizationId-tagged rows only, not
+      // that shared fallback or other still-unbackfilled orphans (Q35).
+      // Only auto-select when that count is unambiguous (zero -> the
+      // shared default; exactly one -> that station); two or more is a
+      // genuine multi-station admin whose intended station can't be
+      // guessed without an explicit pick, so that case keeps today's
+      // behaviour (no station, REST-only, no live updates).
+      if (isAuthenticated && organization) {
+        const loadedStations = await loadStations(true);
+        const ownStations = loadedStations.filter(s => s.organizationId === organization.id);
+        if (ownStations.length === 1) {
+          setSelectedStation(ownStations[0]);
+          setCurrentStationId(ownStations[0].id);
+          setIsLoading(false);
+          return;
+        }
+        if (ownStations.length === 0) {
+          const fallback = loadedStations.find(s => s.id === DEFAULT_STATION_ID);
+          if (fallback) {
+            setSelectedStation(fallback);
+            setCurrentStationId(fallback.id);
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+
       // Normal mode: Just use demo/default station - NO API CALL
       // Station is determined automatically based on authentication/requirements
       // No persisted selection needed - always use demo/default
@@ -175,7 +217,7 @@ export function StationProvider({ children }: StationProviderProps) {
     };
 
     initialize();
-  }, [authLoading, loadStations, isAuthenticated, requireAuth]);
+  }, [authLoading, loadStations, isAuthenticated, requireAuth, organization]);
 
   /**
    * Listen for storage changes from other tabs

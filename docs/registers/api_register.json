@@ -1555,7 +1555,7 @@
       "PUT /api/organizations/current": {
         "method": "PUT",
         "path": "/api/organizations/current",
-        "description": "Update name/billingEmail/planCode/moduleToggles (owner only). Entitlements reset to the new plan's defaults on a real plan change, then owner module toggles are applied and clamped to the plan ceiling. D1 (2026-07-17): this is the only functional plan-upgrade path while Stripe billing is unconfigured, so a genuine plan change with no stripeSubscriptionId on the org also starts/ends a 14-day trial directly here — status: 'trialing' + trialEndsAt set on upgrade to a paid plan, status: 'active' + trialEndsAt cleared on downgrade to community. An org with a live Stripe subscription is untouched by this — its status/trialEndsAt stay governed exclusively by POST /api/billing/webhook.",
+        "description": "Update name/billingEmail/planCode/moduleToggles/agencyName/agencyLogoUrl (owner only). Entitlements reset to the new plan's defaults on a real plan change, then owner module toggles are applied and clamped to the plan ceiling. D1 (2026-07-17): this is the only functional plan-upgrade path while Stripe billing is unconfigured, so a genuine plan change with no stripeSubscriptionId on the org also starts/ends a 14-day trial directly here — status: 'trialing' + trialEndsAt set on upgrade to a paid plan, status: 'active' + trialEndsAt cleared on downgrade to community. An org with a live Stripe subscription is untouched by this — its status/trialEndsAt stay governed exclusively by POST /api/billing/webhook. agencyName/agencyLogoUrl (2026-07-18): admin-configurable branding, defaulted from the claimed facility's serviceType at signup; an empty string clears the override.",
         "authentication": "JWT (owner only)",
         "rateLimit": "sensitive-action limiter",
         "requestBody": {
@@ -1578,6 +1578,14 @@
             "moduleToggles": {
               "type": "object",
               "description": "Partial<{signInEnabled, truckCheckEnabled, reportsEnabled, aiEnabled}> — narrows only, never exceeds the plan ceiling"
+            },
+            "agencyName": {
+              "type": "string",
+              "description": "Up to 100 chars; empty string clears the override"
+            },
+            "agencyLogoUrl": {
+              "type": "string",
+              "description": "Up to 500 chars; empty string clears the override"
             }
           }
         },
@@ -1586,7 +1594,7 @@
             "description": "{ organization }"
           },
           "400": {
-            "description": "Invalid planCode"
+            "description": "Invalid planCode, or agencyName/agencyLogoUrl not a string within the length limit"
           },
           "403": {
             "description": "Caller is not the org owner"
@@ -4308,7 +4316,7 @@
     "GET /api/stations": {
       "method": "GET",
       "path": "/api/stations",
-      "description": "Get all stations with optional filtering and pagination",
+      "description": "Get stations with optional filtering and pagination. Org-scoped (Q45, 2026-07-17): when the caller carries an org context, results are limited to that org's own stations plus any not-yet-organizationId-backfilled orphans; fully unscoped (all stations) when there is no org context (kiosk/demo back-compat).",
       "authentication": "optional",
       "parameters": {
         "query": {
@@ -4376,7 +4384,7 @@
           "description": "Server error"
         }
       },
-      "implementation": "backend/src/routes/stations.ts:28",
+      "implementation": "backend/src/routes/stations.ts:216",
       "security": {
         "rateLimiting": {
           "enabled": true,

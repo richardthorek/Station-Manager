@@ -44,6 +44,9 @@ export interface Organization {
   status: 'trialing' | 'active' | 'past_due' | 'canceled';
   entitlements: Entitlements;
   aiBonusSessions?: number;
+  /** Admin-configurable branding — defaults from the claimed facility's service type at signup. */
+  agencyName?: string;
+  agencyLogoUrl?: string;
 }
 
 interface User {

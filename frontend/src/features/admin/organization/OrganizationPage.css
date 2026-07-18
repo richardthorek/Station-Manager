@@ -272,3 +272,31 @@
 @media (max-width: 640px) {
   .org-adduser input, .org-adduser select, .org-adduser .org-btn { width: 100%; }
 }
+
+.org-branding-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.org-branding-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  flex: 1 1 220px;
+}
+
+.org-branding-form input {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .org-branding-form label, .org-branding-form .org-btn { width: 100%; }
+}

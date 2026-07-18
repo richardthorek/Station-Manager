@@ -266,19 +266,38 @@ class ApiService {
     return response.json();
   }
 
-  async getStationStatistics(): Promise<{
+  /**
+   * Data counts used by the Delete Station confirmation dialog (Q40, found
+   * 2026-07-17). Previously took no `stationId` and relied on `getMembers`/
+   * `getEvents`/`getActiveCheckIns`, which all read the *globally selected*
+   * current station via `X-Station-Id` — not necessarily the station the
+   * caller is asking about. An admin managing multiple stations who opened
+   * "Delete" on a station other than the currently-selected one saw that
+   * other station's counts, wrongly blocking (or wrongly allowing) the
+   * delete. Passing `stationId` here overrides the header for just these
+   * three calls, scoping the counts to the actual station in question.
+   */
+  async getStationStatistics(stationId?: string): Promise<{
     memberCount: number;
     eventCount: number;
     checkInCount: number;
     activeCheckInCount: number;
   }> {
-    // Note: This is a simplified version that gets counts for the current station
-    // The stationId parameter is kept for API compatibility but not used
-    // as all API calls already filter by the current station via X-Station-Id header
+    // fetchWithRetry merges these onto the computed default headers, so this
+    // override (when provided) wins over the globally-selected station.
+    const headerOverride = stationId ? { 'X-Station-Id': stationId } : undefined;
+    const [membersRes, eventsRes, activeCheckInsRes] = await Promise.all([
+      this.fetchWithRetry(`${API_BASE_URL}/members`, { headers: headerOverride }),
+      this.fetchWithRetry(`${API_BASE_URL}/events?limit=50&offset=0`, { headers: headerOverride }),
+      this.fetchWithRetry(`${API_BASE_URL}/checkins/active`, { headers: headerOverride }),
+    ]);
+    if (!membersRes.ok) throw new Error('Failed to fetch members');
+    if (!eventsRes.ok) throw new Error('Failed to fetch events');
+    if (!activeCheckInsRes.ok) throw new Error('Failed to fetch check-ins');
     const [members, events, activeCheckIns] = await Promise.all([
-      this.getMembers(),
-      this.getEvents(),
-      this.getActiveCheckIns(),
+      membersRes.json(),
+      eventsRes.json(),
+      activeCheckInsRes.json(),
     ]);
 
     return {
@@ -1598,6 +1617,8 @@ class ApiService {
     billingEmail?: string;
     planCode?: Organization['planCode'];
     moduleToggles?: Partial<Pick<Entitlements, 'signInEnabled' | 'truckCheckEnabled' | 'reportsEnabled' | 'aiEnabled'>>;
+    agencyName?: string;
+    agencyLogoUrl?: string;
   }): Promise<{ organization: Organization }> {
     const response = await fetch(`${API_BASE_URL}/organizations/current`, {
       method: 'PUT',

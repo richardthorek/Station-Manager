@@ -42,7 +42,10 @@ export function StationDetailsView({ station, onClose, onEdit }: StationDetailsV
     const loadStatistics = async () => {
       try {
         setLoadingStats(true);
-        const stats = await api.getStationStatistics();
+        // Q40 sibling bug: without stationId this reads the globally-selected
+        // current station via X-Station-Id, not necessarily the station this
+        // modal is showing details for. See DeleteConfirmationDialog.tsx.
+        const stats = await api.getStationStatistics(station.id);
         setStatistics(stats);
       } catch (err) {
         console.error('Error loading statistics:', err);
@@ -52,7 +55,7 @@ export function StationDetailsView({ station, onClose, onEdit }: StationDetailsV
     };
 
     loadStatistics();
-  }, []);
+  }, [station.id]);
 
   const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;

@@ -61,6 +61,10 @@ export function OrganizationPage() {
   const [profileEmail, setProfileEmail] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
 
+  const [agencyName, setAgencyName] = useState('');
+  const [agencyLogoUrl, setAgencyLogoUrl] = useState('');
+  const [savingBranding, setSavingBranding] = useState(false);
+
   const load = useCallback(async () => {
     try {
       const [orgRes, membersRes, invitesRes] = await Promise.all([
@@ -79,6 +83,11 @@ export function OrganizationPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setAgencyName(organization?.agencyName ?? '');
+    setAgencyLogoUrl(organization?.agencyLogoUrl ?? '');
+  }, [organization?.agencyName, organization?.agencyLogoUrl]);
 
   // AI session usage + billing status — only relevant when AI module is on.
   const aiEnabled = organization?.entitlements.aiEnabled ?? false;
@@ -257,6 +266,21 @@ export function OrganizationPage() {
     }
   }
 
+  async function saveBranding(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isOwner) return;
+    setSavingBranding(true);
+    try {
+      await api.updateOrganization({ agencyName: agencyName.trim(), agencyLogoUrl: agencyLogoUrl.trim() });
+      await refreshOrganization();
+      flash('success', 'Branding saved');
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not save branding');
+    } finally {
+      setSavingBranding(false);
+    }
+  }
+
   async function saveProfileEmail(e: React.FormEvent) {
     e.preventDefault();
     setSavingEmail(true);
@@ -400,6 +424,50 @@ export function OrganizationPage() {
             )}
 
             {!isOwner && <p className="org-hint">Only the owner can change the plan.</p>}
+          </section>
+
+          <section className="org-section">
+            <h2>Branding</h2>
+            <p className="org-hint">
+              Your agency's own name and logo — shown on exported reports instead of the generic
+              "Station Manager" name. Defaults from the facility you claimed at signup; you can
+              override it here.
+            </p>
+            {isOwner ? (
+              <form className="org-branding-form" onSubmit={saveBranding}>
+                <label>
+                  Agency name
+                  <input
+                    type="text"
+                    placeholder="e.g. NSW Rural Fire Service"
+                    value={agencyName}
+                    onChange={(e) => setAgencyName(e.target.value)}
+                    maxLength={100}
+                  />
+                </label>
+                <label>
+                  Logo URL
+                  <input
+                    type="url"
+                    placeholder="https://…"
+                    value={agencyLogoUrl}
+                    onChange={(e) => setAgencyLogoUrl(e.target.value)}
+                    maxLength={500}
+                  />
+                </label>
+                <button className="org-btn" type="submit" disabled={savingBranding}>
+                  {savingBranding ? 'Saving…' : 'Save branding'}
+                </button>
+              </form>
+            ) : (
+              <p className="org-hint">
+                {organization.agencyName ? (
+                  <>Agency name: <strong>{organization.agencyName}</strong></>
+                ) : (
+                  'No custom branding set.'
+                )}
+              </p>
+            )}
           </section>
 
           {aiEnabled && aiUsage && (

@@ -14,6 +14,8 @@ and everything updates live on every screen at the station.
 It's part of the **Bushie Tools** suite, which also includes **AAR Studio**
 (AI-assisted After Action Reviews).
 
+![The sign-in book, showing the event log, current participants, and member roster side by side on a desktop screen](images/sign-in-board-desktop.png)
+
 ## Guide contents
 
 ### Everyday use

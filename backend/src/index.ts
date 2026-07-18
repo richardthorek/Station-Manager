@@ -183,14 +183,21 @@ app.use(helmet({
       connectSrc: [
         "'self'",
         "ws:", "wss:", // WebSocket connections for Socket.io
-        "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
-        "https://z.clarity.ms", // Microsoft Clarity data collection endpoint
-        "https://e.clarity.ms", // Microsoft Clarity collection endpoint
+        // Q42 (found 2026-07-17): Clarity's collection endpoint isn't a fixed
+        // host — it shards across many single/double-letter subdomains
+        // (c/e/f/g/z.clarity.ms, etc.) chosen at runtime, per Microsoft's own
+        // CSP guidance. Enumerating a few (as this used to) misses most of
+        // them; the wildcard is the documented-correct allowlist.
+        "https://*.clarity.ms", // Microsoft Clarity analytics — all sharded collection endpoints
         "https://fonts.googleapis.com", // Google Fonts CSS (Fetch API)
         "https://fonts.gstatic.com", // Google Fonts files — the service worker fetch()es
                                      // these to cache them; connect-src governs SW fetch,
                                      // so font-src alone isn't enough (CSP error otherwise)
-        "https://*.cloudflare.com", // Cloudflare Insights analytics endpoints
+        // cloudflareinsights.com is its own domain, not a subdomain of
+        // cloudflare.com — *.cloudflare.com never matches it, so the actual
+        // beacon endpoint (https://cloudflareinsights.com/cdn-cgi/rum) was
+        // silently blocked despite this allowlist looking Cloudflare-shaped.
+        "https://*.cloudflare.com", "https://cloudflareinsights.com", // Cloudflare Insights analytics endpoints
       ],
       // Allow self-hosted fonts, data URIs, and Google Fonts
       fontSrc: [
@@ -307,11 +314,17 @@ const aarStudioPath = process.env.AAR_STUDIO_PATH || path.join(__dirname, '../..
 if (fs.existsSync(path.join(aarStudioPath, 'index.html'))) {
   const aarCsp = [
     "default-src 'self'",
-    "script-src 'self' https://cdn.jsdelivr.net blob:",
+    // Q42 (found 2026-07-17): this override replaces Helmet's global CSP
+    // wholesale, so the main app's Cloudflare Insights allowance (script-src)
+    // doesn't carry over here — Cloudflare's edge-injected beacon script was
+    // silently blocked on every /aar load.
+    "script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:",
     "worker-src 'self' blob:",
     // connect-src also governs the SW/browser fetch() for Google-Fonts CSS, and
     // the same-origin Socket.io connection (ws:/wss:) used by collaborative notes.
-    "connect-src 'self' ws: wss: https://cdn.jsdelivr.net https://fonts.googleapis.com https://*.openai.azure.com https://*.cognitiveservices.azure.com https://*.services.ai.azure.com https://*.api.cognitive.microsoft.com wss://*.stt.speech.microsoft.com",
+    // cloudflareinsights.com (the beacon endpoint) is its own domain, not a
+    // subdomain of cloudflare.com — see the matching note on the global CSP.
+    "connect-src 'self' ws: wss: https://cdn.jsdelivr.net https://fonts.googleapis.com https://*.openai.azure.com https://*.cognitiveservices.azure.com https://*.services.ai.azure.com https://*.api.cognitive.microsoft.com wss://*.stt.speech.microsoft.com https://*.cloudflare.com https://cloudflareinsights.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",

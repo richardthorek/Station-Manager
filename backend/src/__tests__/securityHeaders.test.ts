@@ -31,6 +31,7 @@ beforeAll(() => {
           "'self'",
           "https://www.clarity.ms", // Microsoft Clarity analytics (dynamically loads script)
           "https://scripts.clarity.ms", // Microsoft Clarity script files
+          "https://static.cloudflareinsights.com", // Cloudflare Insights analytics script
         ],
         // Allow inline styles for React and Google Fonts stylesheet
         styleSrc: [
@@ -42,9 +43,9 @@ beforeAll(() => {
         connectSrc: [
           "'self'",
           "ws:", "wss:", // WebSocket connections for Socket.io
-          "https://www.clarity.ms", // Microsoft Clarity analytics endpoint
-          "https://z.clarity.ms", // Microsoft Clarity data collection endpoint
+          "https://*.clarity.ms", // Microsoft Clarity — all sharded collection endpoints (Q42)
           "https://fonts.googleapis.com", // Google Fonts CSS (Fetch API)
+          "https://*.cloudflare.com", "https://cloudflareinsights.com", // Cloudflare Insights (Q42)
         ],
         // Allow self-hosted fonts, data URIs, and Google Fonts
         fontSrc: [
@@ -128,6 +129,14 @@ describe('Security Headers - Helmet Middleware', () => {
       expect(csp).toMatch(/script-src[^;]*https:\/\/scripts\.clarity\.ms/);
     });
 
+    it('should allow Cloudflare Insights analytics script', async () => {
+      const response = await request(app)
+        .get('/api/test');
+
+      const csp = response.headers['content-security-policy'];
+      expect(csp).toMatch(/script-src[^;]*https:\/\/static\.cloudflareinsights\.com/);
+    });
+
     it('should allow inline styles for React', async () => {
       const response = await request(app)
         .get('/api/test');
@@ -160,13 +169,28 @@ describe('Security Headers - Helmet Middleware', () => {
       expect(csp).toMatch(/connect-src[^;]*(ws:|wss:)/);
     });
 
-    it('should allow Microsoft Clarity analytics endpoint', async () => {
+    it('should allow all of Microsoft Clarity\'s sharded analytics endpoints (Q42)', async () => {
       const response = await request(app)
         .get('/api/test');
 
+      // Clarity shards data collection across many single/double-letter
+      // subdomains chosen at runtime (c/e/f/g/z.clarity.ms, etc.) — a
+      // wildcard is the only allowlist that actually covers them, per
+      // Microsoft's own CSP guidance. A fixed enumerated list (the old
+      // config) misses most of them.
       const csp = response.headers['content-security-policy'];
-      expect(csp).toMatch(/connect-src[^;]*https:\/\/www\.clarity\.ms/);
-      expect(csp).toMatch(/connect-src[^;]*https:\/\/z\.clarity\.ms/);
+      expect(csp).toMatch(/connect-src[^;]*https:\/\/\*\.clarity\.ms/);
+    });
+
+    it('should allow the real Cloudflare Insights beacon domain, not just *.cloudflare.com (Q42)', async () => {
+      const response = await request(app)
+        .get('/api/test');
+
+      // cloudflareinsights.com is its own domain — not a subdomain of
+      // cloudflare.com — so *.cloudflare.com alone never matches the actual
+      // beacon endpoint (https://cloudflareinsights.com/cdn-cgi/rum).
+      const csp = response.headers['content-security-policy'];
+      expect(csp).toMatch(/connect-src[^;]*https:\/\/cloudflareinsights\.com/);
     });
 
     it('should allow Google Fonts CSS fetch', async () => {
