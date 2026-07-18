@@ -33,7 +33,6 @@ interface UsageEntity extends TableEntity {
   units: number;
   sessionId?: string;
   createdAt: string;
-  reportedToStripe: boolean;
 }
 
 export class TableStorageUsageDatabase implements IUsageDatabase {
@@ -69,7 +68,6 @@ export class TableStorageUsageDatabase implements IUsageDatabase {
       units: row.units,
       sessionId: row.sessionId,
       createdAt: row.createdAt.toISOString(),
-      reportedToStripe: row.reportedToStripe ?? false,
     };
   }
 
@@ -81,7 +79,6 @@ export class TableStorageUsageDatabase implements IUsageDatabase {
       units: entity.units,
       sessionId: entity.sessionId,
       createdAt: new Date(entity.createdAt),
-      reportedToStripe: entity.reportedToStripe,
     };
   }
 
@@ -93,7 +90,6 @@ export class TableStorageUsageDatabase implements IUsageDatabase {
       units: input.units ?? 1,
       sessionId: input.sessionId,
       createdAt: new Date(),
-      reportedToStripe: false,
     };
     await this.table.createEntity(this.toEntity(row));
     return row;
@@ -141,29 +137,6 @@ export class TableStorageUsageDatabase implements IUsageDatabase {
       rows.push(this.fromEntity(entity as UsageEntity));
     }
     return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-
-  async listUnreported(): Promise<UsageRecord[]> {
-    const iterator = this.table.listEntities<UsageEntity>({
-      queryOptions: { filter: odata`reportedToStripe eq ${false}` },
-    });
-    const rows: UsageRecord[] = [];
-    for await (const entity of iterator) {
-      rows.push(this.fromEntity(entity as UsageEntity));
-    }
-    return rows;
-  }
-
-  async markReported(ids: string[]): Promise<void> {
-    // Caller passes a small batch; look each up to get its partition key.
-    for (const id of ids) {
-      const iterator = this.table.listEntities<UsageEntity>({
-        queryOptions: { filter: odata`RowKey eq ${id}` },
-      });
-      for await (const entity of iterator) {
-        await this.table.updateEntity({ ...(entity as UsageEntity), reportedToStripe: true }, 'Merge');
-      }
-    }
   }
 
   async clear(): Promise<void> {

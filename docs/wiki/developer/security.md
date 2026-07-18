@@ -51,9 +51,8 @@ Vault**. Never commit them. Rotate them periodically and per-environment.
 - `ENABLE_ENTITLEMENTS` — default on; **never** `false` in production (removes
   all plan/billing enforcement).
 - `REQUIRE_AUTH`, `ENABLE_DATA_PROTECTION` — the two auth layers documented below.
-- Stripe price IDs (`STRIPE_PRICE_*`), `STRIPE_METERED_USAGE_ENABLED`,
-  `STRIPE_AI_METER_EVENT`, `APP_URL` — billing configuration (not secrets, but
-  environment-specific).
+- Stripe price IDs (`STRIPE_PRICE_*`), `APP_URL` — billing configuration (not
+  secrets, but environment-specific).
 
 > **Storage tip:** Prefer Key Vault references over plaintext App Service
 > settings for everything in the first two tables. Rotate `JWT_SECRET`,

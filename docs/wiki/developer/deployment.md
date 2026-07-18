@@ -119,8 +119,8 @@ Frontend (`VITE_*`) vars are build-time only — they are baked into
 | `STRIPE_PRICE_BASIC_ANNUAL` | for billing | Stripe price ID. |
 | `STRIPE_PRICE_AI_MONTHLY` | for billing | Stripe price ID. |
 | `STRIPE_PRICE_AI_ANNUAL` | for billing | Stripe price ID. |
-| `STRIPE_METERED_USAGE_ENABLED` | — | Toggle metered AI-usage reporting to Stripe. |
-| `STRIPE_AI_METER_EVENT` | — | Stripe billing-meter event name for AI usage. |
+| `STRIPE_PRICE_AI_TOPUP` | for AI top-ups | `mode: payment` Stripe price ID for the AI session top-up pack — the only paid path past the included monthly allowance (usage hard-stops at 402 otherwise). |
+| `AI_TOPUP_PACK_SIZE` | — | Sessions granted per top-up purchase (default 25). |
 | `APP_URL` | for billing | Public app URL (used for Checkout/Portal return URLs). |
 
 ### AI gateway (server-side AI)
