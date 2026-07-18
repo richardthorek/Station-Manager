@@ -36,15 +36,15 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 
 | # | Feature / function | Status | Remaining |
 |---|---|---|---|
-| 1 | Sign-in & check-in/out (kiosk, mobile, QR, real-time sync) | ✅ | — |
+| 1 | Sign-in & check-in/out (kiosk, mobile, QR, real-time sync) | 🟡 | Q37, Q41 |
 | 2 | Events & activities (create/end, participants, audit trail) | ✅ | — |
 | 3 | Member profiles & achievements (QR codes, stats, 20 achievements) | ✅ | — |
-| 4 | Member management (search/filter/sort, CSV import, invite/activation) | ✅ | — |
-| 5 | Truck check — manual (vehicle types, locked checklists, zones/equipment, issue lifecycle, cross-brigade reporting) | ✅ | Q8 |
+| 4 | Member management (search/filter/sort, CSV import, invite/activation) | 🟡 | Q43 |
+| 5 | Truck check — manual (vehicle types, locked checklists, zones/equipment, issue lifecycle, cross-brigade reporting) | 🟡 | Q8, Q38, Q39 |
 | 6 | Truck check — voice agent (hold-to-talk → STT → tool loop → TTS) | 🟡 | Q3, Q4, Q12, Q13 |
 | 7 | Reports & analytics (dashboard, cross-station, CSV/PDF export) | ✅ | Q11 |
 | 8 | AAR Studio — THE HERO (AI-facilitated After Action Reviews) | 🟡 | Q1, Q7 |
-| 9 | Multi-station (isolation, station mgmt UI, national dataset lookup, demo station) | ✅ | — |
+| 9 | Multi-station (isolation, station mgmt UI, national dataset lookup, demo station) | 🟡 | Q40 |
 | 10 | SaaS tenancy & entitlements (plans, gating, org onboarding) | ✅ | Q21, Q22 |
 | 11 | Stripe billing (Checkout, Portal, webhooks, trial, audit trail) | 🟡 | Q5 (blocked on Stripe test-mode credentials) |
 | 12 | AI gateway & metering | ✅ | — |
@@ -86,6 +86,18 @@ The operator can see and manage every account without ever seeing tenant content
 - **Q5 — Metered AI overage end-to-end.** `meteredUsageReporter.ts` already maps `UsageRecord` → Stripe meter events correctly for the decided session-based unit (was built pre-Q32; just needed the unit decision confirming it). What's left is infrastructure, not code: create the actual Stripe Billing Meter (dashboard/API) matching `STRIPE_AI_METER_EVENT`, then verify an overage invoice in Stripe test mode. Needs live Stripe test-mode credentials this environment doesn't have — owner/operator action.
 - **Q21 — Ops: fetch + upload the emergency-facilities dataset.** `npm run facilities:fetch` (needs internet to `services.ga.gov.au` — run from an operator machine, not CI) + `facilities:upload`, once, against prod. Until then signup's facility-claim step degrades gracefully to "my unit isn't listed."
 - **Suite ops (feature #13).** Run `npm run grant:firebreak` against prod (stored entitlement snapshots predate the #638 grant) and add the FBC origin to `FRONTEND_URLS`. One-time ops, unblocks already-built wiring.
+
+### Newly found — 2026-07-17 live UAT pass (triage before next launch review)
+
+A full live UAT pass against `bushietools.com` (admin login + kiosk device token, real create/modify/delete against a live test org) — see [UAT_REVIEW_2026-07-17](wiki/developer/history/reviews/UAT_REVIEW_2026-07-17.md) for full evidence and screenshots. The June 22 blockers (anonymous data exposure, truck-check 400s, AI gateway 503, Stripe not wired) are all confirmed **fixed**. These are new findings from this pass, ordered by severity:
+
+- **Q37 — Check-in silently fails to persist when two members share a display name.** Checking in one of two identically-named members shows a successful UI state (highlight, checkmark, incremented "signed in" count) but the server never records an event participant for either duplicate — confirmed via direct API query. A uniquely-named member checks in and persists correctly in the same test. Data-loss risk on the core sign-in flow; worth a look at whether check-in resolution keys on name instead of member ID anywhere in the client/socket path.
+- **Q38 — Truck check still fake-passes on an unlinked appliance (0/0 NaN%).** Starting a check on any appliance with no linked Vehicle Type instantly shows "All Items Completed! 0 of 0 items (NaN%)" and saves as a legitimate "0/0 OK" pass — the same defect the June 22 review flagged as a blocker. The *linked* path is now fully fixed (real checklist, item save, issue flagging, follow-up lifecycle all confirmed working end-to-end) — this is specifically the unlinked-vehicle fallback that still needs the same fix, or the check flow should refuse to start on an unlinked appliance instead of fake-passing it. Folds into the existing **Q8** (surface vehicle management in the roster) — the root cause is the same "vehicles ship unlinked by default" gap.
+- **Q39 — Vehicle Type link dropdown has duplicate, indistinguishable entries.** Linking a vehicle to a standard type shows two options both labelled "Cat 1 Tanker (standard)" — one a custom-authored type (3 checks), one the built-in NSW RFS type (24 checks) — with nothing in the UI to tell them apart before picking one.
+- **Q40 — "Cannot Delete Station" dialog reports the wrong station's data.** Deleting a brand-new, empty station is blocked with "This station has existing data: 6 members, 2 events" — figures that exactly match the *Default Station's* data, not the station being deleted. Blocks legitimate deletes of empty stations and is actively misleading; deactivate works as a workaround.
+- **Q41 — Admin-authenticated `/signin` sessions don't join the real-time socket room.** Two admin-JWT browser sessions both watching `/signin` never exchanged a `join-station` frame and never received each other's live check-ins/events without a manual refresh (confirmed via raw WebSocket frame capture over 10+ seconds). **Kiosk/brigade-token sessions are unaffected** — the same test with two `?brigade=` device sessions synced correctly and instantly. Likely a `selectedStation` resolution/effect-timing gap in `useSocket.ts`'s admin path, not a broken real-time layer.
+- **Q42 — Polish sweep.** Three small, independent items from this pass: (1) Delete Member / Cancel Check / Revoke Token still use native `confirm()`/`alert()` dialogs, inconsistent with the in-app modal pattern used elsewhere (e.g. truck-check issue Acknowledge/Resolve); (2) Microsoft Clarity (main app) and Cloudflare Insights (`/aar`) analytics beacons are blocked by the CSP `connect-src`/`script-src` allowlists on every page load — harmless but noisy console errors, and analytics silently isn't being collected; (3) the public marketing page calls `GET /api/billing/status` while logged out, producing a benign but noisy 401 in the console.
+- **Q43 — Occasional duplicate member from a single "Add" click.** Observed once this session (two identical "UAT Test Member" records from what should have been one Add action, confirmed via API) but did not reproduce across 3 immediate follow-up attempts with clean network traces (1 POST each). Likely a rare client-side race rather than a systemic double-submit — worth a quick look at the Add-member handler, but low confidence/low priority until it reproduces again.
 
 ### Post-launch — iterate & expand
 
