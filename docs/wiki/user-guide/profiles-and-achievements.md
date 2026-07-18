@@ -15,6 +15,8 @@ Admins additionally see management actions on a profile, including **Invite to
 login** (sends a one-time activation link so the member can set a password) and
 editing member details.
 
+![A member profile page with QR code, sign-in link, stats, and achievement progress](images/member-profile.png)
+
 ## Achievements
 
 Station Manager includes an optional, just-for-fun achievement system to

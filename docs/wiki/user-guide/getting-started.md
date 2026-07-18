@@ -1,5 +1,7 @@
 # Getting Started
 
+![The Bushie Tools marketing landing page, with the "Try it free" and "Try the demo" buttons](images/getting-started-landing.png)
+
 ## Try it first — demo mode
 
 You don't need an account to look around. Open the app and add `?demo=true` to
@@ -25,6 +27,8 @@ demo affects a real brigade, and demo data resets periodically.
    Basic or AI Pro happens from **Admin → Organization** and includes a
    14-day trial.
 
+![The signup form: organisation name, email, username, and password fields](images/getting-started-signup.png)
+
 ## Inviting members & multiple organisations
 
 - From **Admin → Organization → Invite links**, an owner or admin can
@@ -49,6 +53,8 @@ demo affects a real brigade, and demo data resets periodically.
   member profile. Opening it lets you set a password and gives you a read-only
   login of your own.
 
+![The login page with username and password fields](images/getting-started-login.png)
+
 ## The home screen (app picker)
 
 Once your brigade is set up, the home screen shows a card for each part of the
@@ -61,6 +67,8 @@ app your plan includes:
 
 Locked cards link to the upgrade page. Suite apps (Fire Break Calculator,
 Fire Santa Run) appear here too when enabled for your organisation.
+
+![The app picker home screen with cards for Sign In, Vehicle Check, Reports, and AAR Studio](images/getting-started-app-picker.png)
 
 ## Next steps for a new brigade
 

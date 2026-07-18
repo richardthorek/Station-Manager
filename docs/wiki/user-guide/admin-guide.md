@@ -31,6 +31,8 @@ multiples; a plan-limit message appears if you hit your ceiling).
 - Every station's data is isolated — brigades never see each other's members,
   checks, or reports.
 
+![The Stations admin page listing an organisation's stations](images/admin-stations.png)
+
 ## Brigade access — setting up kiosks (`Admin → Brigade Access`)
 
 A **brigade access token** is what lets the shared station tablet use the
@@ -48,9 +50,13 @@ day-to-day pages (sign-in, truck checks), never the admin pages. For putting a
 sign-in link on your brigade's website, see
 [linking from your brigade website](brigade-website-linking.md).
 
+![A brigade access token issued, with its sign-in link and QR code](images/admin-brigade-access.png)
+
 ## Organization, plans & billing (`Admin → Organization`)
 
 The owner's page for the business side:
+
+![The Organization admin page: plan, status, entitlements, and members](images/admin-organization.png)
 
 - **Plan** — see your current plan and upgrade/downgrade. Paid plans start
   with a **14-day trial** and are billed through Stripe (card details are

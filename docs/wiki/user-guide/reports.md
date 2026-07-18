@@ -21,6 +21,8 @@ Open **Reports** from the home screen. The main dashboard shows:
 
 Use the date-range picker to focus on a month, quarter, or custom period.
 
+![The reports dashboard with attendance, participation, and compliance summaries](images/reports-dashboard.png)
+
 ## Advanced and cross-station reports
 
 - **Advanced reports** (`Reports → Advanced`) — deeper breakdowns and
@@ -28,6 +30,10 @@ Use the date-range picker to focus on a month, quarter, or custom period.
 - **Cross-station reports** (`Reports → Cross-station`) — for organisations
   with more than one station: compare attendance and compliance across
   stations side by side.
+
+![Advanced report breakdowns and visualisations](images/reports-advanced.png)
+
+![Cross-station comparison view](images/reports-cross-station.png)
 
 ## Exporting data
 
