@@ -29,7 +29,8 @@ for the account used) · N/A not applicable to the account/plan under test.
 
 **Last run:** 2026-07-17 — see
 [UAT_REVIEW_2026-07-17.md](history/reviews/UAT_REVIEW_2026-07-17.md) for full
-narrative, evidence, and the findings list (Q37–Q43 in `MASTER_PLAN.md`).
+narrative, evidence, and the findings list (Q38–Q44 in `MASTER_PLAN.md`; an
+initial Q37 finding was retracted the same session — see the review).
 
 ---
 
@@ -76,9 +77,10 @@ narrative, evidence, and the findings list (Q37–Q43 in `MASTER_PLAN.md`).
 - [x] Board loads with live member roster and current event/activity
 - [x] Real-time "Connected" indicator
 - [x] Search-by-name and A–Z index jump
-- [🟡] Check a member **in** — updates immediately, participant count increments —
-  **Q37**: silently fails to persist server-side when two members share a display
-  name; a uniquely-named member works correctly
+- [x] Check a member **in** — updates immediately, participant count increments —
+  confirmed persisting correctly server-side, including for duplicate-named
+  members (an initial "Q37" finding was a test-methodology false positive,
+  retracted same session — see the dated review)
 - [x] Check the same member **out** — updates immediately
 - [x] **+ Visitor** — add and sign in a one-off visitor
 - [x] **+ New Event** — start an activity/event, becomes "current"
