@@ -15,6 +15,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import type { FacilitySelection } from '../../services/api';
@@ -119,7 +120,7 @@ export function SignupPage() {
       }
 
       // No billing intent and onboarding complete — drop them at the app picker
-      showSuccess('Account created — welcome to Bushie Tools!');
+      showSuccess('Account created — welcome to StationKit!');
       navigate('/', { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Sign-up failed';
@@ -146,7 +147,7 @@ export function SignupPage() {
         <main className="login-main">
           <div className="login-container">
             <div className="login-card">
-              <div className="login-icon">🚒</div>
+              <div className="login-icon"><UserPlus size={32} strokeWidth={2} aria-hidden /></div>
               <h2>Sign Up</h2>
               <p className="signup-step-indicator">Step {step} of 2</p>
               <p className="login-description">
@@ -166,7 +167,7 @@ export function SignupPage() {
                       <button type="button" className="signup-conflict-link" onClick={() => setFacility(null)}>
                         Choose a different facility
                       </button>
-                      <a className="signup-conflict-link" href="mailto:support@bushietools.com.au">
+                      <a className="signup-conflict-link" href="mailto:support@stationkit.com.au">
                         Contact support
                       </a>
                     </div>

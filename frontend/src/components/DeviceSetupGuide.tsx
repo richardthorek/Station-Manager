@@ -26,7 +26,7 @@ const steps = [
         <p>This guide will show you how to:</p>
         <ul>
           <li>Create a device token on your station's admin console</li>
-          <li>Save Bushie Tools as an app on your device</li>
+          <li>Save StationKit as an app on your device</li>
           <li>Scan the QR code to activate your device</li>
         </ul>
         <p className="guide-note">Estimated time: 3-5 minutes</p>
@@ -57,7 +57,7 @@ const steps = [
   {
     id: 'pwa',
     title: 'Step 2: Save as App',
-    description: 'Install Bushie Tools on your device',
+    description: 'Install StationKit on your device',
     icon: Download,
     content: (
       <div className="guide-step-content">
@@ -89,7 +89,7 @@ const steps = [
       <div className="guide-step-content">
         <p><strong>Using the app on your device:</strong></p>
         <ol>
-          <li>Open the Bushie Tools app from your home screen</li>
+          <li>Open the StationKit app from your home screen</li>
           <li>You'll see the <strong>Sign In</strong> screen</li>
           <li>Look for the <strong>"Scan Device QR Code"</strong> button</li>
           <li>Tap it to open the camera scanner</li>

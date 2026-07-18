@@ -37,8 +37,18 @@
 }
 
 .mkt-brand-name {
+  font-family: 'Archivo', 'Public Sans', sans-serif;
   font-weight: 800;
   font-size: 1.15rem;
+  letter-spacing: -0.3px;
+}
+
+.mkt-brand-name__station {
+  color: var(--text-primary);
+}
+
+.mkt-brand-name__kit {
+  color: var(--rfs-core-red);
 }
 
 .mkt-nav {

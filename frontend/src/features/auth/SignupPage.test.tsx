@@ -159,7 +159,7 @@ describe('SignupPage', () => {
 
     expect(await screen.findByText(/already been claimed/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /choose a different facility/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /contact support/i })).toHaveAttribute('href', 'mailto:support@bushietools.com.au')
+    expect(screen.getByRole('link', { name: /contact support/i })).toHaveAttribute('href', 'mailto:support@stationkit.com.au')
 
     // Choosing a different facility clears the selection and disables submit again.
     fireEvent.click(screen.getByRole('button', { name: /choose a different facility/i }))
