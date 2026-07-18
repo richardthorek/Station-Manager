@@ -19,8 +19,8 @@ A full user-acceptance pass against the live production deployment (`bushietools
 |---|---|---|
 | Resolved since June 22 | 4 | Anonymous data exposure (reports/members/truck-checks) now 401s; truck-check linked-vehicle save no longer 400s; AAR Studio AI gateway fully working (findings + report generation); Stripe billing portal live |
 | Should-fix (new) | 0 | — all resolved same session |
-| Fixed same session | 6 | Admin `/signin` sessions didn't join the real-time socket room (Q41) — fixed in `StationContext.tsx`, verified live; found while fixing it — `GET /api/stations` had no organization scoping at all (Q45), fixed alongside; sign-in board defaulted to the touch-grid layout on every screen size once an event was active, un-persisted (Q44) — fixed in `SignInPage.tsx`, verified live at both desktop and kiosk widths; unlinked-appliance truck check fake-passed 0/0 (Q38) — fixed in `CheckWorkflowPage.tsx`, verified live; Vehicle Type link dropdown had indistinguishable duplicate entries (Q39) — fixed in `VehicleFormModal.tsx`, verified live; Delete Station dialog reported another station's data (Q40) — fixed in `api.ts`/`DeleteConfirmationDialog.tsx`, verified live |
-| Minor / polish (new) | 2 | Native `confirm()`/`alert()` dialogs still used in 3 flows; analytics beacons (Clarity, Cloudflare Insights) blocked by CSP, plus a stray unauthenticated `/api/billing/status` call on the public marketing page (Q42) |
+| Fixed same session | 7 | Admin `/signin` sessions didn't join the real-time socket room (Q41) — fixed in `StationContext.tsx`, verified live; found while fixing it — `GET /api/stations` had no organization scoping at all (Q45), fixed alongside; sign-in board defaulted to the touch-grid layout on every screen size once an event was active, un-persisted (Q44) — fixed in `SignInPage.tsx`, verified live at both desktop and kiosk widths; unlinked-appliance truck check fake-passed 0/0 (Q38) — fixed in `CheckWorkflowPage.tsx`, verified live; Vehicle Type link dropdown had indistinguishable duplicate entries (Q39) — fixed in `VehicleFormModal.tsx`, verified live; Delete Station dialog reported another station's data (Q40) — fixed in `api.ts`/`DeleteConfirmationDialog.tsx`, verified live; polish sweep — native dialogs, CSP analytics gaps, stray billing-status call (Q42) — fixed across `UserProfilePage.tsx`/`TruckCheckPage.tsx`/`BrigadeAccessPage.tsx`, `index.ts`, `TrialBanner.tsx` |
+| Minor / polish (new) | 0 | — Q42's three items all fixed same session |
 | Low-confidence (new) | 1 | One-off duplicate member from a single Add click, not reproduced in 3 follow-up attempts (Q43) |
 | Retracted same session | 1 | "Check-in silently fails for duplicate-named members" (Q37) — a test-methodology false positive, caught and corrected before any fix was attempted; see the retraction note in Section 4 below |
 
@@ -110,7 +110,7 @@ Screenshots: `realtime-sync-kiosk-device-b` (the working kiosk-to-kiosk case); `
 
 ### 15 — Cross-cutting
 
-No console errors on any tested page **except** the CSP-blocked analytics beacons noted in Q42 (Microsoft Clarity on the main app, Cloudflare Insights on `/aar`) — both fire on every load and are silently dropped, so analytics data isn't being collected at all right now, worth a look independent of the console noise. Touch targets on the sign-in board and truck-check screens look kiosk-appropriate at iPad size. Dark mode held up cleanly on every section it was checked against. Service worker registers at scope `/` (didn't reach `active` state in a single headless page load — expected first-visit behavior, not verified further; full offline-queue behavior needs a real device/browser session to verify properly, not a fresh headless context each run).
+No console errors on any tested page **except** the CSP-blocked analytics beacons noted in Q42 (Microsoft Clarity on the main app, Cloudflare Insights on `/aar`) — both fire on every load and were silently dropped, so analytics data wasn't being collected at all. **Fixed 2026-07-18** — see the changelog entry for the exact CSP gaps and fix. Touch targets on the sign-in board and truck-check screens look kiosk-appropriate at iPad size. Dark mode held up cleanly on every section it was checked against. Service worker registers at scope `/` (didn't reach `active` state in a single headless page load — expected first-visit behavior, not verified further; full offline-queue behavior needs a real device/browser session to verify properly, not a fresh headless context each run).
 
 ## Recommendations, in priority order
 
@@ -119,7 +119,7 @@ No console errors on any tested page **except** the CSP-blocked analytics beacon
 3. ~~**Q38 — Truck check unlinked-vehicle fake-pass.**~~ Fixed 2026-07-18 — see above.
 4. ~~**Q39 — the duplicate Vehicle Type dropdown entries.**~~ Fixed 2026-07-18 — see above.
 5. ~~**Q40 — Fix the Delete Station data-count check.**~~ Fixed 2026-07-18 — see above.
-6. **Q42 — Polish sweep** (native dialogs, CSP analytics allowlist, stray anonymous `/api/billing/status` call) — low effort, whenever this area is next touched.
+6. ~~**Q42 — Polish sweep.**~~ Fixed 2026-07-18 — see above.
 7. **Q43 — Keep an eye out for the duplicate-member-on-Add flake.** Not reproducible on demand; re-open if it recurs.
 
 ## What's confirmed fixed since the June 22, 2026 review (no action needed)
@@ -137,6 +137,7 @@ No console errors on any tested page **except** the CSP-blocked analytics beacon
 - **Q38** — an appliance with no linked Vehicle Type and no legacy template fake-passed a check with 0 items; fixed in `CheckWorkflowPage.tsx` (refuses to start, shows a "No checklist to run yet" guidance screen instead), verified live against a forced 0-item state.
 - **Q39** — the Vehicle Type link dropdown showed indistinguishable duplicate entries for same-named types; fixed in `VehicleFormModal.tsx` (labels by provenance + item count), verified live by reproducing the exact original name collision.
 - **Q40** — the Delete Station dialog reported another station's data counts; fixed in `api.ts`/`DeleteConfirmationDialog.tsx` (station-scoped statistics call) — also found and fixed the identical bug in `StationDetailsView.tsx` — verified live with two real stations under one org.
+- **Q42** — polish sweep: Delete Member/Cancel Check/Revoke Token converted from native `confirm()`/`alert()` to the in-app `ConfirmationDialog` + toast pattern; CSP `connect-src`/`script-src` gaps for Clarity (needed a wildcard, not enumerated subdomains) and Cloudflare Insights (wrong domain, and missing entirely from the `/aar` override) closed; the marketing page's stray anonymous `/api/billing/status` call fixed by gating `TrialBanner.tsx` on being signed in.
 
 ## Test data left on the live org
 

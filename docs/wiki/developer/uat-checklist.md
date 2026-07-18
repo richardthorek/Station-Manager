@@ -32,7 +32,8 @@ for the account used) · N/A not applicable to the account/plan under test.
 narrative, evidence, and the findings list (Q38–Q44 in `MASTER_PLAN.md`; an
 initial Q37 finding was retracted the same session — see the review). Q41/Q45,
 Q44, Q38, Q39, and Q40 were fixed and re-verified live the same session
-(2026-07-17/18); the remaining findings (Q42, Q43) are still open.
+(2026-07-17/18); Q42 was also fixed the same session. Only Q43 (a low-confidence,
+not-reproducible flake) remains open.
 
 ---
 
@@ -100,7 +101,8 @@ Q44, Q38, Q39, and Q40 were fixed and re-verified live the same session
 - [x] Stats, check-in history, achievements render
 - [x] QR code for the member displays
 - [x] Edit member details — name/rank inline edit tested, persists
-- [x] Delete member — soft-delete confirmed (native `confirm()` dialog — see **Q42**)
+- [x] Delete member — soft-delete confirmed; now uses the in-app `ConfirmationDialog`
+  instead of a native `confirm()` — fixed same session (**Q42**), re-verified live
 - [x] Anonymous/no-credential visit to a raw `/profile/:id` URL is blocked
   (negative test — AccessRoute gate) — confirmed, bounces to marketing page
 
@@ -224,9 +226,11 @@ Q44, Q38, Q39, and Q40 were fixed and re-verified live the same session
 - [x] Touch targets ≥60px on kiosk-relevant screens (sign-in board, truck check) —
   visual check at iPad size, looks correct
 - [x] Dark mode holds up across every section tested, not just the sign-in board
-- [🟡] No console errors on any page tested — **Q42**: analytics beacons (Clarity,
-  Cloudflare Insights) blocked by CSP on every load; a stray unauthenticated
-  `/api/billing/status` call on the public marketing page
+- [x] No console errors on any page tested — **Q42** fixed same session: CSP
+  `connect-src`/`script-src` gaps for Clarity/Cloudflare Insights closed (wildcard
+  subdomain + correct beacon domain), and the stray unauthenticated
+  `/api/billing/status` call on the public marketing page is gone (gated on
+  being signed in)
 - [x] Responsive layout doesn't break at any of the 3 target widths on any tested
   page (one screenshot-capture artifact noted and corrected — see the dated review;
   not a product bug)

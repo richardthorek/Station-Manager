@@ -16,6 +16,8 @@ import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
 import { PageTransition } from '../../../components/PageTransition';
 import { AdminNav } from '../../../components/AdminNav';
+import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
+import { useToast } from '../../../hooks/useToast';
 import type { Station, Device } from '../../../types';
 import { StationTokenCard } from './StationTokenCard';
 import './BrigadeAccessPage.css';
@@ -44,8 +46,10 @@ export function BrigadeAccessPage() {
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
   const [enrollingFor, setEnrollingFor] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [confirmingRevokeToken, setConfirmingRevokeToken] = useState<TokenInfo | null>(null);
 
   const socket = useSocket();
+  const { showError } = useToast();
 
   /**
    * Load stations, tokens, and devices
@@ -134,21 +138,26 @@ export function BrigadeAccessPage() {
   };
 
   /**
-   * Revoke a token
+   * Revoke a token — opens the confirmation dialog (Q42, found 2026-07-17:
+   * this used to be a native confirm()/alert()).
    */
-  const handleRevokeToken = async (token: string) => {
-    if (!confirm('Are you sure you want to revoke this token? The kiosk URL will no longer work.')) {
-      return;
-    }
-    
+  const handleRevokeToken = (token: string) => {
+    const tokenInfo = tokens.find((t) => t.token === token);
+    if (tokenInfo) setConfirmingRevokeToken(tokenInfo);
+  };
+
+  /** Actually revokes the token being confirmed. */
+  const confirmRevokeToken = async () => {
+    if (!confirmingRevokeToken) return;
+    const token = confirmingRevokeToken.token;
     try {
       await api.revokeBrigadeAccessToken(token);
-      
-      // Remove token from list
       setTokens(tokens.filter(t => t.token !== token));
+      setConfirmingRevokeToken(null);
     } catch (err) {
       console.error('Error revoking token:', err);
-      alert('Failed to revoke token: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      showError('Failed to revoke token: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      throw err; // keeps the confirmation dialog open with the error shown
     }
   };
 
@@ -355,6 +364,22 @@ export function BrigadeAccessPage() {
         )}
       </main>
     </div>
+
+    {confirmingRevokeToken && (
+      <ConfirmationDialog
+        title="Revoke Token"
+        message="Are you sure you want to revoke this token?"
+        description={
+          confirmingRevokeToken.description
+            ? `"${confirmingRevokeToken.description}" — the kiosk URL will no longer work.`
+            : 'The kiosk URL will no longer work.'
+        }
+        confirmLabel="Revoke"
+        isDangerous
+        onConfirm={confirmRevokeToken}
+        onCancel={() => setConfirmingRevokeToken(null)}
+      />
+    )}
     </PageTransition>
   );
 }

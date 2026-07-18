@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import './TrialBanner.css';
 
 export function TrialBanner() {
+  // Q42 (found 2026-07-17): mounted globally in App.tsx, above the route
+  // tree, so it rendered — and called the authed-only billing endpoint —
+  // on every page including the public marketing page for a logged-out
+  // visitor. GET /api/billing/status requires authMiddleware, so that was
+  // a guaranteed 401 on every anonymous page load; harmless (silently
+  // caught) but pure noise. Gate on being signed in instead of firing and
+  // discarding the request on every anonymous page load.
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
     api.getBillingStatus()
       .then(s => {
         if (s.status === 'trialing' && s.trialEndsAt) {
@@ -15,7 +25,7 @@ export function TrialBanner() {
         }
       })
       .catch(() => {/* silently ignore — trial banner is non-critical */});
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   if (daysLeft === null) return null;
 
