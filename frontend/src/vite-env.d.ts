@@ -11,7 +11,7 @@ interface AppVersion {
 
 declare const __APP_VERSION__: AppVersion;
 
-// Suite launcher: absolute URLs of sibling Bushie Tools apps (separate
+// Suite launcher: absolute URLs of sibling StationKit apps (separate
 // deployments in suite Phase 1). Augments vite/client's ImportMetaEnv.
 interface ImportMetaEnv {
   readonly VITE_SANTA_RUN_URL?: string;
