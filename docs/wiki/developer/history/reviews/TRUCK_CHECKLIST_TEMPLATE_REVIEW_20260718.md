@@ -208,5 +208,58 @@ rows would stop future seed edits from regressing them back out.
 
 Forward-intent items from this review are logged in `MASTER_PLAN.md` (queue), per
 the docs structure rule; this file is the point-in-time evidence.
-</content>
-</invoke>
+
+---
+
+## 6. Update — implemented 2026-07-18 (Q47)
+
+Fleet mapping confirmed by the brigade: B1 = Cat 1, B7 = Cat 7, LG Support 6 =
+**Cat 6** (a bulk water tanker with full firefighting equipment — front-mounted
+monitor/water cannon, pump and hoses — distinct from a bare bulk-water carrier
+that only transfers water with no firefighting kit), Pumper = Urban Pumper
+(Cat 10/11), PC Bravo = a dual-cab ute Personnel Carrier folded into the
+existing Group/Personnel Vehicle type.
+
+R1–R5 implemented in `backend/src/constants/standardVehicleTypes.ts`
+(`SEED_VERSION` 1 → 2), scoped to exactly the 5 types this review has evidence
+for — the other 15 seeded templates (SES, Fire & Rescue NSW, Marine Rescue,
+Generic) are untouched:
+
+- **New `std-cat6-tanker` type added** (21 standard types total, was 20) —
+  Cat 1/6/7/Pumper/Group-Personnel all rebuilt from new `RFS_*` reusable groups
+  (not the old shared `FLUIDS`/`TYRES`/`ROAD_LIGHTS`/etc., which stay exactly as
+  they were for the untouched agencies).
+- **R1 — safety-critical rows added**: `no-leaks-under-vehicle`,
+  `battery-secure`, `fire-extinguisher`, `aed-status`, `first-aid-kit` on all 5
+  types; `air-brake-bleed` on the air-braked heavy trucks (Cat 1 / Cat 6 /
+  Pumper); `ba-checks` on Cat 1 / Pumper (not present on the Cat 6/7/PC sheets);
+  MDT-charger disconnect/reconnect and signoff procedural bookends on all 5;
+  Cat 6 gets a `monitor-firefighting-kit` item for the water cannon/monitor the
+  brigade flagged as the category-defining difference; Urban Pumper gets its
+  CO2 extinguisher, RAM fan, generator and grinder-battery items.
+- **R2 — descriptions populated** on every new/reworked item; gauge/reading
+  items got `expectedResponseType`/`unit` (tyre `psi`, pump-pressure `kpa`,
+  fuel `level`) — specific target *values* deliberately left to the appliance
+  overlay (R4), not hardcoded in the shared seed.
+- **R3 — group composition fixed** for these 5 types only: dropped
+  `power-steering`/`spare-tyre`/`adblue-level` (not on any accepted sheet),
+  collapsed the 5 split light rows to the 2 bundled action-lines crews actually
+  use, added the Cat 6 type so pump-carrying support trucks aren't mistyped to
+  a pump-less template.
+- **R4** — confirmed by construction: no truck-specific pressure/kpa/channel/
+  count value was hardcoded into the seed; each `RFS_*` group's description
+  points at "see appliance notes" instead.
+- **R5 — acceptance-fixture tests added** in `standardVehicleTypeSeeder.test.ts`:
+  asserts all 5 road types keep the universal safety itemCodes, the 3 air-braked
+  types keep `air-brake-bleed`, and Cat 6 keeps `monitor-firefighting-kit`.
+
+*Backend: `npx tsc --noEmit` clean; full suite 1106 → 1107 tests green (1
+pre-existing skip), no regressions, run with `AZURE_STORAGE_CONNECTION_STRING`
+unset to confirm against the in-memory DB (a live connection string was present
+in the shell environment — see Q5's changelog entry for the same gotcha).*
+
+Not done in this pass (left as follow-up, not filed as a new Q-item — low
+value until it's a live complaint): zone-vocabulary starter zones for the new
+`cat6-tanker` code (falls back to empty zones, matching the existing
+"unknown code" behaviour — not a regression), and the admin-guide note on where
+per-appliance values go.
