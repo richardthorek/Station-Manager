@@ -105,6 +105,7 @@
   border: 2px solid var(--rfs-core-red);
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
+  font-family: inherit;
   font-weight: 600;
   text-decoration: none;
   border-radius: 6px;
@@ -213,6 +214,36 @@
   gap: 0.5rem;
 }
 
+.roster-card__edit-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--rfs-dark-grey);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Deep grid/flex nesting (roster-grid > roster-card > body > title-row >
+   button) makes Chromium miscompute the SVG's flex-basis as 0 despite its
+   width/height attributes — pin it explicitly rather than rely on intrinsic sizing. */
+.roster-card__edit-btn svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.roster-card__edit-btn:hover {
+  background: var(--surface-hover);
+  color: var(--rfs-core-red);
+}
+
 .roster-card__name {
   margin: 0;
   font-size: 1.25rem;
@@ -220,6 +251,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .roster-card__identity {
