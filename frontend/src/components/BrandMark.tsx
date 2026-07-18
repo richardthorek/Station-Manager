@@ -13,9 +13,9 @@ interface BrandMarkProps {
 
 export function BrandMark({ size = 32 }: BrandMarkProps) {
   return (
-    <span className="brand-mark" style={{ width: size, height: size }} aria-hidden="true">
-      <span className="brand-mark__letters" style={{ fontSize: size * 0.42 }}>SK</span>
-      <span className="brand-mark__bar" />
+    <span className="sk-mark" style={{ width: size, height: size }} aria-hidden="true">
+      <span className="sk-mark__letters" style={{ fontSize: size * 0.42 }}>SK</span>
+      <span className="sk-mark__bar" />
     </span>
   );
 }
