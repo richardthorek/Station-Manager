@@ -73,10 +73,43 @@ h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
 .topbar__brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.4rem 0.5rem; }
 .topbar__home {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.35rem;
   color: var(--rfs-white);
   text-decoration: none;
+}
+/* SK monogram tile — plain HTML/CSS since aar-studio is no-build vanilla
+   (no lucide-react/BrandMark component available here). Mirrors the SPA's
+   BrandMark.tsx sizing/proportions. */
+.topbar__logo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  background: var(--rfs-core-red);
+  border-radius: var(--radius-md);
+}
+.topbar__logo-letters {
+  font-family: 'Archivo', 'Arial Black', Helvetica, sans-serif;
+  font-weight: 900;
+  font-size: 9.5px;
+  color: #ffffff;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  transform: translateY(-8%);
+}
+.topbar__logo-bar {
+  position: absolute;
+  left: 29%;
+  right: 29%;
+  bottom: 16%;
+  height: 8%;
+  min-height: 1.5px;
+  border-radius: 999px;
+  background: var(--accent-amber);
 }
 .topbar__home:hover .topbar__suite { opacity: 1; }
 .topbar__suite {

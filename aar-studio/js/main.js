@@ -121,7 +121,7 @@ function renderGate() {
         'After Action Reviews — AI-assisted transcript analysis, the findings board, and shared cloud reviews — are part of the AI plan. Your organisation is on a plan that doesn’t include AAR Studio yet.'),
       h('div', { class: 'gate__actions' },
         h('a', { class: 'gate__btn', href: '/admin/organization' }, 'View plans & upgrade'),
-        h('a', { class: 'gate__btn gate__btn--secondary', href: '/' }, 'Back to Bushie Tools')),
+        h('a', { class: 'gate__btn gate__btn--secondary', href: '/' }, 'Back to StationKit')),
       h('p', { class: 'gate__hint' },
         'Already upgraded? Make sure AAR Studio is switched on under your organisation’s modules, then reload.'),
     ),

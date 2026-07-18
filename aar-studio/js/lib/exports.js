@@ -7,7 +7,7 @@ import { escapeHtml as esc, fmtClock, slugify } from './text.js';
 // Every export a facilitator hands to another brigade or district staff is a
 // no-cost sales pitch — the artifact carried no attribution at all until this
 // line was added (AAR Studio hero review 2026-07-03, AAR-19).
-const ATTRIBUTION = 'Produced with AAR Studio · Bushie Tools';
+const ATTRIBUTION = 'Produced with AAR Studio · StationKit';
 
 /** Blank report structure, pre-filled from session metadata. */
 export function emptyReport(session) {

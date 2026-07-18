@@ -49,9 +49,9 @@ test('markdown summary includes report sections and the findings register', () =
 });
 
 test('every export carries the "Produced with AAR Studio" attribution (AAR-19)', () => {
-  assert.match(renderSnapshotHtml(sample), /Produced with AAR Studio · Bushie Tools/);
-  assert.match(renderCombinedHtml(sample), /Produced with AAR Studio · Bushie Tools/);
-  assert.match(renderMarkdown(sample), /Produced with AAR Studio · Bushie Tools/);
+  assert.match(renderSnapshotHtml(sample), /Produced with AAR Studio · StationKit/);
+  assert.match(renderCombinedHtml(sample), /Produced with AAR Studio · StationKit/);
+  assert.match(renderMarkdown(sample), /Produced with AAR Studio · StationKit/);
 });
 
 test('transcript text applies the speaker rename map', () => {
