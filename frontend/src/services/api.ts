@@ -1736,6 +1736,20 @@ class ApiService {
     return response.json();
   }
 
+  /** Standalone Fire Santa Run add-on checkout — for Community orgs whose plan doesn't already include it. */
+  async createSantaAddonCheckoutSession(billingInterval: 'monthly' | 'annual' = 'annual'): Promise<{ checkoutUrl: string }> {
+    const response = await fetch(`${API_BASE_URL}/billing/santa-addon/checkout`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ billingInterval }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create checkout session');
+    }
+    return response.json();
+  }
+
   /** A3 voice agent — used to rehydrate the transcript after a WS reconnect resumes a session. */
   async getAgentSessionTurns(sessionId: string): Promise<AgentTurnSummary[]> {
     const response = await fetch(`${API_BASE_URL}/agent-sessions/${sessionId}/turns`, {
@@ -2115,6 +2129,12 @@ export interface BillingStatus {
   stripeConfigured: boolean;
   topupAvailable?: boolean;
   topupPackSize?: number;
+  /** Standalone Fire Santa Run add-on — only relevant for a plan that doesn't already grant santaRunEnabled. */
+  santaAddon?: {
+    available: boolean;
+    status: 'none' | 'trialing' | 'active' | 'past_due' | 'canceled';
+    interval: 'monthly' | 'annual' | null;
+  };
 }
 
 export interface AiUsage {

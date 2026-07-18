@@ -29,6 +29,8 @@ import { FACILITY_SERVICE_TYPE_LABELS } from '../constants/facilityServiceTypes'
 import type { AdminUser, FacilityServiceType } from '../types';
 import type { CreateOrganizationInput } from '../services/organizationDatabase';
 import { JWT_SECRET } from '../config/jwtSecret';
+import { setSessionCookie, clearSessionCookie, readSessionCookie } from '../utils/sessionCookie';
+import { resolveEffectiveEntitlements } from '../services/santaAddonService';
 
 const router = Router();
 
@@ -233,6 +235,7 @@ router.post('/signup', sensitiveActionRateLimiter, async (req: Request, res: Res
     }
 
     const token = signToken(owner);
+    setSessionCookie(res, token);
     const finalOrganization = (await orgDb.getOrganizationById(organization.id)) ?? organization;
     logger.info('Organization signed up', {
       organizationId: organization.id,
@@ -324,6 +327,7 @@ router.post('/login', sensitiveActionRateLimiter, async (req: Request, res: Resp
     });
 
     logger.info('User logged in', { username: user.username, userId: user.id });
+    setSessionCookie(res, token);
 
     // Return token and user info (without password hash)
     res.json({
@@ -348,11 +352,74 @@ router.post('/login', sensitiveActionRateLimiter, async (req: Request, res: Resp
  * Client-side logout (token invalidation happens on client)
  */
 router.post('/logout', (req: Request, res: Response) => {
-  // With JWT, logout is primarily client-side (remove token from storage)
+  // With JWT, logout is primarily client-side (remove token from storage).
+  // Also clear the suite-wide SSO cookie so every *.stationkit.com.au sibling
+  // app sees the sign-out on its next GET /api/auth/session.
   // We can log the event for audit purposes
   logger.info('User logged out', { userId: req.user?.userId });
+  clearSessionCookie(res);
   res.json({ message: 'Logged out successfully' });
 });
+
+/**
+ * Build the identity + organization + entitlements payload shared by
+ * GET /api/auth/me and GET /api/auth/session. `entitlements` is the
+ * *effective* value (plan entitlements with a standalone Santa Run add-on
+ * OR'd in — see services/santaAddonService.ts), not the raw stored value.
+ *
+ * Contract note: id/username/role/organizationId/organization/entitlements
+ * are consumed by suite siblings (Fire Santa Run, Fire Break Calculator) —
+ * additions here must stay additive.
+ */
+async function buildIdentityPayload(
+  userId: string,
+  tokenOrganizationId: string | undefined,
+  tokenRole: 'owner' | 'admin' | 'viewer' | undefined,
+) {
+  const adminDb = getAdminDb();
+  const user = await adminDb.getUserById(userId);
+  if (!user) return null;
+
+  // The ACTIVE org comes from the JWT (set at login / switch-org); fall back
+  // to the user's stored default for older tokens.
+  const activeOrganizationId = tokenOrganizationId ?? user.organizationId;
+
+  // Resolve organization + entitlements for the client to gate features.
+  const orgDb = ensureOrganizationDatabase();
+  let organization = null;
+  if (activeOrganizationId) {
+    organization = await orgDb.getOrganizationById(activeOrganizationId);
+  }
+
+  // All memberships (multi-org), with org names for the switcher UI.
+  const membershipRows = (await resolveMemberships(user)).filter((m) => m.status === 'active');
+  const memberships = await Promise.all(
+    membershipRows.map(async (m) => {
+      const org =
+        m.organizationId === organization?.id
+          ? organization
+          : await orgDb.getOrganizationById(m.organizationId);
+      return {
+        organizationId: m.organizationId,
+        organizationName: org?.name ?? 'Unknown organisation',
+        role: m.role,
+      };
+    }),
+  );
+
+  return {
+    id: user.id,
+    username: user.username,
+    role: tokenRole ?? user.role,
+    organizationId: activeOrganizationId,
+    email: user.email ?? null,
+    lastLoginAt: user.lastLoginAt,
+    organization,
+    entitlements: organization ? resolveEffectiveEntitlements(organization) : null,
+    memberships,
+    isPlatformAdmin: isPlatformAdmin(user.username),
+  };
+}
 
 /**
  * GET /api/auth/me
@@ -365,59 +432,65 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const adminDb = getAdminDb();
-    const user = await adminDb.getUserById(req.user.userId);
-
-    if (!user) {
+    const payload = await buildIdentityPayload(req.user.userId, req.user.organizationId, req.user.role);
+    if (!payload) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // The ACTIVE org comes from the JWT (set at login / switch-org); fall back
-    // to the user's stored default for older tokens.
-    const activeOrganizationId = req.user.organizationId ?? user.organizationId;
-
-    // Resolve organization + entitlements for the client to gate features.
-    const orgDb = ensureOrganizationDatabase();
-    let organization = null;
-    if (activeOrganizationId) {
-      organization = await orgDb.getOrganizationById(activeOrganizationId);
-    }
-
-    // All memberships (multi-org), with org names for the switcher UI.
-    const membershipRows = (await resolveMemberships(user)).filter((m) => m.status === 'active');
-    const memberships = await Promise.all(
-      membershipRows.map(async (m) => {
-        const org =
-          m.organizationId === organization?.id
-            ? organization
-            : await orgDb.getOrganizationById(m.organizationId);
-        return {
-          organizationId: m.organizationId,
-          organizationName: org?.name ?? 'Unknown organisation',
-          role: m.role,
-        };
-      }),
-    );
-
-    // Return user info (without password hash) + org context.
-    // Contract note: id/username/role/organizationId/organization/entitlements
-    // are consumed by suite siblings (Fire Break Calculator) — additions here
-    // must stay additive.
-    res.json({
-      id: user.id,
-      username: user.username,
-      role: req.user.role ?? user.role,
-      organizationId: activeOrganizationId,
-      email: user.email ?? null,
-      lastLoginAt: user.lastLoginAt,
-      organization,
-      entitlements: organization?.entitlements ?? null,
-      memberships,
-      isPlatformAdmin: isPlatformAdmin(user.username),
-    });
+    res.json(payload);
   } catch (error) {
     logger.error('Error fetching user info', { error });
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/auth/session
+ *
+ * Suite SSO bootstrap. Reads the `sk_session` cookie (set on login/signup on
+ * the `.stationkit.com.au` parent domain) and, if it holds a valid session,
+ * returns the same identity/organization/entitlements payload as `/me` plus a
+ * freshly-issued bearer token. A sibling app (Fire Santa Run, Fire Break
+ * Calculator) calls this once on load with `credentials: 'include'` to pick up
+ * an existing Station Manager sign-in without a redirect, then uses the
+ * returned `token` as `Authorization: Bearer <token>` for every subsequent API
+ * call — the cookie itself never authorises a mutation. See
+ * docs/wiki/developer/suite-token-validation.md.
+ */
+router.get('/session', async (req: Request, res: Response) => {
+  const cookieToken = readSessionCookie(req);
+  if (!cookieToken) {
+    return res.status(401).json({ error: 'No session' });
+  }
+
+  let decoded: { userId: string; organizationId?: string; role: 'owner' | 'admin' | 'viewer' };
+  try {
+    decoded = jwt.verify(cookieToken, JWT_SECRET) as typeof decoded;
+  } catch (error) {
+    clearSessionCookie(res);
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ error: 'Session expired' });
+    }
+    return res.status(401).json({ error: 'Invalid session' });
+  }
+
+  try {
+    const payload = await buildIdentityPayload(decoded.userId, decoded.organizationId, decoded.role);
+    if (!payload) {
+      clearSessionCookie(res);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const token = signToken({
+      id: payload.id,
+      username: payload.username,
+      role: payload.role,
+      organizationId: payload.organizationId,
+    });
+    return res.json({ ...payload, token });
+  } catch (error) {
+    logger.error('Error resolving session', { error });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -493,6 +566,7 @@ router.post('/switch-org', sensitiveActionRateLimiter, authMiddleware, async (re
     await adminDb.updateUser(user.id, { organizationId });
 
     const token = signToken({ id: user.id, username: user.username, role, organizationId });
+    setSessionCookie(res, token);
     logger.info('User switched active organization', { userId: user.id, organizationId });
 
     return res.json({
@@ -531,7 +605,7 @@ router.get('/entitlements', authMiddleware, async (req: Request, res: Response) 
     }
 
     return res.json({
-      entitlements: organization.entitlements,
+      entitlements: resolveEffectiveEntitlements(organization),
       planCode: organization.planCode,
       status: organization.status,
     });

@@ -1676,6 +1676,43 @@
       "file": "backend/src/services/adminUserDatabase.ts",
       "description": "AdminUser now carries an optional `email` (required at signup/invite-acceptance, nullable for legacy accounts). createAdminUser gained an optional trailing `options?: {email?: string}` parameter — existing call sites compile unchanged.",
       "functions": {}
+    },
+    "sessionCookie": {
+      "file": "backend/src/utils/sessionCookie.ts",
+      "description": "Suite-wide SSO session cookie (sk_session), scoped to COOKIE_DOMAIN (e.g. .stationkit.com.au). Set on login/signup/switch-org, cleared on logout; read by GET /api/auth/session. No cookie-parser dependency — Express's res.cookie/res.clearCookie plus manual parsing of the one cookie this app reads back.",
+      "functions": {
+        "setSessionCookie": {
+          "signature": "setSessionCookie(res: Response, token: string): void",
+          "description": "Sets the httpOnly, Secure (prod), SameSite=Lax sk_session cookie.",
+          "async": false
+        },
+        "clearSessionCookie": {
+          "signature": "clearSessionCookie(res: Response): void",
+          "description": "Clears the sk_session cookie (logout, or an invalid/expired session read).",
+          "async": false
+        },
+        "readSessionCookie": {
+          "signature": "readSessionCookie(req: Request): string | undefined",
+          "description": "Reads the sk_session cookie's raw JWT value from the request, if present.",
+          "async": false
+        }
+      }
+    },
+    "santaAddonService": {
+      "file": "backend/src/services/santaAddonService.ts",
+      "description": "Standalone Fire Santa Run add-on entitlement resolution — for Community orgs whose plan doesn't already grant santaRunEnabled (Basic/AI Pro get it bundled, see constants/plans.ts). Combines the org's plan-derived entitlements with an active add-on subscription into the effective value GET /api/auth/{me,entitlements,session} and GET /api/organizations/current return, without mutating the persisted plan entitlements.",
+      "functions": {
+        "isSantaAddonEntitled": {
+          "signature": "isSantaAddonEntitled(org: Pick<Organization, 'santaAddon'>): boolean",
+          "description": "True when the org's standalone Santa add-on subscription is active/trialing/past_due (grace window, matching how the main plan subscription is treated).",
+          "async": false
+        },
+        "resolveEffectiveEntitlements": {
+          "signature": "resolveEffectiveEntitlements(org: Pick<Organization, 'entitlements' | 'santaAddon'>): Entitlements",
+          "description": "The entitlements a caller should see: plan entitlements with santaRunEnabled OR'd in when the standalone add-on is active.",
+          "async": false
+        }
+      }
     }
   },
   "routes": {
@@ -1914,8 +1951,14 @@
     },
     "auth (updated)": {
       "file": "backend/src/routes/auth.ts",
-      "description": "signup now validates + persists email and resolves the facility claim/conflict/custom flow (see api_register.json). login and /me resolve multi-org memberships via orgMembershipService. New: PUT /profile (email backfill), POST /switch-org (reissue JWT scoped to a different org the user belongs to).",
-      "functions": {}
+      "description": "signup now validates + persists email and resolves the facility claim/conflict/custom flow (see api_register.json). login and /me resolve multi-org memberships via orgMembershipService. New: PUT /profile (email backfill), POST /switch-org (reissue JWT scoped to a different org the user belongs to). Suite Phase 2 SSO (this session): login/signup/switch-org also set the sk_session cookie (utils/sessionCookie.ts) and logout clears it; new GET /session bootstraps a sibling app's session from that cookie. /me's identity/organization/entitlements body was refactored into a shared buildIdentityPayload() helper reused by /session; both now return *effective* entitlements via services/santaAddonService.ts.",
+      "functions": {
+        "buildIdentityPayload": {
+          "signature": "buildIdentityPayload(userId: string, tokenOrganizationId: string | undefined, tokenRole: 'owner' | 'admin' | 'viewer' | undefined): Promise<IdentityPayload | null>",
+          "description": "Shared identity + organization + effective-entitlements + memberships payload builder used by both GET /me and GET /session.",
+          "async": true
+        }
+      }
     },
     "organizations (updated)": {
       "file": "backend/src/routes/organizations.ts",

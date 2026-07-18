@@ -217,6 +217,13 @@ export interface Entitlements {
   fireBreakEnabled: boolean;
 }
 
+/** Lifecycle of a standalone Santa Run add-on subscription (see Organization.santaAddon). */
+export interface SantaAddonInfo {
+  status: 'none' | 'trialing' | 'active' | 'past_due' | 'canceled';
+  interval?: 'monthly' | 'annual';
+  stripeSubscriptionId?: string;
+}
+
 export type EntitlementFeature =
   | 'signInEnabled'
   | 'truckCheckEnabled'
@@ -270,6 +277,14 @@ export interface Organization {
   stripeCustomerId?: string;     // reserved for Stripe Billing (not yet wired)
   stripeSubscriptionId?: string;
   trialEndsAt?: Date;
+  /**
+   * Standalone Fire Santa Run add-on subscription — for orgs whose plan
+   * doesn't already grant `entitlements.santaRunEnabled` (Community). Basic
+   * and AI Pro get Santa Run bundled in the plan and never need this. See
+   * `services/santaAddonService.ts` for how the two combine into the
+   * effective entitlement a sibling app sees.
+   */
+  santaAddon?: SantaAddonInfo;
   /**
    * Purchased AI top-up sessions that carry over month-to-month (they do not
    * reset). Consumed only after the monthly `aiIncludedSessions` allowance is

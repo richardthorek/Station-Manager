@@ -39,6 +39,7 @@ export type OrganizationUpdate = Partial<
     | 'stripeCustomerId'
     | 'stripeSubscriptionId'
     | 'trialEndsAt'
+    | 'santaAddon'
     | 'aiBonusSessions'
     | 'facilityKey'
     | 'facilityObjectId'

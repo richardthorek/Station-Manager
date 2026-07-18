@@ -100,6 +100,40 @@
         },
         "implementation": "backend/src/routes/billing.ts:148"
       },
+      "POST /api/billing/santa-addon/checkout": {
+        "method": "POST",
+        "path": "/api/billing/santa-addon/checkout",
+        "description": "Create a Stripe Checkout session (mode: subscription) for the standalone Fire Santa Run add-on — for Community orgs whose plan doesn't already grant santaRunEnabled (Basic/AI Pro get it bundled). A$10/year (unlimited use) or A$15 for a one-off month. Owner-only; tracked on Organization.santaAddon independently of the org's main plan subscription.",
+        "authentication": "JWT (owner)",
+        "requestBody": {
+          "billingInterval": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "annual"
+            ],
+            "default": "annual"
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ checkoutUrl } — redirect to complete payment"
+          },
+          "400": {
+            "description": "Invalid billingInterval, price not configured for the chosen interval, or the org's plan already includes Fire Santa Run"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not an org owner"
+          },
+          "503": {
+            "description": "Santa add-on not configured (STRIPE_PRICE_SANTA_ADDON_MONTHLY/_ANNUAL or STRIPE_SECRET_KEY missing)"
+          }
+        },
+        "implementation": "backend/src/routes/billing.ts"
+      },
       "POST /api/billing/portal": {
         "method": "POST",
         "path": "/api/billing/portal",
@@ -7159,6 +7193,64 @@
         },
         "404": {
           "description": "Organization not found"
+        }
+      },
+      "implementation": "backend/src/routes/auth.ts"
+    },
+    "GET /api/auth/session": {
+      "method": "GET",
+      "path": "/api/auth/session",
+      "description": "Phase 2 suite SSO bootstrap. Reads the sk_session httpOnly cookie (set on login/signup, scoped to COOKIE_DOMAIN e.g. .stationkit.com.au) and, if valid, returns the same identity/organization/entitlements payload as GET /api/auth/me plus a freshly-issued bearer token. A sibling app calls this once on load with credentials: 'include' to silently resume an existing Station Manager sign-in, then authorises every subsequent call with the returned token — the cookie itself never authorises a mutation.",
+      "authentication": "sk_session cookie (no Authorization header required)",
+      "rateLimit": "standard API limiter",
+      "responses": {
+        "200": {
+          "description": "Session resolved from the cookie",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "owner",
+                  "admin",
+                  "viewer"
+                ]
+              },
+              "organizationId": {
+                "type": "string"
+              },
+              "organization": {
+                "type": "object"
+              },
+              "entitlements": {
+                "type": "object",
+                "description": "Effective entitlements — plan entitlements with an active standalone Santa Run add-on OR'd in"
+              },
+              "memberships": {
+                "type": "array"
+              },
+              "token": {
+                "type": "string",
+                "description": "Freshly-issued bearer JWT for subsequent Authorization: Bearer calls"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "No sk_session cookie, or it is invalid/expired (cleared server-side in the latter case)"
+        },
+        "404": {
+          "description": "User not found"
+        },
+        "500": {
+          "description": "Internal server error"
         }
       },
       "implementation": "backend/src/routes/auth.ts"

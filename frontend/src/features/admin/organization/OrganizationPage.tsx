@@ -45,6 +45,7 @@ export function OrganizationPage() {
   const [saving, setSaving] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const [topupLoading, setTopupLoading] = useState(false);
+  const [santaAddonLoading, setSantaAddonLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -89,17 +90,24 @@ export function OrganizationPage() {
     setAgencyLogoUrl(organization?.agencyLogoUrl ?? '');
   }, [organization?.agencyName, organization?.agencyLogoUrl]);
 
-  // AI session usage + billing status — only relevant when AI module is on.
+  // AI usage is only relevant when the AI module is on; billing status also
+  // drives the Santa Run add-on offer below, so it's fetched for every org.
   const aiEnabled = organization?.entitlements.aiEnabled ?? false;
   useEffect(() => {
     if (!aiEnabled) {
       setAiUsage(null);
-      setBillingStatus(null);
       return;
     }
     api.getAiUsage().then(setAiUsage).catch(() => setAiUsage(null));
-    api.getBillingStatus().then(setBillingStatus).catch(() => setBillingStatus(null));
   }, [aiEnabled]);
+
+  useEffect(() => {
+    if (!organization) {
+      setBillingStatus(null);
+      return;
+    }
+    api.getBillingStatus().then(setBillingStatus).catch(() => setBillingStatus(null));
+  }, [organization]);
 
   // Show feedback for Stripe redirect outcomes
   useEffect(() => {
@@ -117,6 +125,14 @@ export function OrganizationPage() {
       api.getAiUsage().then(setAiUsage).catch(() => undefined);
     } else if (topup === 'cancelled') {
       flash('error', 'Top-up checkout cancelled — no sessions were added.');
+    }
+    const santaAddon = searchParams.get('santaAddon');
+    if (santaAddon === 'success') {
+      flash('success', 'Fire Santa Run is now unlocked for your organisation!');
+      refreshOrganization();
+      api.getBillingStatus().then(setBillingStatus).catch(() => undefined);
+    } else if (santaAddon === 'cancelled') {
+      flash('error', 'Checkout cancelled — Fire Santa Run was not purchased.');
     }
   }, [searchParams, refreshOrganization]);
 
@@ -176,6 +192,18 @@ export function OrganizationPage() {
     } catch (err) {
       flash('error', err instanceof Error ? err.message : 'Could not start top-up checkout');
       setTopupLoading(false);
+    }
+  }
+
+  async function startSantaAddonCheckout(interval: 'monthly' | 'annual') {
+    if (!isOwner) return;
+    setSantaAddonLoading(true);
+    try {
+      const { checkoutUrl } = await api.createSantaAddonCheckoutSession(interval);
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      flash('error', err instanceof Error ? err.message : 'Could not start checkout');
+      setSantaAddonLoading(false);
     }
   }
 
@@ -425,6 +453,37 @@ export function OrganizationPage() {
 
             {!isOwner && <p className="org-hint">Only the owner can change the plan.</p>}
           </section>
+
+          {billingStatus?.santaAddon?.available && (
+            <section className="org-section">
+              <h2>🎅 Fire Santa Run add-on</h2>
+              <p className="org-hint">
+                Plan the brigade Santa run and share a live public GPS tracking map with the
+                community — not included in your current plan, but available on its own.
+                Unlimited use, no per-event fees.
+              </p>
+              {isOwner ? (
+                <div className="org-billing-actions">
+                  <button
+                    className="org-btn"
+                    disabled={santaAddonLoading}
+                    onClick={() => startSantaAddonCheckout('annual')}
+                  >
+                    {santaAddonLoading ? 'Opening…' : 'A$10/year (unlimited)'}
+                  </button>
+                  <button
+                    className="org-btn org-btn--secondary"
+                    disabled={santaAddonLoading}
+                    onClick={() => startSantaAddonCheckout('monthly')}
+                  >
+                    {santaAddonLoading ? 'Opening…' : 'A$15 one month'}
+                  </button>
+                </div>
+              ) : (
+                <p className="org-hint">Only the owner can purchase the Santa Run add-on.</p>
+              )}
+            </section>
+          )}
 
           <section className="org-section">
             <h2>Branding</h2>

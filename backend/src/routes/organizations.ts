@@ -30,6 +30,7 @@ import {
   violatesLastOwner,
 } from '../services/orgMembershipRules';
 import { clampEntitlements, getDefaultEntitlements, isPlanCode, PLANS, trialEndDate } from '../constants/plans';
+import { resolveEffectiveEntitlements } from '../services/santaAddonService';
 import { logger } from '../services/logger';
 import type { Entitlements, OrganizationStatus, OrgInvite, OrgRole, PlanCode } from '../types';
 
@@ -70,7 +71,13 @@ router.get('/current', authMiddleware, async (req: Request, res: Response) => {
   if (!organization) {
     return res.status(404).json({ error: 'Organization not found' });
   }
-  return res.json({ organization, plans: Object.values(PLANS) });
+  // Present the effective entitlements (plan + any standalone Santa Run
+  // add-on) — the stored `entitlements` alone would under-report a Community
+  // org that has purchased the add-on separately.
+  return res.json({
+    organization: { ...organization, entitlements: resolveEffectiveEntitlements(organization) },
+    plans: Object.values(PLANS),
+  });
 });
 
 /** PUT current organization — owner only. */

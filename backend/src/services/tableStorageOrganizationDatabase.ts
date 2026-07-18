@@ -39,6 +39,7 @@ interface OrganizationEntity extends TableEntity {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   trialEndsAt?: string;
+  santaAddonJson?: string;
   aiBonusSessions?: number;
   facilityKey?: string;
   facilityObjectId?: string;
@@ -92,6 +93,7 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       stripeCustomerId: org.stripeCustomerId,
       stripeSubscriptionId: org.stripeSubscriptionId,
       trialEndsAt: org.trialEndsAt?.toISOString(),
+      santaAddonJson: org.santaAddon ? JSON.stringify(org.santaAddon) : undefined,
       aiBonusSessions: org.aiBonusSessions,
       facilityKey: org.facilityKey,
       facilityObjectId: org.facilityObjectId,
@@ -120,6 +122,7 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       stripeCustomerId: entity.stripeCustomerId,
       stripeSubscriptionId: entity.stripeSubscriptionId,
       trialEndsAt: entity.trialEndsAt ? new Date(entity.trialEndsAt) : undefined,
+      santaAddon: entity.santaAddonJson ? (JSON.parse(entity.santaAddonJson) as Organization['santaAddon']) : undefined,
       aiBonusSessions: entity.aiBonusSessions,
       facilityKey: entity.facilityKey,
       facilityObjectId: entity.facilityObjectId,

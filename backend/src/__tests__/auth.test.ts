@@ -249,6 +249,7 @@ describe('Authentication Routes', () => {
       expect(res.status).toBe(200);
       expect(res.body.planCode).toBe('basic');
       expect(res.body.entitlements.fireBreakEnabled).toBe(true);
+      expect(res.body.entitlements.santaRunEnabled).toBe(true);
     });
 
     it('returns aarStudioEnabled=true for AI-plan org', async () => {
@@ -262,7 +263,105 @@ describe('Authentication Routes', () => {
       expect(res.body.entitlements.aarStudioEnabled).toBe(true);
       expect(res.body.entitlements.aiEnabled).toBe(true);
       expect(res.body.entitlements.fireBreakEnabled).toBe(true);
+      expect(res.body.entitlements.santaRunEnabled).toBe(true);
       expect(res.body.status).toBeDefined();
+    });
+
+    it('OR-in an active Santa add-on for a Community org (fireBreak-style plan gate stays independent)', async () => {
+      const org = await orgDb.createOrganization({ name: 'Community Org', billingEmail: 'c@x.com', planCode: 'community' });
+      await orgDb.updateOrganization(org.id, { santaAddon: { status: 'active', interval: 'annual' } });
+      const token = jwt.sign({ userId: 'u5', username: 'u5', role: 'owner', organizationId: org.id }, JWT_SECRET, { expiresIn: '1h' });
+      const res = await request(app)
+        .get('/api/auth/entitlements')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.entitlements.santaRunEnabled).toBe(true);
+      expect(res.body.entitlements.fireBreakEnabled).toBe(false);
+    });
+  });
+
+  describe('Suite SSO — sk_session cookie + GET /api/auth/session', () => {
+    const orgDb = getOrganizationDatabase();
+
+    beforeEach(async () => {
+      await orgDb.clear();
+      await adminDb.clear();
+    });
+
+    function getCookie(res: { headers: Record<string, string | string[] | undefined> }, name: string): string | undefined {
+      const raw = res.headers['set-cookie'];
+      const cookies: string[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      return cookies.find((c) => c.startsWith(`${name}=`));
+    }
+
+    it('login sets an httpOnly sk_session cookie', async () => {
+      await adminDb.createAdminUser('admin', 'testPassword123', 'admin');
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'admin', password: 'testPassword123' });
+
+      expect(res.status).toBe(200);
+      const cookie = getCookie(res, 'sk_session');
+      expect(cookie).toBeDefined();
+      expect(cookie).toMatch(/HttpOnly/i);
+      expect(cookie).toMatch(/SameSite=Lax/i);
+    });
+
+    it('logout clears the sk_session cookie', async () => {
+      await adminDb.createAdminUser('admin', 'testPassword123', 'admin');
+      const login = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'admin', password: 'testPassword123' });
+      const cookie = getCookie(login, 'sk_session')!.split(';')[0];
+
+      const res = await request(app).post('/api/auth/logout').set('Cookie', cookie);
+      expect(res.status).toBe(200);
+      const cleared = getCookie(res, 'sk_session');
+      expect(cleared).toBeDefined();
+      expect(cleared).toMatch(/sk_session=;/);
+    });
+
+    it('GET /api/auth/session returns 401 with no cookie', async () => {
+      const res = await request(app).get('/api/auth/session');
+      expect(res.status).toBe(401);
+    });
+
+    it('GET /api/auth/session returns 401 for a garbage cookie', async () => {
+      const res = await request(app).get('/api/auth/session').set('Cookie', 'sk_session=not-a-real-jwt');
+      expect(res.status).toBe(401);
+    });
+
+    it('GET /api/auth/session resolves identity + a fresh bearer token from the login cookie', async () => {
+      await adminDb.createAdminUser('sessionuser', 'testPassword123', 'admin');
+      const login = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'sessionuser', password: 'testPassword123' });
+      const cookie = getCookie(login, 'sk_session')!.split(';')[0];
+
+      const res = await request(app).get('/api/auth/session').set('Cookie', cookie);
+      expect(res.status).toBe(200);
+      expect(res.body.username).toBe('sessionuser');
+      expect(res.body).toHaveProperty('token');
+      expect(typeof res.body.token).toBe('string');
+
+      // The freshly-issued token is itself usable against /me.
+      const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${res.body.token}`);
+      expect(me.status).toBe(200);
+      expect(me.body.username).toBe('sessionuser');
+    });
+
+    it('GET /api/auth/session reflects the same effective entitlements as /me', async () => {
+      const org = await orgDb.createOrganization({ name: 'Cookie Org', billingEmail: 'cookie@x.com', planCode: 'basic' });
+      await adminDb.createAdminUser('cookieowner', 'testPassword123', 'owner', org.id);
+      const login = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'cookieowner', password: 'testPassword123' });
+      const cookie = getCookie(login, 'sk_session')!.split(';')[0];
+
+      const res = await request(app).get('/api/auth/session').set('Cookie', cookie);
+      expect(res.status).toBe(200);
+      expect(res.body.entitlements.santaRunEnabled).toBe(true);
+      expect(res.body.organization.id).toBe(org.id);
     });
   });
 });
