@@ -18,8 +18,8 @@ A full user-acceptance pass against the live production deployment (`bushietools
 | Severity | Count | Examples |
 |---|---|---|
 | Resolved since June 22 | 4 | Anonymous data exposure (reports/members/truck-checks) now 401s; truck-check linked-vehicle save no longer 400s; AAR Studio AI gateway fully working (findings + report generation); Stripe billing portal live |
-| Should-fix (new) | 1 | Delete Station dialog reports another station's data (Q40) |
-| Fixed same session | 5 | Admin `/signin` sessions didn't join the real-time socket room (Q41) — fixed in `StationContext.tsx`, verified live; found while fixing it — `GET /api/stations` had no organization scoping at all (Q45), fixed alongside; sign-in board defaulted to the touch-grid layout on every screen size once an event was active, un-persisted (Q44) — fixed in `SignInPage.tsx`, verified live at both desktop and kiosk widths; unlinked-appliance truck check fake-passed 0/0 (Q38) — fixed in `CheckWorkflowPage.tsx`, verified live; Vehicle Type link dropdown had indistinguishable duplicate entries (Q39) — fixed in `VehicleFormModal.tsx`, verified live |
+| Should-fix (new) | 0 | — all resolved same session |
+| Fixed same session | 6 | Admin `/signin` sessions didn't join the real-time socket room (Q41) — fixed in `StationContext.tsx`, verified live; found while fixing it — `GET /api/stations` had no organization scoping at all (Q45), fixed alongside; sign-in board defaulted to the touch-grid layout on every screen size once an event was active, un-persisted (Q44) — fixed in `SignInPage.tsx`, verified live at both desktop and kiosk widths; unlinked-appliance truck check fake-passed 0/0 (Q38) — fixed in `CheckWorkflowPage.tsx`, verified live; Vehicle Type link dropdown had indistinguishable duplicate entries (Q39) — fixed in `VehicleFormModal.tsx`, verified live; Delete Station dialog reported another station's data (Q40) — fixed in `api.ts`/`DeleteConfirmationDialog.tsx`, verified live |
 | Minor / polish (new) | 2 | Native `confirm()`/`alert()` dialogs still used in 3 flows; analytics beacons (Clarity, Cloudflare Insights) blocked by CSP, plus a stray unauthenticated `/api/billing/status` call on the public marketing page (Q42) |
 | Low-confidence (new) | 1 | One-off duplicate member from a single Add click, not reproduced in 3 follow-up attempts (Q43) |
 | Retracted same session | 1 | "Check-in silently fails for duplicate-named members" (Q37) — a test-methodology false positive, caught and corrected before any fix was attempted; see the retraction note in Section 4 below |
@@ -80,7 +80,7 @@ All three report pages (`/reports`, `/reports/advanced`, `/reports/cross-station
 
 ### 8–10 — Admin (Stations, Brigade Access, Organization)
 
-**Stations:** created a real station ("UAT Test Station 3") through the full manual-entry form (national-dataset search skipped — no network path to test it meaningfully here); it appeared correctly with the right hierarchy fields. **Q40 (should-fix, confirmed):** attempting to delete it — while it was still genuinely empty (0 members, 0 events, confirmed via `GET /api/stations`) — was blocked by a "Cannot Delete Station... This station has existing data: 6 members, 2 events" dialog. Those exact figures match the *Default Station's* data at the time, not the new station. Deactivating it (the dialog's suggested alternative) worked correctly and is how the test station was left (station count: 1 active / 1 inactive).
+**Stations:** created a real station ("UAT Test Station 3") through the full manual-entry form (national-dataset search skipped — no network path to test it meaningfully here); it appeared correctly with the right hierarchy fields. **Q40 — fixed 2026-07-18:** attempting to delete it — while it was still genuinely empty (0 members, 0 events, confirmed via `GET /api/stations`) — was blocked by a "Cannot Delete Station... This station has existing data: 6 members, 2 events" dialog. Those exact figures matched the *Default Station's* data at the time, not the new station. Deactivating it (the dialog's suggested alternative) worked correctly at the time and is how the test station was left (station count: 1 active / 1 inactive). Root cause: the statistics call had no `stationId` parameter and always read the *globally selected* station via the `X-Station-Id` header — when none was explicitly selected, the backend silently defaulted to the literal Default Station regardless of which station's delete button was clicked. **Fixed:** the call now takes an explicit station id and the dialog passes the station actually being deleted; the identical bug was found and fixed in the station details view too. Verified live with two real stations under one org — see the changelog entry for full detail.
 
 **Brigade Access:** generated a new kiosk token for the test station, confirmed the resulting `?brigade=` URL authenticates a fresh anonymous session into that station's (empty) board, then revoked it and confirmed the same URL now returns **403** with a clear error — the full issue/verify/revoke lifecycle works correctly and immediately.
 
@@ -118,7 +118,7 @@ No console errors on any tested page **except** the CSP-blocked analytics beacon
 2. ~~**Q44 — Persist the three-column/grid view choice.**~~ Fixed 2026-07-18 — see above.
 3. ~~**Q38 — Truck check unlinked-vehicle fake-pass.**~~ Fixed 2026-07-18 — see above.
 4. ~~**Q39 — the duplicate Vehicle Type dropdown entries.**~~ Fixed 2026-07-18 — see above.
-5. **Q40 — Fix the Delete Station data-count check** to query the station actually being deleted, not whichever station's data happens to be cached.
+5. ~~**Q40 — Fix the Delete Station data-count check.**~~ Fixed 2026-07-18 — see above.
 6. **Q42 — Polish sweep** (native dialogs, CSP analytics allowlist, stray anonymous `/api/billing/status` call) — low effort, whenever this area is next touched.
 7. **Q43 — Keep an eye out for the duplicate-member-on-Add flake.** Not reproducible on demand; re-open if it recurs.
 
@@ -136,6 +136,7 @@ No console errors on any tested page **except** the CSP-blocked analytics beacon
 - **Q44** — the sign-in board force-defaulted to the touch grid on every screen size once an event was active, with no persistence for a manual collapse; fixed in `SignInPage.tsx` (`localStorage`-backed preference + viewport-width-based default), verified live at both desktop and kiosk widths.
 - **Q38** — an appliance with no linked Vehicle Type and no legacy template fake-passed a check with 0 items; fixed in `CheckWorkflowPage.tsx` (refuses to start, shows a "No checklist to run yet" guidance screen instead), verified live against a forced 0-item state.
 - **Q39** — the Vehicle Type link dropdown showed indistinguishable duplicate entries for same-named types; fixed in `VehicleFormModal.tsx` (labels by provenance + item count), verified live by reproducing the exact original name collision.
+- **Q40** — the Delete Station dialog reported another station's data counts; fixed in `api.ts`/`DeleteConfirmationDialog.tsx` (station-scoped statistics call) — also found and fixed the identical bug in `StationDetailsView.tsx` — verified live with two real stations under one org.
 
 ## Test data left on the live org
 

@@ -55,7 +55,7 @@ export function DeleteConfirmationDialog({ station, onClose, onDeleted }: Delete
     const loadStationData = async () => {
       try {
         setLoadingData(true);
-        const stats = await api.getStationStatistics();
+        const stats = await api.getStationStatistics(station.id);
         setStationData({
           memberCount: stats.memberCount,
           eventCount: stats.eventCount,
@@ -70,7 +70,7 @@ export function DeleteConfirmationDialog({ station, onClose, onDeleted }: Delete
     };
 
     loadStationData();
-  }, []);
+  }, [station.id]);
 
   /**
    * Check if station has data

@@ -31,8 +31,8 @@ for the account used) · N/A not applicable to the account/plan under test.
 [UAT_REVIEW_2026-07-17.md](history/reviews/UAT_REVIEW_2026-07-17.md) for full
 narrative, evidence, and the findings list (Q38–Q44 in `MASTER_PLAN.md`; an
 initial Q37 finding was retracted the same session — see the review). Q41/Q45,
-Q44, Q38, and Q39 were fixed and re-verified live the same session
-(2026-07-17/18); the remaining findings (Q40, Q42, Q43) are still open.
+Q44, Q38, Q39, and Q40 were fixed and re-verified live the same session
+(2026-07-17/18); the remaining findings (Q42, Q43) are still open.
 
 ---
 
@@ -152,9 +152,10 @@ Q44, Q38, and Q39 were fixed and re-verified live the same session
 - [x] Edit a station's details — status (active/inactive) toggle tested
 - [ ] Station lookup / national facilities dataset search — not meaningfully
   testable without a real geolocation/network path in this environment
-- [🟡] Delete a station — **Q40**: confirmation dialog blocked deleting a genuinely
-  empty station, reporting another station's data counts; deactivate works as a
-  fallback and was used instead
+- [x] Delete a station — confirmation dialog now correctly checks the station
+  actually being deleted, not whichever station happened to be globally
+  selected — fixed same session (**Q40**), re-verified live with two stations
+  (one with data correctly blocked, one empty correctly allowed)
 - [ ] "Reset demo station" button — not visible on this account/org
 
 ## 9. Admin — Brigade Access (`/admin/brigade-access`)
