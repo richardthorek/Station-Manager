@@ -34,6 +34,12 @@ export function CheckWorkflowPage() {
   const [showNamePrompt, setShowNamePrompt] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Q38 (found 2026-07-17): an appliance with no linked Vehicle Type and no
+  // legacy per-appliance template resolves to a 0-item effective checklist —
+  // without this guard the workflow below reads that as "all items done"
+  // immediately (results.size === template.items.length is true at 0 === 0)
+  // and lets the check fake-pass with nothing actually inspected.
+  const [emptyChecklist, setEmptyChecklist] = useState(false);
   const [isJoinedCheck, setIsJoinedCheck] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; alt: string } | null>(null);
@@ -144,6 +150,14 @@ export function CheckWorkflowPage() {
         api.getEffectiveChecklist(applianceId!),
       ]);
       setAppliance(applianceData);
+      if (checklist.items.length === 0) {
+        // Refuse to start rather than let a 0-item checklist read as "all
+        // items done" (Q38) — the appliance needs a Vehicle Type link or a
+        // legacy per-appliance template before a real check can run.
+        setEmptyChecklist(true);
+        setLoading(false);
+        return;
+      }
       // Roster for member attribution (best-effort; free-text fallback if it fails).
       api.getMembers().then(setMembers).catch(() => setMembers([]));
       // The vehicle's own station (not the global station-selector context,
@@ -395,6 +409,32 @@ export function CheckWorkflowPage() {
           <Link to="/truckcheck" className="back-link">← Back</Link>
           <h1>Loading...</h1>
         </header>
+      </div>
+    );
+  }
+
+  if (emptyChecklist && appliance) {
+    return (
+      <div className="workflow-page">
+        <header className="workflow-header">
+          <Link to="/truckcheck" className="back-link">← Back</Link>
+          <h1>{appliance.name} Check</h1>
+        </header>
+        <main className="workflow-main">
+          <div className="name-prompt">
+            <h2>No checklist to run yet</h2>
+            <p>
+              {appliance.name} isn't linked to a Vehicle Type, so there's no checklist
+              for this appliance — starting a check here would immediately "complete"
+              with 0 items, which isn't a real inspection. Link a Vehicle Type (the
+              standard checklist for this class of appliance) or create a custom
+              checklist for it before running a check.
+            </p>
+            <Link to="/truckcheck/vehicle-types" className="btn-primary">
+              Link a Vehicle Type
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }

@@ -831,6 +831,13 @@
   cursor: not-allowed;
 }
 
+/* .btn-primary used as a <Link> (Q38 empty-checklist guidance) still needs
+   button-like layout — an anchor is inline by default. */
+a.btn-primary {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .btn-secondary {
   background-color: var(--rfs-neutral-light);
   color: var(--rfs-black);

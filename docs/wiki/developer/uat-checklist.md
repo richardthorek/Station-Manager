@@ -30,9 +30,9 @@ for the account used) · N/A not applicable to the account/plan under test.
 **Last run:** 2026-07-17 — see
 [UAT_REVIEW_2026-07-17.md](history/reviews/UAT_REVIEW_2026-07-17.md) for full
 narrative, evidence, and the findings list (Q38–Q44 in `MASTER_PLAN.md`; an
-initial Q37 finding was retracted the same session — see the review). Q41/Q45
-and Q44 were fixed and re-verified live the same session (2026-07-17/18); the
-remaining findings (Q38–Q40, Q42, Q43) are still open.
+initial Q37 finding was retracted the same session — see the review). Q41/Q45,
+Q44, and Q38 were fixed and re-verified live the same session (2026-07-17/18);
+the remaining findings (Q39, Q40, Q42, Q43) are still open.
 
 ---
 
@@ -109,9 +109,10 @@ remaining findings (Q38–Q40, Q42, Q43) are still open.
 - [x] `/truckcheck` — vehicle roster / appliance list
 - [ ] `/truckcheck/select` — template selection page (not separately exercised —
   the check-workflow entry point was used instead)
-- [🟡] `/truckcheck/check/:applianceId` — run a full guided checklist end-to-end —
-  works correctly **once the appliance is linked to a Vehicle Type**; an unlinked
-  appliance fake-passes with 0 items (**Q38**)
+- [x] `/truckcheck/check/:applianceId` — run a full guided checklist end-to-end —
+  works correctly once the appliance is linked to a Vehicle Type; an unlinked
+  appliance now shows a "No checklist to run yet" guidance screen instead of
+  fake-passing with 0 items — fixed same session (**Q38**), re-verified live
 - [x] Flag a fault/issue mid-check — description + photo option, saves correctly
 - [x] `/truckcheck/summary/:runId` — correct pass/fail/issue rollup, declaration +
   submit works
