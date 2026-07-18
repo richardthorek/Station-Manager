@@ -956,8 +956,13 @@ serviceType mapping, resolved by **layer name** rather than numeric layer id
 fetched facilities; an unrecognized layer name now fails loudly instead of
 mislabeling). The script's own comment warns `services.ga.gov.au` needs
 operator-machine internet access, not CI/sandboxed-agent — true in general,
-though not universally: this dataset has been fetched and validated from a
-Claude Code sandbox session (2026-07-18). See `backend/src/scripts/README.md`.
+though not universally: this dataset has been fetched, uploaded to
+production, and validated from a Claude Code sandbox session (2026-07-18).
+`scripts/uploadFacilitiesToBlobStorage.ts` creates the `data-files` container
+**without** public blob access — neither parser needs it, both authenticate
+with the connection string, and the production storage account has public
+access disabled account-wide (requesting it fails the upload outright). See
+`backend/src/scripts/README.md`.
 
 ### Multi-org membership
 
