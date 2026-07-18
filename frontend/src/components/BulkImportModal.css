@@ -140,6 +140,18 @@
   color: var(--rfs-dark-grey);
 }
 
+.detected-columns {
+  font-size: 0.85rem;
+  flex-basis: 100%;
+}
+
+.detected-columns-warning {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--rfs-core-red);
+  flex-basis: 100%;
+}
+
 .btn-change-file {
   background-color: var(--rfs-light-grey);
   color: var(--rfs-dark-grey);

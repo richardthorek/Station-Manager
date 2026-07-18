@@ -25,6 +25,7 @@ import { logger } from '../services/logger';
 import { authMiddleware } from '../middleware/auth';
 import { sensitiveActionRateLimiter } from '../middleware/rateLimiter';
 import { isValidEmail } from '../utils/emailValidation';
+import { FACILITY_SERVICE_TYPE_LABELS } from '../constants/facilityServiceTypes';
 import type { AdminUser, FacilityServiceType } from '../types';
 import type { CreateOrganizationInput } from '../services/organizationDatabase';
 import { JWT_SECRET } from '../config/jwtSecret';
@@ -163,12 +164,20 @@ router.post('/signup', sensitiveActionRateLimiter, async (req: Request, res: Res
       }
     }
 
+    // Default the org's branding agency name from the claimed/selected facility's
+    // service type (e.g. "Rural / country fire") — an owner can always override
+    // this later from Admin -> Organization.
+    const agencyName = facilityFields.facilityServiceType
+      ? FACILITY_SERVICE_TYPE_LABELS[facilityFields.facilityServiceType]
+      : undefined;
+
     // Create the organization (Community/free by default) then the owner user.
     const organization = await orgDb.createOrganization({
       name: organizationName,
       billingEmail,
       planCode: 'community',
       ...facilityFields,
+      ...(agencyName ? { agencyName } : {}),
     });
 
     const owner = await adminDb.createAdminUser(username, password, 'owner', organization.id, { email });

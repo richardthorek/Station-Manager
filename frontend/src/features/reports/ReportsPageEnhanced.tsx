@@ -38,6 +38,7 @@ import { TrendExplainer } from '../../components/TrendExplainer';
 import { AttentionToggle } from '../../components/AttentionToggle';
 import { api } from '../../services/api';
 import { exportAsPDF, exportAsExcel, exportAllChartsAsPNG } from '../../utils/exportUtils.lazy';
+import { useAuth } from '../../contexts/AuthContext';
 import { analyzeTrend, formatTrendExplanation } from '../../utils/analyticsHelpers';
 import './ReportsPage.css';
 
@@ -103,6 +104,7 @@ interface TruckCheckCompliance {
 }
 
 export function ReportsPageEnhanced() {
+  const { organization } = useAuth();
   const [dateRange, setDateRange] = useState<DateRange>('last30');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -364,6 +366,7 @@ export function ReportsPageEnhanced() {
       {
         dateRange: dateRangeInfo.label,
         stationName: 'Station Manager',
+        agencyName: organization?.agencyName,
       }
     );
   };

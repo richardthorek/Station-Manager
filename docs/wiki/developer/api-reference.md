@@ -250,7 +250,7 @@ invite links, and multi-org memberships. All endpoints require a Bearer JWT.
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | `GET` | `/api/organizations/current` | any member | Current org + entitlements + plan catalog. |
-| `PUT` | `/api/organizations/current` | owner | Update name/email/plan and narrow module toggles. |
+| `PUT` | `/api/organizations/current` | owner | Update name/email/plan/module toggles/branding (agency name + logo). |
 | `GET` | `/api/organizations/current/users` | admin/owner | List users in the org (legacy; superseded by `.../members`). |
 | `POST` | `/api/organizations/current/users` | admin/owner | Create a user directly in the org (now accepts `email`). |
 | `POST` | `/api/organizations/current/invites` | admin/owner | Create a multi-use invite link (default 7-day expiry). |
@@ -278,13 +278,21 @@ invite links, and multi-org memberships. All endpoints require a Bearer JWT.
     "truckCheckEnabled": true,
     "reportsEnabled": false,
     "aiEnabled": false
-  }
+  },
+  "agencyName": "NSW Rural Fire Service",
+  "agencyLogoUrl": "https://example.org/logo.png"
 }
 ```
 Changing `planCode` resets entitlements to the plan defaults. `moduleToggles`
 may only **disable** modules; values are clamped to the plan ceiling
-(`clampEntitlements`). **Response**: `{ "organization": { ... } }`.
-**Errors**: `400` (invalid `planCode`), `404` (org not found).
+(`clampEntitlements`). `agencyName`/`agencyLogoUrl` are admin-configurable
+branding shown on exported reports in place of the generic "Station Manager"
+name — defaulted at signup from the claimed facility's service type (see
+`FACILITY_SERVICE_TYPE_LABELS`), editable any time from Admin → Organization;
+an empty string clears the override. Both are capped at 100/500 chars
+respectively. **Response**: `{ "organization": { ... } }`.
+**Errors**: `400` (invalid `planCode`, or `agencyName`/`agencyLogoUrl` not a
+string within the length limit), `404` (org not found).
 
 ### `POST /api/organizations/current/users` (admin/owner)
 

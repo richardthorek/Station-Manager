@@ -938,13 +938,26 @@ raw `facilityObjectId` alongside the composite key lets a future pass reconcile
 claims with Fire Santa Run's `rfsStationId` (same dataset, rural-fire layer) —
 tracked as a follow-up in `docs/MASTER_PLAN.md`, not built here.
 
+**Branding** (2026-07-18): `agencyName` / `agencyLogoUrl` (both optional,
+owner-editable from Admin → Organization) default at signup from the claimed
+facility's `facilityServiceType` via `constants/facilityServiceTypes.ts`'s
+`FACILITY_SERVICE_TYPE_LABELS` (e.g. `rural-fire` → "Rural / country fire"),
+but are never auto-changed again once set. Used on exported reports
+(`exportUtils.pdf.ts`'s PDF header) in place of the generic "Station Manager"
+fallback, so an org's exports show its real agency identity rather than
+assuming every customer is NSW RFS.
+
 The facility snapshot (`src/data/emergency-facilities.csv`, blob
 `data-files/emergency-facilities.csv`) follows the same bundled-CSV /
 blob-download pattern as the existing `rfsFacilitiesParser.ts` below, produced
 by `scripts/fetchEmergencyFacilitiesSnapshot.ts` (ArcGIS REST, per-layer →
-serviceType mapping) — **that script requires internet access to
-`services.ga.gov.au` and must be run from an operator machine**, not CI or a
-sandboxed agent. See `backend/src/scripts/README.md`.
+serviceType mapping, resolved by **layer name** rather than numeric layer id
+— GA has silently reordered these layers before, which previously mislabeled
+fetched facilities; an unrecognized layer name now fails loudly instead of
+mislabeling). The script's own comment warns `services.ga.gov.au` needs
+operator-machine internet access, not CI/sandboxed-agent — true in general,
+though not universally: this dataset has been fetched and validated from a
+Claude Code sandbox session (2026-07-18). See `backend/src/scripts/README.md`.
 
 ### Multi-org membership
 

@@ -8,8 +8,8 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-// RFS brand colors
-const RFS_COLORS = {
+// Brand colors
+const BRAND_COLORS = {
   red: '#e5281B',
   lime: '#F6A609',
   black: '#000000',
@@ -19,7 +19,7 @@ const RFS_COLORS = {
 };
 
 /**
- * Export report as PDF with RFS branding
+ * Export report as a branded PDF.
  */
 export async function exportAsPDF(
   title: string,
@@ -31,6 +31,7 @@ export async function exportAsPDF(
   options: {
     dateRange?: string;
     stationName?: string;
+    agencyName?: string;
   } = {}
 ): Promise<void> {
   const pdf = new jsPDF('p', 'mm', 'a4');
@@ -39,14 +40,14 @@ export async function exportAsPDF(
   const margin = 15;
   let yPosition = margin;
 
-  // Add RFS header
-  pdf.setFillColor(RFS_COLORS.red);
+  // Add header
+  pdf.setFillColor(BRAND_COLORS.red);
   pdf.rect(0, 0, pageWidth, 25, 'F');
 
-  pdf.setTextColor(RFS_COLORS.white);
+  pdf.setTextColor(BRAND_COLORS.white);
   pdf.setFontSize(20);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('NSW Rural Fire Service', margin, 12);
+  pdf.text(options.agencyName || 'Station Manager', margin, 12);
 
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'normal');
@@ -57,7 +58,7 @@ export async function exportAsPDF(
   yPosition = 35;
 
   // Add report title
-  pdf.setTextColor(RFS_COLORS.black);
+  pdf.setTextColor(BRAND_COLORS.black);
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
   pdf.text(title, margin, yPosition);
@@ -67,7 +68,7 @@ export async function exportAsPDF(
   if (options.dateRange) {
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(RFS_COLORS.darkGrey);
+    pdf.setTextColor(BRAND_COLORS.darkGrey);
     pdf.text(`Report Period: ${options.dateRange}`, margin, yPosition);
     yPosition += 10;
   }
@@ -76,7 +77,7 @@ export async function exportAsPDF(
   if (data.kpis && data.kpis.length > 0) {
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(RFS_COLORS.black);
+    pdf.setTextColor(BRAND_COLORS.black);
     pdf.text('Key Metrics', margin, yPosition);
     yPosition += 7;
 
@@ -88,11 +89,11 @@ export async function exportAsPDF(
 
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(RFS_COLORS.darkGrey);
+      pdf.setTextColor(BRAND_COLORS.darkGrey);
       pdf.text(`${kpi.label}:`, margin, yPosition);
 
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(RFS_COLORS.red);
+      pdf.setTextColor(BRAND_COLORS.red);
       pdf.text(kpi.value, margin + 60, yPosition);
 
       yPosition += 6;
@@ -110,16 +111,16 @@ export async function exportAsPDF(
 
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(RFS_COLORS.black);
+      pdf.setTextColor(BRAND_COLORS.black);
       pdf.text(table.title, margin, yPosition);
       yPosition += 7;
 
       // Table headers
       const cellWidth = (pageWidth - 2 * margin) / table.headers.length;
-      pdf.setFillColor(RFS_COLORS.red);
+      pdf.setFillColor(BRAND_COLORS.red);
       pdf.rect(margin, yPosition - 4, pageWidth - 2 * margin, 7, 'F');
 
-      pdf.setTextColor(RFS_COLORS.white);
+      pdf.setTextColor(BRAND_COLORS.white);
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       table.headers.forEach((header, i) => {
@@ -128,7 +129,7 @@ export async function exportAsPDF(
       yPosition += 7;
 
       // Table rows
-      pdf.setTextColor(RFS_COLORS.black);
+      pdf.setTextColor(BRAND_COLORS.black);
       pdf.setFont('helvetica', 'normal');
       table.rows.forEach((row, rowIndex) => {
         if (yPosition > pageHeight - margin - 5) {
@@ -169,7 +170,7 @@ export async function exportAsPDF(
 
           pdf.setFontSize(12);
           pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(RFS_COLORS.black);
+          pdf.setTextColor(BRAND_COLORS.black);
           pdf.text(chart.title, margin, yPosition);
           yPosition += 7;
 
@@ -189,7 +190,7 @@ export async function exportAsPDF(
   for (let i = 1; i <= totalPages; i++) {
     pdf.setPage(i);
     pdf.setFontSize(8);
-    pdf.setTextColor(RFS_COLORS.darkGrey);
+    pdf.setTextColor(BRAND_COLORS.darkGrey);
     pdf.text(
       `Page ${i} of ${totalPages} | Generated ${new Date().toLocaleDateString()}`,
       pageWidth / 2,
@@ -199,6 +200,6 @@ export async function exportAsPDF(
   }
 
   // Save PDF
-  const filename = `RFS_${title.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+  const filename = `${title.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
   pdf.save(filename);
 }

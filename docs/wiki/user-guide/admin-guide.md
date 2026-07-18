@@ -66,6 +66,11 @@ The owner's page for the business side:
 - **Modules** — toggle features on or off for your organisation (e.g. a
   maintenance-only brigade can turn the sign-in book off). Toggles above your
   plan's ceiling are rejected with a clear message.
+- **Branding** — set your agency's real name and a logo URL (defaults from the
+  facility you picked at signup, e.g. "SES" or "Rural / country fire" — you
+  can always override it here). Shown on exported PDF reports instead of the
+  generic "Station Manager" name, since the platform serves rural/metro fire,
+  SES, ambulance, and police brigades, not just one agency.
 - **Members** — list of everyone in the organisation with their role; owners
   and admins can change roles or remove someone (an organisation always keeps
   at least one owner). You can also create a login directly with a username
@@ -82,7 +87,10 @@ The owner's page for the business side:
 
 Member management happens where the members are:
 
-- **Add members** on the sign-in page, or **import a CSV** for first setup.
+- **Add members** on the sign-in page, or **import a CSV** for first setup —
+  column headers are matched flexibly (e.g. "First Name", "firstname", and
+  "given name" all work), and the preview shows which columns it recognised
+  before you confirm.
 - **Invite a member to their own login** from their profile — they receive a
   one-time activation link and set a password (viewer role).
 - Community plan allows up to 10 members; Basic/AI Pro are unlimited. Limit

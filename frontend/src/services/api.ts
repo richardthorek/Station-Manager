@@ -1617,6 +1617,8 @@ class ApiService {
     billingEmail?: string;
     planCode?: Organization['planCode'];
     moduleToggles?: Partial<Pick<Entitlements, 'signInEnabled' | 'truckCheckEnabled' | 'reportsEnabled' | 'aiEnabled'>>;
+    agencyName?: string;
+    agencyLogoUrl?: string;
   }): Promise<{ organization: Organization }> {
     const response = await fetch(`${API_BASE_URL}/organizations/current`, {
       method: 'PUT',

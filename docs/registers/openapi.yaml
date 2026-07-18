@@ -832,7 +832,7 @@ paths:
     put:
       tags:
         - Organizations
-      summary: Update name/billingEmail/planCode/moduleToggles (owner only)
+      summary: Update name/billingEmail/planCode/moduleToggles/agencyName/agencyLogoUrl (owner only)
       description: >
         D1 (2026-07-17): the only functional plan-upgrade path while Stripe billing is
         unconfigured, so a genuine plan change with no live Stripe subscription also

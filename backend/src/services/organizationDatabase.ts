@@ -23,6 +23,8 @@ export interface CreateOrganizationInput {
   facilityCustom?: boolean;
   claimedByUserId?: string;
   claimedAt?: Date;
+  agencyName?: string;
+  agencyLogoUrl?: string;
 }
 
 /** Organization fields updatable via updateOrganization. */
@@ -46,6 +48,8 @@ export type OrganizationUpdate = Partial<
     | 'facilityCustom'
     | 'claimedByUserId'
     | 'claimedAt'
+    | 'agencyName'
+    | 'agencyLogoUrl'
   >
 >;
 
@@ -107,6 +111,8 @@ export class OrganizationDatabase implements IOrganizationDatabase {
       facilityCustom: input.facilityCustom,
       claimedByUserId: input.claimedByUserId,
       claimedAt: input.claimedAt,
+      agencyName: input.agencyName,
+      agencyLogoUrl: input.agencyLogoUrl,
       createdAt: now,
       updatedAt: now,
     };

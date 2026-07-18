@@ -2,7 +2,7 @@
  * Export Menu Component
  *
  * Provides export functionality for reports:
- * - Export as PDF with RFS branding
+ * - Export as PDF, branded
  * - Export as Excel (.xlsx)
  * - Export charts as PNG images
  *
@@ -93,7 +93,7 @@ export function ExportMenu({
             <div className="export-menu__option-content">
               <span className="export-menu__option-title">Export as PDF</span>
               <span className="export-menu__option-description">
-                Formatted report with RFS branding
+                Formatted, branded report
               </span>
             </div>
           </button>

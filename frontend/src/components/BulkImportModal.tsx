@@ -48,10 +48,56 @@ interface ParsedMember {
   errors: string[];
 }
 
+/**
+ * Column mapping (found 2026-07-18, per direct user feedback): the parser
+ * used to match headers by exact, case-sensitive string against a tiny fixed
+ * set ("First Name"/"firstName" etc.) — a header as ordinary as "first name"
+ * or "First_Name" matched nothing, so every row silently came back "Name is
+ * required" with no hint the real problem was the column names, not the
+ * data. Normalizes headers (lowercase, strip spaces/underscores/hyphens) and
+ * matches against a small alias list per field instead.
+ */
+type CanonicalField = 'firstName' | 'lastName' | 'name' | 'rank' | 'roles';
+
+const FIELD_ALIASES: Record<CanonicalField, string[]> = {
+  firstName: ['firstname', 'first', 'givenname', 'forename'],
+  lastName: ['lastname', 'last', 'surname', 'familyname'],
+  name: ['name', 'fullname', 'membername'],
+  rank: ['rank', 'title'],
+  roles: ['roles', 'role', 'duties', 'permissions'],
+};
+
+const FIELD_LABELS: Record<CanonicalField, string> = {
+  firstName: 'First Name',
+  lastName: 'Last Name',
+  name: 'Name',
+  rank: 'Rank',
+  roles: 'Roles',
+};
+
+function normalizeHeaderKey(header: string): string {
+  return header.toLowerCase().replace(/[\s_-]+/g, '');
+}
+
+/** Maps each canonical field to the actual CSV header that matched it, if any. */
+function detectColumnMap(headers: string[]): Partial<Record<CanonicalField, string>> {
+  const map: Partial<Record<CanonicalField, string>> = {};
+  const normalizedHeaders = headers.map((h) => ({ raw: h, normalized: normalizeHeaderKey(h) }));
+
+  (Object.keys(FIELD_ALIASES) as CanonicalField[]).forEach((field) => {
+    const aliases = FIELD_ALIASES[field];
+    const match = normalizedHeaders.find((h) => aliases.includes(h.normalized));
+    if (match) map[field] = match.raw;
+  });
+
+  return map;
+}
+
 export function BulkImportModal({ existingMembers, onClose, onImportComplete, onImport }: BulkImportModalProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedMember[]>([]);
+  const [columnMap, setColumnMap] = useState<Partial<Record<CanonicalField, string>>>({});
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
     successCount: number;
@@ -94,6 +140,7 @@ export function BulkImportModal({ existingMembers, onClose, onImportComplete, on
   const processFile = useCallback((file: File) => {
     setFile(file);
     setImportResult(null);
+    setColumnMap({});
 
     // Parse CSV
     const reader = new FileReader();
@@ -107,17 +154,20 @@ export function BulkImportModal({ existingMembers, onClose, onImportComplete, on
         complete: (results) => {
           // Validate data
           const existingNames = new Set(existingMembers.map(m => m.name.toLowerCase()));
-          
+          const detectedColumns = detectColumnMap(results.meta.fields ?? []);
+          setColumnMap(detectedColumns);
+
           const validated: ParsedMember[] = results.data.map((row, index) => {
             const errors: string[] = [];
             const clean = (val: unknown): string => (typeof val === 'string' ? val.trim() : '');
-            
-            // Handle both "First Name"/"Last Name" and "name" columns
-            const firstName = clean(row['First Name'] || row['firstName'] || '');
-            const lastName = clean(row['Last Name'] || row['lastName'] || '');
-            const directName = clean(row['name'] || row['Name'] || '');
-            const rank = clean(row['Rank'] || row['rank'] || '');
-            const roles = clean(row['Roles'] || row['roles'] || '');
+            const at = (field: CanonicalField): string =>
+              detectedColumns[field] ? clean(row[detectedColumns[field]!]) : '';
+
+            const firstName = at('firstName');
+            const lastName = at('lastName');
+            const directName = at('name');
+            const rank = at('rank');
+            const roles = at('roles');
 
             // Construct the full name
             let name = '';
@@ -298,7 +348,12 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
           {!file && (
             <>
               <div className="import-instructions">
-                <p>Import multiple members from a CSV file exported from OneRFS Brigade Administration Report.</p>
+                <p>
+                  Import multiple members from a CSV file. Include a "First Name"/"Last Name"
+                  pair or a single "Name" column — an optional "Rank" column is also
+                  recognized. Column names don't need to match exactly (capitalization,
+                  spaces, and underscores are all fine).
+                </p>
                 <button 
                   type="button"
                   className="btn-download-sample" 
@@ -349,10 +404,23 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
                 <p role="status">
                   <strong>Summary:</strong> {validCount} valid, {duplicateCount} duplicate{duplicateCount !== 1 ? 's' : ''}, {invalidCount} invalid
                 </p>
-                <button 
+                <p className="detected-columns">
+                  <strong>Detected columns:</strong>{' '}
+                  {(['firstName', 'lastName', 'name', 'rank', 'roles'] as const)
+                    .filter((field) => columnMap[field])
+                    .map((field) => `${FIELD_LABELS[field]} → "${columnMap[field]}"`)
+                    .join(', ') || 'none recognized'}
+                </p>
+                {!columnMap.name && !columnMap.firstName && !columnMap.lastName && (
+                  <p className="detected-columns-warning" role="alert">
+                    ⚠ No name column found — expected a "First Name"/"Last Name" pair or a
+                    single "Name" column. Every row below will fail until the file has one.
+                  </p>
+                )}
+                <button
                   type="button"
-                  className="btn-change-file" 
-                  onClick={() => { setFile(null); setParsedData([]); }}
+                  className="btn-change-file"
+                  onClick={() => { setFile(null); setParsedData([]); setColumnMap({}); }}
                   aria-label="Change selected file"
                 >
                   Change File

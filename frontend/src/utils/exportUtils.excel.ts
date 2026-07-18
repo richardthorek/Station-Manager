@@ -20,7 +20,7 @@ export async function exportAsExcel(
   const workbook = new ExcelJS.Workbook();
 
   // Set workbook properties
-  workbook.creator = 'RFS Station Manager';
+  workbook.creator = 'Station Manager';
   workbook.created = new Date();
 
   sheets.forEach((sheet) => {
@@ -43,7 +43,7 @@ export async function exportAsExcel(
     worksheet.getRow(1).fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FFE5281B' }, // RFS red
+      fgColor: { argb: 'FFE5281B' }, // brand red
     };
     worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }; // White text
     worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'left' };

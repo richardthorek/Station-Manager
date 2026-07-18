@@ -33,17 +33,20 @@ const SERVICE_URL =
   'https://services.ga.gov.au/gis/rest/services/Emergency_Management_Facilities/MapServer';
 
 /**
- * Source layer index → serviceType slug. Verify against `${SERVICE_URL}?f=json`
- * when refreshing — a GA layer renumbering is a one-line fix here (the CSV
- * carries the resolved slug, so runtime code never depends on layer ids).
+ * Source layer *name* → serviceType slug (not layer id/index — GA has
+ * silently renumbered these layers before, which previously mislabeled
+ * every fetched facility: layers 1-3 were POLICING_FACILITY/METRO_FIRE_
+ * FACILITY/OTHER_EMERGENCY_MANAGEMENT_FACILITY in a different order than
+ * this map assumed). Resolving by name is immune to reordering; an
+ * unrecognized layer name fails loudly in main() instead of mislabeling.
  */
-const LAYER_SERVICE_TYPES: Record<number, string> = {
-  0: 'ambulance',
-  1: 'metro-fire',
-  2: 'other',
-  3: 'police',
-  4: 'rural-fire',
-  5: 'ses',
+const LAYER_NAME_SERVICE_TYPES: Record<string, string> = {
+  AMBULANCE_STATION: 'ambulance',
+  OTHER_EMERGENCY_MANAGEMENT_FACILITY: 'other',
+  POLICING_FACILITY: 'police',
+  METRO_FIRE_FACILITY: 'metro-fire',
+  RURAL_COUNTRY_FIRE_SERVICE_FACILITY: 'rural-fire',
+  SES_FACILITY: 'ses',
 };
 
 const OUTPUT_PATH = path.join(__dirname, '../data/emergency-facilities.csv');
@@ -68,11 +71,11 @@ function attr(attributes: Record<string, unknown>, name: string): unknown {
   return key !== undefined ? attributes[key] : undefined;
 }
 
-async function fetchLayerName(layerId: number): Promise<string> {
-  const res = await fetch(`${SERVICE_URL}/${layerId}?f=json`);
-  if (!res.ok) throw new Error(`Layer ${layerId} metadata request failed: ${res.status}`);
-  const meta = (await res.json()) as { name?: string };
-  return meta.name ?? `layer-${layerId}`;
+async function fetchLayerList(): Promise<Array<{ id: number; name: string }>> {
+  const res = await fetch(`${SERVICE_URL}?f=json`);
+  if (!res.ok) throw new Error(`Service metadata request failed: ${res.status}`);
+  const meta = (await res.json()) as { layers?: Array<{ id: number; name: string }> };
+  return meta.layers ?? [];
 }
 
 async function fetchLayerFeatures(layerId: number): Promise<ArcGISFeature[]> {
@@ -104,11 +107,21 @@ async function main(): Promise<void> {
     'servicetype,objectid,layerid,x,y,facility_name,facility_operationalstatus,facility_address,abs_suburb,facility_state,abs_postcode',
   ];
 
-  for (const [layerIdStr, serviceType] of Object.entries(LAYER_SERVICE_TYPES)) {
-    const layerId = Number(layerIdStr);
-    const layerName = await fetchLayerName(layerId);
-    console.log(`   📥 Layer ${layerId} (${layerName}) → ${serviceType} ...`);
-    const features = await fetchLayerFeatures(layerId);
+  const layers = await fetchLayerList();
+  const knownNames = new Set(Object.keys(LAYER_NAME_SERVICE_TYPES));
+  const unrecognized = layers.filter((l) => !knownNames.has(l.name));
+  if (unrecognized.length > 0) {
+    throw new Error(
+      `Unrecognized GA layer name(s), refusing to guess a serviceType: ${unrecognized
+        .map((l) => `${l.id}:${l.name}`)
+        .join(', ')}. Update LAYER_NAME_SERVICE_TYPES.`,
+    );
+  }
+
+  for (const layer of layers) {
+    const serviceType = LAYER_NAME_SERVICE_TYPES[layer.name];
+    console.log(`   📥 Layer ${layer.id} (${layer.name}) → ${serviceType} ...`);
+    const features = await fetchLayerFeatures(layer.id);
     let written = 0;
     for (const feature of features) {
       const a = feature.attributes;
@@ -121,7 +134,7 @@ async function main(): Promise<void> {
         [
           serviceType,
           objectid,
-          layerId,
+          layer.id,
           x,
           y,
           name,

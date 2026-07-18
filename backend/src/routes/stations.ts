@@ -63,7 +63,7 @@ router.get('/lookup', optionalAuth, async (req, res) => {
     if (!parser.isDataAvailable()) {
       return res.status(503).json({
         error: 'Station lookup service unavailable',
-        message: 'RFS facilities CSV data is not available. Please contact the administrator.',
+        message: 'Facilities data is not available. Please contact the administrator.',
       });
     }
 
@@ -126,7 +126,7 @@ router.get('/count', optionalAuth, async (req, res) => {
       return res.json({
         count: 0,
         available: false,
-        message: 'RFS facilities CSV data is not available',
+        message: 'Facilities data is not available',
       });
     }
 

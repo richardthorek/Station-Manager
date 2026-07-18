@@ -2,7 +2,7 @@
  * Organization (SaaS tenant) management routes.
  *
  * - GET  /api/organizations/current        → org + plan + entitlements (any member)
- * - PUT  /api/organizations/current        → update name/email/plan/module toggles (owner)
+ * - PUT  /api/organizations/current        → update name/email/plan/module toggles/branding (owner)
  * - GET  /api/organizations/current/users  → list users in the org (admin/owner)
  * - POST /api/organizations/current/users  → invite/create a user (admin/owner)
  * - GET  /api/organizations/current/export → full data export as JSON (owner)
@@ -83,10 +83,16 @@ router.put('/current', sensitiveActionRateLimiter, authMiddleware, requireOwner,
     return res.status(404).json({ error: 'Organization not found' });
   }
 
-  const { name, billingEmail, planCode, moduleToggles } = req.body ?? {};
+  const { name, billingEmail, planCode, moduleToggles, agencyName, agencyLogoUrl } = req.body ?? {};
 
   if (planCode !== undefined && !isPlanCode(planCode)) {
     return res.status(400).json({ error: 'Invalid planCode' });
+  }
+  if (agencyName !== undefined && (typeof agencyName !== 'string' || agencyName.length > 100)) {
+    return res.status(400).json({ error: 'agencyName must be a string up to 100 characters' });
+  }
+  if (agencyLogoUrl !== undefined && (typeof agencyLogoUrl !== 'string' || agencyLogoUrl.length > 500)) {
+    return res.status(400).json({ error: 'agencyLogoUrl must be a string up to 500 characters' });
   }
 
   const effectivePlan: PlanCode = (planCode as PlanCode) ?? organization.planCode;
@@ -126,6 +132,8 @@ router.put('/current', sensitiveActionRateLimiter, authMiddleware, requireOwner,
   const updated = await db.updateOrganization(id, {
     ...(typeof name === 'string' && name.trim() ? { name: name.trim() } : {}),
     ...(typeof billingEmail === 'string' && billingEmail.trim() ? { billingEmail: billingEmail.trim() } : {}),
+    ...(typeof agencyName === 'string' ? { agencyName: agencyName.trim() || undefined } : {}),
+    ...(typeof agencyLogoUrl === 'string' ? { agencyLogoUrl: agencyLogoUrl.trim() || undefined } : {}),
     planCode: effectivePlan,
     entitlements,
     ...statusUpdate,
