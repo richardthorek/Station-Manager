@@ -12,6 +12,7 @@
 
 import { logger } from './logger';
 import { ensureUsageDatabase } from './usageDbFactory';
+import { ensureOrganizationDatabase } from './organizationDbFactory';
 import { isStripeConfigured } from './stripeClient';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -53,12 +54,18 @@ export async function reportMeteredUsageOnce(): Promise<number> {
   try {
     const { getStripeClient } = await import('./stripeClient');
     const stripe = getStripeClient();
+    const orgDb = ensureOrganizationDatabase();
     const eventName = process.env.STRIPE_AI_METER_EVENT as string;
     for (const [organizationId, sessions] of sessionsByOrg) {
       if (sessions <= 0) continue;
+      const org = await orgDb.getOrganizationById(organizationId);
+      if (!org?.stripeCustomerId) {
+        // No Stripe customer yet (e.g. trial org never checked out) — nothing to meter.
+        continue;
+      }
       await stripe.billing.meterEvents.create({
         event_name: eventName,
-        payload: { value: String(sessions), stripe_customer_id: organizationId },
+        payload: { value: String(sessions), stripe_customer_id: org.stripeCustomerId },
       });
     }
     await db.markReported(reportedIds);

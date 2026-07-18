@@ -333,6 +333,40 @@ describe('AI gateway', () => {
       expect(() => startMeteredUsageReporter()).not.toThrow();
       expect(() => stopMeteredUsageReporter()).not.toThrow();
     });
+
+    it('reports usage against the org\'s Stripe customer id, not the internal org id, and skips orgs with no Stripe customer yet', async () => {
+      process.env.STRIPE_METERED_USAGE_ENABLED = 'true';
+      process.env.STRIPE_AI_METER_EVENT = 'ai_session';
+      process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+
+      const { getStripeClient } = await import('../services/stripeClient');
+      const stripe = getStripeClient();
+      const meterEventsCreate = jest
+        .spyOn(stripe.billing.meterEvents, 'create')
+        .mockResolvedValue({} as never);
+
+      try {
+        const orgDb = ensureOrganizationDatabase();
+        const billed = await makeOrg('ai');
+        await orgDb.updateOrganization(billed.id, { stripeCustomerId: 'cus_realcustomer123' });
+        const unbilled = await makeOrg('ai');
+
+        const usageDb = ensureUsageDatabase();
+        await usageDb.recordUsage({ organizationId: billed.id, type: 'speech' });
+        await usageDb.recordUsage({ organizationId: unbilled.id, type: 'speech' });
+
+        const reported = await reportMeteredUsageOnce();
+
+        expect(reported).toBe(2);
+        expect(meterEventsCreate).toHaveBeenCalledTimes(1);
+        expect(meterEventsCreate).toHaveBeenCalledWith({
+          event_name: 'ai_session',
+          payload: { value: '1', stripe_customer_id: 'cus_realcustomer123' },
+        });
+      } finally {
+        meterEventsCreate.mockRestore();
+      }
+    });
   });
 
   // ── route: GET /api/ai/usage ──────────────────────────────────────────────
