@@ -30,7 +30,9 @@ for the account used) · N/A not applicable to the account/plan under test.
 **Last run:** 2026-07-17 — see
 [UAT_REVIEW_2026-07-17.md](history/reviews/UAT_REVIEW_2026-07-17.md) for full
 narrative, evidence, and the findings list (Q38–Q44 in `MASTER_PLAN.md`; an
-initial Q37 finding was retracted the same session — see the review).
+initial Q37 finding was retracted the same session — see the review). Q41/Q45
+and Q44 were fixed and re-verified live the same session (2026-07-17/18); the
+remaining findings (Q38–Q40, Q42, Q43) are still open.
 
 ---
 
@@ -86,10 +88,11 @@ initial Q37 finding was retracted the same session — see the review).
 - [x] **+ New Event** — start an activity/event, becomes "current"
 - [x] End an event — moves to "Past events" with correct duration
 - [x] Dark mode toggle — theme switches and persists
-- [🟡] Desktop layout stays appropriate once an event is active — **Q44**: auto-forces
-  the touch-optimized grid on every screen size when an event starts; the "Collapse
-  to three-column view" toggle works correctly but isn't persisted (reload snaps
-  back to grid)
+- [x] Desktop layout stays appropriate once an event is active — fixed same session
+  (**Q44**): the grid/three-column choice now persists across reload, and the
+  default (until a user picks) is viewport-width-based — desktop starts
+  three-column, kiosk/tablet widths keep the touch grid; re-verified live against
+  a local dev server at both widths
 - [ ] `/sign-in` (ungated personal QR/walk-up entry point) — not exercised this run
 
 ## 5. Member Profile (`/profile/:memberId`)
