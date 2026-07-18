@@ -18,7 +18,7 @@ A full user-acceptance pass against the live production deployment (`bushietools
 | Severity | Count | Examples |
 |---|---|---|
 | Resolved since June 22 | 4 | Anonymous data exposure (reports/members/truck-checks) now 401s; truck-check linked-vehicle save no longer 400s; AAR Studio AI gateway fully working (findings + report generation); Stripe billing portal live |
-| Should-fix (new) | 5 | Check-in silently fails to persist for duplicate-named members (Q37); unlinked-appliance truck check still fake-passes 0/0 (Q38); Vehicle Type link dropdown has indistinguishable duplicate entries (Q39); Delete Station dialog reports another station's data (Q40); admin `/signin` sessions don't join the real-time socket room (Q41) |
+| Should-fix (new) | 6 | Check-in silently fails to persist for duplicate-named members (Q37); unlinked-appliance truck check still fake-passes 0/0 (Q38); Vehicle Type link dropdown has indistinguishable duplicate entries (Q39); Delete Station dialog reports another station's data (Q40); admin `/signin` sessions don't join the real-time socket room (Q41); sign-in board defaults to the touch-grid layout on every screen size once an event is active, un-persisted (Q44) |
 | Minor / polish (new) | 2 | Native `confirm()`/`alert()` dialogs still used in 3 flows; analytics beacons (Clarity, Cloudflare Insights) blocked by CSP, plus a stray unauthenticated `/api/billing/status` call on the public marketing page (Q42) |
 | Low-confidence (new) | 1 | One-off duplicate member from a single Add click, not reproduced in 3 follow-up attempts (Q43) |
 
@@ -48,7 +48,9 @@ The full lifecycle — add member, start event (two-step: pick an activity card,
 
 **Q37 (should-fix, confirmed):** while testing with two members that happened to share the exact display name "UAT Test Member" (see Q43 below for how that happened), checking one of them in showed every correct UI signal — green highlight, checkmark, "1 signed in" badge — but a direct API query (`GET /api/events`) showed the ended event's `participants` array contained **only** the visitor added afterward; neither duplicate member ID was ever recorded. Re-tested clean: a single, uniquely-named "Clean Repro Member" checked in and persisted correctly, confirmed via the same API query while still checked in. The failure is specific to the duplicate-name scenario — worth checking whether check-in resolution anywhere keys on member *name* instead of ID (e.g., a React list `key` collision that binds the click handler to the wrong closure).
 
-Screenshots: `signin-board-populated`, `signin-board-event-started`, `signin-board-member-checked-in`, `signin-board-with-visitor`, `signin-board-dark-mode` (×3 sizes for the populated board; desktop-only for the interaction states).
+**Q44 (should-fix, confirmed — found via direct user review of the screenshots above):** the board renders two genuinely different layouts depending on whether an event is active — `signin-board-populated` (no active event) shows a proper 3-column desktop layout (Event Log / Current Event / Sign In); `signin-board-event-started` (event just started) switches to a full-width, large-card touch grid instead, at the *same* 1440×900 viewport. This is intentional code (`hasActiveEvents` forces `isGridExpanded = true`), designed for a walk-up kiosk tablet — but it fires on every screen size, and a station normally has an active event during a shift, so a desktop/dispatcher user rarely sees the better-suited 3-column view. A "Collapse to three-column view" toggle exists and works correctly (screenshot: `signin-board-collapsed-with-active-event`, all 3 sizes) — including with an active event and 4 members signed in, it's a clean, dense, well laid-out desktop view — but the choice isn't persisted: reloading the same page while the event stays active snaps straight back to the grid.
+
+Screenshots: `signin-board-populated`, `signin-board-event-started`, `signin-board-member-checked-in`, `signin-board-with-visitor`, `signin-board-dark-mode` (×3 sizes for the populated board; desktop-only for the interaction states); `signin-board-collapsed-with-active-event` (×3 sizes — the preferred desktop view, working correctly today via the manual toggle).
 
 ### 5 — Member Profile
 
@@ -110,8 +112,9 @@ No console errors on any tested page **except** the CSP-blocked analytics beacon
 2. **Q41 — Admin `/signin` sessions don't join the real-time socket room.** Narrower than it sounds (kiosk path is fine) but worth a quick fix in `useSocket.ts` since admins reasonably expect to watch the board live too.
 3. **Q38 / Q39 — Truck check unlinked-vehicle fake-pass, and the duplicate Vehicle Type dropdown entries.** Both are UX traps around the same "vehicles ship unlinked by default" gap; consider refusing to start a check on an unlinked appliance instead of letting it fake-pass, and disambiguating the dropdown (show check count and/or custom-vs-built-in inline).
 4. **Q40 — Fix the Delete Station data-count check** to query the station actually being deleted, not whichever station's data happens to be cached.
-5. **Q42 — Polish sweep** (native dialogs, CSP analytics allowlist, stray anonymous `/api/billing/status` call) — low effort, whenever this area is next touched.
-6. **Q43 — Keep an eye out for the duplicate-member-on-Add flake.** Not reproducible on demand; re-open if it recurs.
+5. **Q44 — Persist the three-column/grid view choice** (and/or default to three-column above some viewport width) so desktop users aren't forced into the touch-grid layout every time an event starts.
+6. **Q42 — Polish sweep** (native dialogs, CSP analytics allowlist, stray anonymous `/api/billing/status` call) — low effort, whenever this area is next touched.
+7. **Q43 — Keep an eye out for the duplicate-member-on-Add flake.** Not reproducible on demand; re-open if it recurs.
 
 ## What's confirmed fixed since the June 22, 2026 review (no action needed)
 

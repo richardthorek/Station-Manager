@@ -84,6 +84,10 @@ narrative, evidence, and the findings list (Q37–Q43 in `MASTER_PLAN.md`).
 - [x] **+ New Event** — start an activity/event, becomes "current"
 - [x] End an event — moves to "Past events" with correct duration
 - [x] Dark mode toggle — theme switches and persists
+- [🟡] Desktop layout stays appropriate once an event is active — **Q44**: auto-forces
+  the touch-optimized grid on every screen size when an event starts; the "Collapse
+  to three-column view" toggle works correctly but isn't persisted (reload snaps
+  back to grid)
 - [ ] `/sign-in` (ungated personal QR/walk-up entry point) — not exercised this run
 
 ## 5. Member Profile (`/profile/:memberId`)
