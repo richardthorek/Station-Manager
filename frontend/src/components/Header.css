@@ -61,8 +61,6 @@
 
 .logo-icon {
   display: inline-flex;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-  animation: pulse 2s ease-in-out infinite;
 }
 
 .header-logo h1 {

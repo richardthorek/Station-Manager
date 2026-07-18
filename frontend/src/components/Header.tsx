@@ -12,9 +12,10 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Flame, Settings2, Users, Plus, BarChart3, Moon, Sun } from 'lucide-react';
+import { Settings2, Users, Plus, BarChart3, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useStation } from '../contexts/StationContext';
+import { BrandMark } from './BrandMark';
 import './Header.css';
 
 interface HeaderProps {
@@ -82,7 +83,7 @@ export function Header({
     <header className={`header ${isDemo ? 'demo-mode' : ''}`}>
       <div className="header-content">
         <div className="header-logo">
-          <div className="logo-icon"><Flame size={24} strokeWidth={2} aria-hidden /></div>
+          <div className="logo-icon"><BrandMark size={28} /></div>
           <h1>Station Manager</h1>
           {isDemo && (
             <div className="demo-badge" title="Demo Mode - Data can be reset at any time">

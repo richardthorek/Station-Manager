@@ -72,7 +72,7 @@ describe('Header', () => {
     await renderWithProvider({ isConnected: true })
 
     expect(screen.getByText('Station Manager')).toBeInTheDocument()
-    expect(document.querySelector('.logo-icon svg')).toBeInTheDocument()
+    expect(document.querySelector('.logo-icon .brand-mark')).toBeInTheDocument()
     
     // Station selector has been removed from header
     // Station selection now happens through URL token or defaults to demo

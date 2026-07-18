@@ -8,9 +8,9 @@
  */
 
 import { Link, NavLink } from 'react-router-dom';
-import { Flame } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { OrgSwitcher } from './OrgSwitcher';
+import { BrandMark } from './BrandMark';
 import './AdminNav.css';
 
 const ADMIN_LINKS = [
@@ -27,8 +27,8 @@ export function AdminNav() {
 
   return (
     <nav className="admin-nav" aria-label="Admin">
-      <Link to="/" className="admin-nav__home" aria-label="Back to Bushie Tools home">
-        <span aria-hidden="true"><Flame size={18} strokeWidth={2} /></span> Bushie Tools
+      <Link to="/" className="admin-nav__home" aria-label="Back to StationKit home">
+        <BrandMark size={20} /> StationKit
       </Link>
       <div className="admin-nav__links">
         {links.map((link) => (
