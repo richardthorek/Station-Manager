@@ -1,11 +1,11 @@
-# Bushie Tools — Suite Token Validation Protocol (Phase 1)
+# StationKit — Suite Token Validation Protocol (Phase 1)
 
 **Status:** Implemented (suite Phase 1 — federation). See issue #556 and the
 Consolidation & Standardisation Roadmap (Suite convergence track) in
 `docs/MASTER_PLAN.md`; design history in `docs/wiki/developer/history/archive/SUITE_INTEGRATION_PLAN.md`
 (Option A / Phase 1).
 
-This document is the contract sibling Bushie Tools apps (Fire Santa Run, Fire
+This document is the contract sibling StationKit apps (Fire Santa Run, Fire
 Break Calculator, and the AAR Studio sub-app) follow to authenticate a user and
 read their entitlements against Station Manager, which acts as the canonical
 **Subscription / Licensing service** for the suite.

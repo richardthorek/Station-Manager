@@ -78,7 +78,7 @@ endpoints).
 
 The `Entitlements` shape also includes limits (`maxStations`, `maxDevices`,
 `aiIncludedSessions`) and per-app suite flags (`aarStudioEnabled`,
-`santaRunEnabled`, `fireBreakEnabled`) used by sibling Bushie Tools apps. See
+`santaRunEnabled`, `fireBreakEnabled`) used by sibling StationKit apps. See
 `docs/wiki/developer/suite-token-validation.md` for the entitlements-probe contract.
 
 ## Input Validation and Security

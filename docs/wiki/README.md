@@ -1,6 +1,6 @@
 # RFS Station Manager Wiki
 
-Wiki-style documentation for the RFS Station Manager (Bushie Tools suite).
+Wiki-style documentation for the RFS Station Manager (StationKit suite).
 
 ## Sections
 

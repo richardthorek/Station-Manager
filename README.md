@@ -1,15 +1,15 @@
-# Station Manager — part of Bushie Tools
+# Station Manager — part of StationKit
 
 A real-time digital sign-in and brigade-operations platform for NSW Rural Fire
 Service stations. Members check in and out, track activities, run truck checks,
 review reports, and facilitate AI-assisted After Action Reviews — all syncing
 live across kiosks, tablets, and phones via WebSockets.
 
-> **Brand:** Station Manager ships as part of **Bushie Tools** — the
-> customer-facing suite of approachable tools built *for the average bushie*
-> (Station Manager, AAR Studio, and more to come). The logged-out marketing site
-> and the post-login app launcher carry the Bushie Tools identity; "Station
-> Manager" is the name of this app within the suite.
+> **Brand:** Station Manager ships as part of **StationKit** — the
+> customer-facing suite of approachable tools built for the crew, not the
+> office (Station Manager, AAR Studio, and more to come). The logged-out
+> marketing site and the post-login app launcher carry the StationKit
+> identity; "Station Manager" is the name of this app within the suite.
 
 ![Version](https://img.shields.io/badge/version-1.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -42,7 +42,7 @@ CI packages all three into a single Azure App Service deploy.
 - ⚙️ **Admin** — station management, brigade access tokens (kiosk locking),
   organization & plan management.
 
-### SaaS platform (Bushie Tools)
+### SaaS platform (StationKit)
 - 🏢 **Organizations & plans** — the billing tenant. Plans (`Community` / `Basic` /
   `AI Pro`) map to **entitlements** that gate features per organization.
 - 🎛️ **Per-feature & per-app gating** — `signInEnabled`, `truckCheckEnabled`,
@@ -259,7 +259,7 @@ deployed but have open issues — see the latest UAT
 and `docs/MASTER_PLAN.md`'s "Prioritised next steps." SaaS foundation
 (organizations, plans, entitlements) is wired; **Stripe billing is not yet
 configured in production** — there is currently no live upgrade path off the
-free plan. AAR Studio is live at `/aar`. The Bushie Tools suite is at Phase 1
+free plan. AAR Studio is live at `/aar`. The StationKit suite is at Phase 1
 (shared identity + subscription + app launcher); shared packages (Phase 2) and
 monorepo consolidation (Phase 3) are planned — see the Consolidation &
 Standardisation Roadmap in [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md).

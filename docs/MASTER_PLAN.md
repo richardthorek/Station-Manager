@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-18 · **Status:** Living document — the single plan for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the Bushie Tools suite.
+**Last updated:** 2026-07-18 · **Status:** Living document — the single plan for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the StationKit suite.
 
 ---
 
@@ -48,7 +48,7 @@ One row per function/feature. Status: ✅ shipped & stable · 🟡 shipped with 
 | 10 | SaaS tenancy & entitlements (plans, gating, org onboarding) | ✅ | Q21, Q22 |
 | 11 | Stripe billing (Checkout, Portal, webhooks, trial, audit trail) | 🟡 | Q5 (blocked on Stripe test-mode credentials) |
 | 12 | AI gateway & metering | ✅ | — |
-| 13 | Suite federation — Bushie Tools Phase 1 (SM as suite IdP, Fire Break Calculator) | ✅ | Suite ops (below), Q14/Q15 |
+| 13 | Suite federation — StationKit Phase 1 (SM as suite IdP, Fire Break Calculator) | ✅ | Suite ops (below), Q14/Q15 |
 | 14 | PWA / offline (service worker, install prompt, offline queue) | ✅ | — |
 | 15 | Auth & security (JWT + brigade tokens, `requireSession`, rate limiting, CSP/Helmet) | 🟡 | Q29 (prod verification) |
 | 16 | Infra & deploy (Bicep IaC, GitHub Actions, run-from-package, smoke tests) | ✅ | D6 |
@@ -86,7 +86,7 @@ The operator can see and manage every account without ever seeing tenant content
 - **Q5 — Metered AI overage end-to-end.** `meteredUsageReporter.ts` already maps `UsageRecord` → Stripe meter events correctly for the decided session-based unit (was built pre-Q32; just needed the unit decision confirming it). What's left is infrastructure, not code: create the actual Stripe Billing Meter (dashboard/API) matching `STRIPE_AI_METER_EVENT`, then verify an overage invoice in Stripe test mode. Needs live Stripe test-mode credentials this environment doesn't have — owner/operator action.
 - **Q21 — Ops: fetch + upload the emergency-facilities dataset.** `npm run facilities:fetch` (needs internet to `services.ga.gov.au` — run from an operator machine, not CI) + `facilities:upload`, once, against prod. Until then signup's facility-claim step degrades gracefully to "my unit isn't listed."
 - **Suite ops (feature #13).** Run `npm run grant:firebreak` against prod (stored entitlement snapshots predate the #638 grant) and add the FBC origin to `FRONTEND_URLS`. One-time ops, unblocks already-built wiring.
-- **Custom domain follow-ups (`stationkit.com.au`, live 2026-07-18 — see changelog).** (1) Confirm the new domain is listed *first* in `FRONTEND_URLS` — `organizations.ts`/`billing.ts`/`members.ts` build invite/checkout/sign-in links from whichever origin is first in that list. (2) Point the Stripe Dashboard webhook endpoint at `bungrfs-linux.azurewebsites.net` (stable host, decoupled from the brand domain/Cloudflare) rather than the brand domain — no code change, dashboard-only. (3) Fix `frontend/public/robots.txt`'s stale `Sitemap:` line (still points at a decommissioned `bungrfsstation.azurewebsites.net` hostname) once the canonical indexing domain is decided — bound up with item 4. (4) **The branding/visual-labelling pass** — `index.html` meta/OG/canonical block, `SignupPage.tsx`'s `support@bushietools.com.au`, README, and sibling suite-app URLs (`santa`/`firebreak`.bushietools.com.au in `suiteApps.ts`) all still say "Bushie Tools" / the old domain — next unit of work.
+- ~~**Custom domain + StationKit rebrand (`stationkit.com.au`, live 2026-07-18).**~~ **Done 2026-07-18:** full design-system + rebrand pass per `handoff/StationKit - Design System Handoff.md` — see changelog for the complete breakdown (name, domain, SK monogram brand mark + regenerated favicon/icon set, service-neutral tone sweep, plus the system-theme-follow fix and a marketing-header centering bug found along the way). Still open, both owner/dashboard actions rather than code: (1) confirm `stationkit.com.au` is listed *first* in the live `FRONTEND_URLS` app setting — `organizations.ts`/`billing.ts`/`members.ts` build invite/checkout/sign-in links from whichever origin is first in that list; (2) point the Stripe Dashboard webhook endpoint at `bungrfs-linux.azurewebsites.net` (stable host, decoupled from the brand domain/Cloudflare) rather than the brand domain. Also still open: the Fire Santa Run / Fire Break Calculator sibling apps still live on `bushietools.com.au` subdomains (`suiteApps.ts`) — separate repos/deployments, coordinate their own rebrand+domain move separately.
 
 ### Post-launch — iterate & expand
 
@@ -130,7 +130,7 @@ The live catalog is code (`backend/src/constants/plans.ts`); this is the intende
 | **Community** (free) | $0 | up to 10 | 1 | Manual sign-in + 1 vehicle check, single station |
 | **Basic** | $10/mo · $100/yr | unlimited | unlimited | Full manual suite + reports & CSV export, multiple stations, Fire Break Calculator |
 | **AI Pro** | $19/mo · $190/yr | unlimited | unlimited | Basic + AAR Studio (~25 AI sessions/mo) + voice agent |
-| **Bushie Suite** *(planned)* | $29/mo · $290/yr | unlimited | unlimited | AI Pro + all Bushie Tools apps (after Q14/Q15) |
+| **Complete Kit** *(planned)* | $29/mo · $290/yr | unlimited | unlimited | AI Pro + all StationKit apps (after Q14/Q15) |
 
 Stripe AU ≈ 1.75% + $0.30; AI ≈ $0.60/AAR session; annual = 2 months free. `maxDevices` remains in the model but is deliberately unenforced (devices dropped from pricing).
 
