@@ -4,9 +4,11 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Header } from '../../components/Header';
 import { AchievementGrid } from '../../components/AchievementBadge';
 import { PageTransition } from '../../components/PageTransition';
+import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { api } from '../../services/api';
 import { useSocket } from '../../hooks/useSocket';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../hooks/useToast';
 import { formatMembershipDuration } from './membershipUtils';
 import type { Member, CheckIn, Activity } from '../../types';
 import type { MemberAchievementSummary } from '../../types/achievements';
@@ -26,6 +28,7 @@ export function UserProfilePage() {
   const [editedName, setEditedName] = useState('');
   const [editedRank, setEditedRank] = useState<string>('');
   const [showQRCode, setShowQRCode] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [databaseStatus, setDatabaseStatus] = useState<{
     databaseType: 'mongodb' | 'in-memory' | 'table-storage';
     usingInMemory: boolean;
@@ -36,6 +39,7 @@ export function UserProfilePage() {
 
   const { isConnected } = useSocket();
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -122,17 +126,16 @@ export function UserProfilePage() {
 
   const handleDeleteMember = async () => {
     if (!member || isDeleting) return;
-    const confirmed = window.confirm(`Delete ${member.name}? This hides them from the UI but keeps history.`);
-    if (!confirmed) return;
 
     try {
       setIsDeleting(true);
       await api.deleteMember(member.id);
-      alert('Member deleted');
+      showSuccess('Member deleted');
       navigate('/signin');
     } catch (err) {
       console.error('Error deleting member:', err);
-      alert('Failed to delete member');
+      showError('Failed to delete member');
+      throw err; // keeps the confirmation dialog open with the error shown
     } finally {
       setIsDeleting(false);
     }
@@ -293,7 +296,7 @@ export function UserProfilePage() {
                 )}
                 <button
                   className="btn-danger"
-                  onClick={handleDeleteMember}
+                  onClick={() => setConfirmingDelete(true)}
                   disabled={isDeleting}
                 >
                   {isDeleting ? 'Deleting...' : 'Delete Member'}
@@ -606,6 +609,21 @@ export function UserProfilePage() {
           </div>
         </main>
       </div>
+
+      {confirmingDelete && member && (
+        <ConfirmationDialog
+          title="Delete Member"
+          message={`Delete ${member.name}?`}
+          description="This hides them from the UI but keeps their history."
+          confirmLabel="Delete"
+          isDangerous
+          onConfirm={async () => {
+            await handleDeleteMember();
+            setConfirmingDelete(false);
+          }}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </PageTransition>
   );
 }

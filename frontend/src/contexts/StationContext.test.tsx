@@ -180,6 +180,96 @@ describe('StationContext', () => {
     expect(result.current.selectedStation).toBe(null);
   });
 
+  describe('authenticated station auto-selection (Q41, found 2026-07-17)', () => {
+    // Without this, selectedStation stayed null for any authenticated admin
+    // who hadn't explicitly picked a station, so useSocket's join-station
+    // effect (which requires a resolved stationId) never fired — an admin
+    // viewing /signin directly got zero live updates from other devices,
+    // even though the page itself loaded fine via the server's separate,
+    // implicit JWT-to-station inference for REST calls.
+    const stubAuthenticatedFetch = () => {
+      localStorage.setItem('auth_token', 'fake-admin-token');
+      const fetchMock = vi.fn((url: string) => {
+        if (url.endsWith('/auth/config')) {
+          return Promise.resolve({ ok: true, json: async () => ({ requireAuth: true }) });
+        }
+        if (url.endsWith('/auth/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              id: 'u1',
+              username: 'Richard BT',
+              role: 'owner',
+              organizationId: 'org-1',
+              organization: { id: 'org-1', name: 'Org 1', slug: 'org-1', billingEmail: 'a@example.com', planCode: 'ai', status: 'active', entitlements: {} },
+            }),
+          });
+        }
+        return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+      });
+      vi.stubGlobal('fetch', fetchMock);
+    };
+
+    it('auto-selects the single station the org owns', async () => {
+      stubAuthenticatedFetch();
+      const ownStation: Station = { ...mockStations[2], organizationId: 'org-1' };
+      vi.mocked(api.getStations).mockResolvedValue([mockStations[0], ownStation]); // default (orphan) + 1 own
+
+      const { result } = await renderStationHook();
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(api.getStations).toHaveBeenCalled();
+      expect(result.current.selectedStation).toEqual(ownStation);
+      expect(setCurrentStationId).toHaveBeenCalledWith(ownStation.id);
+
+      vi.unstubAllGlobals();
+    });
+
+    it('falls back to the shared default station when the org owns none of its own', async () => {
+      stubAuthenticatedFetch();
+      // A fresh org: only the un-owned default station exists (matches what
+      // a brand-new production org's own GET /api/stations actually returns
+      // before it creates its first real station).
+      vi.mocked(api.getStations).mockResolvedValue([mockStations[0]]);
+
+      const { result } = await renderStationHook();
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.selectedStation).toEqual(mockStations[0]);
+      expect(setCurrentStationId).toHaveBeenCalledWith(DEFAULT_STATION_ID);
+
+      vi.unstubAllGlobals();
+    });
+
+    it('leaves no station auto-selected when the org owns two or more (genuinely ambiguous)', async () => {
+      // A multi-station admin's intended station is genuinely ambiguous
+      // without an explicit pick — auto-selecting the wrong one would be
+      // worse than the current "no live updates until you pick one" gap, so
+      // this case deliberately keeps today's behaviour.
+      stubAuthenticatedFetch();
+      const ownStationA: Station = { ...mockStations[1], id: 'own-a', organizationId: 'org-1' };
+      const ownStationB: Station = { ...mockStations[2], id: 'own-b', organizationId: 'org-1' };
+      vi.mocked(api.getStations).mockResolvedValue([mockStations[0], ownStationA, ownStationB]);
+
+      const { result } = await renderStationHook();
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.selectedStation).toBe(null);
+      expect(setCurrentStationId).toHaveBeenCalledWith(null);
+
+      vi.unstubAllGlobals();
+    });
+  });
+
   it('should restore station selection from localStorage', async () => {
     localStorage.setItem('selectedStationId', DEMO_STATION_ID);
     

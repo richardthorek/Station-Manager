@@ -14,6 +14,7 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import { ensureDatabase } from '../services/dbFactory';
 import { authHeader } from './helpers/authHelpers';
+import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
 
 const stationsModule = require('../routes/stations');
 const stationsRouter = stationsModule.default ?? stationsModule;
@@ -357,6 +358,67 @@ describe('Stations API', () => {
       const names = response.body.stations.map((s: any) => s.name);
       const sortedNames = [...names].sort();
       expect(names).toEqual(sortedNames);
+    });
+
+    // Q41 follow-up (found 2026-07-17): this route had no organizationId
+    // filtering at all — any authenticated caller could list every
+    // station across every organization, not just their own.
+    describe('organization scoping', () => {
+      const stationPayload = (label: string) => ({
+        name: `${label} Station`,
+        brigadeId: `${label.toLowerCase().replace(/\s+/g, '-')}-brigade-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        brigadeName: `${label} Brigade`,
+        hierarchy: {
+          jurisdiction: 'NSW',
+          area: `${label} Area`,
+          district: `${label} District`,
+          brigade: `${label} Brigade`,
+          station: `${label} Station`,
+        },
+      });
+
+      it('scopes results to the caller\'s own org plus not-yet-backfilled orphans, when an org context is present', async () => {
+        const orgDb = ensureOrganizationDatabase();
+        const orgA = await orgDb.createOrganization({ name: `Org A ${Date.now()}`, billingEmail: 'a@example.com' });
+        const orgB = await orgDb.createOrganization({ name: `Org B ${Date.now()}`, billingEmail: 'b@example.com' });
+
+        const ownStation = await request(app)
+          .post('/api/stations')
+          .set(authHeader('admin', orgA.id))
+          .send(stationPayload('Org A'))
+          .expect(201);
+
+        const otherOrgStation = await request(app)
+          .post('/api/stations')
+          .set(authHeader('admin', orgB.id))
+          .send(stationPayload('Org B'))
+          .expect(201);
+
+        const response = await request(app)
+          .get('/api/stations')
+          .set(authHeader('admin', orgA.id))
+          .expect(200);
+
+        const ids = response.body.stations.map((s: any) => s.id);
+        expect(ids).toContain(ownStation.body.id);
+        expect(ids).not.toContain(otherOrgStation.body.id);
+      });
+
+      it('stays fully unscoped for a caller with no org context (kiosk/demo back-compat)', async () => {
+        const orgDb = ensureOrganizationDatabase();
+        const orgC = await orgDb.createOrganization({ name: `Org C ${Date.now()}`, billingEmail: 'c@example.com' });
+        const orgStation = await request(app)
+          .post('/api/stations')
+          .set(authHeader('admin', orgC.id))
+          .send(stationPayload('Org C'))
+          .expect(201);
+
+        // authAgent's beforeEach sets a token with no organizationId claim.
+        const response = await authAgent.get('/api/stations').expect(200);
+
+        const ids = response.body.stations.map((s: any) => s.id);
+        expect(ids).toContain(orgStation.body.id);
+      });
     });
   });
 

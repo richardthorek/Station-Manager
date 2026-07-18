@@ -5,6 +5,12 @@ at the station right now, what they're doing, and keeps the history for
 reporting. Every screen at the station updates instantly — sign in on the
 kiosk and it appears on everyone's phone straight away.
 
+![The sign-in book on a desktop screen: event log on the left, current event participants in the middle, member roster on the right](images/sign-in-board-desktop.png)
+
+On a wide screen this three-column layout is the default; on a kiosk tablet or
+phone the touch-optimised full-width member grid takes over instead, and
+either view is one tap away from the other.
+
 ## Checking in and out
 
 1. Open **Sign In** from the home screen (on the station kiosk it's usually
@@ -30,6 +36,8 @@ Other ways to sign in:
 **Forgot to check out?** The system rolls the book over at midnight so nobody
 stays "at the station" forever. Admins can also correct entries.
 
+![A member checked in, with a toast confirmation and their tile moved into the checked-in group](images/sign-in-checked-in.png)
+
 ## Activities — what's happening at the station
 
 The station has a **current activity** (Training, Maintenance, Meeting, and so
@@ -54,6 +62,10 @@ later.
 ## Adding new members
 
 Anyone can be added from the sign-in page (**Add member**) with just a name.
+A guest attending one event without joining the roster can be added as a
+**one-off visitor** instead, straight from the current event.
+
+![Adding a one-off visitor to the current event](images/sign-in-visitor.png)
 Admins can also:
 
 - **Import a member list** from CSV (Sign In → import) — good for first setup.

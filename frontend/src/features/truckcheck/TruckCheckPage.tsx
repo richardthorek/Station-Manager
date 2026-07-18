@@ -24,6 +24,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useStation } from '../../contexts/StationContext';
 import { useSocket } from '../../hooks/useSocket';
 import { PageTransition } from '../../components/PageTransition';
+import { ConfirmationDialog } from '../../components/ConfirmationDialog';
+import { useToast } from '../../hooks/useToast';
 import { api } from '../../services/api';
 import { VehicleFormModal } from './VehicleFormModal';
 import type { Appliance, CheckRun, CheckRunWithResults, IssueResult } from '../../types';
@@ -42,6 +44,7 @@ export function TruckCheckPage() {
   const { hasFeature } = useAuth();
   const { isDefaultStation } = useStation();
   const { on, off } = useSocket();
+  const { showError } = useToast();
   const navigate = useNavigate();
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [activeChecks, setActiveChecks] = useState<Map<string, CheckRun>>(new Map());
@@ -50,6 +53,7 @@ export function TruckCheckPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState<CheckRun | null>(null);
   // Q8: vehicle CRUD folded directly into the roster (no admin-page hop
   // needed to add or fix a vehicle's details). null = adding a new vehicle;
   // an Appliance = editing that one. undefined = modal closed.
@@ -130,18 +134,14 @@ export function TruckCheckPage() {
   }
 
   async function handleCancel(run: CheckRun) {
-    if (!window.confirm(
-      `Cancel the in-progress check on ${run.applianceName}? This discards its progress and cannot be undone.`,
-    )) {
-      return;
-    }
     try {
       setCancellingId(run.id);
       await api.cancelCheckRun(run.id);
       await loadAppliances();
     } catch (err) {
       console.error(err);
-      alert('Failed to cancel the check. Please try again.');
+      showError('Failed to cancel the check. Please try again.');
+      throw err; // keeps the confirmation dialog open with the error shown
     } finally {
       setCancellingId(null);
     }
@@ -318,7 +318,7 @@ export function TruckCheckPage() {
                           </button>
                           <button
                             className="btn-danger"
-                            onClick={() => handleCancel(activeCheck)}
+                            onClick={() => setConfirmingCancel(activeCheck)}
                             disabled={cancellingId === activeCheck.id}
                           >
                             {cancellingId === activeCheck.id ? 'Cancelling…' : 'Cancel'}
@@ -352,6 +352,22 @@ export function TruckCheckPage() {
             vehicle={vehicleModal}
             onClose={() => setVehicleModal(undefined)}
             onSaved={loadAppliances}
+          />
+        )}
+
+        {confirmingCancel && (
+          <ConfirmationDialog
+            title="Cancel Check"
+            message={`Cancel the in-progress check on ${confirmingCancel.applianceName}?`}
+            description="This discards its progress and cannot be undone."
+            confirmLabel="Cancel Check"
+            cancelLabel="Keep Checking"
+            isDangerous
+            onConfirm={async () => {
+              await handleCancel(confirmingCancel);
+              setConfirmingCancel(null);
+            }}
+            onCancel={() => setConfirmingCancel(null)}
           />
         )}
       </div>

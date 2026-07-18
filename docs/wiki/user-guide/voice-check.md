@@ -16,6 +16,13 @@ quirks notes your admin has recorded.
    hear you without it.
 3. Wait for the status pill to show **Ready**.
 
+![The voice check screen: status pill, hold-to-talk button, and a type-instead text box](images/voice-check.png)
+
+*(Captured in a test environment with no live AI connection, so the "Ready"
+status shows but the transcript area is empty and a connection note appears —
+in normal use the assistant greets you as soon as it connects and the
+transcript fills in as you talk.)*
+
 ## Talking to the assistant
 
 - **Hold the big button while you speak**, let go when you're done — like a

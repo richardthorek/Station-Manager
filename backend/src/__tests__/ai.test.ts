@@ -19,7 +19,6 @@ import {
 import { getUsageDatabase, monthStart, monthlyResetAt } from '../services/usageDatabase';
 import { ensureOrganizationDatabase, initializeOrganizationDatabase } from '../services/organizationDbFactory';
 import { ensureUsageDatabase, initializeUsageDatabase } from '../services/usageDbFactory';
-import { reportMeteredUsageOnce, startMeteredUsageReporter, stopMeteredUsageReporter } from '../services/meteredUsageReporter';
 import type { Organization, PlanCode } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
@@ -303,35 +302,6 @@ describe('AI gateway', () => {
         .set('Authorization', `Bearer ${tokenFor(org)}`)
         .send({ sessionId: 'review-2' });
       expect(res.status).toBe(402);
-    });
-  });
-
-  // ── metered usage reporter ────────────────────────────────────────────────
-  describe('metered usage reporter', () => {
-    afterEach(() => {
-      stopMeteredUsageReporter();
-      delete process.env.STRIPE_METERED_USAGE_ENABLED;
-      delete process.env.STRIPE_AI_METER_EVENT;
-      delete process.env.STRIPE_SECRET_KEY;
-    });
-
-    it('reports nothing when metered billing is disabled', async () => {
-      delete process.env.STRIPE_METERED_USAGE_ENABLED;
-      await ensureUsageDatabase().recordUsage({ organizationId: 'org1', type: 'speech' });
-      expect(await reportMeteredUsageOnce()).toBe(0);
-    });
-
-    it('reports nothing when enabled but there is no unreported usage', async () => {
-      process.env.STRIPE_METERED_USAGE_ENABLED = 'true';
-      process.env.STRIPE_AI_METER_EVENT = 'ai_session';
-      process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
-      await (ensureUsageDatabase() as unknown as { clear: () => Promise<void> }).clear();
-      expect(await reportMeteredUsageOnce()).toBe(0);
-    });
-
-    it('start/stop are safe no-ops in the test environment', () => {
-      expect(() => startMeteredUsageReporter()).not.toThrow();
-      expect(() => stopMeteredUsageReporter()).not.toThrow();
     });
   });
 

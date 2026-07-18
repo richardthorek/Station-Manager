@@ -31,6 +31,7 @@ export async function exportAsPDF(
   options: {
     dateRange?: string;
     stationName?: string;
+    agencyName?: string;
   } = {}
 ): Promise<void> {
   const { exportAsPDF: exportAsPDFImpl } = await import('./exportUtils.pdf');

@@ -276,6 +276,19 @@ export interface Organization {
    * exhausted. See the C3 commercialisation track in docs/MASTER_PLAN.md.
    */
   aiBonusSessions?: number;
+  /**
+   * Admin-configurable branding (found 2026-07-18, alongside removing
+   * hardcoded "NSW Rural Fire Service" text from exports): the org's own
+   * display name/logo, used on exported reports (and anywhere else generic
+   * "Station Manager" branding previously stood in for the org's real
+   * identity) instead of assuming every customer is NSW RFS — the platform
+   * now serves rural/metro fire, SES, ambulance, police, and other agencies.
+   * Defaulted from the claimed facility's serviceType at signup (see
+   * `FACILITY_SERVICE_TYPE_LABELS`) but never auto-changed again once set —
+   * an owner can always override both from Admin → Organization.
+   */
+  agencyName?: string;
+  agencyLogoUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -296,7 +309,6 @@ export interface UsageRecord {
   type: UsageType;
   units: number;                 // sessions for 'speech'; provider calls for chat/report
   createdAt: Date;
-  reportedToStripe?: boolean;    // set once batched metered usage is sent to Stripe
 }
 
 export type Member = SharedMember<Date>;

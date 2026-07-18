@@ -238,7 +238,7 @@ export function generateComplianceInsights(
       type: 'critical',
       title: 'No Recent Checks',
       message: 'No truck checks recorded in this period.',
-      recommendation: 'Initiate vehicle inspections as per RFS guidelines.',
+      recommendation: 'Initiate vehicle inspections as per your agency\'s guidelines.',
     });
   }
 

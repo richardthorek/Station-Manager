@@ -63,7 +63,7 @@ router.get('/lookup', optionalAuth, async (req, res) => {
     if (!parser.isDataAvailable()) {
       return res.status(503).json({
         error: 'Station lookup service unavailable',
-        message: 'RFS facilities CSV data is not available. Please contact the administrator.',
+        message: 'Facilities data is not available. Please contact the administrator.',
       });
     }
 
@@ -126,7 +126,7 @@ router.get('/count', optionalAuth, async (req, res) => {
       return res.json({
         count: 0,
         available: false,
-        message: 'RFS facilities CSV data is not available',
+        message: 'Facilities data is not available',
       });
     }
 
@@ -202,12 +202,27 @@ router.get('/brigade/:brigadeId', optionalAuth, validateBrigadeId, handleValidat
  * Get all stations with optional filtering and pagination
  * Query params: brigadeId, area, district, limit, offset
  * Protected by optionalAuth middleware (requires authentication when REQUIRE_AUTH=true)
+ *
+ * Org-scoped when the caller carries an org context (Q41 follow-up, found
+ * 2026-07-17): this route had no organizationId filtering at all, so any
+ * authenticated caller — or an anonymous one, since optionalAuth doesn't
+ * require a credential — could list every station across every
+ * organization on the platform, not just their own. Scoped to (the
+ * caller's own org's stations) ∪ (stations with no organizationId yet —
+ * see Q35's orphaned-station backfill tool) when req.organization is set;
+ * left fully open when there's no org context, matching the kiosk/demo
+ * back-compat pattern used throughout entitlements.ts.
  */
-router.get('/', optionalAuth, validateStationQuery, handleValidationErrors, async (req: Request, res: Response) => {
+router.get('/', optionalAuth, attachOrganization, validateStationQuery, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
     let stations = await db.getAllStations();
-    
+
+    if (req.organization) {
+      const organizationId = req.organization.id;
+      stations = stations.filter(s => !s.organizationId || s.organizationId === organizationId);
+    }
+
     // Apply filters
     const { brigadeId, area, district, limit, offset } = req.query;
     

@@ -47,3 +47,5 @@ connection while you're talking (it reconnects automatically after dropouts).
 Any mix works simultaneously: wall tablet + members' phones + captain's
 laptop. Everything stays in sync in real time — a check-in on one device
 appears on all the others within a second.
+
+![The sign-in book on a phone screen — the same live data as the wall tablet](images/sign-in-board-mobile.png)

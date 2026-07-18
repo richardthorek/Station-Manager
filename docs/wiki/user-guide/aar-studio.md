@@ -11,6 +11,8 @@ Open it from the **AAR Studio** card on the home screen (it lives at `/aar`).
 Want to see it in action first? Use the **"See an example"** button (or an
 `/aar/?demo` link) to load a worked example review.
 
+![AAR Studio's home screen listing local and team-synced reviews](images/aar-studio-home.png)
+
 ## Running a review
 
 1. **Set up** — describe the review: what it's about, where, when, who's
@@ -27,10 +29,15 @@ Want to see it in action first? Use the **"See an example"** button (or an
    **findings**: what went well, what didn't, and recommendations — each
    linked back to the supporting quote. Possible duplicate findings are
    flagged with one-tap **Merge / Keep both** choices.
+
+![The findings board, with AI-generated findings organised by phase and linked to their source quote](images/aar-studio-findings.png)
+
 4. **Refine the board** — edit findings, add your own, categorise them, and
    attribute findings to a specific unit where relevant.
 5. **Report** — generate a formatted review report (with a findings register)
    to present, print, or file.
+
+![A generated review report, ready to present or file](images/aar-studio-report.png)
 
 ## Where your reviews live
 

@@ -48,6 +48,8 @@ interface OrganizationEntity extends TableEntity {
   facilityCustom?: boolean;
   claimedByUserId?: string;
   claimedAt?: string;
+  agencyName?: string;
+  agencyLogoUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -99,6 +101,8 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       facilityCustom: org.facilityCustom,
       claimedByUserId: org.claimedByUserId,
       claimedAt: org.claimedAt?.toISOString(),
+      agencyName: org.agencyName,
+      agencyLogoUrl: org.agencyLogoUrl,
       createdAt: org.createdAt.toISOString(),
       updatedAt: org.updatedAt.toISOString(),
     };
@@ -125,6 +129,8 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       facilityCustom: entity.facilityCustom,
       claimedByUserId: entity.claimedByUserId,
       claimedAt: entity.claimedAt ? new Date(entity.claimedAt) : undefined,
+      agencyName: entity.agencyName,
+      agencyLogoUrl: entity.agencyLogoUrl,
       createdAt: new Date(entity.createdAt),
       updatedAt: new Date(entity.updatedAt),
     };
@@ -157,6 +163,8 @@ export class TableStorageOrganizationDatabase implements IOrganizationDatabase {
       facilityCustom: input.facilityCustom,
       claimedByUserId: input.claimedByUserId,
       claimedAt: input.claimedAt,
+      agencyName: input.agencyName,
+      agencyLogoUrl: input.agencyLogoUrl,
       createdAt: now,
       updatedAt: now,
     };

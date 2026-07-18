@@ -38,9 +38,6 @@ export interface IUsageDatabase {
   hasRecordedSession(organizationId: string, type: UsageType, sessionId: string, since?: Date): Promise<boolean>;
   /** All usage rows for an org (optionally since a date), newest first. */
   listUsage(organizationId: string, since?: Date): Promise<UsageRecord[]>;
-  /** Rows not yet reported to Stripe metered billing. */
-  listUnreported(): Promise<UsageRecord[]>;
-  markReported(ids: string[]): Promise<void>;
   clear(): Promise<void>;
 }
 
@@ -55,7 +52,6 @@ export class UsageDatabase implements IUsageDatabase {
       units: input.units ?? 1,
       sessionId: input.sessionId,
       createdAt: new Date(),
-      reportedToStripe: false,
     };
     this.rows.set(row.id, row);
     return row;
@@ -96,17 +92,6 @@ export class UsageDatabase implements IUsageDatabase {
     return Array.from(this.rows.values())
       .filter((r) => r.organizationId === organizationId && (!since || r.createdAt >= since))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-
-  async listUnreported(): Promise<UsageRecord[]> {
-    return Array.from(this.rows.values()).filter((r) => !r.reportedToStripe);
-  }
-
-  async markReported(ids: string[]): Promise<void> {
-    for (const id of ids) {
-      const row = this.rows.get(id);
-      if (row) row.reportedToStripe = true;
-    }
   }
 
   async clear(): Promise<void> {

@@ -49,7 +49,12 @@ async function uploadCsvToBlob(): Promise<void> {
     const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
     const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
     console.log(`📦 Ensuring container '${CONTAINER_NAME}' exists...`);
-    await containerClient.createIfNotExists({ access: 'blob' });
+    // Private container — facilitiesParser.ts / rfsFacilitiesParser.ts both
+    // read via an authenticated connection string, never anonymous access, so
+    // there's no reason to request public blob access here. Requesting it
+    // also fails outright on any storage account with "allow blob public
+    // access" disabled (a standard security setting, and the case in prod).
+    await containerClient.createIfNotExists();
 
     const blockBlobClient = containerClient.getBlockBlobClient(BLOB_NAME);
     console.log(`⬆️  Uploading ${BLOB_NAME} to blob storage...`);
