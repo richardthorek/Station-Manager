@@ -53,7 +53,14 @@ still works via username/password.
   CORS+credentials setup the SSO cookie already relies on. A successful verify
   returns the identical `{ token, user }` shape as `POST /api/auth/login` and
   also sets the `sk_session` cookie, so a passkey sign-in participates in
-  suite-wide SSO exactly like a password sign-in.
+  suite-wide SSO exactly like a password sign-in. **If neither `WEBAUTHN_RP_ID`
+  nor `COOKIE_DOMAIN` is set**, `resolveRpId()` (`config/webauthn.ts`) falls
+  back per-request to that request's own hostname instead of a hardcoded
+  value — passkeys still work for Station Manager on its own, just not the
+  cross-app sign-in, which needs the shared parent domain configured
+  explicitly. (A hardcoded `'localhost'` fallback used to leak into
+  production, producing a browser-side "RP ID 'localhost' is invalid for this
+  domain" error on any non-localhost deployment that hadn't set either var.)
 - **Sign-in is "usernameless"/discoverable**: `POST /api/auth/passkey/login/options`
   sets no `allowCredentials`, so the browser's own picker shows every passkey it
   holds for the RP — no username field to fill in first.
@@ -91,8 +98,9 @@ ENABLE_DATA_PROTECTION=true          # require JWT or brigade token on data rout
 # Entitlement / plan gating (default ON; never disable in production)
 ENABLE_ENTITLEMENTS=true
 
-# Passkeys (WebAuthn) — optional, defaults are sensible for most deployments
-WEBAUTHN_RP_ID=stationkit.com.au     # defaults to COOKIE_DOMAIN minus leading dot, else 'localhost'
+# Passkeys (WebAuthn) — set explicitly in production for cross-app sign-in;
+# otherwise each deployment falls back to its own request hostname per-request
+WEBAUTHN_RP_ID=stationkit.com.au     # defaults to COOKIE_DOMAIN minus leading dot, else the request's hostname
 WEBAUTHN_RP_NAME=StationKit          # defaults to 'StationKit'
 ```
 

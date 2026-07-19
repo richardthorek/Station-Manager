@@ -30,7 +30,7 @@ import { getAdminDb } from '../services/adminUserDbFactory';
 import { authMiddleware } from '../middleware/auth';
 import { sensitiveActionRateLimiter } from '../middleware/rateLimiter';
 import { logger } from '../services/logger';
-import { WEBAUTHN_RP_ID, WEBAUTHN_RP_NAME, expectedOrigins } from '../config/webauthn';
+import { resolveRpId, WEBAUTHN_RP_NAME, expectedOrigins } from '../config/webauthn';
 import {
   storeRegistrationChallenge,
   takeRegistrationChallenge,
@@ -62,7 +62,7 @@ router.post('/register/options', authMiddleware, async (req: Request, res: Respo
 
     const options = await generateRegistrationOptions({
       rpName: WEBAUTHN_RP_NAME,
-      rpID: WEBAUTHN_RP_ID,
+      rpID: resolveRpId(req),
       userName: user.username,
       userID: new TextEncoder().encode(user.id),
       userDisplayName: user.username,
@@ -100,7 +100,7 @@ router.post('/register/verify', authMiddleware, async (req: Request, res: Respon
       response,
       expectedChallenge,
       expectedOrigin: expectedOrigins(),
-      expectedRPID: WEBAUTHN_RP_ID,
+      expectedRPID: resolveRpId(req),
     });
 
     if (!verification.verified || !verification.registrationInfo) {
@@ -135,13 +135,13 @@ router.post('/register/verify', authMiddleware, async (req: Request, res: Respon
 // Sign-in — public. Usable from any suite app's own login screen.
 // ---------------------------------------------------------------------------
 
-router.post('/login/options', sensitiveActionRateLimiter, async (_req: Request, res: Response) => {
+router.post('/login/options', sensitiveActionRateLimiter, async (req: Request, res: Response) => {
   try {
     // No allowCredentials: a fully "usernameless" / discoverable-credential
     // flow — the browser's own picker shows every passkey it holds for this
     // RP ID, so the caller never has to type a username first.
     const options = await generateAuthenticationOptions({
-      rpID: WEBAUTHN_RP_ID,
+      rpID: resolveRpId(req),
       userVerification: 'preferred',
     });
 
@@ -182,7 +182,7 @@ router.post('/login/verify', sensitiveActionRateLimiter, async (req: Request, re
       response,
       expectedChallenge,
       expectedOrigin: expectedOrigins(),
-      expectedRPID: WEBAUTHN_RP_ID,
+      expectedRPID: resolveRpId(req),
       credential,
     });
 
