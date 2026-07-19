@@ -7,6 +7,9 @@
  *   brigade). AI can only be enabled on the AI plan (clamped server-side).
  * - List org users and invite new admin/viewer accounts.
  * - Manage subscription via Stripe Customer Portal.
+ * - Manage the signed-in user's own passkeys (PasskeysSection) — available to
+ *   any authenticated user regardless of role, since it's a personal
+ *   credential, not an org-level setting.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -22,6 +25,7 @@ import {
 } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
 import { AdminNav } from '../../../components/AdminNav';
+import { PasskeysSection } from './PasskeysSection';
 import './OrganizationPage.css';
 
 const MODULES: { key: EntitlementFeature; label: string; help: string }[] = [
@@ -390,6 +394,8 @@ export function OrganizationPage() {
               to keep access after the trial ends.
             </div>
           )}
+
+          <PasskeysSection />
 
           <section className="org-section">
             <h2>Plan</h2>

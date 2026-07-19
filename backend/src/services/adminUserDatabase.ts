@@ -7,13 +7,14 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
-import type { AdminUser } from '../types';
+import type { AdminUser, WebAuthnCredential } from '../types';
 
 const SALT_ROUNDS = 10;
 
 class AdminUserDatabase {
   private users: Map<string, AdminUser> = new Map();
   private usersByUsername: Map<string, AdminUser> = new Map();
+  private webAuthnCredentials: Map<string, WebAuthnCredential> = new Map();
 
   /**
    * Initialize with a default admin user if none exists
@@ -185,6 +186,36 @@ class AdminUserDatabase {
   async clear(): Promise<void> {
     this.users.clear();
     this.usersByUsername.clear();
+    this.webAuthnCredentials.clear();
+  }
+
+  // --- WebAuthn / passkey credentials ---
+
+  async saveWebAuthnCredential(credential: WebAuthnCredential): Promise<void> {
+    this.webAuthnCredentials.set(credential.id, credential);
+  }
+
+  async getWebAuthnCredentialById(id: string): Promise<WebAuthnCredential | null> {
+    return this.webAuthnCredentials.get(id) || null;
+  }
+
+  async getWebAuthnCredentialsByUser(userId: string): Promise<WebAuthnCredential[]> {
+    return Array.from(this.webAuthnCredentials.values()).filter((c) => c.userId === userId);
+  }
+
+  async updateWebAuthnCredentialCounter(id: string, counter: number, lastUsedAt: Date): Promise<void> {
+    const credential = this.webAuthnCredentials.get(id);
+    if (!credential) return;
+    credential.counter = counter;
+    credential.lastUsedAt = lastUsedAt;
+  }
+
+  /** Delete a credential — scoped to the owning user so one user can't remove another's. */
+  async deleteWebAuthnCredential(id: string, userId: string): Promise<boolean> {
+    const credential = this.webAuthnCredentials.get(id);
+    if (!credential || credential.userId !== userId) return false;
+    this.webAuthnCredentials.delete(id);
+    return true;
   }
 }
 

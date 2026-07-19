@@ -56,6 +56,54 @@ export function signToken(user: Pick<AdminUser, 'id' | 'username' | 'role' | 'or
 }
 
 /**
+ * Resolve a successfully-authenticated user's active org/role, sign a token,
+ * set the suite SSO cookie, and shape the standard login response body.
+ * Shared by every sign-in path (password, passkey) so they stay in lockstep.
+ */
+export async function completeSignIn(user: AdminUser, res: Response) {
+  // Resolve the default active org from membership rows (multi-org): the
+  // user's stored default when still a member there, else their first
+  // active membership; role in the token = role within that org.
+  let activeOrganizationId = user.organizationId;
+  let activeRole = user.role;
+  try {
+    const memberships = (await resolveMemberships(user)).filter((m) => m.status === 'active');
+    const preferred =
+      memberships.find((m) => m.organizationId === user.organizationId) ?? memberships[0];
+    if (preferred) {
+      activeOrganizationId = preferred.organizationId;
+      activeRole = preferred.role;
+    }
+  } catch (membershipError) {
+    logger.warn('Failed to resolve memberships at sign-in; using AdminUser fields', {
+      error: membershipError,
+      userId: user.id,
+    });
+  }
+
+  const token = signToken({
+    id: user.id,
+    username: user.username,
+    role: activeRole,
+    organizationId: activeOrganizationId,
+  });
+
+  setSessionCookie(res, token);
+
+  return {
+    token,
+    user: {
+      id: user.id,
+      username: user.username,
+      role: activeRole,
+      organizationId: activeOrganizationId,
+      email: user.email,
+      lastLoginAt: user.lastLoginAt,
+    },
+  };
+}
+
+/**
  * POST /api/auth/signup
  * Self-service sign-up: creates an Organization (free Community plan) and its
  * first owner account, then returns a JWT. The new-frontend flow anchors the
@@ -298,49 +346,8 @@ router.post('/login', sensitiveActionRateLimiter, async (req: Request, res: Resp
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Resolve the default active org from membership rows (multi-org): the
-    // user's stored default when still a member there, else their first
-    // active membership; role in the token = role within that org.
-    let activeOrganizationId = user.organizationId;
-    let activeRole = user.role;
-    try {
-      const memberships = (await resolveMemberships(user)).filter((m) => m.status === 'active');
-      const preferred =
-        memberships.find((m) => m.organizationId === user.organizationId) ?? memberships[0];
-      if (preferred) {
-        activeOrganizationId = preferred.organizationId;
-        activeRole = preferred.role;
-      }
-    } catch (membershipError) {
-      logger.warn('Failed to resolve memberships at login; using AdminUser fields', {
-        error: membershipError,
-        userId: user.id,
-      });
-    }
-
-    // Generate JWT token (includes organizationId for SaaS tenancy)
-    const token = signToken({
-      id: user.id,
-      username: user.username,
-      role: activeRole,
-      organizationId: activeOrganizationId,
-    });
-
     logger.info('User logged in', { username: user.username, userId: user.id });
-    setSessionCookie(res, token);
-
-    // Return token and user info (without password hash)
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        role: activeRole,
-        organizationId: activeOrganizationId,
-        email: user.email,
-        lastLoginAt: user.lastLoginAt,
-      },
-    });
+    res.json(await completeSignIn(user, res));
   } catch (error) {
     logger.error('Error during login', { error });
     res.status(500).json({ error: 'Internal server error' });

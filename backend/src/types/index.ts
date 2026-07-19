@@ -90,6 +90,31 @@ export interface AdminUser {
   isActive: boolean;
 }
 
+/**
+ * A registered WebAuthn/passkey credential for an AdminUser. Sign-in is
+ * additive to username/password — a user may have zero, one, or several
+ * (one per device/authenticator). Registration only happens from Station
+ * Manager's own account settings (the suite's sole identity provider);
+ * sibling apps (Fire Santa Run, Fire Break Calculator) only ever call the
+ * login ceremony, never registration.
+ */
+export interface WebAuthnCredential {
+  /** The credential ID (base64url), also the record's row key. */
+  id: string;
+  userId: string;
+  /** Base64url-encoded COSE public key. */
+  publicKey: string;
+  /** Signature counter, for clone detection. */
+  counter: number;
+  deviceType: 'singleDevice' | 'multiDevice';
+  backedUp: boolean;
+  transports?: string[];
+  /** User-assigned label, e.g. "MacBook Touch ID". Defaults to a generic name. */
+  name: string;
+  createdAt: Date;
+  lastUsedAt?: Date;
+}
+
 /** Role a user holds within one organization (per-org, not global). */
 export type OrgRole = 'owner' | 'admin' | 'viewer';
 

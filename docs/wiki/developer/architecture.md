@@ -966,6 +966,34 @@ with the connection string, and the production storage account has public
 access disabled account-wide (requesting it fails the upload outright). See
 `backend/src/scripts/README.md`.
 
+### Passkeys (WebAuthn) — additive sign-in method
+
+Users can register a passkey (Face ID/Touch ID/Windows Hello/Android
+biometric, or a password manager) and use it instead of typing a username and
+password. It's additive, not a replacement — the password still works.
+`routes/webauthn.ts` (mounted at `/api/auth/passkey`) plus
+`services/webAuthnChallengeStore.ts` (short-lived, single-use challenge
+between the `.../options` and `.../verify` half of a ceremony) and a new
+`WebAuthnCredential` record type stored alongside `AdminUser` (public key +
+signature counter + device type; both the in-memory and Table Storage admin
+user DBs implement the CRUD methods). Uses `@simplewebauthn/server`/`browser`.
+
+Registration only happens from Station Manager's own account settings
+(`/admin/organization`'s `PasskeysSection`) — the suite's sole identity
+provider owns credential management. **Sign-in is usable from any suite app's
+own login screen**, because the WebAuthn Relying Party ID
+(`config/webauthn.ts`'s `WEBAUTHN_RP_ID`, e.g. `stationkit.com.au`) is the same
+shared parent domain the SSO cookie (`COOKIE_DOMAIN`) uses — a credential's RP
+ID may be any registrable-domain suffix of the calling origin, so Fire Santa
+Run/Fire Break Calculator run the WebAuthn ceremony directly on their own page
+(no redirect/iframe), then POST the assertion to Station Manager's
+`POST /api/auth/passkey/login/verify` cross-origin (same CORS+credentials
+setup the SSO cookie already relies on). A successful verify returns the
+identical `{ token, user }` shape as `POST /api/auth/login` and also sets the
+`sk_session` cookie — indistinguishable from a password sign-in downstream.
+Full protocol detail (the discoverable/"usernameless" flow, sequence
+diagrams): [`suite-token-validation.md`](suite-token-validation.md) §1b.
+
 ### Multi-org membership
 
 `OrganizationMembership` (`services/orgAccessDatabase.ts` + Table Storage twin

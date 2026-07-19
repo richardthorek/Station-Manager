@@ -301,7 +301,7 @@
           "line": 291,
           "description": "Get all active check-ins with member and activity details",
           "returns": "CheckInWithDetails[]",
-          "complexity": "O(n²)",
+          "complexity": "O(n\u00b2)",
           "sideEffects": "none"
         },
         "getCheckInByMember": {
@@ -539,7 +539,7 @@
         "addEventVisitor": {
           "signature": "addEventVisitor(eventId: string, name: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): EventParticipant",
           "line": 833,
-          "description": "AC-2 — adds an ephemeral visitor to an event as an EventParticipant with a synthetic 'visitor-<uuid>' memberId and isVisitor=true. Not persisted as a Member (no history, no member-cap impact). No toggle: always inserts a new row.",
+          "description": "AC-2 \u2014 adds an ephemeral visitor to an event as an EventParticipant with a synthetic 'visitor-<uuid>' memberId and isVisitor=true. Not persisted as a Member (no history, no member-cap impact). No toggle: always inserts a new row.",
           "parameters": [
             {
               "name": "eventId",
@@ -777,7 +777,7 @@
       "file": "backend/src/services/tableStorageDatabase.ts",
       "description": "Azure Table Storage implementation (production database)",
       "type": "class",
-      "note": "All methods are async and use @azure/data-tables SDK. Fixed Feb 2026: getAllMembers now properly filters by stationId. Fixed 2026-07-14: (1) getEventsByDateRange no longer delegates to getEvents() (which only ever scans the last 3 calendar months) — it now scans the month partitions the requested range actually spans, fixing silent truncation in getAttendanceSummary/getMemberParticipation/getActivityBreakdown; getEvents()/getEventsWithParticipants() themselves are unchanged and still 3-month-capped (tracked as MASTER_PLAN Q25). (2) Added private updateEntityOptimistic() — ETag-based optimistic concurrency with refetch-and-retry on a 412, applied to endEvent/reactivateEvent/deleteEvent and updateMember/updateMemberAuth/deleteMember, replacing unconditional last-write-wins Replace calls.",
+      "note": "All methods are async and use @azure/data-tables SDK. Fixed Feb 2026: getAllMembers now properly filters by stationId. Fixed 2026-07-14: (1) getEventsByDateRange no longer delegates to getEvents() (which only ever scans the last 3 calendar months) \u2014 it now scans the month partitions the requested range actually spans, fixing silent truncation in getAttendanceSummary/getMemberParticipation/getActivityBreakdown; getEvents()/getEventsWithParticipants() themselves are unchanged and still 3-month-capped (tracked as MASTER_PLAN Q25). (2) Added private updateEntityOptimistic() \u2014 ETag-based optimistic concurrency with refetch-and-retry on a 412, applied to endEvent/reactivateEvent/deleteEvent and updateMember/updateMemberAuth/deleteMember, replacing unconditional last-write-wins Replace calls.",
       "methods": {
         "getAllMembers": {
           "signature": "getAllMembers(stationId?: string, options?: { search?: string; filter?: string; sort?: string }): Promise<Member[]>",
@@ -921,7 +921,7 @@
         "addEventVisitor": {
           "signature": "addEventVisitor(eventId: string, name: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): EventParticipant",
           "line": 998,
-          "description": "AC-2 — adds an ephemeral visitor to an event as an EventParticipant with a synthetic 'visitor-<uuid>' memberId and isVisitor=true. Not persisted as a Member (no history, no member-cap impact). No toggle: always inserts a new row.",
+          "description": "AC-2 \u2014 adds an ephemeral visitor to an event as an EventParticipant with a synthetic 'visitor-<uuid>' memberId and isVisitor=true. Not persisted as a Member (no history, no member-cap impact). No toggle: always inserts a new row.",
           "parameters": [
             {
               "name": "eventId",
@@ -1276,7 +1276,7 @@
     },
     "agentSessionDbFactory": {
       "file": "backend/src/services/agentSessionDbFactory.ts",
-      "description": "Factory for AgentSession database instances (voice/vision maintenance-agent sessions + turns) — chooses in-memory vs Azure Table Storage, same pattern as truckChecksDbFactory",
+      "description": "Factory for AgentSession database instances (voice/vision maintenance-agent sessions + turns) \u2014 chooses in-memory vs Azure Table Storage, same pattern as truckChecksDbFactory",
       "functions": {
         "ensureAgentSessionDatabase": {
           "signature": "ensureAgentSessionDatabase(): IAgentSessionDatabase",
@@ -1294,7 +1294,7 @@
     },
     "agentSessionDatabase": {
       "file": "backend/src/services/agentSessionDatabase.ts",
-      "description": "In-memory AgentSession/AgentTurn store (A3 voice-agent transcript). Table Storage twin is tableStorageAgentSessionDatabase.ts — keep both in sync with IAgentSessionDatabase.",
+      "description": "In-memory AgentSession/AgentTurn store (A3 voice-agent transcript). Table Storage twin is tableStorageAgentSessionDatabase.ts \u2014 keep both in sync with IAgentSessionDatabase.",
       "functions": {
         "createSession": {
           "signature": "createSession(input: AgentSessionInput): Promise<AgentSession>",
@@ -1333,7 +1333,7 @@
     },
     "tableStorageAgentSessionDatabase": {
       "file": "backend/src/services/tableStorageAgentSessionDatabase.ts",
-      "description": "Azure Table Storage twin of agentSessionDatabase.ts. updateSession uses ETag-based optimistic concurrency (Replace with If-Match), retrying up to 3 times on a 412 conflict before throwing — fixes a lost-update race between the WS close handler and an in-flight complete_run (A3 code review F10).",
+      "description": "Azure Table Storage twin of agentSessionDatabase.ts. updateSession uses ETag-based optimistic concurrency (Replace with If-Match), retrying up to 3 times on a 412 conflict before throwing \u2014 fixes a lost-update race between the WS close handler and an in-flight complete_run (A3 code review F10).",
       "functions": {
         "createSession": {
           "signature": "createSession(input: AgentSessionInput): Promise<AgentSession>",
@@ -1376,7 +1376,7 @@
     },
     "agentSpeech": {
       "file": "backend/src/services/agentSpeech.ts",
-      "description": "Voice-agent speech adapters (A3 inc 3) — server-side Azure Speech REST calls. Audio is proxied through the backend so the PWA never holds a speech key.",
+      "description": "Voice-agent speech adapters (A3 inc 3) \u2014 server-side Azure Speech REST calls. Audio is proxied through the backend so the PWA never holds a speech key.",
       "functions": {
         "buildWavFile": {
           "signature": "buildWavFile(pcm: Buffer): Buffer",
@@ -1400,7 +1400,7 @@
     },
     "agentTools": {
       "file": "backend/src/services/agentTools.ts",
-      "description": "Voice-agent tool layer (A3 inc 2) — the five OpenAI function-calling tools (get_appliance_context, record_result, flag_issue, next_unchecked_in_zone, complete_run) bound to the truck-check/zone/equipment stores for one AgentSession.",
+      "description": "Voice-agent tool layer (A3 inc 2) \u2014 the five OpenAI function-calling tools (get_appliance_context, record_result, flag_issue, next_unchecked_in_zone, complete_run) bound to the truck-check/zone/equipment stores for one AgentSession.",
       "functions": {
         "AgentToolExecutor.execute": {
           "signature": "execute(name: string, argsJson: string): Promise<string>",
@@ -1419,7 +1419,7 @@
     },
     "agentLoop": {
       "file": "backend/src/services/agentLoop.ts",
-      "description": "Voice-agent conversation loop (A3 inc 2) — one user turn in, one agent reply out, driving Azure OpenAI function-calling against AGENT_TOOL_DEFINITIONS and persisting every step as an AgentTurn.",
+      "description": "Voice-agent conversation loop (A3 inc 2) \u2014 one user turn in, one agent reply out, driving Azure OpenAI function-calling against AGENT_TOOL_DEFINITIONS and persisting every step as an AgentTurn.",
       "functions": {
         "runAgentTurn": {
           "signature": "runAgentTurn(session: AgentSession, userText: string, executor: AgentToolExecutor, fetchImpl?: typeof fetch): Promise<AgentTurnOutcome>",
@@ -1429,7 +1429,7 @@
         },
         "isCompletedToolResult": {
           "signature": "isCompletedToolResult(output: string): boolean",
-          "description": "Parses a complete_run tool result and reads its typed `completed` field, instead of substring-matching the raw JSON text — a summary/comment that happened to contain the literal text '\"completed\":true' could otherwise end the session early (A3 code review, reuse/simplification section)",
+          "description": "Parses a complete_run tool result and reads its typed `completed` field, instead of substring-matching the raw JSON text \u2014 a summary/comment that happened to contain the literal text '\"completed\":true' could otherwise end the session early (A3 code review, reuse/simplification section)",
           "returns": "boolean",
           "async": false,
           "visibility": "private"
@@ -1438,7 +1438,7 @@
     },
     "deviceDatabase": {
       "file": "backend/src/services/deviceDatabase.ts",
-      "description": "AC-5 — in-memory Device database (dev/test twin). A Device is a first-class, named, typed, revocable credential for a kiosk/tablet/phone/wearable, formalising the anonymous BrigadeAccessToken UUID. Production uses tableStorageDeviceDatabase.ts, selected by deviceDbFactory.ts.",
+      "description": "AC-5 \u2014 in-memory Device database (dev/test twin). A Device is a first-class, named, typed, revocable credential for a kiosk/tablet/phone/wearable, formalising the anonymous BrigadeAccessToken UUID. Production uses tableStorageDeviceDatabase.ts, selected by deviceDbFactory.ts.",
       "functions": {
         "isDeviceLive": {
           "signature": "isDeviceLive(device: Device): boolean",
@@ -1454,7 +1454,7 @@
         },
         "getByToken": {
           "signature": "getByToken(token: string): Promise<Device | null>",
-          "description": "Resolves a live (active, unexpired) device by its token — the primary lookup used for kiosk validation.",
+          "description": "Resolves a live (active, unexpired) device by its token \u2014 the primary lookup used for kiosk validation.",
           "returns": "Promise<Device | null>",
           "async": true
         },
@@ -1486,7 +1486,7 @@
     },
     "tableStorageDeviceDatabase": {
       "file": "backend/src/services/tableStorageDeviceDatabase.ts",
-      "description": "AC-5 — Azure Table Storage twin of deviceDatabase.ts. Single 'Device' partition, rowKey = id, mirroring tableStorageVehicleTypeDatabase.ts's low-volume single-partition pattern. Keep in sync with the in-memory twin.",
+      "description": "AC-5 \u2014 Azure Table Storage twin of deviceDatabase.ts. Single 'Device' partition, rowKey = id, mirroring tableStorageVehicleTypeDatabase.ts's low-volume single-partition pattern. Keep in sync with the in-memory twin.",
       "functions": {
         "connect": {
           "signature": "connect(): Promise<void>",
@@ -1504,7 +1504,7 @@
     },
     "deviceDbFactory": {
       "file": "backend/src/services/deviceDbFactory.ts",
-      "description": "AC-5 — chooses between in-memory and Azure Table Storage Device implementations based on environment configuration, mirroring vehicleTypeDbFactory.ts.",
+      "description": "AC-5 \u2014 chooses between in-memory and Azure Table Storage Device implementations based on environment configuration, mirroring vehicleTypeDbFactory.ts.",
       "functions": {
         "ensureDeviceDatabase": {
           "signature": "ensureDeviceDatabase(): IDeviceDatabase",
@@ -1522,7 +1522,7 @@
     },
     "kioskAccessResolver": {
       "file": "backend/src/services/kioskAccessResolver.ts",
-      "description": "AC-5 — the one place that resolves a `/signin?brigade=<token>` kiosk token, trying the new Device store first and falling back to the legacy BrigadeAccessToken so the two stores never drift out of sync. Shared by kioskModeMiddleware.ts, flexibleAuth.ts's brigade-token path, and POST /api/brigade-access/validate.",
+      "description": "AC-5 \u2014 the one place that resolves a `/signin?brigade=<token>` kiosk token, trying the new Device store first and falling back to the legacy BrigadeAccessToken so the two stores never drift out of sync. Shared by kioskModeMiddleware.ts, flexibleAuth.ts's brigade-token path, and POST /api/brigade-access/validate.",
       "functions": {
         "resolveKioskAccess": {
           "signature": "resolveKioskAccess(token: string): Promise<ResolvedKioskAccess | null>",
@@ -1560,7 +1560,7 @@
     },
     "orgAccessDatabase": {
       "file": "backend/src/services/orgAccessDatabase.ts",
-      "description": "In-memory store for the three org-onboarding tables: OrganizationMembership (per-user-per-org role), OrgInvite (multi-use invite links), ClaimConflict (blocked facility-claim attempts). Production twin: tableStorageOrgAccessDatabase.ts (excluded from coverage — Azure SDK). Selected via orgAccessDbFactory.ts (ensureOrgAccessDatabase/initializeOrgAccessDatabase/getOrgAccessDb).",
+      "description": "In-memory store for the three org-onboarding tables: OrganizationMembership (per-user-per-org role), OrgInvite (multi-use invite links), ClaimConflict (blocked facility-claim attempts). Production twin: tableStorageOrgAccessDatabase.ts (excluded from coverage \u2014 Azure SDK). Selected via orgAccessDbFactory.ts (ensureOrgAccessDatabase/initializeOrgAccessDatabase/getOrgAccessDb).",
       "functions": {
         "createMembership": {
           "signature": "createMembership(input: CreateMembershipInput): Promise<OrganizationMembership>",
@@ -1569,12 +1569,12 @@
         },
         "getMembershipsByUser": {
           "signature": "getMembershipsByUser(userId: string): Promise<OrganizationMembership[]>",
-          "description": "All memberships (any status) for a user — the multi-org membership list",
+          "description": "All memberships (any status) for a user \u2014 the multi-org membership list",
           "async": true
         },
         "getMembershipsByOrganization": {
           "signature": "getMembershipsByOrganization(organizationId: string): Promise<OrganizationMembership[]>",
-          "description": "All memberships for an org — used for the members table and last-owner checks",
+          "description": "All memberships for an org \u2014 used for the members table and last-owner checks",
           "async": true
         },
         "createInvite": {
@@ -1599,7 +1599,7 @@
         },
         "createPlatformAuditLog": {
           "signature": "createPlatformAuditLog(input: CreatePlatformAuditLogInput): Promise<PlatformAuditLog>",
-          "description": "Records one platform-admin mutation (Q32) — the sole accountability trail given the console's hard privacy wall",
+          "description": "Records one platform-admin mutation (Q32) \u2014 the sole accountability trail given the console's hard privacy wall",
           "async": true
         },
         "getPlatformAuditLogs": {
@@ -1627,7 +1627,7 @@
     },
     "facilitiesParser": {
       "file": "backend/src/services/facilitiesParser.ts",
-      "description": "Loads the bundled multi-service snapshot of the Digital Atlas of Australia 'Emergency Management Facilities' dataset (rural/country fire, metro fire, SES, ambulance, police, other) from src/data/emergency-facilities.csv or the 'data-files' blob container. Same graceful-degradation pattern as rfsFacilitiesParser.ts (untouched, still serves /api/stations/lookup — converging them is a queued follow-up). Singleton via getFacilitiesParser().",
+      "description": "Loads the bundled multi-service snapshot of the Digital Atlas of Australia 'Emergency Management Facilities' dataset (rural/country fire, metro fire, SES, ambulance, police, other) from src/data/emergency-facilities.csv or the 'data-files' blob container. Same graceful-degradation pattern as rfsFacilitiesParser.ts (untouched, still serves /api/stations/lookup \u2014 converging them is a queued follow-up). Singleton via getFacilitiesParser().",
       "functions": {
         "loadData": {
           "signature": "loadData(): Promise<boolean>",
@@ -1653,11 +1653,11 @@
     },
     "organizationDatabase (updated)": {
       "file": "backend/src/services/organizationDatabase.ts",
-      "description": "Organization now carries facility-claim fields (facilityKey, facilityObjectId, facilityServiceType, facilityName, facilityState, facilityCustom, claimedByUserId, claimedAt) — all optional for back-compat with pre-existing stored rows. New methods for the claim-conflict flow.",
+      "description": "Organization now carries facility-claim fields (facilityKey, facilityObjectId, facilityServiceType, facilityName, facilityState, facilityCustom, claimedByUserId, claimedAt) \u2014 all optional for back-compat with pre-existing stored rows. New methods for the claim-conflict flow.",
       "functions": {
         "getOrganizationsByFacilityKey": {
           "signature": "getOrganizationsByFacilityKey(facilityKey: string): Promise<Organization[]>",
-          "description": "Orgs holding a given Digital Atlas facility key (should be 0 or 1) — the first-come-first-served claim check",
+          "description": "Orgs holding a given Digital Atlas facility key (should be 0 or 1) \u2014 the first-come-first-served claim check",
           "async": true
         },
         "getAllFacilityKeys": {
@@ -1674,12 +1674,12 @@
     },
     "adminUserDatabase (updated)": {
       "file": "backend/src/services/adminUserDatabase.ts",
-      "description": "AdminUser now carries an optional `email` (required at signup/invite-acceptance, nullable for legacy accounts). createAdminUser gained an optional trailing `options?: {email?: string}` parameter — existing call sites compile unchanged.",
+      "description": "AdminUser now carries an optional `email` (required at signup/invite-acceptance, nullable for legacy accounts). createAdminUser gained an optional trailing `options?: {email?: string}` parameter \u2014 existing call sites compile unchanged. Passkey support (this session): gained saveWebAuthnCredential/getWebAuthnCredentialById/getWebAuthnCredentialsByUser/updateWebAuthnCredentialCounter/deleteWebAuthnCredential \u2014 the in-memory twin of the same methods added to tableStorageAdminUserDatabase.ts.",
       "functions": {}
     },
     "sessionCookie": {
       "file": "backend/src/utils/sessionCookie.ts",
-      "description": "Suite-wide SSO session cookie (sk_session), scoped to COOKIE_DOMAIN (e.g. .stationkit.com.au). Set on login/signup/switch-org, cleared on logout; read by GET /api/auth/session. No cookie-parser dependency — Express's res.cookie/res.clearCookie plus manual parsing of the one cookie this app reads back.",
+      "description": "Suite-wide SSO session cookie (sk_session), scoped to COOKIE_DOMAIN (e.g. .stationkit.com.au). Set on login/signup/switch-org, cleared on logout; read by GET /api/auth/session. No cookie-parser dependency \u2014 Express's res.cookie/res.clearCookie plus manual parsing of the one cookie this app reads back.",
       "functions": {
         "setSessionCookie": {
           "signature": "setSessionCookie(res: Response, token: string): void",
@@ -1700,7 +1700,7 @@
     },
     "santaAddonService": {
       "file": "backend/src/services/santaAddonService.ts",
-      "description": "Standalone Fire Santa Run add-on entitlement resolution — for Community orgs whose plan doesn't already grant santaRunEnabled (Basic/AI Pro get it bundled, see constants/plans.ts). Combines the org's plan-derived entitlements with an active add-on subscription into the effective value GET /api/auth/{me,entitlements,session} and GET /api/organizations/current return, without mutating the persisted plan entitlements.",
+      "description": "Standalone Fire Santa Run add-on entitlement resolution \u2014 for Community orgs whose plan doesn't already grant santaRunEnabled (Basic/AI Pro get it bundled, see constants/plans.ts). Combines the org's plan-derived entitlements with an active add-on subscription into the effective value GET /api/auth/{me,entitlements,session} and GET /api/organizations/current return, without mutating the persisted plan entitlements.",
       "functions": {
         "isSantaAddonEntitled": {
           "signature": "isSantaAddonEntitled(org: Pick<Organization, 'santaAddon'>): boolean",
@@ -1710,6 +1710,36 @@
         "resolveEffectiveEntitlements": {
           "signature": "resolveEffectiveEntitlements(org: Pick<Organization, 'entitlements' | 'santaAddon'>): Entitlements",
           "description": "The entitlements a caller should see: plan entitlements with santaRunEnabled OR'd in when the standalone add-on is active.",
+          "async": false
+        }
+      }
+    },
+    "tableStorageAdminUserDatabase (webauthn)": {
+      "file": "backend/src/services/tableStorageAdminUserDatabase.ts",
+      "description": "Added a second table (WebAuthnCredentials, PartitionKey='WebAuthnCredential' constant, RowKey=credential.id \u2014 mirrors the AdminUsers table's own PartitionKey='AdminUser' convention) and its CRUD methods (saveWebAuthnCredential, getWebAuthnCredentialById, getWebAuthnCredentialsByUser, updateWebAuthnCredentialCounter, deleteWebAuthnCredential) alongside the existing AdminUser methods.",
+      "functions": {}
+    },
+    "webAuthnChallengeStore": {
+      "file": "backend/src/services/webAuthnChallengeStore.ts",
+      "description": "In-memory, short-lived (5 min TTL), single-use challenge storage bridging a WebAuthn ceremony's two round-trips (.../options -> .../verify). Registration challenges are keyed by the authenticated user's id; login challenges have no authenticated user yet, so they're keyed by an opaque randomly-generated flowId the client round-trips. Fine for Station Manager's single-instance deployment.",
+      "functions": {
+        "storeRegistrationChallenge": {
+          "signature": "storeRegistrationChallenge(userId: string, challenge: string): void",
+          "async": false
+        },
+        "takeRegistrationChallenge": {
+          "signature": "takeRegistrationChallenge(userId: string): string | null",
+          "description": "Consumes (deletes) the challenge so it can't be replayed.",
+          "async": false
+        },
+        "storeLoginChallenge": {
+          "signature": "storeLoginChallenge(challenge: string): string",
+          "description": "Returns a new opaque flowId.",
+          "async": false
+        },
+        "takeLoginChallenge": {
+          "signature": "takeLoginChallenge(flowId: string): string | null",
+          "description": "Consumes (deletes) the challenge so it can't be replayed.",
           "async": false
         }
       }
@@ -1951,18 +1981,23 @@
     },
     "auth (updated)": {
       "file": "backend/src/routes/auth.ts",
-      "description": "signup now validates + persists email and resolves the facility claim/conflict/custom flow (see api_register.json). login and /me resolve multi-org memberships via orgMembershipService. New: PUT /profile (email backfill), POST /switch-org (reissue JWT scoped to a different org the user belongs to). Suite Phase 2 SSO (this session): login/signup/switch-org also set the sk_session cookie (utils/sessionCookie.ts) and logout clears it; new GET /session bootstraps a sibling app's session from that cookie. /me's identity/organization/entitlements body was refactored into a shared buildIdentityPayload() helper reused by /session; both now return *effective* entitlements via services/santaAddonService.ts.",
+      "description": "signup now validates + persists email and resolves the facility claim/conflict/custom flow (see api_register.json). login and /me resolve multi-org memberships via orgMembershipService. New: PUT /profile (email backfill), POST /switch-org (reissue JWT scoped to a different org the user belongs to). Suite Phase 2 SSO (this session): login/signup/switch-org also set the sk_session cookie (utils/sessionCookie.ts) and logout clears it; new GET /session bootstraps a sibling app's session from that cookie. /me's identity/organization/entitlements body was refactored into a shared buildIdentityPayload() helper reused by /session; both now return *effective* entitlements via services/santaAddonService.ts. Passkey support (this session): the login-response-building logic (resolve active org/role, sign JWT, set sk_session cookie, shape the response) was extracted out of POST /login into a shared completeSignIn() so passkey sign-in (routes/webauthn.ts) produces an identical response.",
       "functions": {
         "buildIdentityPayload": {
           "signature": "buildIdentityPayload(userId: string, tokenOrganizationId: string | undefined, tokenRole: 'owner' | 'admin' | 'viewer' | undefined): Promise<IdentityPayload | null>",
           "description": "Shared identity + organization + effective-entitlements + memberships payload builder used by both GET /me and GET /session.",
+          "async": true
+        },
+        "completeSignIn": {
+          "signature": "completeSignIn(user: AdminUser, res: Response): Promise<{ token: string; user: object }>",
+          "description": "Resolve the user's active org/role from membership rows, sign a JWT, set the sk_session SSO cookie, and shape the standard sign-in response body. Shared by POST /login and POST /auth/passkey/login/verify so every sign-in path stays in lockstep.",
           "async": true
         }
       }
     },
     "organizations (updated)": {
       "file": "backend/src/routes/organizations.ts",
-      "description": "New invite-link CRUD (POST/GET/DELETE .../invites) and membership management (GET .../members, PUT/DELETE .../members/:userId) built on orgAccessDatabase + orgMembershipRules. POST .../users now also accepts email and writes a membership row. GET .../export (owner only) — JSON data export (org, stations, members, event/attendance history, truck-check history via truckChecksDbFactory, device records via deviceDbFactory — Q26, 2026-07-17) for privacy/retention requests; events capped at 5000/station, truck-check runs at 5000 across all stations combined, both newest-first. PUT .../current (D1, 2026-07-17): a genuine plan change with no stripeSubscriptionId now starts/ends a TRIAL_PERIOD_DAYS-day trial (constants/plans.ts) directly — status: 'trialing' + trialEndsAt on upgrade to a paid plan, status: 'active' + cleared trialEndsAt on downgrade to community — since this route is the only functional upgrade path while Stripe billing is unconfigured.",
+      "description": "New invite-link CRUD (POST/GET/DELETE .../invites) and membership management (GET .../members, PUT/DELETE .../members/:userId) built on orgAccessDatabase + orgMembershipRules. POST .../users now also accepts email and writes a membership row. GET .../export (owner only) \u2014 JSON data export (org, stations, members, event/attendance history, truck-check history via truckChecksDbFactory, device records via deviceDbFactory \u2014 Q26, 2026-07-17) for privacy/retention requests; events capped at 5000/station, truck-check runs at 5000 across all stations combined, both newest-first. PUT .../current (D1, 2026-07-17): a genuine plan change with no stripeSubscriptionId now starts/ends a TRIAL_PERIOD_DAYS-day trial (constants/plans.ts) directly \u2014 status: 'trialing' + trialEndsAt on upgrade to a paid plan, status: 'active' + cleared trialEndsAt on downgrade to community \u2014 since this route is the only functional upgrade path while Stripe billing is unconfigured.",
       "functions": {}
     },
     "orgInvites": {
@@ -1977,8 +2012,19 @@
     },
     "platform": {
       "file": "backend/src/routes/platform.ts",
-      "description": "Platform-admin console: claim-conflict review, cross-org visibility (aggregate-only), management (plan/status/entitlements, membership, destructive delete with confirmation — Q32), and the station→organization backfill tool (GET .../stations/orphaned, PATCH .../stations/:id/organization — Q35, 2026-07-17). Gated by middleware/platformAdmin.ts's PLATFORM_ADMIN_USERNAMES allowlist, not org role. Mounted at /api/platform. Every mutation writes a PlatformAuditLog row via orgAccessDatabase.",
+      "description": "Platform-admin console: claim-conflict review, cross-org visibility (aggregate-only), management (plan/status/entitlements, membership, destructive delete with confirmation \u2014 Q32), and the station\u2192organization backfill tool (GET .../stations/orphaned, PATCH .../stations/:id/organization \u2014 Q35, 2026-07-17). Gated by middleware/platformAdmin.ts's PLATFORM_ADMIN_USERNAMES allowlist, not org role. Mounted at /api/platform. Every mutation writes a PlatformAuditLog row via orgAccessDatabase.",
       "functions": {}
+    },
+    "webauthn": {
+      "file": "backend/src/routes/webauthn.ts",
+      "description": "WebAuthn/passkey sign-in, additive to username/password. Registration (POST /register/options, /register/verify) is authenticated-only \u2014 account settings own credential management. Sign-in (POST /login/options, /login/verify) is public and usable from any suite app's own login screen, since the RP ID (config/webauthn.ts, WEBAUTHN_RP_ID) is the shared .stationkit.com.au parent domain \u2014 a sibling app runs the ceremony itself, then POSTs the assertion here cross-origin. Short-lived single-use challenges are held in services/webAuthnChallengeStore.ts between the options and verify calls. GET/DELETE /credentials manage the caller's own passkeys.",
+      "functions": {
+        "defaultCredentialName": {
+          "signature": "defaultCredentialName(existingCount: number): string",
+          "description": "Default label for a newly-registered passkey ('Passkey', 'Passkey 2', ...) until the user renames it.",
+          "async": false
+        }
+      }
     }
   },
   "utilities": {

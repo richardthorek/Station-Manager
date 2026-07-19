@@ -9,7 +9,7 @@ import { TableClient, TableEntity, odata } from '@azure/data-tables';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import { logger } from './logger';
-import type { AdminUser } from '../types';
+import type { AdminUser, WebAuthnCredential } from '../types';
 
 const SALT_ROUNDS = 10;
 
@@ -44,6 +44,18 @@ interface AdminUserEntity extends TableEntity {
   isActive: boolean;
 }
 
+interface WebAuthnCredentialEntity extends TableEntity {
+  userId: string;
+  publicKey: string;
+  counter: number;
+  deviceType: 'singleDevice' | 'multiDevice';
+  backedUp: boolean;
+  transports?: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
 /**
  * Azure Table Storage implementation for admin users
  * Partition Strategy: PartitionKey = 'AdminUser', RowKey = user.id
@@ -51,6 +63,7 @@ interface AdminUserEntity extends TableEntity {
 export class TableStorageAdminUserDatabase {
   private connectionString: string;
   private adminUsersTable!: TableClient;
+  private webAuthnCredentialsTable!: TableClient;
   private isConnected = false;
 
   constructor(connectionString: string) {
@@ -68,7 +81,7 @@ export class TableStorageAdminUserDatabase {
     try {
       const tableName = buildTableName('AdminUsers');
       this.adminUsersTable = TableClient.fromConnectionString(this.connectionString, tableName);
-      
+
       // Create table if it doesn't exist
       try {
         await this.adminUsersTable.createTable();
@@ -76,19 +89,35 @@ export class TableStorageAdminUserDatabase {
       } catch (createError: any) {
         // Table creation errors are acceptable if table already exists (409 conflict)
         if (createError.statusCode !== 409) {
-          logger.error('Failed to create Admin Users table', { 
-            error: createError, 
+          logger.error('Failed to create Admin Users table', {
+            error: createError,
             tableName,
-            message: createError.message 
+            message: createError.message
           });
           throw createError;
         }
       }
-      
+
+      const credentialsTableName = buildTableName('WebAuthnCredentials');
+      this.webAuthnCredentialsTable = TableClient.fromConnectionString(this.connectionString, credentialsTableName);
+      try {
+        await this.webAuthnCredentialsTable.createTable();
+        logger.info('WebAuthn Credentials table created or already exists', { tableName: credentialsTableName });
+      } catch (createError: any) {
+        if (createError.statusCode !== 409) {
+          logger.error('Failed to create WebAuthn Credentials table', {
+            error: createError,
+            tableName: credentialsTableName,
+            message: createError.message,
+          });
+          throw createError;
+        }
+      }
+
       this.isConnected = true;
       logger.info('Connected to Azure Table Storage for Admin Users', { tableName });
     } catch (error) {
-      logger.error('Failed to connect to Azure Table Storage for Admin Users', { 
+      logger.error('Failed to connect to Azure Table Storage for Admin Users', {
         error,
         message: error instanceof Error ? error.message : String(error)
       });
@@ -392,9 +421,94 @@ export class TableStorageAdminUserDatabase {
     }
 
     const users = await this.getAllUsers();
-    
+
     for (const user of users) {
       await this.deleteUser(user.id);
     }
+
+    for await (const entity of this.webAuthnCredentialsTable.listEntities<WebAuthnCredentialEntity>()) {
+      await this.webAuthnCredentialsTable.deleteEntity(entity.partitionKey as string, entity.rowKey as string);
+    }
+  }
+
+  // --- WebAuthn / passkey credentials ---
+  // Partition strategy mirrors AdminUser: PartitionKey = 'WebAuthnCredential'
+  // (constant), RowKey = credential.id. Lookup by user filters on the `userId`
+  // property — low cardinality (a handful of credentials per user), same
+  // trade-off the username lookup above already makes.
+
+  private toCredentialEntity(credential: WebAuthnCredential): WebAuthnCredentialEntity {
+    return {
+      partitionKey: 'WebAuthnCredential',
+      rowKey: credential.id,
+      userId: credential.userId,
+      publicKey: credential.publicKey,
+      counter: credential.counter,
+      deviceType: credential.deviceType,
+      backedUp: credential.backedUp,
+      transports: credential.transports ? JSON.stringify(credential.transports) : undefined,
+      name: credential.name,
+      createdAt: credential.createdAt.toISOString(),
+      lastUsedAt: credential.lastUsedAt?.toISOString(),
+    };
+  }
+
+  private fromCredentialEntity(entity: WebAuthnCredentialEntity): WebAuthnCredential {
+    return {
+      id: entity.rowKey as string,
+      userId: entity.userId,
+      publicKey: entity.publicKey,
+      counter: entity.counter,
+      deviceType: entity.deviceType,
+      backedUp: entity.backedUp,
+      transports: entity.transports ? JSON.parse(entity.transports) : undefined,
+      name: entity.name,
+      createdAt: new Date(entity.createdAt),
+      lastUsedAt: entity.lastUsedAt ? new Date(entity.lastUsedAt) : undefined,
+    };
+  }
+
+  async saveWebAuthnCredential(credential: WebAuthnCredential): Promise<void> {
+    if (!this.isConnected) await this.connect();
+    await this.webAuthnCredentialsTable.upsertEntity(this.toCredentialEntity(credential), 'Replace');
+  }
+
+  async getWebAuthnCredentialById(id: string): Promise<WebAuthnCredential | null> {
+    if (!this.isConnected) await this.connect();
+    try {
+      const entity = await this.webAuthnCredentialsTable.getEntity<WebAuthnCredentialEntity>('WebAuthnCredential', id);
+      return this.fromCredentialEntity(entity);
+    } catch (error: any) {
+      if (error.statusCode === 404) return null;
+      throw error;
+    }
+  }
+
+  async getWebAuthnCredentialsByUser(userId: string): Promise<WebAuthnCredential[]> {
+    if (!this.isConnected) await this.connect();
+    const queryFilter = odata`PartitionKey eq 'WebAuthnCredential' and userId eq ${userId}`;
+    const entities = this.webAuthnCredentialsTable.listEntities<WebAuthnCredentialEntity>({ queryOptions: { filter: queryFilter } });
+    const credentials: WebAuthnCredential[] = [];
+    for await (const entity of entities) {
+      credentials.push(this.fromCredentialEntity(entity));
+    }
+    return credentials;
+  }
+
+  async updateWebAuthnCredentialCounter(id: string, counter: number, lastUsedAt: Date): Promise<void> {
+    if (!this.isConnected) await this.connect();
+    await this.webAuthnCredentialsTable.updateEntity(
+      { partitionKey: 'WebAuthnCredential', rowKey: id, counter, lastUsedAt: lastUsedAt.toISOString() },
+      'Merge',
+    );
+  }
+
+  /** Delete a credential — scoped to the owning user so one user can't remove another's. */
+  async deleteWebAuthnCredential(id: string, userId: string): Promise<boolean> {
+    if (!this.isConnected) await this.connect();
+    const credential = await this.getWebAuthnCredentialById(id);
+    if (!credential || credential.userId !== userId) return false;
+    await this.webAuthnCredentialsTable.deleteEntity('WebAuthnCredential', id);
+    return true;
   }
 }

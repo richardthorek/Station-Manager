@@ -30,6 +30,11 @@ in on one StationKit app signs a user in on every sibling app with no redirect.
 The Phase 1 bearer-token contract (§1–§4 below) is unchanged and still does all
 the actual authorisation; the cookie only ever bootstraps a session.
 
+**Passkeys (§1b) are additive** — a further sign-in *method* layered on top of
+the same contract, not a new phase. Registration is Station Manager-only;
+sign-in is usable from any sibling app's login screen because the WebAuthn
+Relying Party ID is the same shared parent domain the SSO cookie uses.
+
 ---
 
 ## 1. Endpoints
@@ -131,6 +136,42 @@ Local dev note: cookies don't cleanly cross `localhost:5173` ↔ `:3000`
 (different ports on the same host, and `COOKIE_DOMAIN` is normally unset in
 dev), so `VITE_DEV_MODE`'s existing auth bypass remains the dev-loop path —
 Phase 2 SSO is a production/staging concern.
+
+---
+
+## 1b. Passkey sign-in — usable from any suite app
+
+Passkeys are additive to username/password (never a replacement), and
+**registration is Station Manager-only** — "Add a passkey" lives in this
+app's `/admin/organization` account settings, the suite's sole identity
+provider. **Sign-in, however, is usable from any sibling app's own login
+screen**, because the WebAuthn Relying Party ID is the same shared parent
+domain the SSO cookie uses (`WEBAUTHN_RP_ID`, e.g. `stationkit.com.au`) — a
+credential's RP ID may be any registrable-domain suffix of the calling origin,
+so a sibling app can run the `navigator.credentials.get()` ceremony **itself**,
+directly on its own page, with no redirect or iframe back to Station Manager.
+
+1. A sibling app's login screen `POST`s `/api/auth/passkey/login/options`
+   (public, no auth) and gets back `{ flowId, options }` — `options` is a
+   standard WebAuthn `PublicKeyCredentialRequestOptionsJSON` with no
+   `allowCredentials` set, so the browser's own picker shows **every** passkey
+   it holds for `WEBAUTHN_RP_ID` (a "usernameless"/discoverable-credential
+   flow — no username field needed).
+2. The sibling app calls `@simplewebauthn/browser`'s `startAuthentication({ optionsJSON: options })`
+   locally — this is the step that only works because the RP ID is a shared
+   parent domain; a per-app RP ID would reject the ceremony.
+3. The sibling app `POST`s `{ flowId, response }` to Station Manager's
+   `POST /api/auth/passkey/login/verify`, **cross-origin**, using the same
+   `credentials: 'include'` + CORS setup already wired for the SSO cookie (§4
+   below — no new CORS work is needed). On success this returns the identical
+   `{ token, user }` shape as `POST /api/auth/login` and also sets the
+   `sk_session` cookie — a passkey sign-in is indistinguishable from a
+   password sign-in to every downstream consumer (Phase 1 bearer-token
+   validation, Phase 2 SSO).
+
+The challenge behind each ceremony is single-use and held server-side (5 min
+TTL, `services/webAuthnChallengeStore.ts`) between the `.../options` and
+`.../verify` calls — replaying a `flowId` a second time fails.
 
 ---
 

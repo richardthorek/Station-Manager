@@ -9,6 +9,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { startAuthentication } from '@simplewebauthn/browser';
 import type { FacilitySelection } from '../services/api';
 
 export type EntitlementFeature =
@@ -84,6 +85,8 @@ interface AuthContextType {
   requireAuth: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  /** Sign in with a passkey — a browser prompt shows every passkey registered for this app, no username needed. */
+  loginWithPasskey: () => Promise<void>;
   signup: (input: SignupInput) => Promise<void>;
   logout: () => void;
   refreshOrganization: () => Promise<void>;
@@ -184,6 +187,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadMe(data.token);
   };
 
+  /**
+   * Sign in with a passkey. No username is collected — the request carries no
+   * allowCredentials, so the browser's own picker shows every passkey it
+   * holds for this relying party (a "usernameless"/discoverable flow).
+   */
+  const loginWithPasskey = async () => {
+    const optionsRes = await fetch(`${apiBase()}/auth/passkey/login/options`, { method: 'POST' });
+    if (!optionsRes.ok) {
+      const error = await optionsRes.json().catch(() => ({}));
+      throw new Error(error.error || 'Could not start passkey sign-in');
+    }
+    const { flowId, options } = await optionsRes.json();
+
+    const response = await startAuthentication({ optionsJSON: options });
+
+    const verifyRes = await fetch(`${apiBase()}/auth/passkey/login/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flowId, response }),
+    });
+    if (!verifyRes.ok) {
+      const error = await verifyRes.json().catch(() => ({}));
+      throw new Error(error.error || 'Passkey sign-in failed');
+    }
+    const data = await verifyRes.json();
+    localStorage.setItem(TOKEN_KEY, data.token);
+    await loadMe(data.token);
+  };
+
   const signup = async (input: SignupInput) => {
     const response = await fetch(`${apiBase()}/auth/signup`, {
       method: 'POST',
@@ -269,6 +301,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         requireAuth,
         isLoading,
         login,
+        loginWithPasskey,
         signup,
         logout,
         refreshOrganization,

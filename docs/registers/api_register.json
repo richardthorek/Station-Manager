@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "version": "1.17.0",
   "lastUpdated": "2026-07-17",
-  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (≈1,000 requests per hour per IP by default (≈84 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
+  "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (\u22481,000 requests per hour per IP by default (\u224884 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
       "description": "Optional station identifier for multi-station filtering. If not provided, defaults to 'default-station' for backward compatibility.",
@@ -26,7 +26,7 @@
   "apiPrefix": "/api",
   "endpoints": {
     "billing": {
-      "description": "Stripe billing — Checkout, Customer Portal, status, webhook and audit trail. Owner-only except the signature-verified webhook. Returns 503 when STRIPE_SECRET_KEY is not configured.",
+      "description": "Stripe billing \u2014 Checkout, Customer Portal, status, webhook and audit trail. Owner-only except the signature-verified webhook. Returns 503 when STRIPE_SECRET_KEY is not configured.",
       "authentication": "JWT (owner) except POST /api/billing/webhook (Stripe signature)",
       "POST /api/billing/checkout": {
         "method": "POST",
@@ -58,7 +58,7 @@
         },
         "responses": {
           "200": {
-            "description": "{ checkoutUrl } — redirect the browser to complete payment"
+            "description": "{ checkoutUrl } \u2014 redirect the browser to complete payment"
           },
           "400": {
             "description": "Invalid planCode/interval or no Stripe price configured for the combination"
@@ -83,7 +83,7 @@
         "requestBody": null,
         "responses": {
           "200": {
-            "description": "{ checkoutUrl, packSize } — redirect to complete payment"
+            "description": "{ checkoutUrl, packSize } \u2014 redirect to complete payment"
           },
           "400": {
             "description": "AI not enabled on this org"
@@ -103,7 +103,7 @@
       "POST /api/billing/santa-addon/checkout": {
         "method": "POST",
         "path": "/api/billing/santa-addon/checkout",
-        "description": "Create a Stripe Checkout session (mode: subscription) for the standalone Fire Santa Run add-on — for Community orgs whose plan doesn't already grant santaRunEnabled (Basic/AI Pro get it bundled). A$10/year (unlimited use) or A$15 for a one-off month. Owner-only; tracked on Organization.santaAddon independently of the org's main plan subscription.",
+        "description": "Create a Stripe Checkout session (mode: subscription) for the standalone Fire Santa Run add-on \u2014 for Community orgs whose plan doesn't already grant santaRunEnabled (Basic/AI Pro get it bundled). A$10/year (unlimited use) or A$15 for a one-off month. Owner-only; tracked on Organization.santaAddon independently of the org's main plan subscription.",
         "authentication": "JWT (owner)",
         "requestBody": {
           "billingInterval": {
@@ -117,7 +117,7 @@
         },
         "responses": {
           "200": {
-            "description": "{ checkoutUrl } — redirect to complete payment"
+            "description": "{ checkoutUrl } \u2014 redirect to complete payment"
           },
           "400": {
             "description": "Invalid billingInterval, price not configured for the chosen interval, or the org's plan already includes Fire Santa Run"
@@ -210,7 +210,7 @@
         },
         "responses": {
           "200": {
-            "description": "{ received: true } — always returned after audit; { duplicate: true } when the event was already processed"
+            "description": "{ received: true } \u2014 always returned after audit; { duplicate: true } when the event was already processed"
           },
           "400": {
             "description": "Missing or invalid Stripe-Signature"
@@ -226,8 +226,8 @@
       }
     },
     "ai": {
-      "description": "Server-side AI gateway. Provider credentials live server-side; AAR Studio and the SPA call these instead of Azure browser-direct. When org context is present the aiEnabled entitlement is required; the monthly allowance (aiIncludedSessions) is metered in sessions and enforced at the speech-token endpoint. Anonymous calls (no org context) pass through deliberately — AAR Studio is local-first and usable signed-out (A2) — bounded instead by a dedicated per-IP aiRateLimiter (MASTER_PLAN Q31 / review F4), tighter than the general apiRateLimiter.",
-      "authentication": "JWT bearer (org context optional — no org context passes through, consistent with entitlement back-compat); all routes behind aiRateLimiter (30 req / 5 min per IP, tighter than the general apiRateLimiter)",
+      "description": "Server-side AI gateway. Provider credentials live server-side; AAR Studio and the SPA call these instead of Azure browser-direct. When org context is present the aiEnabled entitlement is required; the monthly allowance (aiIncludedSessions) is metered in sessions and enforced at the speech-token endpoint. Anonymous calls (no org context) pass through deliberately \u2014 AAR Studio is local-first and usable signed-out (A2) \u2014 bounded instead by a dedicated per-IP aiRateLimiter (MASTER_PLAN Q31 / review F4), tighter than the general apiRateLimiter.",
+      "authentication": "JWT bearer (org context optional \u2014 no org context passes through, consistent with entitlement back-compat); all routes behind aiRateLimiter (30 req / 5 min per IP, tighter than the general apiRateLimiter)",
       "POST /api/ai/chat": {
         "method": "POST",
         "path": "/api/ai/chat",
@@ -280,10 +280,10 @@
         },
         "responses": {
           "200": {
-            "description": "{ token, region } — short-lived Speech auth token"
+            "description": "{ token, region } \u2014 short-lived Speech auth token"
           },
           "402": {
-            "description": "Monthly AI session allowance (included + bonus) exhausted — { remaining, included, bonus, resetAt, topupAvailable }"
+            "description": "Monthly AI session allowance (included + bonus) exhausted \u2014 { remaining, included, bonus, resetAt, topupAvailable }"
           },
           "403": {
             "description": "aiEnabled entitlement required"
@@ -303,7 +303,7 @@
         "requestBody": null,
         "responses": {
           "200": {
-            "description": "{ used, included, bonus, remaining, resetAt, aiEnabled } — bonus is purchased top-up sessions not yet consumed"
+            "description": "{ used, included, bonus, remaining, resetAt, aiEnabled } \u2014 bonus is purchased top-up sessions not yet consumed"
           },
           "401": {
             "description": "Not authenticated"
@@ -384,7 +384,7 @@
             "description": "No organization context, or aarStudioEnabled entitlement required"
           },
           "409": {
-            "description": "Stale write — updated more recently on another device; body is { error, current } (current omits payload)"
+            "description": "Stale write \u2014 updated more recently on another device; body is { error, current } (current omits payload)"
           },
           "413": {
             "description": "Review payload too large to persist (~900k char cap)"
@@ -534,7 +534,7 @@
       }
     },
     "truck-check-appliance-zones": {
-      "description": "A1 per-truck spatial model. An ApplianceZone is a named physical area on exactly ONE appliance (Pump Panel, Driver-side Locker 1, Cab), with a walk-around order and an optional canonical zoneCode slug for cross-brigade analytics. Admin-authored config; reads require an authenticated session. See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.1.",
+      "description": "A1 per-truck spatial model. An ApplianceZone is a named physical area on exactly ONE appliance (Pump Panel, Driver-side Locker 1, Cab), with a walk-around order and an optional canonical zoneCode slug for cross-brigade analytics. Admin-authored config; reads require an authenticated session. See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md \u00a74.1.",
       "authentication": "JWT (zone writes require admin; list requires an authenticated session)",
       "entitlement": "truckCheckEnabled (parent /api/truck-checks mount)",
       "GET /api/truck-checks/appliances/:applianceId/zones": {
@@ -620,10 +620,10 @@
       "POST /api/truck-checks/appliances/:id/seed-zones": {
         "method": "POST",
         "path": "/api/truck-checks/appliances/:id/seed-zones",
-        "description": "Seed an appliance's zones from the starter vocabulary for its VehicleType.code (zoneVocabulary.ts). Idempotent by default — returns existing zones unchanged. Pass ?replace=true to delete and re-seed. Returns { seeded: number, zones: ApplianceZone[], message?: string }. Also triggered automatically (non-fatal) on POST /appliances when vehicleTypeId is supplied.",
+        "description": "Seed an appliance's zones from the starter vocabulary for its VehicleType.code (zoneVocabulary.ts). Idempotent by default \u2014 returns existing zones unchanged. Pass ?replace=true to delete and re-seed. Returns { seeded: number, zones: ApplianceZone[], message?: string }. Also triggered automatically (non-fatal) on POST /appliances when vehicleTypeId is supplied.",
         "authentication": "JWT (admin)",
         "queryParams": {
-          "replace": "boolean? — if true, deletes existing zones before seeding"
+          "replace": "boolean? \u2014 if true, deletes existing zones before seeding"
         },
         "responses": {
           "200": {
@@ -646,7 +646,7 @@
       }
     },
     "truck-check-appliance-equipment": {
-      "description": "A1 per-truck inventory. An ApplianceEquipment is a piece of equipment on exactly ONE appliance (Holmatro spreader, BA set #2, Akron branch), optionally located in a zone (zoneId). active:false retires an item without losing history. Admin-authored config; reads require an authenticated session. See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md §4.2.",
+      "description": "A1 per-truck inventory. An ApplianceEquipment is a piece of equipment on exactly ONE appliance (Holmatro spreader, BA set #2, Akron branch), optionally located in a zone (zoneId). active:false retires an item without losing history. Admin-authored config; reads require an authenticated session. See docs/archive/AI_MAINTENANCE_AGENT_DESIGN.md \u00a74.2.",
       "authentication": "JWT (equipment writes require admin; list requires an authenticated session)",
       "entitlement": "truckCheckEnabled (parent /api/truck-checks mount)",
       "GET /api/truck-checks/appliances/:applianceId/equipment": {
@@ -731,7 +731,7 @@
       }
     },
     "truck-check-issues": {
-      "description": "TC-4 issue follow-up. A CheckResult with status 'issue' starts an 'open' lifecycle; an equipment officer moves it open → acknowledged → resolved (admin-gated via the parent mount; no separate role). Member attribution (TC-3): a check run's completedBy holds the roster memberId when the inspector is picked from the roster, else the free-text name (kiosk).",
+      "description": "TC-4 issue follow-up. A CheckResult with status 'issue' starts an 'open' lifecycle; an equipment officer moves it open \u2192 acknowledged \u2192 resolved (admin-gated via the parent mount; no separate role). Member attribution (TC-3): a check run's completedBy holds the roster memberId when the inspector is picked from the roster, else the free-text name (kiosk).",
       "GET /api/truck-checks/issues": {
         "method": "GET",
         "path": "/api/truck-checks/issues",
@@ -840,7 +840,7 @@
             "enabled": true,
             "maxRequests": 84,
             "windowMs": 300000,
-            "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+            "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
             "headers": [
               "RateLimit-Limit",
               "RateLimit-Remaining",
@@ -878,7 +878,7 @@
             "enabled": true,
             "maxRequests": 84,
             "windowMs": 300000,
-            "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+            "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
             "headers": [
               "RateLimit-Limit",
               "RateLimit-Remaining",
@@ -890,7 +890,7 @@
       "GET /api/members/:id": {
         "method": "GET",
         "path": "/api/members/:id",
-        "description": "Get specific member by ID. Requires a session (requireSession — admin JWT/brigade-token/member-session, or the public demo station). Station-scoped for brigade-token/member-session callers; an admin JWT instead matches on organizationId (Q9, 2026-07-17) so a deep link works regardless of the caller's currently-selected station.",
+        "description": "Get specific member by ID. Requires a session (requireSession \u2014 admin JWT/brigade-token/member-session, or the public demo station). Station-scoped for brigade-token/member-session callers; an admin JWT instead matches on organizationId (Q9, 2026-07-17) so a deep link works regardless of the caller's currently-selected station.",
         "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
         "parameters": {
           "path": {
@@ -923,7 +923,7 @@
             "enabled": true,
             "maxRequests": 84,
             "windowMs": 300000,
-            "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+            "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
             "headers": [
               "RateLimit-Limit",
               "RateLimit-Remaining",
@@ -967,7 +967,7 @@
             "enabled": true,
             "maxRequests": 84,
             "windowMs": 300000,
-            "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+            "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
             "headers": [
               "RateLimit-Limit",
               "RateLimit-Remaining",
@@ -1032,7 +1032,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1211,7 +1211,7 @@
     "DELETE /api/members/:id": {
       "method": "DELETE",
       "path": "/api/members/:id",
-      "description": "Soft delete a member (mark inactive, hide from UI, retain history). Station-scoped, with the same organizationId-based cross-station allowance for admin JWTs as GET /api/members/:id (Q9, 2026-07-17). Note: not itself behind requireSession (non-GET/HEAD, so only gated when ENABLE_DATA_PROTECTION=true) — kiosk write-path pass-through, matching the rest of the write surface.",
+      "description": "Soft delete a member (mark inactive, hide from UI, retain history). Station-scoped, with the same organizationId-based cross-station allowance for admin JWTs as GET /api/members/:id (Q9, 2026-07-17). Note: not itself behind requireSession (non-GET/HEAD, so only gated when ENABLE_DATA_PROTECTION=true) \u2014 kiosk write-path pass-through, matching the rest of the write surface.",
       "authentication": "flexibleAuth (station scope) when ENABLE_DATA_PROTECTION=true",
       "parameters": {
         "path": {
@@ -1252,7 +1252,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1300,7 +1300,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -1589,7 +1589,7 @@
       "PUT /api/organizations/current": {
         "method": "PUT",
         "path": "/api/organizations/current",
-        "description": "Update name/billingEmail/planCode/moduleToggles/agencyName/agencyLogoUrl (owner only). Entitlements reset to the new plan's defaults on a real plan change, then owner module toggles are applied and clamped to the plan ceiling. D1 (2026-07-17): this is the only functional plan-upgrade path while Stripe billing is unconfigured, so a genuine plan change with no stripeSubscriptionId on the org also starts/ends a 14-day trial directly here — status: 'trialing' + trialEndsAt set on upgrade to a paid plan, status: 'active' + trialEndsAt cleared on downgrade to community. An org with a live Stripe subscription is untouched by this — its status/trialEndsAt stay governed exclusively by POST /api/billing/webhook. agencyName/agencyLogoUrl (2026-07-18): admin-configurable branding, defaulted from the claimed facility's serviceType at signup; an empty string clears the override.",
+        "description": "Update name/billingEmail/planCode/moduleToggles/agencyName/agencyLogoUrl (owner only). Entitlements reset to the new plan's defaults on a real plan change, then owner module toggles are applied and clamped to the plan ceiling. D1 (2026-07-17): this is the only functional plan-upgrade path while Stripe billing is unconfigured, so a genuine plan change with no stripeSubscriptionId on the org also starts/ends a 14-day trial directly here \u2014 status: 'trialing' + trialEndsAt set on upgrade to a paid plan, status: 'active' + trialEndsAt cleared on downgrade to community. An org with a live Stripe subscription is untouched by this \u2014 its status/trialEndsAt stay governed exclusively by POST /api/billing/webhook. agencyName/agencyLogoUrl (2026-07-18): admin-configurable branding, defaulted from the claimed facility's serviceType at signup; an empty string clears the override.",
         "authentication": "JWT (owner only)",
         "rateLimit": "sensitive-action limiter",
         "requestBody": {
@@ -1611,7 +1611,7 @@
             },
             "moduleToggles": {
               "type": "object",
-              "description": "Partial<{signInEnabled, truckCheckEnabled, reportsEnabled, aiEnabled}> — narrows only, never exceeds the plan ceiling"
+              "description": "Partial<{signInEnabled, truckCheckEnabled, reportsEnabled, aiEnabled}> \u2014 narrows only, never exceeds the plan ceiling"
             },
             "agencyName": {
               "type": "string",
@@ -1659,7 +1659,7 @@
             },
             "email": {
               "type": "string",
-              "description": "Optional intended recipient — display only, no email is sent"
+              "description": "Optional intended recipient \u2014 display only, no email is sent"
             },
             "expiresInDays": {
               "type": "number",
@@ -1671,7 +1671,7 @@
         },
         "responses": {
           "201": {
-            "description": "{ invite, inviteUrl } — inviteUrl is <frontend origin>/invite/<token>"
+            "description": "{ invite, inviteUrl } \u2014 inviteUrl is <frontend origin>/invite/<token>"
           },
           "400": {
             "description": "expiresInDays out of range"
@@ -1724,7 +1724,7 @@
       "PUT /api/organizations/current/members/:userId": {
         "method": "PUT",
         "path": "/api/organizations/current/members/:userId",
-        "description": "Change a member's role. Enforced by orgMembershipRules.canChangeRole and violatesLastOwner (an org must always retain ≥1 active owner). Also syncs AdminUser.role when this org is the target's default org.",
+        "description": "Change a member's role. Enforced by orgMembershipRules.canChangeRole and violatesLastOwner (an org must always retain \u22651 active owner). Also syncs AdminUser.role when this org is the target's default org.",
         "authentication": "JWT",
         "rateLimit": "sensitive-action limiter",
         "requestBody": {
@@ -1759,7 +1759,7 @@
       "DELETE /api/organizations/current/members/:userId": {
         "method": "DELETE",
         "path": "/api/organizations/current/members/:userId",
-        "description": "Remove a member (or self — leave). Enforced by orgMembershipRules.canRemoveMember and violatesLastOwner. If the removed org was the user's default, repoints AdminUser.organizationId to their next active membership.",
+        "description": "Remove a member (or self \u2014 leave). Enforced by orgMembershipRules.canRemoveMember and violatesLastOwner. If the removed org was the user's default, repoints AdminUser.organizationId to their next active membership.",
         "authentication": "JWT",
         "rateLimit": "sensitive-action limiter",
         "responses": {
@@ -1790,7 +1790,7 @@
         "rateLimit": "sensitive-action limiter",
         "responses": {
           "200": {
-            "description": "{ exportedAt, organization, stations, members, events, vehicles, truckCheckRuns, devices, limitations } — served as a downloadable attachment"
+            "description": "{ exportedAt, organization, stations, members, events, vehicles, truckCheckRuns, devices, limitations } \u2014 served as a downloadable attachment"
           },
           "403": {
             "description": "Caller is not the org owner"
@@ -1895,7 +1895,7 @@
       "GET /api/facilities/lookup": {
         "method": "GET",
         "path": "/api/facilities/lookup",
-        "description": "Search/lookup facilities. Requires `q` (min 2 chars) and/or `lat`+`lon`. Each result is annotated with `claimed` (an Organization already holds its facilityKey) — the claiming org's identity is never exposed.",
+        "description": "Search/lookup facilities. Requires `q` (min 2 chars) and/or `lat`+`lon`. Each result is annotated with `claimed` (an Organization already holds its facilityKey) \u2014 the claiming org's identity is never exposed.",
         "authentication": "None",
         "responses": {
           "200": {
@@ -1912,7 +1912,7 @@
       }
     },
     "platform": {
-      "description": "Platform-operator administration (not per-org). Gated by the PLATFORM_ADMIN_USERNAMES allowlist (middleware/platformAdmin.ts), not by org role. Covers facility claim-conflict review/resolution, the Q32 organizations console (cross-org visibility — aggregate counts only, never row-level tenant data — plan/status/entitlement management, membership, and destructive delete with a confirm string), and the Q35 station→organization backfill tool. Every mutation writes a PlatformAuditLog row (GET /api/platform/audit-log).",
+      "description": "Platform-operator administration (not per-org). Gated by the PLATFORM_ADMIN_USERNAMES allowlist (middleware/platformAdmin.ts), not by org role. Covers facility claim-conflict review/resolution, the Q32 organizations console (cross-org visibility \u2014 aggregate counts only, never row-level tenant data \u2014 plan/status/entitlement management, membership, and destructive delete with a confirm string), and the Q35 station\u2192organization backfill tool. Every mutation writes a PlatformAuditLog row (GET /api/platform/audit-log).",
       "authentication": "Bearer JWT + PLATFORM_ADMIN_USERNAMES allowlist",
       "GET /api/platform/organizations": {
         "method": "GET",
@@ -1932,7 +1932,7 @@
       "GET /api/platform/organizations/:id": {
         "method": "GET",
         "path": "/api/platform/organizations/:id",
-        "description": "Organization detail (entitlements, facility, aggregate counts) plus its memberships (account username/email/role/lastLoginAt — account info, not tenant content).",
+        "description": "Organization detail (entitlements, facility, aggregate counts) plus its memberships (account username/email/role/lastLoginAt \u2014 account info, not tenant content).",
         "authentication": "JWT (platform admin)",
         "responses": {
           "200": {
@@ -2173,7 +2173,7 @@
       "GET /api/platform/stations/orphaned": {
         "method": "GET",
         "path": "/api/platform/stations/orphaned",
-        "description": "Q35 — list active stations with no organizationId (created before Q33 tagged it on creation), whose members/vehicles don't count toward any org's plan limits until backfilled. Returns name/brigade/hierarchy plus member/vehicle counts so the operator can identify the real-world brigade.",
+        "description": "Q35 \u2014 list active stations with no organizationId (created before Q33 tagged it on creation), whose members/vehicles don't count toward any org's plan limits until backfilled. Returns name/brigade/hierarchy plus member/vehicle counts so the operator can identify the real-world brigade.",
         "authentication": "JWT (platform admin)",
         "responses": {
           "200": {
@@ -2188,7 +2188,7 @@
       "PATCH /api/platform/stations/:id/organization": {
         "method": "PATCH",
         "path": "/api/platform/stations/:id/organization",
-        "description": "Q35 — assign (or reassign) a station's owning organization. System stations (demo/default) are rejected. Writes a station.organization_assigned audit log row.",
+        "description": "Q35 \u2014 assign (or reassign) a station's owning organization. System stations (demo/default) are rejected. Writes a station.organization_assigned audit log row.",
         "authentication": "JWT (platform admin)",
         "requestBody": {
           "type": "object",
@@ -2220,7 +2220,7 @@
       "GET /api/platform/audit-log": {
         "method": "GET",
         "path": "/api/platform/audit-log",
-        "description": "List platform-admin audit log entries, newest first (?limit=&offset=, max limit 500). The accountability trail for every mutation made through /api/platform — the hard privacy wall means it is the only record of this access level.",
+        "description": "List platform-admin audit log entries, newest first (?limit=&offset=, max limit 500). The accountability trail for every mutation made through /api/platform \u2014 the hard privacy wall means it is the only record of this access level.",
         "authentication": "JWT (platform admin)",
         "responses": {
           "200": {
@@ -2301,7 +2301,7 @@
       "method": "GET",
       "path": "/api/activities",
       "description": "Get all activities (default + custom)",
-      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) \u2014 MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2324,7 +2324,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2380,7 +2380,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2393,7 +2393,7 @@
       "method": "GET",
       "path": "/api/activities/active",
       "description": "Get currently active activity for station",
-      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) \u2014 MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2416,7 +2416,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2477,7 +2477,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2531,7 +2531,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2546,7 +2546,7 @@
       "method": "GET",
       "path": "/api/checkins",
       "description": "Get all check-ins (both active and inactive)",
-      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) \u2014 MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2569,7 +2569,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2582,7 +2582,7 @@
       "method": "GET",
       "path": "/api/checkins/active",
       "description": "Get all currently active check-ins",
-      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) \u2014 MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2605,7 +2605,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2710,7 +2710,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2761,7 +2761,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2818,7 +2818,7 @@
               },
               "sessionToken": {
                 "type": "string",
-                "description": "AC-1 — short-lived (8h), station-scoped member-session JWT. Send it back as the X-Member-Session header to read the station's live sign-in book without a full account or kiosk token (station-wide read scope, never more)."
+                "description": "AC-1 \u2014 short-lived (8h), station-scoped member-session JWT. Send it back as the X-Member-Session header to read the station's live sign-in book without a full account or kiosk token (station-wide read scope, never more)."
               }
             }
           }
@@ -2842,7 +2842,7 @@
               },
               "sessionToken": {
                 "type": "string",
-                "description": "AC-1 — short-lived (8h), station-scoped member-session JWT. Send it back as the X-Member-Session header to read the station's live sign-in book without a full account or kiosk token (station-wide read scope, never more)."
+                "description": "AC-1 \u2014 short-lived (8h), station-scoped member-session JWT. Send it back as the X-Member-Session header to read the station's live sign-in book without a full account or kiosk token (station-wide read scope, never more)."
               }
             }
           }
@@ -2863,7 +2863,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2878,7 +2878,7 @@
       "method": "GET",
       "path": "/api/events",
       "description": "Get all events (active and historical)",
-      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) \u2014 MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2901,7 +2901,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2914,7 +2914,7 @@
       "method": "GET",
       "path": "/api/events/active",
       "description": "Get currently active events",
-      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) \u2014 MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -2937,7 +2937,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -2950,7 +2950,7 @@
       "method": "GET",
       "path": "/api/events/:id",
       "description": "Get event with participants",
-      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) \u2014 MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {
         "path": {
           "id": {
@@ -2982,7 +2982,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3051,7 +3051,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3097,7 +3097,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3144,7 +3144,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3157,7 +3157,7 @@
       "method": "POST",
       "path": "/api/events/admin/rollover",
       "description": "Manually trigger event expiry check (marks expired events as inactive)",
-      "authentication": "required (owner/admin) — MASTER_PLAN F6",
+      "authentication": "required (owner/admin) \u2014 MASTER_PLAN F6",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -3202,7 +3202,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3350,7 +3350,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3362,7 +3362,7 @@
     "POST /api/events/:eventId/visitors": {
       "method": "POST",
       "path": "/api/events/:eventId/visitors",
-      "description": "AC-2 — sign in an ephemeral visitor by typed name. The visitor is recorded as an EventParticipant for attendance but is never persisted as a Member: no history, no member-cap impact, no tap-to-repeat tile. Unlike /participants there is no toggle — every call adds a new visitor row.",
+      "description": "AC-2 \u2014 sign in an ephemeral visitor by typed name. The visitor is recorded as an EventParticipant for attendance but is never persisted as a Member: no history, no member-cap impact, no tap-to-repeat tile. Unlike /participants there is no toggle \u2014 every call adds a new visitor row.",
       "authentication": "none",
       "parameters": {
         "path": {
@@ -3464,7 +3464,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3560,7 +3560,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3573,7 +3573,7 @@
       "method": "GET",
       "path": "/api/events/:eventId/audit",
       "description": "Get audit log of all participant additions and removals for an event. Returns chronological sequence of membership changes.",
-      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) — MASTER_PLAN AC-4, review F1 pattern",
+      "authentication": "required (JWT, brigade/kiosk token, member-session, or public demo station) \u2014 MASTER_PLAN AC-4, review F1 pattern",
       "parameters": {
         "path": {
           "eventId": {
@@ -3622,7 +3622,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3636,7 +3636,7 @@
     "GET /api/achievements/member/:memberId": {
       "method": "GET",
       "path": "/api/achievements/member/:memberId",
-      "description": "Get achievements for specific member. Requires a session (requireSession — admin JWT/brigade-token/member-session, or the public demo station); previously ungated (Q36, fixed 2026-07-17).",
+      "description": "Get achievements for specific member. Requires a session (requireSession \u2014 admin JWT/brigade-token/member-session, or the public demo station); previously ungated (Q36, fixed 2026-07-17).",
       "authentication": "requireSession (JWT any role / brigade-token / member-session / demo)",
       "parameters": {
         "path": {
@@ -3672,7 +3672,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -3716,7 +3716,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -4251,7 +4251,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -4297,7 +4297,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -4333,7 +4333,7 @@
           "enabled": true,
           "maxRequests": 84,
           "windowMs": 300000,
-          "description": "Rate limited to ≈1,000 requests per hour per IP (≈84 per 5-minute window) (configurable)",
+          "description": "Rate limited to \u22481,000 requests per hour per IP (\u224884 per 5-minute window) (configurable)",
           "headers": [
             "RateLimit-Limit",
             "RateLimit-Remaining",
@@ -4580,7 +4580,7 @@
     "POST /api/stations": {
       "method": "POST",
       "path": "/api/stations",
-      "description": "Create a new station. Validates that brigade ID is unique to prevent duplicate station creation. Returns 409 if a station with the same brigade ID already exists. Tags the new station with the caller's organizationId (from their JWT), if any (Q33, 2026-07-17) — used to scope enforceStationLimit/enforceMemberLimit/enforceVehicleLimit per-org instead of across the whole deployment.",
+      "description": "Create a new station. Validates that brigade ID is unique to prevent duplicate station creation. Returns 409 if a station with the same brigade ID already exists. Tags the new station with the caller's organizationId (from their JWT), if any (Q33, 2026-07-17) \u2014 used to scope enforceStationLimit/enforceMemberLimit/enforceVehicleLimit per-org instead of across the whole deployment.",
       "authentication": "none",
       "parameters": {},
       "requestBody": {
@@ -4977,7 +4977,7 @@
       "method": "POST",
       "path": "/api/brigade-access/generate",
       "description": "Generate a new brigade access token for kiosk mode. Tokens lock the sign-in interface to a specific station.",
-      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
+      "authentication": "required (owner/admin) \u2014 MASTER_PLAN Q29/F5",
       "parameters": {},
       "requestBody": {
         "required": true,
@@ -5162,7 +5162,7 @@
       "method": "DELETE",
       "path": "/api/brigade-access/:token",
       "description": "Revoke a brigade access token",
-      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
+      "authentication": "required (owner/admin) \u2014 MASTER_PLAN Q29/F5",
       "parameters": {
         "path": {
           "token": {
@@ -5214,7 +5214,7 @@
       "method": "GET",
       "path": "/api/brigade-access/brigade/:brigadeId",
       "description": "Get all active tokens for a brigade",
-      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
+      "authentication": "required (owner/admin) \u2014 MASTER_PLAN Q29/F5",
       "parameters": {
         "path": {
           "brigadeId": {
@@ -5266,7 +5266,7 @@
       "method": "GET",
       "path": "/api/brigade-access/station/:stationId",
       "description": "Get all active tokens for a station",
-      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
+      "authentication": "required (owner/admin) \u2014 MASTER_PLAN Q29/F5",
       "parameters": {
         "path": {
           "stationId": {
@@ -5318,7 +5318,7 @@
       "method": "GET",
       "path": "/api/brigade-access/stats",
       "description": "Get statistics about active tokens",
-      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
+      "authentication": "required (owner/admin) \u2014 MASTER_PLAN Q29/F5",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -5354,7 +5354,7 @@
       "method": "GET",
       "path": "/api/brigade-access/all-tokens",
       "description": "Get all active tokens across all stations (admin utility). Returns tokens with full kiosk URLs for easy distribution.",
-      "authentication": "required (owner/admin) — MASTER_PLAN Q29/F5",
+      "authentication": "required (owner/admin) \u2014 MASTER_PLAN Q29/F5",
       "parameters": {},
       "requestBody": null,
       "responses": {
@@ -5435,7 +5435,7 @@
     "GET /api/devices": {
       "method": "GET",
       "path": "/api/devices",
-      "description": "AC-5 — list the caller org's Device accounts (named, typed, revocable kiosk/tablet/phone/wearable credentials), optionally filtered to one station.",
+      "description": "AC-5 \u2014 list the caller org's Device accounts (named, typed, revocable kiosk/tablet/phone/wearable credentials), optionally filtered to one station.",
       "authentication": "required (owner/admin)",
       "parameters": {
         "query": {
@@ -5477,7 +5477,7 @@
     "POST /api/devices": {
       "method": "POST",
       "path": "/api/devices",
-      "description": "AC-5 — enroll a new device for a station in the caller's org. Formalises the anonymous BrigadeAccessToken UUID into a named, typed, revocable credential; the returned token backs the same `/signin?brigade=<token>` kiosk URL.",
+      "description": "AC-5 \u2014 enroll a new device for a station in the caller's org. Formalises the anonymous BrigadeAccessToken UUID into a named, typed, revocable credential; the returned token backs the same `/signin?brigade=<token>` kiosk URL.",
       "authentication": "required (owner/admin)",
       "parameters": {},
       "requestBody": {
@@ -5550,7 +5550,7 @@
     "PATCH /api/devices/:id": {
       "method": "PATCH",
       "path": "/api/devices/:id",
-      "description": "AC-5 — rename a device and/or flip its status between 'active' and 'revoked'. Only the owning organization may manage its own devices.",
+      "description": "AC-5 \u2014 rename a device and/or flip its status between 'active' and 'revoked'. Only the owning organization may manage its own devices.",
       "authentication": "required (owner/admin)",
       "parameters": {
         "path": {
@@ -5602,7 +5602,7 @@
     "DELETE /api/devices/:id": {
       "method": "DELETE",
       "path": "/api/devices/:id",
-      "description": "AC-5 — remove a device your organization owns.",
+      "description": "AC-5 \u2014 remove a device your organization owns.",
       "authentication": "required (owner/admin)",
       "parameters": {
         "path": {
@@ -5629,7 +5629,7 @@
     "POST /api/devices/validate": {
       "method": "POST",
       "path": "/api/devices/validate",
-      "description": "AC-5 — public: resolve a device token to its station (called by the device itself, e.g. a kiosk on load). Updates the device's lastSeenAt audit trail on success. Mirrors POST /api/brigade-access/validate, which now falls back to this same resolution (see kioskAccessResolver.ts).",
+      "description": "AC-5 \u2014 public: resolve a device token to its station (called by the device itself, e.g. a kiosk on load). Updates the device's lastSeenAt audit trail on success. Mirrors POST /api/brigade-access/validate, which now falls back to this same resolution (see kioskAccessResolver.ts).",
       "authentication": "none",
       "parameters": {},
       "requestBody": {
@@ -5701,7 +5701,7 @@
       "implementation": "backend/src/routes/devices.ts",
       "security": {
         "notes": [
-          "Public endpoint — the token itself is the credential, same trust model as /api/brigade-access/validate",
+          "Public endpoint \u2014 the token itself is the credential, same trust model as /api/brigade-access/validate",
           "Revoked or expired devices resolve as not-found"
         ]
       }
@@ -6729,7 +6729,7 @@
     },
     "Device": {
       "type": "object",
-      "description": "AC-5 — a first-class device account (kiosk/tablet/phone/wearable), formalising the anonymous BrigadeAccessToken UUID into a named, typed, revocable credential with a last-seen audit trail.",
+      "description": "AC-5 \u2014 a first-class device account (kiosk/tablet/phone/wearable), formalising the anonymous BrigadeAccessToken UUID into a named, typed, revocable credential with a last-seen audit trail.",
       "properties": {
         "id": {
           "type": "string"
@@ -6758,7 +6758,7 @@
         "token": {
           "type": "string",
           "format": "uuid",
-          "description": "Unguessable credential — same model as BrigadeAccessToken"
+          "description": "Unguessable credential \u2014 same model as BrigadeAccessToken"
         },
         "status": {
           "type": "string",
@@ -7026,7 +7026,7 @@
     "POST /api/auth/signup": {
       "method": "POST",
       "path": "/api/auth/signup",
-      "description": "Self-service sign-up: creates a Community-plan Organization and its owner account. As of the org-onboarding rework, requires `email` and a `facility` selection: either `{facilityKey}` (claims a Digital Atlas of Australia emergency-services facility, first-come-first-served) or `{custom: {name, serviceType, suburb?, state?, postcode?}}` (an unlisted unit — no review needed). Omitting `facility` entirely keeps the legacy behaviour (creates an unlinked/custom org) for back-compat callers.",
+      "description": "Self-service sign-up: creates a Community-plan Organization and its owner account. As of the org-onboarding rework, requires `email` and a `facility` selection: either `{facilityKey}` (claims a Digital Atlas of Australia emergency-services facility, first-come-first-served) or `{custom: {name, serviceType, suburb?, state?, postcode?}}` (an unlisted unit \u2014 no review needed). Omitting `facility` entirely keeps the legacy behaviour (creates an unlinked/custom org) for back-compat callers.",
       "authentication": "None (public, rate-limited)",
       "requestBody": {
         "type": "object",
@@ -7048,7 +7048,7 @@
           "email": {
             "type": "string",
             "format": "email",
-            "description": "Required — the owner's contact email"
+            "description": "Required \u2014 the owner's contact email"
           },
           "facility": {
             "oneOf": [
@@ -7117,13 +7117,13 @@
       },
       "responses": {
         "201": {
-          "description": "{ token, user, organization } — organization includes facilityKey/facilityName/facilityCustom when a facility was resolved"
+          "description": "{ token, user, organization } \u2014 organization includes facilityKey/facilityName/facilityCustom when a facility was resolved"
         },
         "400": {
           "description": "Missing/invalid fields, unknown facilityKey, or missing custom facility details"
         },
         "409": {
-          "description": "Username already taken, or code=FACILITY_ALREADY_CLAIMED (409) when the chosen facility is already claimed by another organisation — a ClaimConflict row is recorded for the platform admin"
+          "description": "Username already taken, or code=FACILITY_ALREADY_CLAIMED (409) when the chosen facility is already claimed by another organisation \u2014 a ClaimConflict row is recorded for the platform admin"
         },
         "503": {
           "description": "Facility dataset snapshot not loaded (only when a facilityKey is supplied)"
@@ -7134,7 +7134,7 @@
     "PUT /api/auth/profile": {
       "method": "PUT",
       "path": "/api/auth/profile",
-      "description": "Update the caller's own profile. Currently just `email` — lets legacy accounts (created before email was required) backfill it.",
+      "description": "Update the caller's own profile. Currently just `email` \u2014 lets legacy accounts (created before email was required) backfill it.",
       "authentication": "Bearer JWT",
       "requestBody": {
         "type": "object",
@@ -7200,7 +7200,7 @@
     "GET /api/auth/session": {
       "method": "GET",
       "path": "/api/auth/session",
-      "description": "Phase 2 suite SSO bootstrap. Reads the sk_session httpOnly cookie (set on login/signup, scoped to COOKIE_DOMAIN e.g. .stationkit.com.au) and, if valid, returns the same identity/organization/entitlements payload as GET /api/auth/me plus a freshly-issued bearer token. A sibling app calls this once on load with credentials: 'include' to silently resume an existing Station Manager sign-in, then authorises every subsequent call with the returned token — the cookie itself never authorises a mutation.",
+      "description": "Phase 2 suite SSO bootstrap. Reads the sk_session httpOnly cookie (set on login/signup, scoped to COOKIE_DOMAIN e.g. .stationkit.com.au) and, if valid, returns the same identity/organization/entitlements payload as GET /api/auth/me plus a freshly-issued bearer token. A sibling app calls this once on load with credentials: 'include' to silently resume an existing Station Manager sign-in, then authorises every subsequent call with the returned token \u2014 the cookie itself never authorises a mutation.",
       "authentication": "sk_session cookie (no Authorization header required)",
       "rateLimit": "standard API limiter",
       "responses": {
@@ -7231,7 +7231,7 @@
               },
               "entitlements": {
                 "type": "object",
-                "description": "Effective entitlements — plan entitlements with an active standalone Santa Run add-on OR'd in"
+                "description": "Effective entitlements \u2014 plan entitlements with an active standalone Santa Run add-on OR'd in"
               },
               "memberships": {
                 "type": "array"
@@ -7254,6 +7254,172 @@
         }
       },
       "implementation": "backend/src/routes/auth.ts"
+    },
+    "POST /api/auth/passkey/register/options": {
+      "method": "POST",
+      "path": "/api/auth/passkey/register/options",
+      "description": "Start a passkey registration ceremony for the authenticated user (\"Add a passkey\" in account settings). Returns WebAuthn PublicKeyCredentialCreationOptions (RP id/name = WEBAUTHN_RP_ID/WEBAUTHN_RP_NAME, excludeCredentials = the user's existing passkeys) and stores the challenge server-side, keyed by userId, for a subsequent /register/verify call.",
+      "authentication": "Bearer JWT (SM-issued)",
+      "rateLimit": "standard API limiter",
+      "responses": {
+        "200": {
+          "description": "WebAuthn registration options (PublicKeyCredentialCreationOptionsJSON)"
+        },
+        "401": {
+          "description": "Missing or invalid JWT"
+        },
+        "500": {
+          "description": "Internal server error"
+        }
+      },
+      "implementation": "backend/src/routes/webauthn.ts"
+    },
+    "POST /api/auth/passkey/register/verify": {
+      "method": "POST",
+      "path": "/api/auth/passkey/register/verify",
+      "description": "Verify the browser's attestation response against the challenge from /register/options and, on success, store the new WebAuthnCredential (public key, counter, device type) against the authenticated user. Request body: { response: RegistrationResponseJSON, name?: string }.",
+      "authentication": "Bearer JWT (SM-issued)",
+      "rateLimit": "standard API limiter",
+      "responses": {
+        "201": {
+          "description": "Passkey registered",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "verified": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Registration session expired, missing response, or attestation could not be verified"
+        },
+        "401": {
+          "description": "Missing or invalid JWT"
+        },
+        "500": {
+          "description": "Internal server error"
+        }
+      },
+      "implementation": "backend/src/routes/webauthn.ts"
+    },
+    "POST /api/auth/passkey/login/options": {
+      "method": "POST",
+      "path": "/api/auth/passkey/login/options",
+      "description": "Public. Start a passwordless (\"usernameless\"/discoverable-credential) sign-in ceremony \u2014 no allowCredentials narrowing, so the browser's own picker shows every passkey it holds for WEBAUTHN_RP_ID. Callable cross-origin from any suite app's own login screen (RP id is the shared parent domain), not just this one. Returns an opaque flowId plus WebAuthn PublicKeyCredentialRequestOptions; the challenge is stored server-side keyed by flowId.",
+      "authentication": "None (public, pre-authentication)",
+      "rateLimit": "sensitive-action limiter (brute-force/enumeration protection)",
+      "responses": {
+        "200": {
+          "description": "flowId + WebAuthn authentication options (PublicKeyCredentialRequestOptionsJSON)"
+        },
+        "500": {
+          "description": "Internal server error"
+        }
+      },
+      "implementation": "backend/src/routes/webauthn.ts"
+    },
+    "POST /api/auth/passkey/login/verify": {
+      "method": "POST",
+      "path": "/api/auth/passkey/login/verify",
+      "description": "Public. Verify the browser's assertion response against the challenge from /login/options, identify the credential's owning user, bump its signature counter (clone detection), and complete sign-in exactly like POST /api/auth/login \u2014 sets the sk_session SSO cookie and returns the same { token, user } shape. Request body: { flowId: string, response: AuthenticationResponseJSON }. The challenge is single-use \u2014 replaying the same flowId a second time 400s.",
+      "authentication": "None (public, pre-authentication)",
+      "rateLimit": "sensitive-action limiter",
+      "responses": {
+        "200": {
+          "description": "Signed in",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string"
+              },
+              "user": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Missing flowId/response, or the sign-in session has expired/already been used"
+        },
+        "401": {
+          "description": "Credential id not recognised, assertion could not be verified, or the account is inactive"
+        },
+        "500": {
+          "description": "Internal server error"
+        }
+      },
+      "implementation": "backend/src/routes/webauthn.ts"
+    },
+    "GET /api/auth/passkey/credentials": {
+      "method": "GET",
+      "path": "/api/auth/passkey/credentials",
+      "description": "List the authenticated user's registered passkeys for account-settings display. Never returns the public key.",
+      "authentication": "Bearer JWT (SM-issued)",
+      "rateLimit": "standard API limiter",
+      "responses": {
+        "200": {
+          "description": "Array of passkeys",
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "deviceType": {
+                  "type": "string",
+                  "enum": [
+                    "singleDevice",
+                    "multiDevice"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "lastUsedAt": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Missing or invalid JWT"
+        },
+        "500": {
+          "description": "Internal server error"
+        }
+      },
+      "implementation": "backend/src/routes/webauthn.ts"
+    },
+    "DELETE /api/auth/passkey/credentials/:id": {
+      "method": "DELETE",
+      "path": "/api/auth/passkey/credentials/:id",
+      "description": "Remove one of the authenticated user's own passkeys. Scoped to the caller \u2014 404s (not 403) for a credential id that exists but belongs to another user, so as not to confirm which ids exist.",
+      "authentication": "Bearer JWT (SM-issued)",
+      "rateLimit": "standard API limiter",
+      "responses": {
+        "204": {
+          "description": "Deleted"
+        },
+        "401": {
+          "description": "Missing or invalid JWT"
+        },
+        "404": {
+          "description": "Not found, or owned by a different user"
+        },
+        "500": {
+          "description": "Internal server error"
+        }
+      },
+      "implementation": "backend/src/routes/webauthn.ts"
     }
   },
   "maintenance": {
@@ -7313,12 +7479,12 @@
       "end-session": "Client is done; server closes the socket after acknowledging"
     },
     "serverToClient": {
-      "session-started": "{ sessionId, resumed: boolean } — resumed is true when resumeSessionId was honoured (A3 code review F9)",
+      "session-started": "{ sessionId, resumed: boolean } \u2014 resumed is true when resumeSessionId was honoured (A3 code review F9)",
       "transcript": "STT result text for the just-finished utterance",
       "agent-text": "Agent's spoken reply text, plus whether the run is complete and its runId",
       "agent-audio": "TTS audio (MP3) for the agent's reply",
       "busy": "Sent instead of a reply when a turn is already in flight for this session (A3 code review F11); client should retry shortly",
-      "error": "{ message } — recoverable errors (provider failure, cap exceeded, bad frame)"
+      "error": "{ message } \u2014 recoverable errors (provider failure, cap exceeded, bad frame)"
     },
     "liveness": "Server pings on an interval and terminates the connection if no pong is received before the next ping (A3 code review F9, dead-connection detection)"
   }

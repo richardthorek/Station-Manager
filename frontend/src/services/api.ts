@@ -23,6 +23,7 @@ import type {
   Device,
 } from '../types';
 import type { MemberAchievementSummary } from '../types/achievements';
+import type { PublicKeyCredentialCreationOptionsJSON, RegistrationResponseJSON } from '@simplewebauthn/browser';
 
 /**
  * Thrown when a create operation fails because it has hit a plan limit.
@@ -1750,6 +1751,57 @@ class ApiService {
     return response.json();
   }
 
+  // ============================================
+  // Passkeys (WebAuthn) — account settings only. Sign-in itself (public,
+  // pre-auth) goes through AuthContext's loginWithPasskey, not this class.
+  // ============================================
+
+  async getPasskeyRegistrationOptions(): Promise<PublicKeyCredentialCreationOptionsJSON> {
+    const response = await fetch(`${API_BASE_URL}/auth/passkey/register/options`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to start passkey registration');
+    }
+    return response.json();
+  }
+
+  async verifyPasskeyRegistration(
+    response: RegistrationResponseJSON,
+    name?: string,
+  ): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/auth/passkey/register/verify`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ response, name }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to verify passkey registration');
+    }
+  }
+
+  async getPasskeys(): Promise<Passkey[]> {
+    const response = await fetch(`${API_BASE_URL}/auth/passkey/credentials`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch passkeys');
+    return response.json();
+  }
+
+  async deletePasskey(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/auth/passkey/credentials/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!response.ok && response.status !== 204) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to delete passkey');
+    }
+  }
+
   /** A3 voice agent — used to rehydrate the transcript after a WS reconnect resumes a session. */
   async getAgentSessionTurns(sessionId: string): Promise<AgentTurnSummary[]> {
     const response = await fetch(`${API_BASE_URL}/agent-sessions/${sessionId}/turns`, {
@@ -2135,6 +2187,15 @@ export interface BillingStatus {
     status: 'none' | 'trialing' | 'active' | 'past_due' | 'canceled';
     interval: 'monthly' | 'annual' | null;
   };
+}
+
+/** A registered WebAuthn/passkey credential, as listed in account settings. */
+export interface Passkey {
+  id: string;
+  name: string;
+  deviceType: 'singleDevice' | 'multiDevice';
+  createdAt: string;
+  lastUsedAt?: string;
 }
 
 export interface AiUsage {

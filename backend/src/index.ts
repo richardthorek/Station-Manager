@@ -68,6 +68,7 @@ import brigadeAccessRouter from './routes/brigadeAccess';
 import devicesRouter from './routes/devices';
 import exportRouter from './routes/export';
 import authRouter from './routes/auth';
+import webauthnRouter from './routes/webauthn';
 import organizationsRouter from './routes/organizations';
 import orgInvitesRouter from './routes/orgInvites';
 import facilitiesRouter from './routes/facilities';
@@ -461,6 +462,7 @@ app.get('/api/status', apiRateLimiter, async (req, res) => {
 // maintenance-only brigade can disable the sign-in book, and standard plans
 // have AI gated off.
 app.use('/api/auth', apiRateLimiter, authRouter);
+app.use('/api/auth/passkey', apiRateLimiter, webauthnRouter);
 app.use('/api/organizations', apiRateLimiter, organizationsRouter);
 // Public: invite-link preview/accept/signup and the signup facility lookup.
 app.use('/api/org-invites', apiRateLimiter, orgInvitesRouter);

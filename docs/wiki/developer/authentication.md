@@ -31,6 +31,39 @@ and read entitlements via `GET /api/auth/entitlements` — see
 [`SUITE_TOKEN_VALIDATION.md`](suite-token-validation.md). Station Manager is the
 suite's identity provider and licensing service.
 
+### Passkeys (WebAuthn) — additive to username/password
+
+Users can also register a passkey (Face ID, Touch ID, Windows Hello, Android
+biometric, or a password manager like iCloud Keychain/1Password/Bitwarden) and
+sign in with it instead of typing a password. This never replaces the
+password — it's purely an additional, faster sign-in path; account recovery
+still works via username/password.
+
+- **Registration is Station Manager-only.** "Add a passkey" lives in
+  `/admin/organization` (`PasskeysSection.tsx`) — the suite's sole identity
+  provider owns credential management, so sibling apps have no registration UI.
+- **Sign-in is usable from any suite app.** The WebAuthn Relying Party ID
+  (`WEBAUTHN_RP_ID`, default derived from `COOKIE_DOMAIN` with the leading dot
+  stripped, e.g. `stationkit.com.au`) is the shared parent domain — a
+  credential's RP ID may be any registrable-domain suffix of the calling
+  origin, so Fire Santa Run or Fire Break Calculator's own login screen can run
+  the `navigator.credentials.get()` ceremony **itself** (no redirect or
+  iframe) and then POST the resulting assertion to Station Manager's
+  `POST /api/auth/passkey/login/verify` cross-origin, using the same
+  CORS+credentials setup the SSO cookie already relies on. A successful verify
+  returns the identical `{ token, user }` shape as `POST /api/auth/login` and
+  also sets the `sk_session` cookie, so a passkey sign-in participates in
+  suite-wide SSO exactly like a password sign-in.
+- **Sign-in is "usernameless"/discoverable**: `POST /api/auth/passkey/login/options`
+  sets no `allowCredentials`, so the browser's own picker shows every passkey it
+  holds for the RP — no username field to fill in first.
+- **Server-side**: `routes/webauthn.ts` (endpoints), `services/webAuthnChallengeStore.ts`
+  (short-lived, single-use challenge between the `.../options` and `.../verify`
+  calls of a ceremony), `WebAuthnCredential` records on the admin-user DB
+  (public key, signature counter, device type — never the raw credential
+  itself). Uses `@simplewebauthn/server`; see `config/webauthn.ts` for the RP
+  ID/name/expected-origins configuration.
+
 ## Configuration
 
 ### Environment Variables
@@ -57,6 +90,10 @@ ENABLE_DATA_PROTECTION=true          # require JWT or brigade token on data rout
 
 # Entitlement / plan gating (default ON; never disable in production)
 ENABLE_ENTITLEMENTS=true
+
+# Passkeys (WebAuthn) — optional, defaults are sensible for most deployments
+WEBAUTHN_RP_ID=stationkit.com.au     # defaults to COOKIE_DOMAIN minus leading dot, else 'localhost'
+WEBAUTHN_RP_NAME=StationKit          # defaults to 'StationKit'
 ```
 
 > `JWT_SECRET` falls back to a hard-coded dev secret if unset — this **must** be
