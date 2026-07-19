@@ -118,6 +118,38 @@ describe('Billing', () => {
       const { getStripeClient } = loadStripeClient();
       expect(() => getStripeClient()).toThrow('STRIPE_SECRET_KEY is not configured');
     });
+
+    it('resolveSantaAddonPriceId() returns undefined when env vars are absent', () => {
+      delete process.env.STRIPE_PRICE_SANTA_ADDON_MONTHLY;
+      delete process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL;
+      const { resolveSantaAddonPriceId } = loadStripeClient();
+      expect(resolveSantaAddonPriceId('monthly')).toBeUndefined();
+      expect(resolveSantaAddonPriceId('annual')).toBeUndefined();
+    });
+
+    it('resolveSantaAddonPriceId() returns the configured price per interval', () => {
+      process.env.STRIPE_PRICE_SANTA_ADDON_MONTHLY = 'price_santa_monthly';
+      process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL = 'price_santa_annual';
+      const { resolveSantaAddonPriceId } = loadStripeClient();
+      expect(resolveSantaAddonPriceId('monthly')).toBe('price_santa_monthly');
+      expect(resolveSantaAddonPriceId('annual')).toBe('price_santa_annual');
+    });
+
+    it('isSantaAddonConfigured() is false without STRIPE_SECRET_KEY even with a price set', () => {
+      delete process.env.STRIPE_SECRET_KEY;
+      process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL = 'price_santa_annual';
+      const { isSantaAddonConfigured } = loadStripeClient();
+      expect(isSantaAddonConfigured()).toBe(false);
+      delete process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL;
+    });
+
+    it('isSantaAddonConfigured() is true with Stripe configured and at least one price set', () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+      process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL = 'price_santa_annual';
+      const { isSantaAddonConfigured } = loadStripeClient();
+      expect(isSantaAddonConfigured()).toBe(true);
+      delete process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL;
+    });
   });
 
   // ── GET /api/billing/status ────────────────────────────────────────────────
@@ -135,6 +167,7 @@ describe('Billing', () => {
       expect(res.body.trialEndsAt).toBeNull();
       expect(res.body.hasPaymentMethod).toBe(false);
       expect(res.body.stripeConfigured).toBe(false);
+      expect(res.body.santaAddon).toEqual({ available: false, status: 'none', interval: null });
     });
 
     it('returns 401 when not authenticated', async () => {
@@ -215,6 +248,70 @@ describe('Billing', () => {
         .send({ planCode: 'ai', billingInterval: 'annual' });
       expect(res.status).toBe(400);
       expect(res.body.error).toMatch(/STRIPE_PRICE_AI_ANNUAL/);
+    });
+  });
+
+  // ── POST /api/billing/santa-addon/checkout ─────────────────────────────────
+
+  describe('POST /api/billing/santa-addon/checkout', () => {
+    beforeEach(() => {
+      delete process.env.STRIPE_PRICE_SANTA_ADDON_MONTHLY;
+      delete process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL;
+    });
+
+    it('returns 401 when not authenticated', async () => {
+      const res = await request(app).post('/api/billing/santa-addon/checkout').send({});
+      expect(res.status).toBe(401);
+    });
+
+    it('returns 503 when the add-on is not configured', async () => {
+      const token = await signup();
+      const res = await request(app)
+        .post('/api/billing/santa-addon/checkout')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ billingInterval: 'annual' });
+      expect(res.status).toBe(503);
+      expect(res.body.error).toMatch(/not configured/i);
+    });
+
+    it('returns 400 when billingInterval is invalid', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+      process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL = 'price_santa_annual';
+      const token = await signup();
+      const res = await request(app)
+        .post('/api/billing/santa-addon/checkout')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ billingInterval: 'weekly' });
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 when the price env var for the chosen interval is missing', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+      process.env.STRIPE_PRICE_SANTA_ADDON_MONTHLY = 'price_santa_monthly';
+      delete process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL;
+      const token = await signup();
+      const res = await request(app)
+        .post('/api/billing/santa-addon/checkout')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ billingInterval: 'annual' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/STRIPE_PRICE_SANTA_ADDON_ANNUAL/);
+    });
+
+    it('returns 400 when the org already gets Santa Run from its plan', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+      process.env.STRIPE_PRICE_SANTA_ADDON_ANNUAL = 'price_santa_annual';
+      // Basic already grants santaRunEnabled via the plan (see constants/plans.ts).
+      const token = await signup({ organizationName: 'Basic RFS' });
+      const orgs = await ensureOrganizationDatabase().getAllOrganizations();
+      await ensureOrganizationDatabase().updateOrganization(orgs[0].id, { planCode: 'basic', entitlements: { ...orgs[0].entitlements, santaRunEnabled: true } });
+
+      const res = await request(app)
+        .post('/api/billing/santa-addon/checkout')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ billingInterval: 'annual' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/already includes/i);
     });
   });
 

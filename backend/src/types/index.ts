@@ -90,6 +90,31 @@ export interface AdminUser {
   isActive: boolean;
 }
 
+/**
+ * A registered WebAuthn/passkey credential for an AdminUser. Sign-in is
+ * additive to username/password — a user may have zero, one, or several
+ * (one per device/authenticator). Registration only happens from Station
+ * Manager's own account settings (the suite's sole identity provider);
+ * sibling apps (Fire Santa Run, Fire Break Calculator) only ever call the
+ * login ceremony, never registration.
+ */
+export interface WebAuthnCredential {
+  /** The credential ID (base64url), also the record's row key. */
+  id: string;
+  userId: string;
+  /** Base64url-encoded COSE public key. */
+  publicKey: string;
+  /** Signature counter, for clone detection. */
+  counter: number;
+  deviceType: 'singleDevice' | 'multiDevice';
+  backedUp: boolean;
+  transports?: string[];
+  /** User-assigned label, e.g. "MacBook Touch ID". Defaults to a generic name. */
+  name: string;
+  createdAt: Date;
+  lastUsedAt?: Date;
+}
+
 /** Role a user holds within one organization (per-org, not global). */
 export type OrgRole = 'owner' | 'admin' | 'viewer';
 
@@ -217,6 +242,13 @@ export interface Entitlements {
   fireBreakEnabled: boolean;
 }
 
+/** Lifecycle of a standalone Santa Run add-on subscription (see Organization.santaAddon). */
+export interface SantaAddonInfo {
+  status: 'none' | 'trialing' | 'active' | 'past_due' | 'canceled';
+  interval?: 'monthly' | 'annual';
+  stripeSubscriptionId?: string;
+}
+
 export type EntitlementFeature =
   | 'signInEnabled'
   | 'truckCheckEnabled'
@@ -270,6 +302,14 @@ export interface Organization {
   stripeCustomerId?: string;     // reserved for Stripe Billing (not yet wired)
   stripeSubscriptionId?: string;
   trialEndsAt?: Date;
+  /**
+   * Standalone Fire Santa Run add-on subscription — for orgs whose plan
+   * doesn't already grant `entitlements.santaRunEnabled` (Community). Basic
+   * and AI Pro get Santa Run bundled in the plan and never need this. See
+   * `services/santaAddonService.ts` for how the two combine into the
+   * effective entitlement a sibling app sees.
+   */
+  santaAddon?: SantaAddonInfo;
   /**
    * Purchased AI top-up sessions that carry over month-to-month (they do not
    * reset). Consumed only after the monthly `aiIncludedSessions` allowance is

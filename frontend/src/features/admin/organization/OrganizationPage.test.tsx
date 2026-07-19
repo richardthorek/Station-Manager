@@ -13,6 +13,7 @@ const removeOrgMember = vi.fn();
 const updateProfile = vi.fn();
 const getAiUsage = vi.fn();
 const getBillingStatus = vi.fn();
+const createSantaAddonCheckoutSession = vi.fn();
 const exportOrganizationData = vi.fn();
 
 vi.mock('../../../services/api', () => ({
@@ -27,6 +28,7 @@ vi.mock('../../../services/api', () => ({
     updateProfile: (...a: unknown[]) => updateProfile(...a),
     getAiUsage: (...a: unknown[]) => getAiUsage(...a),
     getBillingStatus: (...a: unknown[]) => getBillingStatus(...a),
+    createSantaAddonCheckoutSession: (...a: unknown[]) => createSantaAddonCheckoutSession(...a),
     exportOrganizationData: (...a: unknown[]) => exportOrganizationData(...a),
     getOrganizationUsers: vi.fn().mockResolvedValue({ users: [] }),
   },
@@ -79,6 +81,14 @@ describe('OrganizationPage', () => {
       members: [{ userId: 'u1', username: 'captain', email: 'a@b.org', role: 'owner', status: 'active', createdAt: new Date().toISOString() }],
     });
     getOrgInvites.mockResolvedValue({ invites: [] });
+    getBillingStatus.mockResolvedValue({
+      planCode: 'community',
+      status: 'active',
+      trialEndsAt: null,
+      hasPaymentMethod: false,
+      stripeConfigured: false,
+      santaAddon: { available: false, status: 'none', interval: null },
+    });
   });
 
   it('lists members with their roles', async () => {
@@ -148,6 +158,30 @@ describe('OrganizationPage', () => {
     fireEvent.click(within(row).getByRole('button', { name: /remove/i }));
 
     await waitFor(() => expect(removeOrgMember).toHaveBeenCalledWith('u2'));
+  });
+
+  it('hides the Santa Run add-on offer when not available', async () => {
+    renderPage();
+    await screen.findByText('captain');
+    expect(screen.queryByText(/fire santa run add-on/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the Santa Run add-on offer and starts checkout for the chosen interval', async () => {
+    getBillingStatus.mockResolvedValue({
+      planCode: 'community',
+      status: 'active',
+      trialEndsAt: null,
+      hasPaymentMethod: false,
+      stripeConfigured: true,
+      santaAddon: { available: true, status: 'none', interval: null },
+    });
+    createSantaAddonCheckoutSession.mockResolvedValue({ checkoutUrl: 'https://checkout.stripe.com/test' });
+    renderPage();
+
+    await screen.findByText(/fire santa run add-on/i);
+    fireEvent.click(screen.getByRole('button', { name: /a\$10\/year/i }));
+
+    await waitFor(() => expect(createSantaAddonCheckoutSession).toHaveBeenCalledWith('annual'));
   });
 
   it('lets the owner export organization data', async () => {

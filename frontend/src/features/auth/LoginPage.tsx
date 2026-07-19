@@ -8,7 +8,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { LockKeyhole, QrCode, HelpCircle } from 'lucide-react';
+import { LockKeyhole, QrCode, HelpCircle, KeyRound } from 'lucide-react';
+import { browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageTransition } from '../../components/PageTransition';
 import { DeviceSetupGuide } from '../../components/DeviceSetupGuide';
@@ -25,15 +26,17 @@ const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' 
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated } = useAuth();
+  const { login, loginWithPasskey, isAuthenticated } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [isProcessingQR, setIsProcessingQR] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
+  const passkeySupported = browserSupportsWebAuthn();
 
   // Get the redirect path from location state, or default to the app picker
   // (the post-login home) — a deep link that required auth sets `from`.
@@ -57,6 +60,22 @@ export function LoginPage() {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    setError('');
+    setIsPasskeyLoading(true);
+    try {
+      await loginWithPasskey();
+      navigate(from, { replace: true });
+    } catch (err) {
+      // A cancelled OS prompt throws NotAllowedError — not a real failure,
+      // the visitor just backed out or has no passkey and picked "cancel".
+      if (err instanceof Error && err.name === 'NotAllowedError') return;
+      setError(err instanceof Error ? err.message : 'Passkey sign-in failed');
+    } finally {
+      setIsPasskeyLoading(false);
     }
   };
 
@@ -137,8 +156,8 @@ export function LoginPage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
-                    autoComplete="username"
-                    disabled={isLoading || isProcessingQR}
+                    autoComplete="username webauthn"
+                    disabled={isLoading || isProcessingQR || isPasskeyLoading}
                   />
                 </div>
 
@@ -151,18 +170,30 @@ export function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    disabled={isLoading || isProcessingQR}
+                    disabled={isLoading || isProcessingQR || isPasskeyLoading}
                   />
                 </div>
 
                 <button
                   type="submit"
                   className="login-button"
-                  disabled={isLoading || isProcessingQR}
+                  disabled={isLoading || isProcessingQR || isPasskeyLoading}
                 >
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </button>
               </form>
+
+              {passkeySupported && (
+                <button
+                  type="button"
+                  className="passkey-login-button"
+                  onClick={() => void handlePasskeyLogin()}
+                  disabled={isLoading || isProcessingQR || isPasskeyLoading}
+                >
+                  <KeyRound size={20} strokeWidth={2} aria-hidden />
+                  <span>{isPasskeyLoading ? 'Waiting for passkey…' : 'Sign in with a passkey'}</span>
+                </button>
+              )}
 
               <div className="login-divider">
                 <span>Or</span>
@@ -172,7 +203,7 @@ export function LoginPage() {
                 type="button"
                 className="qr-scan-button"
                 onClick={() => setShowQRScanner(true)}
-                disabled={isLoading || isProcessingQR}
+                disabled={isLoading || isProcessingQR || isPasskeyLoading}
               >
                 <QrCode size={24} strokeWidth={2} aria-hidden />
                 <span>Scan Device QR Code</span>

@@ -20,6 +20,9 @@ import {
   resolveTopupPriceId,
   isTopupConfigured,
   topupPackSize,
+  resolveSantaAddonPriceId,
+  isSantaAddonConfigured,
+  type BillingInterval,
 } from '../services/stripeClient';
 import { authMiddleware, requireOwner } from '../middleware/auth';
 import { ensureOrganizationDatabase } from '../services/organizationDbFactory';
@@ -27,7 +30,7 @@ import { ensureBillingEventDatabase } from '../services/billingEventDbFactory';
 import { getDefaultEntitlements, isPlanCode, TRIAL_PERIOD_DAYS } from '../constants/plans';
 import { logger } from '../services/logger';
 import type Stripe from 'stripe';
-import type { PlanCode, OrganizationStatus } from '../types';
+import type { PlanCode, OrganizationStatus, SantaAddonInfo } from '../types';
 
 const router = Router();
 
@@ -196,6 +199,80 @@ router.post('/topup', authMiddleware, requireOwner, async (req: Request, res: Re
   }
 });
 
+// ─── POST /api/billing/santa-addon/checkout ─────────────────────────────────
+// Standalone Fire Santa Run add-on for orgs whose plan doesn't already grant
+// santaRunEnabled (Community — Basic/AI Pro get it bundled, see plans.ts).
+// $10/year or $15/month, priced to nudge toward the annual (docs/MASTER_PLAN.md).
+
+router.post('/santa-addon/checkout', authMiddleware, requireOwner, async (req: Request, res: Response) => {
+  if (!isSantaAddonConfigured()) {
+    return res.status(503).json({ error: 'The Santa Run add-on is not configured on this server' });
+  }
+
+  const { billingInterval = 'annual' } = req.body ?? {};
+  if (billingInterval !== 'monthly' && billingInterval !== 'annual') {
+    return res.status(400).json({ error: 'billingInterval must be "monthly" or "annual"' });
+  }
+
+  const priceId = resolveSantaAddonPriceId(billingInterval as BillingInterval);
+  if (!priceId) {
+    return res.status(400).json({
+      error: `No Stripe price configured for the Santa add-on/${billingInterval}. Set STRIPE_PRICE_SANTA_ADDON_${billingInterval.toUpperCase()} env var.`,
+    });
+  }
+
+  try {
+    const orgDb = ensureOrganizationDatabase();
+    const org = await orgDb.getOrganizationById(req.user!.organizationId!);
+    if (!org) return res.status(404).json({ error: 'Organization not found' });
+
+    if (org.entitlements.santaRunEnabled) {
+      return res.status(400).json({ error: 'Your plan already includes Fire Santa Run — no need to purchase the add-on.' });
+    }
+
+    const stripe = getStripeClient();
+
+    let customerId = org.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: org.billingEmail,
+        name: org.name,
+        metadata: { organizationId: org.id, slug: org.slug },
+      });
+      customerId = customer.id;
+      await orgDb.updateOrganization(org.id, { stripeCustomerId: customerId });
+    }
+
+    const base = appBaseUrl();
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      subscription_data: {
+        metadata: { organizationId: org.id, kind: 'santa_addon', interval: billingInterval },
+      },
+      success_url: `${base}/admin/organization?santaAddon=success`,
+      cancel_url: `${base}/admin/organization?santaAddon=cancelled`,
+      metadata: { organizationId: org.id, kind: 'santa_addon', interval: billingInterval },
+      allow_promotion_codes: true,
+      customer_update: { name: 'auto', address: 'auto' },
+    });
+
+    logger.info('Santa add-on Checkout session created', {
+      organizationId: org.id,
+      interval: billingInterval,
+      sessionId: session.id,
+    });
+
+    return res.json({ checkoutUrl: session.url });
+  } catch (error) {
+    const stripeMsg = (error as { message?: string })?.message ?? String(error);
+    logger.error('Error creating Santa add-on checkout session', { error, stripeMsg });
+    return res.status(500).json({ error: 'Failed to create checkout session', detail: stripeMsg });
+  }
+});
+
 // ─── GET /api/billing/status ─────────────────────────────────────────────────
 
 router.get('/status', authMiddleware, async (req: Request, res: Response) => {
@@ -212,6 +289,11 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
       stripeConfigured: isStripeConfigured(),
       topupAvailable: isTopupConfigured(),
       topupPackSize: topupPackSize(),
+      santaAddon: {
+        available: isSantaAddonConfigured() && !org.entitlements.santaRunEnabled,
+        status: org.santaAddon?.status ?? 'none',
+        interval: org.santaAddon?.interval ?? null,
+      },
     });
   } catch (error) {
     logger.error('Error fetching billing status', { error });
@@ -349,6 +431,25 @@ async function processStripeEvent(event: Stripe.Event): Promise<void> {
         break;
       }
 
+      // A standalone Fire Santa Run add-on purchase (Community orgs — Basic/AI
+      // Pro already grant santaRunEnabled via the plan). Tracked separately from
+      // the org's plan subscription so it never overwrites planCode/status below.
+      if (session.metadata?.['kind'] === 'santa_addon') {
+        if (!organizationId) {
+          logger.warn('santa_addon checkout missing organizationId metadata', { sessionId: session.id });
+          break;
+        }
+        const interval = session.metadata?.['interval'] === 'monthly' ? 'monthly' : 'annual';
+        const santaAddon: SantaAddonInfo = {
+          status: 'active',
+          interval,
+          stripeSubscriptionId: typeof session.subscription === 'string' ? session.subscription : undefined,
+        };
+        await orgDb.updateOrganization(organizationId, { santaAddon });
+        logger.info('Santa Run add-on activated via Checkout', { organizationId, interval });
+        break;
+      }
+
       const planCode = session.metadata?.['planCode'] as PlanCode | undefined;
       if (!organizationId || !planCode || !isPlanCode(planCode)) {
         logger.warn('checkout.session.completed missing org/plan metadata', { sessionId: session.id });
@@ -372,6 +473,21 @@ async function processStripeEvent(event: Stripe.Event): Promise<void> {
         logger.warn('customer.subscription.updated missing organizationId metadata');
         break;
       }
+
+      // Santa add-on subscriptions are tracked on their own `santaAddon` field —
+      // branch out before touching planCode/status/stripeSubscriptionId below,
+      // which belong to the org's main plan subscription only.
+      if (sub.metadata?.['kind'] === 'santa_addon') {
+        const santaAddon: SantaAddonInfo = {
+          status: stripeStatusToOrgStatus(sub.status),
+          interval: sub.metadata?.['interval'] === 'monthly' ? 'monthly' : 'annual',
+          stripeSubscriptionId: sub.id,
+        };
+        await orgDb.updateOrganization(organizationId, { santaAddon });
+        logger.info('Santa add-on subscription updated', { organizationId, status: sub.status });
+        break;
+      }
+
       const planCode = sub.metadata?.['planCode'] as PlanCode | undefined;
       const updates: Parameters<typeof orgDb.updateOrganization>[1] = {
         status: stripeStatusToOrgStatus(sub.status),
@@ -393,6 +509,13 @@ async function processStripeEvent(event: Stripe.Event): Promise<void> {
       const sub = event.data.object as Stripe.Subscription;
       const organizationId = sub.metadata?.['organizationId'];
       if (!organizationId) break;
+
+      if (sub.metadata?.['kind'] === 'santa_addon') {
+        await orgDb.updateOrganization(organizationId, { santaAddon: { status: 'none' } });
+        logger.info('Santa add-on subscription cancelled', { organizationId });
+        break;
+      }
+
       await orgDb.updateOrganization(organizationId, {
         planCode: 'community',
         status: 'canceled',

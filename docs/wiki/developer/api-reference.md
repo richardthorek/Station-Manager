@@ -165,6 +165,13 @@ rate-limited; login/signup additionally use `sensitiveActionRateLimiter`.
 | `PUT` | `/api/auth/profile` | Bearer | Update the caller's own email (legacy-account backfill). |
 | `POST` | `/api/auth/switch-org` | Bearer | Re-issue the JWT scoped to a different org the caller belongs to (multi-org). |
 | `GET` | `/api/auth/config` | none | Reports `{ requireAuth }` (whether `REQUIRE_AUTH=true`). |
+| `GET` | `/api/auth/session` | `sk_session` cookie | Suite SSO bootstrap — same shape as `/me` plus a fresh `token`. See `suite-token-validation.md` §1a. |
+| `POST` | `/api/auth/passkey/register/options` | Bearer | Start a passkey registration ceremony (account settings only). |
+| `POST` | `/api/auth/passkey/register/verify` | Bearer | Verify the attestation and store the new passkey. |
+| `POST` | `/api/auth/passkey/login/options` | none | Start a passwordless sign-in ceremony; usable from any suite app. |
+| `POST` | `/api/auth/passkey/login/verify` | none | Verify the assertion; on success behaves exactly like `/login` (token + `sk_session` cookie). |
+| `GET` | `/api/auth/passkey/credentials` | Bearer | List the caller's own registered passkeys. |
+| `DELETE` | `/api/auth/passkey/credentials/:id` | Bearer | Remove one of the caller's own passkeys. |
 
 ### `POST /api/auth/signup`
 
@@ -239,6 +246,63 @@ that org + the membership's role — `attachOrganization` and every suite
 consumer keep reading the same claim shape.
 **Response** (200 OK): `{ "token": "...", "user": { ... }, "organization": { ... } }`.
 **Errors**: `403` (not a member of that org), `404` (org not found).
+
+### `GET /api/auth/session`
+
+**Auth**: `sk_session` httpOnly cookie (no `Authorization` header). Called by
+sibling apps with `credentials: 'include'` to silently resume a Station
+Manager sign-in. **Response** (200 OK): identical shape to `GET /api/auth/me`
+plus a freshly-issued `token`. **Errors**: `401` (no cookie, or invalid/expired
+— cleared server-side in the latter case), `404` (user not found). Full
+contract: `suite-token-validation.md` §1a.
+
+### Passkeys (WebAuthn)
+
+Additive to username/password — never a replacement. Registration is
+Station-Manager-only (account settings); **sign-in is usable from any suite
+app's own login screen**, because the Relying Party ID is the shared parent
+domain the SSO cookie uses. Full contract, including why a sibling app can run
+the ceremony on its own page: `suite-token-validation.md` §1b.
+
+#### `POST /api/auth/passkey/register/options`
+
+**Auth**: Bearer JWT. Returns a WebAuthn `PublicKeyCredentialCreationOptionsJSON`
+(rp = `WEBAUTHN_RP_ID`/`WEBAUTHN_RP_NAME`, `excludeCredentials` = the caller's
+existing passkeys) and stores the challenge server-side keyed by the caller's
+user id.
+
+#### `POST /api/auth/passkey/register/verify`
+
+**Auth**: Bearer JWT. **Request Body**: `{ "response": RegistrationResponseJSON, "name"?: "My Laptop" }`.
+Verifies the attestation against the stored challenge and, on success, saves
+the new passkey. **Response** (201 Created): `{ "verified": true }`.
+**Errors**: `400` (registration session expired, or attestation not verified).
+
+#### `POST /api/auth/passkey/login/options`
+
+**Auth**: none (public). No `allowCredentials` is set — the browser's own
+picker shows every passkey it holds for `WEBAUTHN_RP_ID`, no username needed.
+**Response** (200 OK): `{ "flowId": "...", "options": PublicKeyCredentialRequestOptionsJSON }`.
+
+#### `POST /api/auth/passkey/login/verify`
+
+**Auth**: none (public). **Request Body**: `{ "flowId": "...", "response": AuthenticationResponseJSON }`.
+Verifies the assertion, resolves the credential's owning user, bumps its
+signature counter, and completes sign-in exactly like `POST /api/auth/login`.
+**Response** (200 OK): `{ "token": "...", "user": { ... } }` (also sets the
+`sk_session` cookie). **Errors**: `400` (missing fields, or the sign-in
+session expired/was already used — the challenge is single-use), `401`
+(credential not recognised, verification failed, or the account is inactive).
+
+#### `GET /api/auth/passkey/credentials`
+
+**Auth**: Bearer JWT. **Response** (200 OK): `[{ id, name, deviceType, createdAt, lastUsedAt }]` — never the public key.
+
+#### `DELETE /api/auth/passkey/credentials/:id`
+
+**Auth**: Bearer JWT. Scoped to the caller. **Response**: `204`. **Errors**:
+`404` (not found, or owned by a different user — deliberately not `403`, so as
+not to confirm which ids exist).
 
 ---
 

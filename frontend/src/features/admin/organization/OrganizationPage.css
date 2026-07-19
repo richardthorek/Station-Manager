@@ -181,6 +181,43 @@
 
 .org-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.org-passkey-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.org-passkey-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
+
+.org-passkey-meta {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.org-passkey-remove {
+  background: none;
+  border: none;
+  color: var(--rfs-dark-grey);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+}
+
+.org-passkey-remove:hover {
+  color: var(--rfs-core-red);
+}
+
 .org-ai-usage-count {
   margin: 0 0 0.75rem;
   font-size: 1rem;

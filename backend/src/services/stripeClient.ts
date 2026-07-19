@@ -74,3 +74,22 @@ export function topupPackSize(): number {
 export function isTopupConfigured(): boolean {
   return isStripeConfigured() && Boolean(resolveTopupPriceId());
 }
+
+/**
+ * Standalone Fire Santa Run add-on (Community orgs only — Basic/AI Pro already
+ * grant santaRunEnabled via the plan). $10/year or $15/month, priced to nudge
+ * toward the annual — see docs/MASTER_PLAN.md.
+ */
+const SANTA_ADDON_PRICE_ENV_VARS: Record<BillingInterval, string> = {
+  monthly: 'STRIPE_PRICE_SANTA_ADDON_MONTHLY',
+  annual: 'STRIPE_PRICE_SANTA_ADDON_ANNUAL',
+};
+
+export function resolveSantaAddonPriceId(interval: BillingInterval): string | undefined {
+  return process.env[SANTA_ADDON_PRICE_ENV_VARS[interval]] || undefined;
+}
+
+/** True when at least one Santa add-on price is configured. */
+export function isSantaAddonConfigured(): boolean {
+  return isStripeConfigured() && Boolean(resolveSantaAddonPriceId('monthly') || resolveSantaAddonPriceId('annual'));
+}
