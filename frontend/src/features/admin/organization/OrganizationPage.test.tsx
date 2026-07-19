@@ -126,17 +126,13 @@ describe('OrganizationPage', () => {
     expect(await screen.findByRole('button', { name: /copy link/i })).toBeInTheDocument();
   });
 
-  it('shows a legacy-email banner and lets the user save it', async () => {
+  it('shows a legacy-email nudge pointing at the My Account page', async () => {
     authUser = { role: 'owner', email: null };
-    updateProfile.mockResolvedValue({ user: {} });
     renderPage();
     await screen.findByText('captain');
 
     expect(screen.getByText(/add an email to your account/i)).toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'new@example.com' } });
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-
-    await waitFor(() => expect(updateProfile).toHaveBeenCalledWith({ email: 'new@example.com' }));
+    expect(screen.getByRole('link', { name: /my account/i })).toHaveAttribute('href', '/account');
   });
 
   it('removes a member', async () => {

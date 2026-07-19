@@ -57,39 +57,8 @@
   color: #fff;
 }
 
-.admin-nav__user {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  white-space: nowrap;
-}
-
-.admin-nav__username {
-  color: var(--text-secondary);
-  font-size: 0.88rem;
-}
-
-.admin-nav__logout {
-  min-height: 44px;
-  padding: 0 0.9rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-weight: 600;
-  font-size: 0.88rem;
-  cursor: pointer;
-}
-
-.admin-nav__logout:hover {
-  background: var(--surface-hover);
-}
-
 @media (max-width: 640px) {
   .admin-nav {
     gap: 0.75rem;
-  }
-  .admin-nav__username {
-    display: none;
   }
 }

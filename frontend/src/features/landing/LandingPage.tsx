@@ -1,28 +1,33 @@
 /**
  * Landing Page Component
  *
- * The logged-in hub — and the StationKit suite app-launcher. Surfaces
- * Station Manager's own modules (sign-in, truck check, reports, AAR Studio,
- * admin) plus the sibling suite apps (Fire Santa Run, Fire Break Calculator),
- * each unlocked by the org's entitlements.
+ * The logged-in hub — and the StationKit suite app-launcher. The card grid
+ * is apps/features only: Station Manager's own modules (sign-in, truck
+ * check, reports, AAR Studio) plus the sibling suite apps (Fire Santa Run,
+ * Fire Break Calculator), each unlocked by the org's entitlements. Station
+ * Management (Stations/Crew Access admin) is deliberately NOT a card here —
+ * it's a "Station Management" header link next to AccountMenu, since it's an
+ * admin action, not an app a member opens day-to-day.
  */
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn, Truck, BarChart3, Mic, Settings2, GraduationCap, LockKeyhole, LogOut, Moon, Sun, Lock, Heart, HelpCircle } from 'lucide-react';
+import { LogIn, Truck, BarChart3, Mic, Settings2, GraduationCap, LockKeyhole, Moon, Sun, Lock, Heart, HelpCircle } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../contexts/AuthContext';
 import { OnboardingWizard } from '../../components/OnboardingWizard';
 import { PageTransition } from '../../components/PageTransition';
 import { DeviceSetupGuide } from '../../components/DeviceSetupGuide';
+import { AccountMenu } from '../../components/AccountMenu';
+import { DeviceInfoBadge } from '../../components/DeviceInfoBadge';
 import { staggerVariants, getVariants, getTransition, transitions } from '../../utils/animations';
 import { SUITE_SIBLING_APPS } from '../../config/suiteApps';
 import './LandingPage.css';
 
 export function LandingPage() {
   const { theme, toggleTheme } = useTheme();
-  const { isAuthenticated, user, logout, requireAuth, hasFeature, entitlements } = useAuth();
+  const { isAuthenticated, user, requireAuth, hasFeature, entitlements } = useAuth();
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
@@ -30,11 +35,6 @@ export function LandingPage() {
   const containerVariants = getVariants(staggerVariants.container);
   const itemVariants = getVariants(staggerVariants.item);
   const itemTransition = getTransition(transitions.standard);
-
-  const handleLogout = () => {
-    logout();
-    // Optionally show a toast notification
-  };
 
   // A core module is "locked" only when we have entitlement context AND the org
   // lacks the feature. With no entitlements (single-tenant / kiosk back-compat)
@@ -53,12 +53,12 @@ export function LandingPage() {
         className="feature-link feature-link--locked"
         aria-label={`${moduleName} is not included in your plan — click to view upgrade options`}
       >
-        Not in your plan
+        <span className="link-label">Not in your plan</span>
         <span className="lock-icon" aria-hidden="true"><Lock size={16} strokeWidth={2} /></span>
       </Link>
     ) : (
       <Link to={to} className="feature-link">
-        {label}
+        <span className="link-label">{label}</span>
         <span className="arrow" aria-hidden="true">→</span>
       </Link>
     );
@@ -112,17 +112,14 @@ export function LandingPage() {
                 <span className="btn-text">Admin Login</span>
               </button>
             )}
-            {isAuthenticated && user && (
-              <button
-                className="header-cta logout-btn"
-                onClick={handleLogout}
-                aria-label={`Logout ${user.username}`}
-                title={`Logged in as ${user.username}`}
-              >
-                <span className="btn-icon"><LogOut size={20} strokeWidth={2} aria-hidden /></span>
-                <span className="btn-text">Logout</span>
-              </button>
+            {(!requireAuth || isAuthenticated) && (
+              <Link to="/admin/stations" className="header-cta">
+                <span className="btn-icon"><Settings2 size={20} strokeWidth={2} aria-hidden /></span>
+                <span className="btn-text">Station Management</span>
+              </Link>
             )}
+            <DeviceInfoBadge />
+            {isAuthenticated && user && <AccountMenu />}
             <button
               type="button"
               className="theme-toggle-btn"
@@ -150,9 +147,11 @@ export function LandingPage() {
               transition={itemTransition}
             >
               <div className="feature-icon" aria-hidden="true"><LogIn size={32} strokeWidth={2} /></div>
-              <h3>Station Sign-In</h3>
-              <p>Quick and easy member check-in/out with activity tracking. Real-time updates across all devices.</p>
-              {moduleLink(signInLocked, '/signin', 'Go to Sign-In', 'Station Sign-In')}
+              <div className="feature-body">
+                <h3>Station Sign-In</h3>
+                <p>Quick and easy member check-in/out with activity tracking. Real-time updates across all devices.</p>
+                {moduleLink(signInLocked, '/signin', 'Go to Sign-In', 'Station Sign-In')}
+              </div>
             </motion.article>
 
             <motion.article
@@ -161,9 +160,11 @@ export function LandingPage() {
               transition={itemTransition}
             >
               <div className="feature-icon" aria-hidden="true"><Truck size={32} strokeWidth={2} /></div>
-              <h3>Vehicle Check</h3>
-              <p>Vehicle and equipment maintenance tracking with inspection checklists.</p>
-              {moduleLink(truckCheckLocked, '/truckcheck', 'Go to Vehicle Check', 'Vehicle Check')}
+              <div className="feature-body">
+                <h3>Vehicle Check</h3>
+                <p>Vehicle and equipment maintenance tracking with inspection checklists.</p>
+                {moduleLink(truckCheckLocked, '/truckcheck', 'Go to Vehicle Check', 'Vehicle Check')}
+              </div>
             </motion.article>
 
             <motion.article
@@ -172,9 +173,11 @@ export function LandingPage() {
               transition={itemTransition}
             >
               <div className="feature-icon" aria-hidden="true"><BarChart3 size={32} strokeWidth={2} /></div>
-              <h3>Reports & Analytics</h3>
-              <p>Historical reporting, analytics, and data export capabilities.</p>
-              {moduleLink(reportsLocked, '/reports', 'Go to Reports', 'Reports & Analytics')}
+              <div className="feature-body">
+                <h3>Reports & Analytics</h3>
+                <p>Historical reporting, analytics, and data export capabilities.</p>
+                {moduleLink(reportsLocked, '/reports', 'Go to Reports', 'Reports & Analytics')}
+              </div>
             </motion.article>
 
             <motion.article
@@ -183,46 +186,22 @@ export function LandingPage() {
               transition={itemTransition}
             >
               <div className="feature-icon" aria-hidden="true"><Mic size={32} strokeWidth={2} /></div>
-              <h3>AAR Studio</h3>
-              <p>AI-assisted After Action Reviews: capture the discussion live, build a findings board, and export the report.</p>
-              {/* AAR Studio is a self-contained static sub-app served by the backend at /aar, so this is a plain link, not a router route. */}
-              {entitlements && !hasFeature('aarStudioEnabled') ? (
-                <Link to="/admin/organization" className="feature-link feature-link--locked" aria-label="AAR Studio requires AI Pro plan — click to view upgrade options">
-                  Upgrade to AI Pro
-                  <span className="lock-icon" aria-hidden="true"><Lock size={16} strokeWidth={2} /></span>
-                </Link>
-              ) : (
-                <a href="/aar/" className="feature-link">
-                  Go to AAR Studio
-                  <span className="arrow" aria-hidden="true">→</span>
-                </a>
-              )}
-            </motion.article>
-
-            <motion.article
-              className="feature-card feature-card--admin"
-              variants={itemVariants}
-              transition={itemTransition}
-            >
-              <div className="feature-icon" aria-hidden="true"><Settings2 size={32} strokeWidth={2} /></div>
-              <h3>Station Management</h3>
-              <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
-              {(!requireAuth || isAuthenticated) ? (
-                <div className="feature-links">
-                  <Link to="/admin/stations" className="feature-link">
-                    Stations
-                    <span className="arrow" aria-hidden="true">→</span>
+              <div className="feature-body">
+                <h3>AAR Studio</h3>
+                <p>AI-assisted After Action Reviews: capture the discussion live, build a findings board, and export the report.</p>
+                {/* AAR Studio is a self-contained static sub-app served by the backend at /aar, so this is a plain link, not a router route. */}
+                {entitlements && !hasFeature('aarStudioEnabled') ? (
+                  <Link to="/admin/organization" className="feature-link feature-link--locked" aria-label="AAR Studio requires AI Pro plan — click to view upgrade options">
+                    <span className="link-label">Upgrade to AI Pro</span>
+                    <span className="lock-icon" aria-hidden="true"><Lock size={16} strokeWidth={2} /></span>
                   </Link>
-                  <Link to="/admin/brigade-access" className="feature-link">
-                    Crew Access
+                ) : (
+                  <a href="/aar/" className="feature-link">
+                    <span className="link-label">Go to AAR Studio</span>
                     <span className="arrow" aria-hidden="true">→</span>
-                  </Link>
-                </div>
-              ) : (
-                <p className="auth-required-msg" style={{ marginTop: '1rem', fontSize: '0.875rem', opacity: 0.7 }}>
-                  Authentication required to access station management
-                </p>
-              )}
+                  </a>
+                )}
+              </div>
             </motion.article>
 
             {/* StationKit sibling apps — separate deployments, unlocked by entitlements. */}
@@ -237,19 +216,21 @@ export function LandingPage() {
                 >
                   {suiteApp.seasonal && <span className="suite-badge">Seasonal</span>}
                   <div className="feature-icon" aria-hidden="true">{suiteApp.icon}</div>
-                  <h3>{suiteApp.name}</h3>
-                  <p>{suiteApp.description}</p>
-                  {locked ? (
-                    <Link to="/admin/organization" className="feature-link feature-link--locked" aria-label={`${suiteApp.name} is not included in your plan — click to view upgrade options`}>
-                      Not in your plan
-                      <span className="lock-icon" aria-hidden="true"><Lock size={16} strokeWidth={2} /></span>
-                    </Link>
-                  ) : (
-                    <a href={suiteApp.href} className="feature-link" target="_blank" rel="noopener noreferrer">
-                      Open {suiteApp.name}
-                      <span className="arrow" aria-hidden="true">↗</span>
-                    </a>
-                  )}
+                  <div className="feature-body">
+                    <h3>{suiteApp.name}</h3>
+                    <p>{suiteApp.description}</p>
+                    {locked ? (
+                      <Link to="/admin/organization" className="feature-link feature-link--locked" aria-label={`${suiteApp.name} is not included in your plan — click to view upgrade options`}>
+                        <span className="link-label">Not in your plan</span>
+                        <span className="lock-icon" aria-hidden="true"><Lock size={16} strokeWidth={2} /></span>
+                      </Link>
+                    ) : (
+                      <a href={suiteApp.href} className="feature-link" target="_blank" rel="noopener noreferrer">
+                        <span className="link-label">Open {suiteApp.name}</span>
+                        <span className="arrow" aria-hidden="true">↗</span>
+                      </a>
+                    )}
+                  </div>
                 </motion.article>
               );
             })}

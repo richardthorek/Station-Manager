@@ -1,0 +1,60 @@
+.device-info-badge {
+  position: relative;
+}
+
+.device-info-badge__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  max-width: 220px;
+}
+
+.device-info-badge__trigger:hover {
+  background: var(--surface-hover);
+}
+
+.device-info-badge__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-info-badge__dropdown {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 220px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 20;
+  padding: 0.75rem 0.85rem;
+}
+
+.device-info-badge__details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.device-info-badge__details dt {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.device-info-badge__details dd {
+  margin: 0;
+  color: var(--text-primary);
+}

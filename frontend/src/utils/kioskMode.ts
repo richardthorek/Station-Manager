@@ -191,7 +191,13 @@ export function getKioskModeInfo(): {
 export async function validateKioskToken(): Promise<{
   valid: boolean;
   stationId?: string;
+  stationName?: string;
   brigadeId?: string;
+  /** AC-5 device account name (e.g. "Main shed kiosk") — absent for a legacy anonymous token. */
+  name?: string;
+  /** AC-5 device type — absent for a legacy anonymous token. */
+  type?: 'kiosk' | 'tablet' | 'phone' | 'wearable';
+  expiresAt?: string;
   error?: string;
 }> {
   const token = getKioskToken();

@@ -1526,7 +1526,7 @@
       "functions": {
         "resolveKioskAccess": {
           "signature": "resolveKioskAccess(token: string): Promise<ResolvedKioskAccess | null>",
-          "description": "Resolves a kiosk token to its station (and brigade, via the station's brigadeId). Touches the device's lastSeenAt when resolved via the Device store. Returns null when the token is unknown, revoked, or expired.",
+          "description": "Resolves a kiosk token to its station (and brigade, via the station's brigadeId), plus the station name and — for an AC-5 Device token — its name/type (undefined for a legacy anonymous BrigadeAccessToken). Touches the device's lastSeenAt when resolved via the Device store. Returns null when the token is unknown, revoked, or expired.",
           "returns": "Promise<ResolvedKioskAccess | null>",
           "async": true
         }
@@ -1981,7 +1981,7 @@
     },
     "auth (updated)": {
       "file": "backend/src/routes/auth.ts",
-      "description": "signup now validates + persists email and resolves the facility claim/conflict/custom flow (see api_register.json). login and /me resolve multi-org memberships via orgMembershipService. New: PUT /profile (email backfill), POST /switch-org (reissue JWT scoped to a different org the user belongs to). Suite Phase 2 SSO (this session): login/signup/switch-org also set the sk_session cookie (utils/sessionCookie.ts) and logout clears it; new GET /session bootstraps a sibling app's session from that cookie. /me's identity/organization/entitlements body was refactored into a shared buildIdentityPayload() helper reused by /session; both now return *effective* entitlements via services/santaAddonService.ts. Passkey support (this session): the login-response-building logic (resolve active org/role, sign JWT, set sk_session cookie, shape the response) was extracted out of POST /login into a shared completeSignIn() so passkey sign-in (routes/webauthn.ts) produces an identical response.",
+      "description": "signup now validates + persists email and resolves the facility claim/conflict/custom flow (see api_register.json). login and /me resolve multi-org memberships via orgMembershipService. New: PUT /profile (email backfill), PUT /profile/password (change password, current-password-verified via verifyCredentials), POST /switch-org (reissue JWT scoped to a different org the user belongs to). Suite Phase 2 SSO (this session): login/signup/switch-org also set the sk_session cookie (utils/sessionCookie.ts) and logout clears it; new GET /session bootstraps a sibling app's session from that cookie. /me's identity/organization/entitlements body was refactored into a shared buildIdentityPayload() helper reused by /session; both now return *effective* entitlements via services/santaAddonService.ts. Passkey support (this session): the login-response-building logic (resolve active org/role, sign JWT, set sk_session cookie, shape the response) was extracted out of POST /login into a shared completeSignIn() so passkey sign-in (routes/webauthn.ts) produces an identical response.",
       "functions": {
         "buildIdentityPayload": {
           "signature": "buildIdentityPayload(userId: string, tokenOrganizationId: string | undefined, tokenRole: 'owner' | 'admin' | 'viewer' | undefined): Promise<IdentityPayload | null>",

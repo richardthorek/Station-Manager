@@ -11,6 +11,7 @@ import {
   generateBrigadeAccessToken,
   revokeBrigadeAccessToken,
 } from '../services/brigadeAccessService';
+import { ensureDeviceDatabase } from '../services/deviceDbFactory';
 import { authHeader } from './helpers/authHelpers';
 
 // Create test Express app
@@ -159,6 +160,26 @@ describe('Brigade Access API Routes', () => {
         });
 
       expect(response.status).toBe(400);
+    });
+
+    it('should include the device name and type for an AC-5 device token', async () => {
+      const device = await ensureDeviceDatabase().create({
+        stationId: 'station-1',
+        type: 'kiosk',
+        name: 'Main shed kiosk',
+        description: 'By the front door',
+      });
+
+      const response = await authAgent
+        .post('/api/brigade-access/validate')
+        .send({ token: device.token });
+
+      expect(response.status).toBe(200);
+      expect(response.body.valid).toBe(true);
+      expect(response.body.name).toBe('Main shed kiosk');
+      expect(response.body.type).toBe('kiosk');
+
+      await ensureDeviceDatabase().clear();
     });
   });
 

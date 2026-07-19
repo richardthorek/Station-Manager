@@ -29,6 +29,12 @@
   box-shadow: var(--shadow-lg);
   flex-shrink: 0;
   position: relative;
+  /* Grid row item of .landing-page's implicit single column: without this,
+     a non-wrapping child (header-actions' row of buttons) can force its
+     "automatic minimum width" contribution onto that column, widening the
+     ENTIRE grid — including <main> and the footer — past the viewport on
+     narrow screens, invisibly clipped by .landing-page's overflow-x:hidden. */
+  min-width: 0;
 }
 
 .header-content {
@@ -168,14 +174,20 @@
   border-color: var(--ui-blue);
 }
 
-.logout-btn {
-  background: rgba(77, 77, 79, 0.2);
-  border-color: rgba(77, 77, 79, 0.4);
+/* AccountMenu / DeviceInfoBadge sit in the dark header, so their default
+   light-card trigger style is overridden here to match the other header-cta
+   "glass" buttons — the dropdown panels themselves stay their normal light
+   card style, same as any other popover surface. */
+.header-actions .account-menu__trigger,
+.header-actions .device-info-badge__trigger {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--rfs-white);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
-.logout-btn:hover {
-  background: rgba(77, 77, 79, 0.3);
-  border-color: var(--rfs-dark-grey);
+.header-actions .account-menu__trigger:hover,
+.header-actions .device-info-badge__trigger:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .landing-main {
@@ -186,7 +198,18 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  min-height: 0;
+  /* min-height: auto (not 0) is deliberate: this is a grid row sized `1fr`
+     inside .landing-page. A grid item's explicit min-height of 0 disables
+     the "automatic minimum size" contribution content normally makes to its
+     track's sizing, so when there are enough cards to wrap to 3 rows the
+     1fr row stayed pinned to the viewport's leftover space instead of
+     growing — the card content then visually overflowed past this box
+     (overflow: visible doesn't create a scrollport) and the footer, painted
+     after it as the next grid row, rendered on top of the overflow instead
+     of being pushed below it. min-height: auto restores that automatic
+     growth so .landing-page's own overflow-y: auto can scroll to it. */
+  min-height: auto;
+  min-width: 0;
   height: 100%;
   overflow: visible;
   position: relative;
@@ -228,6 +251,15 @@
   border: 2px solid transparent;
   position: relative;
   overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.feature-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
 }
 
 .feature-card::before {
@@ -248,7 +280,6 @@
 .feature-card--vehicle::before { background: var(--rfs-neutral-dark); }
 .feature-card--reports::before { background: var(--ui-blue); }
 .feature-card--aar::before { background: var(--accent-amber); }
-.feature-card--admin::before { background: var(--ui-green); }
 .feature-card--suite::before { background: var(--rfs-neutral-dark); }
 
 .feature-card:hover {
@@ -289,12 +320,6 @@
   flex: 1;
 }
 
-.feature-links {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
 .feature-link {
   display: inline-flex;
   align-items: center;
@@ -310,11 +335,6 @@
   align-self: flex-start;
   box-shadow: var(--shadow-sm);
   letter-spacing: 0.3px;
-}
-
-.feature-links .feature-link {
-  width: 100%;
-  justify-content: space-between;
 }
 
 .feature-link:hover {
@@ -338,6 +358,7 @@
   text-align: center;
   border-top: 3px solid var(--rfs-core-red);
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .footer-content {
@@ -377,7 +398,10 @@
 
 @media (max-width: 768px) {
   .landing-page {
-    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
 
   .landing-main {
@@ -385,6 +409,7 @@
     gap: 0.9rem;
     height: auto;
     overflow: visible;
+    max-width: 100%;
   }
 
   .landing-header {
@@ -400,9 +425,15 @@
     width: 100%;
   }
 
+  .brand-block {
+    min-width: 0;
+    flex: 1;
+  }
+
   .brand-mark {
     width: 60px;
     height: 60px;
+    flex-shrink: 0;
   }
 
   .headline {
@@ -415,16 +446,157 @@
 
   .header-actions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .cards-area {
-    align-items: flex-start;
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
   }
 
+  /* Stacked list: every module becomes a compact row (icon + title + one-line
+     description + arrow) instead of a full card, so the whole app list fits
+     without horizontal scrolling and without a long vertical scroll either. */
   .cards-grid {
-    grid-template-columns: 1fr;
-    gap: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+  }
+
+  .feature-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-lg);
+    width: 100%;
+  }
+
+  .feature-card:hover {
+    transform: none;
+  }
+
+  .feature-icon {
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+
+  .feature-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .feature-card h3 {
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .feature-card p {
+    /* One-liner: truncate rather than wrap, so every row is the same height. */
+    display: block;
+    margin: 0.15rem 0 0 0;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: none;
+  }
+
+  /* Text column (h3 + p) grows; the link/arrow stays a fixed-size button
+     pinned to the right of the row. */
+  .feature-body {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    align-items: center;
+    column-gap: 0.6rem;
+    row-gap: 0.35rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .feature-body h3 {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .feature-body p {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .feature-body .feature-link {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .feature-link {
+    padding: 0;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 50%;
+    justify-content: center;
+    align-self: center;
+    gap: 0;
+  }
+
+  .feature-link .link-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .feature-link .arrow {
+    font-size: 1.1rem;
+  }
+
+  /* Locked state has no arrow, so keep the label visible (smaller) as a
+     pill instead of collapsing to an empty circle. */
+  .feature-link--locked {
+    background: transparent;
+    width: auto;
+    min-width: 44px;
+    height: auto;
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.6rem;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .feature-link--locked .link-label {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+    overflow: visible;
+    font-size: 0.7rem;
+    white-space: normal;
+  }
+
+  /* Corner badge moves to top-left (over the icon, which sits well below the
+     card's top edge at this row height) so it can't collide with the
+     right-aligned arrow button. Selector is scoped to .feature-card to
+     out-specificity the unscoped base .suite-badge rule declared later in
+     this file (same specificity would otherwise lose on source order). */
+  .feature-card .suite-badge,
+  .feature-card .coming-soon-badge {
+    top: 2px;
+    left: 2px;
+    right: auto;
+    width: auto;
+    font-size: 0.55rem;
+    padding: 1px 5px;
   }
 
   .landing-footer {

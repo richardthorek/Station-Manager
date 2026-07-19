@@ -10,6 +10,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { OrgSwitcher } from './OrgSwitcher';
+import { AccountMenu } from './AccountMenu';
 import { BrandMark } from './BrandMark';
 import './AdminNav.css';
 
@@ -22,7 +23,7 @@ const ADMIN_LINKS = [
 const PLATFORM_ADMIN_LINK = { to: '/admin/platform', label: 'Platform' };
 
 export function AdminNav() {
-  const { user, logout, isPlatformAdmin } = useAuth();
+  const { isPlatformAdmin } = useAuth();
   const links = isPlatformAdmin ? [...ADMIN_LINKS, PLATFORM_ADMIN_LINK] : ADMIN_LINKS;
 
   return (
@@ -42,14 +43,7 @@ export function AdminNav() {
         ))}
       </div>
       <OrgSwitcher />
-      {user && (
-        <div className="admin-nav__user">
-          <span className="admin-nav__username" title={`Signed in as ${user.username}`}>{user.username}</span>
-          <button type="button" className="admin-nav__logout" onClick={logout}>
-            Sign out
-          </button>
-        </div>
-      )}
+      <AccountMenu />
     </nav>
   );
 }

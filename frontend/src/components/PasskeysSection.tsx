@@ -1,15 +1,19 @@
 /**
- * Passkeys section (account settings) — Station Manager is the suite's sole
- * identity provider, so credential registration/management lives only here.
- * A passkey added here can then be used to sign in from any StationKit app's
- * own login screen (they share the same WebAuthn relying-party ID), not just
- * this one. Additive to username/password — never a replacement.
+ * Passkeys section (personal account settings) — Station Manager is the
+ * suite's sole identity provider, so credential registration/management
+ * lives only here. A passkey added here can then be used to sign in from
+ * any StationKit app's own login screen (they share the same WebAuthn
+ * relying-party ID), not just this one. Additive to username/password —
+ * never a replacement. Rendered on the personal `/account` page — not
+ * Organization (org-level settings) or Station Management, since a passkey
+ * is a credential for this one person, not the org.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import { KeyRound, Trash2, Plus } from 'lucide-react';
-import { api, type Passkey } from '../../../services/api';
+import { api, type Passkey } from '../services/api';
+import './PasskeysSection.css';
 
 function formatDate(iso: string | undefined): string {
   if (!iso) return 'Never';
@@ -64,7 +68,7 @@ export function PasskeysSection() {
   }
 
   return (
-    <section className="org-section">
+    <section className="passkeys-section">
       <h2>
         <KeyRound size={18} strokeWidth={2} aria-hidden style={{ verticalAlign: 'text-bottom', marginRight: '0.35rem' }} />
         Passkeys
@@ -75,24 +79,24 @@ export function PasskeysSection() {
         Your password still works as a fallback.
       </p>
 
-      {error && <div className="org-message org-message--error" role="alert">{error}</div>}
+      {error && <div className="passkeys-message passkeys-message--error" role="alert">{error}</div>}
 
       {passkeys === null ? (
         <p>Loading…</p>
       ) : passkeys.length === 0 ? (
         <p>No passkeys registered yet.</p>
       ) : (
-        <ul className="org-passkey-list">
+        <ul className="passkeys-list">
           {passkeys.map((p) => (
-            <li key={p.id} className="org-passkey-row">
+            <li key={p.id} className="passkeys-row">
               <span>
-                {p.name} <span className="org-passkey-meta">— added {formatDate(p.createdAt)}, last used {formatDate(p.lastUsedAt)}</span>
+                {p.name} <span className="passkeys-meta">— added {formatDate(p.createdAt)}, last used {formatDate(p.lastUsedAt)}</span>
               </span>
               <button
                 type="button"
                 onClick={() => void handleDelete(p.id)}
                 aria-label={`Remove passkey ${p.name}`}
-                className="org-passkey-remove"
+                className="passkeys-remove"
               >
                 <Trash2 size={16} strokeWidth={2} aria-hidden />
               </button>
@@ -101,7 +105,7 @@ export function PasskeysSection() {
         </ul>
       )}
 
-      <button type="button" onClick={() => void handleAdd()} disabled={adding} className="org-btn">
+      <button type="button" onClick={() => void handleAdd()} disabled={adding} className="passkeys-btn">
         <Plus size={16} strokeWidth={2} aria-hidden /> {adding ? 'Adding…' : 'Add a passkey'}
       </button>
     </section>

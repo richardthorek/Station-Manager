@@ -50,10 +50,11 @@ describe('AdminNav', () => {
     expect(screen.getByRole('link', { name: 'Organization' })).not.toHaveClass('admin-nav__link--active');
   });
 
-  it('shows the signed-in username and signs out on click', () => {
+  it('shows the signed-in username in the account menu and signs out on click', () => {
     renderNav();
-    expect(screen.getByText('captain')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /sign out/i }));
+    fireEvent.click(screen.getByRole('button', { name: /account menu for captain/i }));
+    expect(screen.getAllByText('captain').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('menuitem', { name: /sign out/i }));
     expect(logout).toHaveBeenCalled();
   });
 
