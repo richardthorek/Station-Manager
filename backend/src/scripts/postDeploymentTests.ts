@@ -359,18 +359,17 @@ async function testApiStatus(): Promise<void> {
 
 /**
  * Functional Test 3: Get Activities Endpoint
+ *
+ * `GET /api/activities` is protected by `flexibleAuth` (the data-protection
+ * gate). An unauthenticated request must be rejected with 401 — so this smoke
+ * test verifies the gate is actually live in production (a 200 here would mean
+ * activity data is exposed to anonymous callers again).
  */
 async function testGetActivities(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/activities`);
-  
-  if (response.statusCode !== 200) {
-    throw new Error(`Expected status 200, got ${response.statusCode}`);
-  }
 
-  const data = JSON.parse(response.data);
-  
-  if (!Array.isArray(data)) {
-    throw new Error('Expected activities to be an array');
+  if (response.statusCode !== 401) {
+    throw new Error(`Expected 401 (auth-gated), got ${response.statusCode} — activity data must not be readable anonymously`);
   }
 }
 
@@ -392,18 +391,17 @@ async function testGetMembers(): Promise<void> {
 
 /**
  * Functional Test 5: Get Check-ins Endpoint
+ *
+ * `GET /api/checkins` is protected by `flexibleAuth` (the data-protection
+ * gate). An unauthenticated request must be rejected with 401 — so this smoke
+ * test verifies the gate is actually live in production (a 200 here would mean
+ * check-in data is exposed to anonymous callers again).
  */
 async function testGetCheckins(): Promise<void> {
   const response = await makeRequest(`${APP_URL}/api/checkins`);
-  
-  if (response.statusCode !== 200) {
-    throw new Error(`Expected status 200, got ${response.statusCode}`);
-  }
 
-  const data = JSON.parse(response.data);
-  
-  if (!Array.isArray(data)) {
-    throw new Error('Expected checkins to be an array');
+  if (response.statusCode !== 401) {
+    throw new Error(`Expected 401 (auth-gated), got ${response.statusCode} — check-in data must not be readable anonymously`);
   }
 }
 
