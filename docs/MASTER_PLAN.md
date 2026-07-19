@@ -1,6 +1,6 @@
 # RFS Station Manager — Master Plan
 
-**Last updated:** 2026-07-18 · **Status:** Living document — the single plan for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the StationKit suite.
+**Last updated:** 2026-07-19 · **Status:** Living document — the single plan for all three apps (`backend/`, `frontend/`, `aar-studio/`) and the StationKit suite.
 
 ---
 
