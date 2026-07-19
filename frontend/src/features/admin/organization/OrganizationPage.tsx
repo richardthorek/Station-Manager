@@ -7,13 +7,14 @@
  *   brigade). AI can only be enabled on the AI plan (clamped server-side).
  * - List org users and invite new admin/viewer accounts.
  * - Manage subscription via Stripe Customer Portal.
- * - Manage the signed-in user's own passkeys (PasskeysSection) — available to
- *   any authenticated user regardless of role, since it's a personal
- *   credential, not an org-level setting.
+ *
+ * Personal account settings (own passkeys, profile, org-membership switch)
+ * live on the separate `/account` page, not here — this page is org-scoped
+ * settings only (see AccountPage.tsx).
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth, type EntitlementFeature } from '../../../contexts/AuthContext';
 import {
   api,
@@ -25,7 +26,6 @@ import {
 } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
 import { AdminNav } from '../../../components/AdminNav';
-import { PasskeysSection } from './PasskeysSection';
 import './OrganizationPage.css';
 
 const MODULES: { key: EntitlementFeature; label: string; help: string }[] = [
@@ -62,9 +62,6 @@ export function OrganizationPage() {
   const [inviteRole, setInviteRole] = useState<'owner' | 'admin' | 'viewer'>('viewer');
   const [inviteExpiresInDays, setInviteExpiresInDays] = useState(7);
   const [creatingInvite, setCreatingInvite] = useState(false);
-
-  const [profileEmail, setProfileEmail] = useState('');
-  const [savingEmail, setSavingEmail] = useState(false);
 
   const [agencyName, setAgencyName] = useState('');
   const [agencyLogoUrl, setAgencyLogoUrl] = useState('');
@@ -313,20 +310,6 @@ export function OrganizationPage() {
     }
   }
 
-  async function saveProfileEmail(e: React.FormEvent) {
-    e.preventDefault();
-    setSavingEmail(true);
-    try {
-      await api.updateProfile({ email: profileEmail });
-      await refreshOrganization();
-      flash('success', 'Email saved');
-    } catch (err) {
-      flash('error', err instanceof Error ? err.message : 'Could not save email');
-    } finally {
-      setSavingEmail(false);
-    }
-  }
-
   if (!organization) {
     return (
       <div className="org-page">
@@ -367,19 +350,7 @@ export function OrganizationPage() {
 
           {user && !user.email && (
             <div className="org-trial-notice" role="status">
-              <form className="org-email-banner-form" onSubmit={saveProfileEmail}>
-                <span>Add an email to your account — it helps with invites and support.</span>
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={profileEmail}
-                  onChange={(e) => setProfileEmail(e.target.value)}
-                  required
-                />
-                <button className="org-btn" type="submit" disabled={savingEmail}>
-                  {savingEmail ? 'Saving…' : 'Save'}
-                </button>
-              </form>
+              Add an email to your account on the <Link to="/account">My Account</Link> page — it helps with invites and support.
             </div>
           )}
 
@@ -394,8 +365,6 @@ export function OrganizationPage() {
               to keep access after the trial ends.
             </div>
           )}
-
-          <PasskeysSection />
 
           <section className="org-section">
             <h2>Plan</h2>

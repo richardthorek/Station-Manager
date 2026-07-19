@@ -90,7 +90,6 @@ describe('LandingPage', () => {
     expect(screen.getByText('Station Sign-In')).toBeInTheDocument()
     expect(screen.getByText('Vehicle Check')).toBeInTheDocument()
     expect(screen.getByText('Reports & Analytics')).toBeInTheDocument()
-    expect(screen.getByText('Station Management')).toBeInTheDocument()
 
     // Verify all feature links are active and route correctly (v1.1 un-gated)
     expect(screen.getByRole('link', { name: /go to sign-in/i })).toHaveAttribute('href', '/signin')
@@ -100,6 +99,16 @@ describe('LandingPage', () => {
     // Verify the "Coming in v1.1" gating has been removed entirely
     expect(screen.queryByText('Coming in v1.1')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /coming soon/i })).not.toBeInTheDocument()
+  })
+
+  it('surfaces Station Management as a header link, not a card in the app grid', () => {
+    render(<LandingPage />)
+
+    const link = screen.getByRole('link', { name: /station management/i })
+    expect(link).toHaveAttribute('href', '/admin/stations')
+    // The old card had its own heading + Stations/Crew Access sub-links — gone now.
+    expect(screen.queryByRole('link', { name: /^stations$/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /crew access/i })).not.toBeInTheDocument()
   })
 
   it('renders the suite sibling-app launcher cards', () => {

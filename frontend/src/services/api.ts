@@ -1983,6 +1983,20 @@ class ApiService {
     return response.json();
   }
 
+  /** PUT /api/auth/profile/password — change the caller's own password. */
+  async changePassword(input: { currentPassword: string; newPassword: string }): Promise<{ success: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/auth/profile/password`, {
+      method: 'PUT',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to change password');
+    }
+    return response.json();
+  }
+
   // ============================================
   // Platform administration (claim conflicts)
   // ============================================

@@ -536,6 +536,39 @@ router.put('/profile', authMiddleware, async (req: Request, res: Response) => {
 });
 
 /**
+ * PUT /api/auth/profile/password
+ * Change the caller's own password. Requires the current password to
+ * confirm identity (a passkey-only user with no memorable password would
+ * still have one set at signup, since passkeys are additive, never a
+ * replacement — see WebAuthnCredential).
+ */
+router.put('/profile/password', sensitiveActionRateLimiter, authMiddleware, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const { currentPassword, newPassword } = req.body ?? {};
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+      return res.status(400).json({ error: 'currentPassword and newPassword are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+    const adminDb = getAdminDb();
+    const verified = await adminDb.verifyCredentials(req.user.username, currentPassword);
+    if (!verified) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    await adminDb.updatePassword(req.user.userId, newPassword);
+    logger.info('User changed their password', { userId: req.user.userId });
+    return res.json({ success: true });
+  } catch (error) {
+    logger.error('Error changing password', { error });
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * POST /api/auth/switch-org
  * Switch the caller's active organization (multi-org membership). Verifies an
  * active membership in the target org, persists it as the user's default, and

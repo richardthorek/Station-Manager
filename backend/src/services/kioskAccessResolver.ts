@@ -13,14 +13,20 @@
  * that logic lives, so the two token stores never drift out of sync.
  */
 
+import type { DeviceType } from '../types';
 import { validateBrigadeAccessToken } from './brigadeAccessService';
 import { ensureDeviceDatabase } from './deviceDbFactory';
 import { ensureDatabase } from './dbFactory';
 
 export interface ResolvedKioskAccess {
   stationId: string;
+  stationName?: string;
   brigadeId?: string;
   deviceId?: string;
+  /** Device account name (e.g. "Main shed kiosk") — undefined for a legacy anonymous token. */
+  name?: string;
+  /** Device account type — undefined for a legacy anonymous token. */
+  type?: DeviceType;
   description?: string;
   createdAt?: Date;
   expiresAt?: Date;
@@ -39,8 +45,11 @@ export async function resolveKioskAccess(token: string): Promise<ResolvedKioskAc
     const station = await mainDb.getStationById(device.stationId);
     return {
       stationId: device.stationId,
+      stationName: station?.name,
       brigadeId: station?.brigadeId,
       deviceId: device.id,
+      name: device.name,
+      type: device.type,
       description: device.description,
       createdAt: device.createdAt,
       expiresAt: device.expiresAt,
@@ -49,8 +58,11 @@ export async function resolveKioskAccess(token: string): Promise<ResolvedKioskAc
 
   const legacy = validateBrigadeAccessToken(token);
   if (legacy) {
+    const mainDb = await ensureDatabase();
+    const station = await mainDb.getStationById(legacy.stationId);
     return {
       stationId: legacy.stationId,
+      stationName: station?.name,
       brigadeId: legacy.brigadeId,
       description: legacy.description,
       createdAt: legacy.createdAt,

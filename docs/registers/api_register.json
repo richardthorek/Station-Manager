@@ -5110,6 +5110,21 @@
               "stationId": {
                 "type": "string"
               },
+              "stationName": {
+                "type": "string",
+                "nullable": true
+              },
+              "name": {
+                "type": "string",
+                "nullable": true,
+                "description": "AC-5 device account name (e.g. \"Main shed kiosk\") — undefined for a legacy anonymous BrigadeAccessToken"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["kiosk", "tablet", "phone", "wearable"],
+                "nullable": true,
+                "description": "AC-5 device type — undefined for a legacy anonymous BrigadeAccessToken"
+              },
               "description": {
                 "type": "string",
                 "nullable": true
@@ -7160,6 +7175,41 @@
         },
         "404": {
           "description": "User not found"
+        }
+      },
+      "implementation": "backend/src/routes/auth.ts"
+    },
+    "PUT /api/auth/profile/password": {
+      "method": "PUT",
+      "path": "/api/auth/profile/password",
+      "description": "Change the caller's own password. Requires the current password to confirm identity — additive to passkey sign-in, never a replacement for it.",
+      "authentication": "Bearer JWT",
+      "rateLimit": "sensitive-action limiter",
+      "requestBody": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "responses": {
+        "200": {
+          "description": "{ success: true }"
+        },
+        "400": {
+          "description": "Missing fields, or newPassword shorter than 8 characters"
+        },
+        "401": {
+          "description": "Not authenticated, or currentPassword is incorrect"
         }
       },
       "implementation": "backend/src/routes/auth.ts"

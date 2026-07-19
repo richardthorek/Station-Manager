@@ -30,6 +30,7 @@ const SignupPage = lazy(() => import('./features/auth/SignupPage').then(m => ({ 
 const ActivatePage = lazy(() => import('./features/auth/ActivatePage').then(m => ({ default: m.ActivatePage })));
 const OrgInvitePage = lazy(() => import('./features/auth/OrgInvitePage').then(m => ({ default: m.OrgInvitePage })));
 const OrganizationPage = lazy(() => import('./features/admin/organization/OrganizationPage').then(m => ({ default: m.OrganizationPage })));
+const AccountPage = lazy(() => import('./features/account/AccountPage').then(m => ({ default: m.AccountPage })));
 const PlatformAdminPage = lazy(() => import('./features/admin/platform/PlatformAdminPage').then(m => ({ default: m.PlatformAdminPage })));
 
 // Truck Check routes (v1.1)
@@ -87,6 +88,7 @@ function AnimatedRoutes() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/activate/:token" element={<ActivatePage />} />
         <Route path="/invite/:token" element={<OrgInvitePage />} />
+        <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
 
         {/* Sign-In — AccessRoute first (must arrive with a brigade code, an account,
             or the demo), then the signInEnabled entitlement (maintenance-only brigades can hide it) */}

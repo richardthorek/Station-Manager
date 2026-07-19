@@ -1,28 +1,33 @@
 /**
  * Landing Page Component
  *
- * The logged-in hub — and the StationKit suite app-launcher. Surfaces
- * Station Manager's own modules (sign-in, truck check, reports, AAR Studio,
- * admin) plus the sibling suite apps (Fire Santa Run, Fire Break Calculator),
- * each unlocked by the org's entitlements.
+ * The logged-in hub — and the StationKit suite app-launcher. The card grid
+ * is apps/features only: Station Manager's own modules (sign-in, truck
+ * check, reports, AAR Studio) plus the sibling suite apps (Fire Santa Run,
+ * Fire Break Calculator), each unlocked by the org's entitlements. Station
+ * Management (Stations/Crew Access admin) is deliberately NOT a card here —
+ * it's a "Station Management" header link next to AccountMenu, since it's an
+ * admin action, not an app a member opens day-to-day.
  */
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn, Truck, BarChart3, Mic, Settings2, GraduationCap, LockKeyhole, LogOut, Moon, Sun, Lock, Heart, HelpCircle } from 'lucide-react';
+import { LogIn, Truck, BarChart3, Mic, Settings2, GraduationCap, LockKeyhole, Moon, Sun, Lock, Heart, HelpCircle } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../contexts/AuthContext';
 import { OnboardingWizard } from '../../components/OnboardingWizard';
 import { PageTransition } from '../../components/PageTransition';
 import { DeviceSetupGuide } from '../../components/DeviceSetupGuide';
+import { AccountMenu } from '../../components/AccountMenu';
+import { DeviceInfoBadge } from '../../components/DeviceInfoBadge';
 import { staggerVariants, getVariants, getTransition, transitions } from '../../utils/animations';
 import { SUITE_SIBLING_APPS } from '../../config/suiteApps';
 import './LandingPage.css';
 
 export function LandingPage() {
   const { theme, toggleTheme } = useTheme();
-  const { isAuthenticated, user, logout, requireAuth, hasFeature, entitlements } = useAuth();
+  const { isAuthenticated, user, requireAuth, hasFeature, entitlements } = useAuth();
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
@@ -30,11 +35,6 @@ export function LandingPage() {
   const containerVariants = getVariants(staggerVariants.container);
   const itemVariants = getVariants(staggerVariants.item);
   const itemTransition = getTransition(transitions.standard);
-
-  const handleLogout = () => {
-    logout();
-    // Optionally show a toast notification
-  };
 
   // A core module is "locked" only when we have entitlement context AND the org
   // lacks the feature. With no entitlements (single-tenant / kiosk back-compat)
@@ -112,17 +112,14 @@ export function LandingPage() {
                 <span className="btn-text">Admin Login</span>
               </button>
             )}
-            {isAuthenticated && user && (
-              <button
-                className="header-cta logout-btn"
-                onClick={handleLogout}
-                aria-label={`Logout ${user.username}`}
-                title={`Logged in as ${user.username}`}
-              >
-                <span className="btn-icon"><LogOut size={20} strokeWidth={2} aria-hidden /></span>
-                <span className="btn-text">Logout</span>
-              </button>
+            {(!requireAuth || isAuthenticated) && (
+              <Link to="/admin/stations" className="header-cta">
+                <span className="btn-icon"><Settings2 size={20} strokeWidth={2} aria-hidden /></span>
+                <span className="btn-text">Station Management</span>
+              </Link>
             )}
+            <DeviceInfoBadge />
+            {isAuthenticated && user && <AccountMenu />}
             <button
               type="button"
               className="theme-toggle-btn"
@@ -203,34 +200,6 @@ export function LandingPage() {
                     <span className="link-label">Go to AAR Studio</span>
                     <span className="arrow" aria-hidden="true">→</span>
                   </a>
-                )}
-              </div>
-            </motion.article>
-
-            <motion.article
-              className="feature-card feature-card--admin"
-              variants={itemVariants}
-              transition={itemTransition}
-            >
-              <div className="feature-icon" aria-hidden="true"><Settings2 size={32} strokeWidth={2} /></div>
-              <div className="feature-body">
-                <h3>Station Management</h3>
-                <p>Admin portal for managing stations, viewing statistics, and configuring settings.</p>
-                {(!requireAuth || isAuthenticated) ? (
-                  <div className="feature-links">
-                    <Link to="/admin/stations" className="feature-link">
-                      <span className="link-label">Stations</span>
-                      <span className="arrow" aria-hidden="true">→</span>
-                    </Link>
-                    <Link to="/admin/brigade-access" className="feature-link">
-                      <span className="link-label">Crew Access</span>
-                      <span className="arrow" aria-hidden="true">→</span>
-                    </Link>
-                  </div>
-                ) : (
-                  <p className="auth-required-msg" style={{ marginTop: '1rem', fontSize: '0.875rem', opacity: 0.7 }}>
-                    Authentication required to access station management
-                  </p>
                 )}
               </div>
             </motion.article>

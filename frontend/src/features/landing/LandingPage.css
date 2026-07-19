@@ -29,6 +29,12 @@
   box-shadow: var(--shadow-lg);
   flex-shrink: 0;
   position: relative;
+  /* Grid row item of .landing-page's implicit single column: without this,
+     a non-wrapping child (header-actions' row of buttons) can force its
+     "automatic minimum width" contribution onto that column, widening the
+     ENTIRE grid — including <main> and the footer — past the viewport on
+     narrow screens, invisibly clipped by .landing-page's overflow-x:hidden. */
+  min-width: 0;
 }
 
 .header-content {
@@ -168,14 +174,20 @@
   border-color: var(--ui-blue);
 }
 
-.logout-btn {
-  background: rgba(77, 77, 79, 0.2);
-  border-color: rgba(77, 77, 79, 0.4);
+/* AccountMenu / DeviceInfoBadge sit in the dark header, so their default
+   light-card trigger style is overridden here to match the other header-cta
+   "glass" buttons — the dropdown panels themselves stay their normal light
+   card style, same as any other popover surface. */
+.header-actions .account-menu__trigger,
+.header-actions .device-info-badge__trigger {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--rfs-white);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
-.logout-btn:hover {
-  background: rgba(77, 77, 79, 0.3);
-  border-color: var(--rfs-dark-grey);
+.header-actions .account-menu__trigger:hover,
+.header-actions .device-info-badge__trigger:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .landing-main {
@@ -186,7 +198,18 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  min-height: 0;
+  /* min-height: auto (not 0) is deliberate: this is a grid row sized `1fr`
+     inside .landing-page. A grid item's explicit min-height of 0 disables
+     the "automatic minimum size" contribution content normally makes to its
+     track's sizing, so when there are enough cards to wrap to 3 rows the
+     1fr row stayed pinned to the viewport's leftover space instead of
+     growing — the card content then visually overflowed past this box
+     (overflow: visible doesn't create a scrollport) and the footer, painted
+     after it as the next grid row, rendered on top of the overflow instead
+     of being pushed below it. min-height: auto restores that automatic
+     growth so .landing-page's own overflow-y: auto can scroll to it. */
+  min-height: auto;
+  min-width: 0;
   height: 100%;
   overflow: visible;
   position: relative;
@@ -257,7 +280,6 @@
 .feature-card--vehicle::before { background: var(--rfs-neutral-dark); }
 .feature-card--reports::before { background: var(--ui-blue); }
 .feature-card--aar::before { background: var(--accent-amber); }
-.feature-card--admin::before { background: var(--ui-green); }
 .feature-card--suite::before { background: var(--rfs-neutral-dark); }
 
 .feature-card:hover {
@@ -298,12 +320,6 @@
   flex: 1;
 }
 
-.feature-links {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
 .feature-link {
   display: inline-flex;
   align-items: center;
@@ -319,11 +335,6 @@
   align-self: flex-start;
   box-shadow: var(--shadow-sm);
   letter-spacing: 0.3px;
-}
-
-.feature-links .feature-link {
-  width: 100%;
-  justify-content: space-between;
 }
 
 .feature-link:hover {
@@ -347,6 +358,7 @@
   text-align: center;
   border-top: 3px solid var(--rfs-core-red);
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .footer-content {
@@ -434,7 +446,8 @@
 
   .header-actions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .cards-area {
@@ -521,24 +534,6 @@
     grid-row: 1 / span 2;
   }
 
-  /* Multiple actions (e.g. admin's Stations / Crew Access) get their own
-     full-width row below the description instead of squeezing into the
-     narrow side column and wrapping the title. */
-  .feature-body .feature-links {
-    grid-column: 1 / -1;
-    grid-row: 3;
-  }
-
-  .feature-body .auth-required-msg {
-    grid-column: 1 / -1;
-  }
-
-  .feature-links {
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 0.4rem;
-  }
-
   .feature-link {
     padding: 0;
     width: 44px;
@@ -548,10 +543,6 @@
     justify-content: center;
     align-self: center;
     gap: 0;
-  }
-
-  .feature-links .feature-link {
-    width: 44px;
   }
 
   .feature-link .link-label {
@@ -591,37 +582,6 @@
     overflow: visible;
     font-size: 0.7rem;
     white-space: normal;
-  }
-
-  /* The admin card has two distinct actions (Stations / Crew Access) — an
-     icon-only circle can't tell them apart, so keep these as labelled pills
-     instead of collapsing to identical arrow circles. */
-  .feature-links {
-    justify-content: flex-end;
-    flex-wrap: wrap;
-  }
-
-  .feature-links .feature-link {
-    width: auto;
-    height: auto;
-    min-width: 0;
-    border-radius: var(--radius-sm);
-    padding: 0.45rem 0.65rem;
-    gap: 0.35rem;
-  }
-
-  .feature-links .feature-link .link-label {
-    position: static;
-    width: auto;
-    height: auto;
-    clip: auto;
-    overflow: visible;
-    font-size: 0.72rem;
-    white-space: nowrap;
-  }
-
-  .feature-links .feature-link .arrow {
-    font-size: 0.85rem;
   }
 
   /* Corner badge moves to top-left (over the icon, which sits well below the

@@ -1,0 +1,69 @@
+.passkeys-section h2 {
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+}
+
+.passkeys-message {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.passkeys-message--error {
+  background: var(--surface-error);
+  color: var(--text-error-strong);
+}
+
+.passkeys-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.passkeys-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
+
+.passkeys-meta {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.passkeys-remove {
+  background: none;
+  border: none;
+  color: var(--rfs-dark-grey);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+}
+
+.passkeys-remove:hover {
+  color: var(--rfs-core-red);
+}
+
+.passkeys-btn {
+  padding: 0.5rem 1rem;
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.passkeys-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

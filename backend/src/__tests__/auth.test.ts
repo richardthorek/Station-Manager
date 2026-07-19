@@ -364,4 +364,66 @@ describe('Authentication Routes', () => {
       expect(res.body.organization.id).toBe(org.id);
     });
   });
+
+  describe('PUT /api/auth/profile/password', () => {
+    async function loginAs(username: string, password: string): Promise<string> {
+      const res = await request(app).post('/api/auth/login').send({ username, password });
+      return res.body.token;
+    }
+
+    it('returns 401 with no token', async () => {
+      const res = await request(app)
+        .put('/api/auth/profile/password')
+        .send({ currentPassword: 'a', newPassword: 'newPassword123' });
+      expect(res.status).toBe(401);
+    });
+
+    it('returns 401 when the current password is wrong', async () => {
+      await adminDb.createAdminUser('pwuser', 'correctPassword1', 'admin');
+      const token = await loginAs('pwuser', 'correctPassword1');
+
+      const res = await request(app)
+        .put('/api/auth/profile/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentPassword: 'wrongPassword', newPassword: 'newPassword123' });
+
+      expect(res.status).toBe(401);
+      expect(res.body.error).toBe('Current password is incorrect');
+    });
+
+    it('returns 400 when the new password is too short', async () => {
+      await adminDb.createAdminUser('pwuser2', 'correctPassword1', 'admin');
+      const token = await loginAs('pwuser2', 'correctPassword1');
+
+      const res = await request(app)
+        .put('/api/auth/profile/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentPassword: 'correctPassword1', newPassword: 'short' });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('changes the password and the new one signs in afterwards', async () => {
+      await adminDb.createAdminUser('pwuser3', 'correctPassword1', 'admin');
+      const token = await loginAs('pwuser3', 'correctPassword1');
+
+      const changeRes = await request(app)
+        .put('/api/auth/profile/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentPassword: 'correctPassword1', newPassword: 'newPassword456' });
+
+      expect(changeRes.status).toBe(200);
+      expect(changeRes.body.success).toBe(true);
+
+      const oldLogin = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'pwuser3', password: 'correctPassword1' });
+      expect(oldLogin.status).toBe(401);
+
+      const newLogin = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'pwuser3', password: 'newPassword456' });
+      expect(newLogin.status).toBe(200);
+    });
+  });
 });
