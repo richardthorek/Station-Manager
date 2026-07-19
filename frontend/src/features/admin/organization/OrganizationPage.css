@@ -235,6 +235,27 @@
   text-align: left;
   padding: 0.5rem;
   border-bottom: 1px solid var(--border-color);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 640px) {
+  .org-users {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .org-users th, .org-users td {
+    min-width: 80px;
+  }
+
+  .org-users th:nth-child(2),
+  .org-users td:nth-child(2) {
+    min-width: 160px;
+    word-break: break-all;
+    font-size: 0.85rem;
+  }
 }
 
 .org-adduser {

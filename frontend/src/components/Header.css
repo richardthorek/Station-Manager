@@ -304,24 +304,24 @@
     gap: 0.5rem;
     flex-wrap: nowrap;
   }
-  
+
   .header-logo {
     gap: 8px;
   }
-  
+
   .logo-icon {
     font-size: 1.5rem;
   }
-  
+
   .header-logo h1 {
     font-size: 1.1rem;
   }
-  
-  /* Hide status text on smaller screens, keep icons */
+
+  /* Hide status text on smaller screens, keep icons only */
   .status-text {
     display: none;
   }
-  
+
   /* Adjust button sizes */
   .theme-toggle-btn,
   .admin-menu-btn {
@@ -329,18 +329,25 @@
     height: 36px;
     font-size: 1.1rem;
   }
-  
+
+  /* Make status indicators icon-only (no padding/text) */
   .status-indicator {
-    padding: 6px 10px;
+    padding: 6px;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  
+
   /* Make station selector take available space */
   .header-center {
     flex: 1 1 auto;
     max-width: 250px;
     min-width: 0;
   }
-  
+
   /* Hide demo badge on very small screens */
   .demo-badge {
     display: none;

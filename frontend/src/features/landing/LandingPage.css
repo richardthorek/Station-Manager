@@ -448,6 +448,20 @@
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .header-cta {
+    font-size: 0.8rem;
+    padding: 0.6rem 0.9rem;
+  }
+
+  .header-cta .btn-text {
+    display: none;
+  }
+
+  .header-cta .btn-icon {
+    display: inline-flex;
   }
 
   .cards-area {

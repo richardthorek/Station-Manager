@@ -31,9 +31,9 @@ export interface Entitlements {
   maxMembers?: number;
   maxVehicles?: number;
   aiIncludedSessions: number;
-  aarStudioEnabled?: boolean;
-  santaRunEnabled?: boolean;
-  fireBreakEnabled?: boolean;
+  aarStudioEnabled: boolean;
+  santaRunEnabled: boolean;
+  fireBreakEnabled: boolean;
 }
 
 export interface Organization {
