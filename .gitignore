@@ -21,6 +21,12 @@ local.settings.json
 *.swo
 *~
 
+# Claude Code — commit shared config (.claude/settings.json, commands, skills),
+# ignore personal/local overrides
+.claude/settings.local.json
+CLAUDE.local.md
+.claude/projects/
+
 # OS
 .DS_Store
 Thumbs.db
