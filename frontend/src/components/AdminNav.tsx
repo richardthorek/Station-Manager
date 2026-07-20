@@ -29,7 +29,7 @@ export function AdminNav() {
   return (
     <nav className="admin-nav" aria-label="Admin">
       <Link to="/" className="admin-nav__home" aria-label="Back to StationKit home">
-        <BrandMark size={20} /> StationKit
+        <BrandMark size={20} /> <span className="admin-nav__home-label">StationKit</span>
       </Link>
       <div className="admin-nav__links">
         {links.map((link) => (
@@ -42,8 +42,10 @@ export function AdminNav() {
           </NavLink>
         ))}
       </div>
-      <OrgSwitcher />
-      <AccountMenu />
+      <div className="admin-nav__actions">
+        <OrgSwitcher />
+        <AccountMenu />
+      </div>
     </nav>
   );
 }

@@ -78,3 +78,15 @@
   color: var(--text-secondary);
   text-transform: capitalize;
 }
+
+@media (max-width: 768px) {
+  .org-switcher__trigger {
+    gap: 0.3rem;
+    padding: 0 0.6rem;
+    max-width: none;
+  }
+
+  .org-switcher__label {
+    display: none;
+  }
+}

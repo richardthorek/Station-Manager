@@ -100,3 +100,15 @@
 .account-menu__item--danger {
   color: var(--rfs-core-red);
 }
+
+@media (max-width: 768px) {
+  .account-menu__trigger {
+    gap: 0.3rem;
+    padding: 0.3rem 0.5rem 0.3rem 0.3rem;
+    max-width: none;
+  }
+
+  .account-menu__label {
+    display: none;
+  }
+}

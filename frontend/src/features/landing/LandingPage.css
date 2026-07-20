@@ -449,6 +449,15 @@
     justify-content: flex-start;
     flex-wrap: wrap;
     gap: 0.5rem;
+    /* AccountMenu's dropdown is `position: absolute; right: 0` relative to
+       its own trigger. On this row the trigger can land anywhere (wrapped
+       icon-only buttons), so anchoring here instead keeps the dropdown
+       within the viewport's right edge instead of overflowing off-screen. */
+    position: relative;
+  }
+
+  .header-actions .account-menu {
+    position: static;
   }
 
   .header-cta {
