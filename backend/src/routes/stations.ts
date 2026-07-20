@@ -152,7 +152,7 @@ router.get('/count', optionalAuth, async (req, res) => {
 router.get('/check-brigade/:brigadeId', optionalAuth, validateBrigadeId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const stations = await db.getStationsByBrigade(req.params.brigadeId);
+    const stations = await db.getStationsByBrigade(req.params.brigadeId as string);
     
     // Only consider active stations
     const activeStations = stations.filter(s => s.isActive);
@@ -185,7 +185,7 @@ router.get('/check-brigade/:brigadeId', optionalAuth, validateBrigadeId, handleV
 router.get('/brigade/:brigadeId', optionalAuth, validateBrigadeId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const stations = await db.getStationsByBrigade(req.params.brigadeId);
+    const stations = await db.getStationsByBrigade(req.params.brigadeId as string);
     
     // Sort by name
     stations.sort((a, b) => a.name.localeCompare(b.name));
@@ -272,7 +272,7 @@ router.get('/', optionalAuth, attachOrganization, validateStationQuery, handleVa
 router.get('/:id', optionalAuth, validateStationId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const station = await db.getStationById(req.params.id);
+    const station = await db.getStationById(req.params.id as string);
     
     if (!station) {
       return res.status(404).json({ error: 'Station not found' });
@@ -352,7 +352,7 @@ router.post('/', optionalAuth, attachOrganization, enforceStationLimit(), valida
 router.put('/:id', optionalAuth, validateStationId, validateUpdateStation, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     const updates = {
       name: req.body.name,
@@ -397,7 +397,7 @@ router.put('/:id', optionalAuth, validateStationId, validateUpdateStation, handl
 router.delete('/:id', optionalAuth, validateStationId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     // Check if station has any data
     const members = await db.getAllMembers(id);

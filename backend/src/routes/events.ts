@@ -98,7 +98,7 @@ router.get('/active', async (req, res) => {
 router.get('/:eventId', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const stationId = getStationIdFromRequest(req);
     const event = await db.getEventWithParticipants(eventId);
     
@@ -112,7 +112,7 @@ router.get('/:eventId', validateEventId, handleValidationErrors, async (req: Req
     
     res.json(event);
   } catch (error) {
-    logger.error('Error fetching event', { error, eventId: req.params.id, requestId: req.id });
+    logger.error('Error fetching event', { error, eventId: req.params.id as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to fetch event' });
   }
 });
@@ -151,7 +151,7 @@ router.post('/', validateCreateEvent, handleValidationErrors, async (req: Reques
 router.put('/:eventId/end', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const stationId = getStationIdFromRequest(req);
     const existingEvent = await db.getEventById(eventId);
 
@@ -167,7 +167,7 @@ router.put('/:eventId/end', validateEventId, handleValidationErrors, async (req:
     const eventWithParticipants = await db.getEventWithParticipants(event.id);
     res.json(eventWithParticipants);
   } catch (error) {
-    logger.error('Error ending event', { error, eventId: req.params.id, requestId: req.id });
+    logger.error('Error ending event', { error, eventId: req.params.id as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to end event' });
   }
 });
@@ -178,7 +178,7 @@ router.put('/:eventId/end', validateEventId, handleValidationErrors, async (req:
 router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const stationId = getStationIdFromRequest(req);
     const existingEvent = await db.getEventById(eventId);
 
@@ -214,7 +214,7 @@ router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, asyn
     const eventWithParticipants = await db.getEventWithParticipants(event.id);
     res.json(eventWithParticipants);
   } catch (error) {
-    logger.error('Error reactivating event', { error, eventId: req.params.id, requestId: req.id });
+    logger.error('Error reactivating event', { error, eventId: req.params.id as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to reactivate event' });
   }
 });
@@ -225,7 +225,7 @@ router.put('/:eventId/reactivate', validateEventId, handleValidationErrors, asyn
 router.post('/:eventId/participants', validateAddParticipant, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const { memberId, method, location, isOffsite, performedBy, notes } = req.body;
     const stationId = getStationIdFromRequest(req);
     
@@ -314,7 +314,7 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
       participant,
     });
   } catch (error) {
-    logger.error('Error adding participant', { error, eventId: req.params.id, requestId: req.id });
+    logger.error('Error adding participant', { error, eventId: req.params.id as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to add participant' });
   }
 });
@@ -331,7 +331,7 @@ router.post('/:eventId/participants', validateAddParticipant, handleValidationEr
 router.post('/:eventId/visitors', validateAddVisitor, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const { name, method, location, isOffsite, performedBy, notes } = req.body;
     const stationId = getStationIdFromRequest(req);
 
@@ -391,7 +391,7 @@ router.post('/:eventId/visitors', validateAddVisitor, handleValidationErrors, as
       participant,
     });
   } catch (error) {
-    logger.error('Error adding visitor', { error, eventId: req.params.eventId, requestId: req.id });
+    logger.error('Error adding visitor', { error, eventId: req.params.eventId as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to add visitor' });
   }
 });
@@ -402,7 +402,8 @@ router.post('/:eventId/visitors', validateAddVisitor, handleValidationErrors, as
 router.delete('/:eventId/participants/:participantId', validateRemoveParticipant, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { eventId, participantId } = req.params;
+    const eventId = req.params.eventId as string;
+      const participantId = req.params.participantId as string;
     const { performedBy, notes } = req.body || {}; // Handle empty body for DELETE
     const stationId = getStationIdFromRequest(req);
 
@@ -450,7 +451,7 @@ router.delete('/:eventId/participants/:participantId', validateRemoveParticipant
     
     res.json({ message: 'Participant removed successfully' });
   } catch (error) {
-    logger.error('Error removing participant', { error, eventId: req.params.eventId, participantId: req.params.participantId, requestId: req.id });
+    logger.error('Error removing participant', { error, eventId: req.params.eventId as string, participantId: req.params.participantId as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to remove participant' });
   }
 });
@@ -462,7 +463,7 @@ router.delete('/:eventId/participants/:participantId', validateRemoveParticipant
 router.get('/:eventId/audit', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const stationId = getStationIdFromRequest(req);
     
     // Verify event exists
@@ -480,7 +481,7 @@ router.get('/:eventId/audit', validateEventId, handleValidationErrors, async (re
       logs: auditLogs,
     });
   } catch (error) {
-    logger.error('Error fetching event audit logs', { error, eventId: req.params.eventId, requestId: req.id });
+    logger.error('Error fetching event audit logs', { error, eventId: req.params.eventId as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to fetch audit logs' });
   }
 });
@@ -491,7 +492,7 @@ router.get('/:eventId/audit', validateEventId, handleValidationErrors, async (re
 router.delete('/:eventId', validateEventId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     const stationId = getStationIdFromRequest(req);
 
     const existingEvent = await db.getEventById(eventId);
@@ -507,7 +508,7 @@ router.delete('/:eventId', validateEventId, handleValidationErrors, async (req: 
     
     res.json({ message: 'Event deleted successfully', event });
   } catch (error) {
-    logger.error('Error deleting event', { error, eventId: req.params.id, requestId: req.id });
+    logger.error('Error deleting event', { error, eventId: req.params.id as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to delete event' });
   }
 });

@@ -62,14 +62,14 @@ router.get('/:id', async (req: Request, res: Response) => {
   const organizationId = requireOrgId(req, res);
   if (!organizationId) return;
   try {
-    const session = await ensureAarSessionDatabase().getById(organizationId, req.params.id);
+    const session = await ensureAarSessionDatabase().getById(organizationId, req.params.id as string);
     if (!session) {
       res.status(404).json({ error: 'Review not found' });
       return;
     }
     res.json({ session });
   } catch (error) {
-    logger.error('Failed to fetch AAR session', { error, organizationId, id: req.params.id });
+    logger.error('Failed to fetch AAR session', { error, organizationId, id: req.params.id as string });
     res.status(500).json({ error: 'Failed to fetch review' });
   }
 });
@@ -96,7 +96,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 
   try {
     const session = await ensureAarSessionDatabase().upsert({
-      id: req.params.id,
+      id: req.params.id as string,
       organizationId,
       stationId: typeof stationId === 'string' ? stationId : undefined,
       title: typeof title === 'string' && title.trim() ? title.slice(0, MAX_TITLE_CHARS) : 'Untitled review',
@@ -115,7 +115,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       res.status(409).json({ error: 'This review was updated more recently on another device', current });
       return;
     }
-    logger.error('Failed to save AAR session', { error, organizationId, id: req.params.id });
+    logger.error('Failed to save AAR session', { error, organizationId, id: req.params.id as string });
     res.status(500).json({ error: 'Failed to save review' });
   }
 });
@@ -125,14 +125,14 @@ router.delete('/:id', async (req: Request, res: Response) => {
   const organizationId = requireOrgId(req, res);
   if (!organizationId) return;
   try {
-    const deleted = await ensureAarSessionDatabase().delete(organizationId, req.params.id);
+    const deleted = await ensureAarSessionDatabase().delete(organizationId, req.params.id as string);
     if (!deleted) {
       res.status(404).json({ error: 'Review not found' });
       return;
     }
     res.json({ success: true });
   } catch (error) {
-    logger.error('Failed to delete AAR session', { error, organizationId, id: req.params.id });
+    logger.error('Failed to delete AAR session', { error, organizationId, id: req.params.id as string });
     res.status(500).json({ error: 'Failed to delete review' });
   }
 });

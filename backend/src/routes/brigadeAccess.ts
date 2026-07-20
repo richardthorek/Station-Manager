@@ -188,7 +188,7 @@ router.delete(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
-      const { token } = req.params;
+      const token = req.params.token as string;
       
       const revoked = revokeBrigadeAccessToken(token);
       
@@ -232,7 +232,7 @@ router.get(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
-      const { brigadeId } = req.params;
+      const brigadeId = req.params.brigadeId as string;
       
       const tokens = getBrigadeAccessTokens(brigadeId);
       
@@ -276,7 +276,7 @@ router.get(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
-      const { stationId } = req.params;
+      const stationId = req.params.stationId as string;
       
       const tokens = getStationAccessTokens(stationId);
       

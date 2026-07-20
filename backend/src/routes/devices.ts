@@ -119,14 +119,14 @@ router.patch(
   async (req: Request, res: Response) => {
     try {
       const db = ensureDeviceDatabase();
-      const existing = await db.getById(req.params.id);
+      const existing = await db.getById(req.params.id as string);
       if (!existing) return res.status(404).json({ error: 'Device not found' });
       if (existing.organizationId && existing.organizationId !== req.user?.organizationId) {
         return res.status(403).json({ error: 'You can only manage devices your organisation owns' });
       }
 
       const { name, description, status } = req.body ?? {};
-      const updated = await db.update(req.params.id, {
+      const updated = await db.update(req.params.id as string, {
         ...(name !== undefined ? { name } : {}),
         ...(description !== undefined ? { description } : {}),
         ...(status !== undefined ? { status } : {}),
@@ -152,7 +152,7 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const db = ensureDeviceDatabase();
-      const device = await db.getById(req.params.id);
+      const device = await db.getById(req.params.id as string);
       if (!device) return res.status(404).json({ error: 'Device not found' });
       if (device.organizationId && device.organizationId !== req.user?.organizationId) {
         return res.status(403).json({ error: 'You can only view QR codes for devices your organisation owns' });
@@ -184,12 +184,12 @@ router.delete(
   async (req: Request, res: Response) => {
     try {
       const db = ensureDeviceDatabase();
-      const existing = await db.getById(req.params.id);
+      const existing = await db.getById(req.params.id as string);
       if (!existing) return res.status(404).json({ error: 'Device not found' });
       if (existing.organizationId && existing.organizationId !== req.user?.organizationId) {
         return res.status(403).json({ error: 'You can only remove devices your organisation owns' });
       }
-      await db.delete(req.params.id);
+      await db.delete(req.params.id as string);
       res.status(204).send();
     } catch (error) {
       logger.error('Error deleting device:', error);

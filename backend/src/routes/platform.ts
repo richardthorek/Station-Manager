@@ -116,7 +116,7 @@ router.get('/organizations', async (_req: Request, res: Response) => {
 router.get('/organizations/:id', async (req: Request, res: Response) => {
   try {
     const orgDb = ensureOrganizationDatabase();
-    const org = await orgDb.getOrganizationById(req.params.id);
+    const org = await orgDb.getOrganizationById(req.params.id as string);
     if (!org) {
       return res.status(404).json({ error: 'Organization not found' });
     }
@@ -228,7 +228,7 @@ router.post('/claim-conflicts/:id/resolve', async (req: Request, res: Response) 
 
     const orgAccessDb = ensureOrgAccessDatabase();
     const conflicts = await orgAccessDb.getClaimConflicts();
-    const conflict = conflicts.find((c) => c.id === req.params.id);
+    const conflict = conflicts.find((c) => c.id === req.params.id as string);
     if (!conflict) {
       return res.status(404).json({ error: 'Conflict not found' });
     }
@@ -350,7 +350,7 @@ router.patch('/stations/:id/organization', async (req: Request, res: Response) =
 
     const db = await ensureDatabase();
     const allStations = await db.getAllStations();
-    const station = allStations.find((s) => s.id === req.params.id);
+    const station = allStations.find((s) => s.id === req.params.id as string);
     if (!station) {
       return res.status(404).json({ error: 'Station not found' });
     }
@@ -394,7 +394,7 @@ router.patch('/stations/:id/organization', async (req: Request, res: Response) =
 router.patch('/organizations/:id', async (req: Request, res: Response) => {
   try {
     const orgDb = ensureOrganizationDatabase();
-    const org = await orgDb.getOrganizationById(req.params.id);
+    const org = await orgDb.getOrganizationById(req.params.id as string);
     if (!org) {
       return res.status(404).json({ error: 'Organization not found' });
     }
@@ -468,7 +468,7 @@ router.patch('/organizations/:id', async (req: Request, res: Response) => {
 router.delete('/organizations/:id', async (req: Request, res: Response) => {
   try {
     const orgDb = ensureOrganizationDatabase();
-    const org = await orgDb.getOrganizationById(req.params.id);
+    const org = await orgDb.getOrganizationById(req.params.id as string);
     if (!org) {
       return res.status(404).json({ error: 'Organization not found' });
     }
@@ -514,7 +514,7 @@ router.delete('/organizations/:id', async (req: Request, res: Response) => {
 router.post('/organizations/:id/members', async (req: Request, res: Response) => {
   try {
     const orgDb = ensureOrganizationDatabase();
-    const org = await orgDb.getOrganizationById(req.params.id);
+    const org = await orgDb.getOrganizationById(req.params.id as string);
     if (!org) {
       return res.status(404).json({ error: 'Organization not found' });
     }
@@ -559,7 +559,7 @@ router.post('/organizations/:id/members', async (req: Request, res: Response) =>
 router.put('/organizations/:id/members/:userId', async (req: Request, res: Response) => {
   try {
     const orgAccessDb = ensureOrgAccessDatabase();
-    const membership = await orgAccessDb.getMembership(req.params.userId, req.params.id);
+    const membership = await orgAccessDb.getMembership(req.params.userId as string, req.params.id as string);
     if (!membership || membership.status !== 'active') {
       return res.status(404).json({ error: 'Member not found in this organisation' });
     }
@@ -568,25 +568,25 @@ router.put('/organizations/:id/members/:userId', async (req: Request, res: Respo
       return res.status(400).json({ error: 'role must be owner, admin or viewer' });
     }
 
-    const memberships = await orgAccessDb.getMembershipsByOrganization(req.params.id);
-    if (violatesLastOwner(memberships, { userId: req.params.userId, newRole })) {
+    const memberships = await orgAccessDb.getMembershipsByOrganization(req.params.id as string);
+    if (violatesLastOwner(memberships, { userId: req.params.userId as string, newRole })) {
       return res.status(409).json({ error: 'An organisation must keep at least one owner' });
     }
 
     const updated = await orgAccessDb.updateMembership(membership.id, { role: newRole });
     const adminDb = getAdminDb();
-    const targetUser = await adminDb.getUserById(req.params.userId);
-    if (targetUser && targetUser.organizationId === req.params.id) {
+    const targetUser = await adminDb.getUserById(req.params.userId as string);
+    if (targetUser && targetUser.organizationId === req.params.id as string) {
       await adminDb.updateUser(targetUser.id, { role: newRole });
     }
 
     await auditLog(
       req,
       'org.membership_role_changed',
-      { organizationId: req.params.id, userId: req.params.userId },
+      { organizationId: req.params.id as string, userId: req.params.userId as string },
       `${membership.role} -> ${newRole}`,
     );
-    logger.info('Platform admin changed member role', { organizationId: req.params.id, userId: req.params.userId, role: newRole });
+    logger.info('Platform admin changed member role', { organizationId: req.params.id as string, userId: req.params.userId as string, role: newRole });
     return res.json({ membership: updated });
   } catch (error) {
     logger.error('Error changing platform org member role', { error });
@@ -598,22 +598,22 @@ router.put('/organizations/:id/members/:userId', async (req: Request, res: Respo
 router.delete('/organizations/:id/members/:userId', async (req: Request, res: Response) => {
   try {
     const orgAccessDb = ensureOrgAccessDatabase();
-    const membership = await orgAccessDb.getMembership(req.params.userId, req.params.id);
+    const membership = await orgAccessDb.getMembership(req.params.userId as string, req.params.id as string);
     if (!membership || membership.status !== 'active') {
       return res.status(404).json({ error: 'Member not found in this organisation' });
     }
 
-    const memberships = await orgAccessDb.getMembershipsByOrganization(req.params.id);
-    if (violatesLastOwner(memberships, { userId: req.params.userId, remove: true })) {
+    const memberships = await orgAccessDb.getMembershipsByOrganization(req.params.id as string);
+    if (violatesLastOwner(memberships, { userId: req.params.userId as string, remove: true })) {
       return res.status(409).json({ error: 'An organisation must keep at least one owner' });
     }
 
     await orgAccessDb.updateMembership(membership.id, { status: 'removed' });
     const adminDb = getAdminDb();
-    const targetUser = await adminDb.getUserById(req.params.userId);
-    if (targetUser && targetUser.organizationId === req.params.id) {
+    const targetUser = await adminDb.getUserById(req.params.userId as string);
+    if (targetUser && targetUser.organizationId === req.params.id as string) {
       const remaining = (await orgAccessDb.getMembershipsByUser(targetUser.id)).filter(
-        (m) => m.status === 'active' && m.organizationId !== req.params.id,
+        (m) => m.status === 'active' && m.organizationId !== req.params.id as string,
       );
       await adminDb.updateUser(targetUser.id, {
         organizationId: remaining[0]?.organizationId,
@@ -621,8 +621,8 @@ router.delete('/organizations/:id/members/:userId', async (req: Request, res: Re
       });
     }
 
-    await auditLog(req, 'org.membership_removed', { organizationId: req.params.id, userId: req.params.userId });
-    logger.info('Platform admin removed org member', { organizationId: req.params.id, userId: req.params.userId });
+    await auditLog(req, 'org.membership_removed', { organizationId: req.params.id as string, userId: req.params.userId as string });
+    logger.info('Platform admin removed org member', { organizationId: req.params.id as string, userId: req.params.userId as string });
     return res.json({ success: true });
   } catch (error) {
     logger.error('Error removing platform org member', { error });
@@ -638,7 +638,7 @@ router.delete('/organizations/:id/members/:userId', async (req: Request, res: Re
 router.delete('/accounts/:userId', async (req: Request, res: Response) => {
   try {
     const adminDb = getAdminDb();
-    const user = await adminDb.getUserById(req.params.userId);
+    const user = await adminDb.getUserById(req.params.userId as string);
     if (!user) {
       return res.status(404).json({ error: 'Account not found' });
     }

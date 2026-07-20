@@ -139,7 +139,7 @@ router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
-    const member = await db.getMemberById(req.params.id);
+    const member = await db.getMemberById(req.params.id as string);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
@@ -150,7 +150,7 @@ router.get('/:id', validateMemberId, handleValidationErrors, async (req: Request
   } catch (error) {
     logger.error('Error fetching member', {
       error, 
-      memberId: req.params.id,
+      memberId: req.params.id as string,
       requestId: req.id,
     });
     res.status(500).json({ error: 'Failed to fetch member' });
@@ -163,7 +163,7 @@ router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Re
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
-    const member = await db.getMemberByQRCode(req.params.qrCode);
+    const member = await db.getMemberByQRCode(req.params.qrCode as string);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
@@ -174,7 +174,7 @@ router.get('/qr/:qrCode', validateQRCode, handleValidationErrors, async (req: Re
   } catch (error) {
     logger.error('Error fetching member by QR code', { 
       error, 
-      qrCode: req.params.qrCode,
+      qrCode: req.params.qrCode as string,
       requestId: req.id,
     });
     res.status(500).json({ error: 'Failed to fetch member' });
@@ -234,7 +234,7 @@ router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Req
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
-    const existing = await db.getMemberById(req.params.id);
+    const existing = await db.getMemberById(req.params.id as string);
     if (!existing || !(await isMemberAccessible(db, existing, stationId, req))) {
       return res.status(404).json({ error: 'Member not found' });
     }
@@ -256,7 +256,7 @@ router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Req
       }
     }
 
-    const member = await db.updateMember(req.params.id, name.trim(), rank || null, parsedMembershipStartDate);
+    const member = await db.updateMember(req.params.id as string, name.trim(), rank || null, parsedMembershipStartDate);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
@@ -264,7 +264,7 @@ router.put('/:id', validateUpdateMember, handleValidationErrors, async (req: Req
   } catch (error) {
     logger.error('Error updating member', {
       error,
-      memberId: req.params.id,
+      memberId: req.params.id as string,
       requestId: req.id,
     });
     res.status(500).json({ error: 'Failed to update member' });
@@ -276,7 +276,7 @@ router.get('/:id/history', validateMemberId, handleValidationErrors, async (req:
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
-    const member = await db.getMemberById(req.params.id);
+    const member = await db.getMemberById(req.params.id as string);
     if (!member) {
       return res.status(404).json({ error: 'Member not found' });
     }
@@ -284,12 +284,12 @@ router.get('/:id/history', validateMemberId, handleValidationErrors, async (req:
       return res.status(404).json({ error: 'Member not found' });
     }
     // Check-ins are filtered by the member's station (member already filtered by getMemberById)
-    const checkIns = await db.getCheckInsByMember(req.params.id);
+    const checkIns = await db.getCheckInsByMember(req.params.id as string);
     res.json(checkIns);
   } catch (error) {
     logger.error('Error fetching member history', { 
       error, 
-      memberId: req.params.id,
+      memberId: req.params.id as string,
       requestId: req.id,
     });
     res.status(500).json({ error: 'Failed to fetch member history' });
@@ -495,13 +495,13 @@ router.post('/:id/invite', authMiddleware, requireAdmin, validateMemberId, handl
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
-    const member = await db.getMemberById(req.params.id);
+    const member = await db.getMemberById(req.params.id as string);
     if (!member || !(await isMemberAccessible(db, member, stationId, req))) {
       return res.status(404).json({ error: 'Member not found' });
     }
     const token = uuidv4();
     const { email } = (req.body as { email?: string }) ?? {};
-    await db.updateMemberAuth(req.params.id, {
+    await db.updateMemberAuth(req.params.id as string, {
       authStatus: 'invited',
       inviteToken: token,
       ...(email ? { inviteEmail: email } : {}),
@@ -514,7 +514,7 @@ router.post('/:id/invite', authMiddleware, requireAdmin, validateMemberId, handl
     logger.info('Member invite generated', { memberId: member.id, stationId });
     res.json({ inviteUrl, token });
   } catch (error) {
-    logger.error('Error generating member invite', { error, memberId: req.params.id, requestId: req.id });
+    logger.error('Error generating member invite', { error, memberId: req.params.id as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to generate invite' });
   }
 });
@@ -524,11 +524,11 @@ router.delete('/:id', validateMemberId, handleValidationErrors, async (req: Requ
   try {
     const db = await ensureDatabase(req.isDemoMode);
     const stationId = getStationIdFromRequest(req);
-    const existing = await db.getMemberById(req.params.id);
+    const existing = await db.getMemberById(req.params.id as string);
     if (!existing || !(await isMemberAccessible(db, existing, stationId, req))) {
       return res.status(404).json({ error: 'Member not found' });
     }
-    const deleted = await db.deleteMember(req.params.id);
+    const deleted = await db.deleteMember(req.params.id as string);
 
     if (!deleted) {
       return res.status(404).json({ error: 'Member not found' });
@@ -538,7 +538,7 @@ router.delete('/:id', validateMemberId, handleValidationErrors, async (req: Requ
   } catch (error) {
     logger.error('Error deleting member', {
       error,
-      memberId: req.params.id,
+      memberId: req.params.id as string,
       requestId: req.id,
     });
     res.status(500).json({ error: 'Failed to delete member' });

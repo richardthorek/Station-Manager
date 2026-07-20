@@ -98,7 +98,7 @@ router.get('/appliances', async (req: Request, res: Response) => {
 router.get('/appliances/:id', validateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.getApplianceById(req.params.id);
+    const appliance = await db.getApplianceById(req.params.id as string);
     if (!appliance) {
       return res.status(404).json({ error: 'Appliance not found' });
     }
@@ -168,7 +168,7 @@ router.put('/appliances/:id', validateUpdateAppliance, handleValidationErrors, a
     }
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.updateAppliance(req.params.id, name, description, photoUrl, vehicleType, extractApplianceDetails(req.body));
+    const appliance = await db.updateAppliance(req.params.id as string, name, description, photoUrl, vehicleType, extractApplianceDetails(req.body));
     if (!appliance) {
       return res.status(404).json({ error: 'Appliance not found' });
     }
@@ -187,7 +187,7 @@ router.put('/appliances/:id', validateUpdateAppliance, handleValidationErrors, a
 router.delete('/appliances/:id', validateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const deleted = await db.deleteAppliance(req.params.id);
+    const deleted = await db.deleteAppliance(req.params.id as string);
     if (!deleted) {
       return res.status(404).json({ error: 'Appliance not found' });
     }
@@ -207,7 +207,7 @@ router.delete('/appliances/:id', validateApplianceId, handleValidationErrors, as
 router.post('/appliances/:id/seed-zones', authMiddleware, attachOrganization, requireAdmin, async (req: Request, res: Response) => {
   try {
     const truckDb = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await truckDb.getApplianceById(req.params.id);
+    const appliance = await truckDb.getApplianceById(req.params.id as string);
     if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
 
     if (!appliance.vehicleTypeId) {
@@ -265,7 +265,7 @@ router.post('/appliances/:id/seed-zones', authMiddleware, attachOrganization, re
 router.get('/templates/:applianceId', validateTemplateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const template = await db.getTemplateByApplianceId(req.params.applianceId);
+    const template = await db.getTemplateByApplianceId(req.params.applianceId as string);
     if (!template) {
       return res.status(404).json({ error: 'Template not found' });
     }
@@ -290,7 +290,7 @@ router.put('/templates/:applianceId', validateUpdateTemplate, handleValidationEr
     }
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const template = await db.updateTemplate(req.params.applianceId, items, stationId);
+    const template = await db.updateTemplate(req.params.applianceId as string, items, stationId);
     res.json(template);
   } catch (error) {
     logger.error('Error updating template:', error);
@@ -375,7 +375,7 @@ router.post('/vehicle-types', vehicleTypeAuth, async (req: Request, res: Respons
 router.put('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: Response) => {
   try {
     const db = ensureVehicleTypeDatabase();
-    const existing = await db.getById(req.params.id);
+    const existing = await db.getById(req.params.id as string);
     if (!existing) return res.status(404).json({ error: 'Vehicle type not found' });
     if (!existing.organizationId) {
       return res.status(403).json({ error: 'Built-in standard templates cannot be edited. To modify templates, edit the seed source and redeploy.' });
@@ -384,7 +384,7 @@ router.put('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: Resp
       return res.status(403).json({ error: 'You can only edit vehicle types your organisation owns' });
     }
     const { name, code, description, category, agency, standardItems, isStandard } = req.body ?? {};
-    const updated = await db.update(req.params.id, {
+    const updated = await db.update(req.params.id as string, {
       ...(name !== undefined ? { name } : {}),
       ...(code !== undefined ? { code: slugify(code) } : {}),
       ...(description !== undefined ? { description } : {}),
@@ -407,7 +407,7 @@ router.put('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: Resp
 router.delete('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: Response) => {
   try {
     const db = ensureVehicleTypeDatabase();
-    const existing = await db.getById(req.params.id);
+    const existing = await db.getById(req.params.id as string);
     if (!existing) return res.status(404).json({ error: 'Vehicle type not found' });
     if (!existing.organizationId) {
       return res.status(403).json({ error: 'Built-in standard templates cannot be deleted. To remove templates, edit the seed source and redeploy.' });
@@ -415,7 +415,7 @@ router.delete('/vehicle-types/:id', vehicleTypeAuth, async (req: Request, res: R
     if (existing.organizationId !== req.user?.organizationId) {
       return res.status(403).json({ error: 'You can only delete vehicle types your organisation owns' });
     }
-    await db.delete(req.params.id);
+    await db.delete(req.params.id as string);
     res.status(204).send();
   } catch (error) {
     logger.error('Error deleting vehicle type:', error);
@@ -441,7 +441,7 @@ function parseSide(value: unknown): ApplianceZoneSide | undefined {
  */
 router.get('/appliances/:applianceId/zones', authMiddleware, attachOrganization, async (req: Request, res: Response) => {
   try {
-    const zones = await ensureApplianceZoneDatabase().listForAppliance(req.params.applianceId);
+    const zones = await ensureApplianceZoneDatabase().listForAppliance(req.params.applianceId as string);
     res.json(zones);
   } catch (error) {
     logger.error('Error listing appliance zones:', error);
@@ -456,7 +456,7 @@ router.get('/appliances/:applianceId/zones', authMiddleware, attachOrganization,
 router.post('/appliances/:applianceId/zones', zoneAuth, async (req: Request, res: Response) => {
   try {
     const truckDb = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await truckDb.getApplianceById(req.params.applianceId);
+    const appliance = await truckDb.getApplianceById(req.params.applianceId as string);
     if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
 
     const { name, zoneCode, parentZoneId, side, order, description } = req.body ?? {};
@@ -464,7 +464,7 @@ router.post('/appliances/:applianceId/zones', zoneAuth, async (req: Request, res
       return res.status(400).json({ error: 'name is required' });
     }
     const zone = await ensureApplianceZoneDatabase().create({
-      applianceId: req.params.applianceId,
+      applianceId: req.params.applianceId as string,
       stationId: appliance.stationId,
       name: name.trim(),
       zoneCode: typeof zoneCode === 'string' && zoneCode.trim() ? slugify(zoneCode) : undefined,
@@ -487,11 +487,11 @@ router.post('/appliances/:applianceId/zones', zoneAuth, async (req: Request, res
 router.put('/zones/:id', zoneAuth, async (req: Request, res: Response) => {
   try {
     const db = ensureApplianceZoneDatabase();
-    const existing = await db.getById(req.params.id);
+    const existing = await db.getById(req.params.id as string);
     if (!existing) return res.status(404).json({ error: 'Zone not found' });
 
     const { name, zoneCode, parentZoneId, side, order, description } = req.body ?? {};
-    const updated = await db.update(req.params.id, {
+    const updated = await db.update(req.params.id as string, {
       ...(name !== undefined ? { name } : {}),
       ...(zoneCode !== undefined ? { zoneCode: typeof zoneCode === 'string' && zoneCode.trim() ? slugify(zoneCode) : undefined } : {}),
       ...(parentZoneId !== undefined ? { parentZoneId: typeof parentZoneId === 'string' ? parentZoneId : undefined } : {}),
@@ -513,9 +513,9 @@ router.put('/zones/:id', zoneAuth, async (req: Request, res: Response) => {
 router.delete('/zones/:id', zoneAuth, async (req: Request, res: Response) => {
   try {
     const db = ensureApplianceZoneDatabase();
-    const existing = await db.getById(req.params.id);
+    const existing = await db.getById(req.params.id as string);
     if (!existing) return res.status(404).json({ error: 'Zone not found' });
-    await db.delete(req.params.id);
+    await db.delete(req.params.id as string);
     res.status(204).send();
   } catch (error) {
     logger.error('Error deleting appliance zone:', error);
@@ -535,7 +535,7 @@ const equipmentAuth = [authMiddleware, attachOrganization, requireAdmin];
 router.get('/appliances/:applianceId/equipment', authMiddleware, attachOrganization, async (req: Request, res: Response) => {
   try {
     const includeInactive = req.query.includeInactive === 'true';
-    const items = await ensureApplianceEquipmentDatabase().listForAppliance(req.params.applianceId, includeInactive);
+    const items = await ensureApplianceEquipmentDatabase().listForAppliance(req.params.applianceId as string, includeInactive);
     res.json(items);
   } catch (error) {
     logger.error('Error listing appliance equipment:', error);
@@ -550,7 +550,7 @@ router.get('/appliances/:applianceId/equipment', authMiddleware, attachOrganizat
 router.post('/appliances/:applianceId/equipment', equipmentAuth, async (req: Request, res: Response) => {
   try {
     const truckDb = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await truckDb.getApplianceById(req.params.applianceId);
+    const appliance = await truckDb.getApplianceById(req.params.applianceId as string);
     if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
 
     const { name, equipmentCode, zoneId, serialNumber, notes, active } = req.body ?? {};
@@ -558,7 +558,7 @@ router.post('/appliances/:applianceId/equipment', equipmentAuth, async (req: Req
       return res.status(400).json({ error: 'name is required' });
     }
     const item = await ensureApplianceEquipmentDatabase().create({
-      applianceId: req.params.applianceId,
+      applianceId: req.params.applianceId as string,
       stationId: appliance.stationId,
       name: name.trim(),
       equipmentCode: typeof equipmentCode === 'string' && equipmentCode.trim() ? slugify(equipmentCode) : undefined,
@@ -581,11 +581,11 @@ router.post('/appliances/:applianceId/equipment', equipmentAuth, async (req: Req
 router.put('/equipment/:id', equipmentAuth, async (req: Request, res: Response) => {
   try {
     const db = ensureApplianceEquipmentDatabase();
-    const existing = await db.getById(req.params.id);
+    const existing = await db.getById(req.params.id as string);
     if (!existing) return res.status(404).json({ error: 'Equipment not found' });
 
     const { name, equipmentCode, zoneId, serialNumber, notes, active } = req.body ?? {};
-    const updated = await db.update(req.params.id, {
+    const updated = await db.update(req.params.id as string, {
       ...(name !== undefined ? { name } : {}),
       ...(equipmentCode !== undefined ? { equipmentCode: typeof equipmentCode === 'string' && equipmentCode.trim() ? slugify(equipmentCode) : undefined } : {}),
       ...(zoneId !== undefined ? { zoneId: typeof zoneId === 'string' ? zoneId : undefined } : {}),
@@ -607,9 +607,9 @@ router.put('/equipment/:id', equipmentAuth, async (req: Request, res: Response) 
 router.delete('/equipment/:id', equipmentAuth, async (req: Request, res: Response) => {
   try {
     const db = ensureApplianceEquipmentDatabase();
-    const existing = await db.getById(req.params.id);
+    const existing = await db.getById(req.params.id as string);
     if (!existing) return res.status(404).json({ error: 'Equipment not found' });
-    await db.delete(req.params.id);
+    await db.delete(req.params.id as string);
     res.status(204).send();
   } catch (error) {
     logger.error('Error deleting appliance equipment:', error);
@@ -630,10 +630,10 @@ router.delete('/equipment/:id', equipmentAuth, async (req: Request, res: Respons
 router.get('/appliances/:id/checklist', validateApplianceId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.getApplianceById(req.params.id);
+    const appliance = await db.getApplianceById(req.params.id as string);
     if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
 
-    const template = await db.getTemplateByApplianceId(req.params.id);
+    const template = await db.getTemplateByApplianceId(req.params.id as string);
     const vehicleType = appliance.vehicleTypeId
       ? await ensureVehicleTypeDatabase().getById(appliance.vehicleTypeId)
       : null;
@@ -659,7 +659,7 @@ router.put('/appliances/:id/checklist', validateApplianceId, handleValidationErr
     }
     const stationId = getStationIdFromRequest(req);
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const appliance = await db.getApplianceById(req.params.id);
+    const appliance = await db.getApplianceById(req.params.id as string);
     if (!appliance) return res.status(404).json({ error: 'Appliance not found' });
 
     // Persist custom items (forced isStandard:false) + order via the template overlay.
@@ -671,7 +671,7 @@ router.put('/appliances/:id/checklist', validateApplianceId, handleValidationErr
     const cleanOrder = Array.isArray(itemOrder)
       ? itemOrder.filter((k: unknown): k is string => typeof k === 'string')
       : undefined;
-    const template = await db.updateTemplate(req.params.id, overlayItems, stationId, cleanOrder);
+    const template = await db.updateTemplate(req.params.id as string, overlayItems, stationId, cleanOrder);
 
     const vehicleType = appliance.vehicleTypeId
       ? await ensureVehicleTypeDatabase().getById(appliance.vehicleTypeId)
@@ -756,7 +756,7 @@ router.post('/runs', validateCreateCheckRun, handleValidationErrors, async (req:
 router.get('/runs/:id', validateCheckRunId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const checkRun = await db.getCheckRunWithResults(req.params.id);
+    const checkRun = await db.getCheckRunWithResults(req.params.id as string);
     if (!checkRun) {
       return res.status(404).json({ error: 'Check run not found' });
     }
@@ -817,7 +817,7 @@ router.put('/runs/:id/complete', validateCompleteCheckRun, handleValidationError
     const { additionalComments } = req.body;
     
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const checkRun = await db.completeCheckRun(req.params.id, additionalComments);
+    const checkRun = await db.completeCheckRun(req.params.id as string, additionalComments);
     if (!checkRun) {
       return res.status(404).json({ error: 'Check run not found' });
     }
@@ -847,12 +847,12 @@ router.put('/runs/:id/complete', validateCompleteCheckRun, handleValidationError
 router.delete('/runs/:id', validateCheckRunId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const checkRun = await db.getCheckRunById(req.params.id);
+    const checkRun = await db.getCheckRunById(req.params.id as string);
     if (!checkRun) {
       return res.status(404).json({ error: 'Check run not found' });
     }
 
-    const deleted = await db.deleteCheckRun(req.params.id);
+    const deleted = await db.deleteCheckRun(req.params.id as string);
     if (!deleted) {
       return res.status(404).json({ error: 'Check run not found' });
     }
@@ -949,7 +949,7 @@ router.put('/results/:id', validateUpdateCheckResult, handleValidationErrors, as
 
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const result = await db.updateCheckResult(
-      req.params.id,
+      req.params.id as string,
       status as CheckStatus,
       comment,
       photoUrl
@@ -973,7 +973,7 @@ router.put('/results/:id', validateUpdateCheckResult, handleValidationErrors, as
 router.delete('/results/:id', validateCheckResultId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
-    const deleted = await db.deleteCheckResult(req.params.id);
+    const deleted = await db.deleteCheckResult(req.params.id as string);
     if (!deleted) {
       return res.status(404).json({ error: 'Check result not found' });
     }
@@ -1041,7 +1041,7 @@ router.patch('/results/:id/issue', async (req: Request, res: Response) => {
     }
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const result = await db.updateIssueStatus(
-      req.params.id,
+      req.params.id as string,
       { issueStatus, issueNote, assignedTo, resolvedBy },
       typeof runId === 'string' ? runId : undefined,
     );

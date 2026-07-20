@@ -58,14 +58,14 @@ function canReadSession(req: Request, session: { organizationId?: string }): boo
 agentCheckRouter.get('/:id', async (req: Request, res: Response) => {
   try {
     const db = ensureAgentSessionDatabase();
-    const session = await db.getSession(req.params.id);
+    const session = await db.getSession(req.params.id as string);
     if (!session || !canReadSession(req, session)) {
       res.status(404).json({ error: 'Session not found' });
       return;
     }
     res.json({ session });
   } catch (error) {
-    logger.error('Failed to get agent session', { error, id: req.params.id });
+    logger.error('Failed to get agent session', { error, id: req.params.id as string });
     res.status(500).json({ error: 'Failed to get session' });
   }
 });
@@ -73,15 +73,15 @@ agentCheckRouter.get('/:id', async (req: Request, res: Response) => {
 agentCheckRouter.get('/:id/turns', async (req: Request, res: Response) => {
   try {
     const db = ensureAgentSessionDatabase();
-    const session = await db.getSession(req.params.id);
+    const session = await db.getSession(req.params.id as string);
     if (!session || !canReadSession(req, session)) {
       res.status(404).json({ error: 'Session not found' });
       return;
     }
-    const turns = await db.getTurnsForSession(req.params.id);
+    const turns = await db.getTurnsForSession(req.params.id as string);
     res.json({ turns });
   } catch (error) {
-    logger.error('Failed to get agent turns', { error, id: req.params.id });
+    logger.error('Failed to get agent turns', { error, id: req.params.id as string });
     res.status(500).json({ error: 'Failed to get turns' });
   }
 });

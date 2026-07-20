@@ -290,7 +290,7 @@ router.delete('/current/invites/:id', authMiddleware, requireAdmin, async (req: 
   try {
     const orgAccessDb = ensureOrgAccessDatabase();
     const invites = await orgAccessDb.getInvitesByOrganization(id);
-    const invite = invites.find((i) => i.id === req.params.id);
+    const invite = invites.find((i) => i.id === req.params.id as string);
     if (!invite) {
       return res.status(404).json({ error: 'Invite not found' });
     }
@@ -380,7 +380,7 @@ router.put('/current/members/:userId', sensitiveActionRateLimiter, authMiddlewar
       return res.status(400).json({ error: 'role must be owner, admin or viewer' });
     }
     const orgAccessDb = ensureOrgAccessDatabase();
-    const membership = await orgAccessDb.getMembership(req.params.userId, id);
+    const membership = await orgAccessDb.getMembership(req.params.userId as string, id);
     if (!membership || membership.status !== 'active') {
       return res.status(404).json({ error: 'Member not found in this organisation' });
     }
@@ -390,7 +390,7 @@ router.put('/current/members/:userId', sensitiveActionRateLimiter, authMiddlewar
       return res.status(403).json({ error: 'You do not have permission to make that role change' });
     }
     const memberships = await orgAccessDb.getMembershipsByOrganization(id);
-    if (violatesLastOwner(memberships, { userId: req.params.userId, newRole })) {
+    if (violatesLastOwner(memberships, { userId: req.params.userId as string, newRole })) {
       return res.status(403).json({ error: 'An organisation must keep at least one owner' });
     }
 
@@ -398,12 +398,12 @@ router.put('/current/members/:userId', sensitiveActionRateLimiter, authMiddlewar
 
     // Keep the legacy global role coherent when this org is the user's default.
     const adminDb = getAdminDb();
-    const targetUser = await adminDb.getUserById(req.params.userId);
+    const targetUser = await adminDb.getUserById(req.params.userId as string);
     if (targetUser && targetUser.organizationId === id) {
       await adminDb.updateUser(targetUser.id, { role: newRole });
     }
 
-    logger.info('Org member role changed', { organizationId: id, userId: req.params.userId, role: newRole });
+    logger.info('Org member role changed', { organizationId: id, userId: req.params.userId as string, role: newRole });
     return res.json({ membership: updated });
   } catch (error) {
     logger.error('Error changing member role', { error });
@@ -417,18 +417,18 @@ router.delete('/current/members/:userId', sensitiveActionRateLimiter, authMiddle
   if (!id) return;
   try {
     const orgAccessDb = ensureOrgAccessDatabase();
-    const membership = await orgAccessDb.getMembership(req.params.userId, id);
+    const membership = await orgAccessDb.getMembership(req.params.userId as string, id);
     if (!membership || membership.status !== 'active') {
       return res.status(404).json({ error: 'Member not found in this organisation' });
     }
 
-    const isSelf = req.user?.userId === req.params.userId;
+    const isSelf = req.user?.userId === req.params.userId as string;
     const actorRole = req.user?.role as OrgRole;
     if (!canRemoveMember(actorRole, membership.role, isSelf)) {
       return res.status(403).json({ error: 'You do not have permission to remove that member' });
     }
     const memberships = await orgAccessDb.getMembershipsByOrganization(id);
-    if (violatesLastOwner(memberships, { userId: req.params.userId, remove: true })) {
+    if (violatesLastOwner(memberships, { userId: req.params.userId as string, remove: true })) {
       return res.status(403).json({ error: 'An organisation must keep at least one owner' });
     }
 
@@ -436,7 +436,7 @@ router.delete('/current/members/:userId', sensitiveActionRateLimiter, authMiddle
 
     // If this org was the user's default, repoint to their next active org.
     const adminDb = getAdminDb();
-    const targetUser = await adminDb.getUserById(req.params.userId);
+    const targetUser = await adminDb.getUserById(req.params.userId as string);
     if (targetUser && targetUser.organizationId === id) {
       const remaining = (await orgAccessDb.getMembershipsByUser(targetUser.id)).filter(
         (m) => m.status === 'active' && m.organizationId !== id,
@@ -447,7 +447,7 @@ router.delete('/current/members/:userId', sensitiveActionRateLimiter, authMiddle
       });
     }
 
-    logger.info('Org member removed', { organizationId: id, userId: req.params.userId, isSelf });
+    logger.info('Org member removed', { organizationId: id, userId: req.params.userId as string, isSelf });
     return res.json({ success: true });
   } catch (error) {
     logger.error('Error removing org member', { error });

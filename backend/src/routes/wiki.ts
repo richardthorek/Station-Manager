@@ -27,7 +27,7 @@ function registerSectionRoutes(mountPath: string, section: WikiSection): void {
   });
 
   router.get(`${mountPath}/pages/:slug`, (req: Request, res: Response) => {
-    const page = getWikiPage(section, req.params.slug);
+    const page = getWikiPage(section, req.params.slug as string);
     if (!page) {
       res.status(404).json({ error: 'Wiki page not found' });
       return;
@@ -36,7 +36,7 @@ function registerSectionRoutes(mountPath: string, section: WikiSection): void {
   });
 
   router.get(`${mountPath}/images/:filename`, (req: Request, res: Response) => {
-    const filePath = getWikiImagePath(section, req.params.filename);
+    const filePath = getWikiImagePath(section, req.params.filename as string);
     if (!filePath) {
       res.status(404).json({ error: 'Wiki image not found' });
       return;

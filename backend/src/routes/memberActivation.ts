@@ -17,7 +17,7 @@ const router = Router();
 // GET /api/members/activate/:token — validate token and return member name for the form
 router.get('/activate/:token', async (req: Request, res: Response) => {
   try {
-    const { token } = req.params;
+    const token = req.params.token as string;
     if (!token || typeof token !== 'string') {
       return res.status(400).json({ error: 'Invalid token' });
     }
@@ -48,7 +48,7 @@ router.get('/activate/:token', async (req: Request, res: Response) => {
 
     res.json({ memberName: member.name, orgName, inviteEmail: member.inviteEmail });
   } catch (error) {
-    logger.error('Error validating invite token', { error, token: req.params.token });
+    logger.error('Error validating invite token', { error, token: req.params.token as string });
     res.status(500).json({ error: 'Failed to validate invite' });
   }
 });
@@ -56,7 +56,7 @@ router.get('/activate/:token', async (req: Request, res: Response) => {
 // POST /api/members/activate/:token — complete activation: create AdminUser + mark member active
 router.post('/activate/:token', async (req: Request, res: Response) => {
   try {
-    const { token } = req.params;
+    const token = req.params.token as string;
     const { username, password, email } = (req.body as { username?: string; password?: string; email?: string }) ?? {};
 
     if (!token || typeof token !== 'string') {
@@ -132,7 +132,7 @@ router.post('/activate/:token', async (req: Request, res: Response) => {
     if (error instanceof Error && error.message === 'Username already exists') {
       return res.status(409).json({ error: 'That username is already taken' });
     }
-    logger.error('Error activating member', { error, token: req.params.token });
+    logger.error('Error activating member', { error, token: req.params.token as string });
     res.status(500).json({ error: 'Failed to activate account' });
   }
 });

@@ -29,7 +29,7 @@ export function createAchievementRoutes(): Router {
    */
   router.get('/:memberId', async (req: Request, res: Response): Promise<void> => {
     try {
-      const { memberId } = req.params;
+      const memberId = (req.params.memberId as string);
       
       // Get database instances based on demo mode
       const db = await ensureDatabase(req.isDemoMode);
@@ -59,7 +59,7 @@ export function createAchievementRoutes(): Router {
    */
   router.get('/:memberId/recent', async (req: Request, res: Response): Promise<void> => {
     try {
-      const { memberId } = req.params;
+      const memberId = req.params.memberId as string;
       
       const db = await ensureDatabase(req.isDemoMode);
       const truckChecksDb = await ensureTruckChecksDatabase(req.isDemoMode);
@@ -89,7 +89,7 @@ export function createAchievementRoutes(): Router {
    */
   router.get('/:memberId/progress', async (req: Request, res: Response): Promise<void> => {
     try {
-      const { memberId } = req.params;
+      const memberId = req.params.memberId as string;
       
       const db = await ensureDatabase(req.isDemoMode);
       const truckChecksDb = await ensureTruckChecksDatabase(req.isDemoMode);

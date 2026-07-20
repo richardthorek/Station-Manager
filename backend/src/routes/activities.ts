@@ -135,7 +135,7 @@ router.post('/', validateCreateActivity, handleValidationErrors, flexibleAuth({ 
 router.delete('/:activityId', validateActivityId, handleValidationErrors, flexibleAuth({ scope: 'station' }), async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { activityId } = req.params;
+    const activityId = req.params.activityId as string;
     const stationId = getStationIdFromRequest(req);
 
     const activity = await db.getActivityById(activityId);
@@ -161,7 +161,7 @@ router.delete('/:activityId', validateActivityId, handleValidationErrors, flexib
   } catch (error) {
     logger.error('Error deleting activity', { 
       error, 
-      activityId: req.params.activityId,
+      activityId: req.params.activityId as string,
       requestId: req.id,
     });
     res.status(500).json({ error: 'Failed to delete activity' });

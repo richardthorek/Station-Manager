@@ -40,7 +40,7 @@ async function loadUsableInvite(token: string, res: Response): Promise<OrgInvite
 /** GET /api/org-invites/:token — public invite preview. */
 router.get('/:token', async (req: Request, res: Response) => {
   try {
-    const invite = await loadUsableInvite(req.params.token, res);
+    const invite = await loadUsableInvite(req.params.token as string, res);
     if (!invite) return;
     const organization = await ensureOrganizationDatabase().getOrganizationById(invite.organizationId);
     if (!organization) {
@@ -63,7 +63,7 @@ router.post('/:token/accept', authMiddleware, async (req: Request, res: Response
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-    const invite = await loadUsableInvite(req.params.token, res);
+    const invite = await loadUsableInvite(req.params.token as string, res);
     if (!invite) return;
 
     const orgAccessDb = ensureOrgAccessDatabase();
@@ -96,7 +96,7 @@ router.post('/:token/accept', authMiddleware, async (req: Request, res: Response
 /** POST /api/org-invites/:token/signup — new user account straight into the org. */
 router.post('/:token/signup', sensitiveActionRateLimiter, async (req: Request, res: Response) => {
   try {
-    const invite = await loadUsableInvite(req.params.token, res);
+    const invite = await loadUsableInvite(req.params.token as string, res);
     if (!invite) return;
 
     const { username, password, email } = req.body ?? {};

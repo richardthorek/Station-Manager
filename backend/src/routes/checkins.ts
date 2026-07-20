@@ -147,7 +147,7 @@ router.post('/', validateCreateCheckIn, handleValidationErrors, async (req: Requ
 router.delete('/:memberId', validateMemberIdParam, handleValidationErrors, async (req: Request, res: Response) => {
   try {
     const db = await ensureDatabase(req.isDemoMode);
-    const { memberId } = req.params;
+    const memberId = req.params.memberId as string;
     const success = await db.deactivateCheckInByMember(memberId);
     
     if (!success) {
@@ -156,7 +156,7 @@ router.delete('/:memberId', validateMemberIdParam, handleValidationErrors, async
 
     res.json({ message: 'Check-in undone successfully' });
   } catch (error) {
-    logger.error('Error undoing check-in', { error, memberId: req.params.memberId, requestId: req.id });
+    logger.error('Error undoing check-in', { error, memberId: req.params.memberId as string, requestId: req.id });
     res.status(500).json({ error: 'Failed to undo check-in' });
   }
 });

@@ -234,7 +234,7 @@ router.get('/credentials', authMiddleware, async (req: Request, res: Response) =
 router.delete('/credentials/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Authentication required' });
-    const deleted = await getAdminDb().deleteWebAuthnCredential(req.params.id, req.user.userId);
+    const deleted = await getAdminDb().deleteWebAuthnCredential(req.params.id as string, req.user.userId);
     if (!deleted) return res.status(404).json({ error: 'Passkey not found' });
     res.status(204).send();
   } catch (error) {
