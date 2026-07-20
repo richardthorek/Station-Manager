@@ -11,11 +11,15 @@
  * ask a grounded AI question over the same content (POST .../search) for
  * "I don't know what page this would even be on" queries.
  *
- * Layout adapts via a CSS container query on the wrapper, not a window media
- * query — so the same component lays out as a real two-column sidebar+content
- * page on the wide /wiki page, and collapses to a single column with a
- * disclosure-based nav inside the narrower WikiPanel drawer, without needing
- * two code paths.
+ * Layout adapts via a CSS container query on the wrapper (backstopped by a
+ * viewport media query — see WikiDocument.css — since a landscape phone or
+ * narrow tablet can report the same container width as a genuinely wide
+ * desktop drawer), so the same component lays out as a real two-column
+ * sidebar+content page on the wide /wiki page and stacks to one column
+ * inside the narrower WikiPanel drawer, without needing two code paths.
+ * autoScrollToInitialSlug is the one deliberate behaviour split: off in the
+ * drawer (land on search + suggested questions), on for direct /wiki/:slug
+ * links (land on the requested page) — see the prop doc below.
  */
 
 import { useEffect, useMemo, useRef, useState, type AnchorHTMLAttributes, type ImgHTMLAttributes } from 'react';
@@ -28,14 +32,63 @@ import './WikiDocument.css';
 
 interface WikiDocumentProps {
   section: WikiSection;
-  /** Scrolled to once, after content loads (e.g. a contextual open from HelpButton, or /wiki/:slug). */
+  /** Used to scroll to a page once content loads (when autoScrollToInitialSlug is true) and to pick contextual suggested queries either way. */
   initialSlug?: string | null;
   /** Called whenever the reader settles on a page (initial scroll, sidebar click, or internal link) — lets the host update a URL without causing a navigation. */
   onActivePageChange?: (slug: string) => void;
+  /**
+   * Scroll straight to initialSlug once content loads (e.g. a direct /wiki/:slug
+   * deep link — the visitor asked for that page, so land on it). Default true.
+   * The WikiPanel drawer opts out: its initialSlug is only a best-guess default
+   * for the current route, not something the visitor asked for, so jumping to
+   * it would scroll the just-opened search box and suggestions out of view
+   * before the visitor ever sees them.
+   */
+  autoScrollToInitialSlug?: boolean;
 }
 
 const INTERNAL_LINK_PATTERN = /^([a-z0-9-]+)\.md(#.*)?$/;
 const IMAGE_FILENAME_PATTERN = /^images\/([^/]+)$/;
+
+// Keyed by the same contextual slugs HelpButton.tsx derives from the current
+// route — "which page the user came from" translated into concrete questions
+// they can tap instead of having to guess what to type.
+const SUGGESTED_QUERIES: Record<string, string[]> = {
+  'getting-started': [
+    'How do I create a brigade account?',
+    'What is demo mode?',
+    'How do I install the app on a station kiosk?',
+  ],
+  'sign-in': [
+    'How do I check in and out?',
+    "Why can't I find my name in the list?",
+    'Can members sign in without an account?',
+  ],
+  'truck-checks': [
+    'How do I complete a truck check?',
+    'Can I do a truck check without internet?',
+    'Who can see truck check history?',
+  ],
+  'voice-check': ['How does voice-guided truck check work?', 'What do I say during a voice check?'],
+  reports: [
+    'How do I export a report?',
+    'What does the activity heat map show?',
+    'Can I filter reports by date range?',
+  ],
+  'profiles-and-achievements': ['How do achievements work?', 'How do I edit my profile?'],
+  'admin-guide': ['How do I add a new station?', 'How do I manage brigade access?', 'How do I change our plan?'],
+};
+
+const DEFAULT_SUGGESTED_QUERIES = [
+  'How do I check in and out?',
+  'How do I complete a truck check?',
+  'How do I create a brigade account?',
+  'How do I export a report?',
+];
+
+function suggestedQueriesFor(slug: string | null | undefined): string[] {
+  return (slug && SUGGESTED_QUERIES[slug]) || DEFAULT_SUGGESTED_QUERIES;
+}
 
 // Only ever called with a non-empty, already-trimmed query — filteredSections
 // short-circuits to the unfiltered list before this runs at all otherwise.
@@ -48,7 +101,7 @@ function matchesQuery(page: WikiPage, description: string, query: string): boole
   );
 }
 
-export function WikiDocument({ section, initialSlug, onActivePageChange }: WikiDocumentProps) {
+export function WikiDocument({ section, initialSlug, onActivePageChange, autoScrollToInitialSlug = true }: WikiDocumentProps) {
   const [manifest, setManifest] = useState<WikiManifest | null>(null);
   const [pages, setPages] = useState<Map<string, WikiPage>>(new Map());
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -101,7 +154,7 @@ export function WikiDocument({ section, initialSlug, onActivePageChange }: WikiD
   // and again whenever initialSlug itself changes (e.g. a later useWiki().navigate()
   // call while the panel is already open), but never twice for the same slug.
   useEffect(() => {
-    if (!initialSlug || pages.size === 0 || lastScrolledSlug.current === initialSlug) return;
+    if (!autoScrollToInitialSlug || !initialSlug || pages.size === 0 || lastScrolledSlug.current === initialSlug) return;
     const el = sectionRefs.current.get(initialSlug);
     if (el) {
       lastScrolledSlug.current = initialSlug;
@@ -109,7 +162,7 @@ export function WikiDocument({ section, initialSlug, onActivePageChange }: WikiD
       onActivePageChange?.(initialSlug);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSlug, pages]);
+  }, [initialSlug, pages, autoScrollToInitialSlug]);
 
   function scrollToSlug(slug: string) {
     const el = sectionRefs.current.get(slug);
@@ -187,6 +240,8 @@ export function WikiDocument({ section, initialSlug, onActivePageChange }: WikiD
   }, [manifest, pages, query]);
 
   const loading = !manifest || pages.size === 0;
+  const suggestions = useMemo(() => suggestedQueriesFor(initialSlug), [initialSlug]);
+  const showSuggestions = !query.trim() && aiState.status === 'idle';
 
   return (
     <div className="wiki-document">
@@ -217,6 +272,25 @@ export function WikiDocument({ section, initialSlug, onActivePageChange }: WikiD
           <Sparkles size={15} strokeWidth={2} aria-hidden /> Ask AI
         </button>
       </div>
+
+      {showSuggestions && (
+        <div className="wiki-document__suggestions">
+          <span className="wiki-document__suggestions-label">Try asking:</span>
+          {suggestions.slice(0, 5).map((suggestion) => (
+            <button
+              key={suggestion}
+              type="button"
+              className="wiki-document__suggestion"
+              onClick={() => {
+                setQuery(suggestion);
+                runAiSearch(suggestion);
+              }}
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      )}
 
       {aiState.status !== 'idle' && (
         <div className="wiki-document__ai-answer" role="status">

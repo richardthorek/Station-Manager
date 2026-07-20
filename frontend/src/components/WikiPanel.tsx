@@ -57,7 +57,10 @@ export function WikiPanel({ isOpen, activeSlug, onClose }: WikiPanelProps) {
           </button>
         </div>
         <div className="wiki-panel__body">
-          <WikiDocument section="user-guide" initialSlug={activeSlug} />
+          {/* activeSlug is a best-guess default for the current route, not something
+              the visitor asked for — land on search + suggested questions instead of
+              jumping straight past them into a scrolled-down page. */}
+          <WikiDocument section="user-guide" initialSlug={activeSlug} autoScrollToInitialSlug={false} />
         </div>
         <div className="wiki-panel__footer">
           <a href="/wiki" target="_blank" rel="noopener noreferrer" className="wiki-panel__full-link">

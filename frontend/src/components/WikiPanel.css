@@ -56,6 +56,16 @@
   background: none;
   color: var(--text-secondary);
   cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Same flex/SVG-collapse gotcha as HelpButton.css .help-fab svg — an inline
+   SVG's width/height HTML attributes don't reliably size it inside a flex
+   container, so it renders at 0 width and the button looks empty. */
+.wiki-panel__close svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .wiki-panel__close:hover,

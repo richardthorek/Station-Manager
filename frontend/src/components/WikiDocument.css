@@ -84,6 +84,60 @@
   background: var(--rfs-core-red);
 }
 
+/* Below ~480px the search pill, input placeholder, and Ask AI button don't
+   all fit on one line — the placeholder gets clipped hard up against the
+   button. Give the button its own row instead of shrinking the input. */
+@media (max-width: 480px) {
+  .wiki-document__search {
+    flex-wrap: wrap;
+    row-gap: var(--spacing-xs);
+  }
+
+  .wiki-document__ask-ai {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Suggested queries — shown as the search "landing state", before the
+   user has typed anything or asked a question. Gives mobile users a set of
+   concrete, tappable starting points instead of a long list of page links. ── */
+
+.wiki-document__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  margin: 0 0 var(--spacing-md);
+}
+
+.wiki-document__suggestions-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-right: 2px;
+}
+
+.wiki-document__suggestion {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-full);
+  padding: 0 var(--spacing-md);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wiki-document__suggestion:hover,
+.wiki-document__suggestion:focus-visible {
+  border-color: var(--ui-blue);
+  color: var(--ui-blue);
+}
+
 /* ── AI answer card ── */
 
 .wiki-document__ai-answer {
@@ -338,6 +392,30 @@
 
   .wiki-document__content {
     flex: 1;
+  }
+}
+
+/* A container query only sees the wrapper's own width — it can't tell a
+   genuinely wide desktop drawer from a landscape phone or narrow tablet
+   that happens to report the same container width. Force the stacked,
+   single-column layout back below ~768px viewport width regardless, so a
+   touch-sized device never gets squeezed into two cramped half-width
+   columns. (Placed after the @container block so it wins at equal
+   specificity when both would otherwise apply — no !important needed.) */
+@media (max-width: 768px) {
+  .wiki-document__layout {
+    flex-direction: column;
+  }
+
+  .wiki-document__sidebar {
+    position: static;
+    width: auto;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .wiki-document__content {
+    flex: initial;
   }
 }
 
