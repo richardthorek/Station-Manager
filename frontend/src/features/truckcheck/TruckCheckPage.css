@@ -36,9 +36,20 @@
 /* View Tabs */
 .view-tabs {
   display: flex;
-  justify-content: flex-end;
+  /* flex-start, not flex-end: with overflow-x scrolling, flex-end packs
+     content against the trailing edge and leaves the start of the row
+     unreachable by scroll in some browsers — the exact bug that clipped
+     "Add Vehicle" off-screen with no way to scroll to it on narrow phones. */
+  justify-content: flex-start;
   gap: 1rem;
   margin-bottom: 2rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.view-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-link {
@@ -56,6 +67,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tab-link:hover {
@@ -457,6 +470,11 @@
 
   .tab-btn {
     padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .tab-link {
+    padding: 0.65rem 1rem;
     font-size: 0.9rem;
   }
 }
