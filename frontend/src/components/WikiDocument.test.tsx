@@ -200,6 +200,63 @@ describe('WikiDocument', () => {
     expect(api.getWikiPage).not.toHaveBeenCalled();
   });
 
+  it('auto-scrolls to initialSlug on mount by default', async () => {
+    const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
+    const onActivePageChange = vi.fn();
+    renderDoc({ initialSlug: 'sign-in', onActivePageChange });
+
+    await waitFor(() => expect(onActivePageChange).toHaveBeenCalledWith('sign-in'));
+    expect(scrollSpy).toHaveBeenCalled();
+
+    scrollSpy.mockRestore();
+  });
+
+  it('does not auto-scroll or report an active page when autoScrollToInitialSlug is false', async () => {
+    const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
+    const onActivePageChange = vi.fn();
+    renderDoc({ initialSlug: 'sign-in', autoScrollToInitialSlug: false, onActivePageChange });
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Sign-in book' })).toBeInTheDocument());
+    expect(onActivePageChange).not.toHaveBeenCalled();
+    expect(scrollSpy).not.toHaveBeenCalled();
+
+    scrollSpy.mockRestore();
+  });
+
+  it('shows suggested questions for the given initialSlug, and tapping one runs an AI search', async () => {
+    vi.mocked(api.searchWiki).mockResolvedValue({
+      answer: 'Tap Sign In on the kiosk.',
+      covered: true,
+      sources: ['sign-in'],
+    });
+    const user = userEvent.setup();
+    renderDoc({ initialSlug: 'sign-in', autoScrollToInitialSlug: false });
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Sign-in book' })).toBeInTheDocument());
+
+    const suggestion = screen.getByRole('button', { name: 'How do I check in and out?' });
+    await user.click(suggestion);
+
+    expect(api.searchWiki).toHaveBeenCalledWith('How do I check in and out?', 'user-guide');
+    expect(await screen.findByText(/tap sign in on the kiosk/i)).toBeInTheDocument();
+  });
+
+  it('hides suggested questions once the user has typed a query or gotten an AI answer', async () => {
+    const user = userEvent.setup();
+    renderDoc({ initialSlug: 'sign-in', autoScrollToInitialSlug: false });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'How do I check in and out?' })).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText(/search the guide/i), 'x');
+    expect(screen.queryByRole('button', { name: 'How do I check in and out?' })).not.toBeInTheDocument();
+  });
+
+  it('falls back to default suggested questions when there is no initialSlug', async () => {
+    renderDoc({ initialSlug: null, autoScrollToInitialSlug: false });
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Sign-in book' })).toBeInTheDocument());
+
+    expect(screen.getByRole('button', { name: 'How do I check in and out?' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'How do I complete a truck check?' })).toBeInTheDocument();
+  });
+
   it('re-scrolls when initialSlug changes to a different page while mounted', async () => {
     const onActivePageChange = vi.fn();
     const { rerender } = renderDoc({ initialSlug: 'getting-started', onActivePageChange });

@@ -48,15 +48,31 @@ describe('HelpButton', () => {
     });
   });
 
-  it('opens the panel and scrolls to a contextual page for the current route', async () => {
+  it('opens the panel, loads the contextual page content, but lands on search instead of scrolling to it', async () => {
+    const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
     const user = userEvent.setup();
     renderAt('/signin');
 
     await user.click(screen.getByRole('button', { name: /help and user guide/i }));
 
-    // The whole guide renders as one document — the contextual page is present, scrolled to.
+    // The whole guide is fetched and rendered as one document...
     expect(await screen.findByText(/how to check in and out/i)).toBeInTheDocument();
     expect(api.getWikiPage).toHaveBeenCalledWith('sign-in', 'user-guide');
+    // ...but the drawer doesn't jump straight to it — it opts out of the auto-scroll
+    // so the just-opened search box and suggestions stay in view instead of being
+    // scrolled straight past.
+    expect(scrollSpy).not.toHaveBeenCalled();
+
+    scrollSpy.mockRestore();
+  });
+
+  it('shows suggested questions for the current route as the search landing state', async () => {
+    const user = userEvent.setup();
+    renderAt('/signin');
+
+    await user.click(screen.getByRole('button', { name: /help and user guide/i }));
+
+    expect(await screen.findByRole('button', { name: 'How do I check in and out?' })).toBeInTheDocument();
   });
 
   it('shows the sidebar contents alongside the content', async () => {
