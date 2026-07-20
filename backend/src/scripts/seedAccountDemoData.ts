@@ -354,15 +354,24 @@ async function main() {
       // A couple of different, varied items fail each run — never the same
       // pair twice — so the issue history looks like real, varied faults
       // rather than one broken part nobody ever fixes.
+      //
+      // Not every seeded standard vehicle type's items carry a real `id`
+      // (some only have a stable `itemCode`, e.g. Cat 7 Tanker) — selecting
+      // by `.id` there meant every id-less item shared the same `undefined`
+      // key, so picking "one" as an issue flagged *all* of them. itemCode is
+      // the actually-stable identifier per the ChecklistItem type; fall back
+      // to id only for items that genuinely have neither (shouldn't happen
+      // for a real seeded standard type, but keeps this from crashing if it does).
+      const itemKey = (item: (typeof effectiveChecklist.items)[number]): string => item.itemCode || item.id || item.name;
       const shuffled = [...effectiveChecklist.items].sort(() => Math.random() - 0.5);
       const issueCount = Math.min(effectiveChecklist.items.length, randomInt(2, 3));
-      const issueItemIds = new Set(shuffled.slice(0, issueCount).map((i) => i.id));
+      const issueItemKeys = new Set(shuffled.slice(0, issueCount).map(itemKey));
 
       for (const item of effectiveChecklist.items) {
-        const isIssue = issueItemIds.has(item.id);
+        const isIssue = issueItemKeys.has(itemKey(item));
         await truckChecksDb.createCheckResult(
           run.id,
-          item.id,
+          itemKey(item),
           item.name,
           item.description,
           isIssue ? 'issue' : 'done',
