@@ -651,23 +651,24 @@ class DatabaseService {
    * Create a new event from an activity type
    * This starts a discrete activity instance
    */
-  createEvent(activityId: string, createdBy?: string, stationId?: string): Event {
+  createEvent(activityId: string, createdBy?: string, stationId?: string, startTimeOverride?: Date): Event {
     const activity = this.activities.get(activityId);
     if (!activity) {
       throw new Error('Activity not found');
     }
 
+    const startTime = startTimeOverride ?? new Date();
     const event: Event = {
       id: uuidv4(),
       activityId,
       activityName: activity.name,
       stationId: getEffectiveStationId(stationId),
-      startTime: new Date(),
+      startTime,
       endTime: undefined,
       isActive: true,
       createdBy,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: startTime,
+      updatedAt: startTime,
     };
     
     this.events.set(event.id, event);
@@ -739,15 +740,16 @@ class DatabaseService {
   /**
    * End an event and all its active participants
    */
-  endEvent(eventId: string): Event | null {
+  endEvent(eventId: string, endTimeOverride?: Date): Event | null {
     const event = this.events.get(eventId);
     if (!event) {
       return null;
     }
 
-    event.endTime = new Date();
+    const endTime = endTimeOverride ?? new Date();
+    event.endTime = endTime;
     event.isActive = false;
-    event.updatedAt = new Date();
+    event.updatedAt = endTime;
 
     return event;
   }
@@ -793,7 +795,8 @@ class DatabaseService {
     method: 'kiosk' | 'mobile' | 'qr',
     location?: string,
     isOffsite: boolean = false,
-    stationId?: string
+    stationId?: string,
+    checkInTimeOverride?: Date
   ): EventParticipant {
     const event = this.events.get(eventId);
     if (!event) {
@@ -805,6 +808,7 @@ class DatabaseService {
       throw new Error('Member not found');
     }
 
+    const checkInTime = checkInTimeOverride ?? new Date();
     const participant: EventParticipant = {
       id: uuidv4(),
       eventId,
@@ -812,15 +816,15 @@ class DatabaseService {
       memberName: member.name,
       memberRank: member.rank || null,
       stationId: getEffectiveStationId(stationId),
-      checkInTime: new Date(),
+      checkInTime,
       checkInMethod: method,
       location,
       isOffsite,
-      createdAt: new Date(),
+      createdAt: checkInTime,
     };
 
     this.eventParticipants.set(participant.id, participant);
-    event.updatedAt = new Date();
+    event.updatedAt = checkInTime;
 
     return participant;
   }

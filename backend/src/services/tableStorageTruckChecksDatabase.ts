@@ -403,18 +403,19 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
 
   // ===== CHECK RUN METHODS =====
 
-  async createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string, runDetails?: { source?: CheckRun['source']; agentSessionId?: string }): Promise<CheckRun> {
+  async createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string, runDetails?: { source?: CheckRun['source']; agentSessionId?: string }, startTimeOverride?: Date): Promise<CheckRun> {
     const appliance = await this.getApplianceById(applianceId);
     if (!appliance) {
       throw new Error('Appliance not found');
     }
 
+    const startTime = startTimeOverride ?? new Date();
     const checkRun: CheckRun = {
       id: uuidv4(),
       applianceId,
       applianceName: appliance.name,
       stationId: stationId ?? appliance.stationId,
-      startTime: new Date(),
+      startTime,
       completedBy,
       completedByName,
       contributors: completedByName ? [completedByName] : [],
@@ -422,8 +423,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       hasIssues: false,
       source: runDetails?.source,
       agentSessionId: runDetails?.agentSessionId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: startTime,
+      updatedAt: startTime,
     };
 
     // Partition by month
@@ -512,18 +513,19 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
     );
   }
 
-  async completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun | null> {
+  async completeCheckRun(id: string, additionalComments?: string, endTimeOverride?: Date): Promise<CheckRun | null> {
     const checkRun = await this.getCheckRunById(id);
     if (!checkRun) return null;
 
     const monthKey = checkRun.startTime.toISOString().slice(0, 7);
-    
+    const endTime = endTimeOverride ?? new Date();
+
     try {
       const entity = await this.checkRunsTable.getEntity<TableEntity>(`CheckRun_${monthKey}`, id);
-      entity.endTime = new Date().toISOString();
+      entity.endTime = endTime.toISOString();
       entity.status = 'completed';
       entity.additionalComments = additionalComments || '';
-      entity.updatedAt = new Date().toISOString();
+      entity.updatedAt = endTime.toISOString();
 
       await this.checkRunsTable.updateEntity(entity, 'Replace');
       

@@ -67,14 +67,18 @@ export interface IDatabase {
   clearAllActiveCheckIns(stationId?: string): Promise<void> | void;
   
   // Events
-  createEvent(activityId: string, createdBy?: string, stationId?: string): Promise<Event> | Event;
+  // The trailing timestamp-override params exist only for internal ops/seed
+  // scripts backdating historical demo data (see src/scripts/README.md) —
+  // no HTTP route ever passes them, so there's no way for a request to
+  // forge a check-in/event time.
+  createEvent(activityId: string, createdBy?: string, stationId?: string, startTimeOverride?: Date): Promise<Event> | Event;
   getEvents(limit?: number, offset?: number, stationId?: string): Promise<Event[]> | Event[];
   getActiveEvents(stationId?: string): Promise<Event[]> | Event[];
   getEventById(eventId: string): Promise<Event | null | undefined> | Event | null | undefined;
-  endEvent(eventId: string): Promise<Event | null> | Event | null;
+  endEvent(eventId: string, endTimeOverride?: Date): Promise<Event | null> | Event | null;
   reactivateEvent(eventId: string): Promise<Event | null> | Event | null;
   deleteEvent(eventId: string): Promise<Event | null> | Event | null; // Soft delete
-  addEventParticipant(eventId: string, memberId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): Promise<EventParticipant> | EventParticipant;
+  addEventParticipant(eventId: string, memberId: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string, checkInTimeOverride?: Date): Promise<EventParticipant> | EventParticipant;
   /** AC-2 — add an ephemeral visitor (typed name, not a persisted Member). */
   addEventVisitor(eventId: string, name: string, method: 'kiosk' | 'mobile' | 'qr', location?: string, isOffsite?: boolean, stationId?: string): Promise<EventParticipant> | EventParticipant;
   getEventParticipants(eventId: string): Promise<EventParticipant[]> | EventParticipant[];
