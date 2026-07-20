@@ -251,18 +251,19 @@ class TruckChecksDatabase {
   // Check Run Methods
   // ============================================
 
-  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string, runDetails?: { source?: CheckRun['source']; agentSessionId?: string }): CheckRun {
+  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string, runDetails?: { source?: CheckRun['source']; agentSessionId?: string }, startTimeOverride?: Date): CheckRun {
     const appliance = this.appliances.get(applianceId);
     if (!appliance) {
       throw new Error('Appliance not found');
     }
 
+    const startTime = startTimeOverride ?? new Date();
     const checkRun: CheckRun = {
       id: uuidv4(),
       applianceId,
       applianceName: appliance.name,
       stationId: stationId ?? appliance.stationId,
-      startTime: new Date(),
+      startTime,
       completedBy,
       completedByName,
       contributors: [completedByName || completedBy],
@@ -270,8 +271,8 @@ class TruckChecksDatabase {
       hasIssues: false,
       source: runDetails?.source,
       agentSessionId: runDetails?.agentSessionId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: startTime,
+      updatedAt: startTime,
     };
 
     this.checkRuns.set(checkRun.id, checkRun);
@@ -331,13 +332,14 @@ class TruckChecksDatabase {
       .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
   }
 
-  completeCheckRun(id: string, additionalComments?: string): CheckRun | undefined {
+  completeCheckRun(id: string, additionalComments?: string, endTimeOverride?: Date): CheckRun | undefined {
     const checkRun = this.checkRuns.get(id);
     if (checkRun) {
-      checkRun.endTime = new Date();
+      const endTime = endTimeOverride ?? new Date();
+      checkRun.endTime = endTime;
       checkRun.status = 'completed';
       checkRun.additionalComments = additionalComments;
-      checkRun.updatedAt = new Date();
+      checkRun.updatedAt = endTime;
       
       // Check if there are any issues in the results
       const results = this.getResultsByRunId(id);

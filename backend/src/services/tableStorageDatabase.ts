@@ -794,22 +794,23 @@ export class TableStorageDatabase {
 
   // ===== EVENT METHODS =====
 
-  async createEvent(activityId: string, createdBy?: string, stationId?: string): Promise<Event> {
+  async createEvent(activityId: string, createdBy?: string, stationId?: string, startTimeOverride?: Date): Promise<Event> {
     const activity = await this.getActivityById(activityId);
     if (!activity) {
       throw new Error('Activity not found');
     }
 
+    const startTime = startTimeOverride ?? new Date();
     const event: Event = {
       id: uuidv4(),
       activityId,
       activityName: activity.name,
       stationId: getEffectiveStationId(stationId),
-      startTime: new Date(),
+      startTime,
       isActive: true,
       createdBy,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: startTime,
+      updatedAt: startTime,
       isDeleted: false,
     };
 
@@ -908,20 +909,21 @@ export class TableStorageDatabase {
     return null;
   }
 
-  async endEvent(eventId: string): Promise<Event | null> {
+  async endEvent(eventId: string, endTimeOverride?: Date): Promise<Event | null> {
     const event = await this.getEventById(eventId);
     if (!event) return null;
 
     const monthKey = event.startTime.toISOString().slice(0, 7);
+    const endTime = endTimeOverride ?? new Date();
 
     try {
       const entity = await this.updateEntityOptimistic(
         this.eventsTable,
         () => this.eventsTable.getEntity<TableEntity>(`Event_${monthKey}`, eventId),
         (entity) => {
-          entity.endTime = new Date().toISOString();
+          entity.endTime = endTime.toISOString();
           entity.isActive = false;
-          entity.updatedAt = new Date().toISOString();
+          entity.updatedAt = endTime.toISOString();
         }
       );
 
@@ -1000,7 +1002,8 @@ export class TableStorageDatabase {
     method: 'kiosk' | 'mobile' | 'qr',
     location?: string,
     isOffsite: boolean = false,
-    stationId?: string
+    stationId?: string,
+    checkInTimeOverride?: Date
   ): Promise<EventParticipant> {
     const event = await this.getEventById(eventId);
     if (!event) throw new Error('Event not found');
@@ -1008,6 +1011,7 @@ export class TableStorageDatabase {
     const member = await this.getMemberById(memberId);
     if (!member) throw new Error('Member not found');
 
+    const checkInTime = checkInTimeOverride ?? new Date();
     const participant: EventParticipant = {
       id: uuidv4(),
       eventId,
@@ -1015,11 +1019,11 @@ export class TableStorageDatabase {
       memberName: member.name,
       memberRank: member.rank || null,
       stationId: getEffectiveStationId(stationId || event.stationId),
-      checkInTime: new Date(),
+      checkInTime,
       checkInMethod: method,
       location,
       isOffsite,
-      createdAt: new Date(),
+      createdAt: checkInTime,
     };
 
     // Co-locate participants with their event

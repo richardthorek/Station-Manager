@@ -61,13 +61,19 @@ export interface ITruckChecksDatabase {
   updateTemplate(applianceId: string, items: Omit<ChecklistItem, 'id'>[], stationId?: string, itemOrder?: string[]): Promise<ChecklistTemplate> | ChecklistTemplate;
 
   // Check Runs
-  /** `runDetails` carries the A3 agent provenance (source + linked AgentSession) as a trailing object so the positional signature stays back-compatible. */
-  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string, runDetails?: CheckRunDetails): Promise<CheckRun> | CheckRun;
+  /**
+   * `runDetails` carries the A3 agent provenance (source + linked AgentSession)
+   * as a trailing object so the positional signature stays back-compatible.
+   * `startTimeOverride`/`endTimeOverride` (createCheckRun/completeCheckRun)
+   * exist only for internal ops/seed scripts backdating historical demo data
+   * (see src/scripts/README.md) — no HTTP route ever passes them.
+   */
+  createCheckRun(applianceId: string, completedBy: string, completedByName?: string, stationId?: string, runDetails?: CheckRunDetails, startTimeOverride?: Date): Promise<CheckRun> | CheckRun;
   getCheckRunById(id: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
   getAllCheckRuns(stationId?: string): Promise<CheckRun[]> | CheckRun[];
   getCheckRunsByAppliance(applianceId: string): Promise<CheckRun[]> | CheckRun[];
   getCheckRunsByDateRange(startDate: Date, endDate: Date, stationId?: string): Promise<CheckRun[]> | CheckRun[];
-  completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
+  completeCheckRun(id: string, additionalComments?: string, endTimeOverride?: Date): Promise<CheckRun | null | undefined> | CheckRun | null | undefined;
   /**
    * Delete a check run and all of its results. Used to cancel/abandon a run that
    * was left open (e.g. someone walked away mid-check). Returns false when the run
