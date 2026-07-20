@@ -32,7 +32,9 @@
 }
 
 .wiki-full-page__main {
-  max-width: 760px;
+  /* Wide enough for WikiDocument's sidebar (200px) + a comfortable reading
+     column once its @container breakpoint (560px) switches to two columns. */
+  max-width: 1000px;
   margin: 0 auto;
   padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-2xl);
 }

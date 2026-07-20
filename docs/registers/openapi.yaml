@@ -1315,6 +1315,36 @@ paths:
         '404':
           description: Unknown filename
 
+  /api/wiki/user-guide/search:
+    post:
+      tags:
+        - Wiki
+      summary: Grounded AI search over the user-guide corpus (public, rate-limited)
+      operationId: searchWikiUserGuide
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: |
+            { answer, covered, sources }. Full schema: docs/registers/api_register.json → endpoints.wiki.
+        '400':
+          description: Missing or overlong query
+        '429':
+          description: AI rate limit exceeded
+        '502':
+          description: Model returned no parseable structured answer
+        '503':
+          description: AI is not configured on this server
+
   /api/wiki/platform-admin:
     get:
       tags:
@@ -1375,6 +1405,40 @@ paths:
           description: Not a platform admin
         '404':
           description: Unknown filename
+
+  /api/wiki/platform-admin/search:
+    post:
+      tags:
+        - Wiki
+        - Platform Admin
+      summary: Grounded AI search over the platform-admin doc corpus
+      operationId: searchWikiPlatformAdmin
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: '{ answer, covered, sources }'
+        '400':
+          description: Missing or overlong query
+        '403':
+          description: Not a platform admin
+        '429':
+          description: AI rate limit exceeded
+        '502':
+          description: Model returned no parseable structured answer
+        '503':
+          description: AI is not configured on this server
 
 components:
   schemas:

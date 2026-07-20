@@ -8,17 +8,16 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import { WikiContent } from './WikiContent';
+import { WikiDocument } from './WikiDocument';
 import './WikiPanel.css';
 
 interface WikiPanelProps {
   isOpen: boolean;
   activeSlug: string | null;
-  onNavigate: (slug: string | null) => void;
   onClose: () => void;
 }
 
-export function WikiPanel({ isOpen, activeSlug, onNavigate, onClose }: WikiPanelProps) {
+export function WikiPanel({ isOpen, activeSlug, onClose }: WikiPanelProps) {
   const panelRef = useFocusTrap<HTMLDivElement>(isOpen);
 
   useEffect(() => {
@@ -58,7 +57,7 @@ export function WikiPanel({ isOpen, activeSlug, onNavigate, onClose }: WikiPanel
           </button>
         </div>
         <div className="wiki-panel__body">
-          <WikiContent section="user-guide" activeSlug={activeSlug} onNavigate={onNavigate} />
+          <WikiDocument section="user-guide" initialSlug={activeSlug} />
         </div>
         <div className="wiki-panel__footer">
           <a href="/wiki" target="_blank" rel="noopener noreferrer" className="wiki-panel__full-link">

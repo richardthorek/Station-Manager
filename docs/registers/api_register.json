@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "version": "1.17.0",
-  "lastUpdated": "2026-07-19",
+  "lastUpdated": "2026-07-20",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (\u22481,000 requests per hour per IP by default (\u224884 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -2399,6 +2399,84 @@
           }
         },
         "implementation": "backend/src/routes/wiki.ts:48-51"
+      },
+      "POST /api/wiki/user-guide/search": {
+        "method": "POST",
+        "path": "/api/wiki/user-guide/search",
+        "description": "Grounded AI search over the user-guide corpus \u2014 full-context (every page's markdown goes in the prompt, not vector retrieval), fast/cheap 'chat' model deployment. The model is instructed to answer only from the supplied docs and flag when a question isn't covered; every cited source slug is re-validated against the real manifest before being returned.",
+        "authentication": "None (public, but rate-limited)",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Max 500 characters"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "{ answer, covered, sources } \u2014 sources are page slugs, re-validated server-side against the real manifest"
+          },
+          "400": {
+            "description": "Missing or overlong query"
+          },
+          "429": {
+            "description": "AI rate limit exceeded (aiRateLimiter, tighter per-IP cap than the rest of /api/wiki)"
+          },
+          "502": {
+            "description": "Model returned no parseable structured answer after all fallback attempts"
+          },
+          "503": {
+            "description": "AI is not configured on this server (no AZURE_OPENAI_ENDPOINT/KEY)"
+          }
+        },
+        "implementation": "backend/src/routes/wiki.ts (search handler) + backend/src/services/wikiSearchService.ts"
+      },
+      "POST /api/wiki/platform-admin/search": {
+        "method": "POST",
+        "path": "/api/wiki/platform-admin/search",
+        "description": "Same as the user-guide search, scoped to the platform-admin doc corpus. Gated identically to the rest of /api/wiki/platform-admin.",
+        "authentication": "JWT + platform admin allowlist",
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Max 500 characters"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "responses": {
+          "200": {
+            "description": "{ answer, covered, sources } \u2014 sources are page slugs, re-validated server-side against the real manifest"
+          },
+          "400": {
+            "description": "Missing or overlong query"
+          },
+          "429": {
+            "description": "AI rate limit exceeded (aiRateLimiter, tighter per-IP cap than the rest of /api/wiki)"
+          },
+          "502": {
+            "description": "Model returned no parseable structured answer after all fallback attempts"
+          },
+          "503": {
+            "description": "AI is not configured on this server (no AZURE_OPENAI_ENDPOINT/KEY)"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          }
+        },
+        "implementation": "backend/src/routes/wiki.ts (search handler) + backend/src/services/wikiSearchService.ts"
       }
     }
   },

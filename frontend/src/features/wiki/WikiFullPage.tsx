@@ -4,20 +4,24 @@
  * this is the "point people at stationkit.com.au/wiki" surface, meant to work
  * for prospects who haven't logged in as well as signed-in members who opened
  * "Open full guide in a new tab" from the WikiPanel drawer. Renders the same
- * WikiContent component the drawer uses, just with page chrome around it
- * instead of a sidebar.
+ * WikiDocument the drawer uses, with page chrome instead of a drawer shell —
+ * on a wide viewport WikiDocument's own container-query layout gives it a
+ * real sidebar here.
  */
 
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { PageTransition } from '../../components/PageTransition';
 import { BrandMark } from '../../components/BrandMark';
-import { WikiContent } from '../../components/WikiContent';
+import { WikiDocument } from '../../components/WikiDocument';
 import './WikiFullPage.css';
 
 export function WikiFullPage() {
   const { slug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
+  // Only used to seed WikiDocument's one-time initial scroll — the route
+  // param isn't re-read after that, so later sidebar clicks don't fight with it.
+  const [initialSlug] = useState(slug ?? null);
 
   useEffect(() => {
     document.title = slug ? `${slug.replace(/-/g, ' ')} — StationKit help` : 'StationKit help & user guide';
@@ -33,10 +37,10 @@ export function WikiFullPage() {
           <h1 className="wiki-full-page__title">Help &amp; user guide</h1>
         </header>
         <main className="wiki-full-page__main" id="main-content" tabIndex={-1}>
-          <WikiContent
+          <WikiDocument
             section="user-guide"
-            activeSlug={slug ?? null}
-            onNavigate={(nextSlug) => navigate(nextSlug ? `/wiki/${nextSlug}` : '/wiki')}
+            initialSlug={initialSlug}
+            onActivePageChange={(nextSlug) => navigate(`/wiki/${nextSlug}`, { replace: true })}
           />
         </main>
       </div>

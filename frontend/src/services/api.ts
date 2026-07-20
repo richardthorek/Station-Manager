@@ -2190,6 +2190,28 @@ class ApiService {
   getWikiImageUrl(filename: string, section: WikiSection = 'user-guide'): string {
     return `${API_BASE_URL}/wiki/${section}/images/${encodeURIComponent(filename)}`;
   }
+
+  /** Grounded AI search over the wiki corpus. Throws WikiSearchUnavailableError when AI isn't configured server-side (503). */
+  async searchWiki(query: string, section: WikiSection = 'user-guide'): Promise<WikiSearchResult> {
+    const response = await fetch(`${API_BASE_URL}/wiki/${section}/search`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ query }),
+    });
+    if (response.status === 503) throw new WikiSearchUnavailableError();
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'AI search failed');
+    }
+    return response.json();
+  }
+}
+
+export class WikiSearchUnavailableError extends Error {
+  constructor() {
+    super('AI search is not configured on this server');
+    this.name = 'WikiSearchUnavailableError';
+  }
 }
 
 export interface PlanDefinition {
@@ -2404,6 +2426,13 @@ export interface WikiPage {
   slug: string;
   title: string;
   markdown: string;
+}
+
+export interface WikiSearchResult {
+  answer: string;
+  covered: boolean;
+  /** Slugs the answer draws from — always real pages, hallucinated citations are dropped server-side. */
+  sources: string[];
 }
 
 export const api = new ApiService();

@@ -87,6 +87,25 @@ describe('Wiki routes', () => {
     });
   });
 
+  describe('user-guide search (public, AI-gated)', () => {
+    it('rejects a missing query', async () => {
+      const res = await request(app).post('/api/wiki/user-guide/search').send({});
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects an overlong query', async () => {
+      const res = await request(app)
+        .post('/api/wiki/user-guide/search')
+        .send({ query: 'a'.repeat(501) });
+      expect(res.status).toBe(400);
+    });
+
+    it('503s when AI is not configured (test env has no Azure OpenAI credentials)', async () => {
+      const res = await request(app).post('/api/wiki/user-guide/search').send({ query: 'how do I check in?' });
+      expect(res.status).toBe(503);
+    });
+  });
+
   describe('platform-admin (gated)', () => {
     async function signup(): Promise<string> {
       const res = await request(app)

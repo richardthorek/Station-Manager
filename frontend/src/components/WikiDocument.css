@@ -1,0 +1,348 @@
+.wiki-document {
+  color: var(--text-primary);
+  container-type: inline-size;
+  container-name: wiki-document;
+}
+
+/* ── Search — the most prominent element, always pinned above everything ── */
+
+.wiki-document__search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  transition: border-color 0.15s ease;
+}
+
+.wiki-document__search:focus-within {
+  border-color: var(--ui-blue);
+}
+
+.wiki-document__search-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.wiki-document__search-input {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 1rem;
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.wiki-document__search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.wiki-document__search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.wiki-document__search-clear:hover {
+  background: var(--surface-hover);
+}
+
+.wiki-document__ask-ai {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  background: var(--ui-blue);
+  color: var(--rfs-white);
+  border: none;
+  border-radius: var(--radius-full);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wiki-document__ask-ai:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wiki-document__ask-ai:not(:disabled):hover {
+  background: var(--rfs-core-red);
+}
+
+/* ── AI answer card ── */
+
+.wiki-document__ai-answer {
+  background: var(--surface-info);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.wiki-document__ai-loading,
+.wiki-document__ai-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.wiki-document__ai-uncovered {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--text-warning-strong);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.wiki-document__ai-text {
+  margin: 0 0 var(--spacing-sm);
+  color: var(--text-info-strong);
+  line-height: 1.5;
+}
+
+.wiki-document__ai-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.wiki-document__ai-source {
+  background: var(--bg-primary);
+  border: 1px solid var(--ui-blue);
+  color: var(--ui-blue);
+  border-radius: var(--radius-full);
+  padding: 4px var(--spacing-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wiki-document__ai-source:hover {
+  background: var(--ui-blue);
+  color: var(--rfs-white);
+}
+
+/* ── Loading / error ── */
+
+.wiki-document__loading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-secondary);
+  padding: var(--spacing-lg) 0;
+}
+
+.wiki-document__spinner {
+  animation: wiki-document-spin 1s linear infinite;
+}
+
+@keyframes wiki-document-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.wiki-document__error {
+  color: var(--text-error-strong);
+  background: var(--surface-error);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+/* ── Layout: column + collapsible nav by default, real sidebar once there's room ── */
+
+.wiki-document__layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.wiki-document__sidebar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  /* Deliberately NOT sticky in the single-column (narrow) layout: sidebar and
+     content share one vertical scroll flow there, so a sticky sidebar would
+     sit permanently pinned over whatever section the contextual open scrolls
+     to (tried it — the sticky box visually overlapped the target heading).
+     Once the two-column layout below kicks in, sidebar and content are
+     separate flex columns and can't overlap, so it's sticky there instead. */
+}
+
+.wiki-document__toc-heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.wiki-document__toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wiki-document__toc-link {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  padding: 6px var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+
+.wiki-document__toc-link:hover,
+.wiki-document__toc-link:focus-visible {
+  background: var(--surface-hover);
+  color: var(--ui-blue);
+}
+
+.wiki-document__toc-empty {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.wiki-document__content {
+  min-width: 0;
+}
+
+.wiki-document__article {
+  line-height: 1.6;
+  font-size: 0.95rem;
+  scroll-margin-top: var(--spacing-md);
+}
+
+.wiki-document__article + .wiki-document__article {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--border-color);
+}
+
+.wiki-document__article h1 {
+  font-size: 1.4rem;
+  margin: 0 0 var(--spacing-md);
+}
+
+.wiki-document__article h2 {
+  font-size: 1.15rem;
+  margin: var(--spacing-lg) 0 var(--spacing-sm);
+}
+
+.wiki-document__article h3 {
+  font-size: 1rem;
+  margin: var(--spacing-md) 0 var(--spacing-xs);
+}
+
+.wiki-document__article p {
+  margin: 0 0 var(--spacing-md);
+}
+
+.wiki-document__article ul,
+.wiki-document__article ol {
+  margin: 0 0 var(--spacing-md);
+  padding-left: 1.4em;
+}
+
+.wiki-document__article li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.wiki-document__article a {
+  color: var(--ui-blue);
+}
+
+.wiki-document__article code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.85em;
+}
+
+.wiki-document__article table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 var(--spacing-md);
+  font-size: 0.9rem;
+}
+
+.wiki-document__article th,
+.wiki-document__article td {
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  text-align: left;
+}
+
+.wiki-document__article th {
+  background: var(--bg-secondary);
+}
+
+.wiki-document__image {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  margin: var(--spacing-sm) 0;
+  display: block;
+}
+
+.wiki-document__article blockquote {
+  border-left: 3px solid var(--ui-blue);
+  margin: 0 0 var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-md);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Once the container is wide enough for a real two-column layout (the full
+   /wiki page, or a widened WikiPanel on desktop), switch to a sticky sidebar
+   beside scrolling content instead of a stacked column. */
+@container wiki-document (min-width: 560px) {
+  .wiki-document__layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .wiki-document__sidebar {
+    width: 200px;
+    position: sticky;
+    top: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .wiki-document__content {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiki-document__spinner {
+    animation: none;
+  }
+}
