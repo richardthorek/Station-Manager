@@ -52,6 +52,8 @@ tags:
     description: Platform-operator administration (PLATFORM_ADMIN_USERNAMES allowlist) — facility claim-conflict review
   - name: Billing
     description: Stripe Checkout/Portal/webhook — plan subscriptions and the standalone Fire Santa Run add-on (full detail in docs/registers/api_register.json → endpoints.billing)
+  - name: Wiki
+    description: In-app wiki (help drawer, public /wiki page, platform-admin help tab) — reads docs/wiki/{user-guide,platform-admin} at runtime (full detail in docs/registers/api_register.json → endpoints.wiki)
 
 paths:
   /health:
@@ -1089,7 +1091,7 @@ paths:
             type: boolean
       responses:
         '200':
-          description: '{ organization }' for soft delete, '{ success: true }' for hard delete
+          description: "{ organization } for soft delete, { success: true } for hard delete"
         '400':
           description: Hard delete requested without a matching confirm string
         '403':
@@ -1265,6 +1267,114 @@ paths:
           description: '{ logs }'
         '403':
           description: Not a platform admin
+
+  /api/wiki/user-guide:
+    get:
+      tags:
+        - Wiki
+      summary: User-guide table of contents (public)
+      operationId: getWikiUserGuideManifest
+      responses:
+        '200':
+          description: |
+            { sections: [{ heading, pages: [{ slug, title, description }] }] }. Full schema: docs/registers/api_register.json → endpoints.wiki.
+
+  /api/wiki/user-guide/pages/{slug}:
+    get:
+      tags:
+        - Wiki
+      summary: One user-guide page's markdown (public)
+      operationId: getWikiUserGuidePage
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ slug, title, markdown }'
+        '404':
+          description: Unknown slug
+
+  /api/wiki/user-guide/images/{filename}:
+    get:
+      tags:
+        - Wiki
+      summary: A user-guide image (public, cross-origin readable)
+      operationId: getWikiUserGuideImage
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Image file
+        '404':
+          description: Unknown filename
+
+  /api/wiki/platform-admin:
+    get:
+      tags:
+        - Wiki
+        - Platform Admin
+      summary: Platform-admin doc table of contents
+      operationId: getWikiPlatformAdminManifest
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: '{ sections: [...] }'
+        '403':
+          description: Not a platform admin
+
+  /api/wiki/platform-admin/pages/{slug}:
+    get:
+      tags:
+        - Wiki
+        - Platform Admin
+      summary: One platform-admin doc page's markdown
+      operationId: getWikiPlatformAdminPage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '{ slug, title, markdown }'
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Unknown slug
+
+  /api/wiki/platform-admin/images/{filename}:
+    get:
+      tags:
+        - Wiki
+        - Platform Admin
+      summary: A platform-admin doc image
+      operationId: getWikiPlatformAdminImage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Image file
+        '403':
+          description: Not a platform admin
+        '404':
+          description: Unknown filename
 
 components:
   schemas:

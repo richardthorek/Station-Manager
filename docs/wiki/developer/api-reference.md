@@ -1572,3 +1572,12 @@ curl -X GET "http://localhost:3000/api/export/events?startDate=2024-01-01&endDat
 curl -X GET "http://localhost:3000/api/export/truckcheck-results?startDate=2024-01-01&endDate=2024-03-31" \
   -o truckcheck-q1-2024.csv
 ```
+
+## Wiki Endpoints
+
+In-app wiki (help drawer, public `/wiki` page, platform-admin help tab). Full schema: `docs/registers/api_register.json` → `endpoints.wiki`. Source: `backend/src/routes/wiki.ts` + `services/wikiContentService.ts`.
+
+- `GET /api/wiki/user-guide` — table of contents (public). `{ sections: [{ heading, pages: [{ slug, title, description }] }] }`, derived by parsing `docs/wiki/user-guide/README.md`'s `###` headings and markdown link tables.
+- `GET /api/wiki/user-guide/pages/:slug` — `{ slug, title, markdown }` for one page. `slug` must be in the manifest; arbitrary filenames aren't reachable.
+- `GET /api/wiki/user-guide/images/:filename` — an image from `docs/wiki/user-guide/images/`. Sent with `Cross-Origin-Resource-Policy: cross-origin` (needed so the `:5173` dev frontend can load images from the `:3000` dev backend — Helmet's default same-origin CORP would otherwise block it; harmless in prod, same origin there).
+- `GET /api/wiki/platform-admin`, `.../pages/:slug`, `.../images/:filename` — same shape, reading `docs/wiki/platform-admin/` instead. Gated by `authMiddleware` + `requirePlatformAdmin` (same allowlist as `/api/platform`). Only ever linked from `PlatformAdminPage`'s Help tab — never surfaced to regular users or org admins.

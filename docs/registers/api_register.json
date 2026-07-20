@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "version": "1.17.0",
-  "lastUpdated": "2026-07-17",
+  "lastUpdated": "2026-07-19",
   "description": "Machine-readable registry of all REST API endpoints and WebSocket events for the RFS Station Manager\n\nAll API endpoints are protected with rate limiting (\u22481,000 requests per hour per IP by default (\u224884 per 5-minute window), configurable via RATE_LIMIT_API_MAX environment variable).\n\nMulti-Station Support: All endpoints support optional X-Station-Id header or stationId query parameter for station-based data filtering. Defaults to 'default-station' if not provided.\n\nAuthentication: When REQUIRE_AUTH=true, many endpoints require JWT authentication via Authorization: Bearer <token> header. See individual endpoint documentation for authentication requirements.",
   "commonHeaders": {
     "X-Station-Id": {
@@ -2293,6 +2293,112 @@
           }
         },
         "implementation": "backend/src/routes/platform.ts"
+      }
+    },
+    "wiki": {
+      "description": "In-app wiki (help drawer, public /wiki page, platform-admin help tab). Reads docs/wiki/{user-guide,platform-admin} markdown at runtime; nav structure is derived from each section's README.md link table. user-guide is public; platform-admin is gated.",
+      "authentication": "None (user-guide); JWT + platform admin allowlist (platform-admin)",
+      "GET /api/wiki/user-guide": {
+        "method": "GET",
+        "path": "/api/wiki/user-guide",
+        "description": "Table-of-contents manifest for the user guide: sections (parsed from user-guide/README.md's ### headings) and pages (parsed from its markdown link tables).",
+        "authentication": "None",
+        "responses": {
+          "200": {
+            "description": "{ sections: [{ heading, pages: [{ slug, title, description }] }] }"
+          }
+        },
+        "implementation": "backend/src/routes/wiki.ts:23"
+      },
+      "GET /api/wiki/user-guide/pages/:slug": {
+        "method": "GET",
+        "path": "/api/wiki/user-guide/pages/:slug",
+        "description": "Raw markdown + title for one user-guide page. slug must be in the manifest (whitelist) \u2014 arbitrary filenames on disk are not reachable.",
+        "authentication": "None",
+        "responses": {
+          "200": {
+            "description": "{ slug, title, markdown }"
+          },
+          "404": {
+            "description": "Unknown slug"
+          }
+        },
+        "implementation": "backend/src/routes/wiki.ts:27"
+      },
+      "GET /api/wiki/user-guide/images/:filename": {
+        "method": "GET",
+        "path": "/api/wiki/user-guide/images/:filename",
+        "description": "Serves an image from user-guide/images/. Cross-Origin-Resource-Policy: cross-origin (needed for the :5173/:3000 local dev split; harmless in prod, same origin there).",
+        "authentication": "None",
+        "responses": {
+          "200": {
+            "description": "Image file"
+          },
+          "404": {
+            "description": "Unknown filename"
+          }
+        },
+        "implementation": "backend/src/routes/wiki.ts:36"
+      },
+      "GET /api/wiki/platform-admin": {
+        "method": "GET",
+        "path": "/api/wiki/platform-admin",
+        "description": "Table-of-contents manifest for the platform-admin doc set. Only ever linked from PlatformAdminPage's Help tab.",
+        "authentication": "JWT + platform admin allowlist",
+        "responses": {
+          "200": {
+            "description": "{ sections: [...] }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          }
+        },
+        "implementation": "backend/src/routes/wiki.ts:48-51"
+      },
+      "GET /api/wiki/platform-admin/pages/:slug": {
+        "method": "GET",
+        "path": "/api/wiki/platform-admin/pages/:slug",
+        "description": "Raw markdown + title for one platform-admin doc page.",
+        "authentication": "JWT + platform admin allowlist",
+        "responses": {
+          "200": {
+            "description": "{ slug, title, markdown }"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Unknown slug"
+          }
+        },
+        "implementation": "backend/src/routes/wiki.ts:48-51"
+      },
+      "GET /api/wiki/platform-admin/images/:filename": {
+        "method": "GET",
+        "path": "/api/wiki/platform-admin/images/:filename",
+        "description": "Serves an image from platform-admin/images/.",
+        "authentication": "JWT + platform admin allowlist",
+        "responses": {
+          "200": {
+            "description": "Image file"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not a platform admin"
+          },
+          "404": {
+            "description": "Unknown filename"
+          }
+        },
+        "implementation": "backend/src/routes/wiki.ts:48-51"
       }
     }
   },
@@ -5117,13 +5223,18 @@
               "name": {
                 "type": "string",
                 "nullable": true,
-                "description": "AC-5 device account name (e.g. \"Main shed kiosk\") — undefined for a legacy anonymous BrigadeAccessToken"
+                "description": "AC-5 device account name (e.g. \"Main shed kiosk\") \u2014 undefined for a legacy anonymous BrigadeAccessToken"
               },
               "type": {
                 "type": "string",
-                "enum": ["kiosk", "tablet", "phone", "wearable"],
+                "enum": [
+                  "kiosk",
+                  "tablet",
+                  "phone",
+                  "wearable"
+                ],
                 "nullable": true,
-                "description": "AC-5 device type — undefined for a legacy anonymous BrigadeAccessToken"
+                "description": "AC-5 device type \u2014 undefined for a legacy anonymous BrigadeAccessToken"
               },
               "description": {
                 "type": "string",
@@ -7182,7 +7293,7 @@
     "PUT /api/auth/profile/password": {
       "method": "PUT",
       "path": "/api/auth/profile/password",
-      "description": "Change the caller's own password. Requires the current password to confirm identity — additive to passkey sign-in, never a replacement for it.",
+      "description": "Change the caller's own password. Requires the current password to confirm identity \u2014 additive to passkey sign-in, never a replacement for it.",
       "authentication": "Bearer JWT",
       "rateLimit": "sensitive-action limiter",
       "requestBody": {

@@ -17,10 +17,26 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { api, type ClaimConflict } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
 import { AdminNav } from '../../../components/AdminNav';
+import { WikiContent } from '../../../components/WikiContent';
 import { PlatformOrganizationsTab } from './PlatformOrganizationsTab';
 import { PlatformStationsTab } from './PlatformStationsTab';
 import { PlatformAuditLogTab } from './PlatformAuditLogTab';
 import './PlatformAdminPage.css';
+
+/**
+ * The platform-admin wiki (docs/wiki/platform-admin/) — operator-only
+ * documentation for this console. Deliberately embedded only here: never
+ * linked from the regular HelpButton/WikiPanel, which only ever reads
+ * docs/wiki/user-guide.
+ */
+function PlatformDocsTab() {
+  const [slug, setSlug] = useState<string | null>(null);
+  return (
+    <div className="platform-docs-tab">
+      <WikiContent section="platform-admin" activeSlug={slug} onNavigate={setSlug} />
+    </div>
+  );
+}
 
 function ClaimConflictsTab() {
   const [tab, setTab] = useState<'open' | 'resolved'>('open');
@@ -162,13 +178,14 @@ function ClaimConflictsTab() {
   );
 }
 
-const SECTIONS = ['organizations', 'conflicts', 'stations', 'audit'] as const;
+const SECTIONS = ['organizations', 'conflicts', 'stations', 'audit', 'docs'] as const;
 type Section = (typeof SECTIONS)[number];
 const SECTION_LABELS: Record<Section, string> = {
   organizations: 'Organizations',
   conflicts: 'Claim conflicts',
   stations: 'Orphaned stations',
   audit: 'Audit log',
+  docs: 'Help',
 };
 
 export function PlatformAdminPage() {
@@ -215,6 +232,7 @@ export function PlatformAdminPage() {
           {section === 'conflicts' && <ClaimConflictsTab />}
           {section === 'stations' && <PlatformStationsTab />}
           {section === 'audit' && <PlatformAuditLogTab />}
+          {section === 'docs' && <PlatformDocsTab />}
         </main>
       </div>
     </PageTransition>
