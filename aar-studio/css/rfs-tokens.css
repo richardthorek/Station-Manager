@@ -1,10 +1,12 @@
 /*
- * StationKit — canonical RFS design tokens.
+ * StationKit — canonical RFS design tokens. This is the ONLY physical file
+ * where brand colours/typography/spacing are defined.
  *
- * Single brand source of truth shared across the suite. The React SPA mirrors
- * these exact values in frontend/src/index.css; AAR Studio (no build step)
- * consumes them here and in css/app.css. Keep the two in sync — changing a
- * brand value means changing it in both places.
+ * AAR Studio (no build step) loads this file directly via <link>. The React
+ * SPA does not copy these values — frontend/src/index.css `@import`s this
+ * exact file, so both apps always render the same values with zero manual
+ * sync. Never hand-copy a value from here into another CSS file; add a var()
+ * reference instead.
  *
  * Design system v2.0 — Signal Red #D8232A (white-on-red ~5.3:1), Hi-Vis Amber
  * accent (lime retired), cool-slate neutrals, Archivo for headings, Public

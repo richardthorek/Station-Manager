@@ -57,6 +57,8 @@
   align-items: center;
   gap: 18px;
   flex-shrink: 0;
+  text-decoration: none;
+  color: inherit;
 }
 
 .logo-icon {

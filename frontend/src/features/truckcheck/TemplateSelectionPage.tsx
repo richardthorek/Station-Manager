@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
+import { PageHeader } from '../../components/PageHeader';
 import type { Appliance } from '../../types';
 import './TruckCheckPage.css';
 
@@ -35,10 +36,7 @@ export function TemplateSelectionPage() {
   if (loading) {
     return (
       <div className="truckcheck-page">
-        <header className="truckcheck-header">
-          <Link to="/truckcheck" className="back-link">← Back to Vehicle Checks</Link>
-          <h1>Manage Checklists</h1>
-        </header>
+        <PageHeader title="Manage Checklists" backTo="/truckcheck" backLabel="Vehicle Checks" />
         <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="loading">Loading appliances...</div>
         </main>
@@ -49,10 +47,7 @@ export function TemplateSelectionPage() {
   if (error) {
     return (
       <div className="truckcheck-page">
-        <header className="truckcheck-header">
-          <Link to="/truckcheck" className="back-link">← Back to Vehicle Checks</Link>
-          <h1>Manage Checklists</h1>
-        </header>
+        <PageHeader title="Manage Checklists" backTo="/truckcheck" backLabel="Vehicle Checks" />
         <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="error">{error}</div>
         </main>
@@ -62,11 +57,12 @@ export function TemplateSelectionPage() {
 
   return (
     <div className="truckcheck-page">
-      <header className="truckcheck-header">
-        <Link to="/truckcheck" className="back-link">← Back to Vehicle Checks</Link>
-        <h1>Manage Checklists</h1>
-        <p className="subtitle">Select an appliance to edit its checklist template</p>
-      </header>
+      <PageHeader
+        title="Manage Checklists"
+        subtitle="Select an appliance to edit its checklist template"
+        backTo="/truckcheck"
+        backLabel="Vehicle Checks"
+      />
 
       <main className="truckcheck-main" id="main-content" tabIndex={-1}>
         <div className="start-view">

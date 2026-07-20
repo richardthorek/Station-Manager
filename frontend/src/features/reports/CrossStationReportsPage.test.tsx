@@ -245,9 +245,7 @@ describe('CrossStationReportsPage', () => {
     await renderWithProviders(<CrossStationReportsPage />);
 
     await waitFor(() => {
-      const backLink = screen.getByText('← Back to Reports');
-      expect(backLink).toBeInTheDocument();
-      expect(backLink.closest('a')).toHaveAttribute('href', '/reports');
+      expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('href', '/reports');
     });
   });
 

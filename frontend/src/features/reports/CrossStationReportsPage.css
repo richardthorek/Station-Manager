@@ -8,39 +8,8 @@
   padding-bottom: 2rem;
 }
 
-.reports-header {
-  background: var(--rfs-core-red);
-  color: var(--rfs-white);
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.reports-header h1 {
-  margin: 0 0 0.5rem 0;
-  font-size: 2.5rem;
-  font-weight: 700;
-}
-
-.reports-header .subtitle {
-  margin: 0;
-  font-size: 1.1rem;
-  opacity: 0.95;
-}
-
-.back-link {
-  display: inline-block;
-  color: var(--rfs-white);
-  text-decoration: none;
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  transition: background 0.2s ease;
-}
-
-.back-link:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
+/* Back arrow, title, and subtitle now come from the shared PageHeader
+   component — see components/PageHeader.css. */
 
 .view-mode-toggle {
   display: flex;
@@ -539,10 +508,6 @@
 
 /* Tablet responsive */
 @media (max-width: 1024px) {
-  .reports-header h1 {
-    font-size: 2rem;
-  }
-
   .station-stats-grid,
   .leaderboards-grid,
   .pie-charts-grid {
@@ -552,18 +517,6 @@
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  .reports-header {
-    padding: 1.5rem;
-  }
-
-  .reports-header h1 {
-    font-size: 1.75rem;
-  }
-
-  .reports-header .subtitle {
-    font-size: 1rem;
-  }
-
   .view-mode-toggle,
   .station-selection,
   .brigade-selection,

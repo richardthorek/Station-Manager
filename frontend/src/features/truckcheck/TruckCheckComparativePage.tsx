@@ -7,10 +7,10 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { subDays } from 'date-fns';
 import { useStation } from '../../contexts/StationContext';
 import { MultiStationSelector } from '../../components/MultiStationSelector';
+import { PageHeader } from '../../components/PageHeader';
 import { api } from '../../services/api';
 import './AdminDashboard.css';
 import './TruckCheckComparativePage.css';
@@ -50,15 +50,12 @@ export function TruckCheckComparativePage() {
 
   return (
     <div className="admin-dashboard truckcheck-comparative-page">
-      <header className="dashboard-header">
-        <div className="header-top">
-          <Link to="/truckcheck/admin" className="back-link">← Back to Admin Dashboard</Link>
-        </div>
-        <h1>Compare Vehicle Checks Across Stations</h1>
-        <p className="subtitle">
-          Outcomes for the same vehicle type, matched by checklist item — last 90 days.
-        </p>
-      </header>
+      <PageHeader
+        title="Compare Vehicle Checks Across Stations"
+        subtitle="Outcomes for the same vehicle type, matched by checklist item — last 90 days."
+        backTo="/truckcheck/admin"
+        backLabel="Admin Dashboard"
+      />
 
       <main className="dashboard-main" id="main-content" tabIndex={-1}>
         <div className="station-selection">

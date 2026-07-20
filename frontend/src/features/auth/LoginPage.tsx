@@ -7,11 +7,12 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LockKeyhole, QrCode, HelpCircle, KeyRound } from 'lucide-react';
 import { browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageTransition } from '../../components/PageTransition';
+import { PageHeader } from '../../components/PageHeader';
 import { DeviceSetupGuide } from '../../components/DeviceSetupGuide';
 import './LoginPage.css';
 
@@ -115,22 +116,17 @@ export function LoginPage() {
   return (
     <PageTransition variant="fade">
       <div className="login-page">
-        <header className="login-header">
-          <div className="login-header-left">
-            <Link to="/" className="back-link">← Back to Home</Link>
-          </div>
-          <h1>Admin Login</h1>
-          <button
-            type="button"
-            className="setup-guide-btn"
-            onClick={() => setShowSetupGuide(true)}
-            aria-label="Open device setup guide"
-            title="How to set up a device"
-          >
-            <HelpCircle size={20} strokeWidth={2} aria-hidden />
-            <span className="sr-only">Setup Guide</span>
-          </button>
-        </header>
+        <PageHeader
+          title="Admin Login"
+          backTo="/"
+          backLabel="Home"
+          actions={[{
+            key: 'setup-guide',
+            label: 'How to set up a device',
+            icon: <HelpCircle size={20} strokeWidth={2} aria-hidden />,
+            onClick: () => setShowSetupGuide(true),
+          }]}
+        />
 
         <main className="login-main">
           <div className="login-container">

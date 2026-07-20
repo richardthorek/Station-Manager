@@ -71,9 +71,10 @@ npm run lint           # frontend ESLint (zero-warning gate)
 
 Per-app scripts (`npm test`, `npm run dev`, seeds, etc.) live in each app's
 `package.json` and its `CLAUDE.md`. **CI gate order** (`.github/workflows/ci-cd.yml`):
-backend typecheck → backend tests → frontend lint → frontend typecheck → frontend
-tests → AAR Studio tests → build. Deploy runs only on `main`. Docs-only changes
-(`docs/**`, `*.md`) skip the pipeline. **Node 22.x / npm ≥ 10 required.**
+design-token check → backend typecheck → backend tests → frontend lint → frontend
+typecheck → frontend tests → AAR Studio tests → build. Deploy runs only on `main`.
+Docs-only changes (`docs/**`, `*.md`) skip the pipeline. **Node 22.x / npm ≥ 10
+required.**
 
 ## Architecture (how data flows)
 
@@ -120,10 +121,16 @@ missing from `connect-src`.
 - **API calls** go through `frontend/src/services/api.ts`; **DB access** through
   a factory. Two DB implementations (in-memory + Table Storage) — a schema change
   usually needs **both** twins plus the shared type.
-- **NSW RFS brand**: red `#e5281B`, lime `#cbdb2a`, Public Sans; tokens in
-  `aar-studio/css/rfs-tokens.css`, mirrored by the SPA's `index.css`. Touch
-  targets ≥ 60px (kiosk; 44px inline/desktop). WCAG 2.1 AA. **UI changes need
-  iPad portrait + landscape screenshots in the PR.**
+- **NSW RFS brand**: Signal Red `--rfs-core-red` (#D8232A), Hi-Vis Amber
+  `--accent-amber` (#F6A609), Public Sans body / Archivo headings. **One**
+  canonical token file: `aar-studio/css/rfs-tokens.css` — `frontend/src/index.css`
+  `@import`s it directly (not a hand-copy), so both apps always render the same
+  values. **Never hardcode a brand hex** outside that file — use the `var()`;
+  `scripts/check-brand-colors.sh` (a CI gate) blocks it. Shared nav/header chrome
+  lives in `frontend/src/components/PageHeader.tsx` (sub-pages) and `AdminNav.tsx`
+  (admin console) — reuse them rather than hand-rolling a back link. Touch targets
+  ≥ 60px (kiosk; 44px inline/desktop). WCAG 2.1 AA. **UI changes need iPad
+  portrait + landscape screenshots in the PR.**
 
 ## Where detail lives (consult, don't re-derive)
 

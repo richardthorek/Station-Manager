@@ -246,6 +246,9 @@ export function UserProfilePage() {
       <div className="app">
         <Header isConnected={isConnected} databaseStatus={databaseStatus} />
         <div className="loading-container">
+          <button className="btn-back" onClick={() => navigate('/signin')}>
+            ← Back to Sign In
+          </button>
           <div className="spinner"></div>
           <p>Loading profile...</p>
         </div>

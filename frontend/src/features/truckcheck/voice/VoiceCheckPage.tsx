@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'rea
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useStation } from '../../../contexts/StationContext';
+import { PageHeader } from '../../../components/PageHeader';
 import { VoiceAgentClient } from './voiceAgentClient';
 import { MicCapture, playAudioBlob, unlockAudioPlayback } from './audioIO';
 import './VoiceCheckPage.css';
@@ -188,10 +189,7 @@ export function VoiceCheckPage() {
   if (isDefaultStation()) {
     return (
       <div className="voice-check-page">
-        <header className="voice-check-header">
-          <Link to="/truckcheck" className="back-link">← Vehicle Check</Link>
-          <h1>Voice Check</h1>
-        </header>
+        <PageHeader title="Voice Check" backTo="/truckcheck" backLabel="Vehicle Check" />
         <main className="voice-check-main">
           <p className="voice-transcript-hint">
             Voice check needs a station selected first.{' '}
@@ -212,11 +210,9 @@ export function VoiceCheckPage() {
 
   return (
     <div className="voice-check-page">
-      <header className="voice-check-header">
-        <Link to="/truckcheck" className="back-link">← Vehicle Check</Link>
-        <h1>Voice Check{applianceName ? ` — ${applianceName}` : ''}</h1>
+      <PageHeader title={`Voice Check${applianceName ? ` — ${applianceName}` : ''}`} backTo="/truckcheck" backLabel="Vehicle Check">
         <span className={`voice-status voice-status--${completed ? 'complete' : connection}`}>{statusLabel}</span>
-      </header>
+      </PageHeader>
 
       <main className="voice-check-main">
         <div className="voice-transcript" role="log" aria-live="polite" aria-label="Conversation transcript">

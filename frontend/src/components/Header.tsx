@@ -12,6 +12,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Settings2, Users, Plus, BarChart3, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useClampMenuToViewport } from '../hooks/useClampMenuToViewport';
@@ -85,7 +86,7 @@ export function Header({
   return (
     <header className={`header ${isDemo ? 'demo-mode' : ''}`}>
       <div className="header-content">
-        <div className="header-logo">
+        <Link to="/" className="header-logo" aria-label="Back to StationKit home">
           <div className="logo-icon"><BrandMark size={28} /></div>
           <h1>Station Manager</h1>
           {isDemo && (
@@ -93,7 +94,7 @@ export function Header({
               🎭 DEMO MODE
             </div>
           )}
-        </div>
+        </Link>
         <div className="header-status">
           {showAdminMenu && (
             <div className="admin-menu-container" ref={menuRef}>

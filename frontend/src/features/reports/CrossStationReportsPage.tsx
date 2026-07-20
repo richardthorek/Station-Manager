@@ -17,18 +17,18 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, subDays, subMonths } from 'date-fns';
 import { useStation } from '../../contexts/StationContext';
 import { MultiStationSelector } from '../../components/MultiStationSelector';
+import { PageHeader } from '../../components/PageHeader';
 import { api } from '../../services/api';
 import './CrossStationReportsPage.css';
 
 // RFS brand colors for charts
 const CHART_COLORS = {
-  primary: '#e5281B',     // RFS red
-  lime: '#F6A609',        // Hi-Vis Amber
+  primary: 'var(--rfs-core-red)', // RFS red (design token)
+  lime: 'var(--accent-amber)', // Hi-Vis Amber (design token)
   blue: '#215e9e',        // UI blue
   green: '#008550',       // UI green
   amber: '#fbb034',       // UI amber
@@ -338,11 +338,12 @@ export function CrossStationReportsPage() {
 
   return (
     <div className="cross-station-reports-page">
-      <header className="reports-header">
-        <Link to="/reports" className="back-link">← Back to Reports</Link>
-        <h1>Cross-Station Reports</h1>
-        <p className="subtitle">Compare performance and activity across multiple stations</p>
-      </header>
+      <PageHeader
+        title="Cross-Station Reports"
+        subtitle="Compare performance and activity across multiple stations"
+        backTo="/reports"
+        backLabel="Reports"
+      />
 
       {/* View Mode Toggle */}
       <div className="view-mode-toggle">

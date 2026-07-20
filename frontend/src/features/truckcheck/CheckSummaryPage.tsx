@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { Moon, Sun, Check, TriangleAlert, Search } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { Lightbox } from '../../components/Lightbox';
+import { PageHeader } from '../../components/PageHeader';
 import type { CheckRunWithResults } from '../../types';
 import './CheckSummary.css';
 
@@ -66,9 +67,7 @@ export function CheckSummaryPage() {
   if (loading) {
     return (
       <div className="summary-page">
-        <header className="summary-header">
-          <h1>Loading...</h1>
-        </header>
+        <PageHeader title="Loading..." backTo="/truckcheck" backLabel="Back" />
       </div>
     );
   }
@@ -76,10 +75,7 @@ export function CheckSummaryPage() {
   if (error || !checkRun) {
     return (
       <div className="summary-page">
-        <header className="summary-header">
-          <Link to="/truckcheck" className="back-link">← Back</Link>
-          <h1>Error</h1>
-        </header>
+        <PageHeader title="Error" backTo="/truckcheck" backLabel="Back" />
         <main className="summary-main" id="main-content" tabIndex={-1}>
           <div className="error">{error || 'Failed to load check run'}</div>
         </main>
@@ -104,16 +100,18 @@ export function CheckSummaryPage() {
           onClose={() => setLightboxImage(null)}
         />
       )}
-      <header className="summary-header">
-        <div className="header-top">
-          <Link to="/truckcheck" className="back-link">← Back</Link>
-          <button className="theme-toggle-btn" onClick={toggleTheme}>
-            {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
-          </button>
-        </div>
-        <h1>Check Summary</h1>
-        <p className="subtitle">{checkRun.applianceName}</p>
-      </header>
+      <PageHeader
+        title="Check Summary"
+        subtitle={checkRun.applianceName}
+        backTo="/truckcheck"
+        backLabel="Back"
+        actions={[{
+          key: 'theme',
+          label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+          icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+          onClick: toggleTheme,
+        }]}
+      />
 
       <main className="summary-main" id="main-content" tabIndex={-1}>
         <div className="summary-card">

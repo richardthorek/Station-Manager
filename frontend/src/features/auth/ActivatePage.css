@@ -75,11 +75,11 @@
 }
 
 .activate-field input:focus {
-  border-color: #e5281b;
+  border-color: var(--rfs-core-red);
 }
 
 .activate-error-msg {
-  color: #e5281b;
+  color: var(--rfs-core-red);
   font-size: 0.85rem;
   margin: 0;
   text-align: center;
@@ -95,7 +95,7 @@
 .activate-btn {
   width: 100%;
   padding: 0.75rem;
-  background: #e5281b;
+  background: var(--rfs-core-red);
   color: #fff;
   border: none;
   border-radius: 0.5rem;
@@ -124,7 +124,7 @@
   width: 2rem;
   height: 2rem;
   border: 3px solid #e5e7eb;
-  border-top-color: #e5281b;
+  border-top-color: var(--rfs-core-red);
   border-radius: 50%;
   animation: activate-spin 0.8s linear infinite;
 }
@@ -140,7 +140,7 @@
 }
 
 .activate-login-hint a {
-  color: #e5281b;
+  color: var(--rfs-core-red);
   font-weight: 600;
   text-decoration: none;
 }

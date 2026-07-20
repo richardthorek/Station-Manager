@@ -26,7 +26,7 @@
 }
 
 .kpi-card--lime {
-  --gradient-start: #F6A609;
+  --gradient-start: var(--accent-amber);
   --gradient-end: #a8b821;
   color: var(--rfs-black);
 }

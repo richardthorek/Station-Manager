@@ -122,7 +122,7 @@ describe('ReportsPage', () => {
     await renderReportsPage();
     
     expect(screen.getByText('Reports & Analytics')).toBeInTheDocument();
-    expect(screen.getByText('← Back to Home')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
   });
 
   it('should render date range selector buttons', async () => {

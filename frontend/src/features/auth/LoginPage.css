@@ -12,50 +12,8 @@
   flex-direction: column;
 }
 
-.login-header {
-  padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.login-header-left {
-  flex: 1;
-}
-
-.login-header h1 {
-  color: var(--rfs-white);
-  font-size: 1.75rem;
-  margin: 0;
-  font-weight: 700;
-  flex: 1;
-  text-align: center;
-}
-
-.setup-guide-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  padding: 0.5rem;
-  border-radius: 8px;
-  color: var(--rfs-white);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.setup-guide-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
-}
-
-.setup-guide-btn:active {
-  transform: scale(0.95);
-}
+/* Back arrow, title, and setup-guide action now come from the shared
+   PageHeader component — see components/PageHeader.css. */
 
 .sr-only {
   position: absolute;
@@ -272,32 +230,8 @@
   cursor: not-allowed;
 }
 
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  color: var(--rfs-white);
-  text-decoration: none;
-  font-size: 1rem;
-  font-weight: 500;
-  padding: 0.5rem 0;
-  transition: opacity 0.2s ease;
-}
-
-.back-link:hover {
-  opacity: 0.8;
-}
-
 /* Tablet and Desktop */
 @media (min-width: 768px) {
-  .login-header {
-    padding: 2rem 3rem;
-  }
-
-  .login-header h1 {
-    font-size: 2rem;
-    text-align: left;
-  }
-
   .login-card {
     padding: 3rem;
   }

@@ -43,7 +43,7 @@
 }
 
 .azm-vehicle-name {
-  color: var(--color-primary, #e5281b);
+  color: var(--rfs-core-red);
 }
 
 .azm-close {
@@ -92,8 +92,8 @@
 }
 
 .azm-tab--active {
-  color: var(--color-primary, #e5281b);
-  border-bottom-color: var(--color-primary, #e5281b);
+  color: var(--rfs-core-red);
+  border-bottom-color: var(--rfs-core-red);
 }
 
 /* ── Body ── */
@@ -167,7 +167,7 @@
 }
 
 .azm-btn--primary {
-  background: var(--color-primary, #e5281b);
+  background: var(--rfs-core-red);
   color: #fff;
 }
 
@@ -259,9 +259,9 @@
 }
 
 .azm-input:focus {
-  outline: 2px solid var(--color-primary, #e5281b);
+  outline: 2px solid var(--rfs-core-red);
   outline-offset: -1px;
-  border-color: var(--color-primary, #e5281b);
+  border-color: var(--rfs-core-red);
 }
 
 .azm-input--grow {
@@ -281,7 +281,7 @@
 }
 
 .azm-select:focus {
-  outline: 2px solid var(--color-primary, #e5281b);
+  outline: 2px solid var(--rfs-core-red);
   outline-offset: -1px;
 }
 
@@ -325,7 +325,7 @@
 }
 
 .azm-zone-row--editing {
-  border-color: var(--color-primary, #e5281b);
+  border-color: var(--rfs-core-red);
 }
 
 .azm-zone-view,
@@ -414,7 +414,7 @@
 }
 
 .azm-equip-row--editing {
-  border-color: var(--color-primary, #e5281b);
+  border-color: var(--rfs-core-red);
 }
 
 .azm-equip-view,

@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 import { format, subDays, subMonths } from 'date-fns';
 import { PageTransition } from '../../components/PageTransition';
+import { PageHeader } from '../../components/PageHeader';
 import { KPICard } from '../../components/KPICard';
 import { DataTable, type Column } from '../../components/DataTable';
 import { ExportMenu } from '../../components/ExportMenu';
@@ -44,8 +45,8 @@ import './ReportsPage.css';
 
 // RFS brand colors for charts
 const CHART_COLORS = {
-  primary: '#e5281B',     // RFS red
-  lime: '#F6A609',        // Hi-Vis Amber
+  primary: 'var(--rfs-core-red)', // RFS red (design token)
+  lime: 'var(--accent-amber)', // Hi-Vis Amber (design token)
   blue: '#215e9e',        // UI blue
   green: '#008550',       // UI green
   amber: '#fbb034',       // UI amber
@@ -411,9 +412,7 @@ export function ReportsPageEnhanced() {
   return (
     <PageTransition variant="slideFromBottom">
       <div className="reports-page">
-        <header className="reports-header">
-          <Link to="/" className="back-link">← Back to Home</Link>
-          <h1>Reports & Analytics</h1>
+        <PageHeader title="Reports & Analytics" backTo="/" backLabel="Home">
           <div className="reports-header__actions">
             <ExportMenu
               onExportPDF={handleExportPDF}
@@ -428,7 +427,7 @@ export function ReportsPageEnhanced() {
               Cross-Station →
             </Link>
           </div>
-        </header>
+        </PageHeader>
 
         {/* Date Range Selector */}
         <div className="date-range-selector">

@@ -7,35 +7,8 @@
   overflow: hidden;
 }
 
-.workflow-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--rfs-core-red);
-  color: var(--rfs-white);
-  padding: 0.5rem 1rem 0.625rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
-}
-
-.workflow-header .header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.25rem;
-}
-
-.workflow-header .header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.workflow-header h1 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-}
+/* Back arrow, title, share/theme actions now come from the shared
+   PageHeader component — see components/PageHeader.css. */
 
 /* Horizontal Progress Bar */
 .horizontal-progress-bar {
@@ -867,14 +840,6 @@ a.btn-primary {
 }
 
 @media (max-width: 768px) {
-  .workflow-header {
-    padding: 0.5rem 0.75rem;
-  }
-
-  .workflow-header h1 {
-    font-size: 1rem;
-  }
-
   .workflow-sidebar {
     width: 60px;
   }

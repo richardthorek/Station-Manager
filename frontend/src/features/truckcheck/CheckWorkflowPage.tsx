@@ -11,6 +11,7 @@ import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import { Lightbox } from '../../components/Lightbox';
 import { Confetti } from '../../components/Confetti';
+import { PageHeader } from '../../components/PageHeader';
 import { TruckCheckShareModal } from './TruckCheckShareModal';
 import type { Appliance, ChecklistTemplate, CheckRun, CheckResult, CheckStatus, Member } from '../../types';
 import './CheckWorkflow.css';
@@ -405,10 +406,7 @@ export function CheckWorkflowPage() {
   if (loading) {
     return (
       <div className="workflow-page">
-        <header className="workflow-header">
-          <Link to="/truckcheck" className="back-link">← Back</Link>
-          <h1>Loading...</h1>
-        </header>
+        <PageHeader title="Loading..." backTo="/truckcheck" backLabel="Back" />
       </div>
     );
   }
@@ -416,10 +414,7 @@ export function CheckWorkflowPage() {
   if (emptyChecklist && appliance) {
     return (
       <div className="workflow-page">
-        <header className="workflow-header">
-          <Link to="/truckcheck" className="back-link">← Back</Link>
-          <h1>{appliance.name} Check</h1>
-        </header>
+        <PageHeader title={`${appliance.name} Check`} backTo="/truckcheck" backLabel="Back" />
         <main className="workflow-main">
           <div className="name-prompt">
             <h2>No checklist to run yet</h2>
@@ -442,10 +437,7 @@ export function CheckWorkflowPage() {
   if (error || !appliance || !template) {
     return (
       <div className="workflow-page">
-        <header className="workflow-header">
-          <Link to="/truckcheck" className="back-link">← Back</Link>
-          <h1>Error</h1>
-        </header>
+        <PageHeader title="Error" backTo="/truckcheck" backLabel="Back" />
         <main className="workflow-main">
           <div className="error">{error || 'Failed to load checklist'}</div>
         </main>
@@ -456,15 +448,17 @@ export function CheckWorkflowPage() {
   if (showNamePrompt) {
     return (
       <div className="workflow-page">
-        <header className="workflow-header">
-          <div className="header-top">
-            <Link to="/truckcheck" className="back-link">← Back</Link>
-            <button className="theme-toggle-btn" onClick={toggleTheme}>
-              {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
-            </button>
-          </div>
-          <h1>{appliance.name} Check</h1>
-        </header>
+        <PageHeader
+          title={`${appliance.name} Check`}
+          backTo="/truckcheck"
+          backLabel="Back"
+          actions={[{
+            key: 'theme',
+            label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+            icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+            onClick: toggleTheme,
+          }]}
+        />
         <main className="workflow-main">
           <div className="name-prompt">
             <h2>Who's doing this check?</h2>
@@ -521,29 +515,29 @@ export function CheckWorkflowPage() {
           onClose={() => setShowShareModal(false)}
         />
       )}
-      <header className="workflow-header">
-        <div className="header-top">
-          <Link to="/truckcheck" className="back-link">← Cancel</Link>
-          <div className="header-actions">
-            <button
-              className="theme-toggle-btn"
-              onClick={() => setShowShareModal(true)}
-              aria-label="Share this check"
-              title="Share this check"
-            >
-              <Share2 size={20} strokeWidth={2} aria-hidden />
-            </button>
-            <button className="theme-toggle-btn" onClick={toggleTheme}>
-              {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
-            </button>
-          </div>
-        </div>
-        <h1>{appliance.name} Check</h1>
-        
+      <PageHeader
+        title={`${appliance.name} Check`}
+        backTo="/truckcheck"
+        backLabel="Cancel"
+        actions={[
+          {
+            key: 'share',
+            label: 'Share this check',
+            icon: <Share2 size={20} strokeWidth={2} aria-hidden />,
+            onClick: () => setShowShareModal(true),
+          },
+          {
+            key: 'theme',
+            label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+            icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+            onClick: toggleTheme,
+          },
+        ]}
+      >
         {/* Horizontal Progress Bar */}
         <div className="horizontal-progress-bar">
           <div className="progress-bar-track">
-            <motion.div 
+            <motion.div
               className="progress-bar-fill"
               initial={{ width: 0 }}
               animate={{ width: `${(results.size / template.items.length) * 100}%` }}
@@ -581,7 +575,7 @@ export function CheckWorkflowPage() {
             )}
           </div>
         )}
-      </header>
+      </PageHeader>
 
       <div className="workflow-content-wrapper">
         {/* Left sidebar with progress indicators */}

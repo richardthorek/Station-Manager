@@ -1,36 +1,13 @@
+/* StationKit design tokens — canonical file is aar-studio/css/rfs-tokens.css.
+   Imported directly (not hand-copied) so the SPA and AAR Studio share one
+   physical source of truth: edit the canonical file, both apps pick it up.
+   Only frontend-only extensions (semantic surfaces, shadows, dark theme)
+   live below. */
+@import '../../aar-studio/css/rfs-tokens.css';
+
 :root {
-  /* Brand colours — emergency-services heritage, refined for a modern,
-     professional, service-agnostic feel (fire, SES, and other crews).
-     The primary red is a deeper, less-neon tone than the original RFS red;
-     white-on-red sits at ~5.9:1 (WCAG AA, comfortably above the old 4.52:1). */
-  --rfs-core-red: #D8232A;        /* primary action / brand (Signal Red) */
-  --rfs-core-red-dark: #B01620;   /* hover / pressed */
-  --rfs-core-red-light: #E0555A;  /* light accent */
-
-  /* Hi-vis amber accent (replaces lime). Lime vars aliased for back-compat. */
-  --accent-amber: #F6A609;
-  --accent-amber-dark: #D98A00;
-  --accent-amber-ink: #241A00;    /* text ON amber */
-  --rfs-lime: var(--accent-amber);      /* deprecated alias */
-  --rfs-lime-dark: var(--accent-amber-dark); /* deprecated alias */
-
-  /* Neutral ramp — cool slate for a crisp, contemporary surface system.
-     (Replaces the warmer muddy greys; all text pairings remain WCAG AA.) */
-  --rfs-dark-grey: #55607A;       /* secondary text — 7.1:1 on white */
-  --rfs-light-grey: #D3DAE6;      /* strong borders */
-  --rfs-black: #0C1220;           /* ink — primary text (21:1 on white) */
-  --rfs-white: #ffffff;
-
-  /* Thematic/Semantic UI Colors */
-  --ui-amber: #F6A609;  /* Amber (warning / watch & act) */
-  --ui-blue: #2563EB;   /* Blue (info / links) */
-  --ui-green: #1E9E62;  /* Green (success / confirmation) */
-  /* Emergency Red is --rfs-core-red */
-
-  /* General UI & Text Colors */
+  /* Frontend-only extensions — not needed by AAR Studio's single-theme UI */
   --rfs-accent-green: #10b981;
-  --rfs-neutral-light: #F4F6F9;   /* subtle page background (cool off-white) */
-  --rfs-neutral-medium: #E6EAF1;  /* hover / divider surfaces */
   --rfs-neutral-dark: #1E2637;    /* deep slate for strong text */
 
   /* Accessible status surfaces */
@@ -55,20 +32,8 @@
   --status-skip-bg:     var(--bg-secondary);
   --status-skip-text:   #757575;
 
-  /* Design System - Spacing Scale */
-  --spacing-xs: 0.25rem;   /* 4px */
-  --spacing-sm: 0.5rem;    /* 8px */
-  --spacing-md: 1rem;      /* 16px */
-  --spacing-lg: 1.5rem;    /* 24px */
-  --spacing-xl: 2rem;      /* 32px */
-  --spacing-2xl: 3rem;     /* 48px */
-
-  /* Design System - Border Radius (softer look) */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-full: 9999px;
+  /* Spacing scale, border radius, and font families now come from the
+     imported token file (--spacing-*, --radius-*, --font-sans, etc). */
 
   /* Design System - Shadow Levels (soft, layered — modern depth) */
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, .08);
@@ -83,8 +48,7 @@
   --color-success: var(--ui-green);
 
   /* Typography */
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
 
@@ -96,14 +60,14 @@
 
 /* Headings + primary buttons use Archivo */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Archivo', 'Public Sans', sans-serif;
+  font-family: var(--font-heading);
   font-weight: 800;
   letter-spacing: -0.4px;
 }
 
 /* Codes, vehicle categories, slugs */
 code, .mono, .slug, .category-code {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
 }
 
 /* Light Theme (Default) - WCAG AA Compliant */

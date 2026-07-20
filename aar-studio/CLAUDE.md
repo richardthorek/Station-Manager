@@ -16,8 +16,9 @@ backend mounts statically at `/aar`. Ships as-is in the deploy zip.
 
 ## Layout
 
-- `index.html`, `css/app.css`, `css/rfs-tokens.css` (**canonical brand tokens** —
-  the SPA's `index.css` mirrors these).
+- `index.html`, `css/app.css`, `css/rfs-tokens.css` (**the one canonical brand
+  token file** — `frontend/src/index.css` `@import`s this exact file, so edit
+  only here; never hand-copy a value into the SPA).
 - `js/` — `main.js`, `analyse.js`, `store.js`, `ui.js`, `settings.js`,
   `views/`, `audio/`, `lib/`.
 - `test/` — `node --test` suites (one per concern). `data/sample-session.json`.

@@ -8,8 +8,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
+import { PageHeader } from '../../components/PageHeader';
 import type { VehicleType, ChecklistItem } from '../../types';
 import './VehicleTypesPage.css';
 
@@ -142,11 +142,12 @@ export function VehicleTypesPage() {
 
   return (
     <div className="vehicle-types-page">
-      <header className="truckcheck-header">
-        <Link to="/truckcheck/admin" className="back-link">← Back to Admin</Link>
-        <h1>Vehicle Types</h1>
-        <p className="subtitle">Standard checklists vehicles inherit — the locked, comparable core</p>
-      </header>
+      <PageHeader
+        title="Vehicle Types"
+        subtitle="Standard checklists vehicles inherit — the locked, comparable core"
+        backTo="/truckcheck/admin"
+        backLabel="Admin"
+      />
 
       <main className="truckcheck-main" id="main-content" tabIndex={-1}>
         <div className="vt-toolbar">
