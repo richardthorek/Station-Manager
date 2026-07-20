@@ -840,25 +840,15 @@
   .search-shortcut-hint {
     display: none;
   }
-  /* FAB: Floating Action Button for Add Member */
+  /* SignInPage already renders its own FloatingActionButton for "Add new
+     member" in this exact bottom-right spot (with proper hide-on-scroll,
+     spring animation and haptics) — MemberList is only ever mounted inside
+     it, so this toolbar button doesn't need to duplicate that as its own
+     fixed-position FAB too. Two independent "add member" circles stacking
+     on top of each other in the same corner was the actual bug; hide the
+     inline one on mobile instead of re-floating it. */
   .btn-add-member {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 60px;
-    height: 60px;
-    min-width: 60px;
-    z-index: 100;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    font-size: 2.5rem;
-  }
-
-  .btn-add-member:hover {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-  }
-
-  .btn-add-member:active {
-    transform: scale(0.95);
+    display: none;
   }
 }
 

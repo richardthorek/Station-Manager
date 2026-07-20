@@ -264,6 +264,12 @@ button {
   font-family: 'Archivo', inherit;
   font-size: 1rem;
   font-weight: 700;
+  /* The HTML button UA stylesheet sets color directly on the element (not
+     via inheritance), so without this reset every button that doesn't set
+     its own explicit color silently falls back to near-black text — invisible
+     on a colored background like the header, a FAB, or any dark button whose
+     author assumed color would just inherit from its ancestor. */
+  color: inherit;
   cursor: pointer;
   border: none;
   border-radius: var(--radius-md);
