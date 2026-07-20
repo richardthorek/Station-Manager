@@ -52,6 +52,7 @@ export interface ApplianceDetails {
 import type { Organization, Entitlements } from '../contexts/AuthContext';
 import { getKioskToken } from '../utils/kioskMode';
 import { getMemberSessionToken } from '../utils/memberSession';
+import { WikiSearchUnavailableError } from './wikiSearchError';
 
 // Use relative URL in production, localhost in development; ensure trailing /api
 const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
@@ -2190,7 +2191,24 @@ class ApiService {
   getWikiImageUrl(filename: string, section: WikiSection = 'user-guide'): string {
     return `${API_BASE_URL}/wiki/${section}/images/${encodeURIComponent(filename)}`;
   }
+
+  /** Grounded AI search over the wiki corpus. Throws WikiSearchUnavailableError when AI isn't configured server-side (503). */
+  async searchWiki(query: string, section: WikiSection = 'user-guide'): Promise<WikiSearchResult> {
+    const response = await fetch(`${API_BASE_URL}/wiki/${section}/search`, {
+      method: 'POST',
+      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ query }),
+    });
+    if (response.status === 503) throw new WikiSearchUnavailableError();
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'AI search failed');
+    }
+    return response.json();
+  }
 }
+
+export { WikiSearchUnavailableError } from './wikiSearchError';
 
 export interface PlanDefinition {
   code: 'community' | 'basic' | 'ai';
@@ -2404,6 +2422,13 @@ export interface WikiPage {
   slug: string;
   title: string;
   markdown: string;
+}
+
+export interface WikiSearchResult {
+  answer: string;
+  covered: boolean;
+  /** Slugs the answer draws from — always real pages, hallucinated citations are dropped server-side. */
+  sources: string[];
 }
 
 export const api = new ApiService();

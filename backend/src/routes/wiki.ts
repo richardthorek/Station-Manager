@@ -15,7 +15,9 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import { requirePlatformAdmin } from '../middleware/platformAdmin';
+import { aiRateLimiter } from '../middleware/rateLimiter';
 import { getWikiManifest, getWikiPage, getWikiImagePath, type WikiSection } from '../services/wikiContentService';
+import { searchWiki } from '../services/wikiSearchService';
 
 const router = Router();
 
@@ -49,6 +51,29 @@ function registerSectionRoutes(mountPath: string, section: WikiSection): void {
         'Cross-Origin-Resource-Policy': 'cross-origin',
       },
     });
+  });
+
+  // Grounded AI search — the tighter aiRateLimiter is stacked on top of the
+  // apiRateLimiter already applied at the /api/wiki mount (see index.ts),
+  // same reasoning as /api/ai: a paid, anonymous-reachable AI call needs a
+  // tighter per-IP bound than ordinary reads.
+  router.post(`${mountPath}/search`, aiRateLimiter, async (req: Request, res: Response) => {
+    const { query } = req.body ?? {};
+    if (typeof query !== 'string' || !query.trim()) {
+      res.status(400).json({ error: 'query is required' });
+      return;
+    }
+    if (query.length > 500) {
+      res.status(400).json({ error: 'query is too long (max 500 characters)' });
+      return;
+    }
+
+    const outcome = await searchWiki(section, query.trim());
+    if (!outcome.result) {
+      res.status(outcome.status).json({ error: outcome.error || 'AI search failed' });
+      return;
+    }
+    res.status(200).json(outcome.result);
   });
 }
 

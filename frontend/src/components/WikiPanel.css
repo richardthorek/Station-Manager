@@ -10,7 +10,9 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(420px, 100vw);
+  /* Wide enough for WikiDocument's two-column sidebar+content layout
+     (its @container breakpoint kicks in at 560px) once there's room. */
+  width: min(680px, 92vw);
   background: var(--bg-primary);
   box-shadow: var(--shadow-xl);
   z-index: 9401;

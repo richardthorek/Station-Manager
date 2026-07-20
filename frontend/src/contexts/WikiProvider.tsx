@@ -5,7 +5,7 @@
  * the drawer itself, mirroring ToastProvider's self-contained pattern. Only
  * ever backs the public user-guide section — the platform-admin section is
  * deliberately never wired into this global provider (see
- * features/admin/platform/PlatformAdminPage.tsx, which embeds WikiContent
+ * features/admin/platform/PlatformAdminPage.tsx, which embeds WikiDocument
  * directly instead).
  */
 
@@ -41,12 +41,7 @@ export function WikiProvider({ children }: WikiProviderProps) {
   return (
     <WikiContext.Provider value={value}>
       {children}
-      <WikiPanel
-        isOpen={isOpen}
-        activeSlug={activeSlug}
-        onNavigate={(slug) => setActiveSlug(slug)}
-        onClose={close}
-      />
+      <WikiPanel isOpen={isOpen} activeSlug={activeSlug} onClose={close} />
     </WikiContext.Provider>
   );
 }

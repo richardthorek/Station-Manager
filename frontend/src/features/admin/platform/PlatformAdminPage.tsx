@@ -17,7 +17,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { api, type ClaimConflict } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
 import { AdminNav } from '../../../components/AdminNav';
-import { WikiContent } from '../../../components/WikiContent';
+import { WikiDocument } from '../../../components/WikiDocument';
 import { PlatformOrganizationsTab } from './PlatformOrganizationsTab';
 import { PlatformStationsTab } from './PlatformStationsTab';
 import { PlatformAuditLogTab } from './PlatformAuditLogTab';
@@ -30,10 +30,9 @@ import './PlatformAdminPage.css';
  * docs/wiki/user-guide.
  */
 function PlatformDocsTab() {
-  const [slug, setSlug] = useState<string | null>(null);
   return (
     <div className="platform-docs-tab">
-      <WikiContent section="platform-admin" activeSlug={slug} onNavigate={setSlug} />
+      <WikiDocument section="platform-admin" />
     </div>
   );
 }

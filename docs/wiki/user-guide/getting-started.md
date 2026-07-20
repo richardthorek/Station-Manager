@@ -1,7 +1,5 @@
 # Getting Started
 
-![The Bushie Tools marketing landing page, with the "Try it free" and "Try the demo" buttons](images/getting-started-landing.png)
-
 ## Try it first — demo mode
 
 You don't need an account to look around. Open the app and add `?demo=true` to

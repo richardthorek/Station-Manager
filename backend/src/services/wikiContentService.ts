@@ -137,6 +137,19 @@ export function getWikiPage(section: WikiSection, slug: string): WikiPage | null
   }
 }
 
+/** Every real content page in manifest order (excludes 'readme' — that's the nav source, not content). Used to build the AI search corpus. */
+export function getAllWikiPages(section: WikiSection): WikiPage[] {
+  const manifest = getWikiManifest(section);
+  const pages: WikiPage[] = [];
+  for (const s of manifest.sections) {
+    for (const p of s.pages) {
+      const page = getWikiPage(section, p.slug);
+      if (page) pages.push(page);
+    }
+  }
+  return pages;
+}
+
 export function getWikiImagePath(section: WikiSection, filename: string): string | null {
   if (!IMAGE_FILENAME_PATTERN.test(filename)) return null;
   const imagesDir = path.join(sectionDir(section), 'images');

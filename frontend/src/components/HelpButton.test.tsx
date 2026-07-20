@@ -5,12 +5,16 @@ import { MemoryRouter } from 'react-router-dom';
 import { HelpButton } from './HelpButton';
 import { WikiProvider } from '../contexts/WikiProvider';
 import { api } from '../services/api';
+import { WikiSearchUnavailableError } from '../services/wikiSearchError';
 
+// Deliberately a plain full replacement, no vi.importActual — see
+// WikiDocument.test.tsx for why (pulls the whole giant api.ts into coverage).
 vi.mock('../services/api', () => ({
   api: {
     getWikiManifest: vi.fn(),
     getWikiPage: vi.fn(),
     getWikiImageUrl: vi.fn((filename: string) => `/api/wiki/user-guide/images/${filename}`),
+    searchWiki: vi.fn(),
   },
 }));
 
@@ -44,27 +48,25 @@ describe('HelpButton', () => {
     });
   });
 
-  it('opens the panel at a contextual page for the current route', async () => {
+  it('opens the panel and scrolls to a contextual page for the current route', async () => {
     const user = userEvent.setup();
     renderAt('/signin');
 
     await user.click(screen.getByRole('button', { name: /help and user guide/i }));
 
+    // The whole guide renders as one document — the contextual page is present, scrolled to.
     expect(await screen.findByText(/how to check in and out/i)).toBeInTheDocument();
     expect(api.getWikiPage).toHaveBeenCalledWith('sign-in', 'user-guide');
   });
 
-  it('shows the table of contents after navigating back', async () => {
+  it('shows the sidebar contents alongside the content', async () => {
     const user = userEvent.setup();
     renderAt('/signin');
 
     await user.click(screen.getByRole('button', { name: /help and user guide/i }));
-    await screen.findByText(/how to check in and out/i);
 
-    await user.click(screen.getByRole('button', { name: /all help topics/i }));
-
-    await waitFor(() => expect(screen.getByText('Sign-in book')).toBeInTheDocument());
-    expect(screen.getByText('Everyday use')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Everyday use')).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: 'Sign-in book' })).toBeInTheDocument();
   });
 
   it('does not render inside the platform admin console', () => {
@@ -72,13 +74,57 @@ describe('HelpButton', () => {
     expect(screen.queryByRole('button', { name: /help and user guide/i })).not.toBeInTheDocument();
   });
 
-  it('opens at the table of contents on a route with no contextual mapping', async () => {
+  it('opens without a contextual page on a route with no mapping, but still loads the guide', async () => {
     const user = userEvent.setup();
     renderAt('/account');
 
     await user.click(screen.getByRole('button', { name: /help and user guide/i }));
 
-    await waitFor(() => expect(screen.getByText('Sign-in book')).toBeInTheDocument());
-    expect(api.getWikiPage).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Sign-in book' })).toBeInTheDocument());
+  });
+
+  it('filters the sidebar as the user types in the search box', async () => {
+    const user = userEvent.setup();
+    renderAt('/account');
+
+    await user.click(screen.getByRole('button', { name: /help and user guide/i }));
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Sign-in book' })).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText(/search the guide/i), 'nothing matches this');
+
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'Sign-in book' })).not.toBeInTheDocument());
+    expect(screen.getByText(/no pages match/i)).toBeInTheDocument();
+  });
+
+  it('runs a grounded AI search on Enter and shows the answer with a clickable source', async () => {
+    vi.mocked(api.searchWiki).mockResolvedValue({
+      answer: 'Tap Sign In on the kiosk and select your name.',
+      covered: true,
+      sources: ['sign-in'],
+    });
+    const user = userEvent.setup();
+    renderAt('/account');
+
+    await user.click(screen.getByRole('button', { name: /help and user guide/i }));
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Sign-in book' })).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText(/search the guide/i), 'how do I check in?{Enter}');
+
+    expect(await screen.findByText(/tap sign in on the kiosk/i)).toBeInTheDocument();
+    expect(api.searchWiki).toHaveBeenCalledWith('how do I check in?', 'user-guide');
+    expect(screen.getByRole('button', { name: 'Sign-in book' })).toBeInTheDocument();
+  });
+
+  it('shows an unavailable hint instead of an error when AI search is not configured', async () => {
+    vi.mocked(api.searchWiki).mockRejectedValue(new WikiSearchUnavailableError());
+    const user = userEvent.setup();
+    renderAt('/account');
+
+    await user.click(screen.getByRole('button', { name: /help and user guide/i }));
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Sign-in book' })).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText(/search the guide/i), 'anything{Enter}');
+
+    expect(await screen.findByText(/isn't switched on/i)).toBeInTheDocument();
   });
 });

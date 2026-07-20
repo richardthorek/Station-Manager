@@ -38,6 +38,13 @@ if (!Element.prototype.setPointerCapture) {
   Element.prototype.hasPointerCapture = () => false
 }
 
+// jsdom doesn't implement scrollIntoView at all (not even a no-op) — the
+// in-app wiki's sidebar/search navigation (WikiDocument) calls it to jump
+// between sections, which would otherwise throw "not a function" in tests.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}
+
 // Mock IntersectionObserver for components that use it
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}

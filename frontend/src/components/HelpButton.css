@@ -18,6 +18,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Flex containers can collapse an inline SVG's intrinsic size to 0 width
+   when only the width/height HTML attributes are set (no CSS size) — the
+   flex-basis-from-content algorithm doesn't reliably pick up SVG's replaced
+   intrinsic size across browsers. Pin size + stop shrinking explicitly. */
+.help-fab svg {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
 .help-fab:hover {
   transform: scale(1.06);
   box-shadow: var(--shadow-xl);
