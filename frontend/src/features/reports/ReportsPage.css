@@ -7,32 +7,11 @@
   padding-bottom: 2rem;
 }
 
-.reports-header {
-  background: var(--rfs-core-red);
-  padding: 1.5rem 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+/* Back arrow and title now come from the shared PageHeader component — see
+   components/PageHeader.css. This page's header content lives in a
+   .page-header__extra margin-bottom to match the old .reports-header spacing. */
+.reports-page .page-header {
   margin-bottom: 2rem;
-}
-
-.reports-header .back-link {
-  display: inline-block;
-  color: var(--rfs-white);
-  text-decoration: none;
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
-  opacity: 0.9;
-  transition: opacity 0.2s;
-}
-
-.reports-header .back-link:hover {
-  opacity: 1;
-}
-
-.reports-header h1 {
-  color: var(--rfs-white);
-  font-size: 2rem;
-  margin: 0 0 0.75rem 0;
-  font-weight: 700;
 }
 
 .reports-header__actions {
@@ -42,7 +21,7 @@
   flex-wrap: wrap;
 }
 
-.reports-header .cross-station-link {
+.page-header__extra .cross-station-link {
   display: inline-block;
   color: var(--rfs-white);
   text-decoration: none;
@@ -53,7 +32,7 @@
   transition: all 0.2s ease;
 }
 
-.reports-header .cross-station-link:hover {
+.page-header__extra .cross-station-link:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateX(2px);
 }

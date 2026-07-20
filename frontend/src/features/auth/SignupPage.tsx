@@ -20,6 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import type { FacilitySelection } from '../../services/api';
 import { PageTransition } from '../../components/PageTransition';
+import { PageHeader } from '../../components/PageHeader';
 import { FacilitySearch } from '../../components/FacilitySearch';
 import { useToast } from '../../hooks/useToast';
 import { TruckCheckOnboardingWizard } from './TruckCheckOnboardingWizard';
@@ -139,10 +140,7 @@ export function SignupPage() {
   return (
     <PageTransition variant="fade">
       <div className="login-page">
-        <header className="login-header">
-          <Link to="/" className="back-link">← Back to Home</Link>
-          <h1>Create your account</h1>
-        </header>
+        <PageHeader title="Create your account" backTo="/" backLabel="Home" />
 
         <main className="login-main">
           <div className="login-container">

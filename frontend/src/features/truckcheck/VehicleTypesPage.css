@@ -64,7 +64,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: var(--rfs-lime, #F6A609);
+  background: var(--rfs-lime);
   color: #1a1a1a;
   padding: 0.1rem 0.4rem;
   border-radius: 999px;
@@ -135,7 +135,7 @@
 }
 
 .btn-view {
-  background: var(--rfs-lime, #F6A609);
+  background: var(--rfs-lime);
   color: #1a1a1a;
   border: none;
   padding: 0.4rem 0.6rem;

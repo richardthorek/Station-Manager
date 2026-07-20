@@ -7,7 +7,7 @@
 
 .onboarding-header {
   padding: 2rem 1rem;
-  background: linear-gradient(135deg, #e5281B 0%, #c71511 100%);
+  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
   color: white;
   text-align: center;
 }
@@ -34,7 +34,7 @@
 
 .progress-fill {
   height: 100%;
-  background: #cbdb2a;
+  background: var(--accent-amber);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -87,9 +87,9 @@
 }
 
 .jurisdiction-option input:checked + .jurisdiction-label {
-  background: #e5281B;
+  background: var(--rfs-core-red);
   color: white;
-  border-color: #c71511;
+  border-color: var(--rfs-core-red-dark);
 }
 
 .jurisdiction-label {
@@ -103,12 +103,12 @@
 }
 
 .jurisdiction-option input:focus + .jurisdiction-label {
-  outline: 2px solid #e5281B;
+  outline: 2px solid var(--rfs-core-red);
   outline-offset: -2px;
 }
 
 .jurisdiction-option:hover .jurisdiction-label {
-  border-color: #e5281B;
+  border-color: var(--rfs-core-red);
 }
 
 /* Agency List */
@@ -127,9 +127,9 @@
 }
 
 .agency-option input:checked + .agency-label {
-  background: #e5281B;
+  background: var(--rfs-core-red);
   color: white;
-  border-color: #c71511;
+  border-color: var(--rfs-core-red-dark);
 }
 
 .agency-label {
@@ -143,12 +143,12 @@
 }
 
 .agency-option input:focus + .agency-label {
-  outline: 2px solid #e5281B;
+  outline: 2px solid var(--rfs-core-red);
   outline-offset: -2px;
 }
 
 .agency-option:hover .agency-label {
-  border-color: #e5281B;
+  border-color: var(--rfs-core-red);
 }
 
 /* Vehicle Grid */
@@ -182,14 +182,14 @@
 }
 
 .vehicle-option input:checked + .vehicle-card {
-  border-color: #e5281B;
+  border-color: var(--rfs-core-red);
   background: #ffe8e6;
   box-shadow: 0 0 0 3px rgba(229, 40, 27, 0.1);
 }
 
 .vehicle-option input:checked + .vehicle-card .vehicle-checkbox {
-  background: #e5281B;
-  border-color: #c71511;
+  background: var(--rfs-core-red);
+  border-color: var(--rfs-core-red-dark);
 }
 
 .vehicle-option input:checked + .vehicle-card .vehicle-checkbox::after {
@@ -216,7 +216,7 @@
 }
 
 .vehicle-option:hover .vehicle-card {
-  border-color: #e5281B;
+  border-color: var(--rfs-core-red);
 }
 
 .vehicle-checkbox {
@@ -285,7 +285,7 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #e5281B;
+  border-color: var(--rfs-core-red);
   box-shadow: 0 0 0 3px rgba(229, 40, 27, 0.1);
 }
 
@@ -314,12 +314,12 @@
 }
 
 .onboarding-button.primary {
-  background: #e5281B;
+  background: var(--rfs-core-red);
   color: white;
 }
 
 .onboarding-button.primary:hover:not(:disabled) {
-  background: #c71511;
+  background: var(--rfs-core-red-dark);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(229, 40, 27, 0.3);
 }
@@ -332,7 +332,7 @@
 
 .onboarding-button.secondary:hover:not(:disabled) {
   background: #e8e8e8;
-  border-color: #e5281B;
+  border-color: var(--rfs-core-red);
 }
 
 .onboarding-button:disabled {
@@ -348,7 +348,7 @@
   padding: 1.5rem;
   background: #f9f9f9;
   border-radius: 8px;
-  border-left: 4px solid #e5281B;
+  border-left: 4px solid var(--rfs-core-red);
 }
 
 .summary-section {
@@ -434,7 +434,7 @@
   .jurisdiction-label:hover,
   .agency-label:hover,
   .vehicle-card:hover {
-    border-color: #e5281B;
+    border-color: var(--rfs-core-red);
   }
 
   .vehicle-title {
@@ -457,7 +457,7 @@
   }
 
   .form-input:focus {
-    border-color: #e5281B;
+    border-color: var(--rfs-core-red);
   }
 
   .form-input:disabled {
@@ -477,7 +477,7 @@
 
   .confirm-summary {
     background: #1a1a1a;
-    border-left-color: #e5281B;
+    border-left-color: var(--rfs-core-red);
   }
 
   .summary-value {

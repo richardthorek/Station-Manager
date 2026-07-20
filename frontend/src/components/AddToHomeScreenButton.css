@@ -3,7 +3,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1rem;
-  background: var(--rfs-lime, #F6A609);
+  background: var(--rfs-lime);
   color: #1a1a1a;
   border: none;
   border-radius: 6px;

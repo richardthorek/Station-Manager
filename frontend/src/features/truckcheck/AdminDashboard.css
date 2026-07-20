@@ -4,25 +4,8 @@
   color: var(--text-primary);
 }
 
-.dashboard-header {
-  background: var(--rfs-core-red);
-  color: var(--rfs-white);
-  padding: 1.5rem 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard-header .header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.dashboard-header h1 {
-  margin: 0 0 1rem 0;
-  font-size: 2rem;
-  font-weight: 700;
-}
+/* Back arrow, title, subtitle, and theme-toggle action now come from the
+   shared PageHeader component — see components/PageHeader.css. */
 
 .tabs {
   display: flex;
@@ -52,47 +35,6 @@
 .tab.active {
   background: var(--bg-card);
   color: var(--rfs-core-red);
-}
-
-.dashboard-header .subtitle {
-  margin: 0.5rem 0 0 0;
-  font-size: 1rem;
-  opacity: 0.9;
-}
-
-.back-link {
-  color: var(--rfs-white);
-  text-decoration: none;
-  font-size: 1rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.back-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.theme-toggle-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: var(--rfs-white);
-  font-size: 1.5rem;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-}
-
-.theme-toggle-btn:hover {
-  background-color: rgba(255, 255, 255, 0.3);
 }
 
 .dashboard-main {
@@ -616,7 +558,7 @@
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: var(--rfs-core-red, #e5281b);
+  border-color: var(--rfs-core-red);
 }
 
 .modal-actions {
@@ -638,7 +580,7 @@
 }
 
 .btn-primary {
-  background: var(--rfs-core-red, #e5281b);
+  background: var(--rfs-core-red);
   color: #fff;
 }
 

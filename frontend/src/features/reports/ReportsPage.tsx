@@ -21,14 +21,15 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import { format, subDays, subMonths } from 'date-fns';
 import { PageTransition } from '../../components/PageTransition';
 import { SkeletonReportCard, Skeleton } from '../../components/Skeleton';
+import { PageHeader } from '../../components/PageHeader';
 import { contentFadeIn } from '../../utils/animations';
 import { api } from '../../services/api';
 import './ReportsPage.css';
 
 // RFS brand colors for charts
 const CHART_COLORS = {
-  primary: '#e5281B',     // RFS red
-  lime: '#F6A609',        // Hi-Vis Amber
+  primary: 'var(--rfs-core-red)', // RFS red (design token)
+  lime: 'var(--accent-amber)', // Hi-Vis Amber (design token)
   blue: '#215e9e',        // UI blue
   green: '#008550',       // UI green
   amber: '#fbb034',       // UI amber
@@ -191,13 +192,11 @@ export function ReportsPage() {
   return (
     <PageTransition variant="slideFromBottom">
       <div className="reports-page">
-      <header className="reports-header">
-        <Link to="/" className="back-link">← Back to Home</Link>
-        <h1>Reports & Analytics</h1>
+      <PageHeader title="Reports & Analytics" backTo="/" backLabel="Home">
         <Link to="/reports/cross-station" className="cross-station-link">
           View Cross-Station Reports →
         </Link>
-      </header>
+      </PageHeader>
 
       {/* Date Range Selector */}
       <div className="date-range-selector">

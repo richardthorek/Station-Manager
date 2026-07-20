@@ -6,46 +6,8 @@
   flex-direction: column;
 }
 
-.template-editor-header {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  padding: 1.5rem 2rem;
-  border-bottom: 2px solid rgba(234, 67, 53, 0.3);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.template-editor-header .back-link {
-  color: #ea4335;
-  text-decoration: none;
-  font-size: 1rem;
-  transition: color 0.2s;
-}
-
-.template-editor-header .back-link:hover {
-  color: #ff6b5c;
-}
-
-.template-editor-header .header-content {
-  flex: 1;
-  text-align: center;
-}
-
-.template-editor-header h1 {
-  margin: 0;
-  font-size: 1.8rem;
-  color: white;
-}
-
-.template-editor-header h2 {
-  margin: 0.5rem 0 0 0;
-  font-size: 1.2rem;
-  color: #ea4335;
-  font-weight: normal;
-}
+/* Back arrow, title, and subtitle now come from the shared PageHeader
+   component — see components/PageHeader.css. */
 
 .save-button {
   background: #ea4335;

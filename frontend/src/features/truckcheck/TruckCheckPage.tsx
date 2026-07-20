@@ -24,6 +24,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useStation } from '../../contexts/StationContext';
 import { useSocket } from '../../hooks/useSocket';
 import { PageTransition } from '../../components/PageTransition';
+import { PageHeader } from '../../components/PageHeader';
 import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 import { useToast } from '../../hooks/useToast';
 import { api } from '../../services/api';
@@ -162,10 +163,7 @@ export function TruckCheckPage() {
     return (
       <PageTransition variant="fade">
         <div className="truckcheck-page">
-          <header className="truckcheck-header">
-            <Link to="/" className="back-link">← Back to Home</Link>
-            <h1>Vehicle Checks</h1>
-          </header>
+          <PageHeader title="Vehicle Checks" backTo="/" backLabel="Home" />
           <main className="truckcheck-main" id="main-content" tabIndex={-1}>
             <div className="loading">Loading vehicles…</div>
           </main>
@@ -178,10 +176,7 @@ export function TruckCheckPage() {
     return (
       <PageTransition variant="fade">
         <div className="truckcheck-page">
-          <header className="truckcheck-header">
-            <Link to="/" className="back-link">← Back to Home</Link>
-            <h1>Vehicle Checks</h1>
-          </header>
+          <PageHeader title="Vehicle Checks" backTo="/" backLabel="Home" />
           <main className="truckcheck-main" id="main-content" tabIndex={-1}>
             <div className="error">{error}</div>
           </main>
@@ -193,21 +188,18 @@ export function TruckCheckPage() {
   return (
     <PageTransition variant="slideFromBottom">
       <div className="truckcheck-page">
-        <header className="truckcheck-header">
-          <div className="header-top">
-            <Link to="/" className="back-link">← Back to Home</Link>
-            <button
-              className="theme-toggle-btn"
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-            >
-              {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
-            </button>
-          </div>
-          <h1>Vehicle Roster</h1>
-          <p className="subtitle">Weekly vehicle inspections at a glance</p>
-        </header>
+        <PageHeader
+          title="Vehicle Roster"
+          subtitle="Weekly vehicle inspections at a glance"
+          backTo="/"
+          backLabel="Home"
+          actions={[{
+            key: 'theme',
+            label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+            icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+            onClick: toggleTheme,
+          }]}
+        />
 
         <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           <div className="view-tabs">

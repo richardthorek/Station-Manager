@@ -172,6 +172,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Check design-token discipline (no hardcoded brand hex)
+        run: bash scripts/check-brand-colors.sh
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:

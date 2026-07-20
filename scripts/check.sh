@@ -10,22 +10,25 @@ bash scripts/setup.sh >/dev/null
 
 step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; }
 
-step "1/6 backend typecheck"
+step "1/7 design-token discipline (no hardcoded brand hex)"
+bash scripts/check-brand-colors.sh
+
+step "2/7 backend typecheck"
 ( cd backend && npx tsc --noEmit )
 
-step "2/6 backend tests"
+step "3/7 backend tests"
 ( cd backend && npm test )
 
-step "3/6 frontend lint (zero-warning gate)"
+step "4/7 frontend lint (zero-warning gate)"
 ( cd frontend && npm run lint )
 
-step "4/6 frontend typecheck"
+step "5/7 frontend typecheck"
 ( cd frontend && npx tsc -b --noEmit )
 
-step "5/6 frontend tests"
+step "6/7 frontend tests"
 ( cd frontend && npm test )
 
-step "6/6 AAR Studio tests"
+step "7/7 AAR Studio tests"
 ( cd aar-studio && npm test )
 
 printf '\n\033[1;32m✅ All CI gates passed locally — safe to push.\033[0m\n'

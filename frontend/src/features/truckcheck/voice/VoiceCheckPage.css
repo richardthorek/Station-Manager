@@ -8,30 +8,8 @@
   color: var(--text-primary);
 }
 
-.voice-check-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  background: var(--rfs-core-red);
-  color: #fff;
-}
-
-.voice-check-header .back-link {
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.voice-check-header h1 {
-  flex: 1;
-  font-size: 1.25rem;
-  margin: 0;
-}
-
+/* Back arrow and title now come from the shared PageHeader component — see
+   components/PageHeader.css. .voice-status renders inside its children slot. */
 .voice-status {
   padding: 0.35rem 0.85rem;
   border-radius: 999px;

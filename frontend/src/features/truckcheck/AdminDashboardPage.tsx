@@ -4,6 +4,7 @@ import { Moon, Sun, BarChart3, Wrench, Truck, TrendingUp, CircleCheckBig, Downlo
 import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { downloadCSV, getTodayFormatted } from '../../utils/csvUtils';
+import { PageHeader } from '../../components/PageHeader';
 import { VehicleManagement } from './VehicleManagement';
 import type { CheckRunWithResults, Appliance, IssueResult } from '../../types';
 import './AdminDashboard.css';
@@ -167,9 +168,7 @@ export function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="admin-dashboard">
-        <header className="dashboard-header">
-          <h1>Loading...</h1>
-        </header>
+        <PageHeader title="Loading..." backTo="/truckcheck" backLabel="Back" />
       </div>
     );
   }
@@ -177,10 +176,7 @@ export function AdminDashboardPage() {
   if (error) {
     return (
       <div className="admin-dashboard">
-        <header className="dashboard-header">
-          <Link to="/truckcheck" className="back-link">← Back</Link>
-          <h1>Error</h1>
-        </header>
+        <PageHeader title="Error" backTo="/truckcheck" backLabel="Back" />
         <main className="dashboard-main" id="main-content" tabIndex={-1}>
           <div className="error">{error}</div>
         </main>
@@ -190,14 +186,17 @@ export function AdminDashboardPage() {
 
   return (
     <div className="admin-dashboard">
-      <header className="dashboard-header">
-        <div className="header-top">
-          <Link to="/truckcheck" className="back-link">← Back to Vehicle Checks</Link>
-          <button className="theme-toggle-btn" onClick={toggleTheme}>
-            {theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />}
-          </button>
-        </div>
-        <h1>Admin Dashboard</h1>
+      <PageHeader
+        title="Admin Dashboard"
+        backTo="/truckcheck"
+        backLabel="Vehicle Checks"
+        actions={[{
+          key: 'theme',
+          label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+          icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+          onClick: toggleTheme,
+        }]}
+      >
         <div className="tabs">
           <button
             className={`tab ${activeTab === 'history' ? 'active' : ''}`}
@@ -221,7 +220,7 @@ export function AdminDashboardPage() {
             <TrendingUp size={16} strokeWidth={2} aria-hidden /> Compare Stations
           </Link>
         </div>
-      </header>
+      </PageHeader>
 
       <main className="dashboard-main" id="main-content" tabIndex={-1}>
         {activeTab === 'vehicles' ? (

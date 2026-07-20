@@ -46,7 +46,11 @@ npm run build          # tsc -b && vite build
   feature="...">` here **and** add `requireFeature(...)` on the backend mount.
   Use `<ProtectedRoute>` for auth/admin routes — never mix feature and auth gates.
 - **CSS**: component-scoped files, BEM-ish names, use vars from `index.css`. **No
-  inline styles.** Brand tokens mirror `aar-studio/css/rfs-tokens.css`.
+  inline styles.** Brand tokens are `@import`ed from the canonical
+  `aar-studio/css/rfs-tokens.css` (see the top of `index.css`) — not hand-copied.
+  Never hardcode a brand hex; add a token upstream if one doesn't exist yet.
+  Sub-page headers (back arrow + title + collapsible actions) use the shared
+  `components/PageHeader.tsx` — don't hand-roll another `.back-link`.
 - **All REST calls** go through `services/api.ts` — don't `fetch()` directly.
 - **The service worker** (`vite.config.ts` `VitePWA`/`workbox`) is a cross-app
   seam: keep `navigateFallbackDenylist: [/^\/aar/, /^\/api/]` and remember

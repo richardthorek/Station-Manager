@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
+import { PageHeader } from '../../components/PageHeader';
 import type { ChecklistTemplate, ChecklistItem } from '../../types';
 import './TemplateEditor.css';
 
@@ -168,20 +169,15 @@ export function TemplateEditorPage() {
 
   return (
     <div className="template-editor">
-      <header className="template-editor-header">
-        <Link to="/truckcheck" className="back-link">← Back to Vehicle Checks</Link>
-        <div className="header-content">
-          <h1>Edit Checklist Template</h1>
-          <h2>{template.applianceName}</h2>
-        </div>
-        <button 
-          className="save-button" 
+      <PageHeader title="Edit Checklist Template" subtitle={template.applianceName} backTo="/truckcheck" backLabel="Back">
+        <button
+          className="save-button"
           onClick={handleSave}
           disabled={saving}
         >
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
-      </header>
+      </PageHeader>
 
       {error && <div className="error-banner">{error}</div>}
       {success && <div className="success-banner">Template saved successfully!</div>}

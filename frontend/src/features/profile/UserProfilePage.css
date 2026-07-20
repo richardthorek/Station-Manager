@@ -1212,7 +1212,7 @@
 .invite-badge--pending { background: #fef3c7; color: #92400e; }
 
 .invite-error {
-  color: var(--rfs-danger, #e5281b);
+  color: var(--rfs-core-red);
   font-size: 0.85rem;
   margin: 0.5rem 0 0;
 }

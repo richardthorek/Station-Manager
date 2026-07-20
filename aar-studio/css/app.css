@@ -22,6 +22,16 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
+/* Defensive safety net, mirrors frontend/src/index.css: the HTML button/link
+   UA stylesheet can set color directly (not via inheritance), so a raw
+   <button>/<a> dropped onto a colored surface (the red topbar, a dark toast)
+   without its own explicit color falls back to near-black — invisible.
+   Every .btn/.icon-btn/etc rule below already sets its own color, but this
+   is the backstop for the next one that doesn't. */
+button, a {
+  color: inherit;
+}
+
 /* Accessibility: honour the OS "reduce motion" setting. Mirrors the SPA's
    global guard (frontend/src/animations.css) so AAR Studio behaves the same.
    Near-instant durations (not 0) keep transitionend/animationend handlers

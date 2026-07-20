@@ -16,20 +16,20 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { format, subDays, subMonths } from 'date-fns';
 import { PageTransition } from '../../components/PageTransition';
 import { SkeletonReportCard, Skeleton } from '../../components/Skeleton';
+import { PageHeader } from '../../components/PageHeader';
 import { contentFadeIn } from '../../utils/animations';
 import { api } from '../../services/api';
 import './AdvancedReportsPage.css';
 
 // RFS brand colors for charts
 const CHART_COLORS = {
-  primary: '#e5281B',     // RFS red
-  lime: '#F6A609',        // Hi-Vis Amber
+  primary: 'var(--rfs-core-red)', // RFS red (design token)
+  lime: 'var(--accent-amber)', // Hi-Vis Amber (design token)
   blue: '#215e9e',        // UI blue
   green: '#008550',       // UI green
   amber: '#fbb034',       // UI amber
@@ -242,10 +242,7 @@ export function AdvancedReportsPage() {
   return (
     <PageTransition variant="slideFromBottom">
       <div className="advanced-reports-page">
-        <header className="reports-header">
-          <Link to="/reports" className="back-link">← Back to Reports</Link>
-          <h1>Advanced Analytics</h1>
-        </header>
+        <PageHeader title="Advanced Analytics" backTo="/reports" backLabel="Reports" />
 
         {/* Controls Section */}
         <div className="controls-section">

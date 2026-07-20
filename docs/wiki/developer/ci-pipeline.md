@@ -84,7 +84,21 @@ The RFS Station Manager CI/CD pipeline is a comprehensive automated testing and 
 
 ### Phase 1: Quality Checks (Sequential)
 
-These steps run in a single pipeline job to reuse installs and fail fast: backend deps → backend checks/tests → frontend deps → frontend checks/tests.
+These steps run in a single pipeline job to reuse installs and fail fast: design-token check → backend deps → backend checks/tests → frontend deps → frontend checks/tests.
+
+#### 1.0 Design-Token Discipline (pipeline step)
+
+- **Purpose**: Block hardcoded brand-color hex outside the one canonical token
+  file, so the SPA and AAR Studio can't drift back apart the way they did
+  before (`docs/wiki/developer/changelog.md`, 2026-07-20 mobile-nav pass)
+- **Tool**: `scripts/check-brand-colors.sh` (plain grep, no dependencies —
+  runs before `npm ci` so it fails fastest)
+- **Command**: `bash scripts/check-brand-colors.sh`
+- **Success Criteria**: No hex matches for the old retired palette or the
+  current canonical brand hex outside `aar-studio/css/rfs-tokens.css`,
+  `frontend/src/index.css`, and the documented exceptions in the script
+  (jsPDF/AAR export HTML, which render outside the page that loads the
+  tokens; `Confetti`'s test, which asserts jsdom's resolved `rgb()`)
 
 #### 1.1 Frontend Linting (pipeline step)
 

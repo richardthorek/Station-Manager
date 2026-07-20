@@ -58,7 +58,7 @@ describe('Confetti', () => {
     
     const pieces = container.querySelectorAll('.confetti-piece');
     const rfsColors = [
-      'rgb(229, 40, 27)',   // #e5281B - RFS Red
+      'rgb(216, 35, 42)',   // #D8232A - RFS Red
       'rgb(246, 166, 9)',  // #F6A609 - Hi-Vis Amber
       'rgb(251, 176, 52)',  // #fbb034 - Amber
       'rgb(33, 94, 158)',   // #215e9e - Blue

@@ -8,9 +8,11 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-// Brand colors
+// Brand colors — jsPDF draws directly to a canvas/PDF context, not the DOM,
+// so it can't resolve CSS custom properties; these must stay literal hex.
+// Keep in sync with --rfs-core-red etc in aar-studio/css/rfs-tokens.css.
 const BRAND_COLORS = {
-  red: '#e5281B',
+  red: '#D8232A',
   lime: '#F6A609',
   black: '#000000',
   white: '#ffffff',
