@@ -204,22 +204,22 @@ export function StationDetailsView({ station, onClose, onEdit }: StationDetailsV
             {loadingStats ? (
               <div className="stats-loading">Loading statistics...</div>
             ) : statistics ? (
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-value">{statistics.memberCount}</div>
-                  <div className="stat-label">Members</div>
+              <div className="detail-stats-grid">
+                <div className="detail-stat-card">
+                  <div className="detail-stat-value">{statistics.memberCount}</div>
+                  <div className="detail-stat-label">Members</div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-value">{statistics.eventCount}</div>
-                  <div className="stat-label">Events</div>
+                <div className="detail-stat-card">
+                  <div className="detail-stat-value">{statistics.eventCount}</div>
+                  <div className="detail-stat-label">Events</div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-value">{statistics.checkInCount}</div>
-                  <div className="stat-label">Total Check-ins</div>
+                <div className="detail-stat-card">
+                  <div className="detail-stat-value">{statistics.checkInCount}</div>
+                  <div className="detail-stat-label">Total Check-ins</div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-value">{statistics.activeCheckInCount}</div>
-                  <div className="stat-label">Active Now</div>
+                <div className="detail-stat-card">
+                  <div className="detail-stat-value">{statistics.activeCheckInCount}</div>
+                  <div className="detail-stat-label">Active Now</div>
                 </div>
               </div>
             ) : (
