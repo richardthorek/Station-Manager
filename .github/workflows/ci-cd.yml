@@ -105,8 +105,12 @@
 #   - Dependency caching (npm)
 #   - Concurrency control (cancels outdated PR runs)
 #   - Path filtering: Skip pipeline for documentation-only changes
-#     (docs/**, *.md files) to reduce deployment frequency
-#   - Optimized artifact packaging (aar-studio/ bundled for /aar App Service mount)
+#     (docs/**, *.md files) to reduce deployment frequency. EXCEPTION:
+#     docs/wiki/user-guide/** and docs/wiki/platform-admin/** are un-ignored
+#     (paths-ignore negation) because that markdown is shipped, in-app content
+#     served live by GET /api/wiki/* — see backend/src/routes/wiki.ts.
+#   - Optimized artifact packaging (aar-studio/ + docs/wiki/{user-guide,platform-admin}
+#     bundled for runtime mounts)
 #   - Azure post-deploy builds (SCM_DO_BUILD_DURING_DEPLOYMENT=true)
 #
 # Future Optimizations:
@@ -135,6 +139,11 @@ on:
       - main
     paths-ignore:
       - 'docs/**'
+      # docs/wiki/user-guide and docs/wiki/platform-admin are shipped, in-app
+      # content (served by GET /api/wiki/* — see backend/src/routes/wiki.ts),
+      # not just repo documentation, so changes to them must still deploy.
+      - '!docs/wiki/user-guide/**'
+      - '!docs/wiki/platform-admin/**'
       - '*.md'
       - '.github/*.md'
   pull_request:
@@ -349,6 +358,7 @@ jobs:
         run: |
           mkdir -p deploy/backend
           mkdir -p deploy/frontend
+          mkdir -p deploy/docs/wiki
           cp package.json deploy/
           cp -r backend/dist deploy/backend/
           cp -r backend/node_modules deploy/backend/
@@ -358,11 +368,19 @@ jobs:
           cp -r aar-studio deploy/aar-studio
           cp startup.sh deploy/ 2>/dev/null || true
 
+          # In-app wiki content, read at runtime by backend/src/services/wikiContentService.ts
+          # (path.resolve(__dirname, '../../../') from backend/dist/services lands on
+          # deploy/, so this must sit at deploy/docs/wiki/ to match). developer/ docs are
+          # deliberately NOT copied — they're internal-only and never served by the API.
+          cp -r docs/wiki/user-guide deploy/docs/wiki/user-guide
+          cp -r docs/wiki/platform-admin deploy/docs/wiki/platform-admin
+
           echo "📦 Package contents:"
           du -sh deploy/backend/node_modules
           du -sh deploy/backend/dist
           du -sh deploy/frontend/dist
           du -sh deploy/aar-studio
+          du -sh deploy/docs/wiki
           
           cd deploy && zip -r ../release.zip .
           cd .. && ls -lh release.zip

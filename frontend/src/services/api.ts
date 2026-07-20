@@ -2168,6 +2168,28 @@ class ApiService {
     }
     return response.json();
   }
+
+  // ============================================
+  // In-app wiki (docs/wiki/user-guide, docs/wiki/platform-admin)
+  // ============================================
+
+  async getWikiManifest(section: WikiSection = 'user-guide'): Promise<WikiManifest> {
+    const response = await fetch(`${API_BASE_URL}/wiki/${section}`, { headers: this.getHeaders() });
+    if (!response.ok) throw new Error('Failed to load wiki contents');
+    return response.json();
+  }
+
+  async getWikiPage(slug: string, section: WikiSection = 'user-guide'): Promise<WikiPage> {
+    const response = await fetch(`${API_BASE_URL}/wiki/${section}/pages/${encodeURIComponent(slug)}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error('Wiki page not found');
+    return response.json();
+  }
+
+  getWikiImageUrl(filename: string, section: WikiSection = 'user-guide'): string {
+    return `${API_BASE_URL}/wiki/${section}/images/${encodeURIComponent(filename)}`;
+  }
 }
 
 export interface PlanDefinition {
@@ -2359,6 +2381,29 @@ export interface PlatformOrphanedStation {
   createdAt: string;
   memberCount: number;
   vehicleCount: number;
+}
+
+export type WikiSection = 'user-guide' | 'platform-admin';
+
+export interface WikiManifestPage {
+  slug: string;
+  title: string;
+  description: string;
+}
+
+export interface WikiManifestSection {
+  heading: string;
+  pages: WikiManifestPage[];
+}
+
+export interface WikiManifest {
+  sections: WikiManifestSection[];
+}
+
+export interface WikiPage {
+  slug: string;
+  title: string;
+  markdown: string;
 }
 
 export const api = new ApiService();

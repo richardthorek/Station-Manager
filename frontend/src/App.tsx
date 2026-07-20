@@ -3,12 +3,14 @@ import { useEffect, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { StationProvider } from './contexts/StationContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { WikiProvider } from './contexts/WikiProvider';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoadingFallback } from './components/LoadingFallback';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InstallPrompt } from './components/InstallPrompt';
 import { SkipToContent } from './components/SkipToContent';
 import { LiveAnnouncer } from './components/LiveAnnouncer';
+import { HelpButton } from './components/HelpButton';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { FeatureRoute } from './components/FeatureRoute';
 import { AccessRoute } from './components/AccessRoute';
@@ -32,6 +34,7 @@ const OrgInvitePage = lazy(() => import('./features/auth/OrgInvitePage').then(m 
 const OrganizationPage = lazy(() => import('./features/admin/organization/OrganizationPage').then(m => ({ default: m.OrganizationPage })));
 const AccountPage = lazy(() => import('./features/account/AccountPage').then(m => ({ default: m.AccountPage })));
 const PlatformAdminPage = lazy(() => import('./features/admin/platform/PlatformAdminPage').then(m => ({ default: m.PlatformAdminPage })));
+const WikiFullPage = lazy(() => import('./features/wiki/WikiFullPage').then(m => ({ default: m.WikiFullPage })));
 
 // Truck Check routes (v1.1)
 const TruckCheckPage = lazy(() => import('./features/truckcheck/TruckCheckPage').then(m => ({ default: m.TruckCheckPage })));
@@ -90,6 +93,12 @@ function AnimatedRoutes() {
         <Route path="/invite/:token" element={<OrgInvitePage />} />
         <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
 
+        {/* Public help/user-guide — no auth, no AccessRoute; the "point people at
+            stationkit.com.au/wiki" surface and the target of "Open full guide" from
+            the WikiPanel drawer. */}
+        <Route path="/wiki" element={<WikiFullPage />} />
+        <Route path="/wiki/:slug" element={<WikiFullPage />} />
+
         {/* Sign-In — AccessRoute first (must arrive with a brigade code, an account,
             or the demo), then the signInEnabled entitlement (maintenance-only brigades can hide it) */}
         <Route path="/signin" element={<AccessRoute><FeatureRoute feature="signInEnabled" title="Sign-in book"><SignInPage /></FeatureRoute></AccessRoute>} />
@@ -146,14 +155,17 @@ function App() {
       <AuthProvider>
         <StationProvider>
           <ToastProvider>
-            <SkipToContent />
-            <LiveAnnouncer />
-            <TrialBanner />
-            <OfflineIndicator />
-            <InstallPrompt />
-            <Suspense fallback={<LoadingFallback />}>
-              <AnimatedRoutes />
-            </Suspense>
+            <WikiProvider>
+              <SkipToContent />
+              <LiveAnnouncer />
+              <TrialBanner />
+              <OfflineIndicator />
+              <InstallPrompt />
+              <HelpButton />
+              <Suspense fallback={<LoadingFallback />}>
+                <AnimatedRoutes />
+              </Suspense>
+            </WikiProvider>
           </ToastProvider>
         </StationProvider>
       </AuthProvider>

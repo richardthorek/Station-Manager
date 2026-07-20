@@ -73,6 +73,7 @@ import organizationsRouter from './routes/organizations';
 import orgInvitesRouter from './routes/orgInvites';
 import facilitiesRouter from './routes/facilities';
 import platformRouter from './routes/platform';
+import wikiRouter from './routes/wiki';
 import billingRouter from './routes/billing';
 import aiRouter from './routes/ai';
 import aarSessionsRouter from './routes/aarSessions';
@@ -469,6 +470,8 @@ app.use('/api/org-invites', apiRateLimiter, orgInvitesRouter);
 app.use('/api/facilities', apiRateLimiter, facilitiesRouter);
 // Platform admin (PLATFORM_ADMIN_USERNAMES allowlist): claim-conflict review.
 app.use('/api/platform', apiRateLimiter, platformRouter);
+// In-app wiki: /user-guide is public, /platform-admin is gated inside the router.
+app.use('/api/wiki', apiRateLimiter, wikiRouter);
 app.use('/api/billing', apiRateLimiter, billingRouter);
 app.use('/api/ai', aiRateLimiter, aiRouter);
 app.use('/api/aar-sessions', apiRateLimiter, requireFeature('aarStudioEnabled'), aarSessionsRouter);
