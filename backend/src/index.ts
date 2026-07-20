@@ -339,7 +339,25 @@ if (fs.existsSync(path.join(aarStudioPath, 'index.html'))) {
     res.setHeader('Content-Security-Policy', aarCsp);
     res.setHeader('Permissions-Policy', 'microphone=(self), display-capture=(self), camera=()');
     next();
-  }, express.static(aarStudioPath));
+  }, express.static(aarStudioPath, {
+    setHeaders: (res, filePath) => {
+      // Unlike frontend/dist, this bundle has no build step and no
+      // content-hashed filenames (app.css/main.js keep the same name across
+      // deploys), so express.static's default (no explicit Cache-Control,
+      // just ETag/Last-Modified) leaves browsers free to apply their own
+      // heuristic caching — iOS Safari in particular then serves a stale
+      // app.css/main.js for a long time with no user-visible way to force a
+      // refresh (no pull-to-refresh in standalone PWA mode). Force
+      // revalidation on every load so a deploy is visible immediately, same
+      // policy as the frontend mount's index.html/sw.js above.
+      if (filePath.endsWith('.html') || filePath.endsWith('.css') || filePath.endsWith('.js')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      } else {
+        // Icons, fonts, etc — cache for a day, same as the frontend mount.
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+      }
+    },
+  }));
   logger.info('AAR Studio mounted at /aar', { path: aarStudioPath });
 } else {
   logger.warn('AAR Studio bundle not found; /aar will not be served', { path: aarStudioPath });
