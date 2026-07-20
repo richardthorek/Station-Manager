@@ -1666,6 +1666,8 @@ export class TableStorageDatabase {
       location: entity.location ? JSON.parse(entity.location as string) : undefined,
       contactInfo: entity.contactInfo ? JSON.parse(entity.contactInfo as string) : undefined,
       isActive: entity.isActive as boolean,
+      kioskToken: (entity.kioskToken as string) || undefined,
+      organizationId: (entity.organizationId as string) || undefined,
       createdAt: new Date(entity.createdAt as string),
       updatedAt: new Date(entity.updatedAt as string),
     };
@@ -1685,6 +1687,8 @@ export class TableStorageDatabase {
       location: station.location ? JSON.stringify(station.location) : undefined,
       contactInfo: station.contactInfo ? JSON.stringify(station.contactInfo) : undefined,
       isActive: station.isActive,
+      kioskToken: station.kioskToken || '',
+      organizationId: station.organizationId || '',
       createdAt: station.createdAt.toISOString(),
       updatedAt: station.updatedAt.toISOString(),
     };
