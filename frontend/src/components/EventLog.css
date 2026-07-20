@@ -222,6 +222,21 @@
 @media (max-width: 768px) {
   .event-log-header {
     padding: 1rem;
+    /* .header-left has flex:1/min-width:0 so it can shrink to fit
+       .header-actions on the same row — but the "+ New Event" button
+       doesn't shrink (flex-shrink:0), so on a narrow phone there's often
+       nowhere left for .header-left to go and it collapses to ~0 width,
+       wrapping the title and count into an unreadable single-character
+       column. Let the actions drop to their own row instead. */
+    flex-wrap: wrap;
+  }
+
+  .header-left {
+    flex-basis: 100%;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
   }
 
   .event-log-header h2 {

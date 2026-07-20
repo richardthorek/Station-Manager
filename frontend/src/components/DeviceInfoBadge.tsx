@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Tablet, ChevronDown } from 'lucide-react';
 import { isKioskMode, validateKioskToken } from '../utils/kioskMode';
+import { useClampMenuToViewport } from '../hooks/useClampMenuToViewport';
 import './DeviceInfoBadge.css';
 
 interface DeviceInfo {
@@ -31,6 +32,8 @@ export function DeviceInfoBadge() {
   const [isOpen, setIsOpen] = useState(false);
   const [device, setDevice] = useState<DeviceInfo | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  useClampMenuToViewport(dropdownRef, isOpen);
 
   useEffect(() => {
     if (!isKioskMode()) return;
@@ -75,7 +78,7 @@ export function DeviceInfoBadge() {
       </button>
 
       {isOpen && (
-        <div className="device-info-badge__dropdown" role="menu">
+        <div className="device-info-badge__dropdown" role="menu" ref={dropdownRef}>
           <dl className="device-info-badge__details">
             <dt>Device</dt>
             <dd>{device?.name || 'Unnamed device'}{device?.type ? ` (${device.type})` : ''}</dd>

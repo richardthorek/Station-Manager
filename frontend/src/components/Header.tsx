@@ -14,6 +14,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Settings2, Users, Plus, BarChart3, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
+import { useClampMenuToViewport } from '../hooks/useClampMenuToViewport';
 import { useStation } from '../contexts/StationContext';
 import { BrandMark } from './BrandMark';
 import './Header.css';
@@ -42,6 +43,8 @@ export function Header({
   const isDemo = isDemoStation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  useClampMenuToViewport(dropdownRef, isMenuOpen);
 
   // Show admin menu if any callback is provided
   const showAdminMenu = !!(onManageUsers || onExportData || onAddActivityType);
@@ -105,7 +108,7 @@ export function Header({
                 <Settings2 size={20} strokeWidth={2} aria-hidden />
               </button>
               {isMenuOpen && (
-                <div className="admin-menu-dropdown" role="menu">
+                <div className="admin-menu-dropdown" role="menu" ref={dropdownRef}>
                   {onManageUsers && (
                     <button 
                       className="admin-menu-item"

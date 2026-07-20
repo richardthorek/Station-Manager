@@ -12,12 +12,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useClampMenuToViewport } from '../hooks/useClampMenuToViewport';
 import './AccountMenu.css';
 
 export function AccountMenu() {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  useClampMenuToViewport(dropdownRef, isOpen);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -58,7 +61,7 @@ export function AccountMenu() {
       </button>
 
       {isOpen && (
-        <div className="account-menu__dropdown" role="menu">
+        <div className="account-menu__dropdown" role="menu" ref={dropdownRef}>
           <div className="account-menu__header">
             <span className="account-menu__username">{user.username}</span>
             {user.email && <span className="account-menu__email">{user.email}</span>}

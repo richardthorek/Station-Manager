@@ -15,6 +15,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Download, FileText, BarChart3, ImageIcon, ChevronUp, ChevronDown, Check } from 'lucide-react';
+import { useClampMenuToViewport } from '../hooks/useClampMenuToViewport';
 import './ExportMenu.css';
 
 interface ExportMenuProps {
@@ -34,6 +35,8 @@ export function ExportMenu({
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  useClampMenuToViewport(dropdownRef, isOpen);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -83,7 +86,7 @@ export function ExportMenu({
       </button>
 
       {isOpen && (
-        <div className="export-menu__dropdown">
+        <div className="export-menu__dropdown" ref={dropdownRef}>
           <button
             className="export-menu__option"
             onClick={() => handleExport('pdf', onExportPDF)}

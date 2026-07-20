@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Building2, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { useClampMenuToViewport } from '../hooks/useClampMenuToViewport';
 import './OrgSwitcher.css';
 
 export function OrgSwitcher() {
@@ -16,6 +17,8 @@ export function OrgSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  useClampMenuToViewport(dropdownRef, isOpen);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -64,7 +67,7 @@ export function OrgSwitcher() {
         <ChevronDown size={14} strokeWidth={2} aria-hidden="true" />
       </button>
       {isOpen && (
-        <div className="org-switcher__dropdown" role="menu">
+        <div className="org-switcher__dropdown" role="menu" ref={dropdownRef}>
           {memberships.map((membership) => (
             <button
               key={membership.organizationId}
