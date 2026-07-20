@@ -4,20 +4,19 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { HelpButton } from './HelpButton';
 import { WikiProvider } from '../contexts/WikiProvider';
-import { api, WikiSearchUnavailableError } from '../services/api';
+import { api } from '../services/api';
+import { WikiSearchUnavailableError } from '../services/wikiSearchError';
 
-vi.mock('../services/api', async () => {
-  const actual = await vi.importActual<typeof import('../services/api')>('../services/api');
-  return {
-    WikiSearchUnavailableError: actual.WikiSearchUnavailableError,
-    api: {
-      getWikiManifest: vi.fn(),
-      getWikiPage: vi.fn(),
-      getWikiImageUrl: vi.fn((filename: string) => `/api/wiki/user-guide/images/${filename}`),
-      searchWiki: vi.fn(),
-    },
-  };
-});
+// Deliberately a plain full replacement, no vi.importActual — see
+// WikiDocument.test.tsx for why (pulls the whole giant api.ts into coverage).
+vi.mock('../services/api', () => ({
+  api: {
+    getWikiManifest: vi.fn(),
+    getWikiPage: vi.fn(),
+    getWikiImageUrl: vi.fn((filename: string) => `/api/wiki/user-guide/images/${filename}`),
+    searchWiki: vi.fn(),
+  },
+}));
 
 const manifest = {
   sections: [

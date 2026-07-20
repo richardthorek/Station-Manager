@@ -52,6 +52,7 @@ export interface ApplianceDetails {
 import type { Organization, Entitlements } from '../contexts/AuthContext';
 import { getKioskToken } from '../utils/kioskMode';
 import { getMemberSessionToken } from '../utils/memberSession';
+import { WikiSearchUnavailableError } from './wikiSearchError';
 
 // Use relative URL in production, localhost in development; ensure trailing /api
 const rawApiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
@@ -2207,12 +2208,7 @@ class ApiService {
   }
 }
 
-export class WikiSearchUnavailableError extends Error {
-  constructor() {
-    super('AI search is not configured on this server');
-    this.name = 'WikiSearchUnavailableError';
-  }
-}
+export { WikiSearchUnavailableError } from './wikiSearchError';
 
 export interface PlanDefinition {
   code: 'community' | 'basic' | 'ai';

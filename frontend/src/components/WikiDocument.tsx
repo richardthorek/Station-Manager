@@ -22,7 +22,8 @@ import { useEffect, useMemo, useRef, useState, type AnchorHTMLAttributes, type I
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Search, Sparkles, Loader2, X, CircleAlert } from 'lucide-react';
-import { api, WikiSearchUnavailableError, type WikiManifest, type WikiPage, type WikiSection, type WikiSearchResult } from '../services/api';
+import { api, type WikiManifest, type WikiPage, type WikiSection, type WikiSearchResult } from '../services/api';
+import { WikiSearchUnavailableError } from '../services/wikiSearchError';
 import './WikiDocument.css';
 
 interface WikiDocumentProps {
@@ -36,9 +37,10 @@ interface WikiDocumentProps {
 const INTERNAL_LINK_PATTERN = /^([a-z0-9-]+)\.md(#.*)?$/;
 const IMAGE_FILENAME_PATTERN = /^images\/([^/]+)$/;
 
+// Only ever called with a non-empty, already-trimmed query — filteredSections
+// short-circuits to the unfiltered list before this runs at all otherwise.
 function matchesQuery(page: WikiPage, description: string, query: string): boolean {
   const q = query.trim().toLowerCase();
-  if (!q) return true;
   return (
     page.title.toLowerCase().includes(q) ||
     description.toLowerCase().includes(q) ||
