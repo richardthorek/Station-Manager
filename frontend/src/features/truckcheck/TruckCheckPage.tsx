@@ -50,7 +50,7 @@ export function TruckCheckPage() {
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [activeChecks, setActiveChecks] = useState<Map<string, CheckRun>>(new Map());
   const [lastChecks, setLastChecks] = useState<Map<string, LastCheck>>(new Map());
-  const [openIssues, setOpenIssues] = useState<Map<string, number>>(new Map());
+  const [openIssues, setOpenIssues] = useState<Map<string, { count: number; items: string[] }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -97,11 +97,19 @@ export function TruckCheckPage() {
         });
       setLastChecks(lastMap);
 
-      // Count outstanding (open/acknowledged) issues per appliance.
-      const issueMap = new Map<string, number>();
+      // Count outstanding (open/acknowledged) issues per appliance, and keep
+      // the item names too — maintenance officers scanning the roster need to
+      // see *what's* wrong, not just how many, to judge whether to go help now.
+      const issueMap = new Map<string, { count: number; items: string[] }>();
       (Array.isArray(issuesData) ? issuesData : []).forEach((issue: IssueResult) => {
         if (issue.issueStatus !== 'resolved') {
-          issueMap.set(issue.applianceId, (issueMap.get(issue.applianceId) || 0) + 1);
+          const existing = issueMap.get(issue.applianceId);
+          if (existing) {
+            existing.count += 1;
+            existing.items.push(issue.itemName);
+          } else {
+            issueMap.set(issue.applianceId, { count: 1, items: [issue.itemName] });
+          }
         }
       });
       setOpenIssues(issueMap);
@@ -228,7 +236,8 @@ export function TruckCheckPage() {
               {appliances.map((appliance) => {
                 const activeCheck = activeChecks.get(appliance.id);
                 const last = lastChecks.get(appliance.id);
-                const issueCount = openIssues.get(appliance.id) || 0;
+                const applianceIssues = openIssues.get(appliance.id);
+                const issueCount = applianceIssues?.count || 0;
                 const identity = [
                   [appliance.make, appliance.model, appliance.year].filter(Boolean).join(' '),
                   appliance.registration,
@@ -251,7 +260,10 @@ export function TruckCheckPage() {
                       <div className="roster-card__title-row">
                         <h3 className="roster-card__name">{appliance.name}</h3>
                         {issueCount > 0 && (
-                          <span className="roster-chip roster-chip--issue" title="Outstanding issues">
+                          <span
+                            className="roster-chip roster-chip--issue"
+                            title={applianceIssues!.items.join(', ')}
+                          >
                             <TriangleAlert size={14} strokeWidth={2} aria-hidden /> {issueCount}
                           </span>
                         )}

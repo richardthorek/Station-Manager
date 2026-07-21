@@ -59,7 +59,8 @@ export function CheckWorkflowPage() {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [markingRemaining, setMarkingRemaining] = useState(false);
-  
+  const [storageEnabled, setStorageEnabled] = useState(false);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -104,6 +105,17 @@ export function CheckWorkflowPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applianceId]);
+
+  // Storage status is a single org-wide setting, not per-item — checking it
+  // here once instead of inside every CheckItemCard avoids firing one request
+  // per checklist item (34 simultaneous calls on a full checklist), which was
+  // enough on its own to trip the shared apiRateLimiter and surface as
+  // spurious "Could not save that result" failures elsewhere on this page.
+  useEffect(() => {
+    api.getStorageStatus()
+      .then((status) => setStorageEnabled(status.enabled))
+      .catch((err) => console.error('Failed to check storage status:', err));
+  }, []);
 
   useEffect(() => {
     if (showNamePrompt) {
@@ -737,6 +749,7 @@ export function CheckWorkflowPage() {
                     itemIcon={getItemIcon(item.name)}
                     isActive={index === currentIndex}
                     result={results.get(item.id)}
+                    storageEnabled={storageEnabled}
                     onResult={(status, comment, photoUrl) => handleItemResult(item.id, item.name, item.description, status, comment, photoUrl, item.itemCode, item.section)}
                     onPhotoClick={(url, alt) => setLightboxImage({ url, alt })}
                   />
@@ -799,37 +812,24 @@ interface CheckItemCardProps {
   itemIcon: ReactNode;
   isActive: boolean;
   result?: CheckResult;
+  storageEnabled: boolean;
   onResult: (status: CheckStatus, comment?: string, photoUrl?: string) => void;
   onPhotoClick: (url: string, alt: string) => void;
 }
 
-function CheckItemCard({ item, itemIcon, isActive, result, onResult, onPhotoClick }: CheckItemCardProps) {
+function CheckItemCard({ item, itemIcon, isActive, result, storageEnabled, onResult, onPhotoClick }: CheckItemCardProps) {
   const [comment, setComment] = useState('');
   const [showComment, setShowComment] = useState(false);
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [storageEnabled, setStorageEnabled] = useState(false);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const uploadInputId = `issue-photo-${item.id}`;
-
-  useEffect(() => {
-    checkStorageStatus();
-  }, []);
 
   useEffect(() => {
     if (showComment && isActive) {
       commentInputRef.current?.focus();
     }
   }, [showComment, isActive]);
-
-  async function checkStorageStatus() {
-    try {
-      const status = await api.getStorageStatus();
-      setStorageEnabled(status.enabled);
-    } catch (err) {
-      console.error('Failed to check storage status:', err);
-    }
-  }
 
   function handleStatus(status: CheckStatus) {
     if (status === 'issue') {
