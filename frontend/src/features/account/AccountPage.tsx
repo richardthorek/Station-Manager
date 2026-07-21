@@ -10,16 +10,18 @@
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Building2 } from 'lucide-react';
+import { Building2, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../hooks/useTheme';
 import { api } from '../../services/api';
 import { PageTransition } from '../../components/PageTransition';
+import { PageHeader } from '../../components/PageHeader';
 import { PasskeysSection } from '../../components/PasskeysSection';
 import './AccountPage.css';
 
 export function AccountPage() {
   const { user, organization, memberships, switchOrg, refreshOrganization, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const [email, setEmail] = useState(user?.email ?? '');
   const [savingEmail, setSavingEmail] = useState(false);
@@ -88,6 +90,7 @@ export function AccountPage() {
   if (!user) {
     return (
       <div className="account-page">
+        <PageHeader title="My Account" backTo="/" backLabel="StationKit" />
         <main className="account-main" id="main-content" tabIndex={-1}>
           <p>You need to sign in to view your account.</p>
         </main>
@@ -98,13 +101,17 @@ export function AccountPage() {
   return (
     <PageTransition variant="fade">
       <div className="account-page">
-        <header className="account-header">
-          <Link to="/" className="account-back-link">
-            <ArrowLeft size={18} strokeWidth={2} aria-hidden="true" />
-            Back to StationKit
-          </Link>
-          <h1>My Account</h1>
-        </header>
+        <PageHeader
+          title="My Account"
+          backTo="/"
+          backLabel="StationKit"
+          actions={[{
+            key: 'theme',
+            label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+            icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+            onClick: toggleTheme,
+          }]}
+        />
 
         <main className="account-main" id="main-content" tabIndex={-1}>
           {message && (

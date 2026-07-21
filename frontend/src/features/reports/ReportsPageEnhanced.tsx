@@ -413,17 +413,17 @@ export function ReportsPageEnhanced() {
     <PageTransition variant="slideFromBottom">
       <div className="reports-page">
         <PageHeader title="Reports & Analytics" backTo="/" backLabel="Home">
-          <div className="reports-header__actions">
+          <div className="page-header__tabs">
             <ExportMenu
               onExportPDF={handleExportPDF}
               onExportExcel={handleExportExcel}
               onExportPNG={handleExportPNG}
               disabled={loading || !!error}
             />
-            <Link to="/reports/advanced" className="cross-station-link">
+            <Link to="/reports/advanced" className="page-header__tab">
               Advanced Analytics →
             </Link>
-            <Link to="/reports/cross-station" className="cross-station-link">
+            <Link to="/reports/cross-station" className="page-header__tab">
               Cross-Station →
             </Link>
           </div>

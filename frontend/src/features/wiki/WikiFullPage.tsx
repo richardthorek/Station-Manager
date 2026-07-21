@@ -9,16 +9,19 @@
  * real sidebar here.
  */
 
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '../../hooks/useTheme';
 import { PageTransition } from '../../components/PageTransition';
-import { BrandMark } from '../../components/BrandMark';
+import { PageHeader } from '../../components/PageHeader';
 import { WikiDocument } from '../../components/WikiDocument';
 import './WikiFullPage.css';
 
 export function WikiFullPage() {
   const { slug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   // Only used to seed WikiDocument's one-time initial scroll — the route
   // param isn't re-read after that, so later sidebar clicks don't fight with it.
   const [initialSlug] = useState(slug ?? null);
@@ -30,12 +33,17 @@ export function WikiFullPage() {
   return (
     <PageTransition variant="fade">
       <div className="wiki-full-page">
-        <header className="wiki-full-page__header">
-          <Link to="/" className="wiki-full-page__home" aria-label="Back to StationKit home">
-            <BrandMark size={22} /> StationKit
-          </Link>
-          <h1 className="wiki-full-page__title">Help &amp; user guide</h1>
-        </header>
+        <PageHeader
+          title="Help & user guide"
+          backTo="/"
+          backLabel="StationKit"
+          actions={[{
+            key: 'theme',
+            label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+            icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+            onClick: toggleTheme,
+          }]}
+        />
         <main className="wiki-full-page__main" id="main-content" tabIndex={-1}>
           <WikiDocument
             section="user-guide"

@@ -15,7 +15,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Moon, Sun } from 'lucide-react';
 import { useAuth, type EntitlementFeature } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../hooks/useTheme';
 import {
   api,
   type PlanDefinition,
@@ -25,6 +27,7 @@ import {
   type OrgInvite,
 } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
+import { PageHeader } from '../../../components/PageHeader';
 import { AdminNav } from '../../../components/AdminNav';
 import './OrganizationPage.css';
 
@@ -36,6 +39,7 @@ const MODULES: { key: EntitlementFeature; label: string; help: string }[] = [
 ];
 
 export function OrganizationPage() {
+  const { theme, toggleTheme } = useTheme();
   const { organization, user, refreshOrganization } = useAuth();
   const isOwner = user?.role === 'owner';
   const isAdmin = isOwner || user?.role === 'admin';
@@ -314,9 +318,7 @@ export function OrganizationPage() {
     return (
       <div className="org-page">
         <AdminNav />
-        <header className="org-header">
-          <h1>Organization</h1>
-        </header>
+        <PageHeader title="Organization" backTo="/" backLabel="Home" />
         <main className="org-main" id="main-content" tabIndex={-1}>
           <p>No organization is associated with this account.</p>
         </main>
@@ -332,14 +334,23 @@ export function OrganizationPage() {
     <PageTransition variant="fade">
       <div className="org-page">
         <AdminNav />
-        <header className="org-header">
-          <h1>{organization.name}</h1>
+        <PageHeader
+          title={organization.name}
+          backTo="/"
+          backLabel="Home"
+          actions={[{
+            key: 'theme',
+            label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+            icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+            onClick: toggleTheme,
+          }]}
+        >
           <p className="org-subtitle">
             Plan: <strong>{organization.planCode}</strong>
             {' · '}
             Status: <span className={`org-status org-status--${organization.status}`}>{organization.status}</span>
           </p>
-        </header>
+        </PageHeader>
 
         <main className="org-main" id="main-content" tabIndex={-1}>
           {message && (

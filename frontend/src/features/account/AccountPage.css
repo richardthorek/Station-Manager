@@ -4,32 +4,8 @@
   color: var(--text-primary);
 }
 
-.account-header {
-  background: var(--rfs-core-red);
-  color: var(--rfs-white);
-  padding: 1.5rem 2rem;
-}
-
-.account-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--rfs-white);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-
-.account-back-link:hover {
-  opacity: 1;
-  text-decoration: underline;
-}
-
-.account-header h1 {
-  margin: 0.5rem 0 0;
-  font-size: 1.8rem;
-}
+/* Back arrow, title, and theme-toggle action now come from the shared
+   PageHeader component — see components/PageHeader.css. */
 
 .account-main {
   max-width: 720px;

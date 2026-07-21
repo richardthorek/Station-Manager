@@ -13,9 +13,12 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../hooks/useTheme';
 import { api, type ClaimConflict } from '../../../services/api';
 import { PageTransition } from '../../../components/PageTransition';
+import { PageHeader } from '../../../components/PageHeader';
 import { AdminNav } from '../../../components/AdminNav';
 import { WikiDocument } from '../../../components/WikiDocument';
 import { PlatformOrganizationsTab } from './PlatformOrganizationsTab';
@@ -188,6 +191,7 @@ const SECTION_LABELS: Record<Section, string> = {
 };
 
 export function PlatformAdminPage() {
+  const { theme, toggleTheme } = useTheme();
   const { isPlatformAdmin } = useAuth();
   const [section, setSection] = useState<Section>('organizations');
 
@@ -206,10 +210,18 @@ export function PlatformAdminPage() {
     <PageTransition variant="fade">
       <div className="platform-page">
         <AdminNav />
-        <header className="platform-header">
-          <h1>Platform administration</h1>
-          <p className="platform-subtitle">Operator console — every organization, no tenant content</p>
-        </header>
+        <PageHeader
+          title="Platform administration"
+          backTo="/"
+          backLabel="Home"
+          subtitle="Operator console — every organization, no tenant content"
+          actions={[{
+            key: 'theme',
+            label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+            icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+            onClick: toggleTheme,
+          }]}
+        />
 
         <main className="platform-main" id="main-content" tabIndex={-1}>
           <div className="platform-tabs" role="tablist">

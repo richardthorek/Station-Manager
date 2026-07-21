@@ -3,33 +3,8 @@
   background: var(--bg-secondary);
 }
 
-.wiki-full-page__header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.wiki-full-page__home {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-weight: 700;
-  color: var(--text-primary);
-  flex-shrink: 0;
-}
-
-.wiki-full-page__title {
-  font-size: 1.05rem;
-  margin: 0;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
+/* Back arrow, title, and theme-toggle action now come from the shared
+   PageHeader component — see components/PageHeader.css. */
 
 .wiki-full-page__main {
   /* Wide enough for WikiDocument's sidebar (200px) + a comfortable reading
@@ -40,15 +15,6 @@
 }
 
 @media (max-width: 600px) {
-  .wiki-full-page__header {
-    padding: var(--spacing-sm) var(--spacing-md);
-    gap: var(--spacing-sm);
-  }
-
-  .wiki-full-page__title {
-    font-size: 0.9rem;
-  }
-
   .wiki-full-page__main {
     padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl);
   }

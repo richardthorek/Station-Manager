@@ -33,50 +33,9 @@
   color: var(--rfs-core-red);
 }
 
-/* View Tabs */
-.view-tabs {
-  display: flex;
-  /* flex-start, not flex-end: with overflow-x scrolling, flex-end packs
-     content against the trailing edge and leaves the start of the row
-     unreachable by scroll in some browsers — the exact bug that clipped
-     "Add Vehicle" off-screen with no way to scroll to it on narrow phones. */
-  justify-content: flex-start;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.view-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.tab-link {
-  background: var(--rfs-white);
-  color: var(--rfs-core-red);
-  border: 2px solid var(--rfs-core-red);
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-family: inherit;
-  font-weight: 600;
-  text-decoration: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.tab-link:hover {
-  background: var(--rfs-core-red);
-  color: var(--rfs-white);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
+/* Roster nav (Add Vehicle / Admin Dashboard / Templates & Vehicle Types) now
+   renders as PageHeader `children` using the shared .page-header__tabs /
+   .page-header__tab classes — see components/PageHeader.css. */
 
 .tab-btn {
   background: none;
@@ -113,9 +72,9 @@
     'media body'
     'actions actions';
   gap: 1rem;
-  background: var(--rfs-white);
-  color: var(--rfs-black);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-left: 5px solid var(--rfs-mid-grey, #b0b0b0);
   border-radius: 10px;
   padding: 1.25rem;
@@ -152,8 +111,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--rfs-dark-grey);
-  background: var(--rfs-light-grey, #f0f0f0);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
   border-radius: 8px;
 }
 
@@ -180,7 +139,7 @@
   background: transparent;
   border: none;
   border-radius: 50%;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
 }
@@ -202,7 +161,7 @@
 .roster-card__name {
   margin: 0;
   font-size: 1.25rem;
-  color: var(--rfs-black);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -212,7 +171,7 @@
 
 .roster-card__identity {
   margin: 0.15rem 0 0.5rem 0;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
 }
@@ -226,11 +185,11 @@
 
 .roster-card__result {
   font-weight: 700;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .roster-card__meta {
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 0.82rem;
 }
 
@@ -462,19 +421,5 @@
   .roster-grid,
   .admin-actions {
     grid-template-columns: 1fr;
-  }
-
-  .view-tabs {
-    gap: 0.5rem;
-  }
-
-  .tab-btn {
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-  }
-
-  .tab-link {
-    padding: 0.65rem 1rem;
-    font-size: 0.9rem;
   }
 }

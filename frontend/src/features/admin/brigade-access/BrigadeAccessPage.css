@@ -13,61 +13,8 @@
   background: var(--bg-primary);
 }
 
-/* Compact Header */
-.page-header-compact {
-  padding: 0.75rem 1.5rem;
-  border-bottom: 2px solid var(--rfs-core-red);
-  background: var(--bg-card);
-  box-shadow: 0 2px 8px var(--shadow-color);
-}
-
-.header-top {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.icon-button:hover {
-  background: var(--bg-secondary);
-  transform: rotate(90deg);
-}
-
-.last-refresh {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.page-header-compact h1 {
-  color: var(--text-primary);
-  margin: 0;
-  font-size: 1.5rem;
-}
-
-.page-description {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin: 0.5rem 0 0 0;
-}
+/* Page title row now comes from the shared PageHeader component (rendered
+   below AdminNav) — see components/PageHeader.css. */
 
 /* Page Content */
 .page-content {
@@ -261,18 +208,6 @@
 }
 
 @media (max-width: 768px) {
-  .page-header-compact {
-    padding: 0.5rem 1rem;
-  }
-
-  .page-header-compact h1 {
-    font-size: 1.25rem;
-  }
-
-  .page-description {
-    font-size: 0.85rem;
-  }
-
   .page-content {
     padding: 1rem;
   }

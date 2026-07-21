@@ -130,6 +130,59 @@
   margin-bottom: 0;
 }
 
+/* Shared secondary-nav row — the one look for every page's sub-nav (tabs,
+   quick links, filter pills) rendered as PageHeader `children`. Sits on the
+   header's always-red background, so it never needs its own light/dark
+   surface handling, and shares scroll/collapsing behaviour so no page has to
+   reinvent it. */
+.page-header__tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.page-header__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.page-header__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--rfs-white);
+  border: none;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.page-header__tab:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.page-header__tab--active {
+  background: var(--bg-card);
+  color: var(--rfs-core-red);
+}
+
+@media (max-width: 640px) {
+  .page-header__tab {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+  }
+}
+
 @media (max-width: 640px) {
   .page-header__row {
     padding: 0.4rem 0.6rem;
