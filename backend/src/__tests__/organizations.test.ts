@@ -73,6 +73,17 @@ describe('SaaS foundation', () => {
       expect(res.body.organization.entitlements.truckCheckEnabled).toBe(true);
     });
 
+    it('auto-creates the organization its own station, so it never falls back to the shared default-station bucket', async () => {
+      const res = await signup();
+      expect(res.status).toBe(201);
+
+      const db = await ensureDatabase();
+      const ownStations = (await db.getAllStations()).filter((s) => s.organizationId === res.body.organization.id);
+      expect(ownStations).toHaveLength(1);
+      expect(ownStations[0].id).toBe(`${res.body.organization.slug}-station`);
+      expect(ownStations[0].name).toBe(res.body.organization.name);
+    });
+
     it('rejects a short password', async () => {
       const res = await signup({ password: 'short' });
       expect(res.status).toBe(400);
