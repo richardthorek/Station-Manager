@@ -1256,6 +1256,8 @@ The system supports multi-tenant operation where each RFS station's data (member
 
 **Recent Fix (Q45, 2026-07-17):** a layer up from the station-scoped isolation above — `GET /api/stations` (the *list of stations themselves*, not a station's data) had no `organizationId` filtering at all, so any caller could enumerate every station across every organization on the platform. Now scoped to the caller's own org's stations plus not-yet-`organizationId`-backfilled orphans when an org context is present; unscoped when there isn't (kiosk/demo back-compat). See `docs/wiki/developer/history/reviews/UAT_REVIEW_2026-07-17.md`.
 
+**Recent Fix (Q51, 2026-07-21):** organizations used to start with **zero stations of their own** — nothing in the signup flow created one — and silently fell back to the shared `default-station` bucket described below. Since every entity here is scoped by `stationId` alone with no `organizationId` cross-check, **any two stationless orgs shared that bucket and could see each other's members/events/vehicles.** `stationMiddleware` now auto-resolves (and auto-provisions) the caller's own organization's station from the JWT — see the updated middleware below and the Station Middleware section for the full priority order. This closes the leak for the common single-station case without requiring every caller to start sending `X-Station-Id`.
+
 ### Station Identification
 
 Stations are identified using the `X-Station-Id` HTTP header or `stationId` query parameter:
@@ -1268,23 +1270,46 @@ X-Station-Id: bungeendore-north
 # Via query parameter (fallback for GET requests)
 GET /api/members?stationId=bungeendore-north
 
-# Without stationId (defaults to 'default-station')
+# Without stationId: resolves to the caller's own organization's station
+# (auto-provisioned if it doesn't have one yet), or the shared
+# DEFAULT_STATION_ID with no org context at all (kiosk/demo/anonymous)
 GET /api/members
 ```
 
-**Priority:** Header → Query Parameter → `DEFAULT_STATION_ID` (`'default-station'`)
+**Priority (as of Q51, 2026-07-21):**
+1. A real, specific station named by header/query, or locked by a validated kiosk brigade token — always honoured.
+2. The caller's own organization's station, resolved from the JWT — auto-provisioned (`${org.slug}-station`) the first time it's needed. This is also what happens when the request explicitly carries the literal `DEFAULT_STATION_ID` sentinel, since that never actually means "this organization's station." Most orgs have exactly one station, so this resolves invisibly with no header needed.
+3. A genuine multi-station org (two or more stations) can't be guessed automatically — left unresolved, same as before Q51; the frontend station picker must send an explicit `X-Station-Id`.
+4. No org context at all (kiosk/demo/anonymous) — falls back to the shared `DEFAULT_STATION_ID`, unchanged.
+
+The station-management API (`/api/stations` itself) is excluded from steps 2–3 above — it manages station rows directly rather than reading `req.stationId`, and auto-provisioning there would consume the org's `maxStations` entitlement quota out from under a deliberate `POST /api/stations` call.
 
 ### Station Middleware
 
-All API routes use `stationMiddleware` to extract and attach `stationId` to requests:
+All API routes use `stationMiddleware` to extract and attach `stationId` to requests. Simplified (see `backend/src/middleware/stationMiddleware.ts` for the full org-resolution/auto-provisioning logic):
 
 ```typescript
 // backend/src/middleware/stationMiddleware.ts
-export function stationMiddleware(req: Request, res: Response, next: NextFunction) {
-  const headerStationId = req.headers['x-station-id'];
-  const queryStationId = req.query.stationId;
-  const rawStationId = headerStationId || queryStationId;
-  req.stationId = getEffectiveStationId(rawStationId); // Defaults to DEFAULT_STATION_ID
+export async function stationMiddleware(req: Request, res: Response, next: NextFunction) {
+  const rawStationId = req.stationId || req.headers['x-station-id'] || req.query.stationId;
+
+  if (rawStationId && rawStationId !== DEFAULT_STATION_ID) {
+    req.stationId = rawStationId; // A real, specific station always wins.
+    return next();
+  }
+
+  // No real station named (or explicitly the shared default) — try to
+  // resolve the caller's own organization's station instead.
+  await attachOrganization(req, res, () => undefined);
+  if (req.organization) {
+    const resolved = await resolveOrganizationStationId(req.organization); // auto-provisions if needed
+    if (resolved) {
+      req.stationId = resolved;
+      return next();
+    }
+  }
+
+  req.stationId = rawStationId; // No org context, or a multi-station org — legacy fallback.
   next();
 }
 ```
