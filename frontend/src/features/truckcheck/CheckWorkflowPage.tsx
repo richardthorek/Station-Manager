@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef, Fragment, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useSocket } from '../../hooks/useSocket';
+import { useToast } from '../../hooks/useToast';
 import { api } from '../../services/api';
 import { Lightbox } from '../../components/Lightbox';
 import { Confetti } from '../../components/Confetti';
@@ -22,6 +23,7 @@ export function CheckWorkflowPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { on, off } = useSocket();
+  const { showError } = useToast();
   const [showShareModal, setShowShareModal] = useState(false);
   const [showLinkTypeModal, setShowLinkTypeModal] = useState(false);
   const [shareStation, setShareStation] = useState<{ id: string; brigadeId: string } | null>(null);
@@ -35,6 +37,13 @@ export function CheckWorkflowPage() {
   const [completedByMemberId, setCompletedByMemberId] = useState('');
   const [members, setMembers] = useState<Member[]>([]);
   const [showNamePrompt, setShowNamePrompt] = useState(true);
+  // Preview of an already-active run on this appliance, fetched before the
+  // name prompt renders — lets the picker say "join X and Y" up front instead
+  // of the user free-typing a name and only discovering they've joined someone
+  // else's check after the fact.
+  const [activeCheckPreview, setActiveCheckPreview] = useState<CheckRun | null>(null);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [manualNameEntry, setManualNameEntry] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Q38 (found 2026-07-17): an appliance with no linked Vehicle Type and no
@@ -56,6 +65,22 @@ export function CheckWorkflowPage() {
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
+
+  const filteredMembers = useMemo(() => {
+    const sorted = [...members].sort((a, b) => a.name.localeCompare(b.name));
+    const term = pickerSearch.trim().toLowerCase();
+    if (!term) return sorted;
+    return sorted.filter((m) =>
+      m.name.toLowerCase().includes(term) || (m.rank?.toLowerCase().includes(term) ?? false)
+    );
+  }, [members, pickerSearch]);
+
+  function formatContributors(names?: string[]): string {
+    if (!names || names.length === 0) return 'Someone';
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return `${names[0]} and ${names[1]}`;
+    return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+  }
 
   // Auto-collapse sidebar on mobile devices
   useEffect(() => {
@@ -163,6 +188,12 @@ export function CheckWorkflowPage() {
       }
       // Roster for member attribution (best-effort; free-text fallback if it fails).
       api.getMembers().then(setMembers).catch(() => setMembers([]));
+      // Best-effort: is someone already mid-check on this appliance? Lets the
+      // name prompt say so up front instead of the user finding out only after
+      // picking a name and silently landing in someone else's shared check.
+      api.getCheckRuns({ applianceId: applianceId! })
+        .then((runs) => setActiveCheckPreview(runs.find((r) => r.status === 'in-progress') || null))
+        .catch(() => setActiveCheckPreview(null));
       // The vehicle's own station (not the global station-selector context,
       // which this per-appliance workflow page doesn't set) — needed for the
       // AC-3 share link.
@@ -185,14 +216,22 @@ export function CheckWorkflowPage() {
     }
   }
 
-  async function handleStartCheck() {
-    if (!completedBy.trim() || !applianceId) return;
-    
+  // nameOverride/memberIdOverride let the tap-to-pick roster grid start the
+  // check in one action — setCompletedBy(name) wouldn't be visible yet on this
+  // same call (state updates are async), so the picker passes the chosen
+  // member straight through instead of relying on state that hasn't landed.
+  async function handleStartCheck(nameOverride?: string, memberIdOverride?: string) {
+    const name = (nameOverride ?? completedBy).trim();
+    if (!name || !applianceId) return;
+    const memberId = memberIdOverride ?? completedByMemberId;
+
     try {
+      setCompletedBy(name);
+      setCompletedByMemberId(memberId);
       // Attribute the run to a roster member when the name matches one; otherwise
       // fall back to the free-text name (kiosk / non-member). completedByName keeps
       // the display name in both cases.
-      const response = await api.createCheckRun(applianceId, completedByMemberId || completedBy, completedBy);
+      const response = await api.createCheckRun(applianceId, memberId || name, name);
       setCheckRun(response);
       const joined = typeof response === 'object' && 'joined' in response ? Boolean(response.joined) : false;
       setIsJoinedCheck(joined);
@@ -220,7 +259,7 @@ export function CheckWorkflowPage() {
         }
       }
     } catch (err) {
-      setError('Failed to start/join check');
+      showError('Could not start or join the check. Check your connection and try again.');
       console.error(err);
     }
   }
@@ -265,7 +304,11 @@ export function CheckWorkflowPage() {
         }
       }
     } catch (err) {
-      setError('Failed to save result');
+      // A transient save failure shouldn't blow away the checklist the crew is
+      // mid-way through — surface it as a dismissable toast (item stays
+      // unmarked so they can just retry it) instead of the fatal full-page
+      // error state used for "couldn't load this check at all".
+      showError('Could not save that result. Check your connection and try again.');
       console.error(err);
     }
   }
@@ -309,7 +352,7 @@ export function CheckWorkflowPage() {
       }
       setResults(newResults);
     } catch (err) {
-      setError('Failed to mark remaining items');
+      showError('Could not mark the remaining items. Any already saved are kept — try again for the rest.');
       console.error(err);
     } finally {
       setMarkingRemaining(false);
@@ -469,36 +512,87 @@ export function CheckWorkflowPage() {
           }]}
         />
         <main className="workflow-main">
-          <div className="name-prompt">
+          <div className="name-prompt name-prompt--picker">
+            {activeCheckPreview && (
+              <div className="active-check-banner">
+                <Users size={18} strokeWidth={2} aria-hidden />
+                <p>
+                  <strong>{formatContributors(activeCheckPreview.contributors)}</strong>
+                  {' '}{activeCheckPreview.contributors?.length === 1 ? 'is' : 'are'} already checking this
+                  vehicle — pick your name below to join in.
+                </p>
+              </div>
+            )}
             <h2>Who's doing this check?</h2>
-            <p>Pick your name from the roster, or type it in.</p>
-            <input
-              type="text"
-              list="check-member-options"
-              value={completedBy}
-              onChange={(e) => {
-                const value = e.target.value;
-                setCompletedBy(value);
-                // Resolve to a roster member id when the name matches (for attribution).
-                const match = members.find((m) => m.name === value);
-                setCompletedByMemberId(match?.id ?? '');
-              }}
-              placeholder="Your name"
-              className="name-input"
-              ref={nameInputRef}
-            />
-            <datalist id="check-member-options">
-              {members.map((m) => (
-                <option key={m.id} value={m.name} />
-              ))}
-            </datalist>
-            <button
-              className="btn-primary"
-              onClick={handleStartCheck}
-              disabled={!completedBy.trim()}
-            >
-              Start Check
-            </button>
+
+            {!manualNameEntry ? (
+              <>
+                <p>Tap your name to {activeCheckPreview ? 'join the check' : 'start the check'}.</p>
+                <label htmlFor="name-picker-search" className="sr-only">Search the roster by name</label>
+                <input
+                  id="name-picker-search"
+                  type="search"
+                  value={pickerSearch}
+                  onChange={(e) => setPickerSearch(e.target.value)}
+                  placeholder="Search the roster…"
+                  className="name-picker-search"
+                  ref={nameInputRef}
+                />
+                <div className="name-picker-grid" role="list" aria-label="Roster">
+                  {filteredMembers.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      role="listitem"
+                      className="name-picker-btn"
+                      onClick={() => handleStartCheck(m.name, m.id)}
+                    >
+                      <span className="name-picker-name">{m.name}</span>
+                      {m.rank && <span className="name-picker-rank">{m.rank}</span>}
+                    </button>
+                  ))}
+                  {filteredMembers.length === 0 && (
+                    <p className="name-picker-empty">No match on the roster — type your name instead.</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary name-picker-manual-toggle"
+                  onClick={() => setManualNameEntry(true)}
+                >
+                  Not on the roster? Type your name
+                </button>
+              </>
+            ) : (
+              <>
+                <p>Type your name to {activeCheckPreview ? 'join the check' : 'start the check'}.</p>
+                <input
+                  type="text"
+                  value={completedBy}
+                  onChange={(e) => setCompletedBy(e.target.value)}
+                  placeholder="Your name"
+                  className="name-input"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  autoFocus
+                />
+                <button
+                  className="btn-primary"
+                  onClick={() => handleStartCheck()}
+                  disabled={!completedBy.trim()}
+                >
+                  {activeCheckPreview ? 'Join Check' : 'Start Check'}
+                </button>
+                {members.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn-secondary name-picker-manual-toggle"
+                    onClick={() => setManualNameEntry(false)}
+                  >
+                    Back to the roster
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </main>
       </div>

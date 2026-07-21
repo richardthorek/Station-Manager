@@ -474,27 +474,33 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
   }
 
   async getAllCheckRuns(stationId?: string): Promise<CheckRun[]> {
-    // Query recent months
+    // Query recent months. Each month is a separate partition query against
+    // Table Storage — run them concurrently rather than one-after-another, or
+    // the roster page pays a full network round-trip per month in series
+    // (the dominant cost behind "the vehicle screen takes ages to load").
     const now = new Date();
-    const allRuns: CheckRun[] = [];
+    const monthRuns = await Promise.all(
+      Array.from({ length: 3 }, (_, i) => {
+        const date = new Date(now);
+        date.setMonth(date.getMonth() - i);
+        return date.toISOString().slice(0, 7);
+      }).map(async (monthKey) => {
+        const entities = this.checkRunsTable.listEntities<TableEntity>({
+          queryOptions: { filter: odata`PartitionKey eq ${'CheckRun_' + monthKey}` }
+        });
 
-    for (let i = 0; i < 3; i++) { // Last 3 months
-      const date = new Date(now);
-      date.setMonth(date.getMonth() - i);
-      const monthKey = date.toISOString().slice(0, 7);
-
-      const entities = this.checkRunsTable.listEntities<TableEntity>({
-        queryOptions: { filter: odata`PartitionKey eq ${'CheckRun_' + monthKey}` }
-      });
-
-      for await (const entity of entities) {
-        const run = this.entityToCheckRun(entity);
-        if (stationId === undefined || sameStation(run.stationId, stationId)) {
-          allRuns.push(run);
+        const runs: CheckRun[] = [];
+        for await (const entity of entities) {
+          const run = this.entityToCheckRun(entity);
+          if (stationId === undefined || sameStation(run.stationId, stationId)) {
+            runs.push(run);
+          }
         }
-      }
-    }
+        return runs;
+      }),
+    );
 
+    const allRuns = monthRuns.flat();
     // Sort by startTime descending
     allRuns.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
 
