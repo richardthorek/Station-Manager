@@ -1040,14 +1040,14 @@ router.get('/issues', async (req: Request, res: Response) => {
  */
 router.patch('/results/:id/issue', async (req: Request, res: Response) => {
   try {
-    const { issueStatus, issueNote, assignedTo, resolvedBy, runId } = req.body ?? {};
+    const { issueStatus, issueNote, assignedTo, acknowledgedBy, resolvedBy, runId } = req.body ?? {};
     if (issueStatus !== undefined && !ISSUE_STATUSES.includes(issueStatus)) {
       return res.status(400).json({ error: 'Invalid issueStatus' });
     }
     const db = await ensureTruckChecksDatabase(req.isDemoMode);
     const result = await db.updateIssueStatus(
       req.params.id,
-      { issueStatus, issueNote, assignedTo, resolvedBy },
+      { issueStatus, issueNote, assignedTo, acknowledgedBy, resolvedBy },
       typeof runId === 'string' ? runId : undefined,
     );
     if (!result) {

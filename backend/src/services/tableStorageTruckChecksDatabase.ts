@@ -664,6 +664,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       issueStatus: checkResult.issueStatus || '',
       issueNote: '',
       assignedTo: '',
+      acknowledgedBy: '',
+      acknowledgedAt: '',
       resolvedBy: '',
       resolvedAt: '',
       createdAt: checkResult.createdAt.toISOString(),
@@ -741,6 +743,10 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       if (update.issueStatus !== undefined) entity.issueStatus = update.issueStatus;
       if (update.issueNote !== undefined) entity.issueNote = update.issueNote;
       if (update.assignedTo !== undefined) entity.assignedTo = update.assignedTo;
+      if (update.issueStatus === 'acknowledged') {
+        entity.acknowledgedBy = update.acknowledgedBy || '';
+        entity.acknowledgedAt = new Date().toISOString();
+      }
       if (update.issueStatus === 'resolved') {
         entity.resolvedBy = update.resolvedBy || '';
         entity.resolvedAt = new Date().toISOString();
@@ -771,6 +777,8 @@ export class TableStorageTruckChecksDatabase implements ITruckChecksDatabase {
       issueStatus: (entity.issueStatus as CheckResult['issueStatus']) || undefined,
       issueNote: (entity.issueNote as string) || undefined,
       assignedTo: (entity.assignedTo as string) || undefined,
+      acknowledgedBy: (entity.acknowledgedBy as string) || undefined,
+      acknowledgedAt: entity.acknowledgedAt ? new Date(entity.acknowledgedAt as string) : undefined,
       resolvedBy: (entity.resolvedBy as string) || undefined,
       resolvedAt: entity.resolvedAt ? new Date(entity.resolvedAt as string) : undefined,
       createdAt: new Date(entity.createdAt as string),

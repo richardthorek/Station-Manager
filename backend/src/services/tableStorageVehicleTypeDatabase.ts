@@ -170,8 +170,13 @@ export class TableStorageVehicleTypeDatabase implements IVehicleTypeDatabase {
   }
 
   async upsert(type: VehicleType): Promise<VehicleType> {
-    await this.table.upsertEntity(this.toEntity(type), 'Replace');
-    return type;
+    // Mirror the in-memory twin: the seeder calls this directly with the raw
+    // constant data, which omits `id` on each item — without normalising here,
+    // every standard item is persisted with no id, which 400s every save
+    // ("itemId is required") the instant a crew taps Done/Issue/Skip on it.
+    const normalised: VehicleType = { ...type, standardItems: normaliseStandardItems(type.standardItems) };
+    await this.table.upsertEntity(this.toEntity(normalised), 'Replace');
+    return normalised;
   }
 
   async listForOrganization(organizationId?: string): Promise<VehicleType[]> {

@@ -96,8 +96,14 @@ export class VehicleTypeDatabase implements IVehicleTypeDatabase {
   }
 
   async upsert(type: VehicleType): Promise<VehicleType> {
-    this.rows.set(type.id, type);
-    return type;
+    // Unlike create()/update(), the seeder calls this directly with the raw
+    // constant data (backend/src/constants/standardVehicleTypes.ts), which
+    // deliberately omits `id` on each item — without normalising here, every
+    // standard item is persisted with id: undefined, which 400s every save
+    // ("itemId is required") the instant a crew taps Done/Issue/Skip on it.
+    const normalised: VehicleType = { ...type, standardItems: normaliseStandardItems(type.standardItems) };
+    this.rows.set(normalised.id, normalised);
+    return normalised;
   }
 
   async listForOrganization(organizationId?: string): Promise<VehicleType[]> {

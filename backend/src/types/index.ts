@@ -740,6 +740,8 @@ export interface CheckResult {
   issueStatus?: 'open' | 'acknowledged' | 'resolved';
   issueNote?: string;       // follow-up / resolution note
   assignedTo?: string;      // optional owner (memberId or name)
+  acknowledgedBy?: string;  // who acknowledged it
+  acknowledgedAt?: Date;
   resolvedBy?: string;      // who resolved it
   resolvedAt?: Date;
   createdAt: Date;
@@ -751,6 +753,7 @@ export interface IssueUpdate {
   issueStatus?: 'open' | 'acknowledged' | 'resolved';
   issueNote?: string;
   assignedTo?: string;
+  acknowledgedBy?: string;
   resolvedBy?: string;
 }
 

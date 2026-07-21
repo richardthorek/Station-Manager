@@ -8,6 +8,21 @@
    from the shared PageHeader component (.page-header__tabs / .page-header__tab)
    — see components/PageHeader.css. */
 
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--rfs-core-red);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .dashboard-main {
   max-width: 1200px;
   margin: 0 auto;
@@ -16,7 +31,7 @@
 
 .filters-section {
   background: var(--bg-card);
-  color: var(--rfs-black);
+  color: var(--text-primary);
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 2rem;
@@ -35,7 +50,7 @@
 
 .filter-group label {
   font-weight: 600;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .filter-select {
@@ -75,7 +90,7 @@
 
 .stat-card {
   background: var(--bg-card);
-  color: var(--rfs-black);
+  color: var(--text-primary);
   padding: 1.5rem;
   border-radius: 8px;
   text-align: center;
@@ -113,7 +128,7 @@
 
 .no-results {
   background: var(--bg-card);
-  color: var(--rfs-black);
+  color: var(--text-primary);
   padding: 3rem;
   border-radius: 8px;
   text-align: center;
@@ -131,7 +146,7 @@
 
 .run-card {
   background: var(--bg-card);
-  color: var(--rfs-black);
+  color: var(--text-primary);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -163,7 +178,7 @@
 .run-info h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .run-date {
@@ -261,7 +276,7 @@
 .result-info h4 {
   margin: 0;
   font-size: 1rem;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .status-badge {
@@ -306,7 +321,7 @@
 .additional-comments h4 {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .additional-comments p {
@@ -324,7 +339,7 @@
 
 .export-section {
   background: var(--bg-card);
-  color: var(--rfs-black);
+  color: var(--text-primary);
   padding: 1.25rem 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
@@ -353,7 +368,7 @@
 .export-date-input label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .export-date-input input[type="date"] {
@@ -482,7 +497,7 @@
 .modal-content h2 {
   margin: 0 0 1rem;
   font-size: 1.35rem;
-  color: var(--rfs-black, #1a1a1a);
+  color: var(--text-primary, #1a1a1a);
 }
 
 .resolve-modal__context {
@@ -504,7 +519,7 @@
 .form-group label {
   font-weight: 600;
   font-size: 0.9rem;
-  color: var(--rfs-black, #1a1a1a);
+  color: var(--text-primary, #1a1a1a);
 }
 
 .form-group .optional {
@@ -519,7 +534,7 @@
   border-radius: 6px;
   font-size: 1rem;
   background: var(--bg-card, #fff);
-  color: var(--rfs-black, #1a1a1a);
+  color: var(--text-primary, #1a1a1a);
   width: 100%;
   box-sizing: border-box;
   font-family: inherit;
@@ -559,7 +574,7 @@
 
 .btn-secondary {
   background: var(--bg-secondary, #f0f0f0);
-  color: var(--rfs-black, #1a1a1a);
+  color: var(--text-primary, #1a1a1a);
 }
 
 .btn-secondary:hover:not(:disabled) { opacity: 0.8; }
@@ -567,10 +582,30 @@
 .btn-primary:disabled,
 .btn-secondary:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* TC-4 issue follow-up cards */
-.issue-card { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
-.issue-actions { display: flex; flex-direction: column; gap: 0.4rem; flex-shrink: 0; }
-.issue-meta { font-size: 0.85rem; color: var(--color-text-secondary, #666); margin: 0.25rem 0; }
+/* TC-4 issue follow-up cards — .run-card supplies background/border/shadow but
+   no padding of its own (the History tab's cards get theirs from .run-header,
+   which this card doesn't use), so it needs its own. */
+.issue-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem;
+}
+.issue-card .run-info { display: flex; flex-direction: column; gap: 0.5rem; }
+.issue-card__title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.issue-card__title-row h3 { margin: 0; }
+.issue-actions { display: flex; flex-direction: column; gap: 0.5rem; flex-shrink: 0; }
+.issue-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
 .issue-status--open { background: var(--surface-error, #fde8e8); }
 .issue-status--acknowledged { background: var(--surface-warning, #fef3cd); }
 .issue-status--resolved { background: var(--surface-success, #e6f4ea); }

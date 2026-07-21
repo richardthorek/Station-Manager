@@ -894,7 +894,7 @@ class ApiService {
     return response.json();
   }
 
-  async updateIssueStatus(resultId: string, runId: string, update: { issueStatus?: 'open' | 'acknowledged' | 'resolved'; issueNote?: string; assignedTo?: string; resolvedBy?: string }): Promise<CheckResult> {
+  async updateIssueStatus(resultId: string, runId: string, update: { issueStatus?: 'open' | 'acknowledged' | 'resolved'; issueNote?: string; assignedTo?: string; acknowledgedBy?: string; resolvedBy?: string }): Promise<CheckResult> {
     const response = await fetch(`${API_BASE_URL}/truck-checks/results/${resultId}/issue`, {
       method: 'PATCH',
       headers: this.getHeaders({ 'Content-Type': 'application/json' }),
@@ -995,7 +995,16 @@ class ApiService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy, itemCode, section }),
     });
-    if (!response.ok) throw new Error('Failed to create check result');
+    if (!response.ok) {
+      // A 400 here is the validator rejecting a specific field (see
+      // validateCreateCheckResult) — surface which one instead of a generic
+      // message, since fetchWithRetry only retries 429/503 and a 400 repeats
+      // identically forever otherwise (Q56: this was previously swallowed,
+      // masking a real validation failure as an apparent rate-limit blip).
+      const body = await response.json().catch(() => null) as { error?: string; details?: { field: string; message: string }[] } | null;
+      const detail = body?.details?.map((d) => `${d.field}: ${d.message}`).join('; ');
+      throw new Error(detail || body?.error || 'Failed to create check result');
+    }
     return response.json();
   }
 

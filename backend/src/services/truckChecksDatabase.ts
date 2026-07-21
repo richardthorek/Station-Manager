@@ -445,6 +445,10 @@ class TruckChecksDatabase {
     if (update.issueStatus !== undefined) result.issueStatus = update.issueStatus;
     if (update.issueNote !== undefined) result.issueNote = update.issueNote;
     if (update.assignedTo !== undefined) result.assignedTo = update.assignedTo;
+    if (update.issueStatus === 'acknowledged') {
+      result.acknowledgedBy = update.acknowledgedBy;
+      result.acknowledgedAt = new Date();
+    }
     if (update.issueStatus === 'resolved') {
       result.resolvedBy = update.resolvedBy;
       result.resolvedAt = new Date();

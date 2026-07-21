@@ -277,6 +277,8 @@ export interface CheckResult {
   issueStatus?: 'open' | 'acknowledged' | 'resolved';
   issueNote?: string;
   assignedTo?: string;
+  acknowledgedBy?: string;
+  acknowledgedAt?: string;
   resolvedBy?: string;
   resolvedAt?: string;
   createdAt: string;
