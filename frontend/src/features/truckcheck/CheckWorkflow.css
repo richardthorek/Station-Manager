@@ -388,6 +388,110 @@
   border-color: var(--rfs-core-red);
 }
 
+/* Person picker — tap-to-pick roster grid replacing the old free-text +
+   datalist input, which required an exact-match retype and gave no hint that
+   a check was already underway on this vehicle. */
+.name-prompt--picker {
+  text-align: left;
+}
+
+.name-prompt--picker h2,
+.name-prompt--picker > p {
+  text-align: center;
+}
+
+.active-check-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: rgba(246, 166, 9, 0.12);
+  border: 1.5px solid var(--accent-amber);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  color: var(--rfs-black);
+  text-align: left;
+}
+
+.active-check-banner svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--accent-amber-ink, var(--rfs-black));
+}
+
+.active-check-banner p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.name-picker-search {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  border: 2px solid var(--rfs-neutral-light);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+
+.name-picker-search:focus {
+  outline: none;
+  border-color: var(--rfs-core-red);
+}
+
+.name-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.6rem;
+  max-height: 45vh;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.name-picker-btn {
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--rfs-black);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+  text-align: center;
+}
+
+.name-picker-btn:hover,
+.name-picker-btn:focus-visible {
+  border-color: var(--rfs-core-red);
+  transform: translateY(-1px);
+}
+
+.name-picker-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.name-picker-rank {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.name-picker-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 1rem 0;
+}
+
+.name-picker-manual-toggle {
+  width: 100%;
+}
+
 .items-container {
   display: flex;
   flex-direction: column;

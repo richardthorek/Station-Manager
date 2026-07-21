@@ -678,17 +678,13 @@ class ApiService {
 
   // Appliances
   async getAppliances(): Promise<Appliance[]> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances`, {
-      headers: this.getHeaders(),
-    });
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/appliances`);
     if (!response.ok) throw new Error('Failed to fetch appliances');
     return response.json();
   }
 
   async getAppliance(id: string): Promise<Appliance> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${id}`, {
-      headers: this.getHeaders(),
-    });
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/appliances/${id}`);
     if (!response.ok) throw new Error('Failed to fetch appliance');
     return response.json();
   }
@@ -893,9 +889,7 @@ class ApiService {
   // Issue follow-up (TC-4)
   async getIssues(status?: 'open' | 'acknowledged' | 'resolved'): Promise<IssueResult[]> {
     const qs = status ? `?status=${status}` : '';
-    const response = await fetch(`${API_BASE_URL}/truck-checks/issues${qs}`, {
-      headers: this.getHeaders(),
-    });
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/issues${qs}`);
     if (!response.ok) throw new Error('Failed to fetch issues');
     return response.json();
   }
@@ -912,9 +906,7 @@ class ApiService {
 
   // Effective checklist (standard + custom overlay, resolved)
   async getEffectiveChecklist(applianceId: string): Promise<EffectiveChecklist> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/appliances/${applianceId}/checklist`, {
-      headers: this.getHeaders(),
-    });
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/appliances/${applianceId}/checklist`);
     if (!response.ok) throw new Error('Failed to fetch checklist');
     return response.json();
   }
@@ -931,9 +923,9 @@ class ApiService {
 
   // Check Runs
   async createCheckRun(applianceId: string, completedBy: string, completedByName?: string): Promise<CheckRun> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/runs`, {
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/runs`, {
       method: 'POST',
-      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ applianceId, completedBy, completedByName }),
     });
     if (!response.ok) throw new Error('Failed to create check run');
@@ -941,9 +933,7 @@ class ApiService {
   }
 
   async getCheckRun(id: string): Promise<CheckRunWithResults> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}`, {
-      headers: this.getHeaders(),
-    });
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/runs/${id}`);
     if (!response.ok) throw new Error('Failed to fetch check run');
     return response.json();
   }
@@ -960,17 +950,15 @@ class ApiService {
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.withIssues) params.append('withIssues', 'true');
 
-    const response = await fetch(`${API_BASE_URL}/truck-checks/runs?${params.toString()}`, {
-      headers: this.getHeaders(),
-    });
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/runs?${params.toString()}`);
     if (!response.ok) throw new Error('Failed to fetch check runs');
     return response.json();
   }
 
   async completeCheckRun(id: string, additionalComments?: string): Promise<CheckRun> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}/complete`, {
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/runs/${id}/complete`, {
       method: 'PUT',
-      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ additionalComments }),
     });
     if (!response.ok) throw new Error('Failed to complete check run');
@@ -979,9 +967,8 @@ class ApiService {
 
   /** Cancel/abandon a check run left open from a previous session. */
   async cancelCheckRun(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/runs/${id}`, {
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/runs/${id}`, {
       method: 'DELETE',
-      headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to cancel check run');
   }
@@ -999,9 +986,13 @@ class ApiService {
     itemCode?: string,
     section?: string
   ): Promise<CheckResult> {
-    const response = await fetch(`${API_BASE_URL}/truck-checks/results`, {
+    // fetchWithRetry: a shared kiosk/station IP running several devices through
+    // a live check can trip the per-IP rate limiter or hit a transient 503 —
+    // without a retry that instantly surfaced as "Failed to save result" with
+    // the item's progress lost (see CheckWorkflowPage.tsx handleItemResult).
+    const response = await this.fetchWithRetry(`${API_BASE_URL}/truck-checks/results`, {
       method: 'POST',
-      headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ runId, itemId, itemName, itemDescription, status, comment, photoUrl, completedBy, itemCode, section }),
     });
     if (!response.ok) throw new Error('Failed to create check result');

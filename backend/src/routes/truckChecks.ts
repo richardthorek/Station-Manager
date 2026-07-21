@@ -1002,7 +1002,12 @@ router.get('/issues', async (req: Request, res: Response) => {
     const stationId = getStationIdFromRequest(req);
     const statusFilter = typeof req.query.status === 'string' ? req.query.status : undefined;
 
-    const runs = await db.getAllRunsWithResults(stationId);
+    // getRunsWithIssues filters to runs already flagged hasIssues before fetching
+    // their results, instead of pulling every run's full result history (as
+    // getAllRunsWithResults does) just to throw away the issue-free ones —
+    // this endpoint is fetched on every roster-page load alongside GET /runs,
+    // which was doing that same expensive full-history fetch a second time.
+    const runs = await db.getRunsWithIssues(stationId);
     const issues = runs.flatMap((run) =>
       run.results
         .filter((r) => r.status === 'issue')
