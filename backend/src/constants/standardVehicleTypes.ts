@@ -8,14 +8,19 @@
  *
  * Template structure: reusable check groups (FLUIDS, TYRES, FUEL, etc.; RFS_*
  * groups are NSW RFS road-appliance specific) stacked per vehicle. Items omit
- * `id`/`order` here — the seeder's `upsert` stores them as-is (array order is
- * display order), unlike `VehicleTypeDatabase.create/update`, which run
- * `normaliseStandardItems` to backfill both.
+ * `id`/`order` here (array order is display order) — `normaliseStandardItems`
+ * backfills both, in both the seeder's `upsert` path and `VehicleTypeDatabase
+ * .create/update`. (`upsert` didn't call it until SEED_VERSION 3: every
+ * standard item was persisted with no `id`, which 400'd — "itemId is
+ * required" — the instant a crew tried to save a result against it.)
  */
 
 import type { ChecklistItem, VehicleType } from '../types';
 
-export const SEED_VERSION = 2;
+// Bumped 2 -> 3: upsert() now normalises standardItems (backfills id/order),
+// fixing every existing deployment's standard items, which were persisted
+// with no id and 400'd on every single save. See vehicleTypeDatabase.ts.
+export const SEED_VERSION = 3;
 
 // Reusable checklist item groups (mutable references merged per-template)
 // Using Partial<ChecklistItem> since normaliseStandardItems will fill in id/order

@@ -747,13 +747,14 @@
       "PATCH /api/truck-checks/results/:id/issue": {
         "method": "PATCH",
         "path": "/api/truck-checks/results/:id/issue",
-        "description": "Update an issue result's lifecycle (issueStatus/issueNote/assignedTo/resolvedBy). Resolving stamps resolvedAt. Body must include runId (Table Storage locates the result by run partition).",
+        "description": "Update an issue result's lifecycle (issueStatus/issueNote/assignedTo/acknowledgedBy/resolvedBy). Acknowledging stamps acknowledgedAt; resolving stamps resolvedAt. Body must include runId (Table Storage locates the result by run partition).",
         "authentication": "JWT/optional",
         "requestBody": {
           "runId": "string",
           "issueStatus": "'open'|'acknowledged'|'resolved'?",
           "issueNote": "string?",
           "assignedTo": "string?",
+          "acknowledgedBy": "string?",
           "resolvedBy": "string?"
         },
         "responses": {

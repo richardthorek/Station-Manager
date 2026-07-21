@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Moon, Sun, BarChart3, Wrench, Truck, TrendingUp, CircleCheckBig, Download, TriangleAlert, Check } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import { useSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import { downloadCSV, getTodayFormatted } from '../../utils/csvUtils';
 import { PageHeader } from '../../components/PageHeader';
@@ -14,6 +15,7 @@ type IssueFilter = 'outstanding' | 'open' | 'acknowledged' | 'resolved';
 
 export function AdminDashboardPage() {
   const { theme, toggleTheme } = useTheme();
+  const { on, off } = useSocket();
   const [activeTab, setActiveTab] = useState<ActiveTab>('history');
   const [checkRuns, setCheckRuns] = useState<CheckRunWithResults[]>([]);
   const [appliances, setAppliances] = useState<Appliance[]>([]);
@@ -28,22 +30,44 @@ export function AdminDashboardPage() {
   const [exportFeedback, setExportFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [issues, setIssues] = useState<IssueResult[]>([]);
   const [issueFilter, setIssueFilter] = useState<IssueFilter>('outstanding');
-  // Resolution modal (replaces browser prompt)
-  const [showResolveModal, setShowResolveModal] = useState(false);
-  const [resolveTarget, setResolveTarget] = useState<IssueResult | null>(null);
-  const [resolveBy, setResolveBy] = useState('');
+  // Acknowledge/resolve modal (replaces browser prompt) — same shape for both
+  // actions so we always capture who did it; only "resolved" also takes a note.
+  const [actionMode, setActionMode] = useState<'acknowledged' | 'resolved'>('acknowledged');
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [actionTarget, setActionTarget] = useState<IssueResult | null>(null);
+  const [actionBy, setActionBy] = useState('');
   const [resolveNote, setResolveNote] = useState('');
-  const [resolveSaving, setResolveSaving] = useState(false);
+  const [actionSaving, setActionSaving] = useState(false);
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Always keep the issues list loaded (not gated on the Follow-ups tab being
+  // active) so the tab button can show a live outstanding-issue count even
+  // while an officer is looking at History or Vehicle Management.
   useEffect(() => {
-    if (activeTab === 'followups') loadIssues();
+    loadIssues();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, issueFilter]);
+  }, [issueFilter]);
+
+  // Live dashboard: any truck-check activity elsewhere (an item flagged as an
+  // issue, an issue acknowledged/resolved, a check completed) re-syncs the
+  // issues list and check-history stats without the officer needing to
+  // refresh — the point being to see a new fault the moment it's reported.
+  useEffect(() => {
+    function handleTruckCheckUpdate(data: unknown) {
+      const type = (data as { type?: string } | undefined)?.type;
+      if (type === 'result-created' || type === 'issue-updated' || type === 'check-completed' || type === 'check-cancelled') {
+        loadIssues();
+        loadCheckRuns();
+      }
+    }
+    on('truck-check-update', handleTruckCheckUpdate);
+    return () => off('truck-check-update', handleTruckCheckUpdate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [on, off, issueFilter, selectedAppliance, issuesOnly]);
 
   async function loadIssues() {
     try {
@@ -55,39 +79,34 @@ export function AdminDashboardPage() {
     }
   }
 
-  async function handleIssueAction(issue: IssueResult, issueStatus: 'acknowledged' | 'resolved') {
-    if (issueStatus === 'resolved') {
-      setResolveTarget(issue);
-      setResolveBy('');
-      setResolveNote('');
-      setShowResolveModal(true);
-      return;
-    }
-    try {
-      await api.updateIssueStatus(issue.id, issue.runId, { issueStatus });
-      await loadIssues();
-    } catch (err) {
-      alert('Failed to update issue');
-      console.error(err);
-    }
+  function handleIssueAction(issue: IssueResult, issueStatus: 'acknowledged' | 'resolved') {
+    // Both actions open the same modal so we always capture who did it —
+    // an equipment officer walking past and tapping "Acknowledge" with no
+    // record of who is no better than the resolve flow used to be.
+    setActionMode(issueStatus);
+    setActionTarget(issue);
+    setActionBy('');
+    setResolveNote('');
+    setShowActionModal(true);
   }
 
-  async function handleResolveSubmit() {
-    if (!resolveTarget) return;
+  async function handleActionSubmit() {
+    if (!actionTarget) return;
     try {
-      setResolveSaving(true);
-      await api.updateIssueStatus(resolveTarget.id, resolveTarget.runId, {
-        issueStatus: 'resolved',
-        resolvedBy: resolveBy.trim() || undefined,
-        issueNote: resolveNote.trim() || undefined,
+      setActionSaving(true);
+      await api.updateIssueStatus(actionTarget.id, actionTarget.runId, {
+        issueStatus: actionMode,
+        acknowledgedBy: actionMode === 'acknowledged' ? (actionBy.trim() || undefined) : undefined,
+        resolvedBy: actionMode === 'resolved' ? (actionBy.trim() || undefined) : undefined,
+        issueNote: actionMode === 'resolved' ? (resolveNote.trim() || undefined) : undefined,
       });
-      setShowResolveModal(false);
+      setShowActionModal(false);
       await loadIssues();
     } catch (err) {
-      alert('Failed to resolve issue');
+      alert(actionMode === 'resolved' ? 'Failed to resolve issue' : 'Failed to update issue');
       console.error(err);
     } finally {
-      setResolveSaving(false);
+      setActionSaving(false);
     }
   }
 
@@ -209,6 +228,9 @@ export function AdminDashboardPage() {
             onClick={() => setActiveTab('followups')}
           >
             <Wrench size={16} strokeWidth={2} aria-hidden /> Follow-ups
+            {issueFilter === 'outstanding' && issues.length > 0 && (
+              <span className="tab-badge" aria-label={`${issues.length} outstanding issues`}>{issues.length}</span>
+            )}
           </button>
           <button
             className={`page-header__tab${activeTab === 'vehicles' ? ' page-header__tab--active' : ''}`}
@@ -251,14 +273,18 @@ export function AdminDashboardPage() {
                 {issues.map((issue) => (
                   <div key={issue.id} className={`run-card has-issues issue-card issue-card--${issue.issueStatus}`}>
                     <div className="run-info">
-                      <h3>{issue.applianceName} — {issue.itemName}</h3>
+                      <div className="issue-card__title-row">
+                        <h3>{issue.applianceName} — {issue.itemName}</h3>
+                        <span className={`status-badge issue-status--${issue.issueStatus}`}>{issue.issueStatus}</span>
+                      </div>
                       <p className="run-date">{formatDate(issue.runStartTime)}</p>
                       {issue.comment && <p className="result-comment">“{issue.comment}”</p>}
-                      <p className="issue-meta">
-                        <span className={`status-badge issue-status--${issue.issueStatus}`}>{issue.issueStatus}</span>
-                        {issue.assignedTo && <span> · assigned to {issue.assignedTo}</span>}
-                        {issue.issueStatus === 'resolved' && issue.resolvedBy && <span> · resolved by {issue.resolvedBy}</span>}
-                      </p>
+                      <ul className="issue-people">
+                        <li>Reported by {issue.completedBy || 'Unknown'}</li>
+                        {issue.assignedTo && <li>Assigned to {issue.assignedTo}</li>}
+                        {issue.acknowledgedBy && <li>Acknowledged by {issue.acknowledgedBy}</li>}
+                        {issue.issueStatus === 'resolved' && issue.resolvedBy && <li>Resolved by {issue.resolvedBy}</li>}
+                      </ul>
                       {issue.issueNote && <p className="result-comment">Resolution: {issue.issueNote}</p>}
                     </div>
                     {issue.issueStatus !== 'resolved' && (
@@ -454,48 +480,52 @@ export function AdminDashboardPage() {
         )}
       </main>
 
-      {showResolveModal && resolveTarget && (
+      {showActionModal && actionTarget && (
         <div
           className="modal-overlay"
           role="button"
           tabIndex={0}
-          aria-label="Close resolve dialog"
-          onClick={(e) => { if (e.target === e.currentTarget && !resolveSaving) setShowResolveModal(false); }}
-          onKeyDown={(e) => { if ((e.key === 'Escape' || e.key === 'Enter') && !resolveSaving) setShowResolveModal(false); }}
+          aria-label="Close dialog"
+          onClick={(e) => { if (e.target === e.currentTarget && !actionSaving) setShowActionModal(false); }}
+          onKeyDown={(e) => { if ((e.key === 'Escape' || e.key === 'Enter') && !actionSaving) setShowActionModal(false); }}
         >
           <div className="modal-content resolve-modal" role="dialog" aria-modal="true" aria-labelledby="resolve-modal-title">
-            <h2 id="resolve-modal-title">Mark issue resolved</h2>
+            <h2 id="resolve-modal-title">{actionMode === 'resolved' ? 'Mark issue resolved' : 'Acknowledge issue'}</h2>
             <p className="resolve-modal__context">
-              <strong>{resolveTarget.applianceName}</strong> — {resolveTarget.itemName}
+              <strong>{actionTarget.applianceName}</strong> — {actionTarget.itemName}
             </p>
             <div className="form-group">
-              <label htmlFor="resolve-by">Resolved by</label>
+              <label htmlFor="action-by">{actionMode === 'resolved' ? 'Resolved by' : 'Acknowledged by'}</label>
               <input
-                id="resolve-by"
+                id="action-by"
                 type="text"
-                value={resolveBy}
-                onChange={(e) => setResolveBy(e.target.value)}
-                placeholder="Name of person who resolved this"
-                disabled={resolveSaving}
+                value={actionBy}
+                onChange={(e) => setActionBy(e.target.value)}
+                placeholder={`Name of person who ${actionMode === 'resolved' ? 'resolved' : 'acknowledged'} this`}
+                disabled={actionSaving}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
               />
             </div>
-            <div className="form-group">
-              <label htmlFor="resolve-note">Resolution note <span className="optional">(optional)</span></label>
-              <textarea
-                id="resolve-note"
-                value={resolveNote}
-                onChange={(e) => setResolveNote(e.target.value)}
-                placeholder="What was done to fix this issue?"
-                rows={3}
-                disabled={resolveSaving}
-              />
-            </div>
+            {actionMode === 'resolved' && (
+              <div className="form-group">
+                <label htmlFor="resolve-note">Resolution note <span className="optional">(optional)</span></label>
+                <textarea
+                  id="resolve-note"
+                  value={resolveNote}
+                  onChange={(e) => setResolveNote(e.target.value)}
+                  placeholder="What was done to fix this issue?"
+                  rows={3}
+                  disabled={actionSaving}
+                />
+              </div>
+            )}
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setShowResolveModal(false)} disabled={resolveSaving}>
+              <button className="btn-secondary" onClick={() => setShowActionModal(false)} disabled={actionSaving}>
                 Cancel
               </button>
-              <button className="btn-primary" onClick={handleResolveSubmit} disabled={resolveSaving}>
-                {resolveSaving ? 'Saving…' : 'Mark resolved'}
+              <button className="btn-primary" onClick={handleActionSubmit} disabled={actionSaving}>
+                {actionSaving ? 'Saving…' : actionMode === 'resolved' ? 'Mark resolved' : 'Acknowledge'}
               </button>
             </div>
           </div>
