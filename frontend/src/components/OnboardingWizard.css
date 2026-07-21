@@ -308,40 +308,17 @@
   min-height: 44px;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
-  color: var(--rfs-white);
+/* .btn-primary / .btn-secondary now come from the shared classes in
+   index.css — these are just the flex-sizing modifiers for the footer nav
+   row. See docs/wiki/developer/ui-patterns.md. */
+.onboarding-footer .btn-primary {
   flex: 1;
   max-width: 200px;
 }
 
-.btn-primary:hover {
-  background: linear-gradient(135deg, var(--rfs-core-red-dark) 0%, #a81912 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(229, 40, 27, 0.4);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-.btn-secondary {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 2px solid var(--border-color);
+.onboarding-footer .btn-secondary {
   flex: 1;
   max-width: 150px;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--surface-hover);
-  border-color: var(--rfs-core-red);
-  transform: translateY(-2px);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .btn-skip {

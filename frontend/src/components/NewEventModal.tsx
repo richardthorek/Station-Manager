@@ -196,7 +196,7 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onCreateA
                 <div className="add-activity-actions">
                   <button
                     type="button"
-                    className="btn-primary"
+                    className="btn-accent"
                     onClick={handleAddActivity}
                     disabled={!newActivityName.trim() || isCreatingActivity}
                   >
@@ -233,7 +233,7 @@ export function NewEventModal({ isOpen, activities, onClose, onCreate, onCreateA
           </button>
           <button
             type="button"
-            className="btn-primary"
+            className="btn-accent"
             onClick={handleCreate}
             disabled={!selectedActivityId}
             aria-disabled={!selectedActivityId}

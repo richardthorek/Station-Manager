@@ -295,42 +295,10 @@
   background: var(--bg-secondary);
 }
 
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--rfs-lime);
-  color: #000;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #b5c529;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(198, 217, 49, 0.3);
-}
-
-.btn-primary:disabled {
-  background: #555;
-  color: var(--text-secondary);
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #333;
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: #444;
-}
+/* .btn-accent / .btn-secondary now come from the shared classes in
+   index.css instead of being redefined here (the primary action here uses
+   the amber accent, not brand red, to match this modal's established
+   look) — see docs/wiki/developer/ui-patterns.md. */
 
 /* Scrollbar styling */
 .modal-content::-webkit-scrollbar {

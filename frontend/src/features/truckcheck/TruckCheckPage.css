@@ -250,7 +250,7 @@
 
 .roster-card__actions .btn-primary,
 .roster-card__actions .btn-secondary,
-.roster-card__actions .btn-danger,
+.roster-card__actions .btn-cancel-outline,
 .roster-card__actions .btn-voice-check {
   width: auto;
   flex: 1 1 auto;
@@ -320,46 +320,16 @@
   font-weight: 600;
 }
 
-/* Buttons */
-.btn-primary {
-  background-color: var(--rfs-core-red);
-  color: var(--rfs-white);
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
-  width: 100%;
-}
+/* .btn-primary / .btn-secondary now come from the shared classes in
+   index.css instead of being redefined here (this page's own
+   .roster-empty .btn-primary and .roster-card__actions overrides below
+   already handle the width variations this used to hard-set) — see
+   docs/wiki/developer/ui-patterns.md. */
 
-.btn-primary:hover {
-  background-color: var(--rfs-core-red-dark);
-  transform: translateY(-1px);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-.btn-secondary {
-  background-color: transparent;
-  color: var(--rfs-core-red);
-  border: 2px solid var(--rfs-core-red);
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover {
-  background-color: var(--surface-hover);
-}
-
-.btn-danger {
+/* Outline-style cancel action — deliberately lighter-weight than the filled
+   .btn-danger elsewhere, so it doesn't visually compete with Resume/Finalise
+   in the same button row. */
+.btn-cancel-outline {
   background-color: transparent;
   color: var(--status-issue-border, #d32f2f);
   border: 2px solid var(--status-issue-border, #e57373);
@@ -371,12 +341,12 @@
   transition: background-color 0.2s, color 0.2s;
 }
 
-.btn-danger:hover:not(:disabled) {
+.btn-cancel-outline:hover:not(:disabled) {
   background-color: var(--status-issue-border, #e57373);
   color: #fff;
 }
 
-.btn-danger:disabled {
+.btn-cancel-outline:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

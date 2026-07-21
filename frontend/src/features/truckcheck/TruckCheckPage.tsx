@@ -321,7 +321,7 @@ export function TruckCheckPage() {
                             Finalise
                           </button>
                           <button
-                            className="btn-danger"
+                            className="btn-cancel-outline"
                             onClick={() => setConfirmingCancel(activeCheck)}
                             disabled={cancellingId === activeCheck.id}
                           >

@@ -554,33 +554,18 @@
   margin-top: 1.5rem;
 }
 
-.btn-primary,
-.btn-secondary {
+/* .btn-primary / .btn-secondary now come from the shared classes in
+   index.css — this is just a compact-size modifier for the two dense
+   contexts (issue card actions, modal footer) that use them here, instead
+   of redefining the classes themselves — see
+   docs/wiki/developer/ui-patterns.md. */
+.issue-actions .btn-primary,
+.issue-actions .btn-secondary,
+.modal-actions .btn-primary,
+.modal-actions .btn-secondary {
   padding: 0.65rem 1.25rem;
   font-size: 0.95rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: opacity 0.15s;
 }
-
-.btn-primary {
-  background: var(--rfs-core-red);
-  color: #fff;
-}
-
-.btn-primary:hover:not(:disabled) { opacity: 0.88; }
-
-.btn-secondary {
-  background: var(--bg-secondary, #f0f0f0);
-  color: var(--text-primary, #1a1a1a);
-}
-
-.btn-secondary:hover:not(:disabled) { opacity: 0.8; }
-
-.btn-primary:disabled,
-.btn-secondary:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* TC-4 issue follow-up cards — .run-card supplies background/border/shadow but
    no padding of its own (the History tab's cards get theirs from .run-header,
