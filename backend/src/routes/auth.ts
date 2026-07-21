@@ -23,6 +23,7 @@ import { isFacilityServiceType } from '../types/facilities';
 import { isPlatformAdmin } from '../middleware/platformAdmin';
 import { logger } from '../services/logger';
 import { authMiddleware } from '../middleware/auth';
+import { resolveOrganizationStationId } from '../middleware/stationMiddleware';
 import { sensitiveActionRateLimiter } from '../middleware/rateLimiter';
 import { isValidEmail } from '../utils/emailValidation';
 import { FACILITY_SERVICE_TYPE_LABELS } from '../constants/facilityServiceTypes';
@@ -279,6 +280,20 @@ router.post('/signup', sensitiveActionRateLimiter, async (req: Request, res: Res
       logger.warn('Failed to create founder membership row (legacy fallback still applies)', {
         error: membershipError,
         userId: owner.id,
+      });
+    }
+
+    // Every org gets its own station immediately — a fresh org used to start
+    // with zero stations and silently share the global `default-station`
+    // bucket with every other stationless org until someone noticed (see
+    // stationMiddleware.ts). stationMiddleware also self-heals this lazily
+    // for any org that still slips through, so a failure here isn't fatal.
+    try {
+      await resolveOrganizationStationId(organization);
+    } catch (stationError) {
+      logger.warn('Failed to auto-create station at signup (stationMiddleware will retry lazily)', {
+        error: stationError,
+        organizationId: organization.id,
       });
     }
 
