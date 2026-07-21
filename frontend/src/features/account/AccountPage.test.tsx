@@ -95,7 +95,7 @@ describe('AccountPage', () => {
   it('shows a plain-text hint for a single-org user with no switcher', () => {
     renderPage();
     expect(screen.getByText(/you belong to/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /switch/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^switch$/i })).not.toBeInTheDocument();
   });
 
   it('lists organisations and switches to a non-current one', async () => {
@@ -109,7 +109,7 @@ describe('AccountPage', () => {
     expect(screen.getByText('Second Brigade')).toBeInTheDocument();
     expect(screen.getByText('Current')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /switch/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^switch$/i }));
 
     await waitFor(() => expect(switchOrg).toHaveBeenCalledWith('org-2'));
   });

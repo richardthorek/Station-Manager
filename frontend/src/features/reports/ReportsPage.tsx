@@ -193,9 +193,11 @@ export function ReportsPage() {
     <PageTransition variant="slideFromBottom">
       <div className="reports-page">
       <PageHeader title="Reports & Analytics" backTo="/" backLabel="Home">
-        <Link to="/reports/cross-station" className="cross-station-link">
-          View Cross-Station Reports →
-        </Link>
+        <div className="page-header__tabs">
+          <Link to="/reports/cross-station" className="page-header__tab">
+            View Cross-Station Reports →
+          </Link>
+        </div>
       </PageHeader>
 
       {/* Date Range Selector */}

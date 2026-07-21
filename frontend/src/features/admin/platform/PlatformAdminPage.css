@@ -3,20 +3,8 @@
   background: var(--bg-primary);
 }
 
-.platform-header {
-  padding: 1.5rem;
-}
-
-.platform-header h1 {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.75rem;
-  color: var(--text-primary);
-}
-
-.platform-subtitle {
-  margin: 0;
-  color: var(--text-secondary);
-}
+/* Back arrow, title, subtitle, and theme-toggle action now come from the
+   shared PageHeader component — see components/PageHeader.css. */
 
 .platform-main {
   max-width: 900px;

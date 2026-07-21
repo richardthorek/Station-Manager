@@ -197,26 +197,26 @@ export function AdminDashboardPage() {
           onClick: toggleTheme,
         }]}
       >
-        <div className="tabs">
+        <div className="page-header__tabs">
           <button
-            className={`tab ${activeTab === 'history' ? 'active' : ''}`}
+            className={`page-header__tab${activeTab === 'history' ? ' page-header__tab--active' : ''}`}
             onClick={() => setActiveTab('history')}
           >
             <BarChart3 size={16} strokeWidth={2} aria-hidden /> Check History
           </button>
           <button
-            className={`tab ${activeTab === 'followups' ? 'active' : ''}`}
+            className={`page-header__tab${activeTab === 'followups' ? ' page-header__tab--active' : ''}`}
             onClick={() => setActiveTab('followups')}
           >
             <Wrench size={16} strokeWidth={2} aria-hidden /> Follow-ups
           </button>
           <button
-            className={`tab ${activeTab === 'vehicles' ? 'active' : ''}`}
+            className={`page-header__tab${activeTab === 'vehicles' ? ' page-header__tab--active' : ''}`}
             onClick={() => setActiveTab('vehicles')}
           >
             <Truck size={16} strokeWidth={2} aria-hidden /> Vehicle Management
           </button>
-          <Link to="/truckcheck/comparative" className="tab">
+          <Link to="/truckcheck/comparative" className="page-header__tab">
             <TrendingUp size={16} strokeWidth={2} aria-hidden /> Compare Stations
           </Link>
         </div>

@@ -14,28 +14,8 @@
   margin-bottom: 2rem;
 }
 
-.reports-header__actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.page-header__extra .cross-station-link {
-  display: inline-block;
-  color: var(--rfs-white);
-  text-decoration: none;
-  font-size: 1rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.page-header__extra .cross-station-link:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateX(2px);
-}
+/* The header action row (export menu + quick links) now uses the shared
+   .page-header__tabs / .page-header__tab classes — see components/PageHeader.css. */
 
 /* Date Range Selector */
 .date-range-selector {

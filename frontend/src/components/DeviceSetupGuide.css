@@ -23,7 +23,8 @@
 }
 
 .setup-guide-modal {
-  background: var(--rfs-white);
+  background: var(--bg-card);
+  color: var(--text-primary);
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 600px;
@@ -51,7 +52,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--rfs-light-grey);
+  border-bottom: 1px solid var(--border-color);
   gap: var(--spacing-md);
 }
 
@@ -60,7 +61,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   font-family: 'Archivo', 'Public Sans', sans-serif;
-  color: var(--rfs-black);
+  color: var(--text-primary);
   flex: 1;
 }
 
@@ -69,7 +70,7 @@
   border: none;
   padding: var(--spacing-sm);
   cursor: pointer;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,8 +80,8 @@
 }
 
 .setup-guide-close:hover {
-  background-color: var(--rfs-neutral-light);
-  color: var(--rfs-black);
+  background-color: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .setup-guide-progress {
@@ -94,7 +95,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--rfs-neutral-medium);
+  background: var(--border-color);
   transition: all 0.3s ease;
 }
 
@@ -129,7 +130,7 @@
   text-align: center;
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--rfs-black);
+  color: var(--text-primary);
   margin: 0 0 var(--spacing-lg) 0;
 }
 
@@ -146,19 +147,19 @@
 
 .guide-step-content p {
   margin: 0;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
 .guide-step-content p strong {
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .guide-step-content ol,
 .guide-step-content ul {
   margin: 0;
   padding-left: 1.5rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 .guide-step-content li {
@@ -167,7 +168,7 @@
 }
 
 .guide-step-content li strong {
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .guide-note {
@@ -206,8 +207,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-lg);
-  border-top: 1px solid var(--rfs-light-grey);
-  background: var(--rfs-neutral-light);
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
 }
 
 .setup-guide-button {
@@ -240,14 +241,14 @@
 }
 
 .setup-guide-button.secondary {
-  background: var(--rfs-white);
-  color: var(--rfs-dark-grey);
-  border: 1px solid var(--rfs-light-grey);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .setup-guide-button.secondary:hover:not(:disabled) {
-  background: var(--rfs-neutral-light);
-  color: var(--rfs-black);
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .setup-guide-button:disabled {
@@ -257,14 +258,14 @@
 
 .setup-guide-step-counter {
   font-size: 0.875rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .setup-guide-cta {
   padding: var(--spacing-md) var(--spacing-lg);
   background: var(--surface-warning);
-  border-top: 1px solid var(--rfs-light-grey);
+  border-top: 1px solid var(--border-color);
   text-align: center;
 }
 
@@ -288,74 +289,11 @@
   box-shadow: 0 4px 12px rgba(246, 166, 9, 0.3);
 }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .setup-guide-modal {
-    background: var(--rfs-neutral-dark);
-  }
-
-  .setup-guide-header {
-    border-bottom-color: #333;
-  }
-
-  .setup-guide-header h1 {
-    color: var(--rfs-white);
-  }
-
-  .setup-guide-close {
-    color: var(--rfs-light-grey);
-  }
-
-  .setup-guide-close:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--rfs-white);
-  }
-
-  .setup-guide-actions {
-    border-top-color: #333;
-    background: rgba(0, 0, 0, 0.3);
-  }
-
-  .setup-guide-description {
-    color: var(--rfs-white);
-  }
-
-  .guide-step-content p {
-    color: var(--rfs-light-grey);
-  }
-
-  .guide-step-content p strong {
-    color: var(--rfs-white);
-  }
-
-  .guide-step-content ol,
-  .guide-step-content ul {
-    color: var(--rfs-light-grey);
-  }
-
-  .guide-step-content li strong {
-    color: var(--rfs-white);
-  }
-
-  .setup-guide-button.secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--rfs-light-grey);
-    border-color: #333;
-  }
-
-  .setup-guide-button.secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--rfs-white);
-  }
-
-  .setup-guide-step-counter {
-    color: var(--rfs-light-grey);
-  }
-
-  .setup-guide-cta {
-    border-top-color: #333;
-  }
-}
+/* Dark mode now comes for free from the theme-aware vars above (--bg-card,
+   --text-primary, --border-color, etc. flip via [data-theme="dark"] in
+   index.css) — no separate @media (prefers-color-scheme) block needed. That
+   old block only reacted to the OS-level preference, not the app's in-app
+   theme toggle, so it could show the wrong theme when they disagreed. */
 
 /* Tablet and larger */
 @media (min-width: 768px) {

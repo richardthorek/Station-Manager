@@ -4,47 +4,9 @@
   color: var(--text-primary);
 }
 
-/* Back arrow, title, subtitle, and theme-toggle action now come from the
-   shared PageHeader component — see components/PageHeader.css. */
-
-.tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.75rem 1.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 8px 8px 0 0;
-  color: var(--rfs-white);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.tab:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.tab.active {
-  background: var(--bg-card);
-  color: var(--rfs-core-red);
-}
+/* Back arrow, title, subtitle, theme-toggle action, and the tab row now come
+   from the shared PageHeader component (.page-header__tabs / .page-header__tab)
+   — see components/PageHeader.css. */
 
 .dashboard-main {
   max-width: 1200px;
@@ -454,11 +416,6 @@
 
   .dashboard-main {
     padding: 1rem;
-  }
-
-  .tab {
-    padding: 0.65rem 1rem;
-    font-size: 0.9rem;
   }
 
   .filters-section {

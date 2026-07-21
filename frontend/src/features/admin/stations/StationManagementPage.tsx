@@ -11,11 +11,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { RefreshCw, Building2, Check, Search, LayoutGrid, List, KeyRound, Users, MapPin, Map, Eye, Pencil, Trash2 } from 'lucide-react';
+import { RefreshCw, Building2, Check, Search, LayoutGrid, List, KeyRound, Users, MapPin, Map, Eye, Pencil, Trash2, Moon, Sun } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
 import { useStation, DEMO_STATION_ID } from '../../../contexts/StationContext';
+import { useTheme } from '../../../hooks/useTheme';
 import { PageTransition } from '../../../components/PageTransition';
+import { PageHeader } from '../../../components/PageHeader';
 import { AdminNav } from '../../../components/AdminNav';
 import type { Station } from '../../../types';
 import { CreateStationModal } from './CreateStationModal';
@@ -30,6 +32,7 @@ type SortDirection = 'asc' | 'desc';
 type ViewMode = 'dashboard' | 'grid' | 'table';
 
 export function StationManagementPage() {
+  const { theme, toggleTheme } = useTheme();
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -234,9 +237,7 @@ export function StationManagementPage() {
     return (
       <div className="station-management-page">
         <AdminNav />
-        <header className="page-header-compact">
-          <h1>Station Management</h1>
-        </header>
+        <PageHeader title="Station Management" backTo="/" backLabel="Home" />
         <div className="loading-message">
           <div className="spinner"></div>
           <p>Loading stations...</p>
@@ -249,19 +250,23 @@ export function StationManagementPage() {
     <PageTransition variant="slideFromBottom">
       <div className="station-management-page">
       <AdminNav />
-      <header className="page-header-compact">
-        <div className="header-top">
-          <div className="header-actions">
-            <button onClick={handleRefresh} className="icon-button" title="Refresh">
-              <RefreshCw size={18} strokeWidth={2} aria-hidden />
-            </button>
-            <span className="last-refresh">
-              Updated {lastRefresh.toLocaleTimeString()}
-            </span>
-          </div>
-        </div>
-        <h1>Station Management</h1>
-      </header>
+      <PageHeader
+        title="Station Management"
+        backTo="/"
+        backLabel="Home"
+        subtitle={`Updated ${lastRefresh.toLocaleTimeString()}`}
+        actions={[{
+          key: 'refresh',
+          label: 'Refresh',
+          icon: <RefreshCw size={20} strokeWidth={2} aria-hidden />,
+          onClick: handleRefresh,
+        }, {
+          key: 'theme',
+          label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+          icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+          onClick: toggleTheme,
+        }]}
+      />
 
       {error && (
         <div className="error-message">

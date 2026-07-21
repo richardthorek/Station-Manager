@@ -199,21 +199,21 @@ export function TruckCheckPage() {
             icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
             onClick: toggleTheme,
           }]}
-        />
-
-        <main className="truckcheck-main" id="main-content" tabIndex={-1}>
-          <div className="view-tabs">
-            <button type="button" className="tab-link" onClick={() => setVehicleModal(null)}>
+        >
+          <div className="page-header__tabs">
+            <button type="button" className="page-header__tab" onClick={() => setVehicleModal(null)}>
               <Plus size={16} strokeWidth={2} aria-hidden /> Add Vehicle
             </button>
-            <Link to="/truckcheck/admin" className="tab-link">
+            <Link to="/truckcheck/admin" className="page-header__tab">
               <Settings2 size={16} strokeWidth={2} aria-hidden /> Admin Dashboard
             </Link>
-            <Link to="/truckcheck/vehicle-types" className="tab-link">
+            <Link to="/truckcheck/vehicle-types" className="page-header__tab">
               <Wrench size={16} strokeWidth={2} aria-hidden /> Templates &amp; Vehicle Types
             </Link>
           </div>
+        </PageHeader>
 
+        <main className="truckcheck-main" id="main-content" tabIndex={-1}>
           {appliances.length === 0 ? (
             <div className="roster-empty">
               <div className="roster-empty__icon"><Truck size={40} strokeWidth={2} aria-hidden /></div>

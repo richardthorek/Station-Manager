@@ -102,10 +102,14 @@
   flex-shrink: 0;
 }
 
-.theme-toggle-btn {
-  background: rgba(255, 255, 255, 0.15);
+/* Same circular icon-button language as PageHeader's .page-header__action
+   and Header.tsx's .theme-toggle-btn — one look for "toggle theme" everywhere,
+   scoped to this page's own class so it can't collide with (or be silently
+   overridden by) the app-shell Header's identically-named button. */
+.landing-theme-toggle {
+  background: rgba(255, 255, 255, 0.16);
   border: none;
-  border-radius: 14px;
+  border-radius: 50%;
   width: 44px;
   height: 44px;
   min-width: 44px;
@@ -113,20 +117,12 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1.4rem;
-  transition: all 0.25s ease;
-  backdrop-filter: blur(10px);
+  transition: background 0.2s ease;
   padding: 0;
 }
 
-.theme-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px) rotate(15deg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.theme-toggle-btn:active {
-  transform: translateY(0) rotate(0deg);
+.landing-theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .header-cta {

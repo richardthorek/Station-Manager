@@ -4,19 +4,11 @@
   color: var(--text-primary);
 }
 
-.org-header {
-  background: var(--rfs-core-red);
-  color: var(--rfs-white);
-  padding: 1.5rem 2rem;
-}
-
-.org-header h1 {
-  margin: 0.5rem 0 0;
-  font-size: 1.8rem;
-}
+/* Back arrow, title, and theme-toggle action now come from the shared
+   PageHeader component — see components/PageHeader.css. */
 
 .org-subtitle {
-  margin: 0.25rem 0 0;
+  margin: 0;
   opacity: 0.9;
 }
 

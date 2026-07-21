@@ -11,10 +11,12 @@
  */
 
 import { useState, useEffect } from 'react';
-import { RefreshCw, TriangleAlert, Building2, Check, KeyRound } from 'lucide-react';
+import { RefreshCw, TriangleAlert, Building2, Check, KeyRound, Moon, Sun } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useSocket } from '../../../hooks/useSocket';
+import { useTheme } from '../../../hooks/useTheme';
 import { PageTransition } from '../../../components/PageTransition';
+import { PageHeader } from '../../../components/PageHeader';
 import { AdminNav } from '../../../components/AdminNav';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { useToast } from '../../../hooks/useToast';
@@ -37,6 +39,7 @@ interface StationWithToken extends Station {
 }
 
 export function BrigadeAccessPage() {
+  const { theme, toggleTheme } = useTheme();
   const [stations, setStations] = useState<Station[]>([]);
   const [tokens, setTokens] = useState<TokenInfo[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -257,22 +260,23 @@ export function BrigadeAccessPage() {
     <PageTransition variant="slideFromBottom">
       <div className="brigade-access-page">
       <AdminNav />
-      <header className="page-header-compact">
-        <div className="header-top">
-          <div className="header-actions">
-            <button onClick={loadData} className="icon-button" title="Refresh">
-              <RefreshCw size={18} strokeWidth={2} aria-hidden />
-            </button>
-            <span className="last-refresh">
-              Updated {lastRefresh.toLocaleTimeString()}
-            </span>
-          </div>
-        </div>
-        <h1>Crew Access Management</h1>
-        <p className="page-description">
-          Manage station sign-in URLs and crew access tokens for kiosk mode.
-        </p>
-      </header>
+      <PageHeader
+        title="Crew Access Management"
+        backTo="/"
+        backLabel="Home"
+        subtitle={`Manage station sign-in URLs and crew access tokens for kiosk mode. Updated ${lastRefresh.toLocaleTimeString()}.`}
+        actions={[{
+          key: 'refresh',
+          label: 'Refresh',
+          icon: <RefreshCw size={20} strokeWidth={2} aria-hidden />,
+          onClick: loadData,
+        }, {
+          key: 'theme',
+          label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`,
+          icon: theme === 'light' ? <Moon size={20} strokeWidth={2} aria-hidden /> : <Sun size={20} strokeWidth={2} aria-hidden />,
+          onClick: toggleTheme,
+        }]}
+      />
 
       <main className="page-content" id="main-content" tabIndex={-1}>
         {error && (

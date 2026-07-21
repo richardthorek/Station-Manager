@@ -26,6 +26,7 @@ longer-form material.
 | [logging.md](logging.md) | Structured logging (winston) |
 | [suite-token-validation.md](suite-token-validation.md) | Contract for sibling StationKit apps validating the SM JWT |
 | [accessibility-checklist.md](accessibility-checklist.md) | Developer accessibility checklist (WCAG 2.1 AA) |
+| [ui-patterns.md](ui-patterns.md) | Which shared class/component to reuse for headers, cards, buttons, subtitles — stop reinventing them per page |
 
 ## Operations
 
