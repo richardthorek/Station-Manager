@@ -130,7 +130,7 @@ export function LoginPage() {
 
         <main className="login-main">
           <div className="login-container">
-            <div className="login-card">
+            <div className="login-card card card-elevated">
               <div className="login-icon"><LockKeyhole size={32} strokeWidth={2} aria-hidden /></div>
               <h2>Sign In</h2>
               <p className="login-description">
@@ -172,7 +172,7 @@ export function LoginPage() {
 
                 <button
                   type="submit"
-                  className="login-button"
+                  className="btn-primary login-button"
                   disabled={isLoading || isProcessingQR || isPasskeyLoading}
                 >
                   {isLoading ? 'Signing in...' : 'Sign In'}
@@ -182,7 +182,7 @@ export function LoginPage() {
               {passkeySupported && (
                 <button
                   type="button"
-                  className="passkey-login-button"
+                  className="btn-primary passkey-login-button"
                   onClick={() => void handlePasskeyLogin()}
                   disabled={isLoading || isProcessingQR || isPasskeyLoading}
                 >

@@ -3,7 +3,7 @@
  */
 
 .signup-step-indicator {
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -25,7 +25,7 @@
 }
 
 .signup-selected-facility {
-  color: var(--rfs-black);
+  color: var(--text-primary);
   font-size: 0.95rem;
   margin: 0.5rem 0 1rem 0;
 }
@@ -43,10 +43,10 @@
 .signup-back-button {
   padding: 1rem 1.25rem;
   min-height: 44px;
-  border: 2px solid var(--rfs-light-grey);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  background: var(--rfs-white);
-  color: var(--rfs-black);
+  background: var(--bg-card);
+  color: var(--text-primary);
   font-weight: 700;
   cursor: pointer;
 }

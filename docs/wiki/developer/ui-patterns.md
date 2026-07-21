@@ -153,17 +153,17 @@ page-specific footers as-is rather than force a shared component prematurely.
   `--text-error-strong`), already used correctly by `ConfirmationDialog`,
   `Toast`, and most status pills — reuse those, don't invent a new error-red.
 
-## Known violations not yet fixed (follow-up, tracked in MASTER_PLAN)
+## Known violations (status)
 
 The 2026-07-21 audit found ~15 files with hardcoded white/black card surfaces
-(worst: `CrossStationReportsPage.css`, `UserProfilePage.css`,
-`AdvancedReportsPage.css`, `CheckSummary.css`, `CheckWorkflow.css`) plus ~20
-smaller offenders, and 6 duplicate `.btn-primary` definitions. Two files
-(`TruckCheckOnboardingWizard.css`, `DeviceSetupGuide.css`) had a parallel
-`@media (prefers-color-scheme: dark)` dark mode wired to the OS preference
-instead of the app's actual `data-theme` toggle — fixed 2026-07-21, converted
-to the token-based approach described above (see changelog). The rest are
-real but lower-urgency debt — fix opportunistically when touching a file, or
-as a dedicated remediation pass; each one is a small, mechanical, low-risk
-swap (raw hex/`--rfs-white`/`--rfs-black` → the matching `--bg-*`/`--text-*`
-token) once you're in the file, same pattern as this page's fixes.
+plus ~20 smaller offenders, 6 duplicate `.btn-primary` definitions, a live
+`.card {}` global-class collision, several `@media (prefers-color-scheme:
+dark)` blocks wired to the OS preference instead of the app's actual
+`data-theme` toggle, and ~20 undefined-CSS-custom-property bugs (a var
+referenced but never defined, so its hardcoded fallback silently won
+regardless of theme). **All fixed as of 2026-07-21** — see the changelog's
+Q56 entry for the full breakdown by category. If you find a new instance of
+any of these patterns, fix it the same way rather than reopening this list:
+swap the raw hex/`--rfs-white`/`--rfs-black`/undefined-var for the matching
+`--bg-*`/`--text-*`/`--surface-*` token, and reuse the canonical
+`.card`/`.btn-*` classes instead of a local redefinition.

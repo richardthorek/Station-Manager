@@ -13,9 +13,9 @@
 }
 
 .azm-modal {
-  background: var(--color-surface, #fff);
-  border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.22);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 780px;
   display: flex;
@@ -31,14 +31,14 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 1.25rem 1.5rem 0;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.75rem;
 }
 
 .azm-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--color-text, #111);
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -51,7 +51,7 @@
   border: none;
   font-size: 1.1rem;
   cursor: pointer;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   min-width: 44px;
@@ -62,13 +62,13 @@
 }
 
 .azm-close:hover {
-  background: var(--color-surface-hover, #f3f4f6);
+  background: var(--surface-hover);
 }
 
 /* ── Tabs ── */
 .azm-tabs {
   display: flex;
-  border-bottom: 2px solid var(--color-border, #e5e7eb);
+  border-bottom: 2px solid var(--border-color);
   padding: 0 1.5rem;
   gap: 0.25rem;
 }
@@ -79,7 +79,7 @@
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
   cursor: pointer;
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
@@ -88,7 +88,7 @@
 }
 
 .azm-tab:hover {
-  color: var(--color-text, #111);
+  color: var(--text-primary);
 }
 
 .azm-tab--active {
@@ -106,14 +106,14 @@
 /* ── Shared helpers ── */
 .azm-loading,
 .azm-empty {
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   text-align: center;
   padding: 1.5rem 0;
 }
 
 .azm-error {
-  color: var(--color-error, #dc2626);
+  color: var(--text-error-strong);
   font-size: 0.875rem;
   margin: 0.5rem 0;
 }
@@ -129,24 +129,24 @@
 }
 
 .azm-chip--code {
-  background: var(--color-surface-alt, #f3f4f6);
-  color: var(--color-text-muted, #6b7280);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   font-family: ui-monospace, monospace;
 }
 
 .azm-chip--side {
-  background: var(--color-info-bg, #eff6ff);
-  color: var(--color-info, #1d4ed8);
+  background: var(--surface-info);
+  color: var(--text-info-strong);
 }
 
 .azm-chip--zone {
-  background: var(--color-success-bg, #f0fdf4);
-  color: var(--color-success, #15803d);
+  background: var(--surface-success);
+  color: var(--text-success-strong);
 }
 
 .azm-chip--retired {
-  background: #fef2f2;
-  color: #991b1b;
+  background: var(--surface-error);
+  color: var(--text-error-strong);
 }
 
 /* ── Buttons ── */
@@ -172,27 +172,27 @@
 }
 
 .azm-btn--primary:hover:not(:disabled) {
-  background: var(--color-primary-dark, #c51f12);
+  background: var(--rfs-core-red-dark);
 }
 
 .azm-btn--secondary {
-  background: var(--color-surface-alt, #f3f4f6);
-  color: var(--color-text, #111);
-  border-color: var(--color-border, #e5e7eb);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
 }
 
 .azm-btn--secondary:hover:not(:disabled) {
-  background: var(--color-surface-hover, #e9eaeb);
+  background: var(--surface-hover);
 }
 
 .azm-btn--danger-ghost {
   background: none;
-  color: var(--color-error, #dc2626);
-  border-color: var(--color-error, #dc2626);
+  color: var(--text-error-strong);
+  border-color: var(--text-error-strong);
 }
 
 .azm-btn--danger-ghost:hover:not(:disabled) {
-  background: #fef2f2;
+  background: var(--surface-error);
 }
 
 .azm-btn--icon {
@@ -205,19 +205,19 @@
 }
 
 .azm-btn--icon:hover:not(:disabled) {
-  background: var(--color-surface-hover, #f3f4f6);
+  background: var(--surface-hover);
 }
 
 .azm-btn--danger:hover:not(:disabled) {
-  background: #fef2f2;
+  background: var(--surface-error);
 }
 
 .azm-btn--warn:hover:not(:disabled) {
-  background: #fff7ed;
+  background: var(--surface-warning);
 }
 
 .azm-btn--restore:hover:not(:disabled) {
-  background: #f0fdf4;
+  background: var(--surface-success);
 }
 
 .azm-btn:disabled {
@@ -227,7 +227,7 @@
 
 /* ── Add form ── */
 .azm-add-form {
-  border-top: 1px solid var(--color-border, #e5e7eb);
+  border-top: 1px solid var(--border-color);
   padding-top: 1rem;
   margin-top: 1rem;
 }
@@ -235,7 +235,7 @@
 .azm-add-title {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin: 0 0 0.6rem;
@@ -250,11 +250,11 @@
 
 .azm-input {
   padding: 0.45rem 0.7rem;
-  border: 1px solid var(--color-border, #d1d5db);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.875rem;
-  background: var(--color-surface, #fff);
-  color: var(--color-text, #111);
+  background: var(--bg-card);
+  color: var(--text-primary);
   min-height: 36px;
 }
 
@@ -271,11 +271,11 @@
 
 .azm-select {
   padding: 0.45rem 0.7rem;
-  border: 1px solid var(--color-border, #d1d5db);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.875rem;
-  background: var(--color-surface, #fff);
-  color: var(--color-text, #111);
+  background: var(--bg-card);
+  color: var(--text-primary);
   min-height: 36px;
   cursor: pointer;
 }
@@ -293,19 +293,19 @@
   gap: 0.6rem;
   margin-bottom: 1rem;
   padding: 0.75rem;
-  background: var(--color-surface-alt, #f9fafb);
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
 .azm-seed-msg {
   font-size: 0.875rem;
-  color: var(--color-success, #15803d);
+  color: var(--text-success-strong);
 }
 
 .azm-seed-hint {
   font-size: 0.8rem;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
 }
 
 /* ── Zone list ── */
@@ -319,7 +319,7 @@
 }
 
 .azm-zone-row {
-  border: 1px solid var(--color-border, #e5e7eb);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -344,13 +344,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface-alt, #f3f4f6);
+  background: var(--bg-secondary);
   border-radius: 50%;
   width: 28px;
   height: 28px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
@@ -370,7 +370,7 @@
 
 .azm-zone-desc {
   font-size: 0.8rem;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
   width: 100%;
 }
 
@@ -387,7 +387,7 @@
 
 .azm-toggle-label {
   font-size: 0.875rem;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -404,7 +404,7 @@
 }
 
 .azm-equip-row {
-  border: 1px solid var(--color-border, #e5e7eb);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -445,18 +445,18 @@
 
 .azm-equip-name--retired {
   text-decoration: line-through;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
 }
 
 .azm-equip-serial {
   font-size: 0.78rem;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
   font-family: ui-monospace, monospace;
 }
 
 .azm-equip-notes {
   font-size: 0.8rem;
-  color: var(--color-text-muted, #6b7280);
+  color: var(--text-secondary);
   width: 100%;
 }
 
@@ -467,7 +467,7 @@
   }
 
   .azm-modal {
-    border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     max-height: 92vh;
   }
 
