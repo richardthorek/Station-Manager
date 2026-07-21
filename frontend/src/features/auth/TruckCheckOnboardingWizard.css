@@ -8,8 +8,8 @@
 
 .onboarding-header {
   padding: 2rem 1rem;
-  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
-  color: white;
+  background: var(--rfs-core-red);
+  color: var(--rfs-white);
   text-align: center;
 }
 
@@ -48,14 +48,12 @@
   padding: 2rem 1rem;
 }
 
+/* .onboarding-card carries the shared .card class (index.css) in the TSX
+   for background/border/radius/shadow — this rule is layout only. */
 .onboarding-card {
   width: 100%;
   max-width: 600px;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border-radius: 12px;
   padding: 2rem;
-  box-shadow: var(--shadow-md);
 }
 
 .onboarding-form {
@@ -309,42 +307,10 @@
   justify-content: center;
 }
 
+/* .onboarding-button reuses .btn-primary/.btn-secondary (index.css) for
+   color/behavior — this is just a min-width modifier. */
 .onboarding-button {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
   min-width: 120px;
-}
-
-.onboarding-button.primary {
-  background: var(--rfs-core-red);
-  color: white;
-}
-
-.onboarding-button.primary:hover:not(:disabled) {
-  background: var(--rfs-core-red-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(229, 40, 27, 0.3);
-}
-
-.onboarding-button.secondary {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 2px solid var(--border-color);
-}
-
-.onboarding-button.secondary:hover:not(:disabled) {
-  background: var(--surface-hover);
-  border-color: var(--rfs-core-red);
-}
-
-.onboarding-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* Confirm Summary */

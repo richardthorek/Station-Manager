@@ -461,7 +461,7 @@ export function CheckWorkflowPage() {
       <div className="workflow-page">
         <PageHeader title={`${appliance.name} Check`} backTo="/truckcheck" backLabel="Back" />
         <main className="workflow-main">
-          <div className="name-prompt">
+          <div className="name-prompt card">
             <h2>No checklist to run yet</h2>
             <p>
               {appliance.name} isn't linked to a Vehicle Type, so there's no checklist
@@ -512,7 +512,7 @@ export function CheckWorkflowPage() {
           }]}
         />
         <main className="workflow-main">
-          <div className="name-prompt name-prompt--picker">
+          <div className="name-prompt name-prompt--picker card">
             {activeCheckPreview && (
               <div className="active-check-banner">
                 <Users size={18} strokeWidth={2} aria-hidden />
@@ -746,7 +746,7 @@ export function CheckWorkflowPage() {
             
             {results.size === template.items.length && (
               <motion.div 
-                className="completion-card"
+                className="completion-card card"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, type: 'spring' }}
@@ -755,7 +755,7 @@ export function CheckWorkflowPage() {
                 <h2>All Items Completed!</h2>
                 <p>You've completed all {template.items.length} items in this check.</p>
                 <button 
-                  className="btn-complete"
+                  className="btn-primary btn-complete"
                   onClick={handleFinishCheck}
                 >
                   View Summary & Finish
@@ -768,7 +768,7 @@ export function CheckWorkflowPage() {
 
       {results.size === template.items.length && (
         <div className="completion-sticky" aria-label="Completion actions">
-          <button className="btn-complete" onClick={handleFinishCheck}>
+          <button className="btn-primary btn-complete" onClick={handleFinishCheck}>
             <CircleCheckBig size={18} strokeWidth={2} aria-hidden /> Finish & View Summary
           </button>
         </div>

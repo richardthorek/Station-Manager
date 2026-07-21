@@ -247,7 +247,7 @@ export function AdvancedReportsPage() {
         {/* Controls Section */}
         <div className="controls-section">
           {/* Date Range Selector */}
-          <div className="date-range-selector">
+          <div className="date-range-selector card">
             <div className="date-range-buttons">
               <button
                 className={dateRange === 'last30' ? 'active' : ''}
@@ -300,7 +300,7 @@ export function AdvancedReportsPage() {
           </div>
 
           {/* Comparison Mode Toggle */}
-          <div className="comparison-toggle">
+          <div className="comparison-toggle card">
             <label htmlFor="comparison-mode">
               <input
                 id="comparison-mode"
@@ -334,7 +334,7 @@ export function AdvancedReportsPage() {
         {error && (
           <div className="error-state">
             <p>{error}</p>
-            <button onClick={fetchReports}>Retry</button>
+            <button className="btn-primary" onClick={fetchReports}>Retry</button>
           </div>
         )}
 
@@ -349,15 +349,15 @@ export function AdvancedReportsPage() {
             <section className="statistics-cards">
               <h2>Member Growth</h2>
               <div className="stat-cards-grid">
-                <div className="stat-card">
+                <div className="stat-card card">
                   <div className="stat-value">{trendData.memberGrowth.currentTotal}</div>
                   <div className="stat-label">Current Members</div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card card">
                   <div className="stat-value">{trendData.memberGrowth.previousTotal}</div>
                   <div className="stat-label">Previous Period</div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card card">
                   <div
                     className="stat-value"
                     style={{
@@ -372,7 +372,7 @@ export function AdvancedReportsPage() {
             </section>
 
             {/* Attendance Trend Chart */}
-            <section className="chart-section">
+            <section className="chart-section card">
               <h2>Attendance Trend (Month-over-Month)</h2>
               <div className="chart-container">
                 {attendanceTrendData.length > 0 ? (
@@ -421,7 +421,7 @@ export function AdvancedReportsPage() {
             </section>
 
             {/* Events Trend Chart */}
-            <section className="chart-section">
+            <section className="chart-section card">
               <h2>Events Trend (Month-over-Month)</h2>
               <div className="chart-container">
                 {eventsTrendData.length > 0 ? (
@@ -470,7 +470,7 @@ export function AdvancedReportsPage() {
             </section>
 
             {/* Member Funnel Chart */}
-            <section className="chart-section">
+            <section className="chart-section card">
               <h2>Member Funnel Analysis</h2>
               <div className="chart-container">
                 {funnelChartData.length > 0 ? (
@@ -509,7 +509,7 @@ export function AdvancedReportsPage() {
             </section>
 
             {/* Cohort Analysis Chart */}
-            <section className="chart-section">
+            <section className="chart-section card">
               <h2>Cohort Analysis (Member Retention by Registration Month)</h2>
               <div className="chart-container">
                 {cohortChartData.length > 0 ? (
@@ -545,7 +545,7 @@ export function AdvancedReportsPage() {
             </section>
 
             {/* Activity Heat Map */}
-            <section className="chart-section">
+            <section className="chart-section card">
               <h2>Activity Heat Map (By Day & Hour)</h2>
               <div className="heatmap-container">
                 <div className="heatmap">

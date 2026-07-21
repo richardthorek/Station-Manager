@@ -192,7 +192,7 @@ export function DeviceSetupGuide({ isOpen, onClose, onDeviceTokenRequest }: Devi
         <div className="setup-guide-actions">
           <button
             onClick={handlePrevious}
-            className="setup-guide-button secondary"
+            className="btn-secondary setup-guide-button"
             disabled={currentStep === 0}
             aria-label="Go to previous step"
           >
@@ -205,7 +205,7 @@ export function DeviceSetupGuide({ isOpen, onClose, onDeviceTokenRequest }: Devi
 
           <button
             onClick={handleNext}
-            className="setup-guide-button primary"
+            className="btn-primary setup-guide-button"
             aria-label={isLastStep ? 'Close guide' : 'Go to next step'}
           >
             {isLastStep ? 'Done' : 'Next'} <ChevronRight size={20} strokeWidth={2} />
@@ -216,7 +216,7 @@ export function DeviceSetupGuide({ isOpen, onClose, onDeviceTokenRequest }: Devi
           <div className="setup-guide-cta">
             <button
               onClick={onDeviceTokenRequest}
-              className="setup-guide-cta-button"
+              className="btn-accent setup-guide-cta-button"
               title="Open admin console to create device token"
             >
               Open Admin Console

@@ -3,14 +3,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8f9fb 0%, #fff 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
   padding: 1rem;
 }
 
+/* .activate-card carries the shared .card class (index.css) in the TSX for
+   background/border/radius/shadow — this rule is layout only. */
 .activate-card {
-  background: #fff;
-  border-radius: 1rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
   padding: 2.5rem 2rem;
   width: 100%;
   max-width: 400px;
@@ -27,21 +26,21 @@
 .activate-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0;
   text-align: center;
 }
 
 .activate-org {
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .activate-welcome {
   font-size: 0.95rem;
   text-align: center;
-  color: #444;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -62,12 +61,14 @@
 .activate-field label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .activate-field input {
   padding: 0.65rem 0.75rem;
-  border: 1px solid #d1d5db;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   font-size: 1rem;
   outline: none;
@@ -86,44 +87,28 @@
 }
 
 .activate-success-msg {
-  color: #065f46;
+  color: var(--text-success-strong);
   font-size: 0.95rem;
   text-align: center;
   margin: 0;
 }
 
+/* .activate-btn reuses .btn-primary (index.css) for color/behavior — this is
+   just a full-width modifier. */
 .activate-btn {
   width: 100%;
-  padding: 0.75rem;
-  background: var(--rfs-core-red);
-  color: #fff;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.activate-btn:hover:not(:disabled) {
-  opacity: 0.88;
-}
-
-.activate-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 .activate-status {
   font-size: 0.95rem;
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .activate-spinner {
   width: 2rem;
   height: 2rem;
-  border: 3px solid #e5e7eb;
+  border: 3px solid var(--border-color);
   border-top-color: var(--rfs-core-red);
   border-radius: 50%;
   animation: activate-spin 0.8s linear infinite;
@@ -135,7 +120,7 @@
 
 .activate-login-hint {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
 }
 

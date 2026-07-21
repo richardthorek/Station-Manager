@@ -83,7 +83,7 @@ export function ActivatePage() {
   if (validating) {
     return (
       <div className="activate-page">
-        <div className="activate-card">
+        <div className="activate-card card">
           <div className="activate-spinner" aria-label="Validating invite..." />
           <p className="activate-status">Validating invite...</p>
         </div>
@@ -94,11 +94,11 @@ export function ActivatePage() {
   if (tokenError) {
     return (
       <div className="activate-page">
-        <div className="activate-card">
+        <div className="activate-card card">
           <div className="activate-logo" aria-hidden="true">🔒</div>
           <h1 className="activate-title">Invite not found</h1>
           <p className="activate-error-msg">{tokenError}</p>
-          <button className="activate-btn" onClick={() => navigate('/login')}>Go to Login</button>
+          <button className="btn-primary activate-btn" onClick={() => navigate('/login')}>Go to Login</button>
         </div>
       </div>
     );
@@ -107,13 +107,13 @@ export function ActivatePage() {
   if (success) {
     return (
       <div className="activate-page">
-        <div className="activate-card">
+        <div className="activate-card card">
           <div className="activate-logo" aria-hidden="true">✅</div>
           <h1 className="activate-title">Account created!</h1>
           <p className="activate-success-msg">
             Your account has been set up. You can now log in with your new credentials.
           </p>
-          <button className="activate-btn" onClick={() => navigate('/login')}>Go to Login</button>
+          <button className="btn-primary activate-btn" onClick={() => navigate('/login')}>Go to Login</button>
         </div>
       </div>
     );
@@ -121,7 +121,7 @@ export function ActivatePage() {
 
   return (
     <div className="activate-page">
-      <div className="activate-card">
+      <div className="activate-card card">
         <div className="activate-logo" aria-hidden="true">🔑</div>
         <h1 className="activate-title">Set up your account</h1>
         {orgName && <p className="activate-org">{orgName}</p>}
@@ -183,7 +183,7 @@ export function ActivatePage() {
 
           {formError && <p className="activate-error-msg" role="alert">{formError}</p>}
 
-          <button className="activate-btn" type="submit" disabled={submitting}>
+          <button className="btn-primary activate-btn" type="submit" disabled={submitting}>
             {submitting ? 'Creating account...' : 'Create account'}
           </button>
         </form>

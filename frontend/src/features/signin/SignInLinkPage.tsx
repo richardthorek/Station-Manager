@@ -89,7 +89,7 @@ export function SignInLinkPage() {
       <div className="app">
         <Header isConnected={isConnected} databaseStatus={databaseStatus} />
         <main className="signin-link-container" id="main-content" tabIndex={-1}>
-          <div className="signin-link-content">
+          <div className="signin-link-content card card-elevated">
             <div className="spinner"></div>
             <h2>Processing Check-In...</h2>
           </div>
@@ -103,7 +103,7 @@ export function SignInLinkPage() {
       <Header isConnected={isConnected} databaseStatus={databaseStatus} />
       
       <main className="signin-link-container" id="main-content" tabIndex={-1}>
-        <div className="signin-link-content">
+        <div className="signin-link-content card card-elevated">
           {status === 'success' && (
             <div className="status-icon success">✓</div>
           )}

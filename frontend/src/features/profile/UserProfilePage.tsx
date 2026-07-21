@@ -246,7 +246,7 @@ export function UserProfilePage() {
       <div className="app">
         <Header isConnected={isConnected} databaseStatus={databaseStatus} />
         <div className="loading-container">
-          <button className="btn-back" onClick={() => navigate('/signin')}>
+          <button className="btn-secondary" onClick={() => navigate('/signin')}>
             ← Back to Sign In
           </button>
           <div className="spinner"></div>
@@ -279,7 +279,7 @@ export function UserProfilePage() {
         <main className="main-content profile-main">
           <div className="profile-container">
             <div className="profile-header">
-              <button className="btn-back" onClick={() => navigate('/signin')}>
+              <button className="btn-secondary" onClick={() => navigate('/signin')}>
                 ← Back to Sign In
               </button>
               <div className="profile-header-actions">
@@ -360,7 +360,7 @@ export function UserProfilePage() {
                     {!isEditing ? (
                       <div className="profile-value">
                         <span>{member.name}</span>
-                        <button className="btn-edit" onClick={() => setIsEditing(true)}>
+                        <button className="btn-primary btn-edit" onClick={() => setIsEditing(true)}>
                           Edit
                         </button>
                       </div>
@@ -388,7 +388,7 @@ export function UserProfilePage() {
                     {!isEditing ? (
                       <div className="profile-value">
                         <span>{member.rank || 'Visitor'}</span>
-                        <button className="btn-edit" onClick={() => setIsEditing(true)}>
+                        <button className="btn-primary btn-edit" onClick={() => setIsEditing(true)}>
                           Edit
                         </button>
                       </div>

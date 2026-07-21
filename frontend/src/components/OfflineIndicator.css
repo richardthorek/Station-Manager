@@ -18,7 +18,7 @@
   padding: 0.75rem 1.5rem;
   background: var(--rfs-dark-grey);
   color: var(--rfs-white);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
   gap: 1rem;
   flex-wrap: wrap;
 }
@@ -55,8 +55,8 @@
 }
 
 .status-dot.offline {
-  background: #ff6b6b;
-  box-shadow: 0 0 8px #ff6b6b;
+  background: var(--rfs-core-red);
+  box-shadow: 0 0 8px var(--rfs-core-red);
 }
 
 @keyframes pulse {
@@ -106,9 +106,9 @@
 }
 
 .offline-indicator__queue {
-  background: var(--rfs-white);
-  border-bottom: 1px solid var(--rfs-light-grey);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -135,21 +135,21 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--rfs-light-grey);
-  background: var(--rfs-white);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
   transition: background 0.2s ease;
 }
 
 .queue-item:hover {
-  background: #f8f8f8;
+  background: var(--surface-hover);
 }
 
 .queue-item.syncing {
-  background: #f0f7ff;
+  background: var(--surface-info);
 }
 
 .queue-item.failed {
-  background: #fff5f5;
+  background: var(--surface-error);
 }
 
 .queue-item__icon {
@@ -164,18 +164,18 @@
 
 .queue-item__label {
   font-weight: 600;
-  color: var(--rfs-black);
+  color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
 
 .queue-item__time {
   font-size: 0.85rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 .queue-item__error {
   font-size: 0.8rem;
-  color: #d32f2f;
+  color: var(--text-error-strong);
   margin-top: 0.25rem;
   font-family: monospace;
 }
@@ -189,18 +189,18 @@
 }
 
 .queue-item.pending .queue-item__status {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--surface-warning);
+  color: var(--text-warning-strong);
 }
 
 .queue-item.syncing .queue-item__status {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: var(--surface-info);
+  color: var(--text-info-strong);
 }
 
 .queue-item.failed .queue-item__status {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--surface-error);
+  color: var(--text-error-strong);
 }
 
 /* Responsive design */

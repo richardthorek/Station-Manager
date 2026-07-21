@@ -352,32 +352,32 @@
   padding: 0 1rem;
 }
 
+/* .name-prompt carries the shared .card class (index.css) in the TSX for
+   background/border/radius/shadow — this rule is layout only. */
 .name-prompt {
   max-width: 500px;
   margin: 4rem auto;
   padding: 2rem;
-  background: var(--rfs-white);
-  color: var(--rfs-black);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   text-align: center;
 }
 
 .name-prompt h2 {
   margin: 0 0 0.5rem 0;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .name-prompt p {
   margin: 0 0 2rem 0;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 .name-input {
   width: 100%;
   padding: 1rem;
   font-size: 1.1rem;
-  border: 2px solid var(--rfs-neutral-light);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
   border-radius: 4px;
   margin-bottom: 1rem;
   box-sizing: border-box;
@@ -409,14 +409,14 @@
   border-radius: 8px;
   padding: 0.75rem 1rem;
   margin-bottom: 1.25rem;
-  color: var(--rfs-black);
+  color: var(--text-primary);
   text-align: left;
 }
 
 .active-check-banner svg {
   flex-shrink: 0;
   margin-top: 0.15rem;
-  color: var(--accent-amber-ink, var(--rfs-black));
+  color: var(--accent-amber-ink, var(--text-primary));
 }
 
 .active-check-banner p {
@@ -428,7 +428,9 @@
   width: 100%;
   padding: 0.85rem 1rem;
   font-size: 1rem;
-  border: 2px solid var(--rfs-neutral-light);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
   border-radius: 4px;
   margin-bottom: 1rem;
   box-sizing: border-box;
@@ -459,7 +461,7 @@
   border: 1.5px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-card);
-  color: var(--rfs-black);
+  color: var(--text-primary);
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease;
   text-align: center;
@@ -498,14 +500,12 @@
   padding-bottom: 2rem;
 }
 
+/* .completion-card carries the shared .card class (index.css) in the TSX for
+   background/border/radius/shadow — this rule is layout only. */
 .completion-card {
   margin: 2rem auto;
   padding: 3rem 2rem;
   max-width: 600px;
-  background: linear-gradient(135deg, var(--rfs-white) 0%, #f8f8f8 100%);
-  color: var(--rfs-black);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   text-align: center;
   animation: slideUp 0.5s ease-out;
 }
@@ -546,25 +546,20 @@
 
 .completion-card p {
   margin: 0 0 2rem 0;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
+/* .btn-complete reuses .btn-primary (index.css) for color/behavior — this is
+   just a larger-emphasis size modifier for this celebratory CTA. */
 .btn-complete {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, var(--rfs-core-red) 0%, var(--rfs-core-red-dark) 100%);
-  color: var(--rfs-white);
-  border: none;
   padding: 1rem 2.5rem;
   font-size: 1.2rem;
   font-weight: 700;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(218, 41, 28, 0.3);
 }
 
 .btn-complete:hover {
@@ -857,8 +852,8 @@
 
 .photo-upload-placeholder {
   margin-top: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  background: var(--bg-secondary);
+  border: 2px dashed var(--border-color);
   border-radius: 8px;
   padding: 1.5rem;
   text-align: center;
@@ -878,63 +873,19 @@
 }
 
 .workflow-footer {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   flex-shrink: 0;
 }
 
-.btn-primary {
-  background-color: var(--rfs-core-red);
-  color: var(--rfs-white);
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
-}
-
-.btn-primary:hover {
-  background-color: var(--rfs-core-red-dark);
-}
-
-.btn-primary:disabled {
-  background-color: var(--border-color);
-  cursor: not-allowed;
-}
-
-/* .btn-primary used as a <Link> (Q38 empty-checklist guidance) still needs
-   button-like layout — an anchor is inline by default. */
-a.btn-primary {
-  display: inline-block;
-  text-decoration: none;
-}
-
-.btn-secondary {
-  background-color: var(--rfs-neutral-light);
-  color: var(--rfs-black);
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover {
-  background-color: var(--rfs-light-grey);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* .btn-primary / .btn-secondary now come from the shared classes in
+   index.css (background/color/behavior, including the a.btn-primary anchor
+   case) instead of being redefined here — see
+   docs/wiki/developer/ui-patterns.md. */
 
 .error {
   text-align: center;

@@ -16,19 +16,17 @@
   gap: 1rem;
 }
 
+/* .vt-card carries the shared .card class (index.css) in the TSX for
+   background/border/radius/shadow — this rule is layout only. See
+   docs/wiki/developer/ui-patterns.md. */
 .vt-card {
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #ddd);
-  border-radius: 8px;
-  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
 .vt-card--builtin {
-  background: #f9f9f9;
-  border-color: #ccc;
+  background: var(--bg-secondary);
   opacity: 0.9;
 }
 
@@ -42,14 +40,14 @@
 
 .vt-card__agency {
   margin: 0.25rem 0 0;
-  color: var(--color-text-secondary, #666);
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 600;
 }
 
 .vt-card__meta {
   margin: 0;
-  color: var(--color-text-secondary, #666);
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
@@ -71,8 +69,8 @@
 }
 
 .vt-badge--builtin {
-  background: #888;
-  color: #fff;
+  background: var(--text-secondary);
+  color: var(--rfs-white);
 }
 
 .vt-card__actions {
@@ -103,7 +101,7 @@
   display: flex;
   gap: 0.5rem;
   align-items: flex-start;
-  border: 1px solid var(--color-border, #eee);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 0.5rem;
 }
@@ -153,18 +151,18 @@
 .vt-view-text {
   margin: 0;
   padding: 0.5rem 0;
-  color: var(--color-text-secondary, #666);
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 .vt-item--readonly {
-  border-color: var(--color-border, #eee);
-  background: var(--color-surface, #fff);
+  border-color: var(--border-color);
+  background: var(--bg-secondary);
 }
 
 .vt-item__desc {
   margin: 0.25rem 0 0;
   font-size: 0.85rem;
-  color: var(--color-text-secondary, #666);
+  color: var(--text-secondary);
   line-height: 1.4;
 }

@@ -12,14 +12,16 @@
 /* Controls Section */
 .controls-section {
   margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-/* Date Range Selector */
+/* .date-range-selector, .comparison-toggle, .chart-section, and .stat-card
+   all carry the shared .card class (index.css) in the TSX for background/
+   border/radius/shadow — these rules are layout only. See
+   docs/wiki/developer/ui-patterns.md. */
 .date-range-selector {
-  padding: 1.5rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 1rem;
 }
 
@@ -33,9 +35,9 @@
   flex: 1;
   min-width: 150px;
   padding: 0.75rem 1.5rem;
-  border: 2px solid var(--rfs-light-grey);
-  background: white;
-  color: var(--rfs-black);
+  border: 2px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
   border-radius: 4px;
   font-size: 1rem;
   font-weight: 500;
@@ -45,13 +47,13 @@
 
 .date-range-buttons button:hover {
   border-color: var(--rfs-core-red);
-  background: #fff5f4;
+  background: var(--surface-hover);
 }
 
 .date-range-buttons button.active {
   border-color: var(--rfs-core-red);
   background: var(--rfs-core-red);
-  color: white;
+  color: var(--rfs-white);
 }
 
 .custom-date-range {
@@ -72,25 +74,20 @@
 .date-input-group label {
   font-weight: 600;
   font-size: 0.95rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 .date-input-group input[type="date"] {
   padding: 0.75rem;
-  border: 2px solid var(--rfs-light-grey);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
   border-radius: 4px;
   font-size: 1rem;
   font-family: inherit;
 }
 
 /* Comparison Mode Toggle */
-.comparison-toggle {
-  padding: 1rem 1.5rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 .comparison-toggle label {
   display: flex;
   align-items: center;
@@ -98,7 +95,7 @@
   cursor: pointer;
   font-weight: 500;
   font-size: 1rem;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .comparison-toggle input[type="checkbox"] {
@@ -116,7 +113,7 @@
 .statistics-cards h2 {
   font-size: 1.5rem;
   margin-bottom: 1rem;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .stat-cards-grid {
@@ -126,10 +123,6 @@
 }
 
 .stat-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
@@ -142,23 +135,19 @@
 
 .stat-label {
   font-size: 0.95rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 /* Chart Sections */
 .chart-section {
   margin: 2rem 0;
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .chart-section h2 {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .chart-container {
@@ -171,7 +160,7 @@
   align-items: center;
   justify-content: center;
   height: 300px;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
@@ -184,7 +173,7 @@
 }
 
 .funnel-stage {
-  background: #f9f9f9;
+  background: var(--bg-secondary);
   padding: 1rem;
   border-radius: 4px;
   border-left: 4px solid var(--rfs-core-red);
@@ -196,12 +185,12 @@
 .stage-name {
   font-weight: 700;
   font-size: 1rem;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .stage-count {
   font-size: 0.95rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 .stage-conversion {
@@ -214,14 +203,14 @@
 .cohort-summary {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: #f9f9f9;
+  background: var(--bg-secondary);
   border-radius: 4px;
   border-left: 4px solid var(--ui-blue);
 }
 
 .cohort-summary p {
   margin: 0;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -251,7 +240,7 @@
   justify-content: flex-end;
   padding-right: 0.5rem;
   font-size: 0.75rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 .heatmap-grid {
@@ -269,7 +258,7 @@
   text-align: center;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   padding: 0.25rem;
 }
 
@@ -293,7 +282,7 @@
   justify-content: center;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: transform 0.2s ease;
   min-height: 28px;
@@ -301,7 +290,7 @@
 
 .heatmap-cell:hover {
   transform: scale(1.1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
   z-index: 1;
 }
 
@@ -315,7 +304,7 @@
 
 .heatmap-legend span {
   font-size: 0.875rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 .heatmap-legend-gradient {
@@ -341,9 +330,10 @@
   margin: 2rem 0;
 }
 
-/* Error State */
+/* Error State — a semantically distinct surface (not a plain .card): the
+   error-tint pairing used by ConfirmationDialog/Toast/status pills. */
 .error-state {
-  background: #fff5f4;
+  background: var(--surface-error);
   border: 2px solid var(--rfs-core-red);
   border-radius: 8px;
   padding: 2rem;
@@ -352,25 +342,9 @@
 }
 
 .error-state p {
-  color: var(--rfs-core-red);
+  color: var(--text-error-strong);
   font-size: 1.1rem;
   margin-bottom: 1.5rem;
-}
-
-.error-state button {
-  padding: 0.75rem 2rem;
-  background: var(--rfs-core-red);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.error-state button:hover {
-  background: #c61f15;
 }
 
 /* Responsive Design */
@@ -391,7 +365,8 @@
     grid-template-columns: 1fr;
   }
 
-  .chart-section {
+  .controls-section .card,
+  .chart-section.card {
     padding: 1.5rem;
   }
 

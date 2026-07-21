@@ -363,6 +363,34 @@ input:focus, select:focus {
   box-shadow: var(--shadow-md);
 }
 
+/* Any .btn-* class used on an <a> (a "Link styled as a button", e.g. a
+   locked-feature upsell or an empty-state CTA) — the button element-selector
+   above only targets real <button>s, so anchors need this to get the same
+   padding/radius/shape and to drop the underline. One rule here instead of
+   every page re-declaring `display: inline-block; text-decoration: none;`. */
+a.btn-primary,
+a.btn-secondary,
+a.btn-success,
+a.btn-accent,
+a.btn-danger,
+a.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+a.btn-primary:hover,
+a.btn-secondary:hover,
+a.btn-success:hover,
+a.btn-accent:hover,
+a.btn-danger:hover {
+  box-shadow: var(--shadow-lg);
+}
+
 /* Card Variants */
 .card {
   background: var(--bg-card);
