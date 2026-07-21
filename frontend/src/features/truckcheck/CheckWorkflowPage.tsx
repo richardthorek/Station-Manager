@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, Fragment, type ReactNode } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Moon, Sun, Check, CircleCheckBig, TriangleAlert, Users, PartyPopper, Search, Camera, Upload,
@@ -13,6 +13,7 @@ import { Lightbox } from '../../components/Lightbox';
 import { Confetti } from '../../components/Confetti';
 import { PageHeader } from '../../components/PageHeader';
 import { TruckCheckShareModal } from './TruckCheckShareModal';
+import { VehicleFormModal } from './VehicleFormModal';
 import type { Appliance, ChecklistTemplate, CheckRun, CheckResult, CheckStatus, Member } from '../../types';
 import './CheckWorkflow.css';
 
@@ -22,6 +23,7 @@ export function CheckWorkflowPage() {
   const { theme, toggleTheme } = useTheme();
   const { on, off } = useSocket();
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showLinkTypeModal, setShowLinkTypeModal] = useState(false);
   const [shareStation, setShareStation] = useState<{ id: string; brigadeId: string } | null>(null);
 
   const [appliance, setAppliance] = useState<Appliance | null>(null);
@@ -425,11 +427,18 @@ export function CheckWorkflowPage() {
               standard checklist for this class of appliance) or create a custom
               checklist for it before running a check.
             </p>
-            <Link to="/truckcheck/vehicle-types" className="btn-primary">
+            <button type="button" className="btn-primary" onClick={() => setShowLinkTypeModal(true)}>
               Link a Vehicle Type
-            </Link>
+            </button>
           </div>
         </main>
+        {showLinkTypeModal && (
+          <VehicleFormModal
+            vehicle={appliance}
+            onClose={() => setShowLinkTypeModal(false)}
+            onSaved={loadData}
+          />
+        )}
       </div>
     );
   }
