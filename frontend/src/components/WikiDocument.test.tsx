@@ -261,7 +261,11 @@ describe('WikiDocument', () => {
     const onActivePageChange = vi.fn();
     const { rerender } = renderDoc({ initialSlug: 'getting-started', onActivePageChange });
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Sign-in book' })).toBeInTheDocument());
-    expect(onActivePageChange).toHaveBeenCalledWith('getting-started');
+    // onActivePageChange fires from the auto-scroll effect, a render pass
+    // after `pages` finishes loading (and thus after the heading above
+    // appears) — needs its own waitFor, same as the `sign-in` case below,
+    // instead of asserting in lockstep with the heading's waitFor.
+    await waitFor(() => expect(onActivePageChange).toHaveBeenCalledWith('getting-started'));
 
     onActivePageChange.mockClear();
     rerender(<WikiDocument section="user-guide" initialSlug="sign-in" onActivePageChange={onActivePageChange} />);
