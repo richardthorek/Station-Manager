@@ -459,7 +459,7 @@
   border: 1.5px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-card);
-  color: var(--rfs-black);
+  color: var(--text-primary);
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease;
   text-align: center;
@@ -878,7 +878,7 @@
 }
 
 .workflow-footer {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
