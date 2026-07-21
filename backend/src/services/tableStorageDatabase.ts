@@ -314,36 +314,49 @@ export class TableStorageDatabase {
     // Exclude soft-deleted members
     members = members.filter(m => m.isDeleted !== true && m.isActive !== false);
 
-    // Calculate activity stats for filtering and sorting
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    // Activity stats (check-in counts, last-active, currently-checked-in) cost
+    // an events-by-date-range scan plus one participants query per event — a
+    // real, network-bound N+1 against Table Storage that used to run
+    // unconditionally on every getAllMembers() call, including the plain
+    // "just list the members" call the sign-in page makes on every load.
+    // Only pay for it when the caller actually asked for an activity-based
+    // filter/sort, and scope it to this station rather than every station in
+    // the system, since that's the only data being sorted or filtered here.
+    const needsActivityStats =
+      options?.filter === 'checked-in' || options?.filter === 'active' || options?.filter === 'inactive' ||
+      options?.sort === 'activity' || options?.sort === 'recent';
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    // Get participant data for activity calculations
-    const participants = await this.getAllEventParticipants(sixMonthsAgo, new Date());
     const checkInCounts = new Map<string, { count: number; lastCheckIn: Date | null }>();
-    
-    participants.forEach(p => {
-      const checkInTime = new Date(p.checkInTime);
-      const current = checkInCounts.get(p.memberId) || { count: 0, lastCheckIn: null };
-      current.count++;
-      if (!current.lastCheckIn || checkInTime > current.lastCheckIn) {
-        current.lastCheckIn = checkInTime;
-      }
-      checkInCounts.set(p.memberId, current);
-    });
-    
-    // Get currently checked-in members (fetch all events' participants in parallel
-    // rather than one sequential query per event)
-    const activeEvents = await this.getActiveEvents();
     const checkedInMemberIds = new Set<string>();
-    const activeEventParticipants = await Promise.all(
-      activeEvents.map(event => this.getEventParticipants(event.id))
-    );
-    activeEventParticipants.forEach(eventParticipants => {
-      eventParticipants.forEach(p => checkedInMemberIds.add(p.memberId));
-    });
+
+    if (needsActivityStats) {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      // Get participant data for activity calculations
+      const participants = await this.getAllEventParticipants(sixMonthsAgo, new Date(), stationId);
+      participants.forEach(p => {
+        const checkInTime = new Date(p.checkInTime);
+        const current = checkInCounts.get(p.memberId) || { count: 0, lastCheckIn: null };
+        current.count++;
+        if (!current.lastCheckIn || checkInTime > current.lastCheckIn) {
+          current.lastCheckIn = checkInTime;
+        }
+        checkInCounts.set(p.memberId, current);
+      });
+
+      // Get currently checked-in members (fetch all events' participants in parallel
+      // rather than one sequential query per event)
+      const activeEvents = await this.getActiveEvents(stationId);
+      const activeEventParticipants = await Promise.all(
+        activeEvents.map(event => this.getEventParticipants(event.id))
+      );
+      activeEventParticipants.forEach(eventParticipants => {
+        eventParticipants.forEach(p => checkedInMemberIds.add(p.memberId));
+      });
+    }
     
     // Apply search filter
     if (options?.search) {
