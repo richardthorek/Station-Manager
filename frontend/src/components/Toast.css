@@ -81,7 +81,7 @@
 }
 
 .toast-action-button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--surface-hover);
 }
 
 .toast-action-button:active {
@@ -106,7 +106,7 @@
 }
 
 .toast-close-button:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--surface-hover);
   opacity: 1;
 }
 
@@ -177,18 +177,5 @@
   }
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .toast {
-    background-color: var(--rfs-dark-grey);
-    color: var(--rfs-white);
-  }
-
-  :root:not([data-theme="light"]) .toast-action-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  :root:not([data-theme="light"]) .toast-close-button:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-  }
-}
+/* Dark mode comes for free from the theme-aware vars above (--bg-card,
+   --text-primary, --surface-hover) — no separate @media block needed. */

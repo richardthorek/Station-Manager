@@ -9,13 +9,13 @@
   border-radius: 8px;
   border-left: 4px solid;
   background: var(--bg-card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .insight-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .insight-card__icon {
@@ -52,7 +52,7 @@
 .insight-card__recommendation {
   margin: 0.75rem 0 0;
   padding: 0.75rem;
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--bg-secondary);
   border-radius: 4px;
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -65,22 +65,22 @@
 
 /* Success variant */
 .insight-card--success {
-  border-left-color: var(--rfs-green);
+  border-left-color: var(--ui-green);
 }
 
 .insight-card--success .insight-card__icon {
   background: rgba(0, 133, 80, 0.1);
-  color: var(--rfs-green);
+  color: var(--ui-green);
 }
 
 /* Warning variant */
 .insight-card--warning {
-  border-left-color: var(--rfs-amber);
+  border-left-color: var(--ui-amber);
 }
 
 .insight-card--warning .insight-card__icon {
   background: rgba(251, 176, 52, 0.1);
-  color: var(--rfs-amber);
+  color: var(--ui-amber);
 }
 
 /* Critical variant */
@@ -95,12 +95,12 @@
 
 /* Info variant */
 .insight-card--info {
-  border-left-color: var(--rfs-blue);
+  border-left-color: var(--ui-blue);
 }
 
 .insight-card--info .insight-card__icon {
   background: rgba(33, 94, 158, 0.1);
-  color: var(--rfs-blue);
+  color: var(--ui-blue);
 }
 
 /* Responsive adjustments */

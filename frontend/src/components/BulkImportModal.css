@@ -13,16 +13,16 @@
   border-width: 0;
 }
 
+/* .bulk-import-modal carries the shared .card/.card-elevated classes
+   (index.css) in the TSX for background/border/radius/shadow — this rule is
+   layout only. See docs/wiki/developer/ui-patterns.md. */
 .bulk-import-modal {
-  background: white;
-  border-radius: 12px;
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 .bulk-import-modal .modal-header {
@@ -30,7 +30,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 2px solid var(--rfs-light-grey);
+  border-bottom: 2px solid var(--border-color);
 }
 
 .bulk-import-modal .modal-header h2 {
@@ -53,40 +53,25 @@
 
 .import-instructions p {
   margin-bottom: 1rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   line-height: 1.5;
-}
-
-.btn-download-sample {
-  background-color: var(--ui-blue);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 200ms;
-}
-
-.btn-download-sample:hover {
-  background-color: #184a7a;
 }
 
 /* Upload Area */
 .upload-area {
-  border: 3px dashed var(--rfs-light-grey);
+  border: 3px dashed var(--border-color);
   border-radius: 12px;
   padding: 3rem 2rem;
   text-align: center;
   cursor: pointer;
   transition: all 200ms;
-  background-color: #f9f9f9;
+  background-color: var(--bg-secondary);
 }
 
 .upload-area:hover,
 .upload-area.dragging {
   border-color: var(--rfs-core-red);
-  background-color: #fff5f5;
+  background-color: var(--surface-error);
 }
 
 .upload-icon {
@@ -96,35 +81,19 @@
 
 .upload-area p {
   margin: 0.5rem 0;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
 .upload-or {
-  color: var(--rfs-light-grey);
+  color: var(--text-secondary);
   font-weight: 500;
   margin: 1rem 0 !important;
 }
 
-.btn-browse {
-  background-color: var(--rfs-core-red);
-  color: white;
-  border: none;
-  padding: 0.75rem 2rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  margin-top: 1rem;
-  transition: background-color 200ms;
-}
-
-.btn-browse:hover {
-  background-color: #c71f15;
-}
-
 /* File Info */
 .file-info {
-  background-color: #f9f9f9;
+  background-color: var(--bg-secondary);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1.5rem;
@@ -137,7 +106,7 @@
 
 .file-info p {
   margin: 0.25rem 0;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 .detected-columns {
@@ -152,26 +121,17 @@
   flex-basis: 100%;
 }
 
+/* .btn-change-file reuses .btn-secondary (index.css) — this is just a
+   compact size modifier. */
 .btn-change-file {
-  background-color: var(--rfs-light-grey);
-  color: var(--rfs-dark-grey);
-  border: none;
   padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 200ms;
-}
-
-.btn-change-file:hover {
-  background-color: var(--rfs-dark-grey);
-  color: white;
 }
 
 /* Preview Table */
 .preview-table-container {
   max-height: 400px;
   overflow-y: auto;
-  border: 1px solid var(--rfs-light-grey);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   margin-bottom: 1.5rem;
 }
@@ -185,7 +145,7 @@
   position: sticky;
   top: 0;
   background-color: var(--rfs-core-red);
-  color: white;
+  color: var(--rfs-white);
   z-index: 1;
 }
 
@@ -196,11 +156,11 @@
 }
 
 .preview-table tbody tr {
-  border-bottom: 1px solid var(--rfs-light-grey);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .preview-table tbody tr:hover {
-  background-color: #f9f9f9;
+  background-color: var(--surface-hover);
 }
 
 .preview-table td {
@@ -208,15 +168,15 @@
 }
 
 .preview-table tr.valid {
-  background-color: #f0fdf4;
+  background-color: var(--surface-success);
 }
 
 .preview-table tr.duplicate {
-  background-color: #fffbeb;
+  background-color: var(--surface-warning);
 }
 
 .preview-table tr.invalid {
-  background-color: #fef2f2;
+  background-color: var(--surface-error);
 }
 
 .status-valid {
@@ -240,45 +200,7 @@
   justify-content: flex-end;
   gap: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--rfs-light-grey);
-}
-
-.btn-cancel {
-  background-color: transparent;
-  color: var(--rfs-dark-grey);
-  border: 2px solid var(--rfs-light-grey);
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 200ms;
-}
-
-.btn-cancel:hover {
-  border-color: var(--rfs-dark-grey);
-  background-color: var(--rfs-dark-grey);
-  color: white;
-}
-
-.btn-import {
-  background-color: var(--ui-green);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: background-color 200ms;
-}
-
-.btn-import:hover:not(:disabled) {
-  background-color: #006b40;
-}
-
-.btn-import:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  border-top: 1px solid var(--border-color);
 }
 
 /* Import Result */
@@ -299,7 +221,7 @@
 }
 
 .failed-imports {
-  background-color: #fef2f2;
+  background-color: var(--surface-error);
   border: 1px solid var(--rfs-core-red);
   border-radius: 8px;
   padding: 1rem;
@@ -319,22 +241,7 @@
 
 .failed-imports li {
   padding: 0.25rem 0;
-  color: var(--rfs-dark-grey);
-}
-
-.btn-close-result {
-  background-color: var(--rfs-core-red);
-  color: white;
-  border: none;
-  padding: 0.75rem 2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 200ms;
-}
-
-.btn-close-result:hover {
-  background-color: #c71f15;
+  color: var(--text-secondary);
 }
 
 .btn-close {
@@ -342,7 +249,7 @@
   border: none;
   font-size: 2rem;
   cursor: pointer;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   width: 40px;
   height: 40px;
   display: flex;
@@ -353,7 +260,7 @@
 }
 
 .btn-close:hover {
-  background-color: #f0f0f0;
+  background-color: var(--surface-hover);
 }
 
 /* Responsive Design */

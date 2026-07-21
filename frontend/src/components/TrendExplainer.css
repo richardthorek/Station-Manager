@@ -13,9 +13,9 @@
   gap: 0.375rem;
   padding: 0.375rem 0.75rem;
   background: transparent;
-  border: 1px solid var(--rfs-light-grey);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
-  color: var(--rfs-blue);
+  color: var(--ui-blue);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -25,12 +25,12 @@
 .trend-explainer__button:hover,
 .trend-explainer__button:focus {
   background: rgba(33, 94, 158, 0.05);
-  border-color: var(--rfs-blue);
+  border-color: var(--ui-blue);
   outline: none;
 }
 
 .trend-explainer__button:focus-visible {
-  outline: 2px solid var(--rfs-blue);
+  outline: 2px solid var(--ui-blue);
   outline-offset: 2px;
 }
 
@@ -40,7 +40,7 @@
   justify-content: center;
   width: 1.25rem;
   height: 1.25rem;
-  background: var(--rfs-blue);
+  background: var(--ui-blue);
   color: white;
   border-radius: 50%;
   font-size: 0.875rem;
@@ -70,10 +70,10 @@
   width: max-content;
   max-width: 400px;
   padding: 1rem;
-  background: white;
-  border: 2px solid var(--rfs-blue);
+  background: var(--bg-card);
+  border: 2px solid var(--ui-blue);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 .trend-explainer__tooltip--bottom {
@@ -112,7 +112,7 @@
   background: transparent;
   border: none;
   border-radius: 4px;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
@@ -121,13 +121,13 @@
 
 .trend-explainer__close:hover,
 .trend-explainer__close:focus {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--surface-hover);
   color: var(--rfs-core-red);
   outline: none;
 }
 
 .trend-explainer__close:focus-visible {
-  outline: 2px solid var(--rfs-blue);
+  outline: 2px solid var(--ui-blue);
   outline-offset: 2px;
 }
 
@@ -153,7 +153,7 @@
   margin-top: 1rem;
   padding: 0.75rem;
   background: rgba(33, 94, 158, 0.05);
-  border-left: 3px solid var(--rfs-blue);
+  border-left: 3px solid var(--ui-blue);
   border-radius: 4px;
 }
 
@@ -161,7 +161,7 @@
   display: block;
   margin-bottom: 0.375rem;
   font-size: 0.85rem;
-  color: var(--rfs-blue);
+  color: var(--ui-blue);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }

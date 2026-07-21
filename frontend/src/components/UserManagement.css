@@ -192,29 +192,8 @@
   box-shadow: 0 0 0 2px rgba(33, 94, 158, 0.15);
 }
 
-.btn-primary {
-  background: var(--rfs-core-red);
-  color: #ffffff;
-  border: none;
-  padding: 0.75rem 1.4rem;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:disabled {
-  background: #8a8d91;
-  cursor: not-allowed;
-  color: #ffffff;
-  border: 1px solid #6c6e72;
-}
-
-.btn-primary:not(:disabled):hover {
-  background: #c01d15;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(226, 35, 26, 0.25);
-}
+/* .btn-primary now comes from the shared class in index.css instead of
+   being redefined here — see docs/wiki/developer/ui-patterns.md. */
 
 .modal-body .search-box {
   margin-bottom: 1.5rem;

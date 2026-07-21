@@ -193,15 +193,6 @@
   margin-bottom: 24px;
 }
 
-/* Card styling */
-.card {
-  background: var(--bg-card);
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 4px 12px var(--shadow-color);
-  border: 2px solid var(--border-color);
-}
-
 /* Spinner */
 .spinner {
   width: 50px;

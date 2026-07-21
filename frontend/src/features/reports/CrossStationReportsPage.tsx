@@ -25,15 +25,16 @@ import { PageHeader } from '../../components/PageHeader';
 import { api } from '../../services/api';
 import './CrossStationReportsPage.css';
 
-// RFS brand colors for charts
+// RFS brand colors for charts — all design tokens (index.css), not hardcoded
+// hex, so charts stay correct if the palette or theme changes.
 const CHART_COLORS = {
-  primary: 'var(--rfs-core-red)', // RFS red (design token)
-  lime: 'var(--accent-amber)', // Hi-Vis Amber (design token)
-  blue: '#215e9e',        // UI blue
-  green: '#008550',       // UI green
-  amber: '#fbb034',       // UI amber
-  darkGrey: '#4d4d4f',    // Dark grey
-  lightGrey: '#bcbec0',   // Light grey
+  primary: 'var(--rfs-core-red)',
+  lime: 'var(--accent-amber)',
+  blue: 'var(--ui-blue)',
+  green: 'var(--ui-green)',
+  amber: 'var(--ui-amber)',
+  darkGrey: 'var(--text-secondary)',
+  lightGrey: 'var(--border-color)',
 };
 
 const STATION_COLORS = [
@@ -450,7 +451,7 @@ export function CrossStationReportsPage() {
       {/* Export Button */}
       {viewMode === 'stations' && selectedStationIds.length > 0 && (
         <div className="export-section">
-          <button className="export-button" onClick={exportToCSV}>
+          <button className="btn-success" onClick={exportToCSV}>
             📥 Export to CSV
           </button>
         </div>
@@ -466,7 +467,7 @@ export function CrossStationReportsPage() {
       {error && (
         <div className="error-state">
           <p>{error}</p>
-          <button onClick={() => viewMode === 'stations' ? fetchReports() : fetchBrigadeSummary()}>
+          <button className="btn-primary" onClick={() => viewMode === 'stations' ? fetchReports() : fetchBrigadeSummary()}>
             Retry
           </button>
         </div>
@@ -474,7 +475,7 @@ export function CrossStationReportsPage() {
 
       {!loading && !error && viewMode === 'brigade' && brigadeSummary && (
         <main className="reports-main" id="main-content" tabIndex={-1}>
-          <section className="brigade-summary-section">
+          <section className="brigade-summary-section card">
             <h2>Brigade Summary: {brigades.find(b => b.id === selectedBrigadeId)?.name}</h2>
             
             <div className="stat-cards-grid">
@@ -515,7 +516,7 @@ export function CrossStationReportsPage() {
       {!loading && !error && viewMode === 'stations' && selectedStationIds.length > 0 && (
         <main className="reports-main" id="main-content" tabIndex={-1}>
           {/* Attendance Comparison Chart */}
-          <section className="chart-section">
+          <section className="chart-section card">
             <h2>Attendance Comparison</h2>
             <div className="chart-container">
               {Object.keys(attendanceSummaries).length > 0 ? (
@@ -545,7 +546,7 @@ export function CrossStationReportsPage() {
           </section>
 
           {/* Event Statistics Comparison */}
-          <section className="statistics-comparison-section">
+          <section className="statistics-comparison-section card">
             <h2>Event Statistics Comparison</h2>
             <div className="station-stats-grid">
               {selectedStationIds.map(stationId => {
@@ -582,7 +583,7 @@ export function CrossStationReportsPage() {
           </section>
 
           {/* Member Participation Comparison */}
-          <section className="participation-comparison-section">
+          <section className="participation-comparison-section card">
             <h2>Top Members by Station</h2>
             <div className="leaderboards-grid">
               {selectedStationIds.map(stationId => {
@@ -623,7 +624,7 @@ export function CrossStationReportsPage() {
           </section>
 
           {/* Activity Breakdown Comparison */}
-          <section className="breakdown-comparison-section">
+          <section className="breakdown-comparison-section card">
             <h2>Activity Breakdown by Station</h2>
             <div className="pie-charts-grid">
               {selectedStationIds.map(stationId => {

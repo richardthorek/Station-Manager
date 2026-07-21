@@ -211,49 +211,12 @@
   background: var(--bg-secondary);
 }
 
+/* .setup-guide-button reuses .btn-primary/.btn-secondary (index.css) for
+   color/behavior — this is just the icon+label flex layout. */
 .setup-guide-button {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-family: 'Archivo', 'Public Sans', sans-serif;
-}
-
-.setup-guide-button.primary {
-  background: var(--rfs-core-red);
-  color: var(--rfs-white);
-}
-
-.setup-guide-button.primary:hover:not(:disabled) {
-  background: var(--rfs-core-red-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(216, 35, 42, 0.3);
-}
-
-.setup-guide-button.primary:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.setup-guide-button.secondary {
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-}
-
-.setup-guide-button.secondary:hover:not(:disabled) {
-  background: var(--surface-hover);
-  color: var(--text-primary);
-}
-
-.setup-guide-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .setup-guide-step-counter {
@@ -269,25 +232,7 @@
   text-align: center;
 }
 
-.setup-guide-cta-button {
-  background: var(--accent-amber);
-  color: var(--accent-amber-ink);
-  border: none;
-  padding: 0.875rem 1.5rem;
-  border-radius: var(--radius-md);
-  font-weight: 700;
-  font-family: 'Archivo', 'Public Sans', sans-serif;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 1rem;
-}
-
-.setup-guide-cta-button:hover {
-  background: var(--accent-amber-dark);
-  color: var(--accent-amber-ink);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(246, 166, 9, 0.3);
-}
+/* .setup-guide-cta-button reuses .btn-accent (index.css) for color/behavior. */
 
 /* Dark mode now comes for free from the theme-aware vars above (--bg-card,
    --text-primary, --border-color, etc. flip via [data-theme="dark"] in

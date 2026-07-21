@@ -165,7 +165,7 @@ export function VehicleTypesPage() {
             {types.map((t) => {
               const isBuiltIn = !t.organizationId;
               return (
-                <article key={t.id} className={`vt-card ${isBuiltIn ? 'vt-card--builtin' : ''}`}>
+                <article key={t.id} className={`vt-card card ${isBuiltIn ? 'vt-card--builtin' : ''}`}>
                   <div className="vt-card__body">
                     <h3>{t.name} {isBuiltIn && <span className="vt-badge vt-badge--builtin">Built-in</span>} {t.isStandard && !isBuiltIn && <span className="vt-badge">standard</span>}</h3>
                     {t.agency && <p className="vt-card__agency">{t.agency}</p>}

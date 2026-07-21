@@ -183,7 +183,7 @@ export function TruckCheckOnboardingWizard() {
         </header>
 
         <main className="onboarding-main">
-          <div className="onboarding-card">
+          <div className="onboarding-card card">
             {/* Step 1: Jurisdiction */}
             {step === 'jurisdiction' && (
               <form onSubmit={handleJurisdictionSubmit} className="onboarding-form">
@@ -210,7 +210,7 @@ export function TruckCheckOnboardingWizard() {
                   ))}
                 </fieldset>
 
-                <button type="submit" className="onboarding-button primary">
+                <button type="submit" className="btn-primary onboarding-button">
                   Next →
                 </button>
               </form>
@@ -262,13 +262,13 @@ export function TruckCheckOnboardingWizard() {
                 <div className="form-actions">
                   <button
                     type="button"
-                    className="onboarding-button secondary"
+                    className="btn-secondary onboarding-button"
                     onClick={() => setStep('jurisdiction')}
                     disabled={isLoading}
                   >
                     ← Back
                   </button>
-                  <button type="submit" className="onboarding-button primary" disabled={isLoading}>
+                  <button type="submit" className="btn-primary onboarding-button" disabled={isLoading}>
                     Next →
                   </button>
                 </div>
@@ -315,13 +315,13 @@ export function TruckCheckOnboardingWizard() {
                 <div className="form-actions">
                   <button
                     type="button"
-                    className="onboarding-button secondary"
+                    className="btn-secondary onboarding-button"
                     onClick={() => setStep('agency')}
                     disabled={isLoading}
                   >
                     ← Back
                   </button>
-                  <button type="submit" className="onboarding-button primary" disabled={isLoading}>
+                  <button type="submit" className="btn-primary onboarding-button" disabled={isLoading}>
                     Review →
                   </button>
                 </div>
@@ -368,7 +368,7 @@ export function TruckCheckOnboardingWizard() {
                 <div className="form-actions">
                   <button
                     type="button"
-                    className="onboarding-button secondary"
+                    className="btn-secondary onboarding-button"
                     onClick={() => setStep('vehicles')}
                     disabled={isLoading}
                   >
@@ -376,7 +376,7 @@ export function TruckCheckOnboardingWizard() {
                   </button>
                   <button
                     type="submit"
-                    className="onboarding-button primary"
+                    className="btn-primary onboarding-button"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Setting up vehicles…' : 'Create vehicles & continue'}

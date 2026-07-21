@@ -13,7 +13,7 @@
 }
 
 .qr-scanner-modal {
-  background: var(--rfs-white);
+  background: var(--bg-card);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   width: 100%;
   max-width: 500px;
@@ -38,7 +38,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--rfs-light-grey);
+  border-bottom: 1px solid var(--border-color);
   gap: var(--spacing-md);
 }
 
@@ -47,7 +47,7 @@
   font-size: 1.25rem;
   font-weight: 700;
   font-family: 'Archivo', 'Public Sans', sans-serif;
-  color: var(--rfs-black);
+  color: var(--text-primary);
   flex: 1;
 }
 
@@ -63,7 +63,7 @@
   border: none;
   padding: var(--spacing-sm);
   cursor: pointer;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,7 +75,7 @@
 
 .qr-scanner-switch-camera:hover:not(:disabled),
 .qr-scanner-close:hover:not(:disabled) {
-  background-color: var(--rfs-neutral-light);
+  background-color: var(--surface-hover);
 }
 
 .qr-scanner-switch-camera:disabled,
@@ -141,7 +141,7 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--rfs-light-grey);
+  border: 3px solid var(--border-color);
   border-top-color: var(--rfs-core-red);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -155,35 +155,11 @@
 
 .qr-scanner-instructions {
   font-size: 0.875rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   margin: 0;
   text-align: center;
 }
 
-@media (prefers-color-scheme: dark) {
-  .qr-scanner-modal {
-    background: var(--rfs-neutral-dark);
-  }
-
-  .qr-scanner-header {
-    border-bottom-color: #333;
-  }
-
-  .qr-scanner-header h2 {
-    color: var(--rfs-white);
-  }
-
-  .qr-scanner-switch-camera,
-  .qr-scanner-close {
-    color: var(--rfs-light-grey);
-  }
-
-  .qr-scanner-switch-camera:hover:not(:disabled),
-  .qr-scanner-close:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .qr-scanner-instructions {
-    color: var(--rfs-light-grey);
-  }
-}
+/* Dark mode now comes for free from the theme-aware vars above — no
+   separate @media (prefers-color-scheme) block needed. That old block only
+   reacted to the OS-level preference, not the app's in-app theme toggle. */

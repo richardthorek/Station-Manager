@@ -7,7 +7,7 @@
   padding: 1.5rem;
   background: linear-gradient(135deg, rgba(229, 40, 27, 0.03) 0%, rgba(203, 219, 42, 0.03) 100%);
   border-radius: 12px;
-  border: 2px solid var(--rfs-light-grey);
+  border: 2px solid var(--border-color);
 }
 
 .station-pulse__header {
@@ -24,7 +24,7 @@
 .station-pulse__subtitle {
   margin: 0;
   font-size: 1rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 .station-pulse__content {
@@ -45,15 +45,15 @@
 }
 
 .station-pulse__health-card--excellent {
-  border-left-color: var(--rfs-green);
+  border-left-color: var(--ui-green);
 }
 
 .station-pulse__health-card--good {
-  border-left-color: var(--rfs-blue);
+  border-left-color: var(--ui-blue);
 }
 
 .station-pulse__health-card--fair {
-  border-left-color: var(--rfs-amber);
+  border-left-color: var(--ui-amber);
 }
 
 .station-pulse__health-card--needs-attention {
@@ -70,7 +70,7 @@
   height: 120px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(229, 40, 27, 0.1) 0%, rgba(203, 219, 42, 0.1) 100%);
-  border: 3px solid var(--rfs-light-grey);
+  border: 3px solid var(--border-color);
 }
 
 .health-card__score {
@@ -84,7 +84,7 @@
   margin-top: 0.25rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -109,17 +109,17 @@
 
 .health-card__status--excellent {
   background: rgba(0, 133, 80, 0.15);
-  color: var(--rfs-green);
+  color: var(--ui-green);
 }
 
 .health-card__status--good {
   background: rgba(33, 94, 158, 0.15);
-  color: var(--rfs-blue);
+  color: var(--ui-blue);
 }
 
 .health-card__status--fair {
   background: rgba(251, 176, 52, 0.15);
-  color: var(--rfs-amber);
+  color: var(--ui-amber);
 }
 
 .health-card__status--needs-attention {
@@ -155,12 +155,12 @@
 
 .health-card__metric--warning {
   background: rgba(251, 176, 52, 0.1);
-  color: var(--rfs-amber);
+  color: var(--ui-amber);
 }
 
 .health-card__metric--success {
   background: rgba(0, 133, 80, 0.1);
-  color: var(--rfs-green);
+  color: var(--ui-green);
 }
 
 /* Insights Grid */
@@ -173,7 +173,7 @@
 .station-pulse__no-insights {
   padding: 2rem;
   text-align: center;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-style: italic;
 }
 

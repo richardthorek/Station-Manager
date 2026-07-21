@@ -40,11 +40,11 @@
   max-width: 500px;
 }
 
+/* .login-card carries the shared .card/.card-elevated classes (index.css)
+   in the TSX for background/border/radius/shadow — this rule is layout
+   only. */
 .login-card {
-  background: var(--rfs-white);
-  border-radius: 16px;
   padding: 2.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   text-align: center;
 }
 
@@ -56,14 +56,14 @@
 }
 
 .login-card h2 {
-  color: var(--rfs-black);
+  color: var(--text-primary);
   font-size: 2rem;
   margin: 0 0 0.5rem 0;
   font-weight: 700;
 }
 
 .login-description {
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 1rem;
   margin: 0 0 2rem 0;
   line-height: 1.5;
@@ -79,7 +79,7 @@
 
 .form-group label {
   display: block;
-  color: var(--rfs-black);
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
@@ -89,11 +89,11 @@
   width: 100%;
   padding: 0.875rem 1rem;
   font-size: 1rem;
-  border: 2px solid var(--rfs-light-grey);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  background: var(--rfs-white);
+  background: var(--bg-card);
   transition: border-color 0.2s ease;
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .form-group input:focus {
@@ -118,33 +118,12 @@
   border: 1px solid var(--rfs-core-red-light);
 }
 
+/* .login-button / .passkey-login-button reuse .btn-primary (index.css) for
+   color/behavior — these are just full-width size modifiers. */
 .login-button {
   width: 100%;
   padding: 1rem;
   font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--rfs-white);
-  background: var(--rfs-core-red);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.login-button:hover:not(:disabled) {
-  background: var(--rfs-core-red-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(200, 16, 46, 0.3);
-}
-
-.login-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.login-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .login-divider {
@@ -152,7 +131,7 @@
   align-items: center;
   gap: 1rem;
   margin: 1.5rem 0;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -162,7 +141,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--rfs-light-grey);
+  background: var(--border-color);
 }
 
 .qr-scan-button {
@@ -176,7 +155,6 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -184,7 +162,7 @@
 }
 
 .qr-scan-button:hover:not(:disabled) {
-  background: rgba(216, 35, 42, 0.05);
+  background: var(--surface-error);
   transform: translateY(-2px);
 }
 
@@ -202,18 +180,6 @@
   padding: 1rem;
   margin-top: 0.75rem;
   font-size: 1rem;
-  font-weight: 600;
-  color: var(--rfs-white);
-  background: var(--rfs-core-red);
-  border: 2px solid var(--rfs-core-red);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
 }
 
 .passkey-login-button:hover:not(:disabled) {

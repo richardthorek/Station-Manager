@@ -18,7 +18,7 @@
   min-width: 200px;
   padding: 0.75rem 1rem;
   font-size: 1rem;
-  border: 2px solid var(--rfs-light-grey);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -44,7 +44,7 @@
 .data-table__page-size select {
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
-  border: 2px solid var(--rfs-light-grey);
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -60,7 +60,7 @@
 .data-table__wrapper {
   overflow-x: auto;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .data-table__table {
@@ -121,7 +121,7 @@
 }
 
 .data-table__table tbody tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--bg-secondary);
 }
 
 .data-table__table tbody tr:nth-child(even):hover {
@@ -163,7 +163,7 @@
   min-width: 44px;
   min-height: 44px;
   font-size: 1rem;
-  border: 2px solid var(--rfs-light-grey);
+  border: 2px solid var(--border-color);
   background: var(--bg-card);
   color: var(--text-primary);
   border-radius: 6px;

@@ -20,7 +20,7 @@
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -29,10 +29,10 @@
   padding: 0.875rem 1rem 0.875rem 2.75rem;
   font-size: 1rem;
   min-height: 44px;
-  border: 2px solid var(--rfs-light-grey);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  background: var(--rfs-white);
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-card);
 }
 
 .facility-search__input-row input:focus {
@@ -51,10 +51,10 @@
 .facility-search__chip {
   padding: 0.5rem 0.875rem;
   min-height: 44px;
-  border: 2px solid var(--rfs-light-grey);
+  border: 2px solid var(--border-color);
   border-radius: 999px;
-  background: var(--rfs-white);
-  color: var(--rfs-black);
+  background: var(--bg-card);
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -75,7 +75,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   margin: 0.5rem 0;
 }
@@ -100,15 +100,15 @@
   text-align: left;
   padding: 0.875rem 1rem;
   min-height: 44px;
-  border: 2px solid var(--rfs-light-grey);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  background: var(--rfs-white);
+  background: var(--bg-card);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   transition: all 0.15s ease;
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .facility-search__result:hover:not(:disabled) {
@@ -117,7 +117,7 @@
 
 .facility-search__result--selected {
   border-color: var(--rfs-core-red);
-  background: rgba(229, 40, 27, 0.05);
+  background: var(--surface-error);
 }
 
 .facility-search__result--claimed {
@@ -127,14 +127,14 @@
 
 .facility-search__result-name {
   font-weight: 700;
-  color: var(--rfs-black);
+  color: var(--text-primary);
 }
 
 .facility-search__result-meta {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
@@ -142,8 +142,8 @@
   align-self: flex-start;
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
-  background: var(--surface-secondary, #f0f0f0);
-  color: var(--rfs-dark-grey);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -174,10 +174,10 @@
   padding: 0.875rem 1rem;
   min-height: 44px;
   font-size: 1rem;
-  border: 2px solid var(--rfs-light-grey);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  background: var(--rfs-white);
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-card);
 }
 
 .facility-search__nudge {
@@ -186,7 +186,7 @@
 
 .facility-search__nudge p {
   font-size: 0.875rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   margin: 0 0 0.5rem 0;
 }
 
@@ -211,23 +211,4 @@
 .facility-search__use-custom-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-[data-theme="dark"] .facility-search__input-row input,
-[data-theme="dark"] .facility-search__chip,
-[data-theme="dark"] .facility-search__result,
-[data-theme="dark"] .facility-search__custom-form select {
-  background: var(--bg-secondary);
-  border-color: var(--border-color);
-  color: var(--text-primary);
-}
-
-[data-theme="dark"] .facility-search__result-name {
-  color: var(--text-primary);
-}
-
-[data-theme="dark"] .facility-search__chip--active {
-  background: var(--rfs-core-red);
-  border-color: var(--rfs-core-red);
-  color: var(--rfs-white);
 }

@@ -74,7 +74,7 @@ export function ExportMenu({
   return (
     <div className="export-menu" ref={menuRef}>
       <button
-        className="export-menu__button"
+        className="btn-accent export-menu__button"
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled || isExporting}
         aria-label="Export options"

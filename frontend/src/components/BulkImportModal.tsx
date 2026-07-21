@@ -327,7 +327,7 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
     >
       <div 
         ref={modalRef}
-        className="bulk-import-modal" 
+        className="bulk-import-modal card card-elevated" 
         role="dialog"
         aria-modal="true"
         aria-labelledby="bulk-import-title"
@@ -356,7 +356,7 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
                 </p>
                 <button 
                   type="button"
-                  className="btn-download-sample" 
+                  className="btn-secondary btn-download-sample" 
                   onClick={downloadSampleCSV}
                   aria-label="Download sample CSV template"
                 >
@@ -384,7 +384,7 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
                 <div className="upload-icon" aria-hidden="true">📁</div>
                 <p>Drag and drop a CSV file here</p>
                 <p className="upload-or">or</p>
-                <button type="button" className="btn-browse">Browse Files</button>
+                <button type="button" className="btn-primary btn-browse">Browse Files</button>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -419,7 +419,7 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
                 )}
                 <button
                   type="button"
-                  className="btn-change-file"
+                  className="btn-secondary btn-change-file"
                   onClick={() => { setFile(null); setParsedData([]); setColumnMap({}); }}
                   aria-label="Change selected file"
                 >
@@ -456,10 +456,10 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
               </div>
 
               <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+                <button type="button" className="btn-secondary btn-cancel" onClick={onClose}>Cancel</button>
                 <button 
                   type="button"
-                  className="btn-import" 
+                  className="btn-success btn-import" 
                   onClick={handleImport}
                   disabled={validCount === 0 || importing}
                   aria-disabled={validCount === 0 || importing}
@@ -494,7 +494,7 @@ Robin,Allard,Captain,"OneAdmin, Permit Officer, Callout Officer"`;
 
               <button 
                 type="button"
-                className="btn-close-result" 
+                className="btn-primary btn-close-result" 
                 onClick={onImportComplete}
                 aria-label="Close import results"
               >

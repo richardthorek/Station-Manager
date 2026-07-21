@@ -5,32 +5,15 @@
   display: inline-block;
 }
 
+/* .export-menu__button reuses .btn-accent (index.css) for color/behavior —
+   this is just a gap/min-height layout modifier. */
 .export-menu__button {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
   min-height: 50px;
-  font-size: 1rem;
-  font-weight: 600;
-  border: 2px solid var(--rfs-lime);
-  background: var(--rfs-lime);
-  color: var(--rfs-black);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .export-menu__button:hover:not(:disabled) {
-  background: #a8b821;
-  border-color: #a8b821;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.export-menu__button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .export-menu__icon {
@@ -50,9 +33,9 @@
   right: 0;
   min-width: 280px;
   background: var(--bg-card);
-  border: 2px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
   overflow: hidden;
   animation: slideDown 0.2s ease-out;
@@ -128,7 +111,7 @@
   background: var(--bg-card);
   padding: 2rem 3rem;
   border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -137,7 +120,7 @@
 }
 
 .export-menu__spinner {
-  border: 4px solid var(--rfs-light-grey);
+  border: 4px solid var(--border-color);
   border-top: 4px solid var(--rfs-core-red);
   border-radius: 50%;
   width: 40px;
@@ -163,7 +146,7 @@
   color: var(--rfs-white);
   padding: 1rem 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
   display: flex;
   align-items: center;
   gap: 0.75rem;

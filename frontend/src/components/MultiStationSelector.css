@@ -11,8 +11,8 @@
 .selector-button {
   width: 100%;
   padding: 1rem 1.5rem;
-  background: var(--rfs-white);
-  border: 2px solid var(--rfs-light-grey);
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
   display: flex;
   justify-content: space-between;
@@ -25,7 +25,7 @@
 
 .selector-button:hover {
   border-color: var(--rfs-core-red);
-  background: #fafafa;
+  background: var(--surface-hover);
 }
 
 .selector-button:focus {
@@ -34,13 +34,13 @@
 }
 
 .selector-text {
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   flex: 1;
   text-align: left;
 }
 
 .selector-arrow {
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 0.875rem;
   margin-left: 0.5rem;
 }
@@ -50,10 +50,10 @@
   top: calc(100% + 0.5rem);
   left: 0;
   right: 0;
-  background: var(--rfs-white);
-  border: 2px solid var(--rfs-light-grey);
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
   max-height: 500px;
   display: flex;
@@ -62,15 +62,17 @@
 
 .selector-header {
   padding: 1rem;
-  border-bottom: 1px solid var(--rfs-light-grey);
-  background: #fafafa;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   border-radius: 8px 8px 0 0;
 }
 
 .selector-search {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid var(--rfs-light-grey);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   font-size: 1rem;
   margin-bottom: 0.75rem;
@@ -89,8 +91,9 @@
 .action-btn {
   flex: 1;
   padding: 0.5rem 1rem;
-  background: var(--rfs-white);
-  border: 2px solid var(--rfs-light-grey);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
@@ -113,7 +116,7 @@
 .no-stations {
   padding: 2rem;
   text-align: center;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-style: italic;
 }
 
@@ -126,14 +129,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   border-radius: 6px;
   margin-bottom: 0.5rem;
 }
 
 .brigade-name {
   font-weight: 700;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -141,15 +144,16 @@
 
 .station-count {
   font-weight: 400;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
   margin-left: 0.25rem;
   opacity: 0.7;
 }
 
 .brigade-select-btn {
   padding: 0.375rem 0.75rem;
-  background: var(--rfs-white);
-  border: 1px solid var(--rfs-light-grey);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
@@ -178,11 +182,11 @@
 }
 
 .station-option:hover {
-  background: #f9f9f9;
+  background: var(--surface-hover);
 }
 
 .station-option.selected {
-  background: #e3f2fd;
+  background: var(--surface-info);
 }
 
 .station-option input[type="checkbox"] {
@@ -202,13 +206,13 @@
 
 .station-name {
   font-weight: 500;
-  color: var(--rfs-black);
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
 .station-hierarchy {
   font-size: 0.75rem;
-  color: var(--rfs-dark-grey);
+  color: var(--text-secondary);
 }
 
 /* Mobile responsive */

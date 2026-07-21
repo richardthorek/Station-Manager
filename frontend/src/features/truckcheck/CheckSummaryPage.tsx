@@ -114,7 +114,7 @@ export function CheckSummaryPage() {
       />
 
       <main className="summary-main" id="main-content" tabIndex={-1}>
-        <div className="summary-card">
+        <div className="card">
           <div className="summary-stats">
             <div className="stat done">
               <span className="stat-number">{doneCount}</span>
@@ -192,13 +192,13 @@ export function CheckSummaryPage() {
 
           <div className="submit-section">
             <button
-              className="btn-submit"
+              className="btn-primary"
               onClick={handleSubmit}
               disabled={!declaration.trim() || submitting}
             >
               {submitting ? 'Submitting...' : 'Submit Check'}
             </button>
-            
+
             <button
               className="btn-secondary qr-toggle"
               onClick={() => setShowQRCode(!showQRCode)}

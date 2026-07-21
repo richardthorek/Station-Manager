@@ -234,7 +234,7 @@
   }
 }
 .station-token-card {
-  background: var(--card-background);
+  background: var(--bg-card);
   border: 2px solid var(--border-color);
   border-radius: 12px;
   padding: 1.5rem;
@@ -242,13 +242,13 @@
 }
 
 .station-token-card:hover {
-  border-color: var(--primary-color);
+  border-color: var(--rfs-core-red);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .station-token-card.no-token {
-  border-color: var(--warning-color, #fbb034);
-  background: var(--warning-background, rgba(251, 176, 52, 0.05));
+  border-color: var(--ui-amber);
+  background: var(--surface-warning);
 }
 
 /* Station Header */
@@ -275,7 +275,7 @@
 .station-district {
   color: var(--text-secondary);
   padding: 0.25rem 0.5rem;
-  background: var(--background-secondary);
+  background: var(--bg-secondary);
   border-radius: 4px;
 }
 
@@ -299,7 +299,7 @@
 
 /* Token Item */
 .token-item {
-  background: var(--background-secondary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1rem;
@@ -353,18 +353,18 @@
   font-family: 'Courier New', monospace;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  background-color: var(--input-background);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
 }
 
 .token-url-input:focus {
   outline: none;
-  border-color: var(--primary-color);
+  border-color: var(--rfs-core-red);
 }
 
 .copy-button {
   padding: 0.5rem 1rem;
-  background-color: var(--primary-color);
+  background-color: var(--rfs-core-red);
   color: white;
   border: none;
   border-radius: 4px;
@@ -375,7 +375,7 @@
 }
 
 .copy-button:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--rfs-core-red-dark);
 }
 
 /* Token Actions */
@@ -396,7 +396,7 @@
 }
 
 .secondary-button {
-  background-color: var(--background-secondary);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
@@ -406,13 +406,13 @@
 }
 
 .danger-button {
-  background-color: var(--error-background, #fee);
-  color: var(--error-text, #c00);
-  border: 1px solid var(--error-border, #fcc);
+  background-color: var(--surface-error);
+  color: var(--text-error-strong);
+  border: 1px solid var(--text-error-strong);
 }
 
 .danger-button:hover {
-  background-color: var(--error-text, #c00);
+  background-color: var(--text-error-strong);
   color: white;
 }
 
@@ -420,7 +420,7 @@
 .qr-code-section {
   margin-top: 1rem;
   padding: 1rem;
-  background: var(--card-background);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   text-align: center;
@@ -449,7 +449,7 @@
 .text-button {
   background: none;
   border: none;
-  color: var(--primary-color);
+  color: var(--rfs-core-red);
   cursor: pointer;
   font-size: 0.9rem;
   padding: 0.5rem;
@@ -458,7 +458,7 @@
 }
 
 .text-button:hover {
-  color: var(--primary-hover);
+  color: var(--rfs-core-red-dark);
 }
 
 .text-button:disabled {
@@ -553,7 +553,7 @@
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 600;
-  background-color: var(--danger-color, #dc2626);
+  background-color: var(--rfs-core-red);
   color: white;
 }
 
@@ -568,7 +568,7 @@
   font-size: 0.9rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  background-color: var(--input-background);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
 }
 
@@ -586,7 +586,7 @@
   font-size: 0.85rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  background-color: var(--input-background);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
   min-height: 44px;
 }
@@ -596,7 +596,7 @@
   font-size: 0.85rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  background-color: var(--input-background);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
   min-height: 44px;
 }

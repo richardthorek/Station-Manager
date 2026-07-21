@@ -32,19 +32,19 @@
 }
 
 .kpi-card--blue {
-  --gradient-start: #215e9e;
+  --gradient-start: var(--ui-blue);
   --gradient-end: #1a4c7f;
   color: var(--rfs-white);
 }
 
 .kpi-card--green {
-  --gradient-start: #008550;
+  --gradient-start: var(--ui-green);
   --gradient-end: #006a40;
   color: var(--rfs-white);
 }
 
 .kpi-card--amber {
-  --gradient-start: #fbb034;
+  --gradient-start: var(--ui-amber);
   --gradient-end: #e69a2a;
   color: var(--rfs-black);
 }
